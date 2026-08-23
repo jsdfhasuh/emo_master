@@ -1,0 +1,42 @@
+{
+  "operatorId": "vision.flow.switch",
+  "displayName": "Switch",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.flow_switch.operator:FlowSwitchOperator",
+  "category": "控制流",
+  "iconKey": "default",
+  "summary": "根据输入值命中 case 分支，未命中时走 default。",
+  "inputPorts": {
+    "value": "object"
+  },
+  "outputPorts": {
+    "case0": "object",
+    "case1": "object",
+    "case2": "object",
+    "case3": "object",
+    "default": "object"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "case0Value": {
+        "type": "string",
+        "default": ""
+      },
+      "case1Value": {
+        "type": "string",
+        "default": ""
+      },
+      "case2Value": {
+        "type": "string",
+        "default": ""
+      },
+      "case3Value": {
+        "type": "string",
+        "default": ""
+      }
+    }
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,33 @@
+{
+  "operatorId": "vision.io.image_loader",
+  "displayName": "Image Loader",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.image_loader.operator:ImageLoaderOperator",
+  "category": "预处理",
+  "iconKey": "source",
+  "summary": "从本地路径读取图片并输出 image 端口。",
+  "inputPorts": {},
+  "outputPorts": {
+    "image": "image"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "imagePath": {
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+      },
+      "colorMode": {
+        "type": "string",
+        "enum": ["color", "grayscale"],
+        "default": "color"
+      }
+    },
+    "required": ["imagePath"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,34 @@
+{
+  "operatorId": "vision.io.image_saver",
+  "displayName": "Image Saver",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.image_saver.operator:ImageSaverOperator",
+  "category": "输出",
+  "iconKey": "output",
+  "summary": "将输入图像写出到本地路径。",
+  "inputPorts": {
+    "image": "image"
+  },
+  "outputPorts": {
+    "result": "json"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "outputPath": {
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "save",
+        "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)"
+      },
+      "overwrite": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "required": ["outputPath"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

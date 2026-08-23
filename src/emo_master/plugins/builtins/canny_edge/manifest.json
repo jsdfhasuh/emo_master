@@ -1,0 +1,45 @@
+{
+  "operatorId": "vision.edge.canny",
+  "displayName": "Canny Edge",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.canny_edge.operator:CannyEdgeOperator",
+  "category": "检测",
+  "iconKey": "edge",
+  "summary": "提取图像边缘并输出边缘图与叠加图。",
+  "inputPorts": {
+    "image": "image"
+  },
+  "outputPorts": {
+    "edges": "image",
+    "overlay": "image"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "thresholdLow": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 50
+      },
+      "thresholdHigh": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 150
+      },
+      "apertureSize": {
+        "type": "integer",
+        "enum": [3, 5, 7],
+        "default": 3
+      },
+      "l2Gradient": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["thresholdLow", "thresholdHigh"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

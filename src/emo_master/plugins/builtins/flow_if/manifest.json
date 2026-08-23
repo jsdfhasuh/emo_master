@@ -1,0 +1,33 @@
+{
+  "operatorId": "vision.flow.if",
+  "displayName": "If",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.flow_if.operator:FlowIfOperator",
+  "category": "控制流",
+  "iconKey": "default",
+  "summary": "根据条件将输入分流到 true 或 false 分支。",
+  "inputPorts": {
+    "value": "object"
+  },
+  "outputPorts": {
+    "true": "object",
+    "false": "object"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {
+        "type": "string",
+        "enum": ["bool", "equals", "not_equals"],
+        "default": "bool"
+      },
+      "compareValue": {
+        "type": "string",
+        "default": ""
+      }
+    },
+    "required": ["mode"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

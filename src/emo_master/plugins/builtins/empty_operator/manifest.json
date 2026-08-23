@@ -1,0 +1,27 @@
+{
+  "operatorId": "vision.demo.empty",
+  "displayName": "Empty Operator",
+  "version": "0.1.0",
+  "entry": "emo_master.plugins.builtins.empty_operator.operator:EmptyOperator",
+  "category": "预处理",
+  "iconKey": "source",
+  "summary": "示例算子，输出基础结果用于流程联调。",
+  "inputPorts": {
+    "image": "image"
+  },
+  "outputPorts": {
+    "result": "json"
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "enabled": {
+        "type": "boolean",
+        "default": true
+      }
+    },
+    "required": []
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,43 @@
+# Python bytecode and environments
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+env/
+
+# Tool caches and reports
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Build and package metadata
+build/
+dist/
+*.egg-info/
+*.vxpkg
+
+# Local configuration and runtime data
+.env
+.env.*
+!.env.example
+*.db
+*.sqlite
+*.sqlite3
+*.log
+
+# Editors and operating systems
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+
+# Local demo outputs
+tmp_demo_input*.png
+
+# Private handoff/reference material and local implementation plans
+learn/
+docs/plans/

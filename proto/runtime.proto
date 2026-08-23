@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package emo_master.runtime;
+
+message LoadProjectRequest {
+  string project_path = 1;
+}
+
+message LoadProjectReply {
+  bool ok = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message ValidateProjectRequest {
+  string project_id = 1;
+}
+
+message ValidateProjectReply {
+  bool ok = 1;
+  repeated string errors = 2;
+}
+
+message StartJobRequest {
+  string project_id = 1;
+}
+
+message StartJobReply {
+  bool ok = 1;
+  string job_id = 2;
+  string message = 3;
+}
+
+message StopJobRequest {
+  string job_id = 1;
+  string mode = 2;
+}
+
+message StopJobReply {
+  bool ok = 1;
+  string status = 2;
+  string message = 3;
+}
+
+message GetJobStatusRequest {
+  string job_id = 1;
+}
+
+message GetJobStatusReply {
+  bool ok = 1;
+  string status = 2;
+  string error_code = 3;
+  string message = 4;
+}
+
+message StreamJobEventsRequest {
+  string job_id = 1;
+}
+
+message JobEvent {
+  string job_id = 1;
+  string node_id = 2;
+  string event_type = 3;
+  string level = 4;
+  string code = 5;
+  string message = 6;
+  string payload_json = 7;
+  int64 timestamp_ms = 8;
+}
+
+message ListOperatorsRequest {}
+
+message OperatorInfo {
+  string operator_id = 1;
+  string display_name = 2;
+  string version = 3;
+  map<string, string> input_ports = 4;
+  map<string, string> output_ports = 5;
+  string param_schema_json = 6;
+  string category = 7;
+  string icon_key = 8;
+  string summary = 9;
+}
+
+message ListOperatorsReply {
+  repeated OperatorInfo operators = 1;
+}
+
+message ListRejectedOperatorsRequest {}
+
+message RejectedOperatorInfo {
+  string operator_id = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message ListRejectedOperatorsReply {
+  repeated RejectedOperatorInfo rejected = 1;
+}
+
+service RuntimeService {
+  rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
+  rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
+  rpc StartJob(StartJobRequest) returns (StartJobReply);
+  rpc StopJob(StopJobRequest) returns (StopJobReply);
+  rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
+  rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
+  rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
+  rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
+}

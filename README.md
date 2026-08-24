@@ -1,13 +1,15 @@
 # emo_master
 
-emo_master 是一个参考 VisionMaster 思路实现的机器视觉平台骨架项目，当前包含：
+emo_master 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前版本为 `0.2.0`，包含：
 
-> 当前项目处于实验性 MVP 阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
+> 项目仍处于实验性阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
 
 - Designer（PySide2 / Qt5）
 - Runtime（gRPC 服务）
 - 插件算子框架（含 Empty 与 Canny 示例）
 - 项目目录格式、打包与回滚基础能力
+- `project.json v2` 多工作流、入口工作流、Subflow 与结构化 Loop
+- 异步 Job、SQLite 事件重放、spawn worker 隔离和实时 follow 事件流
 
 ## Conda 环境准备
 
@@ -39,6 +41,7 @@ pip install -r requirements-dev.txt
 
 ```bash
 python scripts/gen_proto.py
+python scripts/gen_proto.py --check
 python scripts/ci_check.py
 ```
 
@@ -79,3 +82,6 @@ python scripts/dev.py run-designer
 ```bash
 pytest -q
 ```
+
+Runtime 每个 Job 使用独立的 `multiprocessing.spawn` 子进程；Designer 通过
+`RuntimeWorker` 在后台接收事件。项目保存会自动迁移 v1 到 v2，读取旧文件不会覆盖原文件，保存 v2 会生成 `.bak` 备份并原子替换。

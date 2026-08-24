@@ -8,7 +8,9 @@ from emo_master.apps.designer.controllers import (
     OperatorCatalogController,
     ProjectController,
     RuntimeController,
+    WorkflowController,
 )
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.presenters import NodeDetailsPresenter
 from emo_master.apps.designer.ui.flow_scene import (
     FlowEdgeViewModel,
@@ -39,6 +41,7 @@ try:
         QPushButton,
         QShortcut,
         QSplitter,
+        QTabWidget,
         QTextEdit,
         QToolBar,
         QVBoxLayout,
@@ -132,6 +135,9 @@ except Exception:  # pragma: no cover
         def setText(self, text: str) -> None:
             self._text = text
 
+        def text(self) -> str:
+            return self._text
+
         def setMinimumHeight(self, height: int) -> None:
             _ = height
 
@@ -151,8 +157,15 @@ except Exception:  # pragma: no cover
             return self._styleSheet
 
     class _SignalStub:
-        def connect(self, callback) -> None:
-            _ = callback
+        def __init__(self) -> None:
+            self._callbacks: list[Callable[..., object]] = []
+
+        def connect(self, callback: Callable[..., object]) -> None:
+            self._callbacks.append(callback)
+
+        def emit(self, *args) -> None:
+            for callback in list(self._callbacks):
+                callback(*args)
 
     class QSettings:  # type: ignore[no-redef]
         _store: dict[str, object] = {}
@@ -307,6 +320,53 @@ except Exception:  # pragma: no cover
         def item(self, index: int):
             return self._items[index]
 
+    class QTabWidget(QWidget):  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            self.currentChanged = _SignalStub()
+            self.tabBarClicked = _SignalStub()
+            self._tabs: list[tuple[object, str]] = []
+            self._tabData: list[object] = []
+            self._currentIndex = -1
+
+        def addTab(self, widget, title: str) -> int:
+            self._tabs.append((widget, title))
+            self._tabData.append(None)
+            if self._currentIndex < 0:
+                self._currentIndex = 0
+            return len(self._tabs) - 1
+
+        def clear(self) -> None:
+            self._tabs = []
+            self._tabData = []
+            self._currentIndex = -1
+
+        def setCurrentIndex(self, index: int) -> None:
+            if 0 <= index < len(self._tabs):
+                self._currentIndex = index
+                self.currentChanged.emit(index)
+
+        def currentIndex(self) -> int:
+            return self._currentIndex
+
+        def count(self) -> int:
+            return len(self._tabs)
+
+        def tabText(self, index: int) -> str:
+            return self._tabs[index][1]
+
+        def setTabText(self, index: int, title: str) -> None:
+            widget, _ = self._tabs[index]
+            self._tabs[index] = (widget, title)
+
+        def setTabData(self, index: int, value: object) -> None:
+            self._tabData[index] = value
+
+        def tabData(self, index: int):
+            return self._tabData[index]
+
+        def setTabsClosable(self, closable: bool) -> None:
+            _ = closable
+
     class QSplitter(QWidget):  # type: ignore[no-redef]
         def __init__(self, orientation) -> None:
             _ = orientation
@@ -449,7 +509,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             else QSettings("emo_master", "designer")
         )
         self._nodeRuntimeState: dict[str, dict[str, str]] = {}
+        self._nodeRuntimeStateByRun: dict[tuple[str, str], dict[str, str]] = {}
         self.flowModel = FlowGraphModel()
+        self.workflowStore = WorkflowStore()
+        self.activeWorkflowId = self.workflowStore.activeWorkflowId
         self.nodeDetailsPresenter = NodeDetailsPresenter(
             flowModel=self.flowModel,
             nodeRuntimeState=self._nodeRuntimeState,
@@ -582,6 +645,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setCanvasSpacing):
             setCanvasSpacing(8)
         leftPanel.addWidget(QLabel("流程画布"))
+        self.workflowTabs = QTabWidget()
+        setWorkflowTabsName = getattr(self.workflowTabs, "setObjectName", None)
+        if callable(setWorkflowTabsName):
+            setWorkflowTabsName("workflowTabs")
+        leftPanel.addWidget(self.workflowTabs)
         self.flowScene = FlowScene()
         setSceneRect = getattr(self.flowScene, "setSceneRect", None)
         if callable(setSceneRect):
@@ -767,6 +835,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         rootWidget.setLayout(rootLayout)
         self.setCentralWidget(rootWidget)
 
+        self.workflowController = WorkflowController(
+            workflowStore=self.workflowStore,
+            flowModel=self.flowModel,
+            flowScene=self.flowScene,
+            refreshSidebarNodeList=self.refreshSidebarNodeList,
+            focusGraphContent=self.focusGraphContent,
+            updateToolbarState=self.updateToolbarState,
+        )
         self.projectController = ProjectController(
             runtimeClient=self.runtimeClient,
             flowModel=self.flowModel,
@@ -780,6 +856,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             updateRuntimeJobState=lambda status, message: (
                 self.runtimePanelState.updateJob(status, message)
             ),
+            workflowController=self.workflowController,
         )
         self.runtimeController = RuntimeController(
             runtimeClient=self.runtimeClient,
@@ -793,6 +870,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setIsJobRunning=self._setIsJobRunning,
             getLoadedProjectPath=lambda: self.loadedProjectPath,
             getCurrentJobId=lambda: self.currentJobId,
+            getActiveWorkflowId=lambda: self.activeWorkflowId,
+            getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
@@ -816,6 +895,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
 
         self.refreshButton.clicked.connect(self.refreshOperators)
+        workflowChanged = getattr(self.workflowTabs, "currentChanged", None)
+        if workflowChanged is not None and hasattr(workflowChanged, "connect"):
+            workflowChanged.connect(self._onWorkflowTabChanged)
+        workflowTabClicked = getattr(self.workflowTabs, "tabBarClicked", None)
+        if workflowTabClicked is not None and hasattr(workflowTabClicked, "connect"):
+            workflowTabClicked.connect(self._onWorkflowTabClicked)
         self.loadButton.clicked.connect(self.loadProject)
         self.saveProjectButton.clicked.connect(self.saveProjectAction)
         self.validateButton.clicked.connect(self.validateProject)
@@ -837,6 +922,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.operatorBubble = OperatorBubble()
         self.operatorBubble.setCreateHandler(self.addNodeFromOperatorPayload)
         self.refreshSidebarNodeList()
+        self._refreshWorkflowTabs()
         self._layoutMode = "normal"
         self.applyResponsiveLayout()
         self.restoreMainSplitterSizes()
@@ -931,6 +1017,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if ok:
             self.loadedProjectPath = loadedProjectPath
             self.currentProjectDir = currentProjectDir
+            self.activeWorkflowId = self.workflowController.activeWorkflowId
+            self._refreshWorkflowTabs()
         return bool(ok)
 
     def refreshSidebarNodeList(self) -> None:
@@ -985,6 +1073,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         fileMenu = addMenu("文件")
         self._addMenuAction(fileMenu, "打开项目", self.loadProject)
         self._addMenuAction(fileMenu, "保存项目", self.saveProjectAction)
+        self._addMenuAction(fileMenu, "新建工作流", self.createWorkflow)
+        self._addMenuAction(fileMenu, "删除当前工作流", self.deleteActiveWorkflow)
+        self._addMenuAction(fileMenu, "设置当前为入口", self.setEntryWorkflow)
         addSubMenu = getattr(fileMenu, "addMenu", None)
         recentMenu = (
             addSubMenu("最近项目") if callable(addSubMenu) else QMenu("最近项目")
@@ -1049,6 +1140,95 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def getRecentProjectsMenuEntries(self) -> list[dict[str, str]]:
         return [dict(item) for item in self.getRecentProjects()]
+
+    def _refreshWorkflowTabs(self) -> None:
+        labels = self.workflowController.getWorkflowTabLabels()
+        self._workflowTabsUpdating = True
+        blockSignals = getattr(self.workflowTabs, "blockSignals", None)
+        previousBlock = blockSignals(True) if callable(blockSignals) else None
+        try:
+            self.workflowTabs.clear()
+            for label in labels:
+                title = str(label["name"])
+                if bool(label.get("isEntry", False)):
+                    title = f"{title} [入口]"
+                index = self.workflowTabs.addTab(QWidget(), title)
+                setTabData = getattr(self.workflowTabs, "setTabData", None)
+                if callable(setTabData):
+                    setTabData(index, str(label["workflowId"]))
+            addTab = getattr(self.workflowTabs, "addTab", None)
+            if callable(addTab):
+                plusIndex = addTab(QWidget(), "+")
+                setTabData = getattr(self.workflowTabs, "setTabData", None)
+                if callable(setTabData):
+                    setTabData(plusIndex, None)
+            activeIndex = 0
+            for index, label in enumerate(labels):
+                if bool(label.get("isActive", False)):
+                    activeIndex = index
+                    break
+            if labels:
+                self.workflowTabs.setCurrentIndex(activeIndex)
+        finally:
+            if callable(blockSignals) and previousBlock is not None:
+                blockSignals(previousBlock)
+            self._workflowTabsUpdating = False
+
+    def _onWorkflowTabChanged(self, index: int) -> None:
+        if getattr(self, "_workflowTabsUpdating", False):
+            return
+        tabData = getattr(self.workflowTabs, "tabData", None)
+        workflowId = tabData(index) if callable(tabData) and index >= 0 else None
+        if not isinstance(workflowId, str) or workflowId == "":
+            return
+        if workflowId == self.activeWorkflowId:
+            return
+        self.workflowController.switchWorkflow(workflowId)
+        self.activeWorkflowId = workflowId
+        self._refreshWorkflowTabs()
+
+    def _onWorkflowTabClicked(self, index: int) -> None:
+        tabData = getattr(self.workflowTabs, "tabData", None)
+        workflowId = tabData(index) if callable(tabData) and index >= 0 else None
+        if workflowId is None:
+            self.createWorkflow()
+
+    def getWorkflowTabs(self) -> list[dict[str, object]]:
+        return self.workflowController.getWorkflowTabLabels()
+
+    def getActiveWorkflowId(self) -> str:
+        return self.activeWorkflowId
+
+    def createWorkflow(self, name: str = "New Workflow") -> str:
+        workflowId = self.workflowController.createWorkflow(name)
+        self.activeWorkflowId = workflowId
+        self._refreshWorkflowTabs()
+        return workflowId
+
+    def renameWorkflow(self, workflowId: str, name: str) -> None:
+        self.workflowController.renameWorkflow(workflowId, name)
+        self._refreshWorkflowTabs()
+
+    def renameActiveWorkflow(self, name: str) -> None:
+        self.renameWorkflow(self.activeWorkflowId, name)
+
+    def deleteActiveWorkflow(self) -> None:
+        try:
+            self.workflowController.deleteWorkflow(self.activeWorkflowId)
+        except (KeyError, ValueError) as err:
+            self.appendRuntimeLog("ERROR", f"删除工作流失败：{err}")
+            return
+        self.activeWorkflowId = self.workflowController.activeWorkflowId
+        self._refreshWorkflowTabs()
+
+    def setEntryWorkflow(self, workflowId: str | None = None) -> None:
+        selected = workflowId or self.activeWorkflowId
+        try:
+            self.workflowController.setEntryWorkflow(selected)
+        except KeyError as err:
+            self.appendRuntimeLog("ERROR", f"入口工作流不存在：{err}")
+            return
+        self._refreshWorkflowTabs()
 
     def openRecentProject(self, projectPath: str) -> bool:
         return self.loadProjectSelection(projectPath)
@@ -1121,10 +1301,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         statusRaw = payloadRaw.get("status", "")
         branchRaw = payloadRaw.get("branch", "")
+        eventType = event.get("eventType")
+        if not isinstance(statusRaw, str) or statusRaw == "":
+            statusRaw = {
+                "node.started": "RUNNING",
+                "node.completed": "COMPLETED",
+                "node.failed": "FAILED",
+                "node.skipped": "SKIPPED",
+            }.get(eventType if isinstance(eventType, str) else "", "")
         status = statusRaw if isinstance(statusRaw, str) else ""
         branch = branchRaw if isinstance(branchRaw, str) else ""
         if status == "":
             return
+        workflowRunIdRaw = event.get("workflowRunId", "")
+        workflowRunId = workflowRunIdRaw if isinstance(workflowRunIdRaw, str) else ""
+        if workflowRunId:
+            self._nodeRuntimeStateByRun[(workflowRunId, nodeIdRaw)] = {
+                "status": status,
+                "branch": branch,
+            }
         self.setCurrentNodeRuntimeState(nodeIdRaw, status, branch)
 
     def getToolbarGroupNames(self) -> list[str]:
@@ -1161,6 +1356,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.onNodeSelectionChanged()
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
+        if hasattr(self, "workflowController"):
+            return self.workflowController.buildPayload(projectName)
         graphPayload = self.flowModel.toProjectGraph()
         nodePositions = self.flowScene.getNodePositions()
 
@@ -1202,6 +1399,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         }
 
     def _restoreProjectPayload(self, payload: dict[str, object]) -> None:
+        if hasattr(self, "workflowController"):
+            self.workflowController.loadPayload(payload)
+            self.activeWorkflowId = self.workflowController.activeWorkflowId
+            self._refreshWorkflowTabs()
+            return
         designerRaw = payload.get("designer", {})
         designer = designerRaw if isinstance(designerRaw, dict) else {}
         graphPayload = {
@@ -1841,6 +2043,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.nodeParamDialog.setApplyHandler(self.applyNodeParams)
 
         self.activeParamNodeId = nodeId
+        setWorkflowOptions = getattr(self.nodeParamDialog, "setWorkflowOptions", None)
+        if callable(setWorkflowOptions):
+            setWorkflowOptions(list(self.workflowStore.workflowOrder))
         self.nodeParamDialog.setNodeContext(
             nodeId=nodeId,
             operatorId=node.operatorId,

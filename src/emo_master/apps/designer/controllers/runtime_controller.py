@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from typing import Callable
 
+from emo_master.apps.designer.services.runtime_worker import RuntimeWorker
+
 
 class RuntimeController:
     def __init__(
@@ -17,6 +19,8 @@ class RuntimeController:
         setIsJobRunning: Callable[[bool], None],
         getLoadedProjectPath: Callable[[], str | None],
         getCurrentJobId: Callable[[], str | None],
+        getActiveWorkflowId: Callable[[], str | None] | None = None,
+        getEntryWorkflowId: Callable[[], str | None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -29,53 +33,103 @@ class RuntimeController:
         self.setIsJobRunning = setIsJobRunning
         self.getLoadedProjectPath = getLoadedProjectPath
         self.getCurrentJobId = getCurrentJobId
+        self.getActiveWorkflowId = getActiveWorkflowId or (lambda: None)
+        self.getEntryWorkflowId = getEntryWorkflowId or self.getActiveWorkflowId
+        self._worker: RuntimeWorker | None = None
 
     def startJob(self) -> None:
         loadedProjectPath = self.getLoadedProjectPath()
         if loadedProjectPath is None:
             self.appendLog("WARN", "尚未加载项目")
             return
-        _ = self.syncRuntimeProjectBeforeRun()
-        reply = self.runtimeClient.startJob(loadedProjectPath)
-        if not getattr(reply, "ok", False):
-            self.appendLog(
-                "ERROR", f"启动作业失败：{getattr(reply, 'message', '未知错误')}"
-            )
+        if not self.syncRuntimeProjectBeforeRun():
             return
-        currentJobId = str(getattr(reply, "job_id", ""))
-        self.setCurrentJobId(currentJobId)
+        workflowId = self.getEntryWorkflowId() or ""
+        worker = RuntimeWorker(
+            runtimeClient=self.runtimeClient,
+            projectId=loadedProjectPath,
+            workflowId=workflowId,
+        )
+        worker.jobAccepted.connect(self._onJobAccepted)
+        worker.eventReceived.connect(self._onRuntimeEvent)
+        worker.statusChanged.connect(self._onJobStatus)
+        worker.failed.connect(self._onWorkerFailed)
+        self._worker = worker
         self.setIsJobRunning(True)
-        self.runtimePanelState.updateJob("RUNNING", "作业已启动")
-        self.appendLog("INFO", f"作业已启动：{currentJobId}")
-        statusReply = self.runtimeClient.getJobStatus(currentJobId)
+        self.runtimePanelState.updateJob("STARTING", "正在启动作业")
+        self.refreshRuntimePanelView()
+        self.updateToolbarState()
+        worker.start()
+
+    def _onJobAccepted(self, reply) -> None:
+        currentJobId = str(getattr(reply, "job_id", ""))
+        self.setCurrentJobId(currentJobId or None)
+        self.runtimePanelState.updateJob(
+            str(getattr(reply, "status", "ACCEPTED")),
+            str(getattr(reply, "message", "作业已接受")),
+        )
+        self.appendLog("INFO", f"作业已接受：{currentJobId}")
+        self.refreshRuntimePanelView()
+
+    def _onRuntimeEvent(self, jobEvent) -> None:
+        eventType = str(getattr(jobEvent, "event_type", getattr(jobEvent, "eventType", "")))
+        eventMessage = str(getattr(jobEvent, "message", ""))
+        eventLevel = str(getattr(jobEvent, "level", "INFO"))
+        eventNodeId = str(getattr(jobEvent, "node_id", getattr(jobEvent, "nodeId", "")))
+        eventPayload = getattr(jobEvent, "payload", {})
+        payload = eventPayload if isinstance(eventPayload, dict) else {}
+        iterationPath = getattr(
+            jobEvent,
+            "iterationPath",
+            getattr(jobEvent, "iteration_path", ()),
+        )
+        if not isinstance(iterationPath, (list, tuple)):
+            iterationPath = ()
+        event = {
+            "eventType": eventType,
+            "message": eventMessage,
+            "level": eventLevel,
+            "code": str(getattr(jobEvent, "code", "")),
+            "nodeId": eventNodeId,
+            "payload": payload,
+            "jobId": str(getattr(jobEvent, "job_id", getattr(jobEvent, "jobId", ""))),
+            "projectId": str(getattr(jobEvent, "project_id", getattr(jobEvent, "projectId", ""))),
+            "workflowId": str(getattr(jobEvent, "workflow_id", getattr(jobEvent, "workflowId", ""))),
+            "workflowRunId": str(getattr(jobEvent, "workflow_run_id", getattr(jobEvent, "workflowRunId", ""))),
+            "parentWorkflowRunId": str(
+                getattr(
+                    jobEvent,
+                    "parent_workflow_run_id",
+                    getattr(jobEvent, "parentWorkflowRunId", ""),
+                )
+            ),
+            "nodeRunId": str(getattr(jobEvent, "node_run_id", getattr(jobEvent, "nodeRunId", ""))),
+            "iterationPath": tuple(iterationPath),
+            "sequence": int(getattr(jobEvent, "sequence", 0)),
+            "timestampMs": int(
+                getattr(jobEvent, "timestamp_ms", getattr(jobEvent, "timestampMs", 0))
+            ),
+        }
+        self.appendLog(eventLevel, f"事件 {eventType}：{eventMessage}")
+        self.runtimePanelState.applyEvent(event)
+        self.applyRuntimeEventToNode(event)
+        self.refreshRuntimePanelView()
+
+    def _onJobStatus(self, statusReply) -> None:
         runtimeStatus = str(getattr(statusReply, "status", "UNKNOWN"))
         runtimeMessage = str(getattr(statusReply, "message", ""))
         self.runtimePanelState.updateJob(runtimeStatus, runtimeMessage)
         self.appendLog("INFO", f"作业状态：{runtimeStatus} | {runtimeMessage}")
-        jobEvents = self.runtimeClient.streamJobEvents(currentJobId)
-        for jobEvent in jobEvents:
-            eventType = getattr(jobEvent, "event_type", "")
-            eventMessage = getattr(jobEvent, "message", "")
-            eventLevel = getattr(jobEvent, "level", "INFO")
-            eventNodeId = getattr(jobEvent, "node_id", "")
-            eventPayload = getattr(jobEvent, "payload", {})
-            self.appendLog(str(eventLevel), f"事件 {eventType}：{eventMessage}")
-            self.runtimePanelState.applyEvent(
-                {
-                    "eventType": str(eventType),
-                    "message": str(eventMessage),
-                    "nodeId": str(eventNodeId),
-                }
-            )
-            self.applyRuntimeEventToNode(
-                {
-                    "nodeId": str(eventNodeId),
-                    "payload": eventPayload if isinstance(eventPayload, dict) else {},
-                }
-            )
-        self.refreshRuntimePanelView()
         if runtimeStatus in ("COMPLETED", "FAILED", "ABORTED"):
             self.setIsJobRunning(False)
+        self.refreshRuntimePanelView()
+        self.updateToolbarState()
+
+    def _onWorkerFailed(self, message: str) -> None:
+        self.runtimePanelState.updateJob("FAILED", message)
+        self.appendLog("ERROR", f"启动作业失败：{message}")
+        self.setIsJobRunning(False)
+        self.refreshRuntimePanelView()
         self.updateToolbarState()
 
     def stopJob(self) -> None:

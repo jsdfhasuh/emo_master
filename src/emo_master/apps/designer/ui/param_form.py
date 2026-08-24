@@ -109,6 +109,12 @@ try:
             self._fieldsByName: dict[str, FieldDefinition] = {}
             self._nestedFormsByControlId: dict[int, SchemaParamForm] = {}
             self._rawSchema: dict[str, object] = {}
+            self._workflowOptions: list[str] = []
+
+        def setWorkflowOptions(self, options: list[str]) -> None:
+            self._workflowOptions = [option for option in options if isinstance(option, str)]
+            if self._rawSchema:
+                self.setSchema(self._rawSchema, self.getValues())
 
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]
@@ -162,11 +168,25 @@ try:
                         filterText=filterText,
                         initialPath=initialPath,
                     )
+                if widgetType in {"workflow-select", "workflow_select"}:
+                    combo = QComboBox()
+                    rawOptions = field.schema.get("xOptions", self._workflowOptions)
+                    options = (
+                        [option for option in rawOptions if isinstance(option, str)]
+                        if isinstance(rawOptions, list)
+                        else list(self._workflowOptions)
+                    )
+                    if isinstance(selectedValue, str) and selectedValue not in options:
+                        options.append(selectedValue)
+                    for option in options:
+                        combo.addItem(option, option)
+                    self._setComboValue(combo, selectedValue)
+                    return combo
 
             if len(field.enumValues) > 0:
                 combo = QComboBox()
-                for option in field.enumValues:
-                    combo.addItem(str(option), option)
+                for enumOption in field.enumValues:
+                    combo.addItem(str(enumOption), enumOption)
                 self._setComboValue(combo, selectedValue)
                 return combo
 
@@ -283,6 +303,10 @@ except Exception:  # pragma: no cover
         def __init__(self) -> None:
             self._schema: dict[str, object] = {}
             self._values: dict[str, object] = {}
+            self._workflowOptions: list[str] = []
+
+        def setWorkflowOptions(self, options: list[str]) -> None:
+            self._workflowOptions = [option for option in options if isinstance(option, str)]
 
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]

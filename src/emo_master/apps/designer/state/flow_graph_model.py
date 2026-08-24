@@ -14,6 +14,9 @@ class FlowNode:
     outputPorts: dict[str, str]
     paramSchema: dict[str, object] = field(default_factory=dict)
     params: dict[str, object] = field(default_factory=dict)
+    kind: str = "operator"
+    targetWorkflowId: str | None = None
+    loop: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -37,6 +40,9 @@ class FlowGraphModel:
         inputPorts: dict[str, str],
         outputPorts: dict[str, str],
         paramSchema: dict[str, object] | None = None,
+        kind: str = "operator",
+        targetWorkflowId: str | None = None,
+        loop: dict[str, object] | None = None,
     ) -> str:
         nodeId = f"node-{uuid4().hex[:8]}"
         self.nodes[nodeId] = FlowNode(
@@ -46,6 +52,9 @@ class FlowGraphModel:
             inputPorts=dict(inputPorts),
             outputPorts=dict(outputPorts),
             paramSchema={} if paramSchema is None else dict(paramSchema),
+            kind=kind,
+            targetWorkflowId=targetWorkflowId,
+            loop={} if loop is None else dict(loop),
         )
         return nodeId
 
@@ -190,6 +199,9 @@ class FlowGraphModel:
                     "outputPorts": dict(node.outputPorts),
                     "paramSchema": dict(node.paramSchema),
                     "params": dict(node.params),
+                    "kind": node.kind,
+                    "targetWorkflowId": node.targetWorkflowId,
+                    "loop": dict(node.loop),
                 }
                 for node in self.nodes.values()
             ],
@@ -222,15 +234,24 @@ class FlowGraphModel:
                 outputPorts = item.get("outputPorts", {})
                 paramSchema = item.get("paramSchema", {})
                 params = item.get("params", {})
-                if not isinstance(nodeId, str) or not isinstance(operatorId, str):
+                kind = item.get("kind", "operator")
+                targetWorkflowId = item.get("targetWorkflowId")
+                loop = item.get("loop", {})
+                if not isinstance(nodeId, str):
                     continue
+                if not isinstance(operatorId, str):
+                    operatorId = ""
                 if not isinstance(displayName, str):
-                    displayName = operatorId
+                    displayName = operatorId or str(kind) if isinstance(kind, str) else nodeId
                 if not isinstance(inputPorts, dict) or not isinstance(
                     outputPorts, dict
                 ):
                     continue
                 if not isinstance(paramSchema, dict) or not isinstance(params, dict):
+                    continue
+                if not isinstance(kind, str) or not isinstance(loop, dict):
+                    continue
+                if targetWorkflowId is not None and not isinstance(targetWorkflowId, str):
                     continue
                 self.nodes[nodeId] = FlowNode(
                     nodeId=nodeId,
@@ -248,6 +269,9 @@ class FlowGraphModel:
                     },
                     paramSchema=dict(paramSchema),
                     params=dict(params),
+                    kind=kind,
+                    targetWorkflowId=targetWorkflowId,
+                    loop=dict(loop),
                 )
 
         if isinstance(rawEdges, list):

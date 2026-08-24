@@ -25,6 +25,7 @@ class ProjectController:
         refreshRuntimePanelView: Callable[[], None],
         updateToolbarState: Callable[[], None],
         updateRuntimeJobState: Callable[[str, str], None],
+        workflowController=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.flowModel = flowModel
@@ -36,6 +37,7 @@ class ProjectController:
         self.refreshRuntimePanelView = refreshRuntimePanelView
         self.updateToolbarState = updateToolbarState
         self.updateRuntimeJobState = updateRuntimeJobState
+        self.workflowController = workflowController
 
     def getRecentProjects(self) -> list[dict[str, str]]:
         valueMethod = getattr(self.settingsStore, "value", None)
@@ -138,7 +140,10 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        self._restoreProjectPayload(payload)
+        if self.workflowController is not None:
+            self.workflowController.loadPayload(payload)
+        else:
+            self._restoreProjectPayload(payload)
         loaded, runtimePath = self.loadProjectFromPath(
             str(projectDir),
             successMessagePrefix="项目已加载",
@@ -231,6 +236,8 @@ class ProjectController:
     def _buildProjectPayload(
         self, projectName: str, loadedProjectPath: str | None
     ) -> dict[str, object]:
+        if self.workflowController is not None:
+            return self.workflowController.buildPayload(projectName)
         graphPayload = self.flowModel.toProjectGraph()
         nodePositions = self.flowScene.getNodePositions()
 

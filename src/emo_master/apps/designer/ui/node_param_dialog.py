@@ -56,6 +56,11 @@ try:
       self._metaLabel.setText(f"节点：{nodeId} | 算子：{operatorId}")
       self._paramForm.setSchema(schema, values)
 
+    def setWorkflowOptions(self, options: list[str]) -> None:
+      setOptions = getattr(self._paramForm, "setWorkflowOptions", None)
+      if callable(setOptions):
+        setOptions(options)
+
     def _onApplyClicked(self) -> None:
       if self._currentNodeId is None:
         return
@@ -87,6 +92,9 @@ except Exception:  # pragma: no cover
       self._operatorId = operatorId
       self._schema = dict(schema)
       self._values = dict(values)
+
+    def setWorkflowOptions(self, options: list[str]) -> None:
+      _ = options
 
     def show(self) -> None:
       self._visible = True

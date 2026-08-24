@@ -895,6 +895,8 @@ except Exception:  # pragma: no cover
             self._dragSourceNodeId: str | None = None
             self._dragSourcePortName: str | None = None
             self._sceneRect: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+            self._nodeRuntimeStates: dict[str, str] = {}
+            self._selectedEdges: set[tuple[str, str, str, str]] = set()
 
         def setSceneRect(self, x: float, y: float, width: float, height: float) -> None:
             self._sceneRect = (float(x), float(y), float(width), float(height))
@@ -1034,17 +1036,22 @@ except Exception:  # pragma: no cover
             node = self._nodes.get(nodeId)
             if node is None:
                 return {}
+            runtimeState = self._nodeRuntimeStates.get(nodeId, "IDLE")
             if node.operatorId == "vision.flow.if":
-                return {"variant": "if"}
+                return {"variant": "if", "runtimeState": runtimeState}
             if node.operatorId == "vision.flow.switch":
-                return {"variant": "switch"}
+                return {"variant": "switch", "runtimeState": runtimeState}
             if node.operatorId != "":
-                return {"variant": "default"}
+                return {"variant": "default", "runtimeState": runtimeState}
             if set(node.outputPorts.keys()) == {"true", "false"}:
-                return {"variant": "if"}
+                return {"variant": "if", "runtimeState": runtimeState}
             if set(node.outputPorts.keys()) == {"case0", "case1", "case2", "case3", "default"}:
-                return {"variant": "switch"}
-            return {"variant": "default"}
+                return {"variant": "switch", "runtimeState": runtimeState}
+            return {"variant": "default", "runtimeState": runtimeState}
+
+        def setNodeRuntimeState(self, nodeId: str, state: str) -> None:
+            if nodeId in self._nodes:
+                self._nodeRuntimeStates[nodeId] = state
 
         def getContentBounds(self) -> tuple[float, float, float, float] | None:
             if len(self._nodes) == 0:
@@ -1218,9 +1225,13 @@ except Exception:  # pragma: no cover
         def setEdgeSelected(
             self, edgeKey: tuple[str, str, str, str], selected: bool
         ) -> None:
-            _ = edgeKey
-            _ = selected
+            if selected:
+                self._selectedEdges.add(edgeKey)
+            else:
+                self._selectedEdges.discard(edgeKey)
 
         def getEdgeStyle(self, edgeKey: tuple[str, str, str, str]) -> dict[str, object]:
-            _ = edgeKey
-            return {"width": 2.0, "color": "#0984e3"}
+            return {
+                "width": 3.2 if edgeKey in self._selectedEdges else 2.0,
+                "color": "#0652dd" if edgeKey in self._selectedEdges else "#0984e3",
+            }

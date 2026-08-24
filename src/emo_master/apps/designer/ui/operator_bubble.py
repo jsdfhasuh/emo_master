@@ -228,6 +228,7 @@ except Exception:  # pragma: no cover
             self._recentEnabled = True
             self._lastPopupPoint: tuple[int, int] | None = None
             self._visible = False
+            self._buttons: list[object] = []
 
         def setCreateHandler(self, handler: CreateHandler | None) -> None:
             self._createHandler = handler
@@ -307,3 +308,18 @@ except Exception:  # pragma: no cover
                 return (1, 10_000, operatorId)
 
             self._visibleOperators = sorted(filtered, key=sortKey)
+            self._buttons = [
+                _FallbackOperatorButton(payload) for payload in self._visibleOperators
+            ]
+
+
+    class _FallbackOperatorButton:
+        def __init__(self, payload: dict[str, object]) -> None:
+            self._objectName = (
+                "operatorBubbleItemFlow"
+                if payload.get("category") == "控制流"
+                else "operatorBubbleItem"
+            )
+
+        def objectName(self) -> str:
+            return self._objectName

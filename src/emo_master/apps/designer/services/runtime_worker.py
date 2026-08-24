@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import threading
 import inspect
-from typing import Callable
+from typing import Any, Callable
 
 
 try:
@@ -11,10 +11,10 @@ try:
     class RuntimeWorker(QThread):
         """Runs the long-lived runtime stream outside the Designer UI thread."""
 
-        jobAccepted = Signal(object)
-        eventReceived = Signal(object)
-        statusChanged = Signal(object)
-        failed = Signal(str)
+        jobAccepted: Any = Signal(object)
+        eventReceived: Any = Signal(object)
+        statusChanged: Any = Signal(object)
+        failed: Any = Signal(str)
 
         def __init__(
             self,

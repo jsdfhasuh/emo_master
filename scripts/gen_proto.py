@@ -1,6 +1,5 @@
 from pathlib import Path
 import argparse
-import filecmp
 import subprocess
 import sys
 import tempfile
@@ -17,8 +16,9 @@ def genProto(check: bool = False) -> int:
       if code != 0:
         return code
       _patchImports(generatedDir)
+      _normalizeGeneratedFiles(generatedDir)
       for name in ("runtime_pb2.py", "runtime_pb2_grpc.py"):
-        if not (sourceDir / name).exists() or not filecmp.cmp(sourceDir / name, generatedDir / name, shallow=False):
+        if not (sourceDir / name).exists() or not _sameGeneratedFile(sourceDir / name, generatedDir / name):
           print(f"[proto-drift] generated file differs: {sourceDir / name}")
           return 1
       return 0
@@ -26,6 +26,7 @@ def genProto(check: bool = False) -> int:
   code = _generate(projectRoot, protoFile, sourceDir)
   if code == 0:
     _patchImports(sourceDir)
+    _normalizeGeneratedFiles(sourceDir)
   return code
 
 
@@ -50,6 +51,20 @@ def _patchImports(outDir: Path) -> None:
     "from . import runtime_pb2 as runtime__pb2",
   )
   grpcFile.write_text(generated, encoding="utf-8")
+
+
+def _normalizeGeneratedFiles(outDir: Path) -> None:
+  for name in ("runtime_pb2.py", "runtime_pb2_grpc.py"):
+    path = outDir / name
+    path.write_bytes(_normalizedBytes(path.read_bytes()))
+
+
+def _sameGeneratedFile(left: Path, right: Path) -> bool:
+  return _normalizedBytes(left.read_bytes()) == _normalizedBytes(right.read_bytes())
+
+
+def _normalizedBytes(value: bytes) -> bytes:
+  return value.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
 
 
 if __name__ == "__main__":

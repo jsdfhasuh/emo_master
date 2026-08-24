@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 import threading
+import time
+
+try:
+    from PySide2.QtCore import QCoreApplication
+except ImportError:
+    QCoreApplication = None
 
 from emo_master.apps.designer.services.runtime_worker import RuntimeWorker
 
@@ -38,6 +44,19 @@ class _RuntimeStub:
         return type("Status", (), {"status": "COMPLETED", "message": "done"})()
 
 
+def _waitForEvent(event: threading.Event, timeout: float) -> bool:
+    deadline = time.monotonic() + timeout
+    application = QCoreApplication.instance() if QCoreApplication is not None else None
+    while not event.is_set():
+        if application is not None:
+            application.processEvents()
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return False
+        event.wait(min(0.01, remaining))
+    return True
+
+
 def testRuntimeWorkerDoesNotBlockCallerWhileFollowingJob() -> None:
     client = _RuntimeStub()
     accepted = threading.Event()
@@ -46,8 +65,12 @@ def testRuntimeWorkerDoesNotBlockCallerWhileFollowingJob() -> None:
     worker.jobAccepted.connect(lambda reply: accepted.set())
     worker.eventReceived.connect(events.append)
     worker.start()
-    assert accepted.wait(timeout=2.0)
+    assert _waitForEvent(accepted, timeout=2.0)
     assert worker.isRunning() is True
     client.release.set()
     worker.wait(3000)
+    if QCoreApplication is not None:
+        application = QCoreApplication.instance()
+        if application is not None:
+            application.processEvents()
     assert len(events) == 1

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 import inspect
+import json
 import time
 from typing import Any, Callable
 
@@ -39,15 +40,16 @@ try:
 
         def requestStop(self) -> None:
             self._stopEvent.set()
-            with self._streamLock:
-                stream = self._stream
-            if stream is not None:
-                cancel = getattr(stream, "cancel", None)
-                if callable(cancel):
-                    cancel()
-            cancelClientStream = getattr(self.runtimeClient, "cancelEventStream", None)
-            if callable(cancelClientStream) and self._jobId:
-                cancelClientStream(self._jobId)
+            self.cancelSubscription()
+
+        def requestInterruption(self) -> None:
+            self.requestStop()
+
+        def isInterruptionRequested(self) -> bool:
+            return self.stopRequested()
+
+        def cancelSubscription(self) -> None:
+            _cancelSubscription(self)
 
         def stopRequested(self) -> bool:
             return self._stopEvent.is_set()
@@ -122,15 +124,16 @@ except Exception:  # pragma: no cover
 
         def requestStop(self) -> None:
             self._stopEvent.set()
-            with self._streamLock:
-                stream = self._stream
-            if stream is not None:
-                cancel = getattr(stream, "cancel", None)
-                if callable(cancel):
-                    cancel()
-            cancelClientStream = getattr(self.runtimeClient, "cancelEventStream", None)
-            if callable(cancelClientStream) and self._jobId:
-                cancelClientStream(self._jobId)
+            self.cancelSubscription()
+
+        def requestInterruption(self) -> None:
+            self.requestStop()
+
+        def isInterruptionRequested(self) -> bool:
+            return self.stopRequested()
+
+        def cancelSubscription(self) -> None:
+            _cancelSubscription(self)
 
         def stopRequested(self) -> bool:
             return self._stopEvent.is_set()
@@ -145,6 +148,18 @@ except Exception:  # pragma: no cover
 
         def setJobId(self, jobId: str) -> None:
             self._jobId = jobId
+
+
+def _cancelSubscription(worker: RuntimeWorker) -> None:
+    with worker._streamLock:
+        stream = worker._stream
+    if stream is not None:
+        cancel = getattr(stream, "cancel", None)
+        if callable(cancel):
+            cancel()
+    cancelClientStream = getattr(worker.runtimeClient, "cancelEventStream", None)
+    if callable(cancelClientStream) and worker._jobId:
+        cancelClientStream(worker._jobId)
 
 
 def _runWorker(worker: RuntimeWorker) -> None:
@@ -215,23 +230,28 @@ def _emitStatusAfterStop(worker: RuntimeWorker, jobId: str) -> None:
 def _startJobCompat(worker: RuntimeWorker):
     method = worker.runtimeClient.startJob
     parameters = _parameters(method)
-    acceptsKeywords = "workflowId" in parameters or "workflow_id" in parameters
-    acceptsKeywords = acceptsKeywords or "inputs" in parameters or "inputs_json" in parameters
-    acceptsKeywords = acceptsKeywords or any(
+    acceptsVarKeywords = any(
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in parameters.values()
     )
-    if acceptsKeywords:
-        return method(
-            worker.projectId,
-            workflowId=worker.workflowId,
-            inputs=worker.inputs,
-        )
+    keywordArguments: dict[str, object] = {}
+    if acceptsVarKeywords or "workflowId" in parameters:
+        keywordArguments["workflowId"] = worker.workflowId
+    elif "workflow_id" in parameters:
+        keywordArguments["workflow_id"] = worker.workflowId
+    if acceptsVarKeywords or "inputs" in parameters:
+        keywordArguments["inputs"] = worker.inputs
+    elif "inputs_json" in parameters:
+        keywordArguments["inputs_json"] = json.dumps(worker.inputs, ensure_ascii=True)
+    if keywordArguments:
+        return method(worker.projectId, **keywordArguments)
     return method(worker.projectId)
 
 
 def _streamEventsCompat(runtimeClient, jobId: str):
-    method = runtimeClient.streamJobEvents
+    method = getattr(runtimeClient, "iterJobEvents", None)
+    if not callable(method):
+        method = runtimeClient.streamJobEvents
     parameters = _parameters(method)
     acceptsFollow = "follow" in parameters or any(
         parameter.kind is inspect.Parameter.VAR_KEYWORD

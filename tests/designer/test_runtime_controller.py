@@ -1,5 +1,6 @@
 from emo_master.apps.designer.controllers.runtime_controller import RuntimeController
 from emo_master.core.contracts.execution import RuntimeEventDTO
+import emo_master.apps.designer.controllers.runtime_controller as runtimeControllerModule
 
 
 class _Panel:
@@ -80,3 +81,49 @@ def testRuntimeControllerKeepsToolbarLockedWhileStopping() -> None:
 
     assert running == [True, False]
     assert panel.status == "COMPLETED"
+
+
+def testRuntimeControllerClearsPreviousJobBeforeStartingNewWorker(monkeypatch) -> None:
+    class Signal:
+        def connect(self, callback) -> None:
+            _ = callback
+
+    class Worker:
+        def __init__(self, **kwargs) -> None:
+            _ = kwargs
+            self.jobAccepted = Signal()
+            self.eventReceived = Signal()
+            self.statusChanged = Signal()
+            self.failed = Signal()
+
+        def isRunning(self) -> bool:
+            return False
+
+        def start(self) -> None:
+            return None
+
+    class Panel(_Panel):
+        def updateJob(self, status, message="") -> None:
+            self.status = status
+            self.message = message
+
+    monkeypatch.setattr(runtimeControllerModule, "RuntimeWorker", Worker)
+    currentJob = ["job-old"]
+    panel = Panel()
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: currentJob.__setitem__(0, jobId),
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: currentJob[0],
+    )
+
+    controller.startJob()
+
+    assert currentJob == [None]

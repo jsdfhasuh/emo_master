@@ -47,6 +47,9 @@ class RuntimeController:
             return
         if not self.syncRuntimeProjectBeforeRun():
             return
+        # A new start attempt must not keep presenting the previous terminal job
+        # if the worker fails before it receives a new job id.
+        self.setCurrentJobId(None)
         workflowId = self.getEntryWorkflowId() or ""
         worker = RuntimeWorker(
             runtimeClient=self.runtimeClient,
@@ -172,3 +175,17 @@ class RuntimeController:
             # the worker observes a terminal status.
             self.setIsJobRunning(True)
         self.updateToolbarState()
+
+    def close(self) -> None:
+        """Stop the worker subscription before the Designer window closes."""
+        worker = self._worker
+        if worker is not None:
+            worker.requestStop()
+            wait = getattr(worker, "wait", None)
+            isRunning = getattr(worker, "isRunning", None)
+            if callable(wait) and callable(isRunning) and isRunning():
+                wait(2000)
+            self._worker = None
+        closeClient = getattr(self.runtimeClient, "close", None)
+        if callable(closeClient):
+            closeClient()

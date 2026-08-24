@@ -197,14 +197,21 @@ class RuntimeClient:
     def streamJobEvents(
         self, jobId: str, afterSequence: int = 0, follow: bool = False
     ) -> Iterable[RuntimeEventDTO]:
+        stream = self.iterJobEvents(jobId, afterSequence, follow)
+        return stream if follow else list(stream)
+
+    def iterJobEvents(
+        self, jobId: str, afterSequence: int = 0, follow: bool = False
+    ) -> Iterable[RuntimeEventDTO]:
+        """Yield event DTOs without materializing a live subscription."""
         request = runtime_pb2.StreamJobEventsRequest(
             job_id=jobId, after_sequence=afterSequence, follow=follow
         )
         events = self._call("StreamJobEvents", request, useDeadline=False)
         if not isinstance(events, IterableABC):
-            return []
+            return iter(())
         if not follow:
-            return [self._toEventDTO(event) for event in events]
+            return (self._toEventDTO(event) for event in events)
         with self._streamLock:
             previous = self._activeStreams.pop(jobId, None)
             if previous is not None:
@@ -215,7 +222,7 @@ class RuntimeClient:
                 lambda value: self._removeActiveStream(jobId, value),
             )
             self._activeStreams[jobId] = stream
-            return stream
+        return stream
 
     def cancelEventStream(self, jobId: str) -> bool:
         with self._streamLock:

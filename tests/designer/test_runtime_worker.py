@@ -8,7 +8,10 @@ try:
 except ImportError:
     QCoreApplication = None
 
-from emo_master.apps.designer.services.runtime_worker import RuntimeWorker, _runWorker
+from emo_master.apps.designer.services.runtime_worker import (
+    RuntimeWorker,
+    _runWorker,
+)
 
 
 class _RuntimeStub:
@@ -156,3 +159,62 @@ def testRuntimeWorkerStopBeforeStartDoesNotCreateAJob() -> None:
     _runWorker(worker)
 
     assert client.started is False
+
+
+def testRuntimeWorkerStartJobCompatPassesOnlySupportedKeywords() -> None:
+    calls = []
+
+    class WorkflowOnlyClient:
+        def startJob(self, projectId: str, workflowId: str = ""):
+            calls.append((projectId, workflowId))
+            return type("Reply", (), {"ok": True, "job_id": ""})()
+
+    worker = RuntimeWorker(WorkflowOnlyClient(), "project", "body", {"value": 1})
+    _runWorker(worker)
+
+    assert calls == [("project", "body")]
+
+
+def testRuntimeWorkerStartJobCompatSupportsInputsJsonOnlyClient() -> None:
+    calls = []
+
+    class InputsJsonClient:
+        def startJob(self, projectId: str, inputs_json: str = "{}"):  # noqa: N803
+            calls.append((projectId, inputs_json))
+            return type("Reply", (), {"ok": True, "job_id": ""})()
+
+    worker = RuntimeWorker(InputsJsonClient(), "project", "main", {"value": 1})
+    _runWorker(worker)
+
+    assert calls == [("project", '{"value": 1}')]
+
+
+def testRuntimeWorkerPrefersIncrementalIteratorWhenAvailable() -> None:
+    calls: list[str] = []
+
+    class Client:
+        def startJob(self, projectId: str, workflowId: str = "", inputs=None):
+            _ = projectId
+            _ = workflowId
+            _ = inputs
+            return type("Reply", (), {"ok": True, "job_id": "job-iter"})()
+
+        def iterJobEvents(self, jobId: str, follow: bool = False):
+            calls.append("iter")
+            assert jobId == "job-iter"
+            assert follow is True
+            return iter(())
+
+        def streamJobEvents(self, jobId: str, follow: bool = False):
+            _ = jobId
+            _ = follow
+            calls.append("stream")
+            raise AssertionError("worker used the materializing compatibility API")
+
+        def getJobStatus(self, jobId: str):
+            assert jobId == "job-iter"
+            return type("Status", (), {"status": "COMPLETED"})()
+
+    _runWorker(RuntimeWorker(Client(), "project", "main"))
+
+    assert calls == ["iter"]

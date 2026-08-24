@@ -56,6 +56,10 @@ class WorkflowController:
         self.workflowStore.setActiveWorkflow(workflowId)
         self._renderActive()
 
+    def refreshActiveWorkflow(self) -> None:
+        self.captureActiveWorkflow()
+        self._renderActive()
+
     def createWorkflow(self, name: str = "New Workflow") -> str:
         self.captureActiveWorkflow()
         workflowId = self.workflowStore.addWorkflow(name)
@@ -86,6 +90,8 @@ class WorkflowController:
         ]
 
     def configureSubflowNode(self, nodeId: str, targetWorkflowId: str) -> None:
+        if targetWorkflowId == self.activeWorkflowId:
+            raise ValueError("subflow cannot target its current workflow")
         target = self.workflowStore.get(targetWorkflowId)
         node = self.flowModel.nodes[nodeId]
         node.kind = "subflow"
@@ -93,6 +99,7 @@ class WorkflowController:
         node.targetWorkflowId = targetWorkflowId
         node.inputPorts = portTypes(target.inputs)
         node.outputPorts = portTypes(target.outputs)
+        self._pruneNodeEdges(node)
 
     def configureLoopNode(self, nodeId: str, config: dict[str, object]) -> None:
         mode = config.get("mode")
@@ -117,6 +124,8 @@ class WorkflowController:
                 )
         if not isinstance(bodyWorkflowId, str) or bodyWorkflowId not in self.workflowStore.workflows:
             raise ValueError("bodyWorkflowId must reference an existing workflow")
+        if bodyWorkflowId == self.activeWorkflowId:
+            raise ValueError("loop body cannot target its current workflow")
         if mode == "repeat":
             repeatCount = config.get("repeatCount")
             if (
@@ -132,10 +141,16 @@ class WorkflowController:
                 or conditionWorkflowId not in self.workflowStore.workflows
             ):
                 raise ValueError("conditionWorkflowId must reference an existing workflow")
+            if conditionWorkflowId == self.activeWorkflowId:
+                raise ValueError("loop condition cannot target its current workflow")
         node.kind = "loop"
         node.operatorId = ""
         normalizedConfig = deepcopy(config)
         normalizedConfig["bodyWorkflowId"] = bodyWorkflowId
+        if mode != "repeat":
+            normalizedConfig.pop("repeatCount", None)
+        if mode != "while":
+            normalizedConfig.pop("conditionWorkflowId", None)
         node.loop = normalizedConfig
         if mode == "foreach":
             node.inputPorts = {"items": "list"}
@@ -147,6 +162,7 @@ class WorkflowController:
             target = self.workflowStore.get(bodyWorkflowId)
             node.inputPorts = portTypes(target.inputs)
             node.outputPorts = portTypes(target.outputs)
+        self._pruneNodeEdges(node)
 
     def setWorkflowInterface(
         self,
@@ -171,6 +187,16 @@ class WorkflowController:
                     continue
                 node["inputPorts"] = deepcopy(inputPorts)
                 node["outputPorts"] = deepcopy(outputPorts)
+
+    def _pruneNodeEdges(self, node) -> None:
+        self.flowModel.edges = [
+            edge
+            for edge in self.flowModel.edges
+            if not (
+                (edge.toNode == node.nodeId and edge.toPort not in node.inputPorts)
+                or (edge.fromNode == node.nodeId and edge.fromPort not in node.outputPorts)
+            )
+        ]
 
     def referencesTo(self, workflowId: str) -> list[str]:
         self.captureActiveWorkflow()

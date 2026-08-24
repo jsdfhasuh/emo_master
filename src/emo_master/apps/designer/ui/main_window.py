@@ -12,6 +12,7 @@ from emo_master.apps.designer.controllers import (
     WorkflowController,
 )
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
+from emo_master.apps.designer.state.system_node_catalog import SYSTEM_NODE_CATALOG
 from emo_master.apps.designer.presenters import NodeDetailsPresenter
 from emo_master.apps.designer.ui.flow_scene import (
     FlowEdgeViewModel,
@@ -490,10 +491,11 @@ except Exception:  # pragma: no cover
 
     class QInputDialog:  # type: ignore[no-redef]
         @staticmethod
-        def getText(parent, title: str, label: str, text: str = ""):
+        def getText(parent, title: str, label: str, echo=0, text: str = ""):
             _ = parent
             _ = title
             _ = label
+            _ = echo
             return text, False
 
     class QLineEdit:  # type: ignore[no-redef]
@@ -518,6 +520,15 @@ def _runtimeSequence(value: dict[str, object]) -> int:
         except ValueError:
             return 0
     return 0
+
+
+def _runtimeStateBelongsToJob(value: dict[str, object], jobId: str | None) -> bool:
+    valueJobId = value.get("jobId", "")
+    if not isinstance(valueJobId, str):
+        valueJobId = ""
+    if jobId is None:
+        return valueJobId == ""
+    return valueJobId in {"", jobId}
 
 
 class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
@@ -566,6 +577,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.loadedProjectPath: str | None = None
         self.currentProjectDir: Path | None = None
         self.currentJobId: str | None = None
+        self._allowRuntimeEventsWithoutActiveJob = True
         self.isJobRunning = False
         self._lastRunBlockedReason = ""
         self.setWindowTitle("视觉流程设计器")
@@ -1112,10 +1124,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._addMenuAction(fileMenu, "删除当前工作流", self.deleteActiveWorkflow)
         self._addMenuAction(fileMenu, "设置当前为入口", self.setEntryWorkflow)
         self._addMenuAction(fileMenu, "设置工作流接口", self.editWorkflowInterface)
-        self._addMenuAction(fileMenu, "添加 Subflow 节点", self.addSubflowNode)
-        self._addMenuAction(fileMenu, "添加 Repeat 节点", self.addRepeatNode)
-        self._addMenuAction(fileMenu, "添加 ForEach 节点", self.addForEachNode)
-        self._addMenuAction(fileMenu, "添加 While 节点", self.addWhileNode)
+        systemNodeActions = {
+            "subflow": self.addSubflowNode,
+            "loop:repeat": self.addRepeatNode,
+            "loop:foreach": self.addForEachNode,
+            "loop:while": self.addWhileNode,
+        }
+        for definition in SYSTEM_NODE_CATALOG:
+            callback = systemNodeActions.get(definition.kind)
+            if callback is not None:
+                self._addMenuAction(fileMenu, f"添加 {definition.displayName} 节点", callback)
         addSubMenu = getattr(fileMenu, "addMenu", None)
         recentMenu = (
             addSubMenu("最近项目") if callable(addSubMenu) else QMenu("最近项目")
@@ -1149,7 +1167,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return self.layoutController.getMenuBarFontSize()
 
     def _setCurrentJobId(self, jobId: str | None) -> None:
+        if self.currentJobId == jobId:
+            return
+        hadActiveJob = self.currentJobId is not None
         self.currentJobId = jobId
+        self._allowRuntimeEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
+        self._nodeRuntimeState.clear()
+        setActiveJob = getattr(self.runtimePanelState, "setActiveJob", None)
+        if callable(setActiveJob):
+            setActiveJob(jobId)
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshRuntimePanelView()
 
     def _setIsJobRunning(self, isRunning: bool) -> None:
         self.isJobRunning = isRunning
@@ -1177,6 +1205,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def getMenuBarGroups(self) -> list[str]:
         return list(getattr(self, "_menuBarGroups", ["文件", "运行", "编辑", "视图"]))
+
+    def getSystemNodeCatalog(self) -> list[dict[str, object]]:
+        return [
+            {
+                "kind": definition.kind,
+                "displayName": definition.displayName,
+                "category": definition.category,
+                "canvasVisible": definition.canvasVisible,
+            }
+            for definition in SYSTEM_NODE_CATALOG
+        ]
 
     def getRecentProjectsMenuEntries(self) -> list[dict[str, str]]:
         return [dict(item) for item in self.getRecentProjects()]
@@ -1449,6 +1488,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         except Exception:
             _ = event
 
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        self.runtimeController.close()
+        try:
+            super().closeEvent(event)
+        except Exception:
+            accept = getattr(event, "accept", None)
+            if callable(accept):
+                accept()
+
     def getCategoryButtonLabels(self) -> dict[str, str]:
         labels: dict[str, str] = {}
         for categoryName, button in self.categoryButtons.items():
@@ -1508,6 +1556,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         workflowId = workflowIdRaw if isinstance(workflowIdRaw, str) else ""
         jobIdRaw = event.get("jobId", "")
         jobId = jobIdRaw if isinstance(jobIdRaw, str) else ""
+        isCurrentJobEvent = (
+            (self.currentJobId is None and self._allowRuntimeEventsWithoutActiveJob)
+            or (self.currentJobId is not None and jobId == self.currentJobId)
+        )
+        if not isCurrentJobEvent:
+            return
         info: dict[str, object] = {
             "status": status,
             "branch": branch,
@@ -1533,15 +1587,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._refreshRuntimePanelView()
 
     def _restoreActiveWorkflowRuntimeState(self) -> None:
+        expectedJobId = self.currentJobId
         for nodeId in self.flowModel.nodes:
             candidates = [
                 value
                 for (workflowId, _runId, candidateNodeId), value in self._nodeRuntimeStateByWorkflowRun.items()
                 if workflowId == self.activeWorkflowId and candidateNodeId == nodeId
-                and (
-                    self.currentJobId is None
-                    or value.get("jobId", "") in ("", self.currentJobId)
-                )
+                and _runtimeStateBelongsToJob(value, expectedJobId)
             ]
             if not candidates:
                 self._nodeRuntimeState.pop(nodeId, None)
@@ -2278,12 +2330,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.activeParamNodeId = nodeId
         setWorkflowOptions = getattr(self.nodeParamDialog, "setWorkflowOptions", None)
         if callable(setWorkflowOptions):
-            setWorkflowOptions(list(self.workflowStore.workflowOrder))
+            setWorkflowOptions(self._otherWorkflowIds())
+        schema = self._nodeEditorSchema(node)
+        values = dict(node.params)
+        if node.kind == "subflow":
+            values["targetWorkflowId"] = node.targetWorkflowId or ""
+        elif node.kind == "loop":
+            values.update(node.loop)
         self.nodeParamDialog.setNodeContext(
             nodeId=nodeId,
-            operatorId=node.operatorId,
-            schema=node.paramSchema,
-            values=node.params,
+            operatorId=node.operatorId or node.displayName,
+            schema=schema,
+            values=values,
         )
         self.nodeParamDialog.show()
         raiseWindow = getattr(self.nodeParamDialog, "raise_", None)
@@ -2297,9 +2355,56 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if nodeId not in self.flowModel.nodes:
             self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
             return
-        self.flowModel.setNodeParams(nodeId, params)
+        node = self.flowModel.nodes[nodeId]
+        try:
+            if node.kind == "subflow":
+                targetWorkflowId = params.get("targetWorkflowId")
+                if not isinstance(targetWorkflowId, str) or targetWorkflowId == "":
+                    raise ValueError("请选择 Subflow 目标工作流")
+                self.workflowController.configureSubflowNode(nodeId, targetWorkflowId)
+            elif node.kind == "loop":
+                self.workflowController.configureLoopNode(nodeId, dict(params))
+            else:
+                self.flowModel.setNodeParams(nodeId, params)
+        except (KeyError, TypeError, ValueError) as err:
+            self.appendRuntimeLog("ERROR", f"节点配置失败：{err}")
+            return
+        if node.kind in {"subflow", "loop"}:
+            refresh = getattr(self.workflowController, "refreshActiveWorkflow", None)
+            if callable(refresh):
+                refresh()
+            self.flowModel.selectNode(nodeId)
+            self.flowScene.setNodeSelected(nodeId)
+            self.refreshSidebarNodeList()
+            self.onNodeSelectionChanged()
         self.appendRuntimeLog("INFO", f"参数已更新：{nodeId}")
+        self.updateToolbarState()
         self._refreshRuntimePanelView()
 
     def updateNodeParams(self, nodeId: str, params: dict[str, object]) -> None:
         self.applyNodeParams(nodeId, params)
+
+    def _nodeEditorSchema(self, node) -> dict[str, object]:
+        options = self._otherWorkflowIds()
+        workflowSelect = {
+            "type": "string",
+            "xWidget": "workflow-select",
+            "xOptions": options,
+        }
+        if node.kind == "subflow":
+            return {
+                "type": "object",
+                "properties": {"targetWorkflowId": workflowSelect},
+                "required": ["targetWorkflowId"],
+            }
+        if node.kind != "loop":
+            return node.paramSchema
+        properties: dict[str, object] = {
+            "mode": {"type": "string", "enum": ["repeat", "foreach", "while"]},
+            "bodyWorkflowId": workflowSelect,
+            "repeatCount": {"type": "integer", "minimum": 0},
+            "maxIterations": {"type": "integer", "minimum": 0},
+            "timeoutMs": {"type": "integer", "minimum": 0},
+            "conditionWorkflowId": workflowSelect,
+        }
+        return {"type": "object", "properties": properties}

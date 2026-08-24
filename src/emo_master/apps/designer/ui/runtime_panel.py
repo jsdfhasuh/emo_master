@@ -14,12 +14,38 @@ class RuntimePanelState:
     latestArtifact: dict[str, object] = field(default_factory=dict)
     jobStatus: str = "IDLE"
     lastMessage: str = ""
+    activeJobId: str | None = None
+    allowEventsWithoutActiveJob: bool = field(default=True, init=False, repr=False)
+
+    def setActiveJob(self, jobId: str | None) -> None:
+        if self.activeJobId == jobId:
+            return
+        hadActiveJob = self.activeJobId is not None
+        self.activeJobId = jobId
+        self.allowEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
+        self.nodeStatus.clear()
+        self.nodeStatusByRun.clear()
+        self.iterationPathByNode.clear()
+        self.nodeStatusByWorkflowRun.clear()
+        self.iterationPathByWorkflowRun.clear()
+        self.nodeMetricsByWorkflowRun.clear()
+        self.nodeDiagnosticsByWorkflowRun.clear()
+        self.latestImagePath = None
+        self.latestArtifact = {}
+        self.jobStatus = "IDLE"
+        self.lastMessage = ""
 
     def updateJob(self, status: str, message: str = "") -> None:
         self.jobStatus = status
         self.lastMessage = message
 
     def applyEvent(self, event: dict[str, object]) -> None:
+        eventJobIdRaw = event.get("jobId")
+        eventJobId = eventJobIdRaw if isinstance(eventJobIdRaw, str) else ""
+        if self.activeJobId and eventJobId != self.activeJobId:
+            return
+        if self.activeJobId is None and not self.allowEventsWithoutActiveJob:
+            return
         eventType = event.get("eventType")
         nodeId = event.get("nodeId")
         message = event.get("message")

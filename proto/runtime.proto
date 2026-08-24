@@ -23,12 +23,15 @@ message ValidateProjectReply {
 
 message StartJobRequest {
   string project_id = 1;
+  string workflow_id = 2;
+  string inputs_json = 3;
 }
 
 message StartJobReply {
   bool ok = 1;
   string job_id = 2;
   string message = 3;
+  string status = 4;
 }
 
 message StopJobRequest {
@@ -51,10 +54,18 @@ message GetJobStatusReply {
   string status = 2;
   string error_code = 3;
   string message = 4;
+  string project_id = 5;
+  string workflow_id = 6;
+  int64 pid = 7;
+  int64 accepted_at_ms = 8;
+  int64 started_at_ms = 9;
+  int64 ended_at_ms = 10;
 }
 
 message StreamJobEventsRequest {
   string job_id = 1;
+  int64 after_sequence = 2;
+  bool follow = 3;
 }
 
 message JobEvent {
@@ -66,6 +77,13 @@ message JobEvent {
   string message = 6;
   string payload_json = 7;
   int64 timestamp_ms = 8;
+  int64 sequence = 9;
+  string project_id = 10;
+  string workflow_id = 11;
+  string workflow_run_id = 12;
+  string parent_workflow_run_id = 13;
+  string node_run_id = 14;
+  string iteration_path_json = 15;
 }
 
 message ListOperatorsRequest {}
@@ -98,6 +116,22 @@ message ListRejectedOperatorsReply {
   repeated RejectedOperatorInfo rejected = 1;
 }
 
+message ListWorkflowsRequest {
+  string project_id = 1;
+}
+
+message WorkflowInfo {
+  string workflow_id = 1;
+  string name = 2;
+  bool is_entry = 3;
+  string inputs_json = 4;
+  string outputs_json = 5;
+}
+
+message ListWorkflowsReply {
+  repeated WorkflowInfo workflows = 1;
+}
+
 service RuntimeService {
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
@@ -107,4 +141,5 @@ service RuntimeService {
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsReply);
 }

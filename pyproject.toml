@@ -1,12 +1,12 @@
 [project]
 name = "emo_master"
-version = "0.1.0"
+version = "0.2.0"
 requires-python = ">=3.10,<3.11"
 dependencies = [
   "PySide2>=5.15",
-  "grpcio>=1.62",
-  "grpcio-tools>=1.62",
-  "protobuf>=4.25",
+  "grpcio>=1.78.0",
+  "grpcio-tools>=1.78.0",
+  "protobuf>=6.33.6",
   "pydantic>=2.6",
   "opencv-python>=4.9,<4.11",
   "PyYAML>=6.0",

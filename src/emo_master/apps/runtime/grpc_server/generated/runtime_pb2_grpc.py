@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import runtime_pb2 as runtime__pb2
+from . import runtime_pb2 as runtime__pb2
 
 GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
@@ -74,6 +74,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListRejectedOperatorsReply.FromString,
                 _registered_method=True)
+        self.ListWorkflows = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListWorkflows',
+                request_serializer=runtime__pb2.ListWorkflowsRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListWorkflowsReply.FromString,
+                _registered_method=True)
 
 
 class RuntimeServiceServicer(object):
@@ -127,6 +132,12 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListWorkflows(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -169,6 +180,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ListRejectedOperators,
                     request_deserializer=runtime__pb2.ListRejectedOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListRejectedOperatorsReply.SerializeToString,
+            ),
+            'ListWorkflows': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListWorkflows,
+                    request_deserializer=runtime__pb2.ListWorkflowsRequest.FromString,
+                    response_serializer=runtime__pb2.ListWorkflowsReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -387,6 +403,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListRejectedOperators',
             runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
             runtime__pb2.ListRejectedOperatorsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListWorkflows(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListWorkflows',
+            runtime__pb2.ListWorkflowsRequest.SerializeToString,
+            runtime__pb2.ListWorkflowsReply.FromString,
             options,
             channel_credentials,
             insecure,

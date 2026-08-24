@@ -1,7 +1,20 @@
+from __future__ import annotations
+
 import json
 from dataclasses import dataclass
 from collections.abc import Iterable as IterableABC
-from typing import Iterable, Protocol, cast
+import inspect
+from typing import Any, Iterable, Protocol, cast
+
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
+from emo_master.core.contracts.execution import RuntimeEventDTO
+
+runtime_pb2: Any = _runtime_pb2
+
+try:
+    import grpc
+except Exception:  # pragma: no cover
+    grpc = None  # type: ignore[assignment]
 
 
 @dataclass(frozen=True)
@@ -17,10 +30,27 @@ class OperatorDefinition:
     paramSchema: dict[str, object]
 
 
+@dataclass(frozen=True)
+class WorkflowInfo:
+    workflowId: str
+    name: str
+    isEntry: bool
+    inputs: dict[str, object]
+    outputs: dict[str, object]
+
+
+class RuntimeClientError(RuntimeError):
+    def __init__(self, code: str, message: str) -> None:
+        self.code = code
+        super().__init__(message)
+
+
 class RuntimeServiceProtocol(Protocol):
     def ListOperators(self, request, context): ...
 
     def ListRejectedOperators(self, request, context): ...
+
+    def ListWorkflows(self, request, context): ...
 
     def LoadProject(self, request, context): ...
 
@@ -36,29 +66,25 @@ class RuntimeServiceProtocol(Protocol):
 
 
 class RuntimeClient:
-    def __init__(self, runtimeService: RuntimeServiceProtocol) -> None:
+    def __init__(self, runtimeService: RuntimeServiceProtocol, deadlineMs: int = 10000) -> None:
         self.runtimeService = runtimeService
+        self.deadlineMs = deadlineMs
 
     def listOperators(self) -> list[OperatorDefinition]:
-        request = type("ListOperatorsRequest", (), {})()
-        reply = self.runtimeService.ListOperators(request, None)
-        operators = getattr(reply, "operators", [])
+        reply = self._call("ListOperators", runtime_pb2.ListOperatorsRequest())
         parsed: list[OperatorDefinition] = []
-        for operatorInfo in operators:
-            rawCategory = str(getattr(operatorInfo, "category", "其他")).strip()
-            category = rawCategory if rawCategory != "" else "其他"
+        for operatorInfo in getattr(reply, "operators", []):
+            rawCategory = str(getattr(operatorInfo, "category", "Other")).strip()
             parsed.append(
                 OperatorDefinition(
                     operatorId=str(getattr(operatorInfo, "operator_id", "")),
                     displayName=str(getattr(operatorInfo, "display_name", "")),
                     version=str(getattr(operatorInfo, "version", "")),
-                    category=category,
+                    category=rawCategory or "Other",
                     iconKey=str(getattr(operatorInfo, "icon_key", "default")),
                     summary=str(getattr(operatorInfo, "summary", "")),
                     inputPorts=self._toStrMap(getattr(operatorInfo, "input_ports", {})),
-                    outputPorts=self._toStrMap(
-                        getattr(operatorInfo, "output_ports", {})
-                    ),
+                    outputPorts=self._toStrMap(getattr(operatorInfo, "output_ports", {})),
                     paramSchema=self._parseSchema(
                         getattr(operatorInfo, "param_schema_json", "{}")
                     ),
@@ -67,60 +93,127 @@ class RuntimeClient:
         return parsed
 
     def listRejectedOperators(self) -> list[object]:
-        request = type("ListRejectedOperatorsRequest", (), {})()
-        reply = self.runtimeService.ListRejectedOperators(request, None)
-        rejected = getattr(reply, "rejected", [])
-        return list(rejected)
+        reply = self._call("ListRejectedOperators", runtime_pb2.ListRejectedOperatorsRequest())
+        return list(getattr(reply, "rejected", []))
+
+    def listWorkflows(self, projectId: str = "") -> list[WorkflowInfo]:
+        reply = self._call(
+            "ListWorkflows", runtime_pb2.ListWorkflowsRequest(project_id=projectId)
+        )
+        result: list[WorkflowInfo] = []
+        for workflow in getattr(reply, "workflows", []):
+            result.append(
+                WorkflowInfo(
+                    workflowId=str(getattr(workflow, "workflow_id", "")),
+                    name=str(getattr(workflow, "name", "")),
+                    isEntry=bool(getattr(workflow, "is_entry", False)),
+                    inputs=self._parseSchema(getattr(workflow, "inputs_json", "{}")),
+                    outputs=self._parseSchema(getattr(workflow, "outputs_json", "{}")),
+                )
+            )
+        return result
 
     def loadProject(self, projectPath: str) -> object:
-        request = type("LoadProjectRequest", (), {"project_path": projectPath})()
-        return self.runtimeService.LoadProject(request, None)
+        return self._call(
+            "LoadProject", runtime_pb2.LoadProjectRequest(project_path=projectPath)
+        )
 
     def validateProject(self, projectId: str) -> object:
-        request = type("ValidateProjectRequest", (), {"project_id": projectId})()
-        return self.runtimeService.ValidateProject(request, None)
+        return self._call(
+            "ValidateProject", runtime_pb2.ValidateProjectRequest(project_id=projectId)
+        )
 
-    def startJob(self, projectId: str) -> object:
-        request = type("StartJobRequest", (), {"project_id": projectId})()
-        return self.runtimeService.StartJob(request, None)
+    def startJob(
+        self,
+        projectId: str,
+        workflowId: str = "",
+        inputs: dict[str, object] | str | None = None,
+    ) -> object:
+        if isinstance(inputs, str):
+            inputsJson = inputs
+        else:
+            inputsJson = json.dumps(inputs or {}, ensure_ascii=True)
+        request = runtime_pb2.StartJobRequest(
+            project_id=projectId, workflow_id=workflowId, inputs_json=inputsJson
+        )
+        return self._call("StartJob", request)
 
     def stopJob(self, jobId: str, mode: str = "graceful") -> object:
-        request = type("StopJobRequest", (), {"job_id": jobId, "mode": mode})()
-        return self.runtimeService.StopJob(request, None)
+        request = runtime_pb2.StopJobRequest(job_id=jobId, mode=mode)
+        return self._call("StopJob", request)
 
     def getJobStatus(self, jobId: str) -> object:
-        request = type("GetJobStatusRequest", (), {"job_id": jobId})()
-        return self.runtimeService.GetJobStatus(request, None)
+        return self._call("GetJobStatus", runtime_pb2.GetJobStatusRequest(job_id=jobId))
 
-    def streamJobEvents(self, jobId: str) -> list[object]:
-        request = type("StreamJobEventsRequest", (), {"job_id": jobId})()
-        events = self.runtimeService.StreamJobEvents(request, None)
-        if not isinstance(events, Iterable):
+    def streamJobEvents(
+        self, jobId: str, afterSequence: int = 0, follow: bool = False
+    ) -> list[RuntimeEventDTO]:
+        request = runtime_pb2.StreamJobEventsRequest(
+            job_id=jobId, after_sequence=afterSequence, follow=follow
+        )
+        events = self._call("StreamJobEvents", request, useDeadline=False)
+        if not isinstance(events, IterableABC):
             return []
-        parsedEvents: list[object] = []
-        for event in events:
-            payloadJson = getattr(event, "payload_json", "{}")
-            payload: dict[str, object] = {}
-            if isinstance(payloadJson, str) and payloadJson.strip() != "":
-                try:
-                    parsedPayload = json.loads(payloadJson)
-                    if isinstance(parsedPayload, dict):
-                        payload = parsedPayload
-                except json.JSONDecodeError:
-                    payload = {}
-            setattr(event, "payload", payload)
-            parsedEvents.append(event)
-        return parsedEvents
+        return [self._toEventDTO(event) for event in events]
+
+    def _call(self, methodName: str, request: object, useDeadline: bool = True):
+        method = getattr(self.runtimeService, methodName)
+        try:
+            if useDeadline and self.deadlineMs > 0:
+                parameters = _signatureParameters(method)
+                if not parameters or "timeout" in parameters or any(
+                    parameter.kind is inspect.Parameter.VAR_KEYWORD
+                    for parameter in parameters.values()
+                ):
+                    return method(request, timeout=self.deadlineMs / 1000.0)
+            return method(request, None)
+        except Exception as err:
+            if grpc is not None and isinstance(err, grpc.RpcError):
+                code = err.code()
+                detail = err.details() or "runtime RPC failed"
+                raise RuntimeClientError(str(code), detail) from err
+            raise
+
+    def _toEventDTO(self, event: object) -> RuntimeEventDTO:
+        payloadJson = getattr(event, "payload_json", "{}")
+        payload: dict[str, object] = {}
+        if isinstance(payloadJson, str) and payloadJson.strip():
+            try:
+                parsedPayload = json.loads(payloadJson)
+                if isinstance(parsedPayload, dict):
+                    payload = parsedPayload
+            except json.JSONDecodeError:
+                payload = {}
+        iterationPath = self._parseIterationPath(
+            getattr(event, "iteration_path_json", "[]")
+        )
+        return RuntimeEventDTO(
+            jobId=str(getattr(event, "job_id", "")),
+            eventType=str(getattr(event, "event_type", "")),
+            message=str(getattr(event, "message", "")),
+            level=str(getattr(event, "level", "INFO")),
+            nodeId=str(getattr(event, "node_id", "")),
+            code=str(getattr(event, "code", "")),
+            payload=payload,
+            sequence=int(getattr(event, "sequence", 0)),
+            timestampMs=int(getattr(event, "timestamp_ms", 0)),
+            projectId=str(getattr(event, "project_id", "")),
+            workflowId=str(getattr(event, "workflow_id", "")),
+            workflowRunId=str(getattr(event, "workflow_run_id", "")),
+            parentWorkflowRunId=str(getattr(event, "parent_workflow_run_id", "")),
+            nodeRunId=str(getattr(event, "node_run_id", "")),
+            iterationPath=iterationPath,
+        )
 
     def _toStrMap(self, rawValue: object) -> dict[str, str]:
         mapping = self._toDict(rawValue)
         if mapping is None:
             return {}
-        parsed: dict[str, str] = {}
-        for key, value in mapping.items():
-            if isinstance(key, str) and isinstance(value, str):
-                parsed[key] = value
-        return parsed
+        return {
+            key: value
+            for key, value in mapping.items()
+            if isinstance(key, str) and isinstance(value, str)
+        }
 
     def _toDict(self, rawValue: object) -> dict[object, object] | None:
         if isinstance(rawValue, dict):
@@ -148,6 +241,22 @@ class RuntimeClient:
             parsed = json.loads(rawValue)
         except json.JSONDecodeError:
             return {}
-        if not isinstance(parsed, dict):
-            return {}
-        return parsed
+        return parsed if isinstance(parsed, dict) else {}
+
+    def _parseIterationPath(self, rawValue: object) -> tuple[int, ...]:
+        if not isinstance(rawValue, str) or not rawValue.strip():
+            return ()
+        try:
+            parsed = json.loads(rawValue)
+        except json.JSONDecodeError:
+            return ()
+        if not isinstance(parsed, list):
+            return ()
+        return tuple(item for item in parsed if isinstance(item, int) and not isinstance(item, bool))
+
+
+def _signatureParameters(method) -> dict[str, inspect.Parameter]:
+    try:
+        return dict(inspect.signature(method).parameters)
+    except (TypeError, ValueError):
+        return {}

@@ -9,6 +9,46 @@ from uuid import uuid4
 
 SCHEMA_VERSION = "2.0"
 
+_LEGACY_TOP_LEVEL_FIELDS = {
+    "version",
+    "schemaVersion",
+    "project",
+    "projectId",
+    "meta",
+    "designer",
+    "workflows",
+    "entryWorkflowId",
+    "workflowOrder",
+    "runtime",
+    "dependencies",
+    "devices",
+}
+_LEGACY_WORKFLOW_FIELDS = {"name", "inputs", "outputs", "nodes", "edges", "layout"}
+_LEGACY_DESIGNER_FIELDS = {"nodes", "edges"}
+_LEGACY_NODE_FIELDS = {
+    "nodeId",
+    "kind",
+    "operatorId",
+    "displayName",
+    "inputPorts",
+    "outputPorts",
+    "paramSchema",
+    "params",
+    "targetWorkflowId",
+    "loop",
+    "x",
+    "y",
+}
+_LEGACY_EDGE_FIELDS = {"fromNode", "fromPort", "toNode", "toPort"}
+_LEGACY_METADATA_FIELDS = {"projectId", "name", "revision", "createdAt", "updatedAt"}
+_LEGACY_RUNTIME_FIELDS = {
+    "sourceImagePath",
+    "maxConcurrentJobs",
+    "gracefulStopTimeoutMs",
+    "heartbeatTimeoutMs",
+    "eventRetentionPerJob",
+}
+
 
 def utc_now_iso() -> str:
     return datetime.now(timezone.utc).replace(microsecond=0).isoformat().replace(
@@ -28,6 +68,7 @@ def migrateProjectPayload(payload: dict[str, object]) -> dict[str, object]:
     sourceSchema = source.get("schemaVersion")
     if sourceSchema is not None and sourceSchema not in {"1.0", "1"}:
         raise ValueError(f"unsupported project schemaVersion: {sourceSchema!r}")
+    _validateLegacyPayload(source, sourceSchema)
 
     rawProject = source.get("project")
     project = rawProject if isinstance(rawProject, dict) else {}
@@ -103,7 +144,10 @@ def _extract_workflows(source: dict[str, object]) -> dict[str, dict[str, object]
             return result
 
     rawDesigner = source.get("designer")
+    if rawDesigner is not None and not isinstance(rawDesigner, dict):
+        raise ValueError("designer must be an object")
     designer = rawDesigner if isinstance(rawDesigner, dict) else {}
+    _rejectUnknownFields(designer, _LEGACY_DESIGNER_FIELDS, "designer")
     rawNodes = designer.get("nodes", [])
     rawEdges = designer.get("edges", [])
     nodes = _normalize_nodes(rawNodes)
@@ -121,16 +165,33 @@ def _extract_workflows(source: dict[str, object]) -> dict[str, dict[str, object]
 
 
 def _normalize_workflow(workflowId: str, rawWorkflow: dict[str, object]) -> dict[str, object]:
+    unknownFields = sorted(set(rawWorkflow) - _LEGACY_WORKFLOW_FIELDS)
+    if unknownFields:
+        raise ValueError(
+            f"legacy workflow {workflowId!r} contains unsupported fields: "
+            + ", ".join(unknownFields)
+        )
+    rawName = rawWorkflow.get("name")
+    if rawName is not None and not isinstance(rawName, str):
+        raise ValueError(f"legacy workflow {workflowId!r} name must be a string")
+    rawInputs = rawWorkflow.get("inputs")
+    if rawInputs is not None and not isinstance(rawInputs, dict):
+        raise ValueError(f"legacy workflow {workflowId!r} inputs must be an object")
+    rawOutputs = rawWorkflow.get("outputs")
+    if rawOutputs is not None and not isinstance(rawOutputs, dict):
+        raise ValueError(f"legacy workflow {workflowId!r} outputs must be an object")
     rawNodes = rawWorkflow.get("nodes", [])
     nodes = _normalize_nodes(rawNodes)
     rawEdges = rawWorkflow.get("edges", [])
     edges = _normalize_edges(rawEdges)
     layoutRaw = rawWorkflow.get("layout")
+    if layoutRaw is not None and not isinstance(layoutRaw, dict):
+        raise ValueError(f"legacy workflow {workflowId!r} layout must be an object")
     layout = dict(layoutRaw) if isinstance(layoutRaw, dict) else _layout_from_nodes(rawNodes)
     return {
-        "name": _first_string(rawWorkflow.get("name")) or workflowId,
-        "inputs": _copy_object_map(rawWorkflow.get("inputs")),
-        "outputs": _copy_object_map(rawWorkflow.get("outputs")),
+        "name": _first_string(rawName) or workflowId,
+        "inputs": _copy_object_map(rawInputs),
+        "outputs": _copy_object_map(rawOutputs),
         "nodes": nodes,
         "edges": edges,
         "layout": layout,
@@ -144,12 +205,24 @@ def _normalize_nodes(rawNodes: object) -> list[dict[str, object]]:
     for rawNode in rawNodes:
         if not isinstance(rawNode, dict):
             raise ValueError("workflow nodes must contain objects")
+        _rejectUnknownFields(rawNode, _LEGACY_NODE_FIELDS, "workflow node")
         node = dict(rawNode)
+        nodeId = node.get("nodeId")
+        if not isinstance(nodeId, str) or nodeId == "":
+            raise ValueError("workflow node nodeId must be a non-empty string")
         kind = node.get("kind")
         if kind is None:
             node["kind"] = "operator"
         elif not isinstance(kind, str) or kind == "":
             raise ValueError("workflow node kind must be a non-empty string")
+        for fieldName in ("inputPorts", "outputPorts", "paramSchema", "params", "loop"):
+            value = node.get(fieldName)
+            if value is not None and not isinstance(value, dict):
+                raise ValueError(f"workflow node {fieldName} must be an object")
+        for fieldName in ("operatorId", "displayName", "targetWorkflowId"):
+            value = node.get(fieldName)
+            if value is not None and not isinstance(value, str):
+                raise ValueError(f"workflow node {fieldName} must be a string")
         # Coordinates belong to workflow.layout in v2, never to execution nodes.
         node.pop("x", None)
         node.pop("y", None)
@@ -164,6 +237,9 @@ def _normalize_edges(rawEdges: object) -> list[dict[str, object]]:
     for rawEdge in rawEdges:
         if not isinstance(rawEdge, dict):
             raise ValueError("workflow edges must contain objects")
+        _rejectUnknownFields(rawEdge, _LEGACY_EDGE_FIELDS, "workflow edge")
+        if any(not isinstance(rawEdge.get(fieldName), str) for fieldName in _LEGACY_EDGE_FIELDS):
+            raise ValueError("workflow edge endpoints and ports must be strings")
         edges.append(dict(rawEdge))
     return edges
 
@@ -258,9 +334,13 @@ def _runtime_defaults(runtime: dict[str, object]) -> dict[str, object]:
 
 
 def _copy_object_map(value: object) -> dict[str, object]:
-    if not isinstance(value, dict):
+    if value is None:
         return {}
-    return {str(key): deepcopy(item) for key, item in value.items() if isinstance(key, str)}
+    if not isinstance(value, dict):
+        raise ValueError("workflow interface must be an object")
+    if any(not isinstance(key, str) for key in value):
+        raise ValueError("workflow interface keys must be strings")
+    return {key: deepcopy(item) for key, item in value.items()}
 
 
 def _first_string(*values: Any) -> str | None:
@@ -268,3 +348,46 @@ def _first_string(*values: Any) -> str | None:
         if isinstance(value, str) and value.strip() != "":
             return value
     return None
+
+
+def _validateLegacyPayload(source: dict[str, object], sourceSchema: object) -> None:
+    unknownFields = sorted(set(source) - _LEGACY_TOP_LEVEL_FIELDS)
+    if unknownFields:
+        raise ValueError(
+            "legacy project contains unsupported top-level fields: "
+            + ", ".join(unknownFields)
+        )
+    version = source.get("version")
+    if version is not None and version not in {"1.0", "1"}:
+        raise ValueError(f"unsupported legacy project version: {version!r}")
+    if sourceSchema is None and not any(
+        marker in source for marker in ("version", "designer", "meta", "projectId")
+    ):
+        raise ValueError(
+            "project schemaVersion is missing and no recognized v1 markers were found"
+        )
+    for fieldName in ("meta", "project", "runtime", "dependencies", "devices"):
+        value = source.get(fieldName)
+        if value is not None and not isinstance(value, dict):
+            raise ValueError(f"legacy project field must be an object: {fieldName}")
+    for fieldName in ("meta", "project"):
+        value = source.get(fieldName)
+        if isinstance(value, dict):
+            _rejectUnknownFields(value, _LEGACY_METADATA_FIELDS, fieldName)
+    runtime = source.get("runtime")
+    if isinstance(runtime, dict):
+        _rejectUnknownFields(runtime, _LEGACY_RUNTIME_FIELDS, "runtime")
+    dependencies = source.get("dependencies")
+    if isinstance(dependencies, dict):
+        _rejectUnknownFields(dependencies, {"operators"}, "dependencies")
+    devices = source.get("devices")
+    if isinstance(devices, dict):
+        _rejectUnknownFields(devices, {"bindings"}, "devices")
+
+
+def _rejectUnknownFields(value: dict[object, object], allowed: set[str], label: str) -> None:
+    unknownFields = sorted(str(key) for key in value if key not in allowed)
+    if unknownFields:
+        raise ValueError(
+            f"legacy {label} contains unsupported fields: " + ", ".join(unknownFields)
+        )

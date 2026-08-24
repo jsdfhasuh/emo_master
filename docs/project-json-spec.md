@@ -77,7 +77,10 @@
 
 `mode` 为 `repeat`、`foreach` 或 `while`。所有 Loop 必须有
 `maxIterations`；While 另外需要 `conditionWorkflowId`，body 需要
-`bodyWorkflowId`。普通边必须保持 DAG，循环只能通过结构化 Loop 调用子工作流。
+`bodyWorkflowId`。Repeat 的 `repeatCount=0` 是定义明确的无操作：它不运行
+body，并将收到的输入端口原样透传到输出端口；因此 Repeat 的输出端口必须是
+输入端口的子集，否则项目在编译阶段被拒绝。普通边必须保持 DAG，循环只能通过
+结构化 Loop 调用子工作流。
 
 ## v1 迁移
 

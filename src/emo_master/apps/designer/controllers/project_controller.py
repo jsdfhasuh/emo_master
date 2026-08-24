@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
+from uuid import uuid4
 
 from emo_master.apps.designer.state.project_store import (
     createProjectSkeleton,
@@ -9,6 +10,7 @@ from emo_master.apps.designer.state.project_store import (
     saveProject,
 )
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeViewModel
+from emo_master.core.project.migration import utc_now_iso
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
 
@@ -38,6 +40,13 @@ class ProjectController:
         self.updateToolbarState = updateToolbarState
         self.updateRuntimeJobState = updateRuntimeJobState
         self.workflowController = workflowController
+        self._fallbackProjectMetadata: dict[str, object] = {
+            "projectId": str(uuid4()),
+            "name": "project",
+            "revision": 1,
+            "createdAt": utc_now_iso(),
+            "updatedAt": utc_now_iso(),
+        }
 
     def getRecentProjects(self) -> list[dict[str, str]]:
         valueMethod = getattr(self.settingsStore, "value", None)
@@ -140,6 +149,7 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
+        self._captureFallbackProjectMetadata(payload)
         if self.workflowController is not None:
             self.workflowController.loadPayload(payload)
         else:
@@ -159,11 +169,17 @@ class ProjectController:
         self, projectDirPath: str, projectName: str, loadedProjectPath: str | None
     ) -> tuple[bool, Path | None]:
         projectDir = Path(projectDirPath)
-        createProjectSkeleton(projectDir, projectName)
-        payload = self._buildProjectPayload(projectName, loadedProjectPath)
-        saveProject(projectDir, payload)
+        try:
+            createProjectSkeleton(projectDir, projectName)
+            payload = self._buildProjectPayload(projectName, loadedProjectPath)
+            saveProject(projectDir, payload)
+        except Exception as err:
+            self.appendLog("ERROR", f"项目保存失败：{err}")
+            return False, None
         if self.workflowController is not None:
             self.workflowController.commitSavedPayload(payload)
+        else:
+            self._captureFallbackProjectMetadata(payload)
         self.appendLog("INFO", f"项目已保存：{projectDir / 'project.json'}")
         return True, projectDir
 
@@ -249,43 +265,73 @@ class ProjectController:
         for rawNode in nodes:
             if not isinstance(rawNode, dict):
                 continue
-            node = dict(rawNode)
-            nodeIdRaw = node.get("nodeId", "")
-            nodeId = nodeIdRaw if isinstance(nodeIdRaw, str) else ""
-            if nodeId in nodePositions:
-                posX, posY = nodePositions[nodeId]
-                node["x"] = float(posX)
-                node["y"] = float(posY)
-            else:
-                node["x"] = float(node.get("x", 20.0))
-                node["y"] = float(node.get("y", 20.0))
-            patchedNodes.append(node)
+            patchedNodes.append(dict(rawNode))
 
         edgesRaw = graphPayload.get("edges", [])
         edges = edgesRaw if isinstance(edgesRaw, list) else []
 
+        project = dict(self._fallbackProjectMetadata)
+        project["name"] = projectName
+        project["updatedAt"] = utc_now_iso()
+        revision = project.get("revision", 1)
+        project["revision"] = (revision if isinstance(revision, int) else 1) + 1
+
         return {
-            "version": "1.0",
-            "meta": {
-                "name": projectName,
+            "schemaVersion": "2.0",
+            "project": project,
+            "entryWorkflowId": "main",
+            "workflowOrder": ["main"],
+            "workflows": {
+                "main": {
+                    "name": projectName,
+                    "inputs": {},
+                    "outputs": {},
+                    "nodes": patchedNodes,
+                    "edges": edges,
+                    "layout": {"nodePositions": {
+                        nodeId: {"x": float(position[0]), "y": float(position[1])}
+                        for nodeId, position in nodePositions.items()
+                    }},
+                }
             },
-            "runtime": {
-                "sourceImagePath": ""
-                if loadedProjectPath is None
-                else loadedProjectPath,
-            },
-            "designer": {
-                "nodes": patchedNodes,
-                "edges": edges,
-            },
+            "runtime": {},
+            "dependencies": {"operators": []},
+            "devices": {"bindings": {}},
         }
 
+    def _captureFallbackProjectMetadata(self, payload: dict[str, object]) -> None:
+        project = payload.get("project")
+        if isinstance(project, dict):
+            self._fallbackProjectMetadata = dict(project)
+
     def _restoreProjectPayload(self, payload: dict[str, object]) -> str | None:
-        designerRaw = payload.get("designer", {})
-        designer = designerRaw if isinstance(designerRaw, dict) else {}
+        workflowsRaw = payload.get("workflows")
+        entryWorkflowId = payload.get("entryWorkflowId", "main")
+        workflow = (
+            workflowsRaw.get(entryWorkflowId)
+            if isinstance(workflowsRaw, dict) and isinstance(entryWorkflowId, str)
+            else None
+        )
+        if isinstance(workflow, dict):
+            graphPayload = {
+                "nodes": workflow.get("nodes", []),
+                "edges": workflow.get("edges", []),
+            }
+            layoutRaw = workflow.get("layout")
+            layout = layoutRaw if isinstance(layoutRaw, dict) else {}
+            positionsRaw = layout.get("nodePositions", {})
+            positions = positionsRaw if isinstance(positionsRaw, dict) else {}
+        else:
+            designerRaw = payload.get("designer", {})
+            designer = designerRaw if isinstance(designerRaw, dict) else {}
+            graphPayload = {
+                "nodes": designer.get("nodes", []),
+                "edges": designer.get("edges", []),
+            }
+            positions = {}
         graphPayload = {
-            "nodes": designer.get("nodes", []),
-            "edges": designer.get("edges", []),
+            "nodes": graphPayload.get("nodes", []),
+            "edges": graphPayload.get("edges", []),
         }
         self.flowModel.loadProjectGraph(graphPayload)
         self.flowScene.clearGraph()
@@ -301,6 +347,10 @@ class ProjectController:
                     continue
                 xRaw = rawNode.get("x", 20.0)
                 yRaw = rawNode.get("y", 20.0)
+                layoutPosition = positions.get(node.nodeId)
+                if isinstance(layoutPosition, dict):
+                    xRaw = layoutPosition.get("x", xRaw)
+                    yRaw = layoutPosition.get("y", yRaw)
                 if isinstance(xRaw, (int, float)):
                     xValue = float(xRaw)
                 if isinstance(yRaw, (int, float)):

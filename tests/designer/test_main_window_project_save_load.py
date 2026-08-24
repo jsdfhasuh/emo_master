@@ -1,7 +1,9 @@
 from pathlib import Path
+import json
 
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel
 from emo_master.apps.designer.ui.main_window import MainWindow
+from emo_master.apps.designer.controllers import project_controller as projectControllerModule
 
 
 def ensureQApp() -> None:
@@ -113,3 +115,24 @@ def testSaveProjectActionOverwritesLoadedProjectWithoutChooser(tmp_path: Path) -
     window.currentProjectDir = projectDir
     window.saveProjectAction()
     assert chooserCalled["value"] is False
+
+
+def testFailedProjectSaveDoesNotAdvanceRevision(tmp_path: Path, monkeypatch) -> None:
+    window = MainWindow(RuntimeClientStub())
+    projectDir = tmp_path / "failed-project"
+
+    def failSave(*args, **kwargs):
+        _ = args
+        _ = kwargs
+        raise OSError("disk full")
+
+    monkeypatch.setattr(projectControllerModule, "saveProject", failSave)
+
+    ok, savedPath = window.projectController.saveProjectToDirectory(
+        str(projectDir), "failed-project", None
+    )
+
+    assert (ok, savedPath) == (False, None)
+    assert window.workflowStore.project["revision"] == 1
+    savedPayload = json.loads((projectDir / "project.json").read_text(encoding="utf-8"))
+    assert savedPayload["project"]["revision"] == 1

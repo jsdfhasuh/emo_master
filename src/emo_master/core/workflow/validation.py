@@ -156,6 +156,21 @@ def validateProjectDocument(
                                 fieldPath="loop.repeatCount",
                             )
                         )
+                    impossibleOutputs = sorted(
+                        port for port in node.outputPorts if port not in node.inputPorts
+                    )
+                    if repeatCount == 0 and impossibleOutputs:
+                        issues.append(
+                            ValidationIssue(
+                                "E_LOOP_ZERO_OUTPUT_UNSATISFIABLE",
+                                "repeatCount=0 can only pass through loop input ports: "
+                                + ", ".join(impossibleOutputs),
+                                projectId=projectId,
+                                workflowId=workflowId,
+                                nodeId=node.nodeId,
+                                fieldPath="loop.outputPorts",
+                            )
+                        )
                 timeout = node.loop.get("timeoutMs", 0)
                 if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout < 0:
                     issues.append(

@@ -26,6 +26,19 @@ class _EchoOperator:
         return {"status": "ok", "outputs": {"value": inputs.get("value")}}
 
 
+class _FailWithMetadataOperator:
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = inputs
+        _ = params
+        _ = runtimeContext
+        return {
+            "status": "failed",
+            "error": {"code": "E_OPERATOR_METADATA", "message": "failed with metadata"},
+            "metrics": {"latencyMs": 12},
+            "diagnostics": {"retryable": False},
+        }
+
+
 def _v2_project() -> dict[str, object]:
     return {
         "schemaVersion": "2.0",
@@ -124,6 +137,53 @@ def testLegacyUnknownNodeKindIsNotSilentlyFiltered() -> None:
 
     with pytest.raises(ValidationError):
         ProjectDocument.model_validate(migrated)
+
+
+def testLegacyUnknownTopLevelAndWorkflowFieldsAreRejected() -> None:
+    with pytest.raises(ValueError, match="top-level"):
+        migrateProjectPayload(
+            {
+                "version": "1.0",
+                "meta": {"name": "legacy"},
+                "designer": {"nodes": [], "edges": []},
+                "futureField": True,
+            }
+        )
+
+    with pytest.raises(ValueError, match="workflow"):
+        migrateProjectPayload(
+            {
+                "version": "1.0",
+                "workflows": {"main": {"name": "Main", "futureField": True}},
+            }
+        )
+
+
+def testMissingSchemaWithoutLegacyMarkersIsRejected() -> None:
+    with pytest.raises(ValueError, match="v1 markers"):
+        migrateProjectPayload({"project": {"name": "ambiguous"}})
+
+
+def testNodeFailedEventPreservesMetricsAndDiagnostics() -> None:
+    payload = _v2_project()
+    payload["workflows"]["main"]["nodes"][1]["operatorId"] = "test.fail"
+    events = []
+    document = ProjectDocument.model_validate(payload)
+    compiled = WorkflowCompiler(
+        operatorRegistry={"test.fail": _FailWithMetadataOperator}
+    ).compile(document)
+    runner = WorkflowRunner(
+        compiled,
+        {"test.fail": _FailWithMetadataOperator},
+        eventPublisher=lambda **event: events.append(event),
+    )
+
+    with pytest.raises(Exception):
+        runner.run("main", {"image": {}}, RunContext.root("job", "main"), CancellationToken())
+
+    failed = next(event for event in events if event["eventType"] == "node.failed")
+    assert failed["payload"]["metrics"] == {"latencyMs": 12}
+    assert failed["payload"]["diagnostics"] == {"retryable": False}
 
 
 @pytest.mark.parametrize("value", [0, False, "", [], {}])

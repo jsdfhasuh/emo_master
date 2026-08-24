@@ -588,23 +588,33 @@ class JobSupervisor:
         handle = self._handles.get(jobId)
         bridge = self._bridges.get(jobId)
         if bridge is not None and bridge is not threading.current_thread():
-            bridge.requestStop()
-            if getattr(bridge, "ident", None) is not None:
-                bridge.join(timeout=1.0)
-                if bridge.is_alive():
-                    return
+            try:
+                bridge.requestStop()
+                if getattr(bridge, "ident", None) is not None:
+                    bridge.join(timeout=1.0)
+            except BaseException:
+                pass
         if handle is not None:
             process, _cancelEvent, eventQueue = handle
-            if process.is_alive():
-                process.join(timeout=0.2)
-            if process.is_alive():
-                return
+            try:
+                if process.is_alive():
+                    process.join(timeout=0.2)
+                if process.is_alive():
+                    self._terminateProcess(process)
+            except BaseException:
+                pass
             close = getattr(process, "close", None)
             if callable(close):
-                close()
+                try:
+                    close()
+                except BaseException:
+                    pass
             closeQueue = getattr(eventQueue, "close", None)
             if callable(closeQueue):
-                closeQueue()
+                try:
+                    closeQueue()
+                except BaseException:
+                    pass
             self._handles.pop(jobId, None)
         self._bridges.pop(jobId, None)
         self._heartbeat.pop(jobId, None)

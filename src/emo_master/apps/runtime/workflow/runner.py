@@ -17,9 +17,18 @@ class WorkflowResult:
 
 
 class WorkflowExecutionError(RuntimeError):
-    def __init__(self, code: str, message: str, nodeId: str = "") -> None:
+    def __init__(
+        self,
+        code: str,
+        message: str,
+        nodeId: str = "",
+        metrics: Mapping[str, object] | None = None,
+        diagnostics: Mapping[str, object] | None = None,
+    ) -> None:
         self.code = code
         self.nodeId = nodeId
+        self.metrics = dict(metrics or {})
+        self.diagnostics = dict(diagnostics or {})
         super().__init__(message)
 
 
@@ -72,8 +81,7 @@ class WorkflowRunner:
                 node = workflow.nodeById[nodeId]
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
-                self.publish("node.started", nodeContext, f"node started: {node.nodeId}")
-                if node.kind in {"subflow", "loop"} and node.inputPorts and not nodeInput:
+                if node.inputPorts and not nodeInput:
                     self.publish(
                         "node.skipped",
                         nodeContext,
@@ -81,6 +89,7 @@ class WorkflowRunner:
                         payload={"status": "SKIPPED"},
                     )
                     continue
+                self.publish("node.started", nodeContext, f"node started: {node.nodeId}")
                 try:
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation
@@ -90,12 +99,20 @@ class WorkflowRunner:
                     code = getattr(err, "code", "E_EXEC_FAILED")
                     if isinstance(err, WorkflowExecutionError):
                         code = err.code
+                    failedPayload = {
+                        "status": "FAILED",
+                        "code": str(code),
+                        "message": str(err),
+                        "metrics": getattr(err, "metrics", {}),
+                        "diagnostics": getattr(err, "diagnostics", {}),
+                    }
                     self.publish(
                         "node.failed",
                         nodeContext,
                         str(err),
                         level="ERROR",
                         code=str(code),
+                        payload=_jsonSafe(failedPayload),
                     )
                     raise
                 metrics.update(nodeMetrics)
@@ -105,8 +122,6 @@ class WorkflowRunner:
                     outputs.update(nodeOutputs)
                 self._route(nodeId, nodeOutputs, workflow.outgoingEdges, nodeInputs)
                 cancellation.raise_if_cancelled()
-                if node.kind == "operator" and node.inputPorts and not nodeInput:
-                    continue
                 payload = {
                     "status": "COMPLETED",
                     "outputs": _jsonSafe(nodeOutputs),
@@ -131,7 +146,23 @@ class WorkflowRunner:
             self.publish("workflow.completed", context, f"workflow completed: {workflowId}", payload={"outputs": _jsonSafe(outputs)})
             return result
         except Exception as err:
-            self.publish("workflow.failed", context, str(err), level="ERROR", code=str(getattr(err, "code", "E_EXEC_FAILED")))
+            code = str(getattr(err, "code", "E_EXEC_FAILED"))
+            self.publish(
+                "workflow.failed",
+                context,
+                str(err),
+                level="ERROR",
+                code=code,
+                payload=_jsonSafe(
+                    {
+                        "status": "FAILED",
+                        "code": code,
+                        "message": str(err),
+                        "metrics": getattr(err, "metrics", {}),
+                        "diagnostics": getattr(err, "diagnostics", {}),
+                    }
+                ),
+            )
             raise
 
     def _runNode(self, node, nodeInput, supplied, context, cancellation):
@@ -145,9 +176,6 @@ class WorkflowRunner:
         if node.kind == "loop":
             result = self.loopRunner.run(node, nodeInput, context, cancellation)
             return result.outputs, result.metrics, result.diagnostics
-        if node.inputPorts and not nodeInput:
-            self.publish("node.skipped", context, f"node skipped: {node.nodeId}", payload={"status": "SKIPPED"})
-            return {}, {}, {}
         operator = _buildOperator(node.operatorId, self.operatorRegistry)
         if operator is None or not hasattr(operator, "executeNode"):
             raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
@@ -168,7 +196,15 @@ class WorkflowRunner:
             error = result.get("error", {}) if isinstance(result, dict) else {}
             code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
             message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
-            raise WorkflowExecutionError(str(code), str(message), node.nodeId)
+            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
+            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
+            raise WorkflowExecutionError(
+                str(code),
+                str(message),
+                node.nodeId,
+                failedMetrics if isinstance(failedMetrics, dict) else {},
+                failedDiagnostics if isinstance(failedDiagnostics, dict) else {},
+            )
         rawOutputs = result.get("outputs", {})
         outputs = rawOutputs if isinstance(rawOutputs, dict) else {}
         metrics = result.get("metrics", {})
@@ -211,8 +247,17 @@ class WorkflowRunner:
             payload={} if payload is None else payload,
         )
 
-    def result(self, outputs: dict[str, object]) -> WorkflowResult:
-        return WorkflowResult(outputs=outputs)
+    def result(
+        self,
+        outputs: dict[str, object],
+        metrics: Mapping[str, object] | None = None,
+        diagnostics: Mapping[str, object] | None = None,
+    ) -> WorkflowResult:
+        return WorkflowResult(
+            outputs=outputs,
+            metrics=dict(metrics or {}),
+            diagnostics=dict(diagnostics or {}),
+        )
 
 
 def _buildOperator(operatorId: str | None, registry: Mapping[str, object]) -> object | None:

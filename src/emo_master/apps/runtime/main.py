@@ -1,6 +1,4 @@
 from concurrent import futures
-import os
-from pathlib import Path
 from typing import Any
 
 import grpc
@@ -10,10 +8,7 @@ from emo_master.apps.runtime.grpc_server.service import RuntimeService
 
 
 def createRuntimeService() -> RuntimeService:
-    configuredDbPath = os.environ.get("EMO_RUNTIME_DB_PATH") or os.environ.get(
-        "EMO_MASTER_RUNTIME_DB_PATH"
-    )
-    return RuntimeService(dbPath=None if configuredDbPath is None else Path(configuredDbPath))
+    return RuntimeService()
 
 
 def createRuntimeServer(

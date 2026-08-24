@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import deepcopy
 from threading import Event
 
 import pytest
@@ -10,6 +11,7 @@ from emo_master.apps.runtime.workflow.loop_runner import LoopExecutionError
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.workflow.errors import WorkflowCompileError
 
 
 class _ConditionOperator:
@@ -283,3 +285,71 @@ def testLoopBodyContextUsesIndependentWorkflowRunsAndIterationPaths() -> None:
     assert all(context["parentWorkflowRunId"] == root.workflowRunId for context in _ContextBodyOperator.contexts)
     assert all(context["workspacePath"] == "C:/workspace" for context in _ContextBodyOperator.contexts)
     assert all(context["projectId"] == "loop-project" for context in _ContextBodyOperator.contexts)
+
+
+def testInactiveLoopIsSkippedBeforeDispatch() -> None:
+    payload = _payload(
+        "repeat",
+        "test.body",
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": "body",
+            "repeatCount": 1,
+            "maxIterations": 1,
+            "timeoutMs": 1000,
+        },
+    )
+    payload["workflows"]["main"]["edges"] = [
+        edge
+        for edge in payload["workflows"]["main"]["edges"]
+        if edge["toNode"] != "loop"
+    ]
+    events = []
+    document = ProjectDocument.model_validate(payload)
+    compiled = WorkflowCompiler(
+        operatorRegistry={"test.condition": _ConditionOperator, "test.body": _BodyOperator}
+    ).compile(document)
+    runner = WorkflowRunner(
+        compiled,
+        {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
+        eventPublisher=lambda **event: events.append(event),
+    )
+
+    with pytest.raises(Exception):
+        runner.run("main", {"state": {"count": 0}}, RunContext.root("job", "main"), CancellationToken())
+
+    loopEvents = [
+        event["eventType"]
+        for event in events
+        if event["context"].callerNodeId == "loop"
+    ]
+    assert loopEvents == ["node.skipped"]
+    assert not any(
+        event["eventType"] == "workflow.started"
+        and event["context"].workflowId == "body"
+        for event in events
+    )
+
+
+def testRepeatZeroRejectsOutputThatCannotBePassedThrough() -> None:
+    payload = deepcopy(
+        _payload(
+            "repeat",
+            "test.body",
+            {
+                "mode": "repeat",
+                "bodyWorkflowId": "body",
+                "repeatCount": 0,
+                "maxIterations": 1,
+                "timeoutMs": 1000,
+            },
+        )
+    )
+    payload["workflows"]["main"]["nodes"][1]["outputPorts"] = {"result": "object"}
+    payload["workflows"]["main"]["edges"][1]["fromPort"] = "result"
+    document = ProjectDocument.model_validate(payload)
+
+    with pytest.raises(WorkflowCompileError) as error:
+        WorkflowCompiler(operatorRegistry={"test.body": _BodyOperator}).compile(document)
+
+    assert any(issue.code == "E_LOOP_ZERO_OUTPUT_UNSATISFIABLE" for issue in error.value.issues)

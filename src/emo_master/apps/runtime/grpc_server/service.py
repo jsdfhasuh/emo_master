@@ -4,7 +4,6 @@ import json
 import os
 from pathlib import Path
 import shutil
-import tempfile
 from typing import Any
 
 from emo_master.apps.runtime.events.event_store import EventStore
@@ -40,7 +39,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.sqliteStore.markOrphanedJobsFailed()
         self.jobRepository = JobRepository(self.sqliteStore)
         self.eventStore = EventStore(self.sqliteStore)
-        self.workspaceRoot = workspaceRoot or (Path(tempfile.gettempdir()) / "emo_master" / "jobs")
+        self.workspaceRoot = workspaceRoot or _defaultWorkspaceRoot()
         self.workspaceRoot.mkdir(parents=True, exist_ok=True)
         self._workspacePaths: dict[str, Path] = {}
         self._cleanupStaleWorkspaces()
@@ -417,4 +416,15 @@ def _defaultDbPath() -> Path:
     )
     if configured:
         return Path(configured).expanduser()
-    return Path(tempfile.gettempdir()) / "emo_master-runtime.db"
+    return _defaultDataDir() / "emo_master.db"
+
+
+def _defaultDataDir() -> Path:
+    configured = os.environ.get("EMO_RUNTIME_DATA_DIR")
+    if configured:
+        return Path(configured).expanduser()
+    return Path.home() / ".emo_master" / "runtime"
+
+
+def _defaultWorkspaceRoot() -> Path:
+    return _defaultDataDir() / "jobs"

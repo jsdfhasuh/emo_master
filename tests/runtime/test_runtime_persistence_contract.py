@@ -5,7 +5,11 @@ from pathlib import Path
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
-from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from emo_master.apps.runtime.grpc_server.service import (
+    RuntimeService,
+    _defaultDbPath,
+    _defaultWorkspaceRoot,
+)
 
 
 def testEventReplayMergesSqliteHistoryAfterMemoryRetention(tmp_path: Path) -> None:
@@ -69,3 +73,22 @@ def testRuntimeRestartMarksOrphanedJobAndPersistsFailureEvent(tmp_path: Path) ->
         assert events[-1].sequence == 2
     finally:
         service.close()
+
+
+def testDefaultRuntimeDataDirectoryAndDbPathAreStable(monkeypatch, tmp_path: Path) -> None:
+    dataDir = tmp_path / "runtime-data"
+    monkeypatch.setenv("EMO_RUNTIME_DATA_DIR", str(dataDir))
+    monkeypatch.delenv("EMO_RUNTIME_DB_PATH", raising=False)
+    monkeypatch.delenv("EMO_MASTER_RUNTIME_DB_PATH", raising=False)
+
+    assert _defaultDbPath() == dataDir / "emo_master.db"
+    assert _defaultWorkspaceRoot() == dataDir / "jobs"
+    assert _defaultDbPath() == _defaultDbPath()
+
+
+def testExplicitRuntimeDbPathOverridesDataDirectory(monkeypatch, tmp_path: Path) -> None:
+    explicit = tmp_path / "explicit.db"
+    monkeypatch.setenv("EMO_RUNTIME_DATA_DIR", str(tmp_path / "data"))
+    monkeypatch.setenv("EMO_RUNTIME_DB_PATH", str(explicit))
+
+    assert _defaultDbPath() == explicit

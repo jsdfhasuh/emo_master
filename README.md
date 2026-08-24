@@ -69,6 +69,15 @@ set EMO_RUNTIME_TARGET=127.0.0.1:50051
 python scripts/dev.py run-designer
 ```
 
+Runtime 默认将 SQLite 数据库保存在
+`~/.emo_master/runtime/emo_master.db`，Job workspace 保存在同一目录下的
+`jobs/`。可通过以下环境变量覆盖：
+
+- `EMO_RUNTIME_DB_PATH`：指定完整 SQLite 文件路径，优先级最高。
+- `EMO_RUNTIME_DATA_DIR`：指定运行时数据目录，数据库文件名固定为 `emo_master.db`。
+
+两个路径都支持 `~` 展开。显式传入的 `RuntimeService(dbPath=...)` 优先于环境变量。
+
 2) 在 Designer 中点击 `Import Image` 选择本地图片（png/jpg/jpeg/bmp/tif）
 
 3) 点击 `Start` 触发最小运行流程（内置 Canny）

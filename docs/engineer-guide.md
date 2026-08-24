@@ -38,6 +38,16 @@ EmoMaster 由 Designer、Runtime 和 `core` 契约层组成。`core` 只定义�
 旧 `executeGraph()`、内置 Image Loader、Canny、Image Saver、If、Switch、
 embedded Runtime 和 external gRPC Runtime 继续保留兼容入口。
 
+## Runtime 数据与 Job workspace
+
+默认 SQLite 路径是 `~/.emo_master/runtime/emo_master.db`，也可以通过
+`EMO_RUNTIME_DB_PATH` 指定完整文件路径，或通过 `EMO_RUNTIME_DATA_DIR` 指定
+数据目录。显式构造参数优先于环境变量。Job workspace 位于数据目录的
+`jobs/<jobId>/`：失败和中止的 Job 在终态回调中清理，成功 Job 为了保留
+`ArtifactRef` 在 Runtime 关闭前保留，关闭时统一回收；启动时还会清理未知、
+已终态和上次 Runtime 遗留的 workspace。进程和 Queue 在 Supervisor reap 路径
+中关闭并移除句柄。
+
 ## 修改边界
 
 新增项目字段先修改 Pydantic 模型、migration、Designer store、Runtime loader

@@ -1297,7 +1297,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self,
             "设置工作流接口",
             f"{label} JSON",
-            text=json.dumps(current, ensure_ascii=True),
+            json.dumps(current, ensure_ascii=True),
         )
         if not accepted:
             return None

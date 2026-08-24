@@ -4,6 +4,9 @@ import json
 from pathlib import Path
 import threading
 
+import pytest
+from pydantic import ValidationError
+
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
@@ -14,6 +17,13 @@ from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError
 from tests.runtime.runtime_test_utils import waitForTerminal
+
+
+class _EchoOperator:
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = params
+        _ = runtimeContext
+        return {"status": "ok", "outputs": {"value": inputs.get("value")}}
 
 
 def _v2_project() -> dict[str, object]:
@@ -79,6 +89,81 @@ def testProjectV1MigratesToV2() -> None:
     assert migrated["schemaVersion"] == "2.0"
     assert migrated["entryWorkflowId"] == "main"
     assert "main" in migrated["workflows"]
+
+
+def testV2RejectsUnknownTopLevelAndNodeFields() -> None:
+    payload = _v2_project()
+    payload["futureField"] = True
+    with pytest.raises(ValidationError):
+        migrateProjectPayload(payload)
+
+    payload = _v2_project()
+    payload["workflows"]["main"]["nodes"][0]["futureField"] = True
+    with pytest.raises(ValidationError):
+        migrateProjectPayload(payload)
+
+
+def testFutureProjectSchemaVersionIsRejected() -> None:
+    payload = _v2_project()
+    payload["schemaVersion"] = "2.1"
+
+    with pytest.raises(ValueError, match="unsupported project schemaVersion"):
+        migrateProjectPayload(payload)
+
+
+def testLegacyUnknownNodeKindIsNotSilentlyFiltered() -> None:
+    migrated = migrateProjectPayload(
+        {
+            "version": "1.0",
+            "designer": {
+                "nodes": [{"nodeId": "future", "kind": "future_kind"}],
+                "edges": [],
+            },
+        }
+    )
+
+    with pytest.raises(ValidationError):
+        ProjectDocument.model_validate(migrated)
+
+
+@pytest.mark.parametrize("value", [0, False, "", [], {}])
+def testFalsyWorkflowInputIsNotSkipped(value: object) -> None:
+    payload = _v2_project()
+    payload["project"]["projectId"] = "falsy-project"
+    payload["workflows"]["main"] = {
+        "name": "Main",
+        "inputs": {"value": "object"},
+        "outputs": {"value": "object"},
+        "nodes": [
+            {"nodeId": "input", "kind": "workflow_input"},
+            {
+                "nodeId": "echo",
+                "kind": "operator",
+                "operatorId": "test.echo",
+                "inputPorts": {"value": "object"},
+                "outputPorts": {"value": "object"},
+            },
+            {"nodeId": "output", "kind": "workflow_output"},
+        ],
+        "edges": [
+            {"fromNode": "input", "fromPort": "value", "toNode": "echo", "toPort": "value"},
+            {"fromNode": "echo", "fromPort": "value", "toNode": "output", "toPort": "value"},
+        ],
+        "layout": {"nodePositions": {}},
+    }
+    events = []
+    document = ProjectDocument.model_validate(payload)
+    compiled = WorkflowCompiler(operatorRegistry={"test.echo": _EchoOperator}).compile(document)
+    runner = WorkflowRunner(
+        compiled,
+        {"test.echo": _EchoOperator},
+        eventPublisher=lambda **event: events.append(event),
+    )
+
+    result = runner.run("main", {"value": value}, RunContext.root("job", "main"), CancellationToken())
+
+    assert result.outputs == {"value": value}
+    assert not any(event["eventType"] == "node.skipped" for event in events)
 
 
 def testWorkflowCompilerRejectsCycleInsideWorkflow() -> None:

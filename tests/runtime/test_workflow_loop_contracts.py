@@ -47,6 +47,15 @@ class _SlowBodyOperator:
         return {"status": "ok", "outputs": {"state": dict(inputs.get("state", {}))}}
 
 
+class _ContextBodyOperator:
+    contexts: list[dict[str, object]] = []
+
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = params
+        self.contexts.append(dict(runtimeContext))
+        return {"status": "ok", "outputs": {"state": dict(inputs.get("state", {}))}}
+
+
 def _payload(mode: str, bodyOperator: str, loopConfig: dict[str, object]) -> dict[str, object]:
     return {
         "schemaVersion": "2.0",
@@ -213,3 +222,64 @@ def testCancellationTokenAbortsBetweenIterations() -> None:
     token = CancellationToken(_CancelBodyOperator.cancelEvent)
     with pytest.raises(CancellationRequested):
         runner.run("main", {"state": {"count": 0}}, RunContext.root("job", "main"), token)
+
+
+def testRepeatZeroPreservesInputsWithoutRunningBody() -> None:
+    payload = _payload(
+        "repeat",
+        "test.body",
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": "body",
+            "repeatCount": 0,
+            "maxIterations": 2,
+            "timeoutMs": 1000,
+        },
+    )
+    runner = _runner(
+        payload,
+        {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
+    )
+
+    result = runner.run(
+        "main",
+        {"state": {"count": 4}},
+        RunContext.root("job", "main"),
+        CancellationToken(),
+    )
+
+    assert result.outputs == {"state": {"count": 4}}
+
+
+def testLoopBodyContextUsesIndependentWorkflowRunsAndIterationPaths() -> None:
+    _ContextBodyOperator.contexts.clear()
+    payload = _payload(
+        "repeat",
+        "test.context",
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": "body",
+            "repeatCount": 2,
+            "maxIterations": 2,
+            "timeoutMs": 1000,
+        },
+    )
+    runner = _runner(
+        payload,
+        {"test.condition": _ConditionOperator, "test.context": _ContextBodyOperator},
+    )
+    root = RunContext.root(
+        "job",
+        "main",
+        workspacePath="C:/workspace",
+        projectId="loop-project",
+    )
+
+    runner.run("main", {"state": {"count": 0}}, root, CancellationToken())
+
+    assert [context["iterationPath"] for context in _ContextBodyOperator.contexts] == [[0], [1]]
+    assert len({context["workflowRunId"] for context in _ContextBodyOperator.contexts}) == 2
+    assert all(context["workflowId"] == "body" for context in _ContextBodyOperator.contexts)
+    assert all(context["parentWorkflowRunId"] == root.workflowRunId for context in _ContextBodyOperator.contexts)
+    assert all(context["workspacePath"] == "C:/workspace" for context in _ContextBodyOperator.contexts)
+    assert all(context["projectId"] == "loop-project" for context in _ContextBodyOperator.contexts)

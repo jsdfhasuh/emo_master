@@ -3,7 +3,7 @@ from __future__ import annotations
 import multiprocessing
 import threading
 from dataclasses import replace
-from typing import Any, cast
+from typing import Any, Callable, cast
 
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.jobs.event_bridge import EventBridge
@@ -20,12 +20,14 @@ class JobSupervisor:
         maxConcurrentJobs: int = 2,
         gracefulStopTimeoutMs: int = 5000,
         heartbeatTimeoutMs: int = 5000,
+        terminalCallback: Callable[[str, str], None] | None = None,
     ) -> None:
         self.jobRepository = jobRepository
         self.eventStore = eventStore
         self.maxConcurrentJobs = max(1, maxConcurrentJobs)
         self.gracefulStopTimeoutMs = max(0, gracefulStopTimeoutMs)
         self.heartbeatTimeoutMs = max(100, heartbeatTimeoutMs)
+        self.terminalCallback = terminalCallback
         self._context = multiprocessing.get_context("spawn")
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
         self._bridges: dict[str, EventBridge] = {}
@@ -436,32 +438,44 @@ class JobSupervisor:
                 if bridge is not None:
                     bridge.requestStop()
                 if self._terminateProcess(process):
-                    self.eventStore.append(
-                        jobId,
-                        "process.terminated",
-                        "worker process terminated after event bridge failure",
-                        level="WARN",
-                        code="E_EVENT_PERSISTENCE",
-                        projectId=record.projectId,
-                        workflowId=record.workflowId,
-                    )
+                    try:
+                        self.eventStore.append(
+                            jobId,
+                            "process.terminated",
+                            "worker process terminated after event bridge failure",
+                            level="WARN",
+                            code="E_EVENT_PERSISTENCE",
+                            projectId=record.projectId,
+                            workflowId=record.workflowId,
+                        )
+                    except BaseException:
+                        pass
             message = f"event bridge failed: {error}"
-            stored = self.eventStore.append(
-                jobId,
-                "job.failed",
-                message,
-                level="ERROR",
-                code="E_EVENT_PERSISTENCE",
-                projectId=record.projectId,
-                workflowId=record.workflowId,
-            )
-            self._markTerminal(
-                jobId,
-                JobStatus.FAILED.value,
-                stored.timestampMs,
-                errorCode="E_EVENT_PERSISTENCE",
-                message=message,
-            )
+            try:
+                stored = self.eventStore.append(
+                    jobId,
+                    "job.failed",
+                    message,
+                    level="ERROR",
+                    code="E_EVENT_PERSISTENCE",
+                    projectId=record.projectId,
+                    workflowId=record.workflowId,
+                )
+            except BaseException:
+                self._markTerminalWithoutEvent(
+                    jobId,
+                    JobStatus.FAILED.value,
+                    errorCode="E_EVENT_PERSISTENCE",
+                    message=message,
+                )
+            else:
+                self._markTerminal(
+                    jobId,
+                    JobStatus.FAILED.value,
+                    stored.timestampMs,
+                    errorCode="E_EVENT_PERSISTENCE",
+                    message=message,
+                )
             self._reap(jobId)
 
     def _markTerminal(
@@ -486,6 +500,33 @@ class JobSupervisor:
         if stopMode is not None:
             changes["stopMode"] = stopMode
         self.jobRepository.update(jobId, **changes)
+        if self.terminalCallback is not None:
+            self.terminalCallback(jobId, status)
+
+    def _markTerminalWithoutEvent(
+        self,
+        jobId: str,
+        status: str,
+        errorCode: str = "",
+        message: str = "",
+    ) -> None:
+        """Keep in-memory job state terminal when event persistence is unavailable."""
+        self._terminalEvents.add(jobId)
+        try:
+            self.eventStore.markTerminal(jobId)
+        except BaseException:
+            pass
+        record = self.jobRepository.get(jobId)
+        if record is not None:
+            record.status = status
+            record.endedAtMs = nowMs()
+            record.errorCode = errorCode
+            record.message = message
+        if self.terminalCallback is not None:
+            try:
+                self.terminalCallback(jobId, status)
+            except BaseException:
+                pass
 
     def _terminateProcess(self, process) -> bool:
         if not process.is_alive():
@@ -541,6 +582,7 @@ class JobSupervisor:
         self._heartbeatIntervals.pop(jobId, None)
         self._heartbeatTimeouts.pop(jobId, None)
         self._heartbeatSeen.discard(jobId)
+        self._terminalEvents.discard(jobId)
 
     def _reap(self, jobId: str) -> None:
         handle = self._handles.get(jobId)
@@ -569,3 +611,6 @@ class JobSupervisor:
         self._heartbeatIntervals.pop(jobId, None)
         self._heartbeatTimeouts.pop(jobId, None)
         self._heartbeatSeen.discard(jobId)
+        record = self.jobRepository.get(jobId)
+        if record is None or record.isTerminal:
+            self._terminalEvents.discard(jobId)

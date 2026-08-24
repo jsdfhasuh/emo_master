@@ -54,6 +54,35 @@ def testListOperatorsReturnsRegisteredEntries() -> None:
     assert operatorInfo.icon_key != ""
 
 
+def testRuntimeServiceCleansTerminalWorkspacesAndJobMessages(tmp_path: Path) -> None:
+    workspaceRoot = tmp_path / "job-workspaces"
+    service = RuntimeService(
+        dbPath=tmp_path / "runtime.db",
+        workspaceRoot=workspaceRoot,
+    )
+    try:
+        failedWorkspace = workspaceRoot / "job-failed"
+        failedWorkspace.mkdir(parents=True)
+        service._workspacePaths["job-failed"] = failedWorkspace
+        service.jobMessages["job-failed"] = "accepted"
+
+        service._onJobTerminal("job-failed", "FAILED")
+
+        assert not failedWorkspace.exists()
+        assert "job-failed" not in service.jobMessages
+        assert "job-failed" not in service._workspacePaths
+
+        completedWorkspace = workspaceRoot / "job-completed"
+        completedWorkspace.mkdir(parents=True)
+        service._workspacePaths["job-completed"] = completedWorkspace
+        service._onJobTerminal("job-completed", "COMPLETED")
+        assert completedWorkspace.exists()
+    finally:
+        service.close()
+
+    assert not completedWorkspace.exists()
+
+
 def testStreamJobEventsReturnsLifecycleEvents(tmp_path: Path) -> None:
     projectDir = tmp_path / "event_project"
     projectDir.mkdir(parents=True, exist_ok=True)

@@ -58,15 +58,19 @@ class LoopRunner:
         count = _requiredInt(node.loop, "repeatCount")
         if count < 0 or count > maximum:
             raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "repeatCount exceeds maxIterations")
-        outputs: dict[str, object] = {}
+        # A zero-count repeat is a no-op and preserves its input interface.
+        outputs: dict[str, object] = dict(inputs)
         for index in range(count):
             self._check(cancellation, timeoutMs, startedAt)
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
             bodyInputs = dict(inputs)
             bodyInputs["__iteration__"] = index
+            bodyContext = context.childWorkflow(
+                str(node.loop["bodyWorkflowId"]), node.nodeId
+            ).forIteration(index)
             bodyResult = self.workflowRunner.run(
-                node.loop["bodyWorkflowId"], bodyInputs, iterationContext, cancellation
+                node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
             )
             outputs = dict(bodyResult.outputs)
             self._iterationEvent("loop.iteration.completed", iterationContext, index)
@@ -86,8 +90,11 @@ class LoopRunner:
             self._iterationEvent("loop.iteration.started", iterationContext, index)
             bodyInputs = dict(inputs)
             bodyInputs.update({"item": item, "index": index, "__iteration__": index})
+            bodyContext = context.childWorkflow(
+                str(node.loop["bodyWorkflowId"]), node.nodeId
+            ).forIteration(index)
             bodyResult = self.workflowRunner.run(
-                node.loop["bodyWorkflowId"], bodyInputs, iterationContext, cancellation
+                node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
             )
             results.append(dict(bodyResult.outputs))
             self._iterationEvent("loop.iteration.completed", iterationContext, index)
@@ -102,10 +109,13 @@ class LoopRunner:
             self._check(cancellation, timeoutMs, startedAt)
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
+            conditionContext = context.childWorkflow(
+                str(node.loop["conditionWorkflowId"]), node.nodeId
+            ).forIteration(index)
             conditionResult = self.workflowRunner.run(
                 node.loop["conditionWorkflowId"],
                 {"state": state},
-                iterationContext,
+                conditionContext,
                 cancellation,
             )
             condition = conditionResult.outputs.get("continue")
@@ -114,10 +124,13 @@ class LoopRunner:
             if not condition:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
                 return self.workflowRunner.result({"state": state})
+            bodyContext = context.childWorkflow(
+                str(node.loop["bodyWorkflowId"]), node.nodeId
+            ).forIteration(index)
             bodyResult = self.workflowRunner.run(
                 node.loop["bodyWorkflowId"],
                 {"state": state, "__iteration__": index},
-                iterationContext,
+                bodyContext,
                 cancellation,
             )
             nextState = bodyResult.outputs.get("state")

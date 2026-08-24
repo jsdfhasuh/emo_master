@@ -1,10 +1,11 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import shutil
 import tempfile
 from typing import Any
-from uuid import uuid4
 
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.events.models import RuntimeEvent
@@ -30,14 +31,19 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         dbPath: Path | None = None,
         pluginRootPaths: tuple[str, ...] | None = None,
         maxConcurrentJobs: int = 2,
+        workspaceRoot: Path | None = None,
     ) -> None:
         if dbPath is None:
-            dbPath = Path(tempfile.gettempdir()) / f"emo_master-runtime-{uuid4().hex}.db"
+            dbPath = _defaultDbPath()
         self.sqliteStore = SqliteStore(dbPath)
         self.sqliteStore.initialize()
         self.sqliteStore.markOrphanedJobsFailed()
         self.jobRepository = JobRepository(self.sqliteStore)
         self.eventStore = EventStore(self.sqliteStore)
+        self.workspaceRoot = workspaceRoot or (Path(tempfile.gettempdir()) / "emo_master" / "jobs")
+        self.workspaceRoot.mkdir(parents=True, exist_ok=True)
+        self._workspacePaths: dict[str, Path] = {}
+        self._cleanupStaleWorkspaces()
         self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
         self.pluginRootPaths = pluginRootPaths or (str(self._builtinsRoot()),)
         self.jobSupervisor = JobSupervisor(
@@ -45,6 +51,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self.eventStore,
             maxConcurrentJobs=maxConcurrentJobs,
             heartbeatTimeoutMs=5000,
+            terminalCallback=self._onJobTerminal,
         )
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
@@ -138,6 +145,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
         self.jobMessages[record.jobId] = "job accepted"
         snapshotPath, workspacePath = self._createSnapshot(record.jobId, document)
+        self._workspacePaths[record.jobId] = workspacePath
         spec = JobProcessSpec(
             jobId=record.jobId,
             projectSnapshotPath=str(snapshotPath),
@@ -172,6 +180,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 errorCode=errorCode,
                 message=str(err),
             )
+            self.jobMessages.pop(record.jobId, None)
+            self._removeWorkspace(record.jobId)
             return runtime_pb2.StartJobReply(
                 ok=False, job_id=record.jobId, status="FAILED", message=str(err)
             )
@@ -298,6 +308,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
 
     def close(self) -> None:
         self.jobSupervisor.shutdown()
+        for jobId in list(self._workspacePaths):
+            self._removeWorkspace(jobId)
+        self._cleanupStaleWorkspaces()
 
     def _eventsAfter(self, jobId: str, afterSequence: int) -> list[RuntimeEvent]:
         return self.eventStore.readMerged(jobId, afterSequence)
@@ -322,7 +335,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
 
     def _createSnapshot(self, jobId: str, document: ProjectDocument) -> tuple[Path, Path]:
-        workspace = Path(tempfile.gettempdir()) / "emo_master" / "jobs" / jobId
+        workspace = self.workspaceRoot / jobId
         workspace.mkdir(parents=True, exist_ok=True)
         snapshot = workspace / "project.json"
         snapshot.write_text(
@@ -330,6 +343,34 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             encoding="utf-8",
         )
         return snapshot, workspace
+
+    def _onJobTerminal(self, jobId: str, status: str) -> None:
+        self.jobMessages.pop(jobId, None)
+        if status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
+            self._removeWorkspace(jobId)
+
+    def _removeWorkspace(self, jobId: str) -> None:
+        workspace = self._workspacePaths.pop(jobId, self.workspaceRoot / jobId)
+        try:
+            if workspace.exists():
+                shutil.rmtree(workspace)
+        except OSError:
+            # A running third-party operator may still hold a file briefly;
+            # the next Runtime start will retry stale workspace cleanup.
+            return
+
+    def _cleanupStaleWorkspaces(self) -> None:
+        if not self.workspaceRoot.exists():
+            return
+        for workspace in self.workspaceRoot.iterdir():
+            if not workspace.is_dir():
+                continue
+            record = self.jobRepository.get(workspace.name)
+            if record is None or record.isTerminal:
+                try:
+                    shutil.rmtree(workspace)
+                except OSError:
+                    continue
 
     def _scanBuiltins(self, pluginRootPaths: tuple[str, ...] | None):
         roots = pluginRootPaths or (str(self._builtinsRoot()),)
@@ -368,3 +409,12 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.loadedDocument = None
         self.loadedPayload = None
         self.jobMessages["__load__"] = message
+
+
+def _defaultDbPath() -> Path:
+    configured = os.environ.get("EMO_RUNTIME_DB_PATH") or os.environ.get(
+        "EMO_MASTER_RUNTIME_DB_PATH"
+    )
+    if configured:
+        return Path(configured).expanduser()
+    return Path(tempfile.gettempdir()) / "emo_master-runtime.db"

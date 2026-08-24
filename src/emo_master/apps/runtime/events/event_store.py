@@ -16,7 +16,9 @@ class EventStore:
         self._events: dict[str, list[RuntimeEvent]] = {}
         self._sequences: dict[str, int] = {}
         self._terminalJobs: set[str] = set()
-        self._condition = threading.Condition()
+        # follow() checks retained and persisted history while waiting on the
+        # same condition.  A re-entrant lock avoids self-deadlocking there.
+        self._condition = threading.Condition(threading.RLock())
 
     def append(
         self,

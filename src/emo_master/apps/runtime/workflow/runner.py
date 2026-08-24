@@ -73,6 +73,14 @@ class WorkflowRunner:
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
                 self.publish("node.started", nodeContext, f"node started: {node.nodeId}")
+                if node.kind in {"subflow", "loop"} and node.inputPorts and not nodeInput:
+                    self.publish(
+                        "node.skipped",
+                        nodeContext,
+                        f"node skipped: {node.nodeId}",
+                        payload={"status": "SKIPPED"},
+                    )
+                    continue
                 try:
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation
@@ -99,7 +107,12 @@ class WorkflowRunner:
                 cancellation.raise_if_cancelled()
                 if node.kind == "operator" and node.inputPorts and not nodeInput:
                     continue
-                payload = {"status": "COMPLETED", "outputs": _jsonSafe(nodeOutputs)}
+                payload = {
+                    "status": "COMPLETED",
+                    "outputs": _jsonSafe(nodeOutputs),
+                    "metrics": _jsonSafe(nodeMetrics),
+                    "diagnostics": _jsonSafe(nodeDiagnostics),
+                }
                 branch = _branchName(node.operatorId, nodeOutputs)
                 if branch:
                     payload["branch"] = branch

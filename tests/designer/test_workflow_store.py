@@ -59,6 +59,19 @@ def testWorkflowStoreRoundTripsMultipleWorkflowsAndEntry() -> None:
     assert output["workflows"]["main"]["layout"]["nodePositions"]["subflow"]["x"] == 40.0
 
 
+def testWorkflowStoreAdvancesRevisionOnlyAfterCommittedSave() -> None:
+    store = WorkflowStore(_payload())
+
+    first = store.toPayload()
+    assert first["project"]["revision"] == 2
+    store.commitSavedPayload(first)
+    second = store.toPayload()
+    assert second["project"]["revision"] == 3
+
+    third = store.toPayload()
+    assert third["project"]["revision"] == 3
+
+
 def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete() -> None:
     store = WorkflowStore(_payload())
     model = FlowGraphModel()

@@ -48,6 +48,9 @@ class WorkflowController:
     def saveProjectPayload(self, projectName: str | None = None) -> dict[str, object]:
         return self.buildPayload(projectName)
 
+    def commitSavedPayload(self, payload: dict[str, object]) -> None:
+        self.workflowStore.commitSavedPayload(payload)
+
     def switchWorkflow(self, workflowId: str) -> None:
         self.captureActiveWorkflow()
         self.workflowStore.setActiveWorkflow(workflowId)
@@ -86,6 +89,7 @@ class WorkflowController:
         target = self.workflowStore.get(targetWorkflowId)
         node = self.flowModel.nodes[nodeId]
         node.kind = "subflow"
+        node.operatorId = ""
         node.targetWorkflowId = targetWorkflowId
         node.inputPorts = portTypes(target.inputs)
         node.outputPorts = portTypes(target.outputs)
@@ -99,8 +103,74 @@ class WorkflowController:
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise ValueError(f"{key} must be a non-negative integer")
         node = self.flowModel.nodes[nodeId]
+        bodyWorkflowId = config.get("bodyWorkflowId")
+        if bodyWorkflowId is None and mode in {"repeat", "foreach"}:
+            bodyWorkflowId = node.targetWorkflowId
+            if bodyWorkflowId is None:
+                bodyWorkflowId = next(
+                    (
+                        workflowId
+                        for workflowId in self.workflowStore.workflowOrder
+                        if workflowId != self.activeWorkflowId
+                    ),
+                    None,
+                )
+        if not isinstance(bodyWorkflowId, str) or bodyWorkflowId not in self.workflowStore.workflows:
+            raise ValueError("bodyWorkflowId must reference an existing workflow")
+        if mode == "repeat":
+            repeatCount = config.get("repeatCount")
+            if (
+                not isinstance(repeatCount, int)
+                or isinstance(repeatCount, bool)
+                or repeatCount < 0
+            ):
+                raise ValueError("repeatCount must be a non-negative integer")
+        if mode == "while":
+            conditionWorkflowId = config.get("conditionWorkflowId")
+            if (
+                not isinstance(conditionWorkflowId, str)
+                or conditionWorkflowId not in self.workflowStore.workflows
+            ):
+                raise ValueError("conditionWorkflowId must reference an existing workflow")
         node.kind = "loop"
-        node.loop = deepcopy(config)
+        node.operatorId = ""
+        normalizedConfig = deepcopy(config)
+        normalizedConfig["bodyWorkflowId"] = bodyWorkflowId
+        node.loop = normalizedConfig
+        if mode == "foreach":
+            node.inputPorts = {"items": "list"}
+            node.outputPorts = {"results": "list"}
+        elif mode == "while":
+            node.inputPorts = {"state": "object"}
+            node.outputPorts = {"state": "object"}
+        else:
+            target = self.workflowStore.get(bodyWorkflowId)
+            node.inputPorts = portTypes(target.inputs)
+            node.outputPorts = portTypes(target.outputs)
+
+    def setWorkflowInterface(
+        self,
+        workflowId: str,
+        inputs: dict[str, object],
+        outputs: dict[str, object],
+    ) -> None:
+        workflow = self.workflowStore.get(workflowId)
+        workflow.inputs = deepcopy(inputs)
+        workflow.outputs = deepcopy(outputs)
+        self._refreshSubflowPorts(workflowId)
+        if workflowId == self.activeWorkflowId:
+            self._renderActive()
+
+    def _refreshSubflowPorts(self, targetWorkflowId: str) -> None:
+        target = self.workflowStore.get(targetWorkflowId)
+        inputPorts = portTypes(target.inputs)
+        outputPorts = portTypes(target.outputs)
+        for workflow in self.workflowStore.workflows.values():
+            for node in workflow.nodes:
+                if node.get("kind") != "subflow" or node.get("targetWorkflowId") != targetWorkflowId:
+                    continue
+                node["inputPorts"] = deepcopy(inputPorts)
+                node["outputPorts"] = deepcopy(outputPorts)
 
     def referencesTo(self, workflowId: str) -> list[str]:
         self.captureActiveWorkflow()

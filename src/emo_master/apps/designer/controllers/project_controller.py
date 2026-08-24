@@ -162,6 +162,8 @@ class ProjectController:
         createProjectSkeleton(projectDir, projectName)
         payload = self._buildProjectPayload(projectName, loadedProjectPath)
         saveProject(projectDir, payload)
+        if self.workflowController is not None:
+            self.workflowController.commitSavedPayload(payload)
         self.appendLog("INFO", f"项目已保存：{projectDir / 'project.json'}")
         return True, projectDir
 

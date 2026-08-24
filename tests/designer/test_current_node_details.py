@@ -35,6 +35,53 @@ def testCurrentNodePanelShowsEmptyState() -> None:
     assert "未选中节点" in summary
 
 
+def testMainWindowRestoresRuntimeStateFromCurrentJobOnly() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+    nodeId = window.flowModel.addNode(
+        operatorId="vision.demo.echo",
+        displayName="Echo",
+        inputPorts={},
+        outputPorts={"value": "object"},
+    )
+    window.currentJobId = "job-current"
+    window._nodeRuntimeStateByWorkflowRun[
+        ("main", "run-old", nodeId)
+    ] = {"status": "COMPLETED", "sequence": 100, "jobId": "job-old"}
+    window._nodeRuntimeStateByWorkflowRun[
+        ("main", "run-current", nodeId)
+    ] = {"status": "RUNNING", "sequence": 1, "jobId": "job-current"}
+
+    window._restoreActiveWorkflowRuntimeState()
+
+    assert window._nodeRuntimeState[nodeId]["status"] == "RUNNING"
+
+
+def testMainWindowIgnoresUnknownWorkflowEventFromAnotherJob() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+    nodeId = window.flowModel.addNode(
+        operatorId="vision.demo.echo",
+        displayName="Echo",
+        inputPorts={},
+        outputPorts={"value": "object"},
+    )
+    window.currentJobId = "job-current"
+
+    window.applyRuntimeEventToNode(
+        {
+            "eventType": "node.completed",
+            "nodeId": nodeId,
+            "workflowId": "",
+            "jobId": "job-other",
+            "payload": {"status": "COMPLETED"},
+            "sequence": 7,
+        }
+    )
+
+    assert nodeId not in window._nodeRuntimeState
+
+
 def testNodeDetailsPresenterBuildsEmptyState() -> None:
     model = FlowGraphModel()
     presenter = NodeDetailsPresenter(flowModel=model, nodeRuntimeState={})

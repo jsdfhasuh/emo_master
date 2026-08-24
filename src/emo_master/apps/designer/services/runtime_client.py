@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass
 from collections.abc import Iterable as IterableABC
 import inspect
+import threading
 from typing import Any, Iterable, Protocol, cast
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
@@ -65,10 +66,58 @@ class RuntimeServiceProtocol(Protocol):
     def StreamJobEvents(self, request, context) -> Iterable[object]: ...
 
 
+class RuntimeEventStream:
+    """Lazy DTO iterator over a unary-stream RPC call.
+
+    The gRPC call is intentionally kept alive so a consumer can cancel a
+    long-lived follow subscription without waiting for the server to finish.
+    """
+
+    def __init__(self, call: object, converter, onClose) -> None:
+        self._call = call
+        self._iterator = iter(call) if isinstance(call, IterableABC) else iter(())
+        self._converter = converter
+        self._onClose = onClose
+        self._closed = False
+
+    def __iter__(self):
+        return self
+
+    def __next__(self) -> RuntimeEventDTO:
+        if self._closed:
+            raise StopIteration
+        try:
+            event = next(self._iterator)
+        except StopIteration:
+            self.close()
+            raise
+        except BaseException:
+            self.close()
+            raise
+        return self._converter(event)
+
+    def cancel(self) -> None:
+        cancel = getattr(self._call, "cancel", None)
+        if callable(cancel):
+            cancel()
+        self.close()
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        self._closed = True
+        close = getattr(self._call, "close", None)
+        if callable(close):
+            close()
+        self._onClose(self)
+
+
 class RuntimeClient:
     def __init__(self, runtimeService: RuntimeServiceProtocol, deadlineMs: int = 10000) -> None:
         self.runtimeService = runtimeService
         self.deadlineMs = deadlineMs
+        self._streamLock = threading.RLock()
+        self._activeStreams: dict[str, RuntimeEventStream] = {}
 
     def listOperators(self) -> list[OperatorDefinition]:
         reply = self._call("ListOperators", runtime_pb2.ListOperatorsRequest())
@@ -147,14 +196,46 @@ class RuntimeClient:
 
     def streamJobEvents(
         self, jobId: str, afterSequence: int = 0, follow: bool = False
-    ) -> list[RuntimeEventDTO]:
+    ) -> Iterable[RuntimeEventDTO]:
         request = runtime_pb2.StreamJobEventsRequest(
             job_id=jobId, after_sequence=afterSequence, follow=follow
         )
         events = self._call("StreamJobEvents", request, useDeadline=False)
         if not isinstance(events, IterableABC):
             return []
-        return [self._toEventDTO(event) for event in events]
+        if not follow:
+            return [self._toEventDTO(event) for event in events]
+        with self._streamLock:
+            previous = self._activeStreams.pop(jobId, None)
+            if previous is not None:
+                previous.cancel()
+            stream = RuntimeEventStream(
+                events,
+                self._toEventDTO,
+                lambda value: self._removeActiveStream(jobId, value),
+            )
+            self._activeStreams[jobId] = stream
+            return stream
+
+    def cancelEventStream(self, jobId: str) -> bool:
+        with self._streamLock:
+            stream = self._activeStreams.pop(jobId, None)
+        if stream is None:
+            return False
+        stream.cancel()
+        return True
+
+    def close(self) -> None:
+        with self._streamLock:
+            streams = list(self._activeStreams.values())
+            self._activeStreams.clear()
+        for stream in streams:
+            stream.cancel()
+
+    def _removeActiveStream(self, jobId: str, stream: RuntimeEventStream) -> None:
+        with self._streamLock:
+            if self._activeStreams.get(jobId) is stream:
+                self._activeStreams.pop(jobId, None)
 
     def _call(self, methodName: str, request: object, useDeadline: bool = True):
         method = getattr(self.runtimeService, methodName)

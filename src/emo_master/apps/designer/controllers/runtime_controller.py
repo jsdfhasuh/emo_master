@@ -38,6 +38,9 @@ class RuntimeController:
         self._worker: RuntimeWorker | None = None
 
     def startJob(self) -> None:
+        if self._worker is not None and self._worker.isRunning():
+            self.appendLog("WARN", "已有作业正在运行")
+            return
         loadedProjectPath = self.getLoadedProjectPath()
         if loadedProjectPath is None:
             self.appendLog("WARN", "尚未加载项目")
@@ -54,6 +57,9 @@ class RuntimeController:
         worker.eventReceived.connect(self._onRuntimeEvent)
         worker.statusChanged.connect(self._onJobStatus)
         worker.failed.connect(self._onWorkerFailed)
+        finished = getattr(worker, "finished", None)
+        if finished is not None and hasattr(finished, "connect"):
+            finished.connect(lambda: self._onWorkerFinished(worker))
         self._worker = worker
         self.setIsJobRunning(True)
         self.runtimePanelState.updateJob("STARTING", "正在启动作业")
@@ -70,6 +76,11 @@ class RuntimeController:
         )
         self.appendLog("INFO", f"作业已接受：{currentJobId}")
         self.refreshRuntimePanelView()
+
+    def _onWorkerFinished(self, worker: RuntimeWorker) -> None:
+        if self._worker is worker:
+            self._worker = None
+        self.updateToolbarState()
 
     def _onRuntimeEvent(self, jobEvent) -> None:
         eventType = str(getattr(jobEvent, "event_type", getattr(jobEvent, "eventType", "")))
@@ -122,6 +133,8 @@ class RuntimeController:
         self.appendLog("INFO", f"作业状态：{runtimeStatus} | {runtimeMessage}")
         if runtimeStatus in ("COMPLETED", "FAILED", "ABORTED"):
             self.setIsJobRunning(False)
+        elif runtimeStatus in ("ACCEPTED", "STARTING", "RUNNING", "STOPPING"):
+            self.setIsJobRunning(True)
         self.refreshRuntimePanelView()
         self.updateToolbarState()
 
@@ -137,7 +150,16 @@ class RuntimeController:
         if currentJobId is None:
             self.appendLog("WARN", "当前没有活动作业")
             return
-        reply = self.runtimeClient.stopJob(currentJobId)
+        try:
+            reply = self.runtimeClient.stopJob(currentJobId)
+        except Exception as err:
+            self.appendLog("ERROR", f"停止作业失败：{err}")
+            if self._worker is not None:
+                self._worker.requestStop()
+            self.updateToolbarState()
+            return
+        if self._worker is not None:
+            self._worker.requestStop()
         stopStatus = str(getattr(reply, "status", "UNKNOWN"))
         stopMessage = str(getattr(reply, "message", ""))
         self.runtimePanelState.updateJob(stopStatus, stopMessage)
@@ -146,5 +168,7 @@ class RuntimeController:
         if stopStatus in ("COMPLETED", "FAILED", "ABORTED"):
             self.setIsJobRunning(False)
         else:
-            self.setIsJobRunning(not bool(getattr(reply, "ok", False)))
+            # STOPPING is an active state.  Keep the start action locked until
+            # the worker observes a terminal status.
+            self.setIsJobRunning(True)
         self.updateToolbarState()

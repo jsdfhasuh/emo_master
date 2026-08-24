@@ -6,6 +6,10 @@ class RuntimePanelState:
     nodeStatus: dict[str, str] = field(default_factory=dict)
     nodeStatusByRun: dict[tuple[str, str], str] = field(default_factory=dict)
     iterationPathByNode: dict[tuple[str, str], tuple[int, ...]] = field(default_factory=dict)
+    nodeStatusByWorkflowRun: dict[tuple[str, str, str], str] = field(default_factory=dict)
+    iterationPathByWorkflowRun: dict[tuple[str, str, str], tuple[int, ...]] = field(default_factory=dict)
+    nodeMetricsByWorkflowRun: dict[tuple[str, str, str], dict[str, object]] = field(default_factory=dict)
+    nodeDiagnosticsByWorkflowRun: dict[tuple[str, str, str], dict[str, object]] = field(default_factory=dict)
     latestImagePath: str | None = None
     latestArtifact: dict[str, object] = field(default_factory=dict)
     jobStatus: str = "IDLE"
@@ -21,6 +25,8 @@ class RuntimePanelState:
         message = event.get("message")
         workflowRunId = event.get("workflowRunId")
         runId = workflowRunId if isinstance(workflowRunId, str) else ""
+        workflowIdRaw = event.get("workflowId")
+        workflowId = workflowIdRaw if isinstance(workflowIdRaw, str) else ""
         iterationRaw = event.get("iterationPath", ())
         iterationPath = (
             tuple(item for item in iterationRaw if isinstance(item, int) and not isinstance(item, bool))
@@ -40,6 +46,17 @@ class RuntimePanelState:
                 self.nodeStatus[f"{runId}:{nodeId}"] = status
                 self.nodeStatusByRun[(runId, nodeId)] = status
                 self.iterationPathByNode[(runId, nodeId)] = iterationPath
+                key = (workflowId, runId, nodeId)
+                self.nodeStatusByWorkflowRun[key] = status
+                self.iterationPathByWorkflowRun[key] = iterationPath
+                payload = event.get("payload")
+                if isinstance(payload, dict):
+                    metrics = payload.get("metrics")
+                    diagnostics = payload.get("diagnostics")
+                    if isinstance(metrics, dict):
+                        self.nodeMetricsByWorkflowRun[key] = dict(metrics)
+                    if isinstance(diagnostics, dict):
+                        self.nodeDiagnosticsByWorkflowRun[key] = dict(diagnostics)
         if eventType == "artifact.created":
             payload = event.get("payload")
             artifact = payload.get("artifact") if isinstance(payload, dict) else None
@@ -57,6 +74,10 @@ class RuntimePanelState:
                 ].strip()
             self.jobStatus = "COMPLETED"
             self.lastMessage = message
+        if eventType == "job.stopping":
+            self.jobStatus = "STOPPING"
+            if isinstance(message, str):
+                self.lastMessage = message
         if eventType == "job.failed" and isinstance(message, str):
             self.jobStatus = "FAILED"
             self.lastMessage = message

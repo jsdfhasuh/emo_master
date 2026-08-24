@@ -51,3 +51,32 @@ def testRuntimeControllerPreservesEventCorrelationMetadata() -> None:
     assert received[0]["timestampMs"] == 123
     assert received[0]["parentWorkflowRunId"] == "run-main"
     assert received[0]["iterationPath"] == (2, 4)
+
+
+def testRuntimeControllerKeepsToolbarLockedWhileStopping() -> None:
+    class Panel(_Panel):
+        def updateJob(self, status, message="") -> None:
+            self.status = status
+            self.message = message
+
+    panel = Panel()
+    running = []
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=running.append,
+        getLoadedProjectPath=lambda: None,
+        getCurrentJobId=lambda: None,
+    )
+
+    controller._onJobStatus(type("Status", (), {"status": "STOPPING", "message": "stopping"})())
+    controller._onJobStatus(type("Status", (), {"status": "COMPLETED", "message": "done"})())
+
+    assert running == [True, False]
+    assert panel.status == "COMPLETED"

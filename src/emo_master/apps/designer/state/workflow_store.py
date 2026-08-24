@@ -289,6 +289,12 @@ class WorkflowStore:
     def toProjectPayload(self, projectName: str | None = None) -> dict[str, object]:
         return self.toPayload(projectName)
 
+    def commitSavedPayload(self, payload: dict[str, object]) -> None:
+        """Advance project metadata only after an atomic save succeeds."""
+        project = payload.get("project")
+        if isinstance(project, dict):
+            self.project = deepcopy(project)
+
 
 def _slug(value: str) -> str:
     normalized = "".join(char.lower() if char.isalnum() else "-" for char in value)

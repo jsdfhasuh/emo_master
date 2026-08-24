@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import threading
 import inspect
+import time
 from typing import Any, Callable
 
 
@@ -28,9 +29,39 @@ try:
             self.projectId = projectId
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
+            self._stopEvent = threading.Event()
+            self._streamLock = threading.RLock()
+            self._stream = None
+            self._jobId = ""
 
         def run(self) -> None:  # type: ignore[override]
             _runWorker(self)
+
+        def requestStop(self) -> None:
+            self._stopEvent.set()
+            with self._streamLock:
+                stream = self._stream
+            if stream is not None:
+                cancel = getattr(stream, "cancel", None)
+                if callable(cancel):
+                    cancel()
+            cancelClientStream = getattr(self.runtimeClient, "cancelEventStream", None)
+            if callable(cancelClientStream) and self._jobId:
+                cancelClientStream(self._jobId)
+
+        def stopRequested(self) -> bool:
+            return self._stopEvent.is_set()
+
+        def setActiveStream(self, stream) -> None:
+            with self._streamLock:
+                self._stream = stream
+
+        def clearActiveStream(self) -> None:
+            with self._streamLock:
+                self._stream = None
+
+        def setJobId(self, jobId: str) -> None:
+            self._jobId = jobId
 
 except Exception:  # pragma: no cover
 
@@ -65,6 +96,10 @@ except Exception:  # pragma: no cover
             self.failed = _Signal()
             self.finished = _Signal()
             self._thread: threading.Thread | None = None
+            self._stopEvent = threading.Event()
+            self._streamLock = threading.RLock()
+            self._stream = None
+            self._jobId = ""
 
         def start(self) -> None:
             self._thread = threading.Thread(target=self.run, daemon=True)
@@ -76,16 +111,46 @@ except Exception:  # pragma: no cover
             finally:
                 self.finished.emit()
 
-        def wait(self, timeoutMs: int = -1) -> None:
+        def wait(self, timeoutMs: int = -1) -> bool:
             if self._thread is not None:
                 self._thread.join(None if timeoutMs < 0 else timeoutMs / 1000.0)
+                return not self._thread.is_alive()
+            return True
 
         def isRunning(self) -> bool:
             return self._thread is not None and self._thread.is_alive()
 
+        def requestStop(self) -> None:
+            self._stopEvent.set()
+            with self._streamLock:
+                stream = self._stream
+            if stream is not None:
+                cancel = getattr(stream, "cancel", None)
+                if callable(cancel):
+                    cancel()
+            cancelClientStream = getattr(self.runtimeClient, "cancelEventStream", None)
+            if callable(cancelClientStream) and self._jobId:
+                cancelClientStream(self._jobId)
+
+        def stopRequested(self) -> bool:
+            return self._stopEvent.is_set()
+
+        def setActiveStream(self, stream) -> None:
+            with self._streamLock:
+                self._stream = stream
+
+        def clearActiveStream(self) -> None:
+            with self._streamLock:
+                self._stream = None
+
+        def setJobId(self, jobId: str) -> None:
+            self._jobId = jobId
+
 
 def _runWorker(worker: RuntimeWorker) -> None:
     try:
+        if worker.stopRequested():
+            return
         reply = _startJobCompat(worker)
         if not bool(getattr(reply, "ok", False)):
             worker.failed.emit(str(getattr(reply, "message", "runtime job failed")))
@@ -93,15 +158,58 @@ def _runWorker(worker: RuntimeWorker) -> None:
             return
         worker.jobAccepted.emit(reply)
         jobId = str(getattr(reply, "job_id", ""))
+        worker.setJobId(jobId)
         if jobId == "":
             worker.failed.emit("runtime returned an empty job id")
             return
+        if worker.stopRequested():
+            stopJob = getattr(worker.runtimeClient, "stopJob", None)
+            if callable(stopJob):
+                try:
+                    stopJob(jobId)
+                except Exception:
+                    pass
+            _emitStatusAfterStop(worker, jobId)
+            return
         events = _streamEventsCompat(worker.runtimeClient, jobId)
-        for event in events:
-            worker.eventReceived.emit(event)
-        worker.statusChanged.emit(worker.runtimeClient.getJobStatus(jobId))
+        worker.setActiveStream(events)
+        try:
+            for event in events:
+                worker.eventReceived.emit(event)
+        except BaseException:
+            if not worker.stopRequested():
+                raise
+        finally:
+            close = getattr(events, "close", None)
+            if callable(close):
+                close()
+            worker.clearActiveStream()
+        if worker.stopRequested():
+            _emitStatusAfterStop(worker, jobId)
+        else:
+            worker.statusChanged.emit(worker.runtimeClient.getJobStatus(jobId))
     except Exception as err:
-        worker.failed.emit(str(err))
+        if worker.stopRequested():
+            _emitStatusAfterStop(worker, worker._jobId)
+        else:
+            worker.failed.emit(str(err))
+
+
+def _emitStatusAfterStop(worker: RuntimeWorker, jobId: str) -> None:
+    if jobId == "":
+        return
+    deadline = time.monotonic() + 10.0
+    while True:
+        try:
+            status = worker.runtimeClient.getJobStatus(jobId)
+        except Exception:
+            return
+        worker.statusChanged.emit(status)
+        if str(getattr(status, "status", "")) in {"COMPLETED", "FAILED", "ABORTED"}:
+            return
+        if time.monotonic() >= deadline:
+            return
+        threading.Event().wait(0.1)
 
 
 def _startJobCompat(worker: RuntimeWorker):

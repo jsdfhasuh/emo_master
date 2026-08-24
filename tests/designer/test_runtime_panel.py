@@ -36,3 +36,12 @@ def testRuntimePanelStateUpdateJobStatus() -> None:
     state.updateJob("RUNNING", "processing")
     assert state.jobStatus == "RUNNING"
     assert state.lastMessage == "processing"
+
+
+def testRuntimePanelStateKeepsStoppingAsActiveStatus() -> None:
+    state = RuntimePanelState()
+
+    state.applyEvent({"eventType": "job.stopping", "message": "stopping"})
+
+    assert state.jobStatus == "STOPPING"
+    assert state.lastMessage == "stopping"

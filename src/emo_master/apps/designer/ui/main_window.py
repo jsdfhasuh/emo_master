@@ -35,6 +35,7 @@ try:
         QHBoxLayout,
         QInputDialog,
         QLabel,
+        QLineEdit,
         QListWidget,
         QListWidgetItem,
         QMainWindow,
@@ -494,6 +495,9 @@ except Exception:  # pragma: no cover
             _ = title
             _ = label
             return text, False
+
+    class QLineEdit:  # type: ignore[no-redef]
+        Normal = 0
 
     _userRole = 0
 
@@ -1297,6 +1301,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self,
             "设置工作流接口",
             f"{label} JSON",
+            QLineEdit.Normal,
             json.dumps(current, ensure_ascii=True),
         )
         if not accepted:

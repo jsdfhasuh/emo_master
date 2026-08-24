@@ -1,4 +1,5 @@
 from concurrent import futures
+from typing import Any
 
 import grpc
 
@@ -10,12 +11,27 @@ def createRuntimeService() -> RuntimeService:
   return RuntimeService()
 
 
-def runRuntime(host: str = "127.0.0.1", port: int = 50051) -> None:
+def createRuntimeServer(
+    host: str = "127.0.0.1", port: int = 50051, runtimeService: RuntimeService | None = None
+) -> tuple[Any, int, RuntimeService]:
   server = grpc.server(futures.ThreadPoolExecutor(max_workers=4))
-  runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(createRuntimeService(), server)
-  server.add_insecure_port(f"{host}:{port}")
+  service = runtimeService or createRuntimeService()
+  runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+  boundPort = server.add_insecure_port(f"{host}:{port}")
+  if boundPort <= 0:
+    service.close()
+    raise RuntimeError(f"unable to bind runtime server to {host}:{port}")
+  return server, boundPort, service
+
+
+def runRuntime(host: str = "127.0.0.1", port: int = 50051) -> None:
+  server, _boundPort, service = createRuntimeServer(host, port)
   server.start()
-  server.wait_for_termination()
+  try:
+    server.wait_for_termination()
+  finally:
+    service.close()
+    server.stop(0).wait()
 
 
 if __name__ == "__main__":

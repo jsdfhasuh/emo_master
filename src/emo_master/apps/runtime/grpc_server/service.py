@@ -1,166 +1,209 @@
-from pathlib import Path
+from __future__ import annotations
+
 import json
+from pathlib import Path
+import tempfile
+from typing import Any
 from uuid import uuid4
 
-from emo_master.apps.runtime.execution.dag_executor import executeGraph
-from emo_master.apps.runtime.execution.models import RuntimeGraph, parseRuntimeGraph
-from emo_master.apps.runtime.events.event_bus import RuntimeEventBus
-from emo_master.apps.runtime.scheduler.job_service import JobService
+from emo_master.apps.runtime.events.event_store import EventStore
+from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.context.sqlite_store import SqliteStore
+from emo_master.apps.runtime.jobs.manager import JobManager
+from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobStatus, nowMs
+from emo_master.apps.runtime.jobs.repository import JobRepository
+from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
+from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.plugin.registry import PluginRegistry
-from emo_master.apps.runtime.grpc_server.generated import runtime_pb2, runtime_pb2_grpc
+from emo_master.core.project.migration import migrateProjectPayload
+from emo_master.core.project.models import ProjectDocument
+from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.workflow.errors import WorkflowCompileError
+
+runtime_pb2: Any = _runtime_pb2
 
 
 class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
-    def __init__(self) -> None:
-        self.jobService = JobService()
-        self.currentStatus = "IDLE"
+    def __init__(
+        self,
+        dbPath: Path | None = None,
+        pluginRootPaths: tuple[str, ...] | None = None,
+        maxConcurrentJobs: int = 2,
+    ) -> None:
+        if dbPath is None:
+            dbPath = Path(tempfile.gettempdir()) / f"emo_master-runtime-{uuid4().hex}.db"
+        self.sqliteStore = SqliteStore(dbPath)
+        self.sqliteStore.initialize()
+        self.sqliteStore.markOrphanedJobsFailed()
+        self.jobRepository = JobRepository(self.sqliteStore)
+        self.eventStore = EventStore(self.sqliteStore)
+        self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
+        self.pluginRootPaths = pluginRootPaths or (str(self._builtinsRoot()),)
+        self.jobSupervisor = JobSupervisor(
+            self.jobRepository,
+            self.eventStore,
+            maxConcurrentJobs=maxConcurrentJobs,
+            heartbeatTimeoutMs=5000,
+        )
+        self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
+        self.loadedProjectId: str = ""
+        self.loadedDocument: ProjectDocument | None = None
+        self.loadedPayload: dict[str, object] | None = None
         self.jobMessages: dict[str, str] = {}
-        self.eventBus = RuntimeEventBus()
-        self.loadedGraph: RuntimeGraph | None = None
-        self.pluginScanResult = self._scanBuiltins()
 
     def LoadProject(self, request, context):  # type: ignore[override]
         _ = context
-        projectPathRaw = str(request.project_path)
-        self.loadedProjectPath = projectPathRaw
-
+        projectPathRaw = str(getattr(request, "project_path", ""))
         projectFile = self._resolveProjectFile(Path(projectPathRaw))
         if projectFile is None:
-            self.loadedGraph = None
-            self.currentStatus = "FAILED"
+            self._clearLoadedProject("project.json not found; please load project folder")
             return runtime_pb2.LoadProjectReply(
                 ok=False,
                 status="FAILED",
                 message="project.json not found; please load project folder",
             )
-
         try:
-            payloadRaw = json.loads(projectFile.read_text(encoding="utf-8"))
+            rawPayload = json.loads(projectFile.read_text(encoding="utf-8"))
+            if not isinstance(rawPayload, dict):
+                raise ValueError("project file must contain an object")
+            canonical = migrateProjectPayload(rawPayload)
+            document = ProjectDocument.model_validate(canonical)
+            WorkflowCompiler(operatorRegistry=self.pluginScanResult.activeOperators).compile(
+                document,
+                pluginRootPaths=self.pluginRootPaths,
+            )
+        except WorkflowCompileError as err:
+            self._clearLoadedProject(str(err))
+            return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message=str(err))
         except Exception as err:
+            self._clearLoadedProject(str(err))
             return runtime_pb2.LoadProjectReply(
                 ok=False, status="FAILED", message=f"invalid project file: {err}"
             )
 
-        if not isinstance(payloadRaw, dict):
-            return runtime_pb2.LoadProjectReply(
-                ok=False, status="FAILED", message="invalid project format"
-            )
-
-        designerRaw = payloadRaw.get("designer", {})
-        designer = designerRaw if isinstance(designerRaw, dict) else {}
-        self.loadedGraph = parseRuntimeGraph(
-            {
-                "nodes": designer.get("nodes", []),
-                "edges": designer.get("edges", []),
-            }
-        )
-
-        self.currentStatus = "READY"
-        return runtime_pb2.LoadProjectReply(
-            ok=True, status="READY", message="project loaded"
-        )
+        self.loadedProjectPath = str(projectFile.parent)
+        self.loadedPayload = document.model_dump(mode="json")
+        self.loadedDocument = document
+        self.loadedProjectId = document.project.projectId
+        self.eventStore.retentionPerJob = document.runtime.eventRetentionPerJob
+        self.jobSupervisor.maxConcurrentJobs = document.runtime.maxConcurrentJobs
+        self.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
+        self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
+        return runtime_pb2.LoadProjectReply(ok=True, status="READY", message="project loaded")
 
     def ValidateProject(self, request, context):  # type: ignore[override]
-        _ = request
         _ = context
-        if self.loadedProjectPath is None:
+        requested = str(getattr(request, "project_id", ""))
+        if self.loadedDocument is None or not self._projectMatches(requested):
+            return runtime_pb2.ValidateProjectReply(ok=False, errors=["project not loaded"])
+        try:
+            WorkflowCompiler(operatorRegistry=self.pluginScanResult.activeOperators).compile(
+                self.loadedDocument,
+                pluginRootPaths=self.pluginRootPaths,
+            )
+        except WorkflowCompileError as err:
             return runtime_pb2.ValidateProjectReply(
-                ok=False, errors=["project not loaded"]
+                ok=False, errors=[issue.message for issue in err.issues]
             )
         return runtime_pb2.ValidateProjectReply(ok=True, errors=[])
 
     def StartJob(self, request, context):  # type: ignore[override]
-        _ = request
         _ = context
-        if self.currentStatus != "READY":
+        document = self.loadedDocument
+        if document is None or not self._projectMatches(str(getattr(request, "project_id", ""))):
             return runtime_pb2.StartJobReply(
-                ok=False, job_id="", message="runtime not ready"
+                ok=False, job_id="", status="FAILED", message="project not loaded"
             )
-        jobId = str(uuid4())
-        self.jobService.createJob(jobId)
-        self.jobService.applyEvent(jobId, "load")
-        self._appendJobEvent(jobId=jobId, eventType="job.loaded", message="job loaded")
-        self.jobService.applyEvent(jobId, "start")
-        self._appendJobEvent(
-            jobId=jobId, eventType="job.started", message="job started"
+        workflowId = str(getattr(request, "workflow_id", "")) or document.entryWorkflowId
+        if workflowId not in document.workflows:
+            return runtime_pb2.StartJobReply(
+                ok=False, job_id="", status="FAILED", message="workflow not found"
+            )
+        inputsJson = str(getattr(request, "inputs_json", "") or "{}")
+        try:
+            inputs = json.loads(inputsJson)
+            if not isinstance(inputs, dict):
+                raise ValueError("inputs_json must contain an object")
+        except Exception as err:
+            return runtime_pb2.StartJobReply(
+                ok=False, job_id="", status="FAILED", message=f"invalid inputs_json: {err}"
+            )
+
+        record = self.jobManager.createJob(
+            projectId=document.project.projectId,
+            projectRevision=document.project.revision,
+            workflowId=workflowId,
         )
-        self.currentStatus = "RUNNING"
-
-        if self.loadedProjectPath is None:
-            self.jobService.applyEvent(jobId, "fail")
-            self.currentStatus = "FAILED"
-            self.jobMessages[jobId] = "project not loaded"
-            self._appendJobEvent(
-                jobId=jobId,
-                eventType="job.failed",
-                message="project not loaded",
+        self.jobMessages[record.jobId] = "job accepted"
+        snapshotPath, workspacePath = self._createSnapshot(record.jobId, document)
+        spec = JobProcessSpec(
+            jobId=record.jobId,
+            projectSnapshotPath=str(snapshotPath),
+            workflowId=workflowId,
+            projectId=document.project.projectId,
+            inputsJson=json.dumps(inputs, ensure_ascii=True),
+            pluginRootPaths=tuple(self.pluginRootPaths),
+            jobWorkspacePath=str(workspacePath),
+            heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
+        )
+        try:
+            self.jobManager.start(record, spec)
+        except Exception as err:
+            self.eventStore.append(
+                record.jobId,
+                "job.failed",
+                str(err),
                 level="ERROR",
+                code="E_MAX_CONCURRENT_JOBS" if "MAX_CONCURRENT" in str(err) else "E_JOB_START_FAILED",
+                projectId=document.project.projectId,
+                workflowId=workflowId,
+            )
+            errorCode = (
+                "E_MAX_CONCURRENT_JOBS"
+                if "MAX_CONCURRENT" in str(err)
+                else "E_JOB_START_FAILED"
+            )
+            self.jobRepository.update(
+                record.jobId,
+                status=JobStatus.FAILED.value,
+                endedAtMs=nowMs(),
+                errorCode=errorCode,
+                message=str(err),
             )
             return runtime_pb2.StartJobReply(
-                ok=False, job_id=jobId, message="project not loaded"
+                ok=False, job_id=record.jobId, status="FAILED", message=str(err)
             )
-
-        if self.loadedGraph is None or len(self.loadedGraph.nodes) == 0:
-            self.jobService.applyEvent(jobId, "fail")
-            self.currentStatus = "FAILED"
-            self.jobMessages[jobId] = "project graph is empty"
-            self._appendJobEvent(
-                jobId=jobId,
-                eventType="job.failed",
-                message="project graph is empty",
-                level="ERROR",
-            )
-            return runtime_pb2.StartJobReply(
-                ok=False, job_id=jobId, message="project graph is empty"
-            )
-
-        ok, message = self._runLoadedGraph(jobId)
-        return runtime_pb2.StartJobReply(ok=ok, job_id=jobId, message=message)
+        return runtime_pb2.StartJobReply(
+            ok=True,
+            job_id=record.jobId,
+            status=JobStatus.ACCEPTED.value,
+            message="job accepted",
+        )
 
     def StopJob(self, request, context):  # type: ignore[override]
         _ = context
-        jobState = self.jobService.getJob(request.job_id)
-        if jobState is None:
-            return runtime_pb2.StopJobReply(
-                ok=False, status="FAILED", message="job not found"
-            )
-
-        if request.mode == "force":
-            jobState.state = jobState.state.ABORTED
-            self.currentStatus = "IDLE"
-            self._appendJobEvent(
-                jobId=request.job_id,
-                eventType="job.aborted",
-                message="job aborted",
-                level="WARN",
-            )
-            return runtime_pb2.StopJobReply(
-                ok=True, status="ABORTED", message="job aborted"
-            )
-
-        if jobState.state.value in ("RUNNING", "PAUSED"):
-            self.jobService.applyEvent(request.job_id, "stop")
-            self.jobService.applyEvent(request.job_id, "abort")
-            self.currentStatus = "IDLE"
-            self._appendJobEvent(
-                jobId=request.job_id,
-                eventType="job.aborted",
-                message="job stopped",
-                level="WARN",
-            )
-            return runtime_pb2.StopJobReply(
-                ok=True, status="ABORTED", message="job stopped"
-            )
-
-        return runtime_pb2.StopJobReply(
-            ok=False, status=jobState.state.value, message="invalid job state"
-        )
+        jobId = str(getattr(request, "job_id", ""))
+        mode = str(getattr(request, "mode", "graceful")) or "graceful"
+        if mode not in {"graceful", "force"}:
+            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="invalid stop mode")
+        record = self.jobRepository.get(jobId)
+        if record is None:
+            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="job not found")
+        if record.isTerminal:
+            return runtime_pb2.StopJobReply(ok=True, status=record.status, message="job already terminal")
+        try:
+            status = self.jobManager.stop(jobId, mode)
+        except KeyError:
+            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="job not found")
+        return runtime_pb2.StopJobReply(ok=True, status=status, message=f"job stopping ({mode})")
 
     def GetJobStatus(self, request, context):  # type: ignore[override]
         _ = context
-        jobState = self.jobService.getJob(request.job_id)
-        if jobState is None:
+        jobId = str(getattr(request, "job_id", ""))
+        record = self.jobRepository.get(jobId)
+        if record is None:
             return runtime_pb2.GetJobStatusReply(
                 ok=False,
                 status="UNKNOWN",
@@ -169,26 +212,38 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             )
         return runtime_pb2.GetJobStatusReply(
             ok=True,
-            status=jobState.state.value,
-            error_code="",
-            message=self.jobMessages.get(request.job_id, "ok"),
+            status=record.status,
+            error_code=record.errorCode,
+            message=record.message or self.jobMessages.get(jobId, "ok"),
+            project_id=record.projectId,
+            workflow_id=record.workflowId,
+            pid=record.pid or 0,
+            accepted_at_ms=record.acceptedAtMs,
+            started_at_ms=record.startedAtMs,
+            ended_at_ms=record.endedAtMs,
         )
 
     def StreamJobEvents(self, request, context):  # type: ignore[override]
-        events = self.eventBus.read(request.job_id)
-        _ = context
-        eventCtor = getattr(runtime_pb2, "JobEvent")
-        for event in events:
-            yield eventCtor(
-                job_id=event.jobId,
-                node_id=event.nodeId,
-                event_type=event.eventType,
-                level=event.level,
-                code="",
-                message=event.message,
-                payload_json=event.payloadJson,
-                timestamp_ms=0,
+        jobId = str(getattr(request, "job_id", ""))
+        afterSequence = int(getattr(request, "after_sequence", 0))
+        follow = bool(getattr(request, "follow", False))
+        events = (
+            self.eventStore.follow(
+                jobId,
+                afterSequence,
+                cancellation=context,
+                isTerminal=lambda value: (
+                    (record := self.jobRepository.get(value)) is not None
+                    and record.isTerminal
+                ),
             )
+            if follow
+            else self._eventsAfter(jobId, afterSequence)
+        )
+        for event in events:
+            if context is not None and hasattr(context, "is_active") and not context.is_active():
+                return
+            yield self._toProtoEvent(event)
 
     def ListOperators(self, request, context):  # type: ignore[override]
         _ = request
@@ -202,9 +257,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     version=descriptor.manifest.version,
                     input_ports=descriptor.manifest.inputPorts,
                     output_ports=descriptor.manifest.outputPorts,
-                    param_schema_json=json.dumps(
-                        descriptor.manifest.paramSchema, ensure_ascii=True
-                    ),
+                    param_schema_json=json.dumps(descriptor.manifest.paramSchema, ensure_ascii=True),
                     category=descriptor.manifest.category,
                     icon_key=descriptor.manifest.iconKey,
                     summary=descriptor.manifest.summary,
@@ -225,106 +278,71 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 )
         return runtime_pb2.ListRejectedOperatorsReply(rejected=rejected)
 
-    def _scanBuiltins(self):
-        pluginsRoot = Path(__file__).resolve().parents[3] / "plugins"
-        registry = PluginRegistry(coreVersion="0.1.0")
-        return registry.scan(pluginsRoot)
-
-    def _runLoadedGraph(self, jobId: str) -> tuple[bool, str]:
-        if self.loadedGraph is None:
-            self.jobService.applyEvent(jobId, "fail")
-            self.currentStatus = "FAILED"
-            self.jobMessages[jobId] = "project graph not loaded"
-            self._appendJobEvent(
-                jobId=jobId,
-                eventType="job.failed",
-                message="project graph not loaded",
-                level="ERROR",
+    def ListWorkflows(self, request, context):  # type: ignore[override]
+        _ = context
+        if self.loadedDocument is None or not self._projectMatches(str(getattr(request, "project_id", ""))):
+            return runtime_pb2.ListWorkflowsReply(workflows=[])
+        workflows = []
+        for workflowId in self.loadedDocument.workflowOrder:
+            workflow = self.loadedDocument.workflows[workflowId]
+            workflows.append(
+                runtime_pb2.WorkflowInfo(
+                    workflow_id=workflowId,
+                    name=workflow.name,
+                    is_entry=workflowId == self.loadedDocument.entryWorkflowId,
+                    inputs_json=json.dumps(workflow.inputs, ensure_ascii=True),
+                    outputs_json=json.dumps(workflow.outputs, ensure_ascii=True),
+                )
             )
-            return False, "project graph not loaded"
+        return runtime_pb2.ListWorkflowsReply(workflows=workflows)
 
-        runtimeContext: dict[str, object] = {}
+    def close(self) -> None:
+        self.jobSupervisor.shutdown()
 
-        graphPayload = {
-            "nodes": [
-                {
-                    "nodeId": node.nodeId,
-                    "operatorId": node.operatorId,
-                    "params": node.params,
-                }
-                for node in self.loadedGraph.nodes
-            ],
-            "edges": [
-                {
-                    "fromNode": edge.fromNode,
-                    "fromPort": edge.fromPort,
-                    "toNode": edge.toNode,
-                    "toPort": edge.toPort,
-                }
-                for edge in self.loadedGraph.edges
-            ],
-        }
-        operatorRegistry: dict[str, object] = {
-            operatorId: descriptor.operatorClass
-            for operatorId, descriptor in self.pluginScanResult.activeOperators.items()
-        }
-        executeResult = executeGraph(
-            graph=graphPayload,
-            operatorRegistry=operatorRegistry,
-            runtimeContext=runtimeContext,
+    def _eventsAfter(self, jobId: str, afterSequence: int) -> list[RuntimeEvent]:
+        return self.eventStore.readMerged(jobId, afterSequence)
+
+    def _toProtoEvent(self, event: RuntimeEvent):
+        return runtime_pb2.JobEvent(
+            job_id=event.jobId,
+            node_id=event.nodeId,
+            event_type=event.eventType,
+            level=event.level,
+            code=event.code,
+            message=event.message,
+            payload_json=event.payloadJson,
+            timestamp_ms=event.timestampMs,
+            sequence=event.sequence,
+            project_id=event.projectId,
+            workflow_id=event.workflowId,
+            workflow_run_id=event.workflowRunId,
+            parent_workflow_run_id=event.parentWorkflowRunId,
+            node_run_id=event.nodeRunId,
+            iteration_path_json=event.iterationPathJson,
         )
-        if executeResult.get("ok") is not True:
-            message = str(executeResult.get("error", "graph execution failed"))
-            self.jobService.applyEvent(jobId, "fail")
-            self.currentStatus = "FAILED"
-            self.jobMessages[jobId] = message
-            self._appendJobEvent(
-                jobId=jobId, eventType="job.failed", message=message, level="ERROR"
-            )
-            return False, message
 
-        nodeStatusRaw = executeResult.get("nodeStatus", {})
-        nodeStatus = nodeStatusRaw if isinstance(nodeStatusRaw, dict) else {}
-        branchHitsRaw = executeResult.get("branchHits", {})
-        branchHits = branchHitsRaw if isinstance(branchHitsRaw, dict) else {}
-        for nodeId, status in nodeStatus.items():
-            if not isinstance(nodeId, str) or not isinstance(status, str):
-                continue
-            branch = (
-                branchHits.get(nodeId, "")
-                if isinstance(branchHits.get(nodeId, ""), str)
-                else ""
-            )
-            eventType = "node.completed" if status == "COMPLETED" else "node.skipped"
-            payloadJson = json.dumps(
-                {"status": status, "branch": branch}, ensure_ascii=True
-            )
-            self._appendJobEvent(
-                jobId=jobId,
-                eventType=eventType,
-                message=f"{nodeId} {status}",
-                nodeId=nodeId,
-                payloadJson=payloadJson,
-            )
-
-        completionMessage = "job completed"
-        artifacts = executeResult.get("artifacts", {})
-        if isinstance(artifacts, dict):
-            for artifactValue in artifacts.values():
-                if not isinstance(artifactValue, dict):
-                    continue
-                savedPath = artifactValue.get("path")
-                if isinstance(savedPath, str) and savedPath != "":
-                    completionMessage = f"output image saved: {savedPath}"
-                    break
-
-        self.jobService.applyEvent(jobId, "complete")
-        self.currentStatus = "COMPLETED"
-        self.jobMessages[jobId] = completionMessage
-        self._appendJobEvent(
-            jobId=jobId, eventType="job.completed", message=completionMessage
+    def _createSnapshot(self, jobId: str, document: ProjectDocument) -> tuple[Path, Path]:
+        workspace = Path(tempfile.gettempdir()) / "emo_master" / "jobs" / jobId
+        workspace.mkdir(parents=True, exist_ok=True)
+        snapshot = workspace / "project.json"
+        snapshot.write_text(
+            json.dumps(document.model_dump(mode="json"), ensure_ascii=True, indent=2),
+            encoding="utf-8",
         )
-        return True, "job completed"
+        return snapshot, workspace
+
+    def _scanBuiltins(self, pluginRootPaths: tuple[str, ...] | None):
+        roots = pluginRootPaths or (str(self._builtinsRoot()),)
+        active = {}
+        rejected = {}
+        for root in roots:
+            result = PluginRegistry(coreVersion="0.2.0").scan(Path(root))
+            active.update(result.activeOperators)
+            rejected.update(result.rejectedOperators)
+        return type("RegistryScanResult", (), {"activeOperators": active, "rejectedOperators": rejected})()
+
+    def _builtinsRoot(self) -> Path:
+        return Path(__file__).resolve().parents[3] / "plugins"
 
     def _resolveProjectFile(self, projectPath: Path) -> Path | None:
         if projectPath.is_file() and projectPath.name.lower() == "project.json":
@@ -335,20 +353,18 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 return candidate
         return None
 
-    def _appendJobEvent(
-        self,
-        jobId: str,
-        eventType: str,
-        message: str,
-        level: str = "INFO",
-        nodeId: str = "",
-        payloadJson: str = "{}",
-    ) -> None:
-        self.eventBus.publish(
-            jobId=jobId,
-            eventType=eventType,
-            message=message,
-            level=level,
-            nodeId=nodeId,
-            payloadJson=payloadJson,
-        )
+    def _projectMatches(self, requested: str) -> bool:
+        if requested == "":
+            return True
+        return requested in {
+            self.loadedProjectId,
+            self.loadedProjectPath or "",
+            str(Path(self.loadedProjectPath or "") / "project.json"),
+        }
+
+    def _clearLoadedProject(self, message: str) -> None:
+        self.loadedProjectPath = None
+        self.loadedProjectId = ""
+        self.loadedDocument = None
+        self.loadedPayload = None
+        self.jobMessages["__load__"] = message

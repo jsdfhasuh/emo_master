@@ -42,7 +42,10 @@ class ProjectRepository:
                     "name": "Main",
                     "inputs": {},
                     "outputs": {},
-                    "nodes": [],
+                    "nodes": [
+                        {"nodeId": "__workflow_input__", "kind": "workflow_input"},
+                        {"nodeId": "__workflow_output__", "kind": "workflow_output"},
+                    ],
                     "edges": [],
                     "layout": {"nodePositions": {}},
                 }
@@ -87,6 +90,8 @@ class ProjectRepository:
 
     def loadProjectDocument(self, projectId: str):
         payload = self.loadProject(projectId)
+        payload.pop("projectId", None)
+        payload.pop("name", None)
         return ProjectDocument.model_validate(migrateProjectPayload(payload))
 
     def _write(self, projectFile: Path, payload: dict[str, object], backup: bool) -> None:

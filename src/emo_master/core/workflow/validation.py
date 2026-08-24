@@ -139,6 +139,23 @@ def validateProjectDocument(
                                 fieldPath=f"loop.{limitField}",
                             )
                         )
+                if mode == "repeat":
+                    repeatCount = node.loop.get("repeatCount")
+                    if (
+                        not isinstance(repeatCount, int)
+                        or isinstance(repeatCount, bool)
+                        or repeatCount < 0
+                    ):
+                        issues.append(
+                            ValidationIssue(
+                                "E_LOOP_REPEAT_COUNT_INVALID",
+                                "repeatCount must be a non-negative integer",
+                                projectId=projectId,
+                                workflowId=workflowId,
+                                nodeId=node.nodeId,
+                                fieldPath="loop.repeatCount",
+                            )
+                        )
                 timeout = node.loop.get("timeoutMs", 0)
                 if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout < 0:
                     issues.append(

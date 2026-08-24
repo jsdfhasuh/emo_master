@@ -20,7 +20,14 @@ def migrateProjectPayload(payload: dict[str, object]) -> dict[str, object]:
     """Return a canonical v2 document without modifying the caller's payload."""
     source = deepcopy(payload)
     if source.get("schemaVersion") == SCHEMA_VERSION:
-        return _copy_v2_defaults(source)
+        # v2 is already the canonical source.  Validate it before returning so
+        # unknown fields and invalid kinds cannot disappear in normalization.
+        from emo_master.core.project.models import ProjectDocument
+
+        return ProjectDocument.model_validate(source).model_dump(mode="python")
+    sourceSchema = source.get("schemaVersion")
+    if sourceSchema is not None and sourceSchema not in {"1.0", "1"}:
+        raise ValueError(f"unsupported project schemaVersion: {sourceSchema!r}")
 
     rawProject = source.get("project")
     project = rawProject if isinstance(rawProject, dict) else {}
@@ -84,11 +91,13 @@ def loadProjectPayload(projectPath: Path) -> dict[str, object]:
 
 def _extract_workflows(source: dict[str, object]) -> dict[str, dict[str, object]]:
     rawWorkflows = source.get("workflows")
+    if rawWorkflows is not None and not isinstance(rawWorkflows, dict):
+        raise ValueError("workflows must be an object")
     if isinstance(rawWorkflows, dict) and rawWorkflows:
         result: dict[str, dict[str, object]] = {}
         for workflowId, rawWorkflow in rawWorkflows.items():
             if not isinstance(workflowId, str) or not isinstance(rawWorkflow, dict):
-                continue
+                raise ValueError("workflows must map string ids to objects")
             result[workflowId] = _normalize_workflow(workflowId, rawWorkflow)
         if result:
             return result
@@ -98,14 +107,14 @@ def _extract_workflows(source: dict[str, object]) -> dict[str, dict[str, object]
     rawNodes = designer.get("nodes", [])
     rawEdges = designer.get("edges", [])
     nodes = _normalize_nodes(rawNodes)
-    edges = list(rawEdges) if isinstance(rawEdges, list) else []
+    edges = _normalize_edges(rawEdges)
     return {
         "main": {
             "name": "Main",
             "inputs": {},
             "outputs": {},
             "nodes": nodes,
-            "edges": [edge for edge in edges if isinstance(edge, dict)],
+            "edges": edges,
             "layout": _layout_from_nodes(rawNodes),
         }
     }
@@ -115,7 +124,7 @@ def _normalize_workflow(workflowId: str, rawWorkflow: dict[str, object]) -> dict
     rawNodes = rawWorkflow.get("nodes", [])
     nodes = _normalize_nodes(rawNodes)
     rawEdges = rawWorkflow.get("edges", [])
-    edges = [edge for edge in rawEdges if isinstance(edge, dict)] if isinstance(rawEdges, list) else []
+    edges = _normalize_edges(rawEdges)
     layoutRaw = rawWorkflow.get("layout")
     layout = dict(layoutRaw) if isinstance(layoutRaw, dict) else _layout_from_nodes(rawNodes)
     return {
@@ -130,20 +139,33 @@ def _normalize_workflow(workflowId: str, rawWorkflow: dict[str, object]) -> dict
 
 def _normalize_nodes(rawNodes: object) -> list[dict[str, object]]:
     if not isinstance(rawNodes, list):
-        return []
+        raise ValueError("workflow nodes must be a list")
     normalized: list[dict[str, object]] = []
     for rawNode in rawNodes:
         if not isinstance(rawNode, dict):
-            continue
+            raise ValueError("workflow nodes must contain objects")
         node = dict(rawNode)
         kind = node.get("kind")
-        if not isinstance(kind, str) or kind == "":
+        if kind is None:
             node["kind"] = "operator"
+        elif not isinstance(kind, str) or kind == "":
+            raise ValueError("workflow node kind must be a non-empty string")
         # Coordinates belong to workflow.layout in v2, never to execution nodes.
         node.pop("x", None)
         node.pop("y", None)
         normalized.append(node)
     return normalized
+
+
+def _normalize_edges(rawEdges: object) -> list[dict[str, object]]:
+    if not isinstance(rawEdges, list):
+        raise ValueError("workflow edges must be a list")
+    edges: list[dict[str, object]] = []
+    for rawEdge in rawEdges:
+        if not isinstance(rawEdge, dict):
+            raise ValueError("workflow edges must contain objects")
+        edges.append(dict(rawEdge))
+    return edges
 
 
 def _ensure_legacy_boundaries(workflows: dict[str, dict[str, object]]) -> None:
@@ -225,12 +247,14 @@ def _copy_v2_defaults(source: dict[str, object]) -> dict[str, object]:
 
 
 def _runtime_defaults(runtime: dict[str, object]) -> dict[str, object]:
-    return {
-        "maxConcurrentJobs": runtime.get("maxConcurrentJobs", 2),
-        "gracefulStopTimeoutMs": runtime.get("gracefulStopTimeoutMs", 5000),
-        "heartbeatTimeoutMs": runtime.get("heartbeatTimeoutMs", 5000),
-        "eventRetentionPerJob": runtime.get("eventRetentionPerJob", 10000),
+    normalized = {
+        key: value for key, value in runtime.items() if key != "sourceImagePath"
     }
+    normalized.setdefault("maxConcurrentJobs", 2)
+    normalized.setdefault("gracefulStopTimeoutMs", 5000)
+    normalized.setdefault("heartbeatTimeoutMs", 5000)
+    normalized.setdefault("eventRetentionPerJob", 10000)
+    return normalized
 
 
 def _copy_object_map(value: object) -> dict[str, object]:

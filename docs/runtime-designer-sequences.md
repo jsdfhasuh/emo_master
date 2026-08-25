@@ -41,6 +41,10 @@ Subflow 节点从目标接口同步动态端口；删除工作流前会检查所
 按确定顺序发布 iteration 事件，嵌套调用通过 `iterationPath` 和
 `parentWorkflowRunId` 关联。
 
+`Repeat(0)` 是确定性的 no-op：不调用 body workflow，也不发布 iteration
+事件；Loop 输出仅透传同名输入。若输出端口无法由输入透传，编译器以
+`E_LOOP_ZERO_OUTPUT_UNSATISFIABLE` 拒绝项目，避免运行末尾才出现缺失输出。
+
 ## 事件回写
 
 RuntimeClient 把 protobuf `payload_json` 转为普通 DTO。Designer 以

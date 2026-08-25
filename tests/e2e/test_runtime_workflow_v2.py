@@ -7,6 +7,17 @@ import threading
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from emo_master.apps.designer.ui.main_window import MainWindow
+
+
+def _ensureQApp() -> None:
+    try:
+        from PySide2.QtWidgets import QApplication
+
+        if QApplication.instance() is None:
+            QApplication([])
+    except Exception:
+        pass
 
 
 def _writePlugin(tmpPath: Path) -> tuple[Path, Path]:
@@ -232,3 +243,78 @@ def testRuntimeWorkflowV2StreamsLiveLoopEventsAndArtifacts(
     finally:
         service.close()
     assert not list((tmp_path / "job-workspaces").glob("*"))
+
+
+def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> None:
+    class RuntimeClientStub:
+        def listOperators(self):
+            return []
+
+        def loadProject(self, projectPath: str):
+            _ = projectPath
+            return type("Reply", (), {"ok": True, "message": "ok"})()
+
+    _ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+    bodyWorkflowId = window.createWorkflow("Body")
+    window.workflowController.setWorkflowInterface(bodyWorkflowId, {}, {})
+    window.workflowController.switchWorkflow("main")
+    window.activeWorkflowId = "main"
+    window._refreshWorkflowTabs()
+    repeatNodeId = window.addRepeatNode(
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": bodyWorkflowId,
+            "repeatCount": 2,
+            "maxIterations": 2,
+            "timeoutMs": 1000,
+        }
+    )
+    assert repeatNodeId is not None
+
+    projectDir = tmp_path / "designer-project"
+    assert window.saveProjectToDirectory(str(projectDir)) is True
+    payload = json.loads((projectDir / "project.json").read_text(encoding="utf-8"))
+    projectId = payload["project"]["projectId"]
+
+    service = RuntimeService(
+        dbPath=tmp_path / "runtime.db",
+        workspaceRoot=tmp_path / "job-workspaces",
+    )
+    events = []
+    terminal = threading.Event()
+    try:
+        loaded = service.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
+        )
+        assert loaded.ok is True
+        started = service.StartJob(
+            runtime_pb2.StartJobRequest(project_id=projectId), None
+        )
+        assert started.ok is True
+
+        stream = service.StreamJobEvents(
+            runtime_pb2.StreamJobEventsRequest(job_id=started.job_id, follow=True), None
+        )
+
+        def collectUntilTerminal() -> None:
+            for event in stream:
+                events.append(event)
+                if event.event_type in {"job.completed", "job.failed", "job.aborted"}:
+                    terminal.set()
+                    return
+
+        reader = threading.Thread(target=collectUntilTerminal, daemon=True)
+        reader.start()
+        assert terminal.wait(5)
+        reader.join(timeout=5)
+        assert events[-1].event_type == "job.completed"
+        bodyRuns = [
+            event
+            for event in events
+            if event.event_type == "workflow.started" and event.workflow_id == bodyWorkflowId
+        ]
+        assert len(bodyRuns) == 2
+        assert [json.loads(event.iteration_path_json) for event in bodyRuns] == [[0], [1]]
+    finally:
+        service.close()

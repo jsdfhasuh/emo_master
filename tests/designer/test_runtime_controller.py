@@ -127,3 +127,130 @@ def testRuntimeControllerClearsPreviousJobBeforeStartingNewWorker(monkeypatch) -
     controller.startJob()
 
     assert currentJob == [None]
+
+
+def testRuntimeControllerDoesNotReplaceStoppingJob() -> None:
+    class Worker:
+        def isRunning(self) -> bool:
+            return False
+
+    class Panel(_Panel):
+        def updateJob(self, status, message="") -> None:
+            self.status = status
+            self.message = message
+
+    currentJob = ["job-stopping"]
+    logs = []
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=Panel(),
+        appendLog=lambda level, message: logs.append((level, message)),
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: currentJob.__setitem__(0, jobId),
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: currentJob[0],
+    )
+    controller._worker = Worker()
+    controller._onJobStatus(
+        type("Status", (), {"status": "STOPPING", "message": "stopping"})()
+    )
+
+    controller.startJob()
+
+    assert currentJob == ["job-stopping"]
+    assert logs[-1] == ("WARN", "已有作业正在运行")
+
+
+def testRuntimeControllerCanForceStopAfterGracefulStop() -> None:
+    class Client:
+        def __init__(self) -> None:
+            self.modes = []
+
+        def stopJob(self, jobId: str, mode: str):
+            assert jobId == "job-active"
+            self.modes.append(mode)
+            status = "STOPPING" if mode == "graceful" else "ABORTED"
+            return type("Reply", (), {"status": status, "message": status.lower()})()
+
+    class Panel(_Panel):
+        jobStatus = "RUNNING"
+
+        def updateJob(self, status, message="") -> None:
+            self.jobStatus = status
+            self.message = message
+
+    client = Client()
+    panel = Panel()
+    running = []
+    controller = RuntimeController(
+        runtimeClient=client,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=running.append,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: "job-active",
+    )
+
+    controller.stopJob()
+    controller.stopJob()
+
+    assert client.modes == ["graceful", "force"]
+    assert running == [True, False]
+    assert panel.jobStatus == "ABORTED"
+
+
+def testRuntimeControllerCloseStopsWorkerSubscriptionAndClient() -> None:
+    class Client:
+        def __init__(self) -> None:
+            self.closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Worker:
+        def __init__(self) -> None:
+            self.stopRequests = 0
+            self.waitTimeouts = []
+
+        def requestStop(self) -> None:
+            self.stopRequests += 1
+
+        def isRunning(self) -> bool:
+            return True
+
+        def wait(self, timeoutMs: int) -> None:
+            self.waitTimeouts.append(timeoutMs)
+
+    client = Client()
+    worker = Worker()
+    controller = RuntimeController(
+        runtimeClient=client,
+        runtimePanelState=_Panel(),
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: "job-active",
+    )
+    controller._worker = worker
+
+    controller.close()
+
+    assert worker.stopRequests == 1
+    assert worker.waitTimeouts == [2000]
+    assert controller._worker is None
+    assert controller._jobActive is False
+    assert client.closed == 1

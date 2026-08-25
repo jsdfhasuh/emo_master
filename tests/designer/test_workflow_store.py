@@ -105,3 +105,41 @@ def testWorkflowControllerConfiguresSubflowPortsAndLoop() -> None:
     )
     assert model.nodes[nodeId].kind == "loop"
     assert model.nodes[nodeId].loop["maxIterations"] == 2
+
+
+def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None:
+    payload = _payload()
+    payload["workflows"]["main"]["nodes"].append(
+        {
+            "nodeId": "subflow-two",
+            "kind": "subflow",
+            "targetWorkflowId": "body",
+            "inputPorts": {"value": "json"},
+            "outputPorts": {"result": "json"},
+        }
+    )
+    payload["workflows"]["main"]["edges"] = [
+        {
+            "fromNode": "subflow",
+            "fromPort": "result",
+            "toNode": "subflow-two",
+            "toPort": "value",
+        }
+    ]
+    store = WorkflowStore(payload)
+    model = FlowGraphModel()
+    scene = FlowScene()
+    controller = WorkflowController(store, model, scene)
+    controller.loadPayload(payload)
+
+    controller.setWorkflowInterface(
+        "body",
+        {"renamed": "string"},
+        {"done": "string"},
+    )
+
+    for nodeId in ("subflow", "subflow-two"):
+        assert model.nodes[nodeId].inputPorts == {"renamed": "string"}
+        assert model.nodes[nodeId].outputPorts == {"done": "string"}
+    assert model.edges == []
+    assert store.get("main").edges == []

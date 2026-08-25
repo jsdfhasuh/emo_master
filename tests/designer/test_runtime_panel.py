@@ -126,3 +126,30 @@ def testRuntimePanelStateRejectsLateEventDuringNewJobStart() -> None:
     )
 
     assert state.nodeStatus["node"] == "RUNNING"
+
+
+def testRuntimePanelStateKeepsSameNodeIsolatedAcrossWorkflowRuns() -> None:
+    state = RuntimePanelState()
+    state.setActiveJob("job-current")
+
+    state.applyEvent(
+        {
+            "eventType": "node.completed",
+            "jobId": "job-current",
+            "workflowId": "body",
+            "workflowRunId": "run-one",
+            "nodeId": "node",
+        }
+    )
+    state.applyEvent(
+        {
+            "eventType": "node.started",
+            "jobId": "job-current",
+            "workflowId": "body",
+            "workflowRunId": "run-two",
+            "nodeId": "node",
+        }
+    )
+
+    assert state.nodeStatusByWorkflowRun[("body", "run-one", "node")] == "COMPLETED"
+    assert state.nodeStatusByWorkflowRun[("body", "run-two", "node")] == "RUNNING"

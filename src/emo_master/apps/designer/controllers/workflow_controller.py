@@ -170,12 +170,12 @@ class WorkflowController:
         inputs: dict[str, object],
         outputs: dict[str, object],
     ) -> None:
+        self.captureActiveWorkflow()
         workflow = self.workflowStore.get(workflowId)
         workflow.inputs = deepcopy(inputs)
         workflow.outputs = deepcopy(outputs)
         self._refreshSubflowPorts(workflowId)
-        if workflowId == self.activeWorkflowId:
-            self._renderActive()
+        self._renderActive()
 
     def _refreshSubflowPorts(self, targetWorkflowId: str) -> None:
         target = self.workflowStore.get(targetWorkflowId)
@@ -187,6 +187,23 @@ class WorkflowController:
                     continue
                 node["inputPorts"] = deepcopy(inputPorts)
                 node["outputPorts"] = deepcopy(outputPorts)
+                nodeId = node.get("nodeId")
+                if not isinstance(nodeId, str):
+                    continue
+                workflow.edges = [
+                    edge
+                    for edge in workflow.edges
+                    if not (
+                        (
+                            edge.get("toNode") == nodeId
+                            and edge.get("toPort") not in inputPorts
+                        )
+                        or (
+                            edge.get("fromNode") == nodeId
+                            and edge.get("fromPort") not in outputPorts
+                        )
+                    )
+                ]
 
     def _pruneNodeEdges(self, node) -> None:
         self.flowModel.edges = [

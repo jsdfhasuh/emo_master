@@ -77,6 +77,46 @@ def _writePlugin(tmpPath: Path) -> tuple[Path, Path]:
     return pluginRoot, moduleDir
 
 
+def _writeEchoPlugin(tmpPath: Path) -> Path:
+    pluginRoot = tmpPath / "echo-plugins"
+    pluginDir = pluginRoot / "builtins" / "designer_echo"
+    pluginDir.mkdir(parents=True)
+    moduleDir = tmpPath / "designer_echo_plugin"
+    moduleDir.mkdir()
+    (moduleDir / "__init__.py").write_text("", encoding="utf-8")
+    (moduleDir / "operator.py").write_text(
+        "class EchoOperator:\n"
+        "    class Meta:\n"
+        "        inputPorts = {'value': 'string'}\n"
+        "        outputPorts = {'result': 'string'}\n"
+        "    meta = Meta()\n"
+        "\n"
+        "    def validateParams(self, params):\n"
+        "        return None\n"
+        "\n"
+        "    def executeNode(self, inputs, params, runtimeContext):\n"
+        "        return {'status': 'ok', 'outputs': {'result': inputs['value']}}\n",
+        encoding="utf-8",
+    )
+    (pluginDir / "manifest.json").write_text(
+        json.dumps(
+            {
+                "operatorId": "vision.demo.designer_echo",
+                "displayName": "Designer Echo",
+                "version": "0.1.0",
+                "entry": "designer_echo_plugin.operator:EchoOperator",
+                "inputPorts": {"value": "string"},
+                "outputPorts": {"result": "string"},
+                "paramSchema": {"type": "object"},
+                "minCoreVersion": "0.2.0",
+                "maxCoreVersion": "1.x",
+            }
+        ),
+        encoding="utf-8",
+    )
+    return pluginRoot
+
+
 def _project(tmpPath: Path, startedPath: Path, releasePath: Path, outputPath: Path):
     return {
         "schemaVersion": "2.0",
@@ -370,3 +410,125 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
         service.close()
         window.close()
     assert application is not None
+
+
+def testDesignerBuildsDataSubflowSavesReloadsAndRunsInRuntime(
+    tmp_path: Path, monkeypatch
+) -> None:
+    pluginRoot = _writeEchoPlugin(tmp_path)
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    class RuntimeClientStub:
+        def listOperators(self):
+            return []
+
+        def loadProject(self, projectPath: str):
+            _ = projectPath
+            return type("Reply", (), {"ok": True, "message": "ok"})()
+
+    _ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+    bodyWorkflowId = window.createWorkflow("Body")
+    window.editWorkflowInterface({"value": "string"}, {"result": "string"})
+    window.addNodeFromOperatorPayload(
+        {
+            "operatorId": "vision.demo.designer_echo",
+            "displayName": "Designer Echo",
+            "inputPorts": {"value": "string"},
+            "outputPorts": {"result": "string"},
+            "paramSchema": {"type": "object"},
+        }
+    )
+    echoNodeId = next(
+        node.nodeId
+        for node in window.flowModel.nodes.values()
+        if node.operatorId == "vision.demo.designer_echo"
+    )
+    bodyInput = next(
+        node.nodeId for node in window.flowModel.nodes.values() if node.kind == "workflow_input"
+    )
+    bodyOutput = next(
+        node.nodeId for node in window.flowModel.nodes.values() if node.kind == "workflow_output"
+    )
+    bodyEdgeOne = window.connectPorts(bodyInput, "value", echoNodeId, "value")
+    bodyEdgeTwo = window.connectPorts(echoNodeId, "result", bodyOutput, "result")
+    assert bodyEdgeOne is not None
+    assert bodyEdgeTwo is not None
+    window.flowScene.renderEdge(bodyEdgeOne)
+    window.flowScene.renderEdge(bodyEdgeTwo)
+
+    window.workflowController.switchWorkflow("main")
+    window.activeWorkflowId = "main"
+    window._refreshWorkflowTabs()
+    window.editWorkflowInterface({"value": "string"}, {"result": "string"})
+    subflowNodeId = window.addSubflowNode(bodyWorkflowId)
+    assert subflowNodeId is not None
+    mainInput = next(
+        node.nodeId for node in window.flowModel.nodes.values() if node.kind == "workflow_input"
+    )
+    mainOutput = next(
+        node.nodeId for node in window.flowModel.nodes.values() if node.kind == "workflow_output"
+    )
+    mainEdgeOne = window.connectPorts(mainInput, "value", subflowNodeId, "value")
+    mainEdgeTwo = window.connectPorts(subflowNodeId, "result", mainOutput, "result")
+    assert mainEdgeOne is not None
+    assert mainEdgeTwo is not None
+    window.flowScene.renderEdge(mainEdgeOne)
+    window.flowScene.renderEdge(mainEdgeTwo)
+
+    projectDir = tmp_path / "designer-data-project"
+    assert window.saveProjectToDirectory(str(projectDir)) is True
+    savedPayload = json.loads((projectDir / "project.json").read_text(encoding="utf-8"))
+    assert len(savedPayload["workflows"][bodyWorkflowId]["edges"]) == 2
+    assert len(savedPayload["workflows"]["main"]["edges"]) == 2
+
+    reloaded = MainWindow(RuntimeClientStub())
+    assert reloaded.loadProjectDirectory(str(projectDir)) is True
+    reloaded.workflowController.switchWorkflow(bodyWorkflowId)
+    reloaded.activeWorkflowId = bodyWorkflowId
+    assert len(reloaded.flowModel.edges) == 2
+
+    builtinsRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
+    service = RuntimeService(
+        dbPath=tmp_path / "designer-runtime.db",
+        pluginRootPaths=(str(builtinsRoot), str(pluginRoot)),
+        workspaceRoot=tmp_path / "designer-job-workspaces",
+    )
+    try:
+        loaded = service.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
+        )
+        assert loaded.ok is True
+        started = service.StartJob(
+            runtime_pb2.StartJobRequest(
+                project_id=savedPayload["project"]["projectId"],
+                workflow_id="main",
+                inputs_json=json.dumps({"value": "from-designer"}),
+            ),
+            None,
+        )
+        assert started.ok is True
+        events = list(
+            service.StreamJobEvents(
+                runtime_pb2.StreamJobEventsRequest(job_id=started.job_id, follow=True),
+                None,
+            )
+        )
+        assert events[-1].event_type == "job.completed"
+        bodyStarted = [
+            event
+            for event in events
+            if event.event_type == "workflow.started" and event.workflow_id == bodyWorkflowId
+        ]
+        assert len(bodyStarted) == 1
+        mainCompleted = next(
+            event
+            for event in events
+            if event.event_type == "workflow.completed" and event.workflow_id == "main"
+        )
+        outputs = json.loads(mainCompleted.payload_json)["outputs"]
+        assert outputs["result"] == "from-designer"
+    finally:
+        service.close()
+        reloaded.close()
+        window.close()

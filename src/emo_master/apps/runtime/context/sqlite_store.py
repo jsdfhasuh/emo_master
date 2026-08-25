@@ -162,6 +162,7 @@ class SqliteStore:
         timestampText = _utcNow() if not isinstance(timestamp, str) else timestamp
         with self._connect() as connection:
             if sequence is None:
+                connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
                     "SELECT COALESCE(MAX(sequence), 0) + 1 FROM jobEvents WHERE jobId = ?",
                     (jobId,),
@@ -235,6 +236,7 @@ class SqliteStore:
 
     def markOrphanedJobsFailed(self) -> int:
         with self._connect() as connection:
+            connection.execute("BEGIN IMMEDIATE")
             rows = connection.execute(
                 "SELECT jobId, projectId, workflowId, startAt FROM jobs "
                 "WHERE status IN ('ACCEPTED', 'STARTING', 'RUNNING', 'STOPPING')"

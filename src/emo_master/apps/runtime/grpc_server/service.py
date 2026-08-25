@@ -9,6 +9,7 @@ from typing import Any
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
+from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
 from emo_master.apps.runtime.jobs.manager import JobManager
 from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobStatus, nowMs
 from emo_master.apps.runtime.jobs.repository import JobRepository
@@ -32,15 +33,33 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         maxConcurrentJobs: int = 2,
         workspaceRoot: Path | None = None,
     ) -> None:
+        explicitDbPath = dbPath is not None
         if dbPath is None:
             dbPath = _defaultDbPath()
-        self.sqliteStore = SqliteStore(dbPath)
-        self.sqliteStore.initialize()
-        self.sqliteStore.markOrphanedJobsFailed()
-        self.jobRepository = JobRepository(self.sqliteStore)
-        self.eventStore = EventStore(self.sqliteStore)
-        self.workspaceRoot = workspaceRoot or _defaultWorkspaceRoot()
+        if workspaceRoot is None:
+            workspaceRoot = (
+                _defaultWorkspaceRoot()
+                if not explicitDbPath
+                else dbPath.parent / "jobs"
+            )
+        self.workspaceRoot = workspaceRoot
         self.workspaceRoot.mkdir(parents=True, exist_ok=True)
+        lockName = self.workspaceRoot.name or "runtime"
+        self._runtimeDataLock = RuntimeDataLock(
+            self.workspaceRoot.parent / f".{lockName}.runtime.lock"
+        )
+        self._runtimeDataLockIsPrimary = self._runtimeDataLock.acquire()
+        self._closed = False
+        try:
+            self.sqliteStore = SqliteStore(dbPath)
+            self.sqliteStore.initialize()
+            if self._runtimeDataLockIsPrimary:
+                self.sqliteStore.markOrphanedJobsFailed()
+            self.jobRepository = JobRepository(self.sqliteStore)
+            self.eventStore = EventStore(self.sqliteStore)
+        except BaseException:
+            self._runtimeDataLock.release()
+            raise
         self._workspacePaths: dict[str, Path] = {}
         self._cleanupStaleWorkspaces()
         self.pluginScanResult = self._scanBuiltins(pluginRootPaths)
@@ -306,10 +325,16 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return runtime_pb2.ListWorkflowsReply(workflows=workflows)
 
     def close(self) -> None:
-        self.jobSupervisor.shutdown()
-        for jobId in list(self._workspacePaths):
-            self._removeWorkspace(jobId)
-        self._cleanupStaleWorkspaces()
+        if self._closed:
+            return
+        self._closed = True
+        try:
+            self.jobSupervisor.shutdown()
+            for jobId in list(self._workspacePaths):
+                self._removeWorkspace(jobId)
+            self._cleanupStaleWorkspaces()
+        finally:
+            self._runtimeDataLock.release()
 
     def _eventsAfter(self, jobId: str, afterSequence: int) -> list[RuntimeEvent]:
         return self.eventStore.readMerged(jobId, afterSequence)

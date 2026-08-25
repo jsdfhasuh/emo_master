@@ -1,8 +1,12 @@
 from __future__ import annotations
 
+from concurrent.futures import ThreadPoolExecutor
+import multiprocessing
 from pathlib import Path
+import threading
 
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
+from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import (
@@ -10,6 +14,17 @@ from emo_master.apps.runtime.grpc_server.service import (
     _defaultDbPath,
     _defaultWorkspaceRoot,
 )
+
+
+def _tryAcquireRuntimeDataLock(path: str, ready, result) -> None:
+    ready.set()
+    lock = RuntimeDataLock(Path(path))
+    try:
+        result.put(lock.acquire())
+    except RuntimeError:
+        result.put(False)
+    finally:
+        lock.release()
 
 
 def testEventReplayMergesSqliteHistoryAfterMemoryRetention(tmp_path: Path) -> None:
@@ -36,6 +51,47 @@ def testEventFollowStopsWhenGrpcContextIsCancelled() -> None:
     assert list(
         store.follow("job-cancelled", cancellation=_InactiveGrpcContext())
     ) == []
+
+
+def testEventStoreAllocatesSequencesAtomicallyAcrossInstances(tmp_path: Path) -> None:
+    dbPath = tmp_path / "concurrent-events.db"
+    persistence = SqliteStore(dbPath)
+    persistence.initialize()
+    stores = [EventStore(SqliteStore(dbPath)), EventStore(SqliteStore(dbPath))]
+    barrier = threading.Barrier(2)
+
+    def append(store: EventStore, index: int) -> int:
+        barrier.wait()
+        return store.append("shared-job", f"event.{index}", str(index)).sequence
+
+    with ThreadPoolExecutor(max_workers=2) as executor:
+        sequences = list(executor.map(append, stores, range(2)))
+
+    assert sorted(sequences) == [1, 2]
+    assert [event.sequence for event in persistence.listJobEventsAfter("shared-job")] == [1, 2]
+
+
+def testRuntimeDataLockRejectsAnotherProcess(tmp_path: Path) -> None:
+    lock = RuntimeDataLock(tmp_path / "runtime.lock")
+    assert lock.acquire() is True
+    context = multiprocessing.get_context("spawn")
+    ready = context.Event()
+    result = context.Queue()
+    process = context.Process(
+        target=_tryAcquireRuntimeDataLock,
+        args=(str(lock.path), ready, result),
+    )
+    process.start()
+    try:
+        assert ready.wait(5)
+        assert result.get(timeout=5) is False
+        process.join(timeout=5)
+        assert process.exitcode == 0
+    finally:
+        if process.is_alive():
+            process.terminate()
+            process.join(timeout=5)
+        lock.release()
 
 
 def testRuntimeRestartMarksOrphanedJobAndPersistsFailureEvent(tmp_path: Path) -> None:
@@ -73,6 +129,29 @@ def testRuntimeRestartMarksOrphanedJobAndPersistsFailureEvent(tmp_path: Path) ->
         assert events[-1].sequence == 2
     finally:
         service.close()
+
+
+def testSecondRuntimeServiceDoesNotReapLiveJobInSameProcess(tmp_path: Path) -> None:
+    dbPath = tmp_path / "shared-runtime.db"
+    workspaceRoot = tmp_path / "jobs"
+    first = RuntimeService(dbPath=dbPath, workspaceRoot=workspaceRoot)
+    second = None
+    try:
+        first.sqliteStore.insertJob(
+            jobId="live-job",
+            projectId="project",
+            workflowId="main",
+            status="RUNNING",
+        )
+        second = RuntimeService(dbPath=dbPath, workspaceRoot=workspaceRoot)
+        status = second.GetJobStatus(
+            runtime_pb2.GetJobStatusRequest(job_id="live-job"), None
+        )
+        assert status.status == "RUNNING"
+    finally:
+        if second is not None:
+            second.close()
+        first.close()
 
 
 def testDefaultRuntimeDataDirectoryAndDbPathAreStable(monkeypatch, tmp_path: Path) -> None:

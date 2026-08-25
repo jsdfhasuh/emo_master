@@ -40,12 +40,31 @@ class EventStore:
         payloadJson = json.dumps(payload or {}, ensure_ascii=True, default=str)
         timestamp = int(time.time() * 1000) if timestampMs is None else timestampMs
         with self._condition:
-            sequence = self._sequences.get(jobId)
-            if sequence is None and self.persistence is not None:
-                getLast = getattr(self.persistence, "getLastJobEventSequence", None)
-                if callable(getLast):
-                    sequence = int(getLast(jobId))
-            sequence = (sequence or 0) + 1
+            iterationPathJson = json.dumps(list(iterationPath), ensure_ascii=True)
+            append = getattr(self.persistence, "appendJobEvent", None) if self.persistence is not None else None
+            if self.persistence is not None:
+                if callable(append):
+                    sequence = int(append(
+                        jobId=jobId,
+                        nodeId=nodeId,
+                        eventType=eventType,
+                        level=level,
+                        code=code,
+                        message=message,
+                        payloadJson=payloadJson,
+                        projectId=projectId,
+                        workflowId=workflowId,
+                        workflowRunId=workflowRunId,
+                        parentWorkflowRunId=parentWorkflowRunId,
+                        nodeRunId=nodeRunId,
+                        iterationPathJson=iterationPathJson,
+                        timestamp=timestamp,
+                        sequence=None,
+                    ))
+                else:
+                    sequence = (self._sequences.get(jobId) or 0) + 1
+            else:
+                sequence = (self._sequences.get(jobId) or 0) + 1
             self._sequences[jobId] = sequence
             event = RuntimeEvent(
                 jobId=jobId,
@@ -62,28 +81,8 @@ class EventStore:
                 workflowRunId=workflowRunId,
                 parentWorkflowRunId=parentWorkflowRunId,
                 nodeRunId=nodeRunId,
-                iterationPathJson=json.dumps(list(iterationPath), ensure_ascii=True),
+                iterationPathJson=iterationPathJson,
             )
-            if self.persistence is not None:
-                append = getattr(self.persistence, "appendJobEvent", None)
-                if callable(append):
-                    append(
-                        jobId=jobId,
-                        nodeId=nodeId,
-                        eventType=eventType,
-                        level=level,
-                        code=code,
-                        message=message,
-                        payloadJson=payloadJson,
-                        sequence=sequence,
-                        projectId=projectId,
-                        workflowId=workflowId,
-                        workflowRunId=workflowRunId,
-                        parentWorkflowRunId=parentWorkflowRunId,
-                        nodeRunId=nodeRunId,
-                        iterationPathJson=event.iterationPathJson,
-                        timestamp=timestamp,
-                    )
             bucket = self._events.setdefault(jobId, [])
             bucket.append(event)
             if len(bucket) > self.retentionPerJob:

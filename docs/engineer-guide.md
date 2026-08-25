@@ -46,7 +46,9 @@ embedded Runtime 和 external gRPC Runtime 继续保留兼容入口。
 `jobs/<jobId>/`：失败和中止的 Job 在终态回调中清理，成功 Job 为了保留
 `ArtifactRef` 在 Runtime 关闭前保留，关闭时统一回收；启动时还会清理未知、
 已终态和上次 Runtime 遗留的 workspace。进程和 Queue 在 Supervisor reap 路径
-中关闭并移除句柄。
+中关闭并移除句柄。同一数据目录同一时刻只允许一个跨进程 Runtime 实例；
+第二个实例会在启动时快速失败，避免把仍由第一个实例管理的 Job 误判为孤儿。
+同一进程内的嵌入式测试实例共享锁，但只有第一个实例执行孤儿 Job 恢复。
 
 ## 修改边界
 

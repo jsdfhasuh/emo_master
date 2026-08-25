@@ -183,6 +183,7 @@ class _BridgeObserver:
     def __init__(self) -> None:
         self.bridge: EventBridge | None = None
         self.heartbeatChecks = 0
+        self.exits: list[tuple[str, int | None]] = []
 
     def checkHeartbeat(self, jobId: str) -> None:
         _ = jobId
@@ -201,8 +202,7 @@ class _BridgeObserver:
         _ = jobId
 
     def processExited(self, jobId: str, exitCode: int | None) -> None:
-        _ = jobId
-        _ = exitCode
+        self.exits.append((jobId, exitCode))
 
 
 def testEventBridgeChecksHeartbeatWhenQueueIsSilent() -> None:
@@ -214,6 +214,30 @@ def testEventBridgeChecksHeartbeatWhenQueueIsSilent() -> None:
     bridge.run()
 
     assert observer.heartbeatChecks == 1
+
+
+def testEventBridgeTreatsClosedProcessAsExited() -> None:
+    class ClosedProcess:
+        @property
+        def exitcode(self):
+            raise ValueError("process object is closed")
+
+        def is_alive(self) -> bool:
+            raise ValueError("process object is closed")
+
+    observer = _BridgeObserver()
+    bridge = EventBridge(
+        observer,
+        "job-closed",
+        ClosedProcess(),
+        queue.Queue(),
+        Event(),
+    )
+    observer.bridge = bridge
+
+    bridge.run()
+
+    assert observer.exits == [("job-closed", None)]
 
 
 class _FakeProcessContext:

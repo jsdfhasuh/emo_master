@@ -31,14 +31,17 @@ class EventBridge(threading.Thread):
                 except BaseException as err:
                     self.supervisor.bridgeError(self.jobId, err)
                     break
-            if not self.process.is_alive():
+            if self.stopEvent.is_set():
+                break
+            if not self._processIsAlive():
                 self._drain()
+                break
+            if self.stopEvent.is_set():
                 break
             self.supervisor.checkHeartbeat(self.jobId)
         if self.stopEvent.is_set():
-            self.supervisor.bridgeStopped(self.jobId)
             return
-        self.supervisor.processExited(self.jobId, self.process.exitcode)
+        self.supervisor.processExited(self.jobId, self._processExitCode())
 
     def _drain(self) -> None:
         while not self.stopEvent.is_set():
@@ -52,3 +55,15 @@ class EventBridge(threading.Thread):
                 except BaseException as err:
                     self.supervisor.bridgeError(self.jobId, err)
                     return
+
+    def _processIsAlive(self) -> bool:
+        try:
+            return bool(self.process.is_alive())
+        except ValueError:
+            return False
+
+    def _processExitCode(self) -> int | None:
+        try:
+            return self.process.exitcode
+        except ValueError:
+            return None

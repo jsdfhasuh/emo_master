@@ -1,6 +1,8 @@
 from emo_master.apps.designer.controllers.runtime_controller import RuntimeController
 from emo_master.core.contracts.execution import RuntimeEventDTO
 import emo_master.apps.designer.controllers.runtime_controller as runtimeControllerModule
+import threading
+import time
 
 
 class _Panel:
@@ -169,10 +171,13 @@ def testRuntimeControllerCanForceStopAfterGracefulStop() -> None:
     class Client:
         def __init__(self) -> None:
             self.modes = []
+            self.forceCalled = threading.Event()
 
         def stopJob(self, jobId: str, mode: str):
             assert jobId == "job-active"
             self.modes.append(mode)
+            if mode == "force":
+                self.forceCalled.set()
             status = "STOPPING" if mode == "graceful" else "ABORTED"
             return type("Reply", (), {"status": status, "message": status.lower()})()
 
@@ -203,9 +208,84 @@ def testRuntimeControllerCanForceStopAfterGracefulStop() -> None:
     controller.stopJob()
     controller.stopJob()
 
+    from PySide2.QtCore import QCoreApplication
+
+    application = QCoreApplication.instance()
+    assert application is not None
+    deadline = time.monotonic() + 2.0
+    while not client.forceCalled.is_set():
+        application.processEvents()
+        assert time.monotonic() < deadline
+        client.forceCalled.wait(0.01)
+    while panel.jobStatus != "ABORTED":
+        application.processEvents()
+        assert time.monotonic() < deadline + 2.0
+        client.forceCalled.wait(0.01)
+
     assert client.modes == ["graceful", "force"]
-    assert running == [True, False]
+    assert running[-1] is False
     assert panel.jobStatus == "ABORTED"
+
+
+def testRuntimeControllerRunsStopRpcOutsideQtThreadAndEscalates() -> None:
+    mainThreadId = threading.get_ident()
+
+    class Client:
+        def __init__(self) -> None:
+            self.started = threading.Event()
+            self.release = threading.Event()
+            self.calls = []
+
+        def stopJob(self, jobId: str, mode: str):
+            self.calls.append((jobId, mode, threading.get_ident()))
+            self.started.set()
+            self.release.wait(timeout=2.0)
+            status = "ABORTED" if mode == "force" else "STOPPING"
+            return type("Reply", (), {"status": status, "message": status.lower()})()
+
+    class Panel(_Panel):
+        jobStatus = "RUNNING"
+
+        def updateJob(self, status, message="") -> None:
+            self.jobStatus = status
+            self.message = message
+
+    client = Client()
+    panel = Panel()
+    controller = RuntimeController(
+        runtimeClient=client,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: "job-active",
+    )
+
+    controller.stopJob()
+    assert panel.jobStatus == "STOPPING"
+    assert client.started.wait(timeout=2.0)
+    assert client.calls[0][2] != mainThreadId
+
+    controller.stopJob()
+    assert len(client.calls) == 1
+    client.release.set()
+
+    from PySide2.QtCore import QCoreApplication
+
+    application = QCoreApplication.instance()
+    assert application is not None
+    deadline = time.monotonic() + 2.0
+    while panel.jobStatus != "ABORTED":
+        application.processEvents()
+        assert time.monotonic() < deadline
+        client.release.wait(0.01)
+
+    assert [call[1] for call in client.calls] == ["graceful", "force"]
 
 
 def testRuntimeControllerCloseStopsWorkerSubscriptionAndClient() -> None:
@@ -220,21 +300,30 @@ def testRuntimeControllerCloseStopsWorkerSubscriptionAndClient() -> None:
         def __init__(self) -> None:
             self.stopRequests = 0
             self.waitTimeouts = []
+            self.running = True
 
         def requestStop(self) -> None:
             self.stopRequests += 1
 
         def isRunning(self) -> bool:
-            return True
+            return self.running
 
         def wait(self, timeoutMs: int) -> None:
             self.waitTimeouts.append(timeoutMs)
+            self.running = False
+
+    class Panel(_Panel):
+        jobStatus = "IDLE"
+
+        def updateJob(self, status, message="") -> None:
+            self.jobStatus = status
+            self.message = message
 
     client = Client()
     worker = Worker()
     controller = RuntimeController(
         runtimeClient=client,
-        runtimePanelState=_Panel(),
+        runtimePanelState=Panel(),
         appendLog=lambda level, message: None,
         refreshRuntimePanelView=lambda: None,
         updateToolbarState=lambda: None,
@@ -254,3 +343,89 @@ def testRuntimeControllerCloseStopsWorkerSubscriptionAndClient() -> None:
     assert controller._worker is None
     assert controller._jobActive is False
     assert client.closed == 1
+
+
+def testRuntimeControllerCloseEscalatesAndReapsStopWorkers() -> None:
+    class Client:
+        def __init__(self) -> None:
+            self.modes = []
+            self.closed = 0
+
+        def stopJob(self, jobId: str, mode: str):
+            assert jobId == "job-active"
+            self.modes.append(mode)
+            status = "STOPPING" if mode == "graceful" else "ABORTED"
+            return type("Reply", (), {"ok": True, "status": status, "message": status})()
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Panel(_Panel):
+        jobStatus = "RUNNING"
+
+        def updateJob(self, status, message="") -> None:
+            self.jobStatus = status
+            self.message = message
+
+    client = Client()
+    controller = RuntimeController(
+        runtimeClient=client,
+        runtimePanelState=Panel(),
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: "job-active",
+    )
+    controller._jobActive = True
+
+    controller.close()
+
+    assert client.modes == ["graceful", "force"]
+    assert controller._stopWorker is None
+    assert controller._closed is True
+    assert client.closed == 1
+
+
+def testRuntimeControllerHandlesRejectedStopReply() -> None:
+    class Panel(_Panel):
+        jobStatus = "RUNNING"
+
+        def updateJob(self, status, message="") -> None:
+            self.jobStatus = status
+            self.message = message
+
+    class Worker:
+        def __init__(self) -> None:
+            self.resultHandled = False
+
+    panel = Panel()
+    logs = []
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: logs.append((level, message)),
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: "project",
+        getCurrentJobId=lambda: "job-active",
+    )
+    worker = Worker()
+    controller._stopWorker = worker
+
+    controller._onStopReply(
+        worker,
+        type("Reply", (), {"ok": False, "status": "FAILED", "message": "busy"})(),
+    )
+
+    assert worker.resultHandled is True
+    assert panel.jobStatus == "RUNNING"
+    assert logs == [("ERROR", "停止作业失败：busy")]

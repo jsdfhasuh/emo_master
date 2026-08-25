@@ -65,6 +65,24 @@ try:
         def setJobId(self, jobId: str) -> None:
             self._jobId = jobId
 
+    class RuntimeStopWorker(QThread):
+        """Executes a potentially blocking StopJob RPC off the UI thread."""
+
+        replyReceived: Any = Signal(object)
+        failed: Any = Signal(str)
+
+        def __init__(self, runtimeClient, jobId: str, mode: str) -> None:
+            super().__init__()
+            self.runtimeClient = runtimeClient
+            self.jobId = jobId
+            self.mode = mode
+            self.reply: object | None = None
+            self.error: str | None = None
+            self.resultHandled = False
+
+        def run(self) -> None:  # type: ignore[override]
+            _runStopWorker(self)
+
 except Exception:  # pragma: no cover
 
     class _Signal:
@@ -149,6 +167,40 @@ except Exception:  # pragma: no cover
         def setJobId(self, jobId: str) -> None:
             self._jobId = jobId
 
+    class RuntimeStopWorker:  # type: ignore[no-redef]
+        """Threaded fallback for headless Designer tests."""
+
+        def __init__(self, runtimeClient, jobId: str, mode: str) -> None:
+            self.runtimeClient = runtimeClient
+            self.jobId = jobId
+            self.mode = mode
+            self.reply: object | None = None
+            self.error: str | None = None
+            self.resultHandled = False
+            self.replyReceived = _Signal()
+            self.failed = _Signal()
+            self.finished = _Signal()
+            self._thread: threading.Thread | None = None
+
+        def start(self) -> None:
+            self._thread = threading.Thread(target=self.run, daemon=True)
+            self._thread.start()
+
+        def run(self) -> None:
+            try:
+                _runStopWorker(self)
+            finally:
+                self.finished.emit()
+
+        def wait(self, timeoutMs: int = -1) -> bool:
+            if self._thread is not None:
+                self._thread.join(None if timeoutMs < 0 else timeoutMs / 1000.0)
+                return not self._thread.is_alive()
+            return True
+
+        def isRunning(self) -> bool:
+            return self._thread is not None and self._thread.is_alive()
+
 
 def _cancelSubscription(worker: RuntimeWorker) -> None:
     with worker._streamLock:
@@ -160,6 +212,17 @@ def _cancelSubscription(worker: RuntimeWorker) -> None:
     cancelClientStream = getattr(worker.runtimeClient, "cancelEventStream", None)
     if callable(cancelClientStream) and worker._jobId:
         cancelClientStream(worker._jobId)
+
+
+def _runStopWorker(worker: RuntimeStopWorker) -> None:
+    try:
+        reply = worker.runtimeClient.stopJob(worker.jobId, mode=worker.mode)
+    except Exception as err:
+        worker.error = str(err)
+        worker.failed.emit(str(err))
+        return
+    worker.reply = reply
+    worker.replyReceived.emit(reply)
 
 
 def _runWorker(worker: RuntimeWorker) -> None:

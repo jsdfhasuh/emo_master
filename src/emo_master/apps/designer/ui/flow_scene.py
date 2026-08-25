@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 
 
 @dataclass
@@ -16,6 +17,7 @@ class FlowNodeViewModel:
     inputPorts: dict[str, str]
     outputPorts: dict[str, str]
     operatorId: str = ""
+    kind: str = "operator"
 
 
 @dataclass(frozen=True)
@@ -376,6 +378,12 @@ try:
                     edgeItem.refreshPath()
 
         def removeFlowNode(self, nodeId: str) -> None:
+            nodeItem = self._nodeItems.get(nodeId)
+            if nodeItem is not None and nodeItem.model.kind in {
+                "workflow_input",
+                "workflow_output",
+            }:
+                return
             edgeKeysToRemove = [
                 edgeKey
                 for edgeKey in self._edgeItems.keys()
@@ -388,7 +396,6 @@ try:
                 if key[0] == nodeId:
                     del self._portItems[key]
 
-            nodeItem = self._nodeItems.get(nodeId)
             if nodeItem is not None:
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
@@ -620,6 +627,14 @@ try:
                 return
             nodeItem.setRuntimeState(state)
 
+        def resetRuntimeStates(self) -> None:
+            for nodeItem in self._nodeItems.values():
+                nodeItem.setRuntimeState("IDLE")
+
+        def setAllNodeRuntimeStates(self, state: str) -> None:
+            for nodeItem in self._nodeItems.values():
+                nodeItem.setRuntimeState(state)
+
         def getContentBounds(self) -> tuple[float, float, float, float] | None:
             if len(self._nodeItems) == 0:
                 return None
@@ -672,7 +687,7 @@ try:
             targetPort = self._portItems.get((toNodeId, "input", toPort))
             if targetPort is None:
                 return f"无效输入端口：{toNodeId}.{toPort}"
-            if sourcePort.portType != targetPort.portType:
+            if not arePortTypesCompatible(sourcePort.portType, targetPort.portType):
                 return (
                     "端口类型不匹配："
                     f"{fromNodeId}.{fromPort}({sourcePort.portType}) -> {toNodeId}.{toPort}({targetPort.portType})"
@@ -772,7 +787,7 @@ try:
                 if portItem.direction != "input":
                     continue
                 isCompatible = (
-                    sourcePort.portType == portItem.portType
+                    arePortTypesCompatible(sourcePort.portType, portItem.portType)
                     and sourcePort.nodeId != portItem.nodeId
                 )
                 portItem.setHoverHint(isCompatible)
@@ -937,6 +952,7 @@ except Exception:  # pragma: no cover
             self._nodes = {}
             self._edges = []
             self._selectedNodeId = None
+            self._nodeRuntimeStates = {}
             self._dragHintText = ""
             self._dragSourceNodeId = None
             self._dragSourcePortName = None
@@ -966,6 +982,9 @@ except Exception:  # pragma: no cover
             self._edges.append(edge)
 
         def removeFlowNode(self, nodeId: str) -> None:
+            node = self._nodes.get(nodeId)
+            if node is not None and node.kind in {"workflow_input", "workflow_output"}:
+                return
             if nodeId in self._nodes:
                 del self._nodes[nodeId]
             self._edges = [
@@ -1007,6 +1026,7 @@ except Exception:  # pragma: no cover
                     inputPorts=current.inputPorts,
                     outputPorts=current.outputPorts,
                     operatorId=current.operatorId,
+                    kind=current.kind,
                 )
 
         def getSelectedNodeId(self) -> str | None:
@@ -1052,6 +1072,14 @@ except Exception:  # pragma: no cover
         def setNodeRuntimeState(self, nodeId: str, state: str) -> None:
             if nodeId in self._nodes:
                 self._nodeRuntimeStates[nodeId] = state
+
+        def resetRuntimeStates(self) -> None:
+            self._nodeRuntimeStates = {}
+
+        def setAllNodeRuntimeStates(self, state: str) -> None:
+            self._nodeRuntimeStates = {
+                nodeId: state for nodeId in self._nodes
+            }
 
         def getContentBounds(self) -> tuple[float, float, float, float] | None:
             if len(self._nodes) == 0:
@@ -1130,7 +1158,7 @@ except Exception:  # pragma: no cover
                 return f"无效输入端口：{toNodeId}.{toPort}"
             sourceType = sourceNode.outputPorts[fromPort]
             targetType = targetNode.inputPorts[toPort]
-            if sourceType != targetType:
+            if not arePortTypesCompatible(sourceType, targetType):
                 return f"端口类型不匹配：{fromNodeId}.{fromPort}({sourceType}) -> {toNodeId}.{toPort}({targetType})"
             return ""
 

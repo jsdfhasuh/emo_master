@@ -1,6 +1,8 @@
 from collections import defaultdict, deque
 from typing import Iterable
 
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
+
 
 def validateFlowGraph(flowData: dict[str, object]) -> dict[str, object]:
   errors: list[str] = []
@@ -50,7 +52,10 @@ def validateFlowGraph(flowData: dict[str, object]) -> dict[str, object]:
     if sourceType is None or targetType is None:
       errors.append("edge references missing port")
       continue
-    if sourceType != targetType:
+    if not isinstance(sourceType, str) or not isinstance(targetType, str):
+      errors.append("port types must be strings")
+      continue
+    if not arePortTypesCompatible(sourceType, targetType):
       errors.append(f"type mismatch: {fromNode}.{fromPort} -> {toNode}.{toPort}")
 
   if _containsCycle(nodeById.keys(), edges):

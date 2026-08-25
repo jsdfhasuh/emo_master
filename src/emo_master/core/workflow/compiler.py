@@ -7,6 +7,7 @@ from typing import Callable, cast
 
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
 from emo_master.core.workflow.models import (
     CompiledEdge,
@@ -122,7 +123,7 @@ class WorkflowCompiler:
             elif edge.fromPort in source.outputPorts:
                 sourceType = source.outputPorts[edge.fromPort]
                 targetType = target.inputPorts[edge.toPort]
-                if not _portsCompatible(sourceType, targetType):
+                if not arePortTypesCompatible(sourceType, targetType):
                     issues.append(
                         ValidationIssue(
                             "E_PORT_TYPE_MISMATCH",
@@ -333,10 +334,6 @@ def _operatorMetadata(value: object | None) -> tuple[dict[str, str], dict[str, s
 def _operatorClass(value: object) -> object | None:
     operatorClass = getattr(value, "operatorClass", None)
     return operatorClass if operatorClass is not None else value
-
-
-def _portsCompatible(source: str, target: str) -> bool:
-    return source == target or source in {"object", "any"} or target in {"object", "any"}
 
 
 def _topological_order(

@@ -366,6 +366,7 @@ class ProjectController:
                     inputPorts=node.inputPorts,
                     outputPorts=node.outputPorts,
                     operatorId=node.operatorId,
+                    kind=node.kind,
                 )
             )
 

@@ -91,7 +91,12 @@ def testMainWindowCanSaveAndLoadProjectDirectory(tmp_path: Path) -> None:
     loadMethod = getattr(windowLoaded, "loadProjectDirectory", None)
     assert callable(loadMethod)
     assert loadMethod(str(saveDir)) is True
-    assert len(windowLoaded.flowModel.nodes) == 2
+    assert len(
+        [node for node in windowLoaded.flowModel.nodes.values() if node.kind == "operator"]
+    ) == 2
+    assert {
+        node.kind for node in windowLoaded.flowModel.nodes.values()
+    } == {"operator", "workflow_input", "workflow_output"}
     assert len(windowLoaded.flowModel.edges) == 1
 
     loadedSource = windowLoaded.flowModel.nodes[sourceNode]

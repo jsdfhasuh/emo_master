@@ -94,6 +94,8 @@ class WorkflowController:
             raise ValueError("subflow cannot target its current workflow")
         target = self.workflowStore.get(targetWorkflowId)
         node = self.flowModel.nodes[nodeId]
+        if node.kind in {"workflow_input", "workflow_output"}:
+            raise ValueError("workflow boundary nodes cannot be reconfigured")
         node.kind = "subflow"
         node.operatorId = ""
         node.targetWorkflowId = targetWorkflowId
@@ -110,6 +112,8 @@ class WorkflowController:
             if not isinstance(value, int) or isinstance(value, bool) or value < 0:
                 raise ValueError(f"{key} must be a non-negative integer")
         node = self.flowModel.nodes[nodeId]
+        if node.kind in {"workflow_input", "workflow_output"}:
+            raise ValueError("workflow boundary nodes cannot be reconfigured")
         bodyWorkflowId = config.get("bodyWorkflowId")
         if bodyWorkflowId is None and mode in {"repeat", "foreach"}:
             bodyWorkflowId = node.targetWorkflowId
@@ -174,6 +178,7 @@ class WorkflowController:
         workflow = self.workflowStore.get(workflowId)
         workflow.inputs = deepcopy(inputs)
         workflow.outputs = deepcopy(outputs)
+        self.workflowStore.ensureBoundaryNodes(workflowId)
         self._refreshSubflowPorts(workflowId)
         self._renderActive()
 
@@ -220,30 +225,24 @@ class WorkflowController:
         return self.workflowStore.referencesTo(workflowId)
 
     def _renderActive(self) -> None:
+        self.workflowStore.ensureBoundaryNodes(self.activeWorkflowId)
         graph = self.workflowStore.graphFor()
         rawNodes = graph.get("nodes", [])
         rawEdges = graph.get("edges", [])
         nodes = rawNodes if isinstance(rawNodes, list) else []
         edges = rawEdges if isinstance(rawEdges, list) else []
-        visibleNodeIds = {
-            node.get("nodeId")
-            for node in nodes
-            if isinstance(node, dict)
-            and node.get("kind") not in {"workflow_input", "workflow_output"}
-            and isinstance(node.get("nodeId"), str)
-        }
         graph = {
             "nodes": [
                 node
                 for node in nodes
-                if isinstance(node, dict) and node.get("nodeId") in visibleNodeIds
+                if isinstance(node, dict) and isinstance(node.get("nodeId"), str)
             ],
             "edges": [
                 edge
                 for edge in edges
                 if isinstance(edge, dict)
-                and edge.get("fromNode") in visibleNodeIds
-                and edge.get("toNode") in visibleNodeIds
+                and isinstance(edge.get("fromNode"), str)
+                and isinstance(edge.get("toNode"), str)
             ],
         }
         self.flowModel.loadProjectGraph(graph)
@@ -264,6 +263,7 @@ class WorkflowController:
                     inputPorts=node.inputPorts,
                     outputPorts=node.outputPorts,
                     operatorId=node.operatorId,
+                    kind=node.kind,
                 )
             )
         for edge in self.flowModel.edges:

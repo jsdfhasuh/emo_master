@@ -80,7 +80,9 @@ def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete() -> None:
     controller.loadPayload(_payload())
     assert "subflow" in model.nodes
     controller.switchWorkflow("body")
-    assert model.nodes == {}
+    assert {
+        node.kind for node in model.nodes.values()
+    } == {"workflow_input", "workflow_output"}
     try:
         controller.deleteWorkflow("body")
     except ValueError as err:

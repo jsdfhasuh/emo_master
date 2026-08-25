@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 
 
 @dataclass
@@ -58,6 +59,7 @@ class WorkflowStore:
         self.entryWorkflowId = "main"
         self.activeWorkflowId = "main"
         self.workflows = {"main": WorkflowState("main", "Main")}
+        self.ensureBoundaryNodes()
 
     def loadPayload(self, payload: dict[str, object]) -> None:
         canonical = migrateProjectPayload(payload)
@@ -81,6 +83,7 @@ class WorkflowStore:
                 edges=[edge.model_dump(mode="python") for edge in workflow.edges],
                 layout=workflow.layout.model_dump(mode="python"),
             )
+        self.ensureBoundaryNodes()
 
     def loadProjectPayload(self, payload: dict[str, object]) -> None:
         self.loadPayload(payload)
@@ -105,6 +108,7 @@ class WorkflowStore:
         nodePositions: dict[str, tuple[float, float]] | None = None,
     ) -> None:
         workflow = self.get(workflowId)
+        self.ensureBoundaryNodes(workflowId)
         rawNodes = graph.get("nodes", [])
         rawEdges = graph.get("edges", [])
         nodes: list[dict[str, object]] = []
@@ -159,13 +163,28 @@ class WorkflowStore:
             not in capturedEdgeKeys
         )
         workflow.edges = capturedEdges
+        previousPositions = workflow.layout.get("nodePositions", {})
+        preservedPositions = (
+            deepcopy(previousPositions) if isinstance(previousPositions, dict) else {}
+        )
         positions = nodePositions or {}
+        for nodeId, position in positions.items():
+            if not isinstance(nodeId, str) or not isinstance(position, tuple):
+                continue
+            if len(position) != 2:
+                continue
+            preservedPositions[nodeId] = {
+                "x": float(position[0]),
+                "y": float(position[1]),
+            }
         workflow.layout = {
             "nodePositions": {
-                nodeId: {"x": float(position[0]), "y": float(position[1])}
-                for nodeId, position in positions.items()
+                nodeId: value
+                for nodeId, value in preservedPositions.items()
+                if nodeId in nodeIds and isinstance(value, dict)
             }
         }
+        self._pruneBoundaryEdges(workflow)
 
     def captureActiveGraph(
         self,
@@ -199,6 +218,7 @@ class WorkflowStore:
             inputs=deepcopy(inputs or {}),
             outputs=deepcopy(outputs or {}),
         )
+        self.ensureBoundaryNodes(candidate)
         self.workflowOrder.append(candidate)
         if self.activeWorkflowId == "":
             self.activeWorkflowId = candidate
@@ -259,6 +279,7 @@ class WorkflowStore:
         self.activeWorkflowId = workflowId
 
     def toPayload(self, projectName: str | None = None) -> dict[str, object]:
+        self.ensureBoundaryNodes()
         project = deepcopy(self.project)
         if projectName:
             project["name"] = projectName
@@ -275,7 +296,9 @@ class WorkflowStore:
                     "name": workflow.name,
                     "inputs": deepcopy(workflow.inputs),
                     "outputs": deepcopy(workflow.outputs),
-                    "nodes": _serializedNodes(workflowId, workflow.nodes),
+                    "nodes": _serializedNodes(
+                        workflowId, workflow.nodes, workflow.inputs, workflow.outputs
+                    ),
                     "edges": deepcopy(workflow.edges),
                     "layout": deepcopy(workflow.layout),
                 }
@@ -295,23 +318,163 @@ class WorkflowStore:
         if isinstance(project, dict):
             self.project = deepcopy(project)
 
+    def ensureBoundaryNodes(self, workflowId: str | None = None) -> None:
+        selectedIds = (
+            [workflowId]
+            if workflowId is not None
+            else list(self.workflowOrder)
+        )
+        for selectedId in selectedIds:
+            workflow = self.workflows.get(selectedId)
+            if workflow is None:
+                continue
+            self._ensureBoundaryNodesForWorkflow(workflow)
+            self._pruneBoundaryEdges(workflow)
+
+    def _ensureBoundaryNodesForWorkflow(self, workflow: WorkflowState) -> None:
+        normalizedNodes: list[dict[str, object]] = []
+        seenKinds: set[str] = set()
+        for rawNode in workflow.nodes:
+            if not isinstance(rawNode, dict):
+                continue
+            node = deepcopy(rawNode)
+            kind = node.get("kind")
+            if isinstance(kind, str) and kind in {"workflow_input", "workflow_output"}:
+                if kind in seenKinds:
+                    continue
+                seenKinds.add(kind)
+                self._normalizeBoundaryNode(workflow, node, kind)
+            normalizedNodes.append(node)
+
+        if "workflow_input" not in seenKinds:
+            node = {"nodeId": self._boundaryNodeId(workflow, "workflow_input")}
+            self._normalizeBoundaryNode(workflow, node, "workflow_input")
+            normalizedNodes.append(node)
+        if "workflow_output" not in seenKinds:
+            node = {"nodeId": self._boundaryNodeId(workflow, "workflow_output")}
+            self._normalizeBoundaryNode(workflow, node, "workflow_output")
+            normalizedNodes.append(node)
+        workflow.nodes = normalizedNodes
+
+    def _normalizeBoundaryNode(
+        self, workflow: WorkflowState, node: dict[str, object], kind: str
+    ) -> None:
+        rawNodeId = node.get("nodeId")
+        nodeId = rawNodeId if isinstance(rawNodeId, str) and rawNodeId else self._boundaryNodeId(workflow, kind)
+        node.update(
+            {
+                "nodeId": nodeId,
+                "operatorId": "",
+                "displayName": "Workflow Input" if kind == "workflow_input" else "Workflow Output",
+                "inputPorts": {}
+                if kind == "workflow_input"
+                else portTypes(workflow.outputs),
+                "outputPorts": portTypes(workflow.inputs)
+                if kind == "workflow_input"
+                else {},
+                "paramSchema": {},
+                "params": {},
+                "kind": kind,
+                "targetWorkflowId": None,
+                "loop": {},
+            }
+        )
+
+    def _boundaryNodeId(self, workflow: WorkflowState, kind: str) -> str:
+        prefix = "__workflow_input__" if kind == "workflow_input" else "__workflow_output__"
+        return prefix if workflow.workflowId == "main" else f"{prefix}:{workflow.workflowId}"
+
+    def _pruneBoundaryEdges(self, workflow: WorkflowState) -> None:
+        nodesById = {
+            node.get("nodeId"): node
+            for node in workflow.nodes
+            if isinstance(node, dict) and isinstance(node.get("nodeId"), str)
+        }
+        boundaryIds = {
+            nodeId
+            for nodeId, node in nodesById.items()
+            if isinstance(node, dict)
+            and node.get("kind") in {"workflow_input", "workflow_output"}
+        }
+        validEdges: list[dict[str, object]] = []
+        seen: set[tuple[object, object, object, object]] = set()
+        for rawEdge in workflow.edges:
+            if not isinstance(rawEdge, dict):
+                continue
+            fromNode = rawEdge.get("fromNode")
+            fromPort = rawEdge.get("fromPort")
+            toNode = rawEdge.get("toNode")
+            toPort = rawEdge.get("toPort")
+            edgeKey = (fromNode, fromPort, toNode, toPort)
+            if not all(isinstance(value, str) for value in edgeKey):
+                continue
+            if fromNode not in nodesById or toNode not in nodesById:
+                continue
+            if edgeKey in seen:
+                continue
+            if fromNode in boundaryIds or toNode in boundaryIds:
+                sourceNode = nodesById[fromNode]
+                targetNode = nodesById[toNode]
+                sourcePorts = sourceNode.get("outputPorts", {})
+                targetPorts = targetNode.get("inputPorts", {})
+                sourceType = sourcePorts.get(fromPort) if isinstance(sourcePorts, dict) else None
+                targetType = targetPorts.get(toPort) if isinstance(targetPorts, dict) else None
+                if not isinstance(sourceType, str) or not isinstance(targetType, str):
+                    continue
+                if not arePortTypesCompatible(sourceType, targetType):
+                    continue
+            seen.add(edgeKey)
+            validEdges.append(dict(rawEdge))
+        workflow.edges = validEdges
+
 
 def _slug(value: str) -> str:
     normalized = "".join(char.lower() if char.isalnum() else "-" for char in value)
     return "-".join(part for part in normalized.split("-") if part)[:48]
 
 
-def _serializedNodes(workflowId: str, nodes: list[dict[str, object]]) -> list[dict[str, object]]:
+def _serializedNodes(
+    workflowId: str,
+    nodes: list[dict[str, object]],
+    inputs: dict[str, object] | None = None,
+    outputs: dict[str, object] | None = None,
+) -> list[dict[str, object]]:
     serialized = deepcopy(nodes)
     kinds = {
         node.get("kind") for node in serialized if isinstance(node, dict)
     }
     if "workflow_input" not in kinds:
         inputId = "__workflow_input__" if workflowId == "main" else f"__workflow_input__:{workflowId}"
-        serialized.append({"nodeId": inputId, "kind": "workflow_input"})
+        serialized.append(
+            {
+                "nodeId": inputId,
+                "operatorId": "",
+                "displayName": "Workflow Input",
+                "inputPorts": {},
+                "outputPorts": portTypes(inputs or {}),
+                "paramSchema": {},
+                "params": {},
+                "kind": "workflow_input",
+                "targetWorkflowId": None,
+                "loop": {},
+            }
+        )
     if "workflow_output" not in kinds:
         outputId = "__workflow_output__" if workflowId == "main" else f"__workflow_output__:{workflowId}"
-        serialized.append({"nodeId": outputId, "kind": "workflow_output"})
+        serialized.append(
+            {
+                "nodeId": outputId,
+                "operatorId": "",
+                "displayName": "Workflow Output",
+                "inputPorts": portTypes(outputs or {}),
+                "outputPorts": {},
+                "paramSchema": {},
+                "params": {},
+                "kind": "workflow_output",
+                "targetWorkflowId": None,
+                "loop": {},
+            }
+        )
     return serialized
 
 

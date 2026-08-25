@@ -961,6 +961,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.backspaceDeleteShortcut.activated.connect(self.handleDeleteShortcut)
         self._buildMainMenuBar()
         self.refreshOperators()
+        self._layoutMode = "normal"
+        self.workflowController.refreshActiveWorkflow()
         self.updateToolbarState()
         self._refreshRuntimePanelView()
         self.setActiveCategory("全部")
@@ -969,7 +971,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.operatorBubble.setCreateHandler(self.addNodeFromOperatorPayload)
         self.refreshSidebarNodeList()
         self._refreshWorkflowTabs()
-        self._layoutMode = "normal"
         self.applyResponsiveLayout()
         self.restoreMainSplitterSizes()
 
@@ -1061,11 +1062,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.projectController.loadProjectDirectory(projectDirPath)
         )
         if ok:
+            self._resetRuntimeVisualState(clearHistory=True)
+            self.currentJobId = None
+            self.runtimePanelState.setActiveJob(None)
             self.loadedProjectPath = loadedProjectPath
             self.currentProjectDir = currentProjectDir
             self.activeWorkflowId = self.workflowController.activeWorkflowId
             self._restoreActiveWorkflowRuntimeState()
             self._refreshWorkflowTabs()
+        else:
+            self.loadedProjectPath = None
+            self.currentProjectDir = None
+            self.workflowStore.reset()
+            self.activeWorkflowId = self.workflowStore.activeWorkflowId
+            self.workflowController._renderActive()
+            self._resetRuntimeVisualState(clearHistory=True)
+            self.runtimePanelState.setActiveJob(None)
+            self.runtimePanelState.updateJob("IDLE", "")
+            self._refreshRuntimePanelView()
+            self.updateToolbarState()
         return bool(ok)
 
     def refreshSidebarNodeList(self) -> None:
@@ -1073,6 +1088,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(clearMethod):
             clearMethod()
         for node in self.flowModel.nodes.values():
+            if node.kind in {"workflow_input", "workflow_output"}:
+                continue
             shortId = node.nodeId[:8]
             item = QListWidgetItem(f"{node.displayName}\n{shortId}")
             setData = getattr(item, "setData", None)
@@ -1085,6 +1102,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def getSidebarNodeEntries(self) -> list[dict[str, object]]:
         entries: list[dict[str, object]] = []
         for node in self.flowModel.nodes.values():
+            if node.kind in {"workflow_input", "workflow_output"}:
+                continue
             entries.append(
                 {
                     "nodeId": node.nodeId,
@@ -1172,7 +1191,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         hadActiveJob = self.currentJobId is not None
         self.currentJobId = jobId
         self._allowRuntimeEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
-        self._nodeRuntimeState.clear()
+        self._resetRuntimeVisualState()
         setActiveJob = getattr(self.runtimePanelState, "setActiveJob", None)
         if callable(setActiveJob):
             setActiveJob(jobId)
@@ -1446,6 +1465,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 inputPorts=node.inputPorts,
                 outputPorts=node.outputPorts,
                 operatorId=node.operatorId,
+                kind=node.kind,
             )
         )
         self.flowModel.selectNode(nodeId)
@@ -1588,6 +1608,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def _restoreActiveWorkflowRuntimeState(self) -> None:
         expectedJobId = self.currentJobId
+        resetRuntimeStates = getattr(self.flowScene, "resetRuntimeStates", None)
+        if callable(resetRuntimeStates):
+            resetRuntimeStates()
+        self._nodeRuntimeState.clear()
         for nodeId in self.flowModel.nodes:
             candidates = [
                 value
@@ -1596,13 +1620,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 and _runtimeStateBelongsToJob(value, expectedJobId)
             ]
             if not candidates:
-                self._nodeRuntimeState.pop(nodeId, None)
                 continue
             latest = max(candidates, key=_runtimeSequence)
             self._nodeRuntimeState[nodeId] = dict(latest)
             setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
             if callable(setNodeRuntimeState):
                 setNodeRuntimeState(nodeId, str(latest.get("status", "IDLE")))
+
+    def _resetRuntimeVisualState(self, clearHistory: bool = False) -> None:
+        self._nodeRuntimeState.clear()
+        if clearHistory:
+            self._nodeRuntimeStateByRun.clear()
+            self._nodeRuntimeStateByWorkflowRun.clear()
+        resetRuntimeStates = getattr(self.flowScene, "resetRuntimeStates", None)
+        if callable(resetRuntimeStates):
+            resetRuntimeStates()
 
     def getToolbarGroupNames(self) -> list[str]:
         return ["项目", "运行", "编辑", "辅助"]
@@ -1722,6 +1754,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     inputPorts=node.inputPorts,
                     outputPorts=node.outputPorts,
                     operatorId=node.operatorId,
+                    kind=node.kind,
                 )
             )
 
@@ -1851,6 +1884,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 inputPorts=inputPorts,
                 outputPorts=outputPorts,
                 operatorId=operatorId,
+                kind="operator",
             )
         )
         self.appendRuntimeLog("INFO", f"已添加节点：{nodeId}")
@@ -1959,6 +1993,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         selectedNodeIds = self.flowScene.getSelectedNodeIds()
         for nodeId in selectedNodeIds:
+            if self.flowModel.isBoundaryNode(nodeId):
+                self.appendRuntimeLog("WARN", "Workflow Input/Output 节点不能删除")
+                continue
             self.flowModel.removeNode(nodeId)
             self.flowScene.removeFlowNode(nodeId)
             if self.activeParamNodeId == nodeId and self.nodeParamDialog is not None:

@@ -236,3 +236,76 @@ def testRuntimeClientParsesProtoMapContainerPorts() -> None:
     assert len(operators) == 1
     assert operators[0].inputPorts == {"image": "image"}
     assert operators[0].outputPorts == {"edges": "image"}
+
+
+def testRuntimeClientCloseIsIdempotentAndClosesOwnedResources() -> None:
+    class Call:
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            raise RuntimeError("stream should be cancelled")
+
+        def cancel(self) -> None:
+            self.cancelled = getattr(self, "cancelled", 0) + 1
+
+        def close(self) -> None:
+            self.closed = getattr(self, "closed", 0) + 1
+
+    class Service:
+        def __init__(self) -> None:
+            self.call = Call()
+            self.closed = 0
+
+        def StreamJobEvents(self, request, context):
+            _ = request
+            _ = context
+            return self.call
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Channel:
+        def __init__(self) -> None:
+            self.closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    service = Service()
+    channel = Channel()
+    client = RuntimeClient(
+        runtimeService=service,
+        ownedRuntimeService=service,
+        ownedChannel=channel,
+    )
+    client.streamJobEvents("job-owned", follow=True)
+
+    client.close()
+    client.close()
+
+    assert service.call.cancelled == 1
+    assert service.call.closed == 1
+    assert service.closed == 1
+    assert channel.closed == 1
+
+
+def testRuntimeClientDoesNotCloseUnownedRuntimeService() -> None:
+    class Service:
+        def __init__(self) -> None:
+            self.closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Channel:
+        def close(self) -> None:
+            self.closed = getattr(self, "closed", 0) + 1
+
+    service = Service()
+    channel = Channel()
+    client = RuntimeClient(runtimeService=service, ownedChannel=channel)
+    client.close()
+
+    assert service.closed == 0
+    assert channel.closed == 1

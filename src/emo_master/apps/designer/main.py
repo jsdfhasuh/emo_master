@@ -31,24 +31,33 @@ def runDesigner() -> None:
     app = QApplication([])
     applyDesignerStyle(app)
     runtimeTarget = resolveRuntimeTarget()
-    runtimeService: RuntimeServiceProtocol = cast(
-        RuntimeServiceProtocol, RuntimeService()
-    )
-    channel = None
-    if runtimeTarget != "":
-        channel = grpc.insecure_channel(runtimeTarget)
-        runtimeService = cast(
-            RuntimeServiceProtocol, runtime_pb2_grpc.RuntimeServiceStub(channel)
-        )
-    runtimeClient = RuntimeClient(runtimeService=runtimeService)
-    window = MainWindow(runtimeClient, showStartupEntry=True)
-    if channel is not None:
-        setattr(window, "_runtimeChannel", channel)
-    shouldShow = window.showStartupProjectEntry()
-    if not shouldShow:
-        return
-    window.show()
-    app.exec_()
+    runtimeClient: RuntimeClient | None = None
+    try:
+        if runtimeTarget != "":
+            channel = grpc.insecure_channel(runtimeTarget)
+            runtimeService = cast(
+                RuntimeServiceProtocol, runtime_pb2_grpc.RuntimeServiceStub(channel)
+            )
+            runtimeClient = RuntimeClient(
+                runtimeService=runtimeService,
+                ownedChannel=channel,
+            )
+        else:
+            embeddedService = RuntimeService()
+            runtimeService = cast(RuntimeServiceProtocol, embeddedService)
+            runtimeClient = RuntimeClient(
+                runtimeService=runtimeService,
+                ownedRuntimeService=embeddedService,
+            )
+        window = MainWindow(runtimeClient, showStartupEntry=True)
+        shouldShow = window.showStartupProjectEntry()
+        if not shouldShow:
+            return
+        window.show()
+        app.exec_()
+    finally:
+        if runtimeClient is not None:
+            runtimeClient.close()
 
 
 if __name__ == "__main__":

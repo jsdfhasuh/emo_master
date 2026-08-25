@@ -113,11 +113,20 @@ class RuntimeEventStream:
 
 
 class RuntimeClient:
-    def __init__(self, runtimeService: RuntimeServiceProtocol, deadlineMs: int = 10000) -> None:
+    def __init__(
+        self,
+        runtimeService: RuntimeServiceProtocol,
+        deadlineMs: int = 10000,
+        ownedRuntimeService: object | None = None,
+        ownedChannel: object | None = None,
+    ) -> None:
         self.runtimeService = runtimeService
         self.deadlineMs = deadlineMs
+        self._ownedRuntimeService = ownedRuntimeService
+        self._ownedChannel = ownedChannel
         self._streamLock = threading.RLock()
         self._activeStreams: dict[str, RuntimeEventStream] = {}
+        self._closed = False
 
     def listOperators(self) -> list[OperatorDefinition]:
         reply = self._call("ListOperators", runtime_pb2.ListOperatorsRequest())
@@ -234,10 +243,24 @@ class RuntimeClient:
 
     def close(self) -> None:
         with self._streamLock:
+            if self._closed:
+                return
+            self._closed = True
             streams = list(self._activeStreams.values())
             self._activeStreams.clear()
         for stream in streams:
             stream.cancel()
+        self._closeOwned(self._ownedRuntimeService)
+        self._closeOwned(self._ownedChannel)
+
+    def _closeOwned(self, resource: object | None) -> None:
+        close = getattr(resource, "close", None)
+        if not callable(close):
+            return
+        try:
+            close()
+        except Exception:
+            return
 
     def _removeActiveStream(self, jobId: str, stream: RuntimeEventStream) -> None:
         with self._streamLock:

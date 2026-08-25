@@ -1,23 +1,25 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
 import queue
 import threading
+
+os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.designer.ui.main_window import MainWindow
 
 
-def _ensureQApp() -> None:
-    try:
-        from PySide2.QtWidgets import QApplication
+def _ensureQApp():
+    from PySide2.QtWidgets import QApplication
 
-        if QApplication.instance() is None:
-            QApplication([])
-    except Exception:
-        pass
+    application = QApplication.instance()
+    if application is None:
+        application = QApplication([])
+    return application
 
 
 def _writePlugin(tmpPath: Path) -> tuple[Path, Path]:
@@ -86,7 +88,7 @@ def _project(tmpPath: Path, startedPath: Path, releasePath: Path, outputPath: Pa
             "updatedAt": "2026-01-01T00:00:00Z",
         },
         "entryWorkflowId": "main",
-        "workflowOrder": ["main", "body"],
+        "workflowOrder": ["main", "body", "handle_result"],
         "workflows": {
             "main": {
                 "name": "Main",
@@ -107,11 +109,36 @@ def _project(tmpPath: Path, startedPath: Path, releasePath: Path, outputPath: Pa
                             "timeoutMs": 10000,
                         },
                     },
+                    {
+                        "nodeId": "handle",
+                        "kind": "subflow",
+                        "targetWorkflowId": "handle_result",
+                    },
                     {"nodeId": "output", "kind": "workflow_output"},
                 ],
                 "edges": [
                     {"fromNode": "input", "fromPort": "value", "toNode": "repeat", "toPort": "value"},
-                    {"fromNode": "repeat", "fromPort": "result", "toNode": "output", "toPort": "result"},
+                    {"fromNode": "repeat", "fromPort": "result", "toNode": "handle", "toPort": "result"},
+                    {"fromNode": "handle", "fromPort": "result", "toNode": "output", "toPort": "result"},
+                ],
+            },
+            "handle_result": {
+                "name": "Handle result",
+                "inputs": {"result": "json"},
+                "outputs": {"result": "json"},
+                "nodes": [
+                    {"nodeId": "input", "kind": "workflow_input"},
+                    {
+                        "nodeId": "branch",
+                        "kind": "operator",
+                        "operatorId": "vision.flow.if",
+                        "params": {"mode": "bool"},
+                    },
+                    {"nodeId": "output", "kind": "workflow_output"},
+                ],
+                "edges": [
+                    {"fromNode": "input", "fromPort": "result", "toNode": "branch", "toPort": "value"},
+                    {"fromNode": "branch", "fromPort": "true", "toNode": "output", "toPort": "result"},
                 ],
             },
             "body": {
@@ -224,6 +251,24 @@ def testRuntimeWorkflowV2StreamsLiveLoopEventsAndArtifacts(
         )
         assert all(event.parent_workflow_run_id == mainStarted.workflow_run_id for event in bodyStarted)
 
+        handleStarted = [
+            event
+            for event in events
+            if event.event_type == "workflow.started"
+            and event.workflow_id == "handle_result"
+        ]
+        assert len(handleStarted) == 1
+        assert handleStarted[0].parent_workflow_run_id == mainStarted.workflow_run_id
+        assert handleStarted[0].workflow_run_id != mainStarted.workflow_run_id
+        branchCompleted = next(
+            event
+            for event in events
+            if event.event_type == "node.completed"
+            and event.workflow_id == "handle_result"
+            and event.node_id == "branch"
+        )
+        assert json.loads(branchCompleted.payload_json)["branch"] == "true"
+
         completed = [
             event
             for event in events
@@ -235,8 +280,13 @@ def testRuntimeWorkflowV2StreamsLiveLoopEventsAndArtifacts(
         assert payload["diagnostics"] == {"probe": "ok"}
 
         artifacts = [event for event in events if event.event_type == "artifact.created"]
-        assert len(artifacts) == 3
-        artifact = json.loads(artifacts[0].payload_json)["artifact"]
+        bodyArtifacts = [
+            event
+            for event in artifacts
+            if event.workflow_id == "body" and event.node_id == "probe"
+        ]
+        assert len(bodyArtifacts) == 3
+        artifact = json.loads(bodyArtifacts[0].payload_json)["artifact"]
         assert artifact["path"]
         assert artifact["checksum"]
         assert Path(artifact["path"]).exists()
@@ -254,7 +304,7 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
             _ = projectPath
             return type("Reply", (), {"ok": True, "message": "ok"})()
 
-    _ensureQApp()
+    application = _ensureQApp()
     window = MainWindow(RuntimeClientStub())
     bodyWorkflowId = window.createWorkflow("Body")
     window.workflowController.setWorkflowInterface(bodyWorkflowId, {}, {})
@@ -318,3 +368,5 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
         assert [json.loads(event.iteration_path_json) for event in bodyRuns] == [[0], [1]]
     finally:
         service.close()
+        window.close()
+    assert application is not None

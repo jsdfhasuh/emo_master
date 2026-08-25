@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 import json
 from pathlib import Path
 import threading
@@ -11,7 +12,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
-from emo_master.apps.runtime.workflow.runner import WorkflowRunner
+from emo_master.apps.runtime.workflow.runner import WorkflowExecutionError, WorkflowRunner
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -178,15 +179,16 @@ def testNodeFailedEventPreservesMetricsAndDiagnostics() -> None:
         eventPublisher=lambda **event: events.append(event),
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(WorkflowExecutionError) as error:
         runner.run("main", {"image": {}}, RunContext.root("job", "main"), CancellationToken())
 
+    assert error.value.code == "E_OPERATOR_METADATA"
     failed = next(event for event in events if event["eventType"] == "node.failed")
     assert failed["payload"]["metrics"] == {"latencyMs": 12}
     assert failed["payload"]["diagnostics"] == {"retryable": False}
 
 
-@pytest.mark.parametrize("value", [0, False, "", [], {}])
+@pytest.mark.parametrize("value", [None, 0, False, "", [], {}])
 def testFalsyWorkflowInputIsNotSkipped(value: object) -> None:
     payload = _v2_project()
     payload["project"]["projectId"] = "falsy-project"
@@ -245,12 +247,8 @@ def testCompiledProjectHasImmutablePlan() -> None:
     document = ProjectDocument.model_validate(_v2_project())
     compiled = WorkflowCompiler(operatorRegistry={"vision.demo.empty": object}).compile(document)
     assert compiled.workflows["main"].topologicalOrder == ("input", "empty", "output")
-    try:
+    with pytest.raises(FrozenInstanceError):
         compiled.entryWorkflowId = "other"
-    except Exception:
-        pass
-    else:
-        raise AssertionError("compiled project must be immutable")
 
 
 def testV2StartJobUsesSpawnProcessAndReplaysSequences(tmp_path: Path) -> None:

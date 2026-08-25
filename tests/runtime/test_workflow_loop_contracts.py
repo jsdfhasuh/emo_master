@@ -8,10 +8,11 @@ import pytest
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.loop_runner import LoopExecutionError
-from emo_master.apps.runtime.workflow.runner import WorkflowRunner
+from emo_master.apps.runtime.workflow.runner import WorkflowExecutionError, WorkflowRunner
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError
+from emo_master.plugins.builtins.flow_switch.operator import FlowSwitchOperator
 
 
 class _ConditionOperator:
@@ -56,6 +57,36 @@ class _ContextBodyOperator:
         _ = params
         self.contexts.append(dict(runtimeContext))
         return {"status": "ok", "outputs": {"state": dict(inputs.get("state", {}))}}
+
+
+class _ContextConditionOperator:
+    contexts: list[dict[str, object]] = []
+
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = params
+        self.contexts.append(dict(runtimeContext))
+        state = dict(inputs.get("state", {}))
+        return {"status": "ok", "outputs": {"continue": state.get("count", 0) < 2}}
+
+
+class _ContextIncrementBodyOperator:
+    contexts: list[dict[str, object]] = []
+
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = params
+        self.contexts.append(dict(runtimeContext))
+        state = dict(inputs.get("state", {}))
+        state["count"] = int(state.get("count", 0)) + 1
+        return {"status": "ok", "outputs": {"state": state}}
+
+
+class _ContextItemOperator:
+    contexts: list[dict[str, object]] = []
+
+    def executeNode(self, inputs, params, runtimeContext):
+        _ = params
+        self.contexts.append(dict(runtimeContext))
+        return {"status": "ok", "outputs": {"result": inputs["item"]}}
 
 
 def _payload(mode: str, bodyOperator: str, loopConfig: dict[str, object]) -> dict[str, object]:
@@ -159,6 +190,33 @@ def testWhileUsesConditionAndState() -> None:
         {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
     )
     result = runner.run("main", {"state": {"count": 0}}, RunContext.root("job", "main"), CancellationToken())
+    assert result.outputs == {"state": {"count": 2}}
+
+
+def testWhileInitialFalsePreservesStateWithoutRunningBody() -> None:
+    payload = _payload(
+        "while",
+        "test.body",
+        {
+            "mode": "while",
+            "conditionWorkflowId": "condition",
+            "bodyWorkflowId": "body",
+            "maxIterations": 3,
+            "timeoutMs": 1000,
+        },
+    )
+    runner = _runner(
+        payload,
+        {"test.condition": _ConditionOperator, "test.body": _BodyOperator},
+    )
+
+    result = runner.run(
+        "main",
+        {"state": {"count": 2}},
+        RunContext.root("job", "main"),
+        CancellationToken(),
+    )
+
     assert result.outputs == {"state": {"count": 2}}
 
 
@@ -287,6 +345,254 @@ def testLoopBodyContextUsesIndependentWorkflowRunsAndIterationPaths() -> None:
     assert all(context["projectId"] == "loop-project" for context in _ContextBodyOperator.contexts)
 
 
+def testWhileConditionAndBodyUseDistinctWorkflowRuns() -> None:
+    _ContextConditionOperator.contexts.clear()
+    _ContextIncrementBodyOperator.contexts.clear()
+    payload = _payload(
+        "while",
+        "test.context-body",
+        {
+            "mode": "while",
+            "conditionWorkflowId": "condition",
+            "bodyWorkflowId": "body",
+            "maxIterations": 4,
+            "timeoutMs": 1000,
+        },
+    )
+    payload["workflows"]["condition"]["nodes"][1]["operatorId"] = (
+        "test.context-condition"
+    )
+    runner = _runner(
+        payload,
+        {
+            "test.context-condition": _ContextConditionOperator,
+            "test.context-body": _ContextIncrementBodyOperator,
+        },
+    )
+    root = RunContext.root("job", "main")
+
+    runner.run("main", {"state": {"count": 0}}, root, CancellationToken())
+
+    conditionContexts = _ContextConditionOperator.contexts
+    bodyContexts = _ContextIncrementBodyOperator.contexts
+    assert [item["iterationPath"] for item in conditionContexts] == [[0], [1], [2]]
+    assert [item["iterationPath"] for item in bodyContexts] == [[0], [1]]
+    conditionRuns = {item["workflowRunId"] for item in conditionContexts}
+    bodyRuns = {item["workflowRunId"] for item in bodyContexts}
+    assert len(conditionRuns) == 3
+    assert len(bodyRuns) == 2
+    assert conditionRuns.isdisjoint(bodyRuns)
+    assert all(item["parentWorkflowRunId"] == root.workflowRunId for item in conditionContexts)
+    assert all(item["parentWorkflowRunId"] == root.workflowRunId for item in bodyContexts)
+
+
+def testNestedLoopPreservesIterationPath() -> None:
+    _ContextIncrementBodyOperator.contexts.clear()
+    payload = _payload(
+        "repeat",
+        "test.unused",
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": "body",
+            "repeatCount": 2,
+            "maxIterations": 2,
+            "timeoutMs": 1000,
+        },
+    )
+    payload["workflowOrder"].append("innerBody")
+    payload["workflows"]["body"] = {
+        "name": "Body",
+        "inputs": {"state": "object"},
+        "outputs": {"state": "object"},
+        "nodes": [
+            {"nodeId": "input", "kind": "workflow_input"},
+            {
+                "nodeId": "innerLoop",
+                "kind": "loop",
+                "inputPorts": {"state": "object"},
+                "outputPorts": {"state": "object"},
+                "loop": {
+                    "mode": "repeat",
+                    "bodyWorkflowId": "innerBody",
+                    "repeatCount": 2,
+                    "maxIterations": 2,
+                    "timeoutMs": 1000,
+                },
+            },
+            {"nodeId": "output", "kind": "workflow_output"},
+        ],
+        "edges": [
+            {
+                "fromNode": "input",
+                "fromPort": "state",
+                "toNode": "innerLoop",
+                "toPort": "state",
+            },
+            {
+                "fromNode": "innerLoop",
+                "fromPort": "state",
+                "toNode": "output",
+                "toPort": "state",
+            },
+        ],
+    }
+    payload["workflows"]["innerBody"] = {
+        "name": "Inner body",
+        "inputs": {"state": "object"},
+        "outputs": {"state": "object"},
+        "nodes": [
+            {"nodeId": "input", "kind": "workflow_input"},
+            {
+                "nodeId": "body",
+                "kind": "operator",
+                "operatorId": "test.context-body",
+                "inputPorts": {"state": "object"},
+                "outputPorts": {"state": "object"},
+            },
+            {"nodeId": "output", "kind": "workflow_output"},
+        ],
+        "edges": [
+            {
+                "fromNode": "input",
+                "fromPort": "state",
+                "toNode": "body",
+                "toPort": "state",
+            },
+            {
+                "fromNode": "body",
+                "fromPort": "state",
+                "toNode": "output",
+                "toPort": "state",
+            },
+        ],
+    }
+    runner = _runner(
+        payload,
+        {
+            "test.condition": _ConditionOperator,
+            "test.context-body": _ContextIncrementBodyOperator,
+        },
+    )
+
+    runner.run(
+        "main",
+        {"state": {"count": 0}},
+        RunContext.root("job", "main"),
+        CancellationToken(),
+    )
+
+    assert [item["iterationPath"] for item in _ContextIncrementBodyOperator.contexts] == [
+        [0, 0],
+        [0, 1],
+        [1, 0],
+        [1, 1],
+    ]
+
+
+def testForEachCreatesUniqueWorkflowRunsAndEnforcesLimit() -> None:
+    _ContextItemOperator.contexts.clear()
+    payload = _payload(
+        "foreach",
+        "test.item",
+        {
+            "mode": "foreach",
+            "bodyWorkflowId": "body",
+            "maxIterations": 2,
+            "timeoutMs": 1000,
+        },
+    )
+    payload["workflows"]["main"].update(
+        {
+            "inputs": {"items": "list"},
+            "outputs": {"results": "list"},
+            "edges": [
+                {
+                    "fromNode": "input",
+                    "fromPort": "items",
+                    "toNode": "loop",
+                    "toPort": "items",
+                },
+                {
+                    "fromNode": "loop",
+                    "fromPort": "results",
+                    "toNode": "output",
+                    "toPort": "results",
+                },
+            ],
+        }
+    )
+    loopNode = payload["workflows"]["main"]["nodes"][1]
+    loopNode["inputPorts"] = {"items": "list"}
+    loopNode["outputPorts"] = {"results": "list"}
+    payload["workflows"]["body"] = {
+        "name": "Body",
+        "inputs": {"item": "object"},
+        "outputs": {"result": "object"},
+        "nodes": [
+            {"nodeId": "input", "kind": "workflow_input"},
+            {
+                "nodeId": "item",
+                "kind": "operator",
+                "operatorId": "test.item",
+                "inputPorts": {"item": "object"},
+                "outputPorts": {"result": "object"},
+            },
+            {"nodeId": "output", "kind": "workflow_output"},
+        ],
+        "edges": [
+            {
+                "fromNode": "input",
+                "fromPort": "item",
+                "toNode": "item",
+                "toPort": "item",
+            },
+            {
+                "fromNode": "item",
+                "fromPort": "result",
+                "toNode": "output",
+                "toPort": "result",
+            },
+        ],
+    }
+    runner = _runner(
+        payload,
+        {
+            "test.condition": _ConditionOperator,
+            "test.item": _ContextItemOperator,
+        },
+    )
+    root = RunContext.root("job", "main")
+
+    result = runner.run(
+        "main",
+        {"items": ["first", "second"]},
+        root,
+        CancellationToken(),
+    )
+
+    assert result.outputs == {
+        "results": [{"result": "first"}, {"result": "second"}]
+    }
+    assert [item["iterationPath"] for item in _ContextItemOperator.contexts] == [
+        [0],
+        [1],
+    ]
+    assert len({item["workflowRunId"] for item in _ContextItemOperator.contexts}) == 2
+    assert all(
+        item["parentWorkflowRunId"] == root.workflowRunId
+        for item in _ContextItemOperator.contexts
+    )
+
+    with pytest.raises(LoopExecutionError) as error:
+        runner.run(
+            "main",
+            {"items": [1, 2, 3]},
+            RunContext.root("job-limit", "main"),
+            CancellationToken(),
+        )
+    assert error.value.code == "E_LOOP_LIMIT_REACHED"
+
+
 def testInactiveLoopIsSkippedBeforeDispatch() -> None:
     payload = _payload(
         "repeat",
@@ -315,9 +621,10 @@ def testInactiveLoopIsSkippedBeforeDispatch() -> None:
         eventPublisher=lambda **event: events.append(event),
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(WorkflowExecutionError) as error:
         runner.run("main", {"state": {"count": 0}}, RunContext.root("job", "main"), CancellationToken())
 
+    assert error.value.code == "E_OUTPUT_MISSING"
     loopEvents = [
         event["eventType"]
         for event in events
@@ -329,6 +636,81 @@ def testInactiveLoopIsSkippedBeforeDispatch() -> None:
         and event["context"].workflowId == "body"
         for event in events
     )
+
+
+def testUnselectedSwitchBranchSkipsLoopBeforeDispatch() -> None:
+    payload = _payload(
+        "repeat",
+        "test.body",
+        {
+            "mode": "repeat",
+            "bodyWorkflowId": "body",
+            "repeatCount": 1,
+            "maxIterations": 1,
+            "timeoutMs": 1000,
+        },
+    )
+    main = payload["workflows"]["main"]
+    main["nodes"].insert(
+        1,
+        {
+            "nodeId": "switch",
+            "kind": "operator",
+            "operatorId": "vision.flow.switch",
+            "params": {"case0Value": "case0", "case1Value": "case1"},
+        },
+    )
+    main["edges"] = [
+        {
+            "fromNode": "input",
+            "fromPort": "state",
+            "toNode": "switch",
+            "toPort": "value",
+        },
+        {
+            "fromNode": "switch",
+            "fromPort": "case1",
+            "toNode": "loop",
+            "toPort": "state",
+        },
+        {
+            "fromNode": "loop",
+            "fromPort": "state",
+            "toNode": "output",
+            "toPort": "state",
+        },
+    ]
+    events: list[dict[str, object]] = []
+    document = ProjectDocument.model_validate(payload)
+    registry = {
+        "vision.flow.switch": FlowSwitchOperator,
+        "test.condition": _ConditionOperator,
+        "test.body": _BodyOperator,
+    }
+    compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+    runner = WorkflowRunner(
+        compiled,
+        registry,
+        eventPublisher=lambda **event: events.append(event),
+    )
+
+    with pytest.raises(WorkflowExecutionError) as error:
+        runner.run(
+            "main",
+            {"state": "case0"},
+            RunContext.root("job", "main"),
+            CancellationToken(),
+        )
+
+    assert error.value.code == "E_OUTPUT_MISSING"
+    loopEvents = [
+        event["eventType"]
+        for event in events
+        if event["context"].workflowId == "main"
+        and event["context"].callerNodeId == "loop"
+    ]
+    assert loopEvents == ["node.skipped"]
+    assert not any(event["eventType"] == "loop.started" for event in events)
 
 
 def testRepeatZeroRejectsOutputThatCannotBePassedThrough() -> None:

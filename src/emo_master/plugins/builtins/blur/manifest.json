@@ -1,0 +1,45 @@
+{
+  "operatorId": "vision.preprocess.blur",
+  "displayName": "Blur / Denoise",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.blur.operator:BlurOperator",
+  "category": "预处理",
+  "iconKey": "blur",
+  "summary": "执行 Gaussian、Median 或 Bilateral 平滑去噪。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {
+        "type": "string",
+        "enum": ["gaussian", "median", "bilateral"],
+        "default": "gaussian"
+      },
+      "kernelSize": {"type": "integer", "minimum": 3, "default": 5},
+      "sigmaX": {"type": "number", "minimum": 0.0, "default": 0.0},
+      "sigmaY": {"type": "number", "minimum": 0.0, "default": 0.0},
+      "diameter": {"type": "integer", "minimum": 1, "default": 9},
+      "sigmaColor": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
+      "sigmaSpace": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0}
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

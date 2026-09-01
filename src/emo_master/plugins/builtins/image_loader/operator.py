@@ -5,14 +5,16 @@ from typing import Any
 
 import cv2
 
+from emo_master.plugins.builtins._image_frame import defaultFrame
+
 
 @dataclass(frozen=True)
 class OperatorMeta:
     operatorId: str
     displayName: str
     version: str
-    inputPorts: dict[str, str]
-    outputPorts: dict[str, str]
+    inputPorts: dict[str, object]
+    outputPorts: dict[str, object]
     paramSchema: dict[str, object]
 
 
@@ -20,9 +22,17 @@ class ImageLoaderOperator:
     meta = OperatorMeta(
         operatorId="vision.io.image_loader",
         displayName="Image Loader",
-        version="1.0.0",
+        version="1.1.0",
         inputPorts={},
-        outputPorts={"image": "image"},
+        outputPorts={
+            "image": {"type": "image", "required": True, "nullable": False},
+            "frame": {
+                "type": "bbox2d",
+                "required": True,
+                "nullable": False,
+                "schemaVersion": "1.1",
+            },
+        },
         paramSchema={
             "type": "object",
             "properties": {
@@ -100,9 +110,15 @@ class ImageLoaderOperator:
             }
 
         elapsedMs = (perf_counter() - startAt) * 1000.0
+        height, width = image.shape[:2]
+        frame = defaultFrame(
+            width,
+            height,
+            sourceId=str(pathObj.resolve()),
+        )
         return {
             "status": "ok",
-            "outputs": {"image": image},
+            "outputs": {"image": image, "frame": frame.toPayload()},
             "metrics": {"latencyMs": round(elapsedMs, 3)},
             "diagnostics": {"text": "Image loaded"},
         }

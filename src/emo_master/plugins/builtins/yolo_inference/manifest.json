@@ -1,0 +1,96 @@
+{
+  "operatorId": "vision.inference.yolo",
+  "displayName": "YOLO Inference",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
+  "category": "推理",
+  "iconKey": "yolo",
+  "summary": "使用本地 Ultralytics YOLO 模型执行目标检测，输出标准 DetectionCollection。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "detections": {
+      "type": "detectionCollection",
+      "required": true,
+      "schemaVersion": "1.x"
+    },
+    "overlay": {
+      "type": "image",
+      "required": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "modelPath": {
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "YOLO 模型 (*.pt *.onnx *.engine)"
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.25
+      },
+      "iou": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.45
+      },
+      "imageSize": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 640
+      },
+      "maxDetections": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 300
+      },
+      "device": {
+        "type": "string",
+        "default": "auto"
+      },
+      "classes": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "default": []
+      },
+      "agnosticNms": {
+        "type": "boolean",
+        "default": false
+      },
+      "drawOverlay": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["modelPath"]
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

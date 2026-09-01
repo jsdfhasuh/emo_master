@@ -1,0 +1,57 @@
+{
+  "operatorId": "vision.preprocess.roi",
+  "displayName": "ROI Extract",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.roi.operator:RoiOperator",
+  "category": "预处理",
+  "iconKey": "roi",
+  "summary": "按 BBox、旋转框或多边形提取紧致区域与原尺寸遮罩，并保留回源坐标。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "croppedImage": {"type": "image", "required": true, "nullable": false},
+    "croppedMask": {"type": "image", "required": true, "nullable": false},
+    "croppedFrame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "maskedImage": {"type": "image", "required": true, "nullable": false},
+    "fullMask": {"type": "image", "required": true, "nullable": false},
+    "maskedFrame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "roi": {"type": "geometry2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "roiType": {"type": "string", "enum": ["bbox", "rotatedBox", "polygon"], "default": "bbox"},
+      "x": {"type": "number", "default": 0.0},
+      "y": {"type": "number", "default": 0.0},
+      "width": {"type": "number", "minimum": 0.0, "default": 1.0},
+      "height": {"type": "number", "minimum": 0.0, "default": 1.0},
+      "centerX": {"type": "number", "default": 0.0},
+      "centerY": {"type": "number", "default": 0.0},
+      "angleDegrees": {"type": "number", "minimum": -180.0, "exclusiveMaximum": 180.0, "default": 0.0},
+      "points": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {"x": {"type": "number"}, "y": {"type": "number"}},
+          "required": ["x", "y"]
+        },
+        "default": []
+      },
+      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"}
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x",
+  "editor": {
+    "schemaVersion": "1.0",
+    "kind": "customUi",
+    "openMode": "window",
+    "uiResource": "ui/editor.ui",
+    "controllerEntry": "emo_master.plugins.builtins.roi.editor:RoiEditorController",
+    "fallback": "schemaForm",
+    "previewMode": "pure"
+  }
+}

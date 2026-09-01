@@ -1,0 +1,29 @@
+{
+  "operatorId": "vision.analysis.hough_line",
+  "displayName": "Hough Line",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._detection_operators:HoughLineOperator",
+  "category": "分析",
+  "iconKey": "hough-line",
+  "summary": "在单通道边缘图上使用 HoughLinesP 检测有限线段。",
+  "inputPorts": {
+    "edge": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "lines": {"type": "lineCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "rho": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+      "thetaDegrees": {"type": "number", "exclusiveMinimum": 0.0, "maximum": 180.0, "default": 1.0},
+      "threshold": {"type": "integer", "minimum": 1, "default": 50},
+      "minLineLength": {"type": "number", "minimum": 0.0, "default": 0.0},
+      "maxLineGap": {"type": "number", "minimum": 0.0, "default": 0.0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

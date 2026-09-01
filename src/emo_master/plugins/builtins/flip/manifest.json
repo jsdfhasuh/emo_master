@@ -1,0 +1,27 @@
+{
+  "operatorId": "vision.preprocess.flip",
+  "displayName": "Flip",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._transform_operators:FlipOperator",
+  "category": "预处理",
+  "iconKey": "flip",
+  "summary": "水平、垂直或双向翻转图像并传播有效区域与回源坐标。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {"type": "string", "enum": ["horizontal", "vertical", "both"], "default": "horizontal"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

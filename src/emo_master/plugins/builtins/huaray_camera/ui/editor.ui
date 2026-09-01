@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HuarayCameraEditor</class>
+ <widget class="QWidget" name="HuarayCameraEditor">
+  <layout class="QVBoxLayout" name="rootLayout">
+   <item>
+    <widget class="QLabel" name="previewLabel">
+     <property name="minimumSize"><size><width>640</width><height>360</height></size></property>
+     <property name="text"><string>相机画面尚未连接</string></property>
+     <property name="alignment"><set>Qt::AlignCenter</set></property>
+     <property name="frameShape"><enum>QFrame::StyledPanel</enum></property>
+    </widget>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="previewButtonsLayout">
+     <item><widget class="QPushButton" name="connectButton"><property name="text"><string>连接并预览</string></property></widget></item>
+     <item><widget class="QPushButton" name="singleFrameButton"><property name="text"><string>单帧</string></property></widget></item>
+     <item><widget class="QPushButton" name="stopButton"><property name="text"><string>停止</string></property></widget></item>
+     <item><spacer name="buttonSpacer"><property name="orientation"><enum>Qt::Horizontal</enum></property><property name="sizeHint"><size><width>40</width><height>20</height></size></property></spacer></item>
+     <item><widget class="QLabel" name="connectionStatusLabel"><property name="text"><string>未连接</string></property></widget></item>
+    </layout>
+   </item>
+   <item>
+    <layout class="QHBoxLayout" name="metadataLayout">
+     <item><widget class="QLabel" name="blockIdLabel"><property name="text"><string>blockId: -</string></property></widget></item>
+     <item><widget class="QLabel" name="timestampLabel"><property name="text"><string>timestamp: -</string></property></widget></item>
+     <item><widget class="QLabel" name="exposureLabel"><property name="text"><string>actualExposureUs: -</string></property></widget></item>
+    </layout>
+   </item>
+   <item>
+    <widget class="QScrollArea" name="paramsScrollArea">
+     <property name="widgetResizable"><bool>true</bool></property>
+     <widget class="QWidget" name="paramsScrollContents">
+      <layout class="QVBoxLayout" name="paramsScrollLayout">
+       <item><widget class="QWidget" name="paramsPlaceholder"><layout class="QVBoxLayout" name="paramsLayout"/></widget></item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

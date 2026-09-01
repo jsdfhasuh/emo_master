@@ -1,17 +1,29 @@
 {
   "operatorId": "vision.edge.canny",
   "displayName": "Canny Edge",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "emo_master.plugins.builtins.canny_edge.operator:CannyEdgeOperator",
   "category": "检测",
   "iconKey": "edge",
   "summary": "提取图像边缘并输出边缘图与叠加图。",
   "inputPorts": {
-    "image": "image"
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
   },
   "outputPorts": {
-    "edges": "image",
-    "overlay": "image"
+    "edges": {"type": "image", "required": true, "nullable": false},
+    "overlay": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
   },
   "paramSchema": {
     "type": "object",

@@ -5,6 +5,8 @@ from typing import TYPE_CHECKING
 
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
+from emo_master.core.contracts.port_types import matchesPortType
+from emo_master.core.workflow.loop_contracts import CURRENT_LOOP_CONTRACT_VERSION
 
 if TYPE_CHECKING:
     from emo_master.apps.runtime.workflow.runner import WorkflowResult, WorkflowRunner
@@ -48,8 +50,23 @@ class LoopRunner:
             else:
                 raise LoopExecutionError("E_WORKFLOW_INVALID", f"unsupported loop mode: {mode}")
         except LoopExecutionError as err:
-            eventType = "loop.timeout" if err.code == "E_LOOP_TIMEOUT" else "loop.limit_reached"
+            if err.code == "E_LOOP_TIMEOUT":
+                eventType = "loop.timeout"
+            elif err.code == "E_LOOP_LIMIT_REACHED":
+                eventType = "loop.limit_reached"
+            else:
+                eventType = "loop.failed"
             self.workflowRunner.publish(eventType, context, str(err), level="ERROR", code=err.code)
+            raise
+        except Exception as err:
+            code = str(getattr(err, "code", "E_EXEC_FAILED"))
+            self.workflowRunner.publish(
+                "loop.failed",
+                context,
+                str(err),
+                level="ERROR",
+                code=code,
+            )
             raise
         self.workflowRunner.publish("loop.completed", context, "loop completed", payload={"mode": mode})
         return result
@@ -59,7 +76,9 @@ class LoopRunner:
         if count < 0 or count > maximum:
             raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "repeatCount exceeds maxIterations")
         # A zero-count repeat is a no-op and preserves its input interface.
-        outputs: dict[str, object] = dict(inputs)
+        outputs: dict[str, object] = {
+            name: inputs[name] for name in node.outputPorts if name in inputs
+        }
         metrics: dict[str, object] = {}
         diagnostics: dict[str, object] = {}
         for index in range(count):
@@ -85,8 +104,22 @@ class LoopRunner:
         items = inputs.get("items")
         if not isinstance(items, list):
             raise LoopExecutionError("E_INPUT_TYPE", "ForEach requires items:list")
+        if not matchesPortType(items, node.inputPorts.get("items", "list<any>")):
+            raise LoopExecutionError(
+                "E_INPUT_TYPE", "ForEach items do not match the body item type"
+            )
         if len(items) > maximum:
             raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "items exceed maxIterations")
+        if node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION:
+            return self._foreachV2(
+                node,
+                inputs,
+                items,
+                context,
+                cancellation,
+                timeoutMs,
+                startedAt,
+            )
         results: list[object] = []
         metrics: dict[str, object] = {}
         diagnostics: dict[str, object] = {}
@@ -109,7 +142,69 @@ class LoopRunner:
             self._check(cancellation, timeoutMs, startedAt)
         return self.workflowRunner.result({"results": results}, metrics, diagnostics)
 
+    def _foreachV2(
+        self,
+        node,
+        inputs,
+        items,
+        context,
+        cancellation,
+        timeoutMs,
+        startedAt,
+    ):
+        itemInputPort = node.loop.get("itemInputPort")
+        indexInputPort = node.loop.get("indexInputPort")
+        aggregated: dict[str, list[object]] = {
+            name: [] for name in node.outputPorts
+        }
+        metrics: dict[str, object] = {}
+        diagnostics: dict[str, object] = {}
+        for index, item in enumerate(items):
+            self._check(cancellation, timeoutMs, startedAt)
+            iterationContext = context.forIteration(index)
+            self._iterationEvent("loop.iteration.started", iterationContext, index)
+            bodyInputs = {
+                name: value for name, value in inputs.items() if name != "items"
+            }
+            if isinstance(itemInputPort, str) and itemInputPort:
+                bodyInputs[itemInputPort] = item
+            if isinstance(indexInputPort, str) and indexInputPort:
+                bodyInputs[indexInputPort] = index
+            bodyInputs["__iteration__"] = index
+            bodyContext = context.childWorkflow(
+                str(node.loop["bodyWorkflowId"]), node.nodeId
+            ).forIteration(index)
+            bodyResult = self.workflowRunner.run(
+                node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
+            )
+            for outputName in aggregated:
+                if outputName not in bodyResult.outputs:
+                    raise LoopExecutionError(
+                        "E_OUTPUT_MISSING",
+                        f"ForEach body output is missing: {outputName}",
+                    )
+                aggregated[outputName].append(bodyResult.outputs[outputName])
+            metrics.update(bodyResult.metrics)
+            diagnostics.update(bodyResult.diagnostics)
+            self._iterationEvent("loop.iteration.completed", iterationContext, index)
+            self._check(cancellation, timeoutMs, startedAt)
+        return self.workflowRunner.result(
+            {name: values for name, values in aggregated.items()},
+            metrics,
+            diagnostics,
+        )
+
     def _while(self, node, inputs, context, cancellation, maximum, timeoutMs, startedAt):
+        if node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION:
+            return self._whileV2(
+                node,
+                inputs,
+                context,
+                cancellation,
+                maximum,
+                timeoutMs,
+                startedAt,
+            )
         state = inputs.get("state", {})
         if not isinstance(state, dict):
             raise LoopExecutionError("E_INPUT_TYPE", "While requires state:object")
@@ -154,6 +249,88 @@ class LoopRunner:
             self._iterationEvent("loop.iteration.completed", iterationContext, index)
             self._check(cancellation, timeoutMs, startedAt)
         raise LoopExecutionError("E_LOOP_LIMIT_REACHED", "while loop reached maxIterations")
+
+    def _whileV2(
+        self,
+        node,
+        inputs,
+        context,
+        cancellation,
+        maximum,
+        timeoutMs,
+        startedAt,
+    ):
+        missing = [name for name in node.inputPorts if name not in inputs]
+        if missing:
+            raise LoopExecutionError(
+                "E_INPUT_MISSING",
+                "While state inputs are missing: " + ", ".join(sorted(missing)),
+            )
+        state = {name: inputs[name] for name in node.inputPorts}
+        metrics: dict[str, object] = {}
+        diagnostics: dict[str, object] = {}
+        conditionWorkflowId = str(node.loop["conditionWorkflowId"])
+        bodyWorkflowId = str(node.loop["bodyWorkflowId"])
+        conditionWorkflow = self.workflowRunner.compiledProject.workflows[
+            conditionWorkflowId
+        ]
+        bodyWorkflow = self.workflowRunner.compiledProject.workflows[bodyWorkflowId]
+        for index in range(maximum):
+            self._check(cancellation, timeoutMs, startedAt)
+            iterationContext = context.forIteration(index)
+            self._iterationEvent("loop.iteration.started", iterationContext, index)
+            conditionContext = context.childWorkflow(
+                conditionWorkflowId, node.nodeId
+            ).forIteration(index)
+            conditionInputs = {
+                name: state[name]
+                for name in conditionWorkflow.inputs
+                if name in state
+            }
+            conditionResult = self.workflowRunner.run(
+                conditionWorkflowId,
+                conditionInputs,
+                conditionContext,
+                cancellation,
+            )
+            metrics.update(conditionResult.metrics)
+            diagnostics.update(conditionResult.diagnostics)
+            condition = conditionResult.outputs.get("continue")
+            if not isinstance(condition, bool):
+                raise LoopExecutionError(
+                    "E_INPUT_TYPE", "While condition must return continue:boolean"
+                )
+            if not condition:
+                self._iterationEvent("loop.iteration.completed", iterationContext, index)
+                return self.workflowRunner.result(state, metrics, diagnostics)
+            bodyContext = context.childWorkflow(
+                bodyWorkflowId, node.nodeId
+            ).forIteration(index)
+            bodyInputs = {
+                name: state[name] for name in bodyWorkflow.inputs if name in state
+            }
+            bodyInputs["__iteration__"] = index
+            bodyResult = self.workflowRunner.run(
+                bodyWorkflowId,
+                bodyInputs,
+                bodyContext,
+                cancellation,
+            )
+            nextState: dict[str, object] = {}
+            for name in node.outputPorts:
+                if name not in bodyResult.outputs:
+                    raise LoopExecutionError(
+                        "E_OUTPUT_MISSING", f"While body state output is missing: {name}"
+                    )
+                nextState[name] = bodyResult.outputs[name]
+            state = nextState
+            metrics.update(bodyResult.metrics)
+            diagnostics.update(bodyResult.diagnostics)
+            self._iterationEvent("loop.iteration.completed", iterationContext, index)
+            self._check(cancellation, timeoutMs, startedAt)
+        raise LoopExecutionError(
+            "E_LOOP_LIMIT_REACHED", "while loop reached maxIterations"
+        )
 
     def _check(self, cancellation, timeoutMs, startedAt) -> None:
         cancellation.raise_if_cancelled()

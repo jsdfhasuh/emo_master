@@ -100,9 +100,42 @@ def testProjectV1MigratesToV2() -> None:
             "designer": {"nodes": [], "edges": []},
         }
     )
-    assert migrated["schemaVersion"] == "2.0"
+    assert migrated["schemaVersion"] == "2.1"
     assert migrated["entryWorkflowId"] == "main"
     assert "main" in migrated["workflows"]
+
+
+def testProjectV20MigrationMarksExistingLoopsAsLegacyContracts() -> None:
+    payload = _v2_project()
+    payload["workflowOrder"] = ["main", "body"]
+    payload["workflows"]["body"] = {
+        "name": "Body",
+        "inputs": {},
+        "outputs": {},
+        "nodes": [],
+        "edges": [],
+        "layout": {"nodePositions": {}},
+    }
+    payload["workflows"]["main"]["nodes"].append(
+        {
+            "nodeId": "foreach",
+            "kind": "loop",
+            "inputPorts": {"items": "list"},
+            "outputPorts": {"results": "list"},
+            "loop": {
+                "mode": "foreach",
+                "bodyWorkflowId": "body",
+                "maxIterations": 10,
+                "timeoutMs": 0,
+            },
+        }
+    )
+
+    migrated = migrateProjectPayload(payload)
+    loop = migrated["workflows"]["main"]["nodes"][-1]["loop"]
+
+    assert migrated["schemaVersion"] == "2.1"
+    assert loop["contractVersion"] == 1
 
 
 def testV2RejectsUnknownTopLevelAndNodeFields() -> None:
@@ -119,7 +152,7 @@ def testV2RejectsUnknownTopLevelAndNodeFields() -> None:
 
 def testFutureProjectSchemaVersionIsRejected() -> None:
     payload = _v2_project()
-    payload["schemaVersion"] = "2.1"
+    payload["schemaVersion"] = "2.2"
 
     with pytest.raises(ValueError, match="unsupported project schemaVersion"):
         migrateProjectPayload(payload)

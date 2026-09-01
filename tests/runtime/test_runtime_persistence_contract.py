@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import multiprocessing
 from pathlib import Path
 import threading
+import time
 
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
@@ -40,6 +41,21 @@ def testEventReplayMergesSqliteHistoryAfterMemoryRetention(tmp_path: Path) -> No
     assert [event.sequence for event in restarted.readMerged("job-history")] == [1, 2, 3, 4]
 
 
+def testEventStoreRestoresTerminalSequenceFromSqlite(tmp_path: Path) -> None:
+    persistence = SqliteStore(tmp_path / "terminal-events.db")
+    persistence.initialize()
+    original = EventStore(persistence)
+    terminal = original.append("job-terminal", "job.completed", "done")
+
+    restarted = EventStore(persistence)
+
+    assert persistence.getTerminalJobEventSequence("job-terminal") == terminal.sequence
+    assert restarted.terminalSequence("job-terminal") == terminal.sequence
+    assert list(
+        restarted.follow("job-terminal", afterSequence=terminal.sequence)
+    ) == []
+
+
 class _InactiveGrpcContext:
     def is_active(self) -> bool:
         return False
@@ -69,6 +85,24 @@ def testEventStoreAllocatesSequencesAtomicallyAcrossInstances(tmp_path: Path) ->
 
     assert sorted(sequences) == [1, 2]
     assert [event.sequence for event in persistence.listJobEventsAfter("shared-job")] == [1, 2]
+
+
+def testEventStoreDispatchesSinksInAssignedSequenceOrder() -> None:
+    store = EventStore()
+    received: list[int] = []
+    store.addSink(lambda event: received.append(event.sequence))
+
+    with ThreadPoolExecutor(max_workers=8) as executor:
+        list(
+            executor.map(
+                lambda index: store.append(
+                    "sink-order-job", f"node.{index}", str(index)
+                ),
+                range(100),
+            )
+        )
+
+    assert received == list(range(1, 101))
 
 
 def testRuntimeDataLockRejectsAnotherProcess(tmp_path: Path) -> None:
@@ -171,3 +205,70 @@ def testExplicitRuntimeDbPathOverridesDataDirectory(monkeypatch, tmp_path: Path)
     monkeypatch.setenv("EMO_RUNTIME_DB_PATH", str(explicit))
 
     assert _defaultDbPath() == explicit
+
+
+def testSqliteRetentionDeletesOnlyOldUnprotectedTerminalJobEvents(
+    tmp_path: Path,
+) -> None:
+    store = SqliteStore(tmp_path / "retention.db")
+    store.initialize()
+    nowMs = int(time.time() * 1000.0)
+
+    def addJob(
+        jobId: str,
+        projectId: str,
+        *,
+        ageDays: int,
+        status: str = "COMPLETED",
+    ) -> None:
+        store.insertJob(
+            jobId=jobId,
+            projectId=projectId,
+            workflowId="main",
+            status=status,
+        )
+        if status in {"COMPLETED", "FAILED", "ABORTED"}:
+            store.updateJobStatus(
+                jobId,
+                status,
+                endedAtMs=nowMs - ageDays * 86400000,
+            )
+        store.appendJobEvent(
+            jobId=jobId,
+            nodeId="",
+            eventType=("job.completed" if status == "COMPLETED" else "job.started"),
+            level="INFO",
+            code="",
+            message=jobId,
+            payloadJson="{}",
+            projectId=projectId,
+            workflowId="main",
+            timestamp=nowMs - ageDays * 86400000,
+        )
+
+    # The two newest terminal jobs are protected for project-a even though both
+    # are older than 30 days.  Only its third-oldest terminal job is pruned.
+    addJob("project-a-newest", "project-a", ageDays=35)
+    addJob("project-a-second", "project-a", ageDays=40)
+    addJob("project-a-pruned", "project-a", ageDays=50)
+    addJob("project-b-only", "project-b", ageDays=60)
+    addJob("project-a-running", "project-a", ageDays=90, status="RUNNING")
+
+    deleted = store.pruneTerminalJobEvents(
+        retentionDays=30,
+        minimumJobsPerProject=2,
+        currentTimestampMs=nowMs,
+    )
+
+    assert deleted == 1
+    assert store.listJobEventsAfter("project-a-pruned") == []
+    for jobId in (
+        "project-a-newest",
+        "project-a-second",
+        "project-b-only",
+        "project-a-running",
+    ):
+        assert len(store.listJobEventsAfter(jobId)) == 1
+
+    store.checkpointWal()
+    assert isinstance(store.vacuumIfNeeded(0.0), bool)

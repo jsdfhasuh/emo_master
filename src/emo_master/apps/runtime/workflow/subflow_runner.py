@@ -4,6 +4,7 @@ from typing import TYPE_CHECKING
 
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
+from emo_master.core.contracts.port_types import isPortRequired, matchesPortSpec
 
 if TYPE_CHECKING:
     from emo_master.apps.runtime.workflow.runner import WorkflowResult, WorkflowRunner
@@ -33,7 +34,11 @@ class SubflowRunner:
             raise WorkflowExecutionError(
                 "E_WORKFLOW_INVALID", f"unknown subflow target: {target}", node.nodeId
             )
-        missing = sorted(key for key in targetWorkflow.inputs if key not in inputs)
+        missing = sorted(
+            key
+            for key, portSpec in targetWorkflow.inputs.items()
+            if key not in inputs and isPortRequired(portSpec, default=True)
+        )
         if missing:
             raise WorkflowExecutionError(
                 "E_INPUT_MISSING",
@@ -68,18 +73,4 @@ class SubflowRunner:
 
 
 def _matchesType(value: object, expected: object) -> bool:
-    if isinstance(expected, dict):
-        expected = expected.get("type", "object")
-    if not isinstance(expected, str) or expected in {"object", "json", "image"}:
-        return True
-    if expected == "list":
-        return isinstance(value, list)
-    if expected == "integer":
-        return isinstance(value, int) and not isinstance(value, bool)
-    if expected == "number":
-        return isinstance(value, (int, float)) and not isinstance(value, bool)
-    if expected == "boolean":
-        return isinstance(value, bool)
-    if expected == "string":
-        return isinstance(value, str)
-    return True
+    return matchesPortSpec(value, expected)

@@ -206,6 +206,19 @@ class SqliteStore:
             ).fetchone()
         return int(row[0]) if row is not None else 0
 
+    def getTerminalJobEventSequence(self, jobId: str) -> int:
+        with self._connect() as connection:
+            row = connection.execute(
+                """
+                SELECT COALESCE(MAX(sequence), 0)
+                FROM jobEvents
+                WHERE jobId = ?
+                  AND eventType IN ('job.completed', 'job.failed', 'job.aborted')
+                """,
+                (jobId,),
+            ).fetchone()
+        return int(row[0]) if row is not None else 0
+
     def getJob(self, jobId: str) -> dict[str, object] | None:
         with self._connect() as connection:
             row = connection.execute(
@@ -286,6 +299,71 @@ class SqliteStore:
                 )
             connection.commit()
             return len(rows)
+
+    def pruneTerminalJobEvents(
+        self,
+        *,
+        retentionDays: int = 30,
+        minimumJobsPerProject: int = 100,
+        currentTimestampMs: int | None = None,
+    ) -> int:
+        nowMs = _timestampMs() if currentTimestampMs is None else int(currentTimestampMs)
+        cutoffMs = nowMs - max(1, retentionDays) * 86400000
+        minimum = max(0, int(minimumJobsPerProject))
+        with self._connect() as connection:
+            rows = connection.execute(
+                """
+                SELECT jobId, projectId, endAt, startAt
+                FROM jobs
+                WHERE status IN ('COMPLETED', 'FAILED', 'ABORTED')
+                ORDER BY projectId, COALESCE(endAt, startAt) DESC, jobId DESC
+                """
+            ).fetchall()
+            seenByProject: dict[str, int] = {}
+            candidates: list[str] = []
+            for jobId, projectId, endAt, startAt in rows:
+                projectKey = str(projectId)
+                rank = seenByProject.get(projectKey, 0)
+                seenByProject[projectKey] = rank + 1
+                if rank < minimum:
+                    continue
+                try:
+                    endedMs = int(
+                        datetime.fromisoformat(str(endAt or startAt)).timestamp() * 1000.0
+                    )
+                except (TypeError, ValueError, OSError):
+                    continue
+                if endedMs < cutoffMs:
+                    candidates.append(str(jobId))
+            if not candidates:
+                return 0
+            connection.execute("BEGIN IMMEDIATE")
+            deleted = 0
+            for offset in range(0, len(candidates), 400):
+                batch = candidates[offset : offset + 400]
+                placeholders = ",".join("?" for _ in batch)
+                cursor = connection.execute(
+                    f"DELETE FROM jobEvents WHERE jobId IN ({placeholders})",
+                    batch,
+                )
+                deleted += max(0, int(cursor.rowcount))
+            connection.commit()
+            return deleted
+
+    def checkpointWal(self) -> None:
+        with self._connect() as connection:
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
+
+    def vacuumIfNeeded(self, minimumFreeRatio: float = 0.25) -> bool:
+        with self._connect() as connection:
+            pageRow = connection.execute("PRAGMA page_count").fetchone()
+            freeRow = connection.execute("PRAGMA freelist_count").fetchone()
+            pages = int(pageRow[0]) if pageRow is not None else 0
+            free = int(freeRow[0]) if freeRow is not None else 0
+            if pages <= 0 or free / pages < max(0.0, minimumFreeRatio):
+                return False
+            connection.execute("VACUUM")
+            return True
 
     def upsertPluginDiagnostic(
         self,

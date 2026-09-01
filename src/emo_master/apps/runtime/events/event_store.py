@@ -16,6 +16,8 @@ class EventStore:
         self._events: dict[str, list[RuntimeEvent]] = {}
         self._sequences: dict[str, int] = {}
         self._terminalJobs: set[str] = set()
+        self._terminalSequences: dict[str, int] = {}
+        self._sinks: list[Callable[[RuntimeEvent], object]] = []
         # follow() checks retained and persisted history while waiting on the
         # same condition.  A re-entrant lock avoids self-deadlocking there.
         self._condition = threading.Condition(threading.RLock())
@@ -36,6 +38,7 @@ class EventStore:
         nodeRunId: str = "",
         iterationPath: tuple[int, ...] = (),
         timestampMs: int | None = None,
+        notifySinks: bool = True,
     ) -> RuntimeEvent:
         payloadJson = json.dumps(payload or {}, ensure_ascii=True, default=str)
         timestamp = int(time.time() * 1000) if timestampMs is None else timestampMs
@@ -89,8 +92,31 @@ class EventStore:
                 del bucket[: len(bucket) - self.retentionPerJob]
             if eventType in {"job.completed", "job.failed", "job.aborted"}:
                 self._terminalJobs.add(jobId)
+                self._terminalSequences[jobId] = max(
+                    sequence,
+                    self._terminalSequences.get(jobId, 0),
+                )
             self._condition.notify_all()
-            return event
+            # Sinks are required to be non-blocking.  Dispatch while the append
+            # order is still serialized so concurrent producers cannot put a
+            # later SQLite sequence into JSONL before an earlier one.
+            if notifySinks:
+                for sink in tuple(self._sinks):
+                    try:
+                        sink(event)
+                    except BaseException:
+                        pass
+        return event
+
+    def addSink(self, sink: Callable[[RuntimeEvent], object]) -> None:
+        with self._condition:
+            if sink not in self._sinks:
+                self._sinks.append(sink)
+
+    def removeSink(self, sink: Callable[[RuntimeEvent], object]) -> None:
+        with self._condition:
+            if sink in self._sinks:
+                self._sinks.remove(sink)
 
     def read(self, jobId: str, afterSequence: int = 0) -> list[RuntimeEvent]:
         with self._condition:
@@ -114,6 +140,26 @@ class EventStore:
             return []
         return list(reader(jobId, afterSequence))
 
+    def terminalSequence(self, jobId: str) -> int:
+        """Return the persisted terminal event sequence, including after restart."""
+
+        with self._condition:
+            sequence = self._terminalSequences.get(jobId, 0)
+            if sequence > 0:
+                return sequence
+            reader = (
+                getattr(self.persistence, "getTerminalJobEventSequence", None)
+                if self.persistence is not None
+                else None
+            )
+            if not callable(reader):
+                return 0
+            sequence = max(0, int(reader(jobId)))
+            if sequence > 0:
+                self._terminalSequences[jobId] = sequence
+                self._terminalJobs.add(jobId)
+            return sequence
+
     def follow(
         self,
         jobId: str,
@@ -126,11 +172,20 @@ class EventStore:
             events = self.readMerged(jobId, cursor)
             for event in events:
                 cursor = max(cursor, event.sequence)
+                if event.eventType in {"job.completed", "job.failed", "job.aborted"}:
+                    with self._condition:
+                        self._terminalJobs.add(jobId)
+                        self._terminalSequences[jobId] = max(
+                            event.sequence,
+                            self._terminalSequences.get(jobId, 0),
+                        )
                 yield event
             with self._condition:
                 terminal = jobId in self._terminalJobs
                 if isTerminal is not None:
                     terminal = terminal or isTerminal(jobId)
+                elif not terminal:
+                    terminal = self.terminalSequence(jobId) > 0
                 if terminal and not self.readMerged(jobId, cursor):
                     return
                 if _cancelled(cancellation):

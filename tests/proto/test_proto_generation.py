@@ -13,3 +13,18 @@ def testOperatorInfoIncludesPortAndSchemaFields() -> None:
   assert "string category = 7;" in protoText
   assert "string icon_key = 8;" in protoText
   assert "string summary = 9;" in protoText
+  assert "string editor_spec_json = 12;" in protoText
+  assert "string editor_issues_json = 13;" in protoText
+
+
+def testOperatorEditorPreviewRpcsAreDeclared() -> None:
+  protoText = Path("proto/runtime.proto").read_text(encoding="utf-8")
+  assert "rpc GetOperatorEditorAsset" in protoText
+  assert "rpc UploadPreviewImage" in protoText
+  assert "rpc RunOperatorPreview" in protoText
+  assert "rpc CancelOperatorPreview" in protoText
+  assert "rpc OpenOperatorPreviewSession" in protoText
+  assert "rpc StreamOperatorPreviewFrames" in protoText
+  assert "rpc CloseOperatorPreviewSession" in protoText
+  assert "string project_id = 4;" in protoText
+  assert "string project_id = 2;" in protoText

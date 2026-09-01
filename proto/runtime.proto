@@ -98,10 +98,153 @@ message OperatorInfo {
   string category = 7;
   string icon_key = 8;
   string summary = 9;
+  string input_port_specs_json = 10;
+  string output_port_specs_json = 11;
+  string editor_spec_json = 12;
+  string editor_issues_json = 13;
 }
 
 message ListOperatorsReply {
   repeated OperatorInfo operators = 1;
+}
+
+message GetOperatorEditorAssetRequest {
+  string operator_id = 1;
+  string version = 2;
+}
+
+message GetOperatorEditorAssetReply {
+  bool ok = 1;
+  bytes content = 2;
+  string sha256 = 3;
+  string message = 4;
+}
+
+message ListNodePreviewSourcesRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+}
+
+message PreviewSourceInfo {
+  string source_id = 1;
+  string label = 2;
+  string source_kind = 3;
+  string workflow_id = 4;
+  string node_id = 5;
+  string port = 6;
+  int32 width = 7;
+  int32 height = 8;
+  string mime_type = 9;
+  string iteration_path_json = 10;
+}
+
+message ListNodePreviewSourcesReply {
+  repeated PreviewSourceInfo sources = 1;
+}
+
+message PreviewUploadChunk {
+  string upload_id = 1;
+  string filename = 2;
+  bytes content = 3;
+  string project_id = 4;
+}
+
+message PreviewAssetReply {
+  bool ok = 1;
+  string asset_id = 2;
+  string code = 3;
+  string message = 4;
+  int32 width = 5;
+  int32 height = 6;
+  string mime_type = 7;
+}
+
+message GetPreviewAssetRequest {
+  string asset_id = 1;
+  string project_id = 2;
+}
+
+message PreviewDownloadChunk {
+  string asset_id = 1;
+  string mime_type = 2;
+  bytes content = 3;
+}
+
+message RunOperatorPreviewRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+  string operator_id = 4;
+  string params_json = 5;
+  string image_asset_id = 6;
+  string request_id = 7;
+}
+
+message PreviewOutputAsset {
+  string port = 1;
+  string asset_id = 2;
+  string mime_type = 3;
+  int32 width = 4;
+  int32 height = 5;
+}
+
+message RunOperatorPreviewReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string outputs_json = 4;
+  repeated PreviewOutputAsset assets = 5;
+}
+
+message CancelOperatorPreviewRequest {
+  string request_id = 1;
+}
+
+message CancelOperatorPreviewReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message OpenOperatorPreviewSessionRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+  string operator_id = 4;
+  string params_json = 5;
+}
+
+message OpenOperatorPreviewSessionReply {
+  bool ok = 1;
+  string session_id = 2;
+  string code = 3;
+  string message = 4;
+}
+
+message StreamOperatorPreviewFramesRequest {
+  string session_id = 1;
+}
+
+message OperatorPreviewFrame {
+  string session_id = 1;
+  bytes jpeg = 2;
+  int64 sequence = 3;
+  int64 block_id = 4;
+  int64 device_timestamp = 5;
+  double actual_exposure_us = 6;
+  int32 width = 7;
+  int32 height = 8;
+}
+
+message CloseOperatorPreviewSessionRequest {
+  string session_id = 1;
+}
+
+message CloseOperatorPreviewSessionReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
 }
 
 message ListRejectedOperatorsRequest {}
@@ -140,6 +283,15 @@ service RuntimeService {
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
+  rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);
+  rpc ListNodePreviewSources(ListNodePreviewSourcesRequest) returns (ListNodePreviewSourcesReply);
+  rpc UploadPreviewImage(stream PreviewUploadChunk) returns (PreviewAssetReply);
+  rpc StreamPreviewAsset(GetPreviewAssetRequest) returns (stream PreviewDownloadChunk);
+  rpc RunOperatorPreview(RunOperatorPreviewRequest) returns (RunOperatorPreviewReply);
+  rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
+  rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);
+  rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
   rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsReply);
 }

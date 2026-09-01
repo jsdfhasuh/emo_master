@@ -4,10 +4,12 @@ import json
 from pathlib import Path
 import threading
 
+from emo_master import __version__
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
 from emo_master.apps.runtime.artifacts.store import ArtifactStore
+from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -29,10 +31,10 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
         if not isinstance(snapshot, dict):
             raise RuntimeError("project snapshot must be an object")
         document = ProjectDocument.model_validate(snapshot)
-        registry: dict[str, object] = {}
-        for root in spec.pluginRootPaths:
-            result = PluginRegistry(coreVersion="0.2.0").scan(Path(root))
-            registry.update(result.activeOperators)
+        scanResult = PluginRegistry(coreVersion=__version__).scanRoots(
+            Path(root) for root in spec.pluginRootPaths
+        )
+        registry: dict[str, object] = dict(scanResult.activeOperators)
         compiler = WorkflowCompiler(operatorRegistry=registry)
         compiled = compiler.compile(document, pluginRootPaths=tuple(spec.pluginRootPaths))
         inputs = json.loads(spec.inputsJson or "{}")
@@ -45,6 +47,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             operatorRegistry=registry,
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)),
+            previewSnapshotStore=PreviewSnapshotWriter(Path(spec.jobWorkspacePath)),
         )
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         context = RunContext.root(

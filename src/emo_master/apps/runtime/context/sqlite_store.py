@@ -14,40 +14,48 @@ class SqliteStore:
         self.dbPath.parent.mkdir(parents=True, exist_ok=True)
 
     def initialize(self) -> None:
-        with self._connect() as connection:
-            migrationDir = Path(__file__).parent / "migrations"
-            connection.executescript(
-                (migrationDir / "001_init.sql").read_text(encoding="utf-8")
-            )
-            connection.execute(
-                "CREATE TABLE IF NOT EXISTS schemaMigrations (version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)"
-            )
-            applied = {
-                int(row[0])
-                for row in connection.execute("SELECT version FROM schemaMigrations")
-            }
-            if 1 not in applied:
-                connection.execute(
-                    "INSERT INTO schemaMigrations(version, appliedAt) VALUES (1, ?)",
-                    (_utcNow(),),
-                )
-            if 2 not in applied:
+        connection = self._connect()
+        try:
+            with connection:
+                migrationDir = Path(__file__).parent / "migrations"
                 connection.executescript(
-                    (migrationDir / "002_runtime_workflow.sql").read_text(encoding="utf-8")
+                    (migrationDir / "001_init.sql").read_text(encoding="utf-8")
                 )
                 connection.execute(
-                    "INSERT INTO schemaMigrations(version, appliedAt) VALUES (2, ?)",
-                    (_utcNow(),),
+                    "CREATE TABLE IF NOT EXISTS schemaMigrations (version INTEGER PRIMARY KEY, appliedAt TEXT NOT NULL)"
                 )
-            if 3 not in applied:
-                connection.executescript(
-                    (migrationDir / "003_runtime_timestamps.sql").read_text(encoding="utf-8")
-                )
-                connection.execute(
-                    "INSERT INTO schemaMigrations(version, appliedAt) VALUES (3, ?)",
-                    (_utcNow(),),
-                )
-            connection.commit()
+                applied = {
+                    int(row[0])
+                    for row in connection.execute("SELECT version FROM schemaMigrations")
+                }
+                if 1 not in applied:
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (1, ?)",
+                        (_utcNow(),),
+                    )
+                if 2 not in applied:
+                    connection.executescript(
+                        (migrationDir / "002_runtime_workflow.sql").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (2, ?)",
+                        (_utcNow(),),
+                    )
+                if 3 not in applied:
+                    connection.executescript(
+                        (migrationDir / "003_runtime_timestamps.sql").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (3, ?)",
+                        (_utcNow(),),
+                    )
+                connection.commit()
+        finally:
+            connection.close()
 
     def insertJob(
         self,

@@ -1,11 +1,11 @@
 {
   "operatorId": "vision.inference.yolo",
   "displayName": "YOLO Inference",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
   "category": "推理",
   "iconKey": "yolo",
-  "summary": "使用本地 Ultralytics YOLO 模型执行目标检测，输出标准 DetectionCollection。",
+  "summary": "使用 ONNX Runtime CPU 执行 YOLOv8/YOLO11 目标检测，输出标准 DetectionCollection。",
   "inputPorts": {
     "image": {
       "type": "image",
@@ -44,7 +44,7 @@
         "default": "",
         "xWidget": "file",
         "xFileMode": "open",
-        "xFilter": "YOLO 模型 (*.pt *.onnx *.engine)"
+        "xFilter": "YOLO ONNX 模型 (*.onnx)"
       },
       "confidence": {
         "type": "number",
@@ -70,6 +70,7 @@
       },
       "device": {
         "type": "string",
+        "enum": ["auto", "cpu"],
         "default": "auto"
       },
       "classes": {

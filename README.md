@@ -16,6 +16,7 @@ emo_master 是一个参考 VisionMaster 思路实现的机器视觉流程设计�
 - 三菱 SLMP/MC 3E PLC 读写、有界 TCP 客户端/单次接收及内嵌标量/文本输出
 - 华睿 IMV 直连相机单帧采集、作业内连接复用和可取消硬件触发等待
 - 可选 `.ui + Controller` 算子独立编辑窗口、作业快照、纯计算预览与相机实时预览
+- ONNX Runtime CPU 驱动的 YOLOv8/YOLO11 detect 推理、NMS 与原图坐标叠加
 
 ## Conda 环境准备
 
@@ -103,6 +104,38 @@ Runtime 默认将 SQLite 数据库保存在
 ```bash
 pytest -q
 ```
+
+## YOLO ONNX 推理
+
+内置 `vision.inference.yolo` 算子直接使用 `onnxruntime==1.23.2`，模型路径只接受
+`.onnx`，设备只接受 `auto` 或 `cpu`。当前支持 batch 1、3 通道 float32、NCHW，
+以及未内置 NMS 的 YOLOv8/YOLO11 detect 输出；不支持端到端 NMS、pose、
+segmentation、INT8、DirectML 或 CUDA。
+
+算子保持原有 `DetectionCollection`、原图坐标空间和 overlay 契约。动态输入模型使用
+`imageSize`，固定输入模型则以模型尺寸为准。
+
+## Windows 安装包
+
+推送与 `emo_master.__version__` 一致的 `v*` tag 会运行项目检查，并调用中央
+`python_build_scripts` workflow 生成和发布：
+
+- `emo-master-windows-${TAG}.zip`
+- `emo-master-setup-${TAG}.exe`
+- `manifest.json`
+
+安装程序为当前用户安装，默认目录是
+`%LOCALAPPDATA%\Programs\EmoMaster`，不需要管理员权限。华睿 MV Viewer/MVSDK
+仍需单独安装。
+
+便携版或安装版可以无界面执行包内自检：
+
+```powershell
+.\EmoMaster.exe --self-test --result-json self-test.json
+.\EmoMaster.exe --self-test --model D:\path\model.onnx --image D:\path\image.jpg --expected-detections 4 --result-json inference.json
+```
+
+不带参数启动 `EmoMaster.exe` 时仍直接进入 Designer。
 
 Runtime 每个 Job 使用独立的 `multiprocessing.spawn` 子进程；Designer 通过
 `RuntimeWorker` 在后台接收事件。项目保存会自动迁移 v1 到 v2，读取旧文件不会覆盖原文件，保存 v2 会生成 `.bak` 备份并原子替换。

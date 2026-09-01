@@ -11,32 +11,18 @@ from emo_master.core.contracts.geometry2d import (
     DetectionCollection,
 )
 from emo_master.plugins.builtins.yolo_inference import operator as yolo_module
+from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxInferenceResult
 from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
 
 
-class _FakeBoxes:
-    def __init__(self, xyxy: object, confidence: object, classes: object) -> None:
-        self.xyxy = np.asarray(xyxy, dtype=np.float32)
-        self.conf = np.asarray(confidence, dtype=np.float32)
-        self.cls = np.asarray(classes, dtype=np.float32)
-
-
-class _FakeResult:
-    def __init__(self, boxes: _FakeBoxes | None) -> None:
-        self.boxes = boxes
-        self.names = {0: "part", 1: "defect"}
-
-
 class _FakeModel:
-    names = {0: "part", 1: "defect"}
-
-    def __init__(self, result: _FakeResult) -> None:
+    def __init__(self, result: OnnxInferenceResult) -> None:
         self.result = result
         self.calls: list[dict[str, object]] = []
 
-    def predict(self, **kwargs: object) -> list[_FakeResult]:
+    def predict(self, **kwargs: object) -> OnnxInferenceResult:
         self.calls.append(dict(kwargs))
-        return [self.result]
+        return self.result
 
 
 @pytest.fixture(autouse=True)
@@ -47,21 +33,38 @@ def _clearYoloCache():
 
 
 def _modelFile(tmpPath: Path) -> Path:
-    path = tmpPath / "model.pt"
+    path = tmpPath / "model.onnx"
     path.write_bytes(b"test-model")
     return path
+
+
+def _result(
+    boxes: object,
+    scores: object,
+    classes: object,
+    names: dict[int, str] | None = None,
+) -> OnnxInferenceResult:
+    boxArray = np.asarray(boxes, dtype=np.float32)
+    if boxArray.size == 0:
+        boxArray = boxArray.reshape(0, 4)
+    return OnnxInferenceResult(
+        boxesXyxy=boxArray,
+        scores=np.asarray(scores, dtype=np.float32),
+        classIds=np.asarray(classes, dtype=np.int64),
+        names=names or {0: "part", 1: "defect"},
+        provider="CPUExecutionProvider",
+        inputShape=(1, 3, 640, 640),
+    )
 
 
 def testYoloInferenceProducesTypedDetectionsAndOverlay(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     fakeModel = _FakeModel(
-        _FakeResult(
-            _FakeBoxes(
-                [[1, 2, 6, 8], [-2, -1, 4, 5]],
-                [0.9, 0.75],
-                [0, 1],
-            )
+        _result(
+            [[1, 2, 6, 8], [-2, -1, 4, 5]],
+            [0.9, 0.75],
+            [0, 1],
         )
     )
     loads: list[str] = []
@@ -99,6 +102,7 @@ def testYoloInferenceProducesTypedDetectionsAndOverlay(
     assert [item.label for item in detections.items] == ["part", "defect"]
     assert detections.items[0].bbox.x == 1.0
     assert detections.items[0].bbox.width == 5.0
+    assert detections.items[0].attributes["backend"] == "onnxruntime"
     assert detections.items[1].bbox.x == 0.0
     assert detections.items[1].bbox.y == 0.0
     assert detections.coordinateSpace.sourceId == "camera"
@@ -110,6 +114,8 @@ def testYoloInferenceProducesTypedDetectionsAndOverlay(
     assert second["status"] == "ok"
     assert len(loads) == 1
     assert len(fakeModel.calls) == 2
+    assert fakeModel.calls[0]["confidence"] == 0.25
+    assert first["diagnostics"]["provider"] == "CPUExecutionProvider"
 
 
 def testYoloInferenceSupportsEmptyResults(
@@ -118,7 +124,7 @@ def testYoloInferenceSupportsEmptyResults(
     monkeypatch.setattr(
         yolo_module,
         "_createModel",
-        lambda path: _FakeModel(_FakeResult(None)),
+        lambda path: _FakeModel(_result([], [], [])),
     )
     result = YoloInferenceOperator().executeNode(
         {"image": np.zeros((4, 5, 3), dtype=np.uint8)},
@@ -136,7 +142,7 @@ def testYoloInferenceMapsBackendAndModelErrors(
     operator = YoloInferenceOperator()
     missing = operator.executeNode(
         {"image": np.zeros((2, 2, 3), dtype=np.uint8)},
-        {"modelPath": str(tmp_path / "missing.pt")},
+        {"modelPath": str(tmp_path / "missing.onnx")},
         {},
     )
 
@@ -158,7 +164,7 @@ def testYoloInferenceMapsBackendAndModelErrors(
 def testYoloInferenceRejectsMalformedBackendResult(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    malformed = _FakeModel(_FakeResult(_FakeBoxes([[1, 2, 3]], [0.9], [0])))
+    malformed = _FakeModel(_result([[1, 2, 3]], [0.9], [0]))
     monkeypatch.setattr(yolo_module, "_createModel", lambda path: malformed)
 
     result = YoloInferenceOperator().executeNode(
@@ -185,3 +191,16 @@ def testYoloInferenceValidatesParametersAndImageType(tmp_path: Path) -> None:
 
     assert invalidParam["error"]["code"] == "E_PARAM_INVALID"
     assert invalidImage["error"]["code"] == "E_INPUT_TYPE"
+
+    invalidModelType = operator.executeNode(
+        {"image": np.zeros((2, 2, 3), dtype=np.uint8)},
+        {"modelPath": str(tmp_path / "model.pt")},
+        {},
+    )
+    invalidDevice = operator.executeNode(
+        {"image": np.zeros((2, 2, 3), dtype=np.uint8)},
+        {"modelPath": str(_modelFile(tmp_path)), "device": "cuda"},
+        {},
+    )
+    assert invalidModelType["error"]["code"] == "E_PARAM_INVALID"
+    assert invalidDevice["error"]["code"] == "E_PARAM_INVALID"

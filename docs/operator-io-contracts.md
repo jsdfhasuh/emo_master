@@ -715,7 +715,7 @@ if isinstance(geometry, BBox2D):
 | `vision.mask.logic` | `maskA`、可选 `maskB/frameA/frameB` | `mask`、`frame` | AND、OR、XOR、NOT 或差集 |
 | `vision.analysis.blob` | `image`、可选 `mask/frame` | `blobs`、`mask`、`frame`、可选 `overlay` | 连通域过滤、轮廓和质心 |
 | `vision.color.rgb_statistics` | `image`、可选 `roi/frame` | `statistics`、`frame`、可选 `mask` | 按 BGR 图像输入计算标准 RGB 通道统计 |
-| `vision.inference.yolo` | `image`、可选 `frame` | `detections`、`frame`、可选 `overlay` | 本地 Ultralytics 模型推理，输出源图坐标 |
+| `vision.inference.yolo` | `image`、可选 `frame` | `detections`、`frame`、可选 `overlay` | ONNX Runtime CPU 执行 YOLOv8/YOLO11 detect，输出源图坐标 |
 | `vision.analysis.contour` | `mask`、可选 `frame` | `polygons`、`contours`、`frame` | 提取轮廓并保留完整层级来源关系 |
 | `vision.analysis.shape_measurement` | `contours` 或 `blobs` | `measurements` | 面积、周长、质心、圆度、BBox 和最小外接矩形 |
 | `vision.preprocess.rotate` | `image`、可选 `frame/validMask` | `image`、`frame`、`validMask` | 围绕图像中心旋转，可扩展画布并保留回源变换 |
@@ -916,8 +916,7 @@ RGB 算子的 `roi` 接受点、BBox、旋转框、多边形、Line 和 Circle�
 阈值化，所有非零值按前景处理。Blob 输出的 `mask` 只保留通过面积过滤的连通域。
 Threshold 输出固定为仅含 0/255 的单通道 `uint8` 掩码；固定、Otsu、Triangle 模式
 同时返回实际阈值，自适应模式的 `threshold` 为 `null`。HSV 使用 OpenCV uint8
-范围（H 为 0..179，S/V 为 0..255）；LAB 使用 OpenCV 的 uint8 编码。YOLO 后端按需加载并按模型路径与 device 缓存，
-因此算子注册不依赖 Ultralytics；实际推理机器可使用 `pip install -e .[yolo]` 安装
-可选后端。模型路径可以是绝对路径，也可以相对作业工作区。用于闭源、内部或商业
-部署前，应按 [Ultralytics 官方授权说明](https://www.ultralytics.com/license) 确认
-AGPL-3.0 或 Enterprise License 的适用方式。
+范围（H 为 0..179，S/V 为 0..255）；LAB 使用 OpenCV 的 uint8 编码。YOLO 后端按需加载
+ONNX Runtime CPU session，并按模型路径与 device 缓存。模型路径可以是绝对路径，也可以
+相对作业工作区；仅支持 batch 1、float32、未内置 NMS 的 Ultralytics YOLOv8/YOLO11
+detect `.onnx` 导出，不支持 pose、segmentation、端到端 NMS、INT8、DirectML 或 CUDA。

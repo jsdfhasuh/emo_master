@@ -18,6 +18,14 @@ from emo_master.core.contracts.geometry2d import (
     PayloadValidationError,
 )
 from emo_master.plugins.builtins._image_frame import frameForInput
+from emo_master.plugins.builtins.yolo_inference.onnx_backend import (
+    OnnxBackendUnavailableError,
+    OnnxInferenceError,
+    OnnxInferenceResult,
+    OnnxModelError,
+    OnnxResultError,
+    OnnxYoloSession,
+)
 
 
 @dataclass(frozen=True)
@@ -52,7 +60,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": "",
             "xWidget": "file",
             "xFileMode": "open",
-            "xFilter": "YOLO 模型 (*.pt *.onnx *.engine)",
+            "xFilter": "YOLO ONNX 模型 (*.onnx)",
         },
         "confidence": {
             "type": "number",
@@ -68,7 +76,11 @@ _PARAM_SCHEMA: dict[str, object] = {
         },
         "imageSize": {"type": "integer", "minimum": 1, "default": 640},
         "maxDetections": {"type": "integer", "minimum": 1, "default": 300},
-        "device": {"type": "string", "default": "auto"},
+        "device": {
+            "type": "string",
+            "enum": ["auto", "cpu"],
+            "default": "auto",
+        },
         "classes": {
             "type": "array",
             "items": {"type": "integer", "minimum": 0},
@@ -85,7 +97,7 @@ class YoloInferenceOperator:
     meta = OperatorMeta(
         operatorId="vision.inference.yolo",
         displayName="YOLO Inference",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -124,6 +136,8 @@ class YoloInferenceOperator:
         modelPath = params.get("modelPath", "")
         if not isinstance(modelPath, str) or modelPath.strip() == "":
             return _paramError("modelPath must be a non-empty string")
+        if Path(modelPath.strip()).suffix.lower() != ".onnx":
+            return _paramError("modelPath must point to an .onnx model")
         for name, default in (("confidence", 0.25), ("iou", 0.45)):
             value = params.get(name, default)
             if (
@@ -138,8 +152,8 @@ class YoloInferenceOperator:
             if not isinstance(value, int) or isinstance(value, bool) or value < 1:
                 return _paramError(f"{name} must be an integer >= 1")
         device = params.get("device", "auto")
-        if not isinstance(device, str) or device.strip() == "":
-            return _paramError("device must be a non-empty string")
+        if not isinstance(device, str) or device.strip().lower() not in {"auto", "cpu"}:
+            return _paramError("device must be 'auto' or 'cpu'")
         classes = params.get("classes", [])
         if not isinstance(classes, list) or any(
             not isinstance(item, int) or isinstance(item, bool) or item < 0
@@ -197,30 +211,28 @@ class YoloInferenceOperator:
         if not callable(predict):
             return _error("E_MODEL_LOAD_FAILED", "YOLO model has no callable predict()")
         keywordArguments: dict[str, object] = {
-            "source": image,
-            "conf": float(cast(float, params.get("confidence", 0.25))),
+            "image": image,
+            "confidence": float(cast(float, params.get("confidence", 0.25))),
             "iou": float(cast(float, params.get("iou", 0.45))),
-            "imgsz": cast(int, params.get("imageSize", 640)),
-            "max_det": cast(int, params.get("maxDetections", 300)),
-            "agnostic_nms": cast(bool, params.get("agnosticNms", False)),
-            "verbose": False,
+            "imageSize": cast(int, params.get("imageSize", 640)),
+            "maxDetections": cast(int, params.get("maxDetections", 300)),
+            "classes": tuple(cast(list[int], params.get("classes", []))),
+            "agnosticNms": cast(bool, params.get("agnosticNms", False)),
         }
-        classes = cast(list[int], params.get("classes", []))
-        if classes:
-            keywordArguments["classes"] = list(classes)
-        if device.lower() != "auto":
-            keywordArguments["device"] = device
         try:
             with entry.inferenceLock:
-                rawResults = predict(**keywordArguments)
+                rawResult = predict(**keywordArguments)
+        except OnnxResultError as err:
+            return _error("E_RESULT_INVALID", str(err))
+        except OnnxInferenceError as err:
+            return _error("E_INFERENCE_FAILED", str(err))
         except Exception as err:
-            return _error("E_INFERENCE_FAILED", f"YOLO inference failed: {err}")
+            return _error("E_INFERENCE_FAILED", f"ONNX inference failed: {err}")
 
         coordinateSpace = frame.coordinateSpace
         try:
             detections = _parseResults(
-                rawResults,
-                entry.model,
+                rawResult,
                 coordinateSpace,
                 width,
                 height,
@@ -247,6 +259,9 @@ class YoloInferenceOperator:
             "diagnostics": {
                 "text": f"YOLO detected {len(detections)} object(s)",
                 "modelPath": str(modelPath),
+                "backend": "onnxruntime",
+                "provider": getattr(rawResult, "provider", "CPUExecutionProvider"),
+                "inputShape": list(getattr(rawResult, "inputShape", ())),
             },
         }
 
@@ -261,6 +276,8 @@ class YoloInferenceOperator:
                 model = _createModel(str(modelPath))
             except _BackendUnavailableError:
                 raise
+            except _ModelLoadError:
+                raise
             except Exception as err:
                 raise _ModelLoadError(
                     f"failed to load YOLO model {modelPath}: {err}"
@@ -272,13 +289,11 @@ class YoloInferenceOperator:
 
 def _createModel(modelPath: str) -> object:
     try:
-        from ultralytics import YOLO
-    except ImportError as err:
-        raise _BackendUnavailableError(
-            "Ultralytics is not installed; run 'pip install -e .[yolo]' "
-            "in the Runtime environment"
-        ) from err
-    return YOLO(modelPath)
+        return OnnxYoloSession(modelPath)
+    except OnnxBackendUnavailableError as err:
+        raise _BackendUnavailableError(str(err)) from err
+    except OnnxModelError as err:
+        raise _ModelLoadError(str(err)) from err
 
 
 def _resolveModelPath(
@@ -293,32 +308,20 @@ def _resolveModelPath(
 
 
 def _parseResults(
-    rawResults: object,
-    model: object,
+    rawResult: object,
     coordinateSpace: CoordinateSpace2D,
     width: int,
     height: int,
 ) -> list[Detection2D]:
-    if isinstance(rawResults, (str, bytes, Mapping)):
-        raise ValueError("predict() must return a result sequence")
-    try:
-        results = list(cast(Any, rawResults))
-    except TypeError as err:
-        raise ValueError("predict() must return a result sequence") from err
-    if len(results) != 1:
-        raise ValueError("single-image inference must return exactly one result")
-    result = results[0]
-    boxes = getattr(result, "boxes", None)
-    if boxes is None:
-        return []
-    xyxy = _backendArray(getattr(boxes, "xyxy", None), "boxes.xyxy")
-    confidence = _backendArray(getattr(boxes, "conf", None), "boxes.conf").reshape(-1)
-    classes = _backendArray(getattr(boxes, "cls", None), "boxes.cls").reshape(-1)
+    if not isinstance(rawResult, OnnxInferenceResult):
+        raise ValueError("predict() must return OnnxInferenceResult")
+    xyxy = np.asarray(rawResult.boxesXyxy, dtype=np.float64)
+    confidence = np.asarray(rawResult.scores, dtype=np.float64).reshape(-1)
+    classes = np.asarray(rawResult.classIds, dtype=np.float64).reshape(-1)
     if xyxy.ndim != 2 or xyxy.shape[1] != 4:
-        raise ValueError("boxes.xyxy must have shape [N, 4]")
+        raise ValueError("boxesXyxy must have shape [N, 4]")
     if xyxy.shape[0] != confidence.size or xyxy.shape[0] != classes.size:
-        raise ValueError("boxes arrays must contain the same number of items")
-    names = getattr(result, "names", getattr(model, "names", {}))
+        raise ValueError("ONNX result arrays must contain the same number of items")
     detections: list[Detection2D] = []
     for index, rawBox in enumerate(xyxy):
         if not bool(np.all(np.isfinite(rawBox))):
@@ -343,7 +346,7 @@ def _parseResults(
             Detection2D.fromGeometry(
                 detectionId=f"det-{index + 1}",
                 classId=classId,
-                label=_classLabel(names, classId),
+                label=_classLabel(rawResult.names, classId),
                 confidence=score,
                 geometry=BBox2D(
                     x1,
@@ -352,27 +355,10 @@ def _parseResults(
                     y2 - y1,
                     coordinateSpace,
                 ),
-                attributes={"backend": "ultralytics"},
+                attributes={"backend": "onnxruntime"},
             )
         )
     return detections
-
-
-def _backendArray(value: object, path: str) -> np.ndarray[Any, Any]:
-    if value is None:
-        raise ValueError(f"{path} is missing")
-    candidate = value
-    for methodName in ("detach", "cpu"):
-        method = getattr(candidate, methodName, None)
-        if callable(method):
-            candidate = method()
-    numpyMethod = getattr(candidate, "numpy", None)
-    if callable(numpyMethod):
-        candidate = numpyMethod()
-    try:
-        return np.asarray(candidate, dtype=np.float64)
-    except (TypeError, ValueError) as err:
-        raise ValueError(f"{path} cannot be converted to an array") from err
 
 
 def _classLabel(names: object, classId: int) -> str:

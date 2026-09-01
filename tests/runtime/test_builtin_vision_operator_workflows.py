@@ -21,6 +21,7 @@ from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.plugins.builtins.yolo_inference import operator as yolo_module
+from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxInferenceResult
 from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
 
 
@@ -29,6 +30,22 @@ def _registry() -> dict[str, object]:
     result = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
     assert result.rejectedOperators == {}
     return dict(result.activeOperators)
+
+
+def _onnxResult(
+    boxes: object,
+    scores: object,
+    classes: object,
+    names: dict[int, str],
+) -> OnnxInferenceResult:
+    return OnnxInferenceResult(
+        boxesXyxy=np.asarray(boxes, dtype=np.float32),
+        scores=np.asarray(scores, dtype=np.float32),
+        classIds=np.asarray(classes, dtype=np.int64),
+        names=names,
+        provider="CPUExecutionProvider",
+        inputShape=(1, 3, 640, 640),
+    )
 
 
 def _project(
@@ -789,23 +806,12 @@ def testYoloBuiltinRunsThroughCompilerAndRunner(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class Boxes:
-        xyxy = np.asarray([[1, 1, 4, 4]], dtype=np.float32)
-        conf = np.asarray([0.8], dtype=np.float32)
-        cls = np.asarray([0], dtype=np.float32)
-
-    class Result:
-        boxes = Boxes()
-        names = {0: "part"}
-
     class Model:
-        names = {0: "part"}
-
         def predict(self, **kwargs: object):
             _ = kwargs
-            return [Result()]
+            return _onnxResult([[1, 1, 4, 4]], [0.8], [0], {0: "part"})
 
-    modelPath = tmp_path / "model.pt"
+    modelPath = tmp_path / "model.onnx"
     modelPath.write_bytes(b"test")
     monkeypatch.setattr(yolo_module, "_createModel", lambda path: Model())
     YoloInferenceOperator.clearCache()
@@ -847,26 +853,17 @@ def testYoloPostprocessAnnotateWriterAndArtifactRunAsBusinessClosure(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    class Boxes:
-        xyxy = np.asarray(
-            [[1, 4, 3, 6], [4, 4, 6, 6], [9, 9, 11, 11]],
-            dtype=np.float32,
-        )
-        conf = np.asarray([0.7, 0.9, 0.99], dtype=np.float32)
-        cls = np.asarray([0, 1, 2], dtype=np.float32)
-
-    class Result:
-        boxes = Boxes()
-        names = {0: "low", 1: "high", 2: "outside"}
-
     class Model:
-        names = Result.names
-
         def predict(self, **kwargs: object):
             _ = kwargs
-            return [Result()]
+            return _onnxResult(
+                [[1, 4, 3, 6], [4, 4, 6, 6], [9, 9, 11, 11]],
+                [0.7, 0.9, 0.99],
+                [0, 1, 2],
+                {0: "low", 1: "high", 2: "outside"},
+            )
 
-    modelPath = tmp_path / "model.pt"
+    modelPath = tmp_path / "model.onnx"
     modelPath.write_bytes(b"test")
     monkeypatch.setattr(yolo_module, "_createModel", lambda path: Model())
     YoloInferenceOperator.clearCache()

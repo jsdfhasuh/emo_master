@@ -7,4 +7,5 @@ opencv-python>=4.9,<4.11
 PyYAML>=6.0
 fastapi>=0.110
 uvicorn>=0.29
+onnxruntime==1.23.2
 numpy<2

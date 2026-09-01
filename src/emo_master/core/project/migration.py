@@ -7,7 +7,8 @@ from typing import Any
 from uuid import uuid4
 
 
-SCHEMA_VERSION = "2.0"
+SCHEMA_VERSION = "2.1"
+LEGACY_V2_SCHEMA_VERSION = "2.0"
 
 _LEGACY_TOP_LEVEL_FIELDS = {
     "version",
@@ -57,15 +58,22 @@ def utc_now_iso() -> str:
 
 
 def migrateProjectPayload(payload: dict[str, object]) -> dict[str, object]:
-    """Return a canonical v2 document without modifying the caller's payload."""
+    """Return a canonical v2.1 document without modifying the caller's payload."""
     source = deepcopy(payload)
     if source.get("schemaVersion") == SCHEMA_VERSION:
-        # v2 is already the canonical source.  Validate it before returning so
+        # v2.1 is already the canonical source. Validate it before returning so
         # unknown fields and invalid kinds cannot disappear in normalization.
         from emo_master.core.project.models import ProjectDocument
 
         return ProjectDocument.model_validate(source).model_dump(mode="python")
     sourceSchema = source.get("schemaVersion")
+    if sourceSchema == LEGACY_V2_SCHEMA_VERSION:
+        from emo_master.core.project.models import ProjectDocument
+
+        upgraded = ProjectDocument.model_validate(source).model_dump(mode="python")
+        upgraded["schemaVersion"] = SCHEMA_VERSION
+        _markLegacyLoopContracts(upgraded.get("workflows"))
+        return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
     if sourceSchema is not None and sourceSchema not in {"1.0", "1"}:
         raise ValueError(f"unsupported project schemaVersion: {sourceSchema!r}")
     _validateLegacyPayload(source, sourceSchema)
@@ -90,6 +98,7 @@ def migrateProjectPayload(payload: dict[str, object]) -> dict[str, object]:
 
     workflows = _extract_workflows(source)
     _ensure_legacy_boundaries(workflows)
+    _markLegacyLoopContracts(workflows)
     workflowOrder = list(workflows.keys())
     entryWorkflowId = _first_string(source.get("entryWorkflowId")) or workflowOrder[0]
     if entryWorkflowId not in workflows:
@@ -119,6 +128,23 @@ def migrateProjectPayload(payload: dict[str, object]) -> dict[str, object]:
         "dependencies": {"operators": dependencies.get("operators", [])},
         "devices": {"bindings": devices.get("bindings", {})},
     }
+
+
+def _markLegacyLoopContracts(workflowsValue: object) -> None:
+    if not isinstance(workflowsValue, dict):
+        return
+    for workflowValue in workflowsValue.values():
+        if not isinstance(workflowValue, dict):
+            continue
+        nodes = workflowValue.get("nodes")
+        if not isinstance(nodes, list):
+            continue
+        for node in nodes:
+            if not isinstance(node, dict) or node.get("kind") != "loop":
+                continue
+            loop = node.get("loop")
+            if isinstance(loop, dict):
+                loop.setdefault("contractVersion", 1)
 
 
 def loadProjectPayload(projectPath: Path) -> dict[str, object]:

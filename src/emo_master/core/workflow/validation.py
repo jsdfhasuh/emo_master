@@ -2,8 +2,14 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.errors import ValidationIssue
+from emo_master.core.workflow.loop_contracts import (
+    CURRENT_LOOP_CONTRACT_VERSION,
+    deriveLoopContract,
+    interfacePortTypes,
+)
 
 
 def validateProjectDocument(
@@ -156,21 +162,6 @@ def validateProjectDocument(
                                 fieldPath="loop.repeatCount",
                             )
                         )
-                    impossibleOutputs = sorted(
-                        port for port in node.outputPorts if port not in node.inputPorts
-                    )
-                    if repeatCount == 0 and impossibleOutputs:
-                        issues.append(
-                            ValidationIssue(
-                                "E_LOOP_ZERO_OUTPUT_UNSATISFIABLE",
-                                "repeatCount=0 can only pass through loop input ports: "
-                                + ", ".join(impossibleOutputs),
-                                projectId=projectId,
-                                workflowId=workflowId,
-                                nodeId=node.nodeId,
-                                fieldPath="loop.outputPorts",
-                            )
-                        )
                 timeout = node.loop.get("timeoutMs", 0)
                 if not isinstance(timeout, int) or isinstance(timeout, bool) or timeout < 0:
                     issues.append(
@@ -183,6 +174,97 @@ def validateProjectDocument(
                             fieldPath="loop.timeoutMs",
                         )
                     )
+                if (
+                    node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION
+                    and document.schemaVersion != "2.1"
+                ):
+                    issues.append(
+                        ValidationIssue(
+                            "E_LOOP_CONTRACT_SCHEMA_UNSUPPORTED",
+                            "loop contractVersion=2 requires project schemaVersion 2.1",
+                            projectId=projectId,
+                            workflowId=workflowId,
+                            nodeId=node.nodeId,
+                            fieldPath="loop.contractVersion",
+                        )
+                    )
+                bodyWorkflowId = node.loop.get("bodyWorkflowId")
+                conditionWorkflowId = node.loop.get("conditionWorkflowId")
+                bodyWorkflow = (
+                    document.workflows.get(bodyWorkflowId)
+                    if isinstance(bodyWorkflowId, str)
+                    else None
+                )
+                conditionWorkflow = (
+                    document.workflows.get(conditionWorkflowId)
+                    if isinstance(conditionWorkflowId, str)
+                    else None
+                )
+                if bodyWorkflow is not None and (
+                    mode != "while" or conditionWorkflow is not None
+                ):
+                    contract = deriveLoopContract(
+                        node.loop,
+                        bodyWorkflow.inputs,
+                        bodyWorkflow.outputs,
+                        conditionWorkflow.inputs if conditionWorkflow is not None else {},
+                        conditionWorkflow.outputs if conditionWorkflow is not None else {},
+                    )
+                    for contractIssue in contract.issues:
+                        if contractIssue.code == "E_LOOP_MODE_INVALID":
+                            continue
+                        issues.append(
+                            ValidationIssue(
+                                contractIssue.code,
+                                contractIssue.message,
+                                projectId=projectId,
+                                workflowId=workflowId,
+                                nodeId=node.nodeId,
+                                fieldPath=contractIssue.fieldPath,
+                            )
+                        )
+                    actualInputs = interfacePortTypes(node.inputPorts)
+                    actualOutputs = interfacePortTypes(node.outputPorts)
+                    if mode == "repeat" and node.loop.get("repeatCount") == 0:
+                        impossibleActualOutputs = sorted(
+                            name
+                            for name, outputType in actualOutputs.items()
+                            if name not in actualInputs
+                            or not arePortTypesCompatible(
+                                actualInputs[name], outputType
+                            )
+                        )
+                        if impossibleActualOutputs and not any(
+                            issue.code == "E_LOOP_ZERO_OUTPUT_UNSATISFIABLE"
+                            for issue in issues
+                            if issue.workflowId == workflowId
+                            and issue.nodeId == node.nodeId
+                        ):
+                            issues.append(
+                                ValidationIssue(
+                                    "E_LOOP_ZERO_OUTPUT_UNSATISFIABLE",
+                                    "repeatCount=0 cannot pass through loop outputs: "
+                                    + ", ".join(impossibleActualOutputs),
+                                    projectId=projectId,
+                                    workflowId=workflowId,
+                                    nodeId=node.nodeId,
+                                    fieldPath="loop.repeatCount",
+                                )
+                            )
+                    if (
+                        actualInputs != contract.inputPorts
+                        or actualOutputs != contract.outputPorts
+                    ):
+                        issues.append(
+                            ValidationIssue(
+                                "E_LOOP_PORTS_STALE",
+                                "loop ports do not match the referenced workflow contract",
+                                projectId=projectId,
+                                workflowId=workflowId,
+                                nodeId=node.nodeId,
+                                fieldPath="inputPorts/outputPorts",
+                            )
+                        )
             if node.kind == "operator" and node.operatorId and operatorRegistry is not None:
                 if node.operatorId not in operatorRegistry:
                     issues.append(

@@ -13,7 +13,7 @@ from emo_master.core.project.models import ProjectDocument
 
 
 class ProjectRepository:
-    """Repository facade backed exclusively by project.json v2."""
+    """Repository facade backed exclusively by project.json v2.1."""
 
     def __init__(self, workspaceRoot: Path) -> None:
         self.workspaceRoot = workspaceRoot
@@ -27,7 +27,7 @@ class ProjectRepository:
         (projectDir / "outputs").mkdir(parents=True, exist_ok=True)
         now = utc_now_iso()
         payload: dict[str, object] = {
-            "schemaVersion": "2.0",
+            "schemaVersion": "2.1",
             "project": {
                 "projectId": projectId,
                 "name": name,

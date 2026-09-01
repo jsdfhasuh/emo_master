@@ -9,6 +9,10 @@ from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+from emo_master.core.workflow.loop_contracts import (
+    LoopContract,
+    deriveLoopContract,
+)
 from emo_master.core.workflow.models import (
     CompiledEdge,
     CompiledNode,
@@ -71,7 +75,16 @@ class WorkflowCompiler:
         nodeById: dict[str, CompiledNode] = {}
         issues: list[ValidationIssue] = []
         for node in workflow.nodes:
-            inputPorts, outputPorts = self._nodePorts(document, workflowId, node)
+            inputPorts: dict[str, object]
+            outputPorts: dict[str, object]
+            loopConfig = deepcopy(node.loop)
+            if node.kind == "loop":
+                loopContract = self._loopContract(document, node)
+                inputPorts = dict(loopContract.inputPorts)
+                outputPorts = dict(loopContract.outputPorts)
+                loopConfig = deepcopy(loopContract.normalizedConfig)
+            else:
+                inputPorts, outputPorts = self._nodePorts(document, workflowId, node)
             if node.kind == "operator" and node.operatorId:
                 issues.extend(
                     self._validateOperator(document, workflowId, node)
@@ -84,7 +97,7 @@ class WorkflowCompiler:
                 outputPorts=freezeMapping(outputPorts),
                 params=freezeMapping(deepcopy(node.params)),
                 targetWorkflowId=node.targetWorkflowId,
-                loop=freezeMapping(deepcopy(node.loop)),
+                loop=freezeMapping(loopConfig),
             )
             nodes.append(compiled)
             nodeById[node.nodeId] = compiled
@@ -173,7 +186,7 @@ class WorkflowCompiler:
 
     def _nodePorts(
         self, document: ProjectDocument, workflowId: str, node: WorkflowNode
-    ) -> tuple[dict[str, str], dict[str, str]]:
+    ) -> tuple[dict[str, object], dict[str, object]]:
         if node.kind == "workflow_input":
             return {}, _interfacePorts(document.workflows[workflowId].inputs)
         if node.kind == "workflow_output":
@@ -187,6 +200,29 @@ class WorkflowCompiler:
             if metadata is not None:
                 return metadata[0], metadata[1]
         return dict(node.inputPorts), dict(node.outputPorts)
+
+    def _loopContract(
+        self, document: ProjectDocument, node: WorkflowNode
+    ) -> LoopContract:
+        bodyWorkflowId = node.loop.get("bodyWorkflowId")
+        conditionWorkflowId = node.loop.get("conditionWorkflowId")
+        body = (
+            document.workflows.get(bodyWorkflowId)
+            if isinstance(bodyWorkflowId, str)
+            else None
+        )
+        condition = (
+            document.workflows.get(conditionWorkflowId)
+            if isinstance(conditionWorkflowId, str)
+            else None
+        )
+        return deriveLoopContract(
+            node.loop,
+            body.inputs if body is not None else {},
+            body.outputs if body is not None else {},
+            condition.inputs if condition is not None else {},
+            condition.outputs if condition is not None else {},
+        )
 
     def _validateOperator(
         self, document: ProjectDocument, workflowId: str, node: WorkflowNode
@@ -299,20 +335,13 @@ class WorkflowCompiler:
         return issues
 
 
-def _interfacePorts(interface: Mapping[str, object]) -> dict[str, str]:
-    ports: dict[str, str] = {}
-    for name, descriptor in interface.items():
-        if isinstance(descriptor, str):
-            ports[name] = descriptor
-        elif isinstance(descriptor, dict):
-            rawType = descriptor.get("type", "object")
-            ports[name] = rawType if isinstance(rawType, str) else "object"
-        else:
-            ports[name] = "object"
-    return ports
+def _interfacePorts(interface: Mapping[str, object]) -> dict[str, object]:
+    return {str(name): deepcopy(spec) for name, spec in interface.items()}
 
 
-def _operatorMetadata(value: object | None) -> tuple[dict[str, str], dict[str, str]] | None:
+def _operatorMetadata(
+    value: object | None,
+) -> tuple[dict[str, object], dict[str, object]] | None:
     if value is None:
         return None
     manifest = getattr(value, "manifest", None)
@@ -326,8 +355,8 @@ def _operatorMetadata(value: object | None) -> tuple[dict[str, str], dict[str, s
     if not isinstance(inputPorts, Mapping) or not isinstance(outputPorts, Mapping):
         return None
     return (
-        {str(key): str(item) for key, item in inputPorts.items()},
-        {str(key): str(item) for key, item in outputPorts.items()},
+        {str(key): deepcopy(item) for key, item in inputPorts.items()},
+        {str(key): deepcopy(item) for key, item in outputPorts.items()},
     )
 
 

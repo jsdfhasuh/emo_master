@@ -10,6 +10,9 @@ from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 
 
+PACKAGE_MANIFEST_SCHEMA_VERSION = "2.0"
+
+
 def buildPackage(projectDir: Path, outputDir: Path) -> Path:
     if not projectDir.exists():
         raise FileNotFoundError(f"project directory not found: {projectDir}")
@@ -38,7 +41,9 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
         if isinstance(rawProjectId, str) and rawProjectId:
             projectId = rawProjectId
     manifest = {
-        "schemaVersion": "2.0",
+        # This versions the package manifest itself.  The independently
+        # versioned project schema is declared inside project.json.
+        "schemaVersion": PACKAGE_MANIFEST_SCHEMA_VERSION,
         "projectId": projectId,
         "projectVersion": projectVersion,
         "buildTime": datetime.now(timezone.utc).isoformat(),

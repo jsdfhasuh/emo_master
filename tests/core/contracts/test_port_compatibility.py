@@ -1,6 +1,9 @@
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel, FlowScene
-from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
+from emo_master.core.contracts.port_compatibility import (
+    arePortTypesCompatible,
+    isPortTypeAssignable,
+)
 from emo_master.core.graph.validator import validateFlowGraph
 
 
@@ -20,6 +23,27 @@ def testPortCompatibilityUsesObjectAndAnyAsWildcards() -> None:
     assert arePortTypesCompatible("string", "object") is True
     assert arePortTypesCompatible("any", "json") is True
     assert arePortTypesCompatible("image", "mask") is False
+
+
+def testPortCompatibilityUnderstandsTypedLists() -> None:
+    assert arePortTypesCompatible("list", "list<image>") is True
+    assert arePortTypesCompatible("list<image>", "list<any>") is True
+    assert arePortTypesCompatible("list<image>", "list<image>") is True
+    assert arePortTypesCompatible("list<image>", "list<number>") is False
+
+
+def testPortAssignabilityIsDirectionalForWildcardsAndTypedLists() -> None:
+    assert isPortTypeAssignable("string", "object") is True
+    assert isPortTypeAssignable("object", "string") is False
+    assert isPortTypeAssignable("list<string>", "list<any>") is True
+    assert isPortTypeAssignable("list<any>", "list<string>") is False
+
+
+def testIntegerCanSafelyFeedNumberButNotTheReverse() -> None:
+    assert arePortTypesCompatible("integer", "number") is True
+    assert isPortTypeAssignable("integer", "number") is True
+    assert arePortTypesCompatible("number", "integer") is False
+    assert isPortTypeAssignable("number", "integer") is False
 
 
 def testGraphValidatorAcceptsWildcardPortTypes() -> None:

@@ -68,7 +68,8 @@ def testBuildPackageArchivesCanonicalV2ForLegacyInput(tmp_path: Path) -> None:
   with zipfile.ZipFile(packagePath, "r") as archive:
     projectPayload = json.loads(archive.read("project.json"))
     manifest = json.loads(archive.read("manifest.json"))
-    assert projectPayload["schemaVersion"] == "2.0"
+    assert projectPayload["schemaVersion"] == "2.1"
+    assert manifest["schemaVersion"] == "2.0"
     nodes = projectPayload["workflows"]["main"]["nodes"]
     assert {node["kind"] for node in nodes} == {
       "workflow_input",

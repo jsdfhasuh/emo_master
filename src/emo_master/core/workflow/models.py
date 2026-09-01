@@ -10,8 +10,8 @@ class CompiledNode:
     nodeId: str
     kind: str
     operatorId: str | None
-    inputPorts: Mapping[str, str]
-    outputPorts: Mapping[str, str]
+    inputPorts: Mapping[str, object]
+    outputPorts: Mapping[str, object]
     params: Mapping[str, object]
     targetWorkflowId: str | None = None
     loop: Mapping[str, object] = MappingProxyType({})

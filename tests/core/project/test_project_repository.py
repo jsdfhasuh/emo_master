@@ -10,7 +10,7 @@ def testProjectJsonV2RoundTrip(tmp_path: Path) -> None:
 
   assert loaded["name"] == "demo"
   assert loaded["projectId"] == projectId
-  assert loaded["schemaVersion"] == "2.0"
+  assert loaded["schemaVersion"] == "2.1"
   kinds = {
     node["kind"] for node in loaded["workflows"]["main"]["nodes"]
   }

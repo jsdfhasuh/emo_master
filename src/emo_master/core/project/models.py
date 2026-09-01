@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 
 class StrictModel(BaseModel):
@@ -26,7 +26,9 @@ class RuntimeSettings(StrictModel):
 
 class WorkflowNode(StrictModel):
     nodeId: str
-    kind: Literal["operator", "workflow_input", "workflow_output", "subflow", "loop"] = "operator"
+    kind: Literal[
+        "operator", "workflow_input", "workflow_output", "subflow", "loop"
+    ] = "operator"
     operatorId: str | None = None
     displayName: str | None = None
     inputPorts: dict[str, str] = Field(default_factory=dict)
@@ -66,7 +68,7 @@ class ProjectDevices(StrictModel):
 
 
 class ProjectDocument(StrictModel):
-    schemaVersion: Literal["2.0"]
+    schemaVersion: Literal["2.0", "2.1"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -74,6 +76,58 @@ class ProjectDocument(StrictModel):
     runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
     dependencies: ProjectDependencies = Field(default_factory=ProjectDependencies)
     devices: ProjectDevices = Field(default_factory=ProjectDevices)
+
+    @model_validator(mode="after")
+    def validateWorkflowIndex(self) -> "ProjectDocument":
+        workflowIds = set(self.workflows)
+        orderedIds = self.workflowOrder
+        if not workflowIds:
+            raise ValueError("project must contain at least one workflow")
+        if len(orderedIds) != len(set(orderedIds)):
+            raise ValueError("workflowOrder must not contain duplicate workflow ids")
+        if set(orderedIds) != workflowIds:
+            raise ValueError("workflowOrder must contain every workflow exactly once")
+        if self.entryWorkflowId not in workflowIds:
+            raise ValueError("entryWorkflowId must reference an existing workflow")
+
+        for sourceWorkflowId, workflow in self.workflows.items():
+            seenNodeIds: set[str] = set()
+            duplicateNodeIds: set[str] = set()
+            for node in workflow.nodes:
+                if node.nodeId in seenNodeIds:
+                    duplicateNodeIds.add(node.nodeId)
+                seenNodeIds.add(node.nodeId)
+            if duplicateNodeIds:
+                raise ValueError(
+                    f"{sourceWorkflowId}.nodes must not contain duplicate nodeId values: "
+                    + ", ".join(sorted(duplicateNodeIds))
+                )
+            for node in workflow.nodes:
+                references: list[tuple[str, object]] = []
+                if node.kind == "subflow":
+                    references.append(("targetWorkflowId", node.targetWorkflowId))
+                if node.kind == "loop":
+                    references.extend(
+                        [
+                            ("bodyWorkflowId", node.loop.get("bodyWorkflowId")),
+                            (
+                                "conditionWorkflowId",
+                                node.loop.get("conditionWorkflowId"),
+                            ),
+                        ]
+                    )
+                for fieldName, targetWorkflowId in references:
+                    if targetWorkflowId is None:
+                        continue
+                    if (
+                        not isinstance(targetWorkflowId, str)
+                        or targetWorkflowId not in workflowIds
+                    ):
+                        raise ValueError(
+                            f"{sourceWorkflowId}.{node.nodeId}.{fieldName} must "
+                            "reference an existing workflow"
+                        )
+        return self
 
     def toPayload(self) -> dict[str, object]:
         return self.model_dump(mode="python")

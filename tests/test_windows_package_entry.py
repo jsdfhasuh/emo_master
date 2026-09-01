@@ -18,6 +18,7 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
     assert checks["builtins"]["editorUiCount"] >= 3
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
     assert checks["migrations"]["versions"] == [1, 2, 3]
+    assert checks["migrations"]["journalMode"] == "delete"
 
 
 def testPackageSelfTestCommandWritesResultJson(tmp_path: Path) -> None:

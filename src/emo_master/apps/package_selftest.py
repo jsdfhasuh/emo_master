@@ -86,7 +86,10 @@ def _checkMigrations() -> dict[str, object]:
         if not migrationPath.is_file() or migrationPath.stat().st_size == 0:
             raise RuntimeError(f"SQL migration is missing or empty: {migrationName}")
 
-    with TemporaryDirectory(prefix="emo-master-self-test-") as tempDirectory:
+    with TemporaryDirectory(
+        prefix="emo-master-self-test-",
+        ignore_cleanup_errors=True,
+    ) as tempDirectory:
         databasePath = Path(tempDirectory) / "runtime.db"
         SqliteStore(databasePath).initialize()
         connection = sqlite3.connect(databasePath)
@@ -97,11 +100,22 @@ def _checkMigrations() -> dict[str, object]:
                     "SELECT version FROM schemaMigrations ORDER BY version"
                 )
             ]
+            connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
+            journalModeRow = connection.execute("PRAGMA journal_mode=DELETE").fetchone()
+            journalMode = "" if journalModeRow is None else str(journalModeRow[0])
+            if journalMode.lower() != "delete":
+                raise RuntimeError(
+                    f"failed to leave migration test database in DELETE mode: {journalMode}"
+                )
         finally:
             connection.close()
     if versions != [1, 2, 3]:
         raise RuntimeError(f"unexpected migration versions: {versions}")
-    return {"files": list(_EXPECTED_MIGRATIONS), "versions": versions}
+    return {
+        "files": list(_EXPECTED_MIGRATIONS),
+        "versions": versions,
+        "journalMode": journalMode,
+    }
 
 
 def _checkOnnxRuntime() -> dict[str, object]:

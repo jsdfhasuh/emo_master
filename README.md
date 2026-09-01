@@ -1,6 +1,6 @@
 # emo_master
 
-emo_master 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前版本为 `0.2.0`，包含：
+emo_master 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前版本为 `0.6.0`，包含：
 
 > 项目仍处于实验性阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
 
@@ -8,8 +8,14 @@ emo_master 是一个参考 VisionMaster 思路实现的机器视觉流程设计�
 - Runtime（gRPC 服务）
 - 插件算子框架（含 Empty 与 Canny 示例）
 - 项目目录格式、打包与回滚基础能力
-- `project.json v2` 多工作流、入口工作流、Subflow 与结构化 Loop
+- `project.json v2.1` 多工作流、入口工作流、Subflow 与类型化 Loop 契约
 - 异步 Job、SQLite 事件重放、spawn worker 隔离和实时 follow 事件流
+- Runner 注入的算子结构化日志、SQLite 权威存储、滚动 JSONL 与可浮动日志 Dock
+- schema 1.2/Homography、经典机器视觉与强类型集合算子
+- TXT/CSV 强类型坐标读取、点序列变换和几何测量算子
+- 三菱 SLMP/MC 3E PLC 读写、有界 TCP 客户端/单次接收及内嵌标量/文本输出
+- 华睿 IMV 直连相机单帧采集、作业内连接复用和可取消硬件触发等待
+- 可选 `.ui + Controller` 算子独立编辑窗口、作业快照、纯计算预览与相机实时预览
 
 ## Conda 环境准备
 
@@ -53,6 +59,12 @@ python scripts/dev.py test
 python scripts/dev.py run-runtime
 python scripts/dev.py run-designer
 ```
+
+## 开发和注册新算子
+
+当前算子采用 manifest 自动发现机制，不需要修改中央注册表。完整目录结构、
+`manifest.json`、`operator.py` 可复制示例、外部插件根和注册测试方法见：
+[算子注册与执行流程](docs/plugin-registration-flow.md#9-如何注册一个算子可直接照做)。
 
 ## 运行与图片测试
 

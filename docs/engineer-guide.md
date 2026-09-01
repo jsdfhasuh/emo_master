@@ -9,6 +9,7 @@ EmoMaster 由 Designer、Runtime 和 `core` 契约层组成。`core` 只定义�
 - `core/project/models.py`：`ProjectDocument`、`WorkflowDefinition` 和运行设置。
 - `core/project/migration.py`：v1 到 v2 的纯内存迁移。
 - `core/workflow/compiler.py`：端口、节点、DAG、Subflow 调用图和 Loop 校验。
+- `core/workflow/loop_contracts.py`：Repeat/ForEach/While 的唯一端口派生与接口契约。
 - `apps/designer/state/workflow_store.py`：多工作流、顺序、入口和引用关系。
 - `apps/designer/controllers/workflow_controller.py`：工作流切换、画布投影、Subflow 端口和 Loop 配置。
 - `apps/designer/services/runtime_worker.py`：QThread 后台 StartJob/follow 消费。

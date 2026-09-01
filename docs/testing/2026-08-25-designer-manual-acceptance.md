@@ -206,19 +206,61 @@ timeoutMs=30000
 
 ## H. ForEach 和 While
 
-本轮至少分别检查 ForEach 和 While 的编辑与持久化行为，不要求为它们构造复杂生产数据：
+### H.1 ForEach 派生端口
+
+准备一个 Body，其输入至少包含一个迭代项端口，输出至少包含两个不同名称的端口。
+例如：
+
+~~~text
+Body 输入： image:image, threshold:number
+Body 输出： edges:image, score:number
+~~~
+
+添加新的 ForEach，并验证：
+
+- 参数中可选择 `itemInputPort=image`；
+- 节点输入为 `items:list<image>` 和共享输入 `threshold:number`；
+- 节点输出为 `edges:list<image>` 和 `score:list<number>`，不再只有不透明的 `results`；
+- 多项输入运行后，两个输出列表顺序都与 items 一致；
+- 空 items 返回两个空列表；
+- 修改 Body 输出名称或类型后，ForEach 端口立即同步；
+- 被删除或类型不兼容的旧连线不会复活，并有警告或日志说明。
+
+### H.2 While 类型化状态
+
+准备兼容的 Body 和 Condition：
+
+~~~text
+Body 输入： count:integer
+Body 输出： count:integer
+Condition 输入： count:integer
+Condition 输出： continue:boolean
+~~~
+
+添加新的 While，并验证：
+
+- While 输入和输出都显示 `count:integer`；
+- Condition 返回 false 时输出当前 count，不执行 Body；
+- Condition 返回 true 时，Body 输出成为下一轮输入；
+- `maxIterations=0` 会在配置阶段被拒绝；
+- 把 `image -> results` 这类无法反馈的工作流选作 Body 时，界面给出可理解错误；
+- Body/Condition 接口变化后，节点状态和相关连线可解释。
+
+### H.3 兼容和持久化
+
+继续检查：
 
 - 节点可以添加到画布；
 - 参数弹窗可以打开和编辑；
-- ForEach 的 body 可以选择；
-- While 的 condition 和 body 可以选择；
+- 旧项目中的 contractVersion=1 节点仍能加载；
+- 新节点保存为 contractVersion=2；
 - 配置可以保存；
 - 关闭并重载后配置仍存在；
 - body 或 condition 不允许引用当前工作流自身；
 - 非法设置会给出可理解的错误，不会静默保存为有效配置；
 - 修改引用工作流后，相关端口和连线状态可解释。
 
-若已有方便的业务输入，可做一次最小运行；否则只记录编辑、校验、保存和重载结果。不要为了满足本项引入新的视觉算法或业务输入。
+本节的新契约必须至少完成一次最小运行；不要为了满足本项引入新的视觉算法。
 
 ## I. 实时事件和节点颜色
 

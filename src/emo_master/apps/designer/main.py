@@ -8,7 +8,6 @@ from emo_master.apps.designer.services.runtime_client import (
     RuntimeClient,
     RuntimeServiceProtocol,
 )
-from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 
@@ -25,8 +24,44 @@ def applyDesignerStyle(app) -> None:
     app.setStyleSheet(styleText)
 
 
+def _configureHighDpi(qCoreApplication, qt, qGuiApplication) -> bool:
+    instance = getattr(qCoreApplication, "instance", None)
+    if callable(instance) and instance() is not None:
+        return False
+
+    configured = False
+    setAttribute = getattr(qCoreApplication, "setAttribute", None)
+    if callable(setAttribute):
+        for attributeName in ["AA_EnableHighDpiScaling", "AA_UseHighDpiPixmaps"]:
+            attribute = getattr(qt, attributeName, None)
+            if attribute is None:
+                continue
+            setAttribute(attribute, True)
+            configured = True
+
+    policyType = getattr(qt, "HighDpiScaleFactorRoundingPolicy", None)
+    passThrough = getattr(policyType, "PassThrough", None)
+    setRoundingPolicy = getattr(
+        qGuiApplication, "setHighDpiScaleFactorRoundingPolicy", None
+    )
+    if callable(setRoundingPolicy) and passThrough is not None:
+        setRoundingPolicy(passThrough)
+        configured = True
+    return configured
+
+
+def configureHighDpi() -> bool:
+    from PySide2.QtCore import QCoreApplication, Qt
+    from PySide2.QtGui import QGuiApplication
+
+    return _configureHighDpi(QCoreApplication, Qt, QGuiApplication)
+
+
 def runDesigner() -> None:
+    configureHighDpi()
     from PySide2.QtWidgets import QApplication
+
+    from emo_master.apps.designer.ui.main_window import MainWindow
 
     app = QApplication([])
     applyDesignerStyle(app)

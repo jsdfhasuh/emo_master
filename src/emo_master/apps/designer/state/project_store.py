@@ -59,7 +59,7 @@ def createProjectSkeleton(projectDir: Path, projectName: str) -> None:
         return
     now = utc_now_iso()
     payload: dict[str, object] = {
-        "schemaVersion": "2.0",
+        "schemaVersion": "2.1",
         "project": {
             "projectId": str(uuid4()),
             "name": projectName,

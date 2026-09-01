@@ -140,6 +140,90 @@ def testRuntimeWorkerClearsStreamAndReportsFailureAfterStreamError() -> None:
     assert worker._stream is None
 
 
+def testRuntimeWorkerReconnectsFromLastSequenceWithoutDuplicatingEvents() -> None:
+    class Stream:
+        def __init__(self, values, error: Exception | None = None) -> None:
+            self.values = iter(values)
+            self.error = error
+
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            try:
+                return next(self.values)
+            except StopIteration:
+                if self.error is not None:
+                    error = self.error
+                    self.error = None
+                    raise error
+                raise
+
+        def close(self) -> None:
+            return None
+
+    def event(sequence: int, eventType: str):
+        return type(
+            "Event",
+            (),
+            {"sequence": sequence, "event_type": eventType},
+        )()
+
+    class Client:
+        def __init__(self) -> None:
+            self.streamCalls = []
+            self.statusCalls = 0
+
+        def startJob(self, projectId: str, workflowId: str = "", inputs=None):
+            _ = projectId, workflowId, inputs
+            return type("Reply", (), {"ok": True, "job_id": "job-reconnect"})()
+
+        def iterJobEvents(
+            self,
+            jobId: str,
+            afterSequence: int = 0,
+            follow: bool = False,
+        ):
+            assert jobId == "job-reconnect"
+            self.streamCalls.append((afterSequence, follow))
+            if len(self.streamCalls) == 1:
+                return Stream(
+                    [event(1, "node.log")],
+                    RuntimeError("temporary disconnect"),
+                )
+            if len(self.streamCalls) == 2:
+                return Stream(
+                    [
+                        event(1, "node.log"),
+                        event(2, "job.completed"),
+                    ]
+                )
+            assert follow is True
+            return Stream([event(3, "runtime.logfile.failed")])
+
+        def getJobStatus(self, jobId: str):
+            assert jobId == "job-reconnect"
+            self.statusCalls += 1
+            status = "RUNNING" if self.statusCalls == 1 else "COMPLETED"
+            return type("Status", (), {"status": status})()
+
+    client = Client()
+    worker = RuntimeWorker(client, "project", "main")
+    received = []
+    failures = []
+    statuses = []
+    worker.eventReceived.connect(received.append)
+    worker.failed.connect(failures.append)
+    worker.statusChanged.connect(statuses.append)
+
+    _runWorker(worker)
+
+    assert [item.sequence for item in received] == [1, 2, 3]
+    assert client.streamCalls == [(0, True), (1, True), (2, True)]
+    assert failures == []
+    assert [item.status for item in statuses] == ["COMPLETED"]
+
+
 def testRuntimeWorkerStopBeforeStartDoesNotCreateAJob() -> None:
     class Client:
         def __init__(self) -> None:

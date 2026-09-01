@@ -10,11 +10,13 @@ class LayoutController:
         sidebarContainer,
         rightPanelContainer,
         canvasPanel,
+        dependencyTreeWidget,
         nodeListWidget,
         runtimeStatusOutput,
         previewImageLabel,
         sidebarToggleButton,
         categoryPanel,
+        dependencyTreeContainer,
         nodeListContainer,
         mainMenuBar,
         settingsStore,
@@ -25,11 +27,13 @@ class LayoutController:
         self.sidebarContainer = sidebarContainer
         self.rightPanelContainer = rightPanelContainer
         self.canvasPanel = canvasPanel
+        self.dependencyTreeWidget = dependencyTreeWidget
         self.nodeListWidget = nodeListWidget
         self.runtimeStatusOutput = runtimeStatusOutput
         self.previewImageLabel = previewImageLabel
         self.sidebarToggleButton = sidebarToggleButton
         self.categoryPanel = categoryPanel
+        self.dependencyTreeContainer = dependencyTreeContainer
         self.nodeListContainer = nodeListContainer
         self.mainMenuBar = mainMenuBar
         self.settingsStore = settingsStore
@@ -47,7 +51,7 @@ class LayoutController:
         self._rightPanelMinWidth = 300
         self._rightPanelWidth = 340
         self._layoutMode = "normal"
-        self._menuBarFontSize = 12
+        self._menuBarFontSize = 13
 
     def getMainSplitterSizes(self) -> list[int]:
         return [int(size) for size in self._currentSplitterSizes]
@@ -110,8 +114,9 @@ class LayoutController:
         self._layoutMode = "large" if isLarge else "normal"
         self._sidebarExpandedWidth = 248 if isLarge else 228
         self._rightPanelWidth = 320 if isLarge else 340
-        self._menuBarFontSize = 15 if isLarge else 12
-        nodeListHeight = 240 if isLarge else 220
+        self._menuBarFontSize = 15 if isLarge else 13
+        dependencyTreeHeight = 180 if isLarge else 150
+        nodeListHeight = 130 if isLarge else 110
         statusHeight = 100 if isLarge else 120
         previewHeight = 260 if isLarge else 220
 
@@ -126,6 +131,12 @@ class LayoutController:
         setCanvasMinWidth = getattr(self.canvasPanel, "setMinimumWidth", None)
         if callable(setCanvasMinWidth):
             setCanvasMinWidth(self._canvasMinWidth)
+
+        setDependencyTreeHeight = getattr(
+            self.dependencyTreeWidget, "setFixedHeight", None
+        )
+        if callable(setDependencyTreeHeight):
+            setDependencyTreeHeight(dependencyTreeHeight)
 
         setNodeListHeight = getattr(self.nodeListWidget, "setFixedHeight", None)
         if callable(setNodeListHeight):
@@ -154,6 +165,7 @@ class LayoutController:
     def applySidebarState(self) -> None:
         if self.isSidebarCollapsedGetter():
             self.categoryPanel.setVisible(False)
+            self.dependencyTreeContainer.setVisible(False)
             self.nodeListContainer.setVisible(False)
             sizes = list(self._expandedSplitterSizes)
             if len(sizes) == 3:
@@ -170,6 +182,7 @@ class LayoutController:
             return
 
         self.categoryPanel.setVisible(True)
+        self.dependencyTreeContainer.setVisible(True)
         self.nodeListContainer.setVisible(True)
         setSidebarMinWidth = getattr(self.sidebarContainer, "setMinimumWidth", None)
         if callable(setSidebarMinWidth):

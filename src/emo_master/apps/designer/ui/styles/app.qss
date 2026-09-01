@@ -5,7 +5,7 @@ QMainWindow {
 QWidget {
   color: #111111;
   font-family: "Segoe UI";
-  font-size: 12px;
+  font-size: 10pt;
 }
 
 QDialog {
@@ -19,7 +19,7 @@ QLabel {
 }
 
 QLabel#panelTitle {
-  font-size: 13px;
+  font-size: 10pt;
   font-weight: 700;
   color: #111111;
   margin-top: 4px;
@@ -30,6 +30,7 @@ QLabel#previewCard,
 QWidget#startupActionSection,
 QWidget#startupRecentSection,
 QWidget#sidebarCategorySection,
+QWidget#sidebarDependencySection,
 QWidget#sidebarNodeSection,
 QWidget#rightPanelSection,
 QWidget#operatorDrawer,
@@ -42,6 +43,7 @@ QWidget#operatorBubble {
 QWidget#startupActionSection,
 QWidget#startupRecentSection,
 QWidget#sidebarCategorySection,
+QWidget#sidebarDependencySection,
 QWidget#sidebarNodeSection {
   padding: 10px;
 }
@@ -65,13 +67,13 @@ QWidget#startupHeroSection {
 }
 
 QLabel#startupHeroTitle {
-  font-size: 24px;
+  font-size: 18pt;
   font-weight: 700;
   color: #111111;
 }
 
 QLabel#startupHeroSubtitle {
-  font-size: 13px;
+  font-size: 10pt;
   color: #514841;
   font-weight: 500;
 }
@@ -80,6 +82,7 @@ QMenuBar {
   color: #dfdbd2;
   background: #41403b;
   border-bottom: 1px solid #5a574e;
+  font-size: 10pt;
 }
 
 QMenuBar::item {
@@ -101,6 +104,7 @@ QMenu {
   border: 1px solid #5a574e;
   border-radius: 6px;
   padding: 4px 0;
+  font-size: 10pt;
 }
 
 QMenu::item {
@@ -127,7 +131,47 @@ QToolBar::separator {
   background: #cfcfcf;
 }
 
+QToolButton {
+  min-height: 34px;
+  padding: 6px 10px;
+  font-size: 10pt;
+}
+
+QTabWidget#workflowTabs::pane {
+  background: #ffffff;
+  border: 1px solid #cfcfcf;
+  border-radius: 8px;
+  top: -1px;
+}
+
+QTabWidget#workflowTabs QTabBar::tab {
+  min-width: 28px;
+  min-height: 26px;
+  padding: 8px 14px;
+  margin-right: 2px;
+  color: #514841;
+  background: #e9e7e5;
+  border: 1px solid #cfcfcf;
+  border-top-left-radius: 7px;
+  border-top-right-radius: 7px;
+  font-size: 10pt;
+}
+
+QTabWidget#workflowTabs QTabBar::tab:hover {
+  color: #111111;
+  background: #fff5ef;
+  border-color: #f68656;
+}
+
+QTabWidget#workflowTabs QTabBar::tab:selected {
+  color: #111111;
+  background: #ffffff;
+  border-bottom: 2px solid #f68656;
+  font-weight: 700;
+}
+
 QListWidget,
+QTreeWidget,
 QTextEdit,
 QGraphicsView,
 QLineEdit {
@@ -138,6 +182,7 @@ QLineEdit {
 }
 
 QListWidget,
+QTreeWidget,
 QTextEdit,
 QGraphicsView {
   padding: 6px;
@@ -150,22 +195,72 @@ QLineEdit {
 
 QLineEdit:focus,
 QTextEdit:focus,
+QTreeWidget:focus,
 QListWidget:focus {
   border: 1px solid #f68656;
 }
 
-QListWidget#sidebarNodeList {
-  min-height: 220px;
-  max-height: 220px;
+QDockWidget#runtimeLogDock {
+  color: #111111;
+  background: #eef0f3;
+  border-top: 1px solid #cfcfcf;
+  font-weight: 700;
 }
 
-QListWidget::item {
+QDockWidget#runtimeLogDock::title {
+  background: #41403b;
+  color: #ffffff;
+  padding: 7px 10px;
+  text-align: left;
+}
+
+QTableWidget#runtimeLogTable {
+  background: #ffffff;
+  alternate-background-color: #f7f6f6;
+  color: #111111;
+  border: 1px solid #cfcfcf;
+  gridline-color: #e1dfdd;
+  selection-background-color: #f3ddd3;
+  selection-color: #111111;
+}
+
+QTableWidget#runtimeLogTable QHeaderView::section {
+  background: #e9e7e5;
+  color: #111111;
+  border: 0;
+  border-right: 1px solid #cfcfcf;
+  border-bottom: 1px solid #cfcfcf;
+  padding: 6px 8px;
+  font-weight: 700;
+}
+
+QTextEdit#runtimeLogDetails {
+  background: #222321;
+  color: #f5f3ef;
+  border: 1px solid #41403b;
+  border-radius: 6px;
+  font-family: "Consolas", "Cascadia Mono", monospace;
+}
+
+QListWidget#sidebarNodeList {
+  min-height: 110px;
+  max-height: 130px;
+}
+
+QTreeWidget#workflowDependencyTree {
+  min-height: 150px;
+  max-height: 180px;
+}
+
+QListWidget::item,
+QTreeWidget::item {
   border-radius: 6px;
   padding: 6px 8px;
   margin: 2px 0;
 }
 
-QListWidget::item:selected {
+QListWidget::item:selected,
+QTreeWidget::item:selected {
   background: #f3ddd3;
   color: #111111;
 }
@@ -190,13 +285,13 @@ QListWidget#recentProjectsList::item:selected {
 }
 
 QLabel#recentProjectTitle {
-  font-size: 13px;
+  font-size: 10pt;
   font-weight: 700;
   color: #111111;
 }
 
 QLabel#recentProjectPath {
-  font-size: 11px;
+  font-size: 9pt;
   color: #514841;
   font-weight: 500;
 }
@@ -258,7 +353,7 @@ QPushButton#startupSecondaryAction,
 QPushButton#startupGhostAction {
   min-height: 48px;
   border-radius: 12px;
-  font-size: 13px;
+  font-size: 10pt;
 }
 
 QPushButton#startupPrimaryAction,
@@ -295,7 +390,7 @@ QPushButton#startupGhostAction:hover {
 QPushButton#sideCategoryButton,
 QPushButton#sideCategoryButtonActive {
   min-height: 34px;
-  font-size: 12px;
+  font-size: 10pt;
   min-width: 0;
   padding: 6px 10px;
   text-align: left;
@@ -316,7 +411,7 @@ QPushButton#sidebarToggleButton:hover {
 
 QLabel#toolbarGroupLabel {
   color: #514841;
-  font-size: 11px;
+  font-size: 9pt;
   font-weight: 700;
   margin-right: 2px;
 }
@@ -381,4 +476,40 @@ QPushButton#operatorBubbleItemFlow {
   background: #f3e8ff;
   border: 1px solid #d8b4fe;
   color: #581c87;
+}
+
+QLabel#workflowPackageSummary {
+  color: #111111;
+  font-size: 12pt;
+  font-weight: 700;
+  padding: 4px 0;
+}
+
+QLabel#workflowPackageWarnings {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  border-radius: 8px;
+  color: #9a3412;
+  padding: 8px 10px;
+}
+
+QTreeWidget#workflowPackageWorkflowTree,
+QListWidget#workflowPackageDependencyList,
+QListWidget#workflowPackageConflictList,
+QListWidget#workflowPackageOperatorList,
+QListWidget#workflowPackageExternalPathList {
+  min-height: 58px;
+  max-height: 96px;
+}
+
+QPushButton#workflowPackageImportButton {
+  background: #f68656;
+  border-color: #c84614;
+  color: #ffffff;
+}
+
+QPushButton#workflowPackageCancelButton {
+  background: #f7f6f6;
+  border: 1px solid #cfcfcf;
+  color: #111111;
 }

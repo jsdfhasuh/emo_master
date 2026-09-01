@@ -7,6 +7,23 @@ from uuid import uuid4
 from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
+from emo_master.core.contracts.port_types import normalizePortType
+
+
+_WORKFLOW_RELATION_LABELS = {
+    "subflow": "Subflow",
+    "repeat-body": "Repeat · Body",
+    "foreach-body": "ForEach · Body",
+    "while-body": "While · Body",
+    "while-condition": "While · Condition",
+    "loop-body": "Loop · Body",
+    "loop-condition": "Loop · Condition",
+}
+
+_BOUNDARY_NODE_DEFAULT_POSITIONS = {
+    "workflow_input": (20.0, 20.0),
+    "workflow_output": (360.0, 20.0),
+}
 
 
 @dataclass
@@ -125,42 +142,21 @@ class WorkflowStore:
             if node.get("kind") in {"workflow_input", "workflow_output"}
         ]
         nodeIds = {
-            node.get("nodeId")
-            for node in nodes
-            if isinstance(node.get("nodeId"), str)
+            node.get("nodeId") for node in nodes if isinstance(node.get("nodeId"), str)
         }
         nodes.extend(
             node
             for node in boundaryNodes
-            if isinstance(node.get("nodeId"), str)
-            and node.get("nodeId") not in nodeIds
+            if isinstance(node.get("nodeId"), str) and node.get("nodeId") not in nodeIds
         )
+        nodeIds = {
+            node.get("nodeId") for node in nodes if isinstance(node.get("nodeId"), str)
+        }
         workflow.nodes = nodes
         capturedEdges = (
             [dict(edge) for edge in rawEdges if isinstance(edge, dict)]
             if isinstance(rawEdges, list)
             else []
-        )
-        boundaryIds = {
-            node.get("nodeId")
-            for node in boundaryNodes
-            if isinstance(node.get("nodeId"), str)
-        }
-        capturedEdgeKeys = {
-            tuple(edge.get(key) for key in ("fromNode", "fromPort", "toNode", "toPort"))
-            for edge in capturedEdges
-        }
-        capturedEdges.extend(
-            deepcopy(edge)
-            for edge in workflow.edges
-            if (
-                edge.get("fromNode") in boundaryIds
-                or edge.get("toNode") in boundaryIds
-            )
-            and tuple(
-                edge.get(key) for key in ("fromNode", "fromPort", "toNode", "toPort")
-            )
-            not in capturedEdgeKeys
         )
         workflow.edges = capturedEdges
         previousPositions = workflow.layout.get("nodePositions", {})
@@ -250,6 +246,266 @@ class WorkflowStore:
                     references.append(sourceId)
         return sorted(set(references))
 
+    def getWorkflowDependencyReferences(self) -> list[dict[str, object]]:
+        """Return ordered, lossless references between editable workflows."""
+        references: list[dict[str, object]] = []
+
+        def appendReference(
+            sourceWorkflowId: str,
+            sourceNodeId: str,
+            relation: str,
+            targetWorkflowId: object,
+        ) -> None:
+            target = (
+                targetWorkflowId
+                if isinstance(targetWorkflowId, str) and targetWorkflowId != ""
+                else None
+            )
+            references.append(
+                {
+                    "sourceWorkflowId": sourceWorkflowId,
+                    "sourceNodeId": sourceNodeId,
+                    "relation": relation,
+                    "relationLabel": _WORKFLOW_RELATION_LABELS[relation],
+                    "targetWorkflowId": target,
+                }
+            )
+
+        for sourceWorkflowId in self._orderedWorkflowIds():
+            workflow = self.workflows[sourceWorkflowId]
+            for node in workflow.nodes:
+                if not isinstance(node, dict):
+                    continue
+                rawNodeId = node.get("nodeId")
+                sourceNodeId = rawNodeId if isinstance(rawNodeId, str) else ""
+                kind = node.get("kind")
+                if kind == "subflow":
+                    appendReference(
+                        sourceWorkflowId,
+                        sourceNodeId,
+                        "subflow",
+                        node.get("targetWorkflowId"),
+                    )
+                    continue
+                if kind != "loop":
+                    continue
+                loop = node.get("loop")
+                if not isinstance(loop, dict):
+                    appendReference(
+                        sourceWorkflowId,
+                        sourceNodeId,
+                        "loop-body",
+                        None,
+                    )
+                    continue
+                rawMode = loop.get("mode")
+                mode = rawMode if isinstance(rawMode, str) else ""
+                bodyRelation = {
+                    "repeat": "repeat-body",
+                    "foreach": "foreach-body",
+                    "while": "while-body",
+                }.get(mode, "loop-body")
+                appendReference(
+                    sourceWorkflowId,
+                    sourceNodeId,
+                    bodyRelation,
+                    loop.get("bodyWorkflowId"),
+                )
+                if mode == "while" or "conditionWorkflowId" in loop:
+                    appendReference(
+                        sourceWorkflowId,
+                        sourceNodeId,
+                        "while-condition" if mode == "while" else "loop-condition",
+                        loop.get("conditionWorkflowId"),
+                    )
+        return references
+
+    def getWorkflowDependencyTree(self) -> list[dict[str, object]]:
+        """Build the entry-rooted dependency tree plus unreachable components."""
+        workflowIds = self._orderedWorkflowIds()
+        references = self.getWorkflowDependencyReferences()
+        referencesBySource: dict[str, list[dict[str, object]]] = {
+            workflowId: [] for workflowId in workflowIds
+        }
+        incomingCount = {workflowId: 0 for workflowId in workflowIds}
+        for reference in references:
+            sourceWorkflowId = reference["sourceWorkflowId"]
+            if isinstance(sourceWorkflowId, str):
+                referencesBySource.setdefault(sourceWorkflowId, []).append(reference)
+            targetWorkflowId = reference["targetWorkflowId"]
+            if isinstance(targetWorkflowId, str) and targetWorkflowId in incomingCount:
+                incomingCount[targetWorkflowId] += 1
+
+        reachable: set[str] = set()
+        pending = [self.entryWorkflowId]
+        while pending:
+            workflowId = pending.pop()
+            if workflowId in reachable or workflowId not in self.workflows:
+                continue
+            reachable.add(workflowId)
+            for reference in reversed(referencesBySource.get(workflowId, [])):
+                targetWorkflowId = reference["targetWorkflowId"]
+                if (
+                    isinstance(targetWorkflowId, str)
+                    and targetWorkflowId in self.workflows
+                ):
+                    pending.append(targetWorkflowId)
+
+        def workflowEntry(
+            workflowId: str,
+            relation: str,
+            relationLabel: str,
+            sourceWorkflowId: str | None,
+            sourceNodeId: str | None,
+            path: tuple[str, ...],
+        ) -> dict[str, object]:
+            workflow = self.workflows[workflowId]
+            isCycle = workflowId in path
+            entry: dict[str, object] = {
+                "itemType": "workflow",
+                "workflowId": workflowId,
+                "name": workflow.name,
+                "relation": relation,
+                "relationLabel": relationLabel,
+                "sourceWorkflowId": sourceWorkflowId,
+                "sourceNodeId": sourceNodeId,
+                "status": "cycle" if isCycle else "normal",
+                "exists": True,
+                "isEntry": workflowId == self.entryWorkflowId,
+                "isReachable": workflowId in reachable,
+                "isUnreferenced": incomingCount.get(workflowId, 0) == 0,
+                "children": [],
+            }
+            if isCycle:
+                return entry
+            nextPath = (*path, workflowId)
+            children = [
+                referenceEntry(reference, nextPath)
+                for reference in referencesBySource.get(workflowId, [])
+            ]
+            entry["children"] = children
+            return entry
+
+        def referenceEntry(
+            reference: dict[str, object], path: tuple[str, ...]
+        ) -> dict[str, object]:
+            relation = str(reference["relation"])
+            relationLabel = str(reference["relationLabel"])
+            sourceWorkflowId = str(reference["sourceWorkflowId"])
+            sourceNodeId = str(reference["sourceNodeId"])
+            targetWorkflowId = reference["targetWorkflowId"]
+            if (
+                not isinstance(targetWorkflowId, str)
+                or targetWorkflowId not in self.workflows
+            ):
+                return {
+                    "itemType": "workflow",
+                    "workflowId": targetWorkflowId,
+                    "name": targetWorkflowId or "未设置",
+                    "relation": relation,
+                    "relationLabel": relationLabel,
+                    "sourceWorkflowId": sourceWorkflowId,
+                    "sourceNodeId": sourceNodeId,
+                    "status": "missing",
+                    "exists": False,
+                    "isEntry": False,
+                    "isReachable": False,
+                    "isUnreferenced": False,
+                    "children": [],
+                }
+            return workflowEntry(
+                targetWorkflowId,
+                relation,
+                relationLabel,
+                sourceWorkflowId,
+                sourceNodeId,
+                path,
+            )
+
+        tree: list[dict[str, object]] = []
+        if self.entryWorkflowId in self.workflows:
+            tree.append(
+                workflowEntry(
+                    self.entryWorkflowId,
+                    "entry",
+                    "入口",
+                    None,
+                    None,
+                    (),
+                )
+            )
+
+        unreachableIds = [
+            workflowId for workflowId in workflowIds if workflowId not in reachable
+        ]
+        if not unreachableIds:
+            return tree
+
+        unreachableSet = set(unreachableIds)
+        incomingWithin = {workflowId: 0 for workflowId in unreachableIds}
+        for sourceWorkflowId in unreachableIds:
+            for reference in referencesBySource.get(sourceWorkflowId, []):
+                targetWorkflowId = reference["targetWorkflowId"]
+                if (
+                    isinstance(targetWorkflowId, str)
+                    and targetWorkflowId in unreachableSet
+                ):
+                    incomingWithin[targetWorkflowId] += 1
+
+        rootCandidates = [
+            workflowId
+            for workflowId in unreachableIds
+            if incomingWithin[workflowId] == 0
+        ]
+        covered: set[str] = set()
+
+        def coverComponent(workflowId: str) -> None:
+            if workflowId in covered or workflowId not in unreachableSet:
+                return
+            covered.add(workflowId)
+            for reference in referencesBySource.get(workflowId, []):
+                targetWorkflowId = reference["targetWorkflowId"]
+                if isinstance(targetWorkflowId, str):
+                    coverComponent(targetWorkflowId)
+
+        unusedRoots: list[dict[str, object]] = []
+        for workflowId in [*rootCandidates, *unreachableIds]:
+            if workflowId in covered:
+                continue
+            unusedRoots.append(
+                workflowEntry(
+                    workflowId,
+                    "unreachable-root",
+                    "入口不可达",
+                    None,
+                    None,
+                    (),
+                )
+            )
+            coverComponent(workflowId)
+        tree.append(
+            {
+                "itemType": "group",
+                "label": "未使用工作流（入口不可达）",
+                "count": len(unreachableIds),
+                "workflowIds": list(unreachableIds),
+                "children": unusedRoots,
+            }
+        )
+        return tree
+
+    def _orderedWorkflowIds(self) -> list[str]:
+        ordered = [
+            workflowId
+            for workflowId in self.workflowOrder
+            if workflowId in self.workflows
+        ]
+        orderedSet = set(ordered)
+        ordered.extend(
+            workflowId for workflowId in self.workflows if workflowId not in orderedSet
+        )
+        return ordered
+
     def deleteWorkflow(self, workflowId: str) -> None:
         if workflowId not in self.workflows:
             raise KeyError(workflowId)
@@ -257,9 +513,7 @@ class WorkflowStore:
             raise ValueError("a project must keep at least one workflow")
         references = self.referencesTo(workflowId)
         if references:
-            raise ValueError(
-                f"workflow is referenced by: {', '.join(references)}"
-            )
+            raise ValueError(f"workflow is referenced by: {', '.join(references)}")
         del self.workflows[workflowId]
         self.workflowOrder = [item for item in self.workflowOrder if item != workflowId]
         if self.entryWorkflowId == workflowId:
@@ -287,7 +541,7 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": "2.0",
+            "schemaVersion": "2.1",
             "project": project,
             "entryWorkflowId": self.entryWorkflowId,
             "workflowOrder": list(self.workflowOrder),
@@ -320,15 +574,14 @@ class WorkflowStore:
 
     def ensureBoundaryNodes(self, workflowId: str | None = None) -> None:
         selectedIds = (
-            [workflowId]
-            if workflowId is not None
-            else list(self.workflowOrder)
+            [workflowId] if workflowId is not None else list(self.workflowOrder)
         )
         for selectedId in selectedIds:
             workflow = self.workflows.get(selectedId)
             if workflow is None:
                 continue
             self._ensureBoundaryNodesForWorkflow(workflow)
+            self._ensureBoundaryNodePositions(workflow)
             self._pruneBoundaryEdges(workflow)
 
     def _ensureBoundaryNodesForWorkflow(self, workflow: WorkflowState) -> None:
@@ -356,16 +609,46 @@ class WorkflowStore:
             normalizedNodes.append(node)
         workflow.nodes = normalizedNodes
 
+    def _ensureBoundaryNodePositions(self, workflow: WorkflowState) -> None:
+        layout = deepcopy(workflow.layout)
+        rawPositions = layout.get("nodePositions", {})
+        positions = deepcopy(rawPositions) if isinstance(rawPositions, dict) else {}
+        for node in workflow.nodes:
+            kind = node.get("kind")
+            nodeId = node.get("nodeId")
+            if (
+                not isinstance(kind, str)
+                or kind not in _BOUNDARY_NODE_DEFAULT_POSITIONS
+                or not isinstance(nodeId, str)
+            ):
+                continue
+            defaultX, defaultY = defaultNodePosition(kind)
+            rawPosition = positions.get(nodeId)
+            position = dict(rawPosition) if isinstance(rawPosition, dict) else {}
+            if not _isCoordinate(position.get("x")):
+                position["x"] = defaultX
+            if not _isCoordinate(position.get("y")):
+                position["y"] = defaultY
+            positions[nodeId] = position
+        layout["nodePositions"] = positions
+        workflow.layout = layout
+
     def _normalizeBoundaryNode(
         self, workflow: WorkflowState, node: dict[str, object], kind: str
     ) -> None:
         rawNodeId = node.get("nodeId")
-        nodeId = rawNodeId if isinstance(rawNodeId, str) and rawNodeId else self._boundaryNodeId(workflow, kind)
+        nodeId = (
+            rawNodeId
+            if isinstance(rawNodeId, str) and rawNodeId
+            else self._boundaryNodeId(workflow, kind)
+        )
         node.update(
             {
                 "nodeId": nodeId,
                 "operatorId": "",
-                "displayName": "Workflow Input" if kind == "workflow_input" else "Workflow Output",
+                "displayName": "Workflow Input"
+                if kind == "workflow_input"
+                else "Workflow Output",
                 "inputPorts": {}
                 if kind == "workflow_input"
                 else portTypes(workflow.outputs),
@@ -381,8 +664,14 @@ class WorkflowStore:
         )
 
     def _boundaryNodeId(self, workflow: WorkflowState, kind: str) -> str:
-        prefix = "__workflow_input__" if kind == "workflow_input" else "__workflow_output__"
-        return prefix if workflow.workflowId == "main" else f"{prefix}:{workflow.workflowId}"
+        prefix = (
+            "__workflow_input__" if kind == "workflow_input" else "__workflow_output__"
+        )
+        return (
+            prefix
+            if workflow.workflowId == "main"
+            else f"{prefix}:{workflow.workflowId}"
+        )
 
     def _pruneBoundaryEdges(self, workflow: WorkflowState) -> None:
         nodesById = {
@@ -417,8 +706,12 @@ class WorkflowStore:
                 targetNode = nodesById[toNode]
                 sourcePorts = sourceNode.get("outputPorts", {})
                 targetPorts = targetNode.get("inputPorts", {})
-                sourceType = sourcePorts.get(fromPort) if isinstance(sourcePorts, dict) else None
-                targetType = targetPorts.get(toPort) if isinstance(targetPorts, dict) else None
+                sourceType = (
+                    sourcePorts.get(fromPort) if isinstance(sourcePorts, dict) else None
+                )
+                targetType = (
+                    targetPorts.get(toPort) if isinstance(targetPorts, dict) else None
+                )
                 if not isinstance(sourceType, str) or not isinstance(targetType, str):
                     continue
                 if not arePortTypesCompatible(sourceType, targetType):
@@ -433,6 +726,14 @@ def _slug(value: str) -> str:
     return "-".join(part for part in normalized.split("-") if part)[:48]
 
 
+def defaultNodePosition(kind: str) -> tuple[float, float]:
+    return _BOUNDARY_NODE_DEFAULT_POSITIONS.get(kind, (20.0, 20.0))
+
+
+def _isCoordinate(value: object) -> bool:
+    return isinstance(value, (int, float)) and not isinstance(value, bool)
+
+
 def _serializedNodes(
     workflowId: str,
     nodes: list[dict[str, object]],
@@ -440,11 +741,13 @@ def _serializedNodes(
     outputs: dict[str, object] | None = None,
 ) -> list[dict[str, object]]:
     serialized = deepcopy(nodes)
-    kinds = {
-        node.get("kind") for node in serialized if isinstance(node, dict)
-    }
+    kinds = {node.get("kind") for node in serialized if isinstance(node, dict)}
     if "workflow_input" not in kinds:
-        inputId = "__workflow_input__" if workflowId == "main" else f"__workflow_input__:{workflowId}"
+        inputId = (
+            "__workflow_input__"
+            if workflowId == "main"
+            else f"__workflow_input__:{workflowId}"
+        )
         serialized.append(
             {
                 "nodeId": inputId,
@@ -460,7 +763,11 @@ def _serializedNodes(
             }
         )
     if "workflow_output" not in kinds:
-        outputId = "__workflow_output__" if workflowId == "main" else f"__workflow_output__:{workflowId}"
+        outputId = (
+            "__workflow_output__"
+            if workflowId == "main"
+            else f"__workflow_output__:{workflowId}"
+        )
         serialized.append(
             {
                 "nodeId": outputId,
@@ -482,7 +789,7 @@ def portTypes(values: dict[str, object]) -> dict[str, str]:
     result: dict[str, str] = {}
     for name, value in values.items():
         if isinstance(value, str):
-            result[name] = value
+            result[name] = normalizePortType(value)
         elif isinstance(value, dict) and isinstance(value.get("type"), str):
-            result[name] = str(value["type"])
+            result[name] = normalizePortType(value)
     return result

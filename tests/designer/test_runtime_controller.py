@@ -56,6 +56,84 @@ def testRuntimeControllerPreservesEventCorrelationMetadata() -> None:
     assert received[0]["iterationPath"] == (2, 4)
 
 
+def testRuntimeControllerForwardsCompleteStructuredEventWithoutTextDuplicate() -> None:
+    panel = _Panel()
+    structured = []
+    textLogs = []
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: textLogs.append((level, message)),
+        appendEvent=structured.append,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: None,
+        getCurrentJobId=lambda: None,
+    )
+
+    controller._onRuntimeEvent(
+        RuntimeEventDTO(
+            jobId="job",
+            eventType="node.log",
+            message="connected",
+            level="INFO",
+            nodeId="camera",
+            payload={"operatorId": "vision.io.huaray_camera", "phase": "execute"},
+            sequence=9,
+            timestampMs=456,
+            workflowId="main",
+            workflowRunId="run",
+            nodeRunId="node-run",
+            iterationPath=(3,),
+        )
+    )
+
+    assert textLogs == []
+    assert structured == panel.events
+    assert structured[0]["eventType"] == "node.log"
+    assert structured[0]["payload"]["phase"] == "execute"
+    assert structured[0]["sequence"] == 9
+
+
+def testRuntimeControllerToleratesMalformedEventNumbers() -> None:
+    panel = _Panel()
+    received = []
+    controller = RuntimeController(
+        runtimeClient=None,
+        runtimePanelState=panel,
+        appendLog=lambda level, message: None,
+        refreshRuntimePanelView=lambda: None,
+        updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True,
+        applyRuntimeEventToNode=received.append,
+        setCurrentJobId=lambda jobId: None,
+        setIsJobRunning=lambda running: None,
+        getLoadedProjectPath=lambda: None,
+        getCurrentJobId=lambda: None,
+    )
+    malformed = type(
+        "Event",
+        (),
+        {
+            "event_type": "node.log",
+            "sequence": "not-a-number",
+            "timestamp_ms": None,
+        },
+    )()
+
+    before = int(time.time() * 1000)
+    controller._onRuntimeEvent(malformed)
+    after = int(time.time() * 1000)
+
+    assert received == panel.events
+    assert received[0]["sequence"] == 0
+    assert before <= received[0]["timestampMs"] <= after
+
+
 def testRuntimeControllerKeepsToolbarLockedWhileStopping() -> None:
     class Panel(_Panel):
         def updateJob(self, status, message="") -> None:

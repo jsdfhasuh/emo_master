@@ -3,7 +3,9 @@ import json
 
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel
 from emo_master.apps.designer.ui.main_window import MainWindow
-from emo_master.apps.designer.controllers import project_controller as projectControllerModule
+from emo_master.apps.designer.controllers import (
+    project_controller as projectControllerModule,
+)
 
 
 def ensureQApp() -> None:
@@ -24,6 +26,19 @@ class RuntimeClientStub:
     def loadProject(self, projectPath: str):
         _ = projectPath
         return type("Reply", (), {"ok": True, "message": "ok"})()
+
+
+class MutableRuntimeClientStub(RuntimeClientStub):
+    def __init__(self) -> None:
+        self.loadOk = True
+
+    def loadProject(self, projectPath: str):
+        _ = projectPath
+        return type(
+            "Reply",
+            (),
+            {"ok": self.loadOk, "message": "runtime rejected project"},
+        )()
 
 
 def testMainWindowCanSaveAndLoadProjectDirectory(tmp_path: Path) -> None:
@@ -91,12 +106,21 @@ def testMainWindowCanSaveAndLoadProjectDirectory(tmp_path: Path) -> None:
     loadMethod = getattr(windowLoaded, "loadProjectDirectory", None)
     assert callable(loadMethod)
     assert loadMethod(str(saveDir)) is True
-    assert len(
-        [node for node in windowLoaded.flowModel.nodes.values() if node.kind == "operator"]
-    ) == 2
-    assert {
-        node.kind for node in windowLoaded.flowModel.nodes.values()
-    } == {"operator", "workflow_input", "workflow_output"}
+    assert (
+        len(
+            [
+                node
+                for node in windowLoaded.flowModel.nodes.values()
+                if node.kind == "operator"
+            ]
+        )
+        == 2
+    )
+    assert {node.kind for node in windowLoaded.flowModel.nodes.values()} == {
+        "operator",
+        "workflow_input",
+        "workflow_output",
+    }
     assert len(windowLoaded.flowModel.edges) == 1
 
     loadedSource = windowLoaded.flowModel.nodes[sourceNode]
@@ -141,3 +165,28 @@ def testFailedProjectSaveDoesNotAdvanceRevision(tmp_path: Path, monkeypatch) -> 
     assert window.workflowStore.project["revision"] == 1
     savedPayload = json.loads((projectDir / "project.json").read_text(encoding="utf-8"))
     assert savedPayload["project"]["revision"] == 1
+
+
+def testFailedProjectLoadPreservesCurrentWorkflowAndTabs(tmp_path: Path) -> None:
+    targetProjectDir = tmp_path / "target-project"
+    targetWindow = MainWindow(RuntimeClientStub())
+    assert targetWindow.saveProjectToDirectory(str(targetProjectDir)) is True
+
+    runtimeClient = MutableRuntimeClientStub()
+    window = MainWindow(runtimeClient)
+    bodyWorkflowId = window.createWorkflow("Body")
+    previousProjectPath = "C:/existing/project"
+    previousProjectDir = Path("C:/existing")
+    window.loadedProjectPath = previousProjectPath
+    window.currentProjectDir = previousProjectDir
+    previousTabs = window.getWorkflowTabs()
+
+    runtimeClient.loadOk = False
+    assert window.loadProjectDirectory(str(targetProjectDir)) is False
+
+    assert window.getWorkflowTabs() == previousTabs
+    assert window.getActiveWorkflowId() == bodyWorkflowId
+    assert window.workflowTabs.count() == 3
+    assert window.workflowTabs.tabText(1) == "Body"
+    assert window.loadedProjectPath == previousProjectPath
+    assert window.currentProjectDir == previousProjectDir

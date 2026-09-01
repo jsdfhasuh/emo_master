@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from typing import Callable
 
 from emo_master.apps.designer.services.runtime_worker import RuntimeStopWorker, RuntimeWorker
@@ -21,6 +22,7 @@ class RuntimeController:
         getCurrentJobId: Callable[[], str | None],
         getActiveWorkflowId: Callable[[], str | None] | None = None,
         getEntryWorkflowId: Callable[[], str | None] | None = None,
+        appendEvent: Callable[[dict[str, object]], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -35,6 +37,7 @@ class RuntimeController:
         self.getCurrentJobId = getCurrentJobId
         self.getActiveWorkflowId = getActiveWorkflowId or (lambda: None)
         self.getEntryWorkflowId = getEntryWorkflowId or self.getActiveWorkflowId
+        self.appendEvent = appendEvent
         self._worker: RuntimeWorker | None = None
         self._stopWorker: RuntimeStopWorker | None = None
         self._stopJobId = ""
@@ -132,12 +135,16 @@ class RuntimeController:
             ),
             "nodeRunId": str(getattr(jobEvent, "node_run_id", getattr(jobEvent, "nodeRunId", ""))),
             "iterationPath": tuple(iterationPath),
-            "sequence": int(getattr(jobEvent, "sequence", 0)),
-            "timestampMs": int(
-                getattr(jobEvent, "timestamp_ms", getattr(jobEvent, "timestampMs", 0))
+            "sequence": _nonNegativeInteger(getattr(jobEvent, "sequence", 0)),
+            "timestampMs": _nonNegativeInteger(
+                getattr(jobEvent, "timestamp_ms", getattr(jobEvent, "timestampMs", 0)),
+                fallback=int(time.time() * 1000),
             ),
         }
-        self.appendLog(eventLevel, f"事件 {eventType}：{eventMessage}")
+        if self.appendEvent is None:
+            self.appendLog(eventLevel, f"事件 {eventType}：{eventMessage}")
+        else:
+            self.appendEvent(event)
         self.runtimePanelState.applyEvent(event)
         self.applyRuntimeEventToNode(event)
         self.refreshRuntimePanelView()
@@ -338,3 +345,14 @@ class RuntimeController:
         closeClient = getattr(self.runtimeClient, "close", None)
         if callable(closeClient):
             closeClient()
+
+
+def _nonNegativeInteger(value: object, fallback: int = 0) -> int:
+    if isinstance(value, bool):
+        return max(0, fallback)
+    if not isinstance(value, (int, float, str, bytes, bytearray)):
+        return max(0, fallback)
+    try:
+        return max(0, int(value))
+    except (TypeError, ValueError, OverflowError):
+        return max(0, fallback)

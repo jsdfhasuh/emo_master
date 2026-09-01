@@ -1,3 +1,7 @@
+from copy import deepcopy
+
+import pytest
+
 from emo_master.apps.designer.controllers.workflow_controller import WorkflowController
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
@@ -56,7 +60,9 @@ def testWorkflowStoreRoundTripsMultipleWorkflowsAndEntry() -> None:
 
     assert output["entryWorkflowId"] == "body"
     assert output["workflowOrder"] == ["main", "body", bodyId]
-    assert output["workflows"]["main"]["layout"]["nodePositions"]["subflow"]["x"] == 40.0
+    assert (
+        output["workflows"]["main"]["layout"]["nodePositions"]["subflow"]["x"] == 40.0
+    )
 
 
 def testWorkflowStoreAdvancesRevisionOnlyAfterCommittedSave() -> None:
@@ -80,9 +86,10 @@ def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete() -> None:
     controller.loadPayload(_payload())
     assert "subflow" in model.nodes
     controller.switchWorkflow("body")
-    assert {
-        node.kind for node in model.nodes.values()
-    } == {"workflow_input", "workflow_output"}
+    assert {node.kind for node in model.nodes.values()} == {
+        "workflow_input",
+        "workflow_output",
+    }
     try:
         controller.deleteWorkflow("body")
     except ValueError as err:
@@ -106,7 +113,44 @@ def testWorkflowControllerConfiguresSubflowPortsAndLoop() -> None:
         {"mode": "repeat", "repeatCount": 2, "maxIterations": 2, "timeoutMs": 1000},
     )
     assert model.nodes[nodeId].kind == "loop"
+    assert model.nodes[nodeId].targetWorkflowId is None
     assert model.nodes[nodeId].loop["maxIterations"] == 2
+
+
+def testWorkflowControllerRejectsLoopConfigWithoutPartiallyMutatingNode() -> None:
+    store = WorkflowStore(_payload())
+    model = FlowGraphModel()
+    controller = WorkflowController(store, model, FlowScene())
+    controller.loadPayload(_payload())
+    sourceId = model.addNode("vision.test.source", "Source", {}, {"value": "json"})
+    nodeId = model.addNode(
+        "vision.test.original",
+        "Original",
+        {"value": "json"},
+        {"result": "json"},
+        paramSchema={"type": "object"},
+    )
+    model.nodes[nodeId].params = {"threshold": 3}
+    model.connectNodes(sourceId, "value", nodeId, "value")
+    originalNode = deepcopy(model.nodes[nodeId])
+    originalEdges = list(model.edges)
+
+    with pytest.raises(ValueError, match="index input does not exist"):
+        controller.configureLoopNode(
+            nodeId,
+            {
+                "contractVersion": 2,
+                "mode": "foreach",
+                "bodyWorkflowId": "body",
+                "itemInputPort": "value",
+                "indexInputPort": "missing",
+                "maxIterations": 10,
+                "timeoutMs": 0,
+            },
+        )
+
+    assert model.nodes[nodeId] == originalNode
+    assert model.edges == originalEdges
 
 
 def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None:
@@ -145,3 +189,103 @@ def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None
         assert model.nodes[nodeId].outputPorts == {"done": "string"}
     assert model.edges == []
     assert store.get("main").edges == []
+
+
+def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts() -> None:
+    payload = _payload()
+    payload["schemaVersion"] = "2.1"
+    payload["workflows"]["main"]["nodes"].extend(
+        [
+            {
+                "nodeId": "repeat",
+                "kind": "loop",
+                "inputPorts": {"value": "json"},
+                "outputPorts": {"result": "json"},
+                "loop": {
+                    "contractVersion": 2,
+                    "mode": "repeat",
+                    "bodyWorkflowId": "body",
+                    "repeatCount": 1,
+                    "maxIterations": 1,
+                    "timeoutMs": 0,
+                },
+            },
+            {
+                "nodeId": "foreach",
+                "kind": "loop",
+                "inputPorts": {"items": "list<json>"},
+                "outputPorts": {"result": "list<json>"},
+                "loop": {
+                    "contractVersion": 2,
+                    "mode": "foreach",
+                    "bodyWorkflowId": "body",
+                    "itemInputPort": "value",
+                    "maxIterations": 10,
+                    "timeoutMs": 0,
+                },
+            },
+        ]
+    )
+    store = WorkflowStore(payload)
+    model = FlowGraphModel()
+    controller = WorkflowController(store, model, FlowScene())
+    controller.loadPayload(payload)
+
+    report = controller.setWorkflowInterface(
+        "body",
+        {"image": "image"},
+        {"edges": "image"},
+    )
+
+    assert model.nodes["repeat"].inputPorts == {"image": "image"}
+    assert model.nodes["repeat"].outputPorts == {"edges": "image"}
+    assert model.nodes["foreach"].inputPorts == {"items": "list<image>"}
+    assert model.nodes["foreach"].outputPorts == {"edges": "list<image>"}
+    assert model.nodes["foreach"].loop["itemInputPort"] == "image"
+    assert report == []
+
+
+def testWorkflowStoreRejectsInconsistentWorkflowOrder() -> None:
+    payload = _payload()
+    payload["workflowOrder"] = ["main"]
+
+    with pytest.raises(ValueError, match="every workflow exactly once"):
+        WorkflowStore(payload)
+
+
+def testWorkflowStoreRejectsMissingEntryWorkflow() -> None:
+    payload = _payload()
+    payload["entryWorkflowId"] = "missing"
+
+    with pytest.raises(ValueError, match="entryWorkflowId"):
+        WorkflowStore(payload)
+
+
+def testWorkflowStoreRejectsDanglingSubflowReference() -> None:
+    payload = _payload()
+    mainWorkflow = payload["workflows"]["main"]
+    mainWorkflow["nodes"][0]["targetWorkflowId"] = "missing"
+
+    with pytest.raises(ValueError, match="targetWorkflowId"):
+        WorkflowStore(payload)
+
+
+def testWorkflowStoreRejectsDanglingLoopReference() -> None:
+    payload = _payload()
+    mainWorkflow = payload["workflows"]["main"]
+    mainWorkflow["nodes"].append(
+        {
+            "nodeId": "repeat",
+            "kind": "loop",
+            "loop": {
+                "mode": "repeat",
+                "bodyWorkflowId": "missing",
+                "repeatCount": 1,
+                "maxIterations": 1,
+                "timeoutMs": 1000,
+            },
+        }
+    )
+
+    with pytest.raises(ValueError, match="bodyWorkflowId"):
+        WorkflowStore(payload)

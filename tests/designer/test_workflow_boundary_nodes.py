@@ -42,7 +42,9 @@ def _addInternalNode(window: MainWindow) -> str:
     return nodeId
 
 
-def _connect(window: MainWindow, fromNode: str, fromPort: str, toNode: str, toPort: str) -> None:
+def _connect(
+    window: MainWindow, fromNode: str, fromPort: str, toNode: str, toPort: str
+) -> None:
     edge = window.connectPorts(fromNode, fromPort, toNode, toPort)
     assert edge is not None
     window.flowScene.renderEdge(edge)
@@ -58,6 +60,29 @@ def testWorkflowBoundaryNodesAreVisibleAndFollowInterface() -> None:
     assert window.flowScene.hasNode(outputNode.nodeId) is True
     assert inputNode.outputPorts == {"value": "string"}
     assert outputNode.inputPorts == {"result": "string"}
+
+
+def testNewWorkflowBoundaryNodesStartSeparatedAndPersisted() -> None:
+    window = MainWindow(_RuntimeClientStub())
+
+    workflowId = window.createWorkflow("Empty")
+
+    inputNode = _boundaryNode(window, "workflow_input")
+    outputNode = _boundaryNode(window, "workflow_output")
+    scenePositions = window.flowScene.getNodePositions()
+    inputPosition = scenePositions[inputNode.nodeId]
+    outputPosition = scenePositions[outputNode.nodeId]
+    assert inputPosition != outputPosition
+    assert outputPosition[0] - inputPosition[0] >= 220.0
+    storedPositions = window.workflowStore.layoutFor(workflowId)["nodePositions"]
+    assert storedPositions[inputNode.nodeId] == {
+        "x": inputPosition[0],
+        "y": inputPosition[1],
+    }
+    assert storedPositions[outputNode.nodeId] == {
+        "x": outputPosition[0],
+        "y": outputPosition[1],
+    }
 
 
 def testWorkflowBoundaryNodesCannotBeDeleted() -> None:
@@ -83,6 +108,10 @@ def testBoundaryEdgesSurviveSwitchSaveAndReload(tmp_path: Path) -> None:
 
     inputItem = window.flowScene._nodeItems[inputNode.nodeId]
     inputItem.setPos(40.0, 70.0)
+    _ = window.createWorkflow("Body")
+    window.workflowTabs.setCurrentIndex(0)
+    assert window.getActiveWorkflowId() == "main"
+    assert len(window.flowModel.edges) == 2
     projectDir = tmp_path / "boundary-project"
     assert window.saveProjectToDirectory(str(projectDir)) is True
 
@@ -95,6 +124,47 @@ def testBoundaryEdgesSurviveSwitchSaveAndReload(tmp_path: Path) -> None:
     assert reloaded.flowScene.hasNode(reloadedOutput.nodeId) is True
     position = reloaded.flowScene.getNodePositions()[reloadedInput.nodeId]
     assert position == (40.0, 70.0)
+
+
+def testDeletedBoundaryEdgeStaysDeletedAcrossSwitchAndReload(tmp_path: Path) -> None:
+    window = MainWindow(_RuntimeClientStub())
+    window.editWorkflowInterface({"value": "string"}, {"result": "string"})
+    inputNode = _boundaryNode(window, "workflow_input")
+    internalNodeId = _addInternalNode(window)
+    _connect(window, inputNode.nodeId, "value", internalNodeId, "value")
+    edgeKey = (inputNode.nodeId, "value", internalNodeId, "value")
+    window.flowScene.getSelectedEdgeKeys = lambda: [edgeKey]  # type: ignore[method-assign]
+    window.flowScene.getSelectedNodeIds = lambda: []  # type: ignore[method-assign]
+
+    window.deleteSelectedElements()
+    assert window.flowModel.edges == []
+
+    _ = window.createWorkflow("Body")
+    window.workflowController.switchWorkflow("main")
+    window.activeWorkflowId = "main"
+    window._refreshWorkflowTabs()
+    assert window.flowModel.edges == []
+
+    projectDir = tmp_path / "deleted-boundary-edge"
+    assert window.saveProjectToDirectory(str(projectDir)) is True
+    reloaded = MainWindow(_RuntimeClientStub())
+    assert reloaded.loadProjectDirectory(str(projectDir)) is True
+    assert reloaded.flowModel.edges == []
+
+
+def testCaptureGraphPreservesFallbackBoundaryNodePositions() -> None:
+    window = MainWindow(_RuntimeClientStub())
+    inputNode = _boundaryNode(window, "workflow_input")
+    window.workflowStore.get().layout = {
+        "nodePositions": {inputNode.nodeId: {"x": 12.0, "y": 34.0}}
+    }
+
+    window.workflowStore.captureActiveGraph({"nodes": [], "edges": []})
+
+    assert window.workflowStore.layoutFor()["nodePositions"][inputNode.nodeId] == {
+        "x": 12.0,
+        "y": 34.0,
+    }
 
 
 def testInterfaceChangePrunesInvalidBoundaryEdgesAndRefreshesSubflowPorts() -> None:

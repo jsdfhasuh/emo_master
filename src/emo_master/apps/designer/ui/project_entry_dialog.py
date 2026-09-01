@@ -227,6 +227,7 @@ try:
 
         def _onClearRecentProjects(self) -> None:
             self._clearRecentProjects = True
+            self.setRecentProjects([])
 
 except Exception:  # pragma: no cover
 
@@ -258,6 +259,10 @@ except Exception:  # pragma: no cover
 
         def shouldClearRecentProjects(self) -> bool:
             return self._clearRecentProjects
+
+        def _onClearRecentProjects(self) -> None:
+            self._clearRecentProjects = True
+            self.setRecentProjects([])
 
         def getLayoutMode(self) -> str:
             return self._layoutMode

@@ -43,6 +43,32 @@ def testMainWindowBuildsMenuBarGroups() -> None:
     assert groups == ["文件", "运行", "编辑", "视图"]
 
 
+def testControlFlowNodesAreNotAddedFromFileMenu() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+
+    assert {
+        "添加 Subflow 节点",
+        "添加 Repeat 节点",
+        "添加 ForEach 节点",
+        "添加 While 节点",
+    }.isdisjoint(window._menuActions)
+
+
+def testWorkflowActionsAreNotDuplicatedInFileMenu() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+
+    assert {"打开项目", "保存项目"}.issubset(window._menuActions)
+    assert {
+        "新建工作流",
+        "重命名当前工作流",
+        "删除当前工作流",
+        "设置当前为入口",
+        "设置工作流接口",
+    }.isdisjoint(window._menuActions)
+
+
 def testRecentProjectsMenuEntriesExist() -> None:
     ensureQApp()
     settings = SettingsStoreStub()
@@ -92,3 +118,4 @@ def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
     largeSize = getMenuBarFontSize()
     assert largeSize > smallSize
     assert largeSize >= 14
+    assert smallSize >= 13

@@ -249,28 +249,130 @@ def _runWorker(worker: RuntimeWorker) -> None:
                     pass
             _emitStatusAfterStop(worker, jobId)
             return
-        events = _streamEventsCompat(worker.runtimeClient, jobId)
-        worker.setActiveStream(events)
-        try:
-            for event in events:
-                worker.eventReceived.emit(event)
-        except BaseException:
-            if not worker.stopRequested():
-                raise
-        finally:
-            close = getattr(events, "close", None)
-            if callable(close):
-                close()
-            worker.clearActiveStream()
+        _followJobEvents(worker, jobId)
         if worker.stopRequested():
             _emitStatusAfterStop(worker, jobId)
-        else:
-            worker.statusChanged.emit(worker.runtimeClient.getJobStatus(jobId))
     except Exception as err:
         if worker.stopRequested():
             _emitStatusAfterStop(worker, worker._jobId)
         else:
             worker.failed.emit(str(err))
+
+
+def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
+    lastSequence = 0
+    reconnectDelay = 0.1
+    while not worker.stopRequested():
+        events = None
+        streamError: BaseException | None = None
+        try:
+            events = _streamEventsCompat(
+                worker.runtimeClient,
+                jobId,
+                afterSequence=lastSequence,
+                follow=True,
+            )
+            worker.setActiveStream(events)
+            for event in events:
+                sequence = _eventSequence(event)
+                if sequence > 0 and sequence <= lastSequence:
+                    continue
+                worker.eventReceived.emit(event)
+                if sequence > 0:
+                    lastSequence = sequence
+            reconnectDelay = 0.1
+        except BaseException as err:
+            if worker.stopRequested():
+                break
+            streamError = err
+        finally:
+            if events is not None:
+                close = getattr(events, "close", None)
+                if callable(close):
+                    try:
+                        close()
+                    except BaseException:
+                        pass
+            worker.clearActiveStream()
+
+        if worker.stopRequested():
+            break
+        status = _jobStatusOrNone(worker.runtimeClient, jobId)
+        if status is not None and _isTerminalStatus(status):
+            if lastSequence > 0:
+                try:
+                    lastSequence = _replayAvailableEvents(
+                        worker,
+                        jobId,
+                        lastSequence,
+                    )
+                except BaseException:
+                    if worker.stopRequested():
+                        break
+                    if worker._stopEvent.wait(reconnectDelay):
+                        break
+                    reconnectDelay = min(2.0, reconnectDelay * 2.0)
+                    continue
+            worker.statusChanged.emit(status)
+            return
+        if streamError is not None and not callable(
+            getattr(worker.runtimeClient, "getJobStatus", None)
+        ):
+            raise streamError
+        if worker._stopEvent.wait(reconnectDelay):
+            break
+        reconnectDelay = min(2.0, reconnectDelay * 2.0)
+
+
+def _replayAvailableEvents(
+    worker: RuntimeWorker,
+    jobId: str,
+    lastSequence: int,
+) -> int:
+    events = None
+    try:
+        events = _streamEventsCompat(
+            worker.runtimeClient,
+            jobId,
+            afterSequence=lastSequence,
+            follow=True,
+        )
+        worker.setActiveStream(events)
+        for event in events:
+            sequence = _eventSequence(event)
+            if sequence > 0 and sequence <= lastSequence:
+                continue
+            worker.eventReceived.emit(event)
+            if sequence > 0:
+                lastSequence = sequence
+    finally:
+        if events is not None:
+            close = getattr(events, "close", None)
+            if callable(close):
+                try:
+                    close()
+                except BaseException:
+                    pass
+        worker.clearActiveStream()
+    return lastSequence
+
+
+def _jobStatusOrNone(runtimeClient, jobId: str):
+    getStatus = getattr(runtimeClient, "getJobStatus", None)
+    if not callable(getStatus):
+        return None
+    try:
+        return getStatus(jobId)
+    except BaseException:
+        return None
+
+
+def _isTerminalStatus(status: object) -> bool:
+    return str(getattr(status, "status", "")) in {
+        "COMPLETED",
+        "FAILED",
+        "ABORTED",
+    }
 
 
 def _emitStatusAfterStop(worker: RuntimeWorker, jobId: str) -> None:
@@ -311,18 +413,45 @@ def _startJobCompat(worker: RuntimeWorker):
     return method(worker.projectId)
 
 
-def _streamEventsCompat(runtimeClient, jobId: str):
+def _streamEventsCompat(
+    runtimeClient,
+    jobId: str,
+    *,
+    afterSequence: int = 0,
+    follow: bool = True,
+):
     method = getattr(runtimeClient, "iterJobEvents", None)
     if not callable(method):
         method = runtimeClient.streamJobEvents
     parameters = _parameters(method)
-    acceptsFollow = "follow" in parameters or any(
+    acceptsVarKeywords = any(
         parameter.kind is inspect.Parameter.VAR_KEYWORD
         for parameter in parameters.values()
     )
-    if acceptsFollow:
-        return method(jobId, follow=True)
-    return method(jobId)
+    keywordArguments: dict[str, object] = {}
+    if acceptsVarKeywords or "afterSequence" in parameters:
+        keywordArguments["afterSequence"] = afterSequence
+    elif "after_sequence" in parameters:
+        keywordArguments["after_sequence"] = afterSequence
+    if acceptsVarKeywords or "follow" in parameters:
+        keywordArguments["follow"] = follow
+    return method(jobId, **keywordArguments)
+
+
+def _eventSequence(event: object) -> int:
+    rawValue = getattr(event, "sequence", 0)
+    if isinstance(rawValue, bool):
+        return 0
+    if isinstance(rawValue, int):
+        return max(0, rawValue)
+    if isinstance(rawValue, float):
+        return max(0, int(rawValue))
+    if isinstance(rawValue, str):
+        try:
+            return max(0, int(rawValue))
+        except ValueError:
+            return 0
+    return 0
 
 
 def _parameters(method) -> dict[str, inspect.Parameter]:

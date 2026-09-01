@@ -121,6 +121,25 @@ def testClearRecentProjects() -> None:
     assert recent == []
 
 
+def testClearRecentProjectsButtonImmediatelyClearsDialogList() -> None:
+    from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+
+    ensureQApp()
+    dialog = ProjectEntryDialog()
+    dialog.setRecentProjects(
+        [{"projectName": "demo", "projectPath": "C:/demo/project.json"}]
+    )
+
+    clearButton = getattr(dialog, "_clearRecentButton", None)
+    if clearButton is not None:
+        clearButton.click()
+    else:
+        dialog._onClearRecentProjects()
+
+    assert dialog.shouldClearRecentProjects() is True
+    assert dialog.getRecentProjectDisplayTexts() == []
+
+
 def testRecentProjectsRenderedAsProjectCards() -> None:
     from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 

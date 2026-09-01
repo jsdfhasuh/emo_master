@@ -9,6 +9,7 @@ from emo_master.apps.designer.state.project_store import (
     loadProject,
     saveProject,
 )
+from emo_master.apps.designer.state.workflow_store import defaultNodePosition
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeViewModel
 from emo_master.core.project.migration import utc_now_iso
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
@@ -149,11 +150,6 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        self._captureFallbackProjectMetadata(payload)
-        if self.workflowController is not None:
-            self.workflowController.loadPayload(payload)
-        else:
-            self._restoreProjectPayload(payload)
         loaded, runtimePath = self.loadProjectFromPath(
             str(projectDir),
             successMessagePrefix="项目已加载",
@@ -161,6 +157,11 @@ class ProjectController:
         )
         if not loaded:
             return False, None, None
+        self._captureFallbackProjectMetadata(payload)
+        if self.workflowController is not None:
+            self.workflowController.loadPayload(payload)
+        else:
+            self._restoreProjectPayload(payload)
         self.recordRecentProject(str(projectDir / "project.json"))
         self.appendLog("INFO", f"项目已加载：{projectDir / 'project.json'}")
         return True, runtimePath, projectDir
@@ -236,19 +237,20 @@ class ProjectController:
             selectedDir = chooseProjectDirectory("为新建空白项目选择文件夹")
             if selectedDir != "":
                 projectDir = Path(selectedDir)
-                self.saveProjectToDirectory(
+                saved, savedProjectDir = self.saveProjectToDirectory(
                     selectedDir, projectDir.name or "project", None
                 )
+                if not saved or savedProjectDir is None:
+                    return False, None, None
                 self.appendLog("INFO", f"空白项目已初始化：{selectedDir}")
-                return (
-                    self.loadProjectFromPath(
-                        str(projectDir),
-                        successMessagePrefix="空白项目已加载",
-                        failedMessagePrefix="加载空白项目失败",
-                    )[0],
-                    str(projectDir),
-                    projectDir,
+                loaded, runtimePath = self.loadProjectFromPath(
+                    str(savedProjectDir),
+                    successMessagePrefix="空白项目已加载",
+                    failedMessagePrefix="加载空白项目失败",
                 )
+                if not loaded:
+                    return False, None, None
+                return True, runtimePath, savedProjectDir
         return False, None, None
 
     def _buildProjectPayload(
@@ -277,7 +279,7 @@ class ProjectController:
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
 
         return {
-            "schemaVersion": "2.0",
+            "schemaVersion": "2.1",
             "project": project,
             "entryWorkflowId": "main",
             "workflowOrder": ["main"],
@@ -288,10 +290,12 @@ class ProjectController:
                     "outputs": {},
                     "nodes": patchedNodes,
                     "edges": edges,
-                    "layout": {"nodePositions": {
-                        nodeId: {"x": float(position[0]), "y": float(position[1])}
-                        for nodeId, position in nodePositions.items()
-                    }},
+                    "layout": {
+                        "nodePositions": {
+                            nodeId: {"x": float(position[0]), "y": float(position[1])}
+                            for nodeId, position in nodePositions.items()
+                        }
+                    },
                 }
             },
             "runtime": {},
@@ -337,16 +341,17 @@ class ProjectController:
         self.flowScene.clearGraph()
 
         for node in self.flowModel.nodes.values():
-            xValue = 20.0
-            yValue = 20.0
+            defaultX, defaultY = defaultNodePosition(node.kind)
+            xValue = defaultX
+            yValue = defaultY
             for rawNode in graphPayload.get("nodes", []):
                 if not isinstance(rawNode, dict):
                     continue
                 rawNodeId = rawNode.get("nodeId")
                 if not isinstance(rawNodeId, str) or rawNodeId != node.nodeId:
                     continue
-                xRaw = rawNode.get("x", 20.0)
-                yRaw = rawNode.get("y", 20.0)
+                xRaw = rawNode.get("x", defaultX)
+                yRaw = rawNode.get("y", defaultY)
                 layoutPosition = positions.get(node.nodeId)
                 if isinstance(layoutPosition, dict):
                     xRaw = layoutPosition.get("x", xRaw)

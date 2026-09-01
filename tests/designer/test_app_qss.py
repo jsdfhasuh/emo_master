@@ -17,3 +17,19 @@ def testAppQssUsesIndustrialMenuAndControlStyling() -> None:
   assert "background: #ffffff;" in qss
   assert "QPushButton#secondaryButton," in qss or "QPushButton#secondaryButton {" in qss
   assert "background: #f7f6f6;" in qss
+
+
+def testAppQssUsesDpiAwareFontsAndReadableWorkflowTabs() -> None:
+  qss = readAppQss()
+  assert 'font-size: 10pt;' in qss
+  assert "QTabWidget#workflowTabs QTabBar::tab {" in qss
+  assert "min-height: 26px;" in qss
+  assert "padding: 8px 14px;" in qss
+
+
+def testAppQssStylesWorkflowPackagePreviewHierarchy() -> None:
+  qss = readAppQss()
+  assert "QLabel#workflowPackageSummary" in qss
+  assert "QLabel#workflowPackageWarnings" in qss
+  assert "QTreeWidget#workflowPackageWorkflowTree" in qss
+  assert "QPushButton#workflowPackageCancelButton" in qss

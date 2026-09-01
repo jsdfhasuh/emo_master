@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections.abc import Iterable as IterableABC
 import inspect
 import threading
@@ -9,6 +9,10 @@ from typing import Any, Iterable, Protocol, cast
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.core.contracts.execution import RuntimeEventDTO
+from emo_master.core.contracts.port_types import (
+    PortSpecValidationError,
+    validatePortSpec,
+)
 
 runtime_pb2: Any = _runtime_pb2
 
@@ -28,7 +32,25 @@ class OperatorDefinition:
     summary: str
     inputPorts: dict[str, str]
     outputPorts: dict[str, str]
+    inputPortSpecs: dict[str, object]
+    outputPortSpecs: dict[str, object]
     paramSchema: dict[str, object]
+    editorSpec: dict[str, object] = field(default_factory=dict)
+    editorIssues: tuple[dict[str, object], ...] = ()
+
+
+@dataclass(frozen=True)
+class PreviewSource:
+    sourceId: str
+    label: str
+    sourceKind: str
+    workflowId: str
+    nodeId: str
+    port: str
+    width: int
+    height: int
+    mimeType: str
+    iterationPath: tuple[int, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -50,6 +72,24 @@ class RuntimeServiceProtocol(Protocol):
     def ListOperators(self, request, context): ...
 
     def ListRejectedOperators(self, request, context): ...
+
+    def GetOperatorEditorAsset(self, request, context): ...
+
+    def ListNodePreviewSources(self, request, context): ...
+
+    def UploadPreviewImage(self, request, context): ...
+
+    def StreamPreviewAsset(self, request, context): ...
+
+    def RunOperatorPreview(self, request, context): ...
+
+    def CancelOperatorPreview(self, request, context): ...
+
+    def OpenOperatorPreviewSession(self, request, context): ...
+
+    def StreamOperatorPreviewFrames(self, request, context): ...
+
+    def CloseOperatorPreviewSession(self, request, context): ...
 
     def ListWorkflows(self, request, context): ...
 
@@ -133,6 +173,12 @@ class RuntimeClient:
         parsed: list[OperatorDefinition] = []
         for operatorInfo in getattr(reply, "operators", []):
             rawCategory = str(getattr(operatorInfo, "category", "Other")).strip()
+            inputPorts = self._toStrMap(
+                getattr(operatorInfo, "input_ports", {})
+            )
+            outputPorts = self._toStrMap(
+                getattr(operatorInfo, "output_ports", {})
+            )
             parsed.append(
                 OperatorDefinition(
                     operatorId=str(getattr(operatorInfo, "operator_id", "")),
@@ -141,14 +187,174 @@ class RuntimeClient:
                     category=rawCategory or "Other",
                     iconKey=str(getattr(operatorInfo, "icon_key", "default")),
                     summary=str(getattr(operatorInfo, "summary", "")),
-                    inputPorts=self._toStrMap(getattr(operatorInfo, "input_ports", {})),
-                    outputPorts=self._toStrMap(getattr(operatorInfo, "output_ports", {})),
+                    inputPorts=inputPorts,
+                    outputPorts=outputPorts,
+                    inputPortSpecs=self._parsePortSpecs(
+                        getattr(operatorInfo, "input_port_specs_json", ""),
+                        inputPorts,
+                    ),
+                    outputPortSpecs=self._parsePortSpecs(
+                        getattr(operatorInfo, "output_port_specs_json", ""),
+                        outputPorts,
+                    ),
                     paramSchema=self._parseSchema(
                         getattr(operatorInfo, "param_schema_json", "{}")
+                    ),
+                    editorSpec=self._parseSchema(
+                        getattr(operatorInfo, "editor_spec_json", "{}")
+                    ),
+                    editorIssues=tuple(
+                        item
+                        for item in self._parseJsonList(
+                            getattr(operatorInfo, "editor_issues_json", "[]")
+                        )
+                        if isinstance(item, dict)
                     ),
                 )
             )
         return parsed
+
+    def getOperatorEditorAsset(self, operatorId: str, version: str = "") -> object:
+        return self._call(
+            "GetOperatorEditorAsset",
+            runtime_pb2.GetOperatorEditorAssetRequest(
+                operator_id=operatorId, version=version
+            ),
+        )
+
+    def listNodePreviewSources(
+        self,
+        projectId: str,
+        workflowId: str,
+        nodeId: str,
+    ) -> list[PreviewSource]:
+        reply = self._call(
+            "ListNodePreviewSources",
+            runtime_pb2.ListNodePreviewSourcesRequest(
+                project_id=projectId,
+                workflow_id=workflowId,
+                node_id=nodeId,
+            ),
+        )
+        return [
+            PreviewSource(
+                sourceId=str(getattr(source, "source_id", "")),
+                label=str(getattr(source, "label", "")),
+                sourceKind=str(getattr(source, "source_kind", "")),
+                workflowId=str(getattr(source, "workflow_id", "")),
+                nodeId=str(getattr(source, "node_id", "")),
+                port=str(getattr(source, "port", "")),
+                width=int(getattr(source, "width", 0)),
+                height=int(getattr(source, "height", 0)),
+                mimeType=str(getattr(source, "mime_type", "")),
+                iterationPath=self._parseIterationPath(
+                    getattr(source, "iteration_path_json", "[]")
+                ),
+            )
+            for source in getattr(reply, "sources", [])
+        ]
+
+    def uploadPreviewImage(
+        self,
+        data: bytes,
+        filename: str = "",
+        projectId: str = "",
+    ) -> object:
+        uploadId = f"upload-{threading.get_ident()}"
+
+        def chunks():
+            for offset in range(0, len(data), 256 * 1024):
+                yield runtime_pb2.PreviewUploadChunk(
+                    upload_id=uploadId,
+                    filename=filename if offset == 0 else "",
+                    content=data[offset : offset + 256 * 1024],
+                    project_id=projectId,
+                )
+
+        return self._call("UploadPreviewImage", chunks())
+
+    def downloadPreviewAsset(
+        self,
+        assetId: str,
+        projectId: str = "",
+    ) -> tuple[bytes, str]:
+        chunks = self._call(
+            "StreamPreviewAsset",
+            runtime_pb2.GetPreviewAssetRequest(
+                asset_id=assetId,
+                project_id=projectId,
+            ),
+            useDeadline=False,
+        )
+        content: list[bytes] = []
+        mimeType = ""
+        for chunk in chunks if isinstance(chunks, IterableABC) else ():
+            content.append(bytes(getattr(chunk, "content", b"")))
+            if not mimeType:
+                mimeType = str(getattr(chunk, "mime_type", ""))
+        return b"".join(content), mimeType
+
+    def runOperatorPreview(
+        self,
+        projectId: str,
+        workflowId: str,
+        nodeId: str,
+        operatorId: str,
+        params: dict[str, object],
+        imageAssetId: str,
+        requestId: str = "",
+    ) -> object:
+        return self._call(
+            "RunOperatorPreview",
+            runtime_pb2.RunOperatorPreviewRequest(
+                project_id=projectId,
+                workflow_id=workflowId,
+                node_id=nodeId,
+                operator_id=operatorId,
+                params_json=json.dumps(params, ensure_ascii=True),
+                image_asset_id=imageAssetId,
+                request_id=requestId,
+            ),
+        )
+
+    def cancelOperatorPreview(self, requestId: str) -> object:
+        return self._call(
+            "CancelOperatorPreview",
+            runtime_pb2.CancelOperatorPreviewRequest(request_id=requestId),
+        )
+
+    def openOperatorPreviewSession(
+        self,
+        projectId: str,
+        workflowId: str,
+        nodeId: str,
+        operatorId: str,
+        params: dict[str, object],
+    ) -> object:
+        return self._call(
+            "OpenOperatorPreviewSession",
+            runtime_pb2.OpenOperatorPreviewSessionRequest(
+                project_id=projectId,
+                workflow_id=workflowId,
+                node_id=nodeId,
+                operator_id=operatorId,
+                params_json=json.dumps(params, ensure_ascii=True),
+            ),
+        )
+
+    def streamOperatorPreviewFrames(self, sessionId: str) -> Iterable[object]:
+        stream = self._call(
+            "StreamOperatorPreviewFrames",
+            runtime_pb2.StreamOperatorPreviewFramesRequest(session_id=sessionId),
+            useDeadline=False,
+        )
+        return stream if isinstance(stream, IterableABC) else ()
+
+    def closeOperatorPreviewSession(self, sessionId: str) -> object:
+        return self._call(
+            "CloseOperatorPreviewSession",
+            runtime_pb2.CloseOperatorPreviewSessionRequest(session_id=sessionId),
+        )
 
     def listRejectedOperators(self) -> list[object]:
         reply = self._call("ListRejectedOperators", runtime_pb2.ListRejectedOperatorsRequest())
@@ -353,6 +559,31 @@ class RuntimeClient:
         except json.JSONDecodeError:
             return {}
         return parsed if isinstance(parsed, dict) else {}
+
+    def _parseJsonList(self, rawValue: object) -> list[object]:
+        if not isinstance(rawValue, str) or not rawValue.strip():
+            return []
+        try:
+            parsed = json.loads(rawValue)
+        except json.JSONDecodeError:
+            return []
+        return parsed if isinstance(parsed, list) else []
+
+    def _parsePortSpecs(
+        self,
+        rawValue: object,
+        fallback: dict[str, str],
+    ) -> dict[str, object]:
+        parsed = self._parseSchema(rawValue)
+        if not parsed:
+            return dict(fallback)
+        result: dict[str, object] = {}
+        for name, spec in parsed.items():
+            try:
+                result[name] = validatePortSpec(spec, f"ports.{name}")
+            except PortSpecValidationError:
+                return dict(fallback)
+        return result
 
     def _parseIterationPath(self, rawValue: object) -> tuple[int, ...]:
         if not isinstance(rawValue, str) or not rawValue.strip():

@@ -10,7 +10,7 @@ CreateHandler = Callable[[dict[str, object]], None]
 
 
 try:
-    from PySide2.QtCore import QByteArray, QMimeData, QPoint, Qt
+    from PySide2.QtCore import QByteArray, QEvent, QMimeData, QPoint, Qt
     from PySide2.QtGui import QDrag
     from PySide2.QtWidgets import (
         QApplication,
@@ -33,11 +33,13 @@ try:
             )
             self.payload = payload
             self._dragStartPos: QPoint | None = None
+            self._dragStarted = False
             self.setObjectName(_getCardObjectName(str(payload.get("category", "其他"))))
             self.setToolTip(_buildTooltip(payload))
 
         def mousePressEvent(self, event) -> None:  # type: ignore[override]
             self._dragStartPos = event.pos()
+            self._dragStarted = False
             super().mousePressEvent(event)
 
         def mouseMoveEvent(self, event) -> None:  # type: ignore[override]
@@ -53,6 +55,7 @@ try:
                 return
 
             drag = QDrag(self)
+            self._dragStarted = True
             mimeData = QMimeData()
             payloadText = json.dumps(self.payload, ensure_ascii=False)
             mimeData.setData(
@@ -63,9 +66,19 @@ try:
             drag.exec_(Qt.CopyAction)
             self._dragStartPos = None
 
+        def mouseReleaseEvent(self, event) -> None:  # type: ignore[override]
+            if self._dragStarted:
+                self._dragStarted = False
+                self._dragStartPos = None
+                self.setDown(False)
+                event.accept()
+                return
+            self._dragStartPos = None
+            super().mouseReleaseEvent(event)
+
     class OperatorBubble(QWidget):
-        def __init__(self) -> None:
-            super().__init__(None, Qt.Popup | Qt.FramelessWindowHint)
+        def __init__(self, parent: QWidget | None = None) -> None:
+            super().__init__(parent, Qt.Tool | Qt.FramelessWindowHint)
             self._createHandler: CreateHandler | None = None
             self._buttons: list[_OperatorCardButton] = []
             self._operators: list[dict[str, object]] = []
@@ -79,14 +92,18 @@ try:
             self._grid.setSpacing(8)
 
             self.searchInput = QLineEdit()
-            self.searchInput.setPlaceholderText("搜索算子（名称/ID）")
+            self.searchInput.setPlaceholderText("搜索节点（名称/ID）")
             self.searchInput.textChanged.connect(self.setSearchKeyword)
+            self.searchInput.installEventFilter(self)
 
             rootLayout = QVBoxLayout()
             rootLayout.addWidget(self.searchInput)
             rootLayout.addLayout(self._grid)
             self.setLayout(rootLayout)
             self.setObjectName("operatorBubble")
+            application = QApplication.instance()
+            if application is not None:
+                application.installEventFilter(self)
 
         def setCreateHandler(self, handler: CreateHandler | None) -> None:
             self._createHandler = handler
@@ -130,9 +147,43 @@ try:
             self.show()
             self.raise_()
             self.activateWindow()
+            self.searchInput.setFocus(Qt.PopupFocusReason)
+
+        def eventFilter(self, watched, event) -> bool:  # type: ignore[override]
+            if event.type() == QEvent.KeyPress and event.key() == Qt.Key_Escape:
+                if watched is self.searchInput or self.isVisible():
+                    event.accept()
+                    self.close()
+                    return True
+            if event.type() == QEvent.MouseButtonPress and self.isVisible():
+                if not self._isBubbleWidget(watched) and not self._isCategoryButton(
+                    watched
+                ):
+                    self.close()
+            if event.type() == QEvent.ApplicationDeactivate and self.isVisible():
+                self.close()
+            return bool(super().eventFilter(watched, event))
+
+        def keyPressEvent(self, event) -> None:  # type: ignore[override]
+            if event.key() == Qt.Key_Escape:
+                event.accept()
+                self.close()
+                return
+            super().keyPressEvent(event)
 
         def getPopupPosition(self) -> tuple[int, int] | None:
             return self._lastPopupPoint
+
+        def _isBubbleWidget(self, watched: object) -> bool:
+            if watched is self:
+                return True
+            return isinstance(watched, QWidget) and self.isAncestorOf(watched)
+
+        def _isCategoryButton(self, watched: object) -> bool:
+            objectName = getattr(watched, "objectName", None)
+            if not callable(objectName):
+                return False
+            return objectName() in {"sideCategoryButton", "sideCategoryButtonActive"}
 
         def _refreshGrid(self) -> None:
             self._clearButtons()
@@ -140,6 +191,9 @@ try:
             self._visibleOperators = filteredOperators
             for index, payload in enumerate(filteredOperators):
                 button = _OperatorCardButton(payload)
+                button.clicked.connect(
+                    lambda checked=False, current=payload: self._create(current)
+                )
                 row = index // 2
                 col = index % 2
                 self._grid.addWidget(button, row, col)
@@ -179,11 +233,13 @@ try:
             self._buttons = []
 
         def simulateCreate(self, index: int) -> None:
-            if self._createHandler is None:
-                return
             if index < 0 or index >= len(self._visibleOperators):
                 return
-            self._createHandler(self._visibleOperators[index])
+            self._create(self._visibleOperators[index])
+
+        def _create(self, payload: dict[str, object]) -> None:
+            if self._createHandler is not None:
+                self._createHandler(payload)
 
     def _buildTooltip(payload: dict[str, object]) -> str:
         displayName = str(payload.get("displayName", ""))
@@ -219,7 +275,8 @@ except Exception:  # pragma: no cover
     OPERATOR_MIME_TYPE = "application/x-emo-operator"
 
     class OperatorBubble:  # type: ignore[no-redef]
-        def __init__(self) -> None:
+        def __init__(self, parent: object | None = None) -> None:
+            self._parent = parent
             self._createHandler: CreateHandler | None = None
             self._operators: list[dict[str, object]] = []
             self._visibleOperators: list[dict[str, object]] = []
@@ -229,6 +286,9 @@ except Exception:  # pragma: no cover
             self._lastPopupPoint: tuple[int, int] | None = None
             self._visible = False
             self._buttons: list[object] = []
+
+        def parentWidget(self) -> object | None:
+            return self._parent
 
         def setCreateHandler(self, handler: CreateHandler | None) -> None:
             self._createHandler = handler
@@ -309,12 +369,19 @@ except Exception:  # pragma: no cover
 
             self._visibleOperators = sorted(filtered, key=sortKey)
             self._buttons = [
-                _FallbackOperatorButton(payload) for payload in self._visibleOperators
+                _FallbackOperatorButton(payload, self._createHandler)
+                for payload in self._visibleOperators
             ]
 
 
     class _FallbackOperatorButton:
-        def __init__(self, payload: dict[str, object]) -> None:
+        def __init__(
+            self,
+            payload: dict[str, object],
+            createHandler: CreateHandler | None,
+        ) -> None:
+            self._payload = payload
+            self._createHandler = createHandler
             self._objectName = (
                 "operatorBubbleItemFlow"
                 if payload.get("category") == "控制流"
@@ -323,3 +390,7 @@ except Exception:  # pragma: no cover
 
         def objectName(self) -> str:
             return self._objectName
+
+        def click(self) -> None:
+            if self._createHandler is not None:
+                self._createHandler(self._payload)

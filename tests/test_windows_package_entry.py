@@ -14,10 +14,10 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
 
     assert result["status"] == "ok"
     checks = result["checks"]
-    assert checks["builtins"]["operatorCount"] >= 48
+    assert checks["builtins"]["operatorCount"] >= 49
     assert checks["builtins"]["editorUiCount"] >= 3
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
-    assert checks["migrations"]["versions"] == [1, 2, 3]
+    assert checks["migrations"]["versions"] == [1, 2, 3, 4]
     assert checks["migrations"]["journalMode"] == "delete"
 
 

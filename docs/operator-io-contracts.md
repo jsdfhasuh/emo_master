@@ -733,6 +733,7 @@ if isinstance(geometry, BBox2D):
 | `vision.mask.apply` | `image/mask`、可选 `frame/maskFrame` | `image`、`frame` | 按二值 mask 保留像素，其余填固定值 |
 | `vision.collection.filter` | 七类集合中的一个、可选 `roi` | 对应类型的 kept/rejected 集合、`keptCount/rejectedCount` | 按属性和空间条件进行 AND 过滤 |
 | `vision.collection.count` | 七类集合中的一个 | `count` | 空集合返回 0，保留强类型输入 |
+| `vision.state.counter` | 可选 `increment/reset` 布尔信号 | `count` | 按 `(projectId, name)` 持久化共享；复位优先，递增固定为 1 |
 | `vision.collection.sort` | 七类集合中的一个 | 对应类型的 sorted 集合 | 按类型白名单字段稳定排序，缺失字段始终置后 |
 | `vision.collection.select` | 七类集合中的一个 | 对应类型的 selected 集合、`selectedCount` | First、Last、Index 或 Top-K，单项仍使用集合 |
 | `vision.value.number` | 无 | `value` | 产生有限 number 常量 |
@@ -745,6 +746,11 @@ if isinstance(geometry, BBox2D):
 | `communication.plc.slmp_write` | `data`、`value`、`values` 或参数值中的一个 | `receipt:plcWriteReceipt` | 三菱 SLMP/MC 3E 字设备写入，传输失败可有界重试 |
 | `communication.tcp.client` | `message`、`text` 或参数文本中的一个 | `sentBytes`、可选 `response:tcpMessage/responseText` | 一次有界 TCP send/exchange 事务，可独立解码文本响应 |
 | `communication.tcp.receive_once` | 无 | `message:tcpMessage`、`peerHost/peerPort`、可选 `text` | 在超时内监听并接收一条消息，可独立解码文本后关闭 |
+
+`vision.state.counter` 的 `name` 是必填参数，区分大小写，允许 1–128 个 Unicode
+字符，但不允许首尾空白。计数状态由 Runtime SQLite 按 `(projectId, name)` 保存，
+不写入项目文件；`reset=true` 优先于 `increment=true`，两者均未给出或为 false 时
+只读取当前值。Designer 预览不提供持久状态访问器，因此不会改动计数值。
 
 ### 10.1 ROI 输出契约
 

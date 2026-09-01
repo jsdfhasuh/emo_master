@@ -49,6 +49,7 @@ class WorkflowRunner:
         maxCallDepth: int = 32,
         artifactStore: object | None = None,
         previewSnapshotStore: object | None = None,
+        globalCounters: object | None = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -56,6 +57,7 @@ class WorkflowRunner:
         self.maxCallDepth = maxCallDepth
         self.artifactStore = artifactStore
         self.previewSnapshotStore = previewSnapshotStore
+        self.globalCounters = globalCounters
         self._operatorLogManager = OperatorLogManager(
             self.publish if eventPublisher is not None else None
         )
@@ -297,6 +299,7 @@ class WorkflowRunner:
             "isCancellationRequested": cancellation.isCancellationRequested,
             "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
             "logger": logger,
+            "globalCounters": self.globalCounters,
         }
         try:
             result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
@@ -373,6 +376,7 @@ class WorkflowRunner:
                 "isCancellationRequested": cancellation.isCancellationRequested,
                 "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
                 "logger": lifecycleLogger,
+                "globalCounters": self.globalCounters,
             }
             try:
                 init(initContext)

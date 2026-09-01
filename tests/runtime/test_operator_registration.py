@@ -70,9 +70,10 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.preprocess.threshold",
         "vision.segment.in_range",
         "vision.render.annotate",
+        "vision.state.counter",
         "vision.value.number",
     } <= operatorIds
-    assert len(operatorIds) == 48
+    assert len(operatorIds) == 49
     assert list(rejectedReply.rejected) == []
 
 

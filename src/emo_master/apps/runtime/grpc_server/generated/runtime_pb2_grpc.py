@@ -124,6 +124,26 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListWorkflowsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListWorkflowsReply.FromString,
                 _registered_method=True)
+        self.ListGlobalCounters = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+                request_serializer=runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListGlobalCountersReply.FromString,
+                _registered_method=True)
+        self.GetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+                request_serializer=runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.SetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+                request_serializer=runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.SetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.ResetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+                request_serializer=runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ResetGlobalCounterReply.FromString,
+                _registered_method=True)
 
 
 class RuntimeServiceServicer(object):
@@ -237,6 +257,30 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListGlobalCounters(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -329,6 +373,26 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ListWorkflows,
                     request_deserializer=runtime__pb2.ListWorkflowsRequest.FromString,
                     response_serializer=runtime__pb2.ListWorkflowsReply.SerializeToString,
+            ),
+            'ListGlobalCounters': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGlobalCounters,
+                    request_deserializer=runtime__pb2.ListGlobalCountersRequest.FromString,
+                    response_serializer=runtime__pb2.ListGlobalCountersReply.SerializeToString,
+            ),
+            'GetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGlobalCounter,
+                    request_deserializer=runtime__pb2.GetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.GetGlobalCounterReply.SerializeToString,
+            ),
+            'SetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalCounter,
+                    request_deserializer=runtime__pb2.SetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.SetGlobalCounterReply.SerializeToString,
+            ),
+            'ResetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetGlobalCounter,
+                    request_deserializer=runtime__pb2.ResetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.ResetGlobalCounterReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -817,6 +881,114 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListWorkflows',
             runtime__pb2.ListWorkflowsRequest.SerializeToString,
             runtime__pb2.ListWorkflowsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListGlobalCounters(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+            runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+            runtime__pb2.ListGlobalCountersReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+            runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.GetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+            runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.SetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+            runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.ResetGlobalCounterReply.FromString,
             options,
             channel_credentials,
             insecure,

@@ -33,6 +33,7 @@ from emo_master.apps.designer.ui.log_dialog import (
     StructuredLogEntry,
 )
 from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
+from emo_master.apps.designer.ui.global_counters_dialog import GlobalCountersDialog
 from emo_master.apps.designer.ui.icon_map import getOperatorGlyph
 from emo_master.apps.designer.ui.operator_bubble import OperatorBubble
 from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
@@ -712,6 +713,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         settingsStore: object | None = None,
         workflowPackagePreviewDialogFactory: Callable[[object], object]
         | None = None,
+        globalCountersDialogFactory: Callable[[], object] | None = None,
     ) -> None:
         super().__init__()
         self.runtimeClient = runtimeClient
@@ -720,6 +722,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._workflowPackagePreviewDialogFactory = (
             workflowPackagePreviewDialogFactory
         )
+        self._globalCountersDialogFactory = globalCountersDialogFactory
+        self._globalCountersDialog: object | None = None
         self._startupEntryHandled = False
         self.settingsStore = (
             settingsStore
@@ -1352,6 +1356,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimePanelState.setActiveJob(None)
         self.loadedProjectPath = loadedProjectPath
         self.currentProjectDir = currentProjectDir
+        counterDialog = self._globalCountersDialog
+        if counterDialog is not None:
+            bindProject = getattr(counterDialog, "bindProject", None)
+            if callable(bindProject):
+                bindProject(loadedProjectPath or "")
         self.activeWorkflowId = self.workflowController.activeWorkflowId
         self._restoreActiveWorkflowRuntimeState()
         self._refreshWorkflowTabs()
@@ -1531,6 +1540,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         runMenu = addMenu("运行")
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
+        self._addMenuAction(runMenu, "全局计数器…", self.openGlobalCountersDialog)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -1558,6 +1568,30 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def getMenuBarFontSize(self) -> int:
         return self.layoutController.getMenuBarFontSize()
+
+    def openGlobalCountersDialog(self) -> object | None:
+        if not self.loadedProjectPath:
+            QMessageBox.warning(self, "全局计数器", "请先加载项目")
+            return None
+        dialog = self._globalCountersDialog
+        if dialog is None:
+            dialog = (
+                self._globalCountersDialogFactory()
+                if self._globalCountersDialogFactory is not None
+                else GlobalCountersDialog(self.runtimeClient, self)
+            )
+            self._globalCountersDialog = dialog
+        showForProject = getattr(dialog, "showForProject", None)
+        if callable(showForProject):
+            showForProject(self.loadedProjectPath)
+        else:
+            bindProject = getattr(dialog, "bindProject", None)
+            if callable(bindProject):
+                bindProject(self.loadedProjectPath)
+            show = getattr(dialog, "show", None)
+            if callable(show):
+                show()
+        return dialog
 
     def _setCurrentJobId(self, jobId: str | None) -> None:
         if self.currentJobId == jobId:
@@ -2292,6 +2326,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._saveRuntimeLogSettings()
         self.operatorEditorManager.closeAll()
+        counterDialog = self._globalCountersDialog
+        if counterDialog is not None:
+            shutdown = getattr(counterDialog, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
         self.runtimeController.close()
         try:
             super().closeEvent(event)

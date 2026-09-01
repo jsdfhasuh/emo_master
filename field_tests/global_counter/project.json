@@ -1,0 +1,951 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "global-counter-field-hardware",
+    "name": "相机 PLC 全局计数器现场联调",
+    "revision": 1,
+    "createdAt": "2026-09-01T00:00:00Z",
+    "updatedAt": "2026-09-01T00:00:00Z"
+  },
+  "entryWorkflowId": "camera_capture",
+  "workflowOrder": [
+    "camera_capture",
+    "plc_read_status",
+    "plc_write_probe",
+    "plc_signal_counter",
+    "camera_counter_freerun",
+    "camera_counter_hardware",
+    "counter_read"
+  ],
+  "workflows": {
+    "camera_capture": {
+      "name": "01 相机自由运行采图（只读）",
+      "inputs": {},
+      "outputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "blockId": "integer",
+        "deviceTimestamp": "integer",
+        "actualExposureUs": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "camera",
+          "kind": "operator",
+          "operatorId": "vision.io.huaray_camera",
+          "params": {
+            "selectionMode": "ip",
+            "ipAddress": "192.168.1.10",
+            "triggerMode": "freeRun",
+            "captureTimeoutMs": 5000,
+            "retryCount": 1,
+            "retryDelayMs": 200,
+            "outputColor": "bgr",
+            "exposureMode": "keep",
+            "gainMode": "keep",
+            "frameRateMode": "keep",
+            "roiMode": "keep",
+            "pixelFormat": "keep"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "camera",
+          "fromPort": "image",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "frame",
+          "toNode": "output",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "blockId",
+          "toNode": "output",
+          "toPort": "blockId"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "deviceTimestamp",
+          "toNode": "output",
+          "toPort": "deviceTimestamp"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "actualExposureUs",
+          "toNode": "output",
+          "toPort": "actualExposureUs"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 260.0
+          },
+          "camera": {
+            "x": 280.0,
+            "y": 90.0
+          },
+          "output": {
+            "x": 650.0,
+            "y": 90.0
+          }
+        }
+      }
+    },
+    "plc_read_status": {
+      "name": "02 PLC 信号与计数寄存器读取（只读）",
+      "inputs": {},
+      "outputs": {
+        "incrementSignal": "boolean",
+        "resetSignal": "boolean",
+        "plcCount": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "read_increment",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 500,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "read_reset",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 501,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "read_count",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "D",
+            "startAddress": 798,
+            "dataType": "uint32",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "read_increment",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "incrementSignal"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "resetSignal"
+        },
+        {
+          "fromNode": "read_count",
+          "fromPort": "numberValue",
+          "toNode": "output",
+          "toPort": "plcCount"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 360.0
+          },
+          "read_increment": {
+            "x": 260.0,
+            "y": 40.0
+          },
+          "read_reset": {
+            "x": 260.0,
+            "y": 200.0
+          },
+          "read_count": {
+            "x": 260.0,
+            "y": 360.0
+          },
+          "output": {
+            "x": 650.0,
+            "y": 190.0
+          }
+        }
+      }
+    },
+    "plc_write_probe": {
+      "name": "03 PLC 备用寄存器写入 123（确认后运行）",
+      "inputs": {},
+      "outputs": {
+        "writtenValue": "number",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "probe_value",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "params": {
+            "value": 123
+          }
+        },
+        {
+          "nodeId": "write_probe",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "D",
+            "startAddress": 798,
+            "dataType": "uint32",
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "probe_value",
+          "fromPort": "value",
+          "toNode": "write_probe",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "probe_value",
+          "fromPort": "value",
+          "toNode": "output",
+          "toPort": "writtenValue"
+        },
+        {
+          "fromNode": "write_probe",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 260.0
+          },
+          "probe_value": {
+            "x": 80.0,
+            "y": 80.0
+          },
+          "write_probe": {
+            "x": 380.0,
+            "y": 80.0
+          },
+          "output": {
+            "x": 730.0,
+            "y": 80.0
+          }
+        }
+      }
+    },
+    "plc_signal_counter": {
+      "name": "04 PLC M 信号驱动计数并写回 D",
+      "inputs": {},
+      "outputs": {
+        "incrementSignal": "boolean",
+        "resetSignal": "boolean",
+        "count": "integer",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "read_increment",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 500,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "read_reset",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 501,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "counter",
+          "kind": "operator",
+          "operatorId": "vision.state.counter",
+          "params": {
+            "name": "现场联调计数"
+          }
+        },
+        {
+          "nodeId": "write_count",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "D",
+            "startAddress": 798,
+            "dataType": "uint32",
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "read_increment",
+          "fromPort": "booleanValue",
+          "toNode": "counter",
+          "toPort": "increment"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "counter",
+          "toPort": "reset"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "write_count",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "read_increment",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "incrementSignal"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "resetSignal"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "output",
+          "toPort": "count"
+        },
+        {
+          "fromNode": "write_count",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 400.0
+          },
+          "read_increment": {
+            "x": 80.0,
+            "y": 50.0
+          },
+          "read_reset": {
+            "x": 80.0,
+            "y": 230.0
+          },
+          "counter": {
+            "x": 430.0,
+            "y": 140.0
+          },
+          "write_count": {
+            "x": 740.0,
+            "y": 140.0
+          },
+          "output": {
+            "x": 1080.0,
+            "y": 140.0
+          }
+        }
+      }
+    },
+    "camera_counter_freerun": {
+      "name": "05 自由运行采图成功计数并写 PLC",
+      "inputs": {},
+      "outputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "blockId": "integer",
+        "resetSignal": "boolean",
+        "count": "integer",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "camera",
+          "kind": "operator",
+          "operatorId": "vision.io.huaray_camera",
+          "params": {
+            "selectionMode": "ip",
+            "ipAddress": "192.168.1.10",
+            "triggerMode": "freeRun",
+            "captureTimeoutMs": 5000,
+            "retryCount": 1,
+            "retryDelayMs": 200,
+            "outputColor": "bgr",
+            "exposureMode": "keep",
+            "gainMode": "keep",
+            "frameRateMode": "keep",
+            "roiMode": "keep",
+            "pixelFormat": "keep"
+          }
+        },
+        {
+          "nodeId": "capture_success",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0
+          }
+        },
+        {
+          "nodeId": "read_reset",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 501,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "counter",
+          "kind": "operator",
+          "operatorId": "vision.state.counter",
+          "params": {
+            "name": "现场联调计数"
+          }
+        },
+        {
+          "nodeId": "write_count",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "D",
+            "startAddress": 798,
+            "dataType": "uint32",
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "camera",
+          "fromPort": "blockId",
+          "toNode": "capture_success",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "capture_success",
+          "fromPort": "result",
+          "toNode": "counter",
+          "toPort": "increment"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "counter",
+          "toPort": "reset"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "write_count",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "image",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "frame",
+          "toNode": "output",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "blockId",
+          "toNode": "output",
+          "toPort": "blockId"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "resetSignal"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "output",
+          "toPort": "count"
+        },
+        {
+          "fromNode": "write_count",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 500.0
+          },
+          "camera": {
+            "x": 60.0,
+            "y": 60.0
+          },
+          "capture_success": {
+            "x": 380.0,
+            "y": 60.0
+          },
+          "read_reset": {
+            "x": 380.0,
+            "y": 260.0
+          },
+          "counter": {
+            "x": 700.0,
+            "y": 150.0
+          },
+          "write_count": {
+            "x": 1010.0,
+            "y": 150.0
+          },
+          "output": {
+            "x": 1350.0,
+            "y": 150.0
+          }
+        }
+      }
+    },
+    "camera_counter_hardware": {
+      "name": "06 PLC 硬触发采图计数并写回 PLC",
+      "inputs": {},
+      "outputs": {
+        "image": "image",
+        "frame": "bbox2d",
+        "blockId": "integer",
+        "resetSignal": "boolean",
+        "count": "integer",
+        "receipt": "plcWriteReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "camera",
+          "kind": "operator",
+          "operatorId": "vision.io.huaray_camera",
+          "params": {
+            "selectionMode": "ip",
+            "ipAddress": "192.168.1.10",
+            "triggerMode": "hardware",
+            "triggerSource": "Line1",
+            "triggerActivation": "RisingEdge",
+            "captureTimeoutMs": 10000,
+            "retryCount": 1,
+            "retryDelayMs": 200,
+            "outputColor": "bgr",
+            "exposureMode": "keep",
+            "gainMode": "keep",
+            "frameRateMode": "keep",
+            "roiMode": "keep",
+            "pixelFormat": "keep"
+          }
+        },
+        {
+          "nodeId": "capture_success",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0
+          }
+        },
+        {
+          "nodeId": "read_reset",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_read",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "M",
+            "startAddress": 501,
+            "dataType": "bit",
+            "count": 1,
+            "outputIndex": 0,
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "counter",
+          "kind": "operator",
+          "operatorId": "vision.state.counter",
+          "params": {
+            "name": "现场联调计数"
+          }
+        },
+        {
+          "nodeId": "write_count",
+          "kind": "operator",
+          "operatorId": "communication.plc.slmp_write",
+          "params": {
+            "host": "192.168.1.20",
+            "port": 10001,
+            "device": "D",
+            "startAddress": 798,
+            "dataType": "uint32",
+            "connectTimeoutMs": 2000,
+            "responseTimeoutMs": 2000,
+            "retryCount": 1,
+            "retryDelayMs": 100,
+            "networkNo": 0,
+            "pcNo": 255,
+            "moduleIoNo": 1023,
+            "moduleStationNo": 0,
+            "monitoringTimer": 0
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "camera",
+          "fromPort": "blockId",
+          "toNode": "capture_success",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "capture_success",
+          "fromPort": "result",
+          "toNode": "counter",
+          "toPort": "increment"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "counter",
+          "toPort": "reset"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "write_count",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "image",
+          "toNode": "output",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "frame",
+          "toNode": "output",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "camera",
+          "fromPort": "blockId",
+          "toNode": "output",
+          "toPort": "blockId"
+        },
+        {
+          "fromNode": "read_reset",
+          "fromPort": "booleanValue",
+          "toNode": "output",
+          "toPort": "resetSignal"
+        },
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "output",
+          "toPort": "count"
+        },
+        {
+          "fromNode": "write_count",
+          "fromPort": "receipt",
+          "toNode": "output",
+          "toPort": "receipt"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 500.0
+          },
+          "camera": {
+            "x": 60.0,
+            "y": 60.0
+          },
+          "capture_success": {
+            "x": 380.0,
+            "y": 60.0
+          },
+          "read_reset": {
+            "x": 380.0,
+            "y": 260.0
+          },
+          "counter": {
+            "x": 700.0,
+            "y": 150.0
+          },
+          "write_count": {
+            "x": 1010.0,
+            "y": 150.0
+          },
+          "output": {
+            "x": 1350.0,
+            "y": 150.0
+          }
+        }
+      }
+    },
+    "counter_read": {
+      "name": "07 全局计数只读（无需硬件）",
+      "inputs": {},
+      "outputs": {
+        "count": "integer"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "counter",
+          "kind": "operator",
+          "operatorId": "vision.state.counter",
+          "params": {
+            "name": "现场联调计数"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "counter",
+          "fromPort": "count",
+          "toNode": "output",
+          "toPort": "count"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 220.0
+          },
+          "counter": {
+            "x": 300.0,
+            "y": 80.0
+          },
+          "output": {
+            "x": 620.0,
+            "y": 80.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 1,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {}
+  }
+}

@@ -8,6 +8,7 @@ import threading
 from typing import Any, Iterable, Protocol, cast
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
+from emo_master.apps.runtime.context.global_counters import MAX_GLOBAL_COUNTER_VALUE
 from emo_master.core.contracts.execution import RuntimeEventDTO
 from emo_master.core.contracts.port_types import (
     PortSpecValidationError,
@@ -62,6 +63,13 @@ class WorkflowInfo:
     outputs: dict[str, object]
 
 
+@dataclass(frozen=True)
+class GlobalCounterInfo:
+    name: str
+    value: int
+    updatedAtMs: int
+
+
 class RuntimeClientError(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         self.code = code
@@ -92,6 +100,14 @@ class RuntimeServiceProtocol(Protocol):
     def CloseOperatorPreviewSession(self, request, context): ...
 
     def ListWorkflows(self, request, context): ...
+
+    def ListGlobalCounters(self, request, context): ...
+
+    def GetGlobalCounter(self, request, context): ...
+
+    def SetGlobalCounter(self, request, context): ...
+
+    def ResetGlobalCounter(self, request, context): ...
 
     def LoadProject(self, request, context): ...
 
@@ -377,6 +393,60 @@ class RuntimeClient:
             )
         return result
 
+    def listGlobalCounters(self, projectId: str) -> list[GlobalCounterInfo]:
+        reply = self._call(
+            "ListGlobalCounters",
+            runtime_pb2.ListGlobalCountersRequest(project_id=projectId),
+        )
+        self._raiseGlobalCounterReply(reply)
+        return [
+            self._toGlobalCounterInfo(counter)
+            for counter in getattr(reply, "counters", [])
+        ]
+
+    def getGlobalCounter(self, projectId: str, name: str) -> GlobalCounterInfo:
+        reply = self._call(
+            "GetGlobalCounter",
+            runtime_pb2.GetGlobalCounterRequest(project_id=projectId, name=name),
+        )
+        self._raiseGlobalCounterReply(reply)
+        return self._toGlobalCounterInfo(getattr(reply, "counter", None))
+
+    def setGlobalCounter(
+        self,
+        projectId: str,
+        name: str,
+        value: int,
+    ) -> GlobalCounterInfo:
+        if (
+            not isinstance(value, int)
+            or isinstance(value, bool)
+            or value < 0
+            or value > MAX_GLOBAL_COUNTER_VALUE
+        ):
+            raise RuntimeClientError(
+                "E_COUNTER_VALUE_RANGE",
+                f"counter value must be an integer between 0 and {MAX_GLOBAL_COUNTER_VALUE}",
+            )
+        reply = self._call(
+            "SetGlobalCounter",
+            runtime_pb2.SetGlobalCounterRequest(
+                project_id=projectId,
+                name=name,
+                value=value,
+            ),
+        )
+        self._raiseGlobalCounterReply(reply)
+        return self._toGlobalCounterInfo(getattr(reply, "counter", None))
+
+    def resetGlobalCounter(self, projectId: str, name: str) -> GlobalCounterInfo:
+        reply = self._call(
+            "ResetGlobalCounter",
+            runtime_pb2.ResetGlobalCounterRequest(project_id=projectId, name=name),
+        )
+        self._raiseGlobalCounterReply(reply)
+        return self._toGlobalCounterInfo(getattr(reply, "counter", None))
+
     def loadProject(self, projectPath: str) -> object:
         return self._call(
             "LoadProject", runtime_pb2.LoadProjectRequest(project_path=projectPath)
@@ -520,6 +590,21 @@ class RuntimeClient:
             parentWorkflowRunId=str(getattr(event, "parent_workflow_run_id", "")),
             nodeRunId=str(getattr(event, "node_run_id", "")),
             iterationPath=iterationPath,
+        )
+
+    def _raiseGlobalCounterReply(self, reply: object) -> None:
+        if bool(getattr(reply, "ok", False)):
+            return
+        raise RuntimeClientError(
+            str(getattr(reply, "code", "E_RUNTIME_STATE_UNAVAILABLE")),
+            str(getattr(reply, "message", "global counter request failed")),
+        )
+
+    def _toGlobalCounterInfo(self, counter: object) -> GlobalCounterInfo:
+        return GlobalCounterInfo(
+            name=str(getattr(counter, "name", "")),
+            value=int(getattr(counter, "value", 0)),
+            updatedAtMs=int(getattr(counter, "updated_at_ms", 0)),
         )
 
     def _toStrMap(self, rawValue: object) -> dict[str, str]:

@@ -5,6 +5,15 @@ from pathlib import Path
 import sqlite3
 import time
 
+from emo_master.apps.runtime.context.global_counters import (
+    E_COUNTER_BUSY,
+    E_COUNTER_VALUE_RANGE,
+    MAX_GLOBAL_COUNTER_VALUE,
+    GlobalCounterError,
+    GlobalCounterRecord,
+    validateGlobalCounterName,
+    validateGlobalCounterValue,
+)
 from emo_master.apps.runtime.events.models import RuntimeEvent
 
 
@@ -51,6 +60,16 @@ class SqliteStore:
                     )
                     connection.execute(
                         "INSERT INTO schemaMigrations(version, appliedAt) VALUES (3, ?)",
+                        (_utcNow(),),
+                    )
+                if 4 not in applied:
+                    connection.executescript(
+                        (migrationDir / "004_global_counters.sql").read_text(
+                            encoding="utf-8"
+                        )
+                    )
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (4, ?)",
                         (_utcNow(),),
                     )
                 connection.commit()
@@ -362,6 +381,119 @@ class SqliteStore:
         with self._connect() as connection:
             connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
 
+    def applyGlobalCounter(
+        self,
+        projectId: str,
+        name: str,
+        *,
+        increment: bool = False,
+        reset: bool = False,
+    ) -> GlobalCounterRecord:
+        counterName = validateGlobalCounterName(name)
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = self._connect()
+            connection.execute("BEGIN IMMEDIATE")
+            row = connection.execute(
+                "SELECT value, updatedAtMs FROM globalCounters "
+                "WHERE projectId = ? AND name = ?",
+                (projectId, counterName),
+            ).fetchone()
+            now = _timestampMs()
+            if row is None:
+                value = 0 if reset or not increment else 1
+                connection.execute(
+                    "INSERT INTO globalCounters(projectId, name, value, updatedAtMs) "
+                    "VALUES (?, ?, ?, ?)",
+                    (projectId, counterName, value, now),
+                )
+                updatedAtMs = now
+            else:
+                currentValue = int(row[0])
+                updatedAtMs = int(row[1])
+                if reset:
+                    value = 0
+                elif increment:
+                    if currentValue >= MAX_GLOBAL_COUNTER_VALUE:
+                        raise GlobalCounterError(
+                            E_COUNTER_VALUE_RANGE,
+                            "counter increment would exceed the signed int64 maximum",
+                        )
+                    value = currentValue + 1
+                else:
+                    value = currentValue
+                if reset or increment:
+                    connection.execute(
+                        "UPDATE globalCounters SET value = ?, updatedAtMs = ? "
+                        "WHERE projectId = ? AND name = ?",
+                        (value, now, projectId, counterName),
+                    )
+                    updatedAtMs = now
+            connection.commit()
+            return GlobalCounterRecord(counterName, value, updatedAtMs)
+        except GlobalCounterError:
+            _rollbackQuietly(connection)
+            raise
+        except sqlite3.OperationalError as err:
+            _rollbackQuietly(connection)
+            raise _mapCounterOperationalError(err) from err
+        finally:
+            if connection is not None:
+                connection.close()
+
+    def getGlobalCounter(self, projectId: str, name: str) -> GlobalCounterRecord:
+        return self.applyGlobalCounter(projectId, name)
+
+    def listGlobalCounters(self, projectId: str) -> list[GlobalCounterRecord]:
+        try:
+            with self._connect() as connection:
+                rows = connection.execute(
+                    "SELECT name, value, updatedAtMs FROM globalCounters "
+                    "WHERE projectId = ? ORDER BY name COLLATE BINARY",
+                    (projectId,),
+                ).fetchall()
+        except sqlite3.OperationalError as err:
+            raise _mapCounterOperationalError(err) from err
+        return [
+            GlobalCounterRecord(str(name), int(value), int(updatedAtMs))
+            for name, value, updatedAtMs in rows
+        ]
+
+    def setGlobalCounter(
+        self,
+        projectId: str,
+        name: str,
+        value: int,
+    ) -> GlobalCounterRecord:
+        counterName = validateGlobalCounterName(name)
+        counterValue = validateGlobalCounterValue(value)
+        connection: sqlite3.Connection | None = None
+        try:
+            connection = self._connect()
+            connection.execute("BEGIN IMMEDIATE")
+            updatedAtMs = _timestampMs()
+            connection.execute(
+                """
+                INSERT INTO globalCounters(projectId, name, value, updatedAtMs)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(projectId, name) DO UPDATE SET
+                  value = excluded.value,
+                  updatedAtMs = excluded.updatedAtMs
+                """,
+                (projectId, counterName, counterValue, updatedAtMs),
+            )
+            connection.commit()
+            return GlobalCounterRecord(counterName, counterValue, updatedAtMs)
+        except sqlite3.OperationalError as err:
+            _rollbackQuietly(connection)
+            raise _mapCounterOperationalError(err) from err
+        finally:
+            if connection is not None:
+                connection.close()
+
+    def resetGlobalCounter(self, projectId: str, name: str) -> GlobalCounterRecord:
+        return self.setGlobalCounter(projectId, name, 0)
+
     def vacuumIfNeeded(self, minimumFreeRatio: float = 0.25) -> bool:
         with self._connect() as connection:
             pageRow = connection.execute("PRAGMA page_count").fetchone()
@@ -404,3 +536,22 @@ def _utcNow() -> str:
 
 def _timestampMs() -> int:
     return int(time.time() * 1000)
+
+
+def _rollbackQuietly(connection: sqlite3.Connection | None) -> None:
+    if connection is None:
+        return
+    try:
+        connection.rollback()
+    except sqlite3.Error:
+        pass
+
+
+def _mapCounterOperationalError(error: sqlite3.OperationalError) -> GlobalCounterError:
+    message = str(error)
+    if "locked" in message.casefold() or "busy" in message.casefold():
+        return GlobalCounterError(E_COUNTER_BUSY, "global counter database is busy")
+    return GlobalCounterError(
+        "E_RUNTIME_STATE_UNAVAILABLE",
+        f"global counter state is unavailable: {message}",
+    )

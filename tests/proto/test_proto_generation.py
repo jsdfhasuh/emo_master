@@ -28,3 +28,13 @@ def testOperatorEditorPreviewRpcsAreDeclared() -> None:
   assert "rpc CloseOperatorPreviewSession" in protoText
   assert "string project_id = 4;" in protoText
   assert "string project_id = 2;" in protoText
+
+
+def testGlobalCounterRpcsAreDeclared() -> None:
+  protoText = Path("proto/runtime.proto").read_text(encoding="utf-8")
+  assert "message GlobalCounterInfo" in protoText
+  assert "int64 updated_at_ms = 3;" in protoText
+  assert "rpc ListGlobalCounters" in protoText
+  assert "rpc GetGlobalCounter" in protoText
+  assert "rpc SetGlobalCounter" in protoText
+  assert "rpc ResetGlobalCounter" in protoText

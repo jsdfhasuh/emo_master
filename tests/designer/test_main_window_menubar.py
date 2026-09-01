@@ -41,6 +41,7 @@ def testMainWindowBuildsMenuBarGroups() -> None:
     assert callable(getMenuBarGroups)
     groups = getMenuBarGroups()
     assert groups == ["文件", "运行", "编辑", "视图"]
+    assert "全局计数器…" in window._menuActions
 
 
 def testControlFlowNodesAreNotAddedFromFileMenu() -> None:
@@ -119,3 +120,34 @@ def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
     assert largeSize > smallSize
     assert largeSize >= 14
     assert smallSize >= 13
+
+
+def testGlobalCounterDialogUsesLoadedProjectAndShutsDown() -> None:
+    ensureQApp()
+
+    class Dialog:
+        def __init__(self) -> None:
+            self.projects = []
+            self.shutdownCalls = 0
+
+        def showForProject(self, projectId: str) -> None:
+            self.projects.append(projectId)
+
+        def shutdown(self) -> None:
+            self.shutdownCalls += 1
+
+    class CloseEvent:
+        def accept(self) -> None:
+            self.accepted = True
+
+    dialog = Dialog()
+    window = MainWindow(
+        RuntimeClientStub(),
+        globalCountersDialogFactory=lambda: dialog,
+    )
+    window.loadedProjectPath = "C:/demo"
+
+    assert window.openGlobalCountersDialog() is dialog
+    assert dialog.projects == ["C:/demo"]
+    window.closeEvent(CloseEvent())
+    assert dialog.shutdownCalls == 1

@@ -20,12 +20,13 @@ from emo_master.plugins.builtins.yolo_inference.onnx_backend import OnnxYoloSess
 from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
 
 
-_EXPECTED_MINIMUM_OPERATOR_COUNT = 48
+_EXPECTED_MINIMUM_OPERATOR_COUNT = 49
 _EXPECTED_EDITOR_UI_COUNT = 3
 _EXPECTED_MIGRATIONS = (
     "001_init.sql",
     "002_runtime_workflow.sql",
     "003_runtime_timestamps.sql",
+    "004_global_counters.sql",
 )
 _TINY_YOLO_ONNX = (
     "CAg6qAEKUxIHb3V0cHV0MCIIQ29uc3RhbnQqPgoFdmFsdWUqMggBCAUIAhABSigAAIBAZmaG"
@@ -109,7 +110,7 @@ def _checkMigrations() -> dict[str, object]:
                 )
         finally:
             connection.close()
-    if versions != [1, 2, 3]:
+    if versions != [1, 2, 3, 4]:
         raise RuntimeError(f"unexpected migration versions: {versions}")
     return {
         "files": list(_EXPECTED_MIGRATIONS),

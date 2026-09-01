@@ -5,6 +5,8 @@ from pathlib import Path
 import threading
 
 from emo_master import __version__
+from emo_master.apps.runtime.context.global_counters import ProjectGlobalCounters
+from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
@@ -42,12 +44,18 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             raise ValueError("inputs_json must contain an object")
         token = CancellationToken(cancelEvent)
         publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue)
+        globalCounters = (
+            ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
+            if spec.runtimeDbPath and spec.projectId
+            else None
+        )
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)),
             previewSnapshotStore=PreviewSnapshotWriter(Path(spec.jobWorkspacePath)),
+            globalCounters=globalCounters,
         )
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         context = RunContext.root(

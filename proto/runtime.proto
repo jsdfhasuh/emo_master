@@ -275,6 +275,60 @@ message ListWorkflowsReply {
   repeated WorkflowInfo workflows = 1;
 }
 
+message GlobalCounterInfo {
+  string name = 1;
+  int64 value = 2;
+  int64 updated_at_ms = 3;
+}
+
+message ListGlobalCountersRequest {
+  string project_id = 1;
+}
+
+message ListGlobalCountersReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  repeated GlobalCounterInfo counters = 4;
+}
+
+message GetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+}
+
+message GetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
+message SetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+  int64 value = 3;
+}
+
+message SetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
+message ResetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+}
+
+message ResetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
 service RuntimeService {
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
@@ -294,4 +348,8 @@ service RuntimeService {
   rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
   rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsReply);
+  rpc ListGlobalCounters(ListGlobalCountersRequest) returns (ListGlobalCountersReply);
+  rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
+  rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
+  rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
 }

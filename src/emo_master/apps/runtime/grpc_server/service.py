@@ -14,6 +14,11 @@ from emo_master import __version__
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
 from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.context.global_counters import (
+    E_RUNTIME_STATE_UNAVAILABLE,
+    GlobalCounterError,
+    GlobalCounterRecord,
+)
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
 from emo_master.apps.runtime.jobs.manager import JobManager
@@ -287,6 +292,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 pluginRootPaths=tuple(self.pluginRootPaths),
                 jobWorkspacePath=str(workspacePath),
                 heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
+                runtimeDbPath=str(self.sqliteStore.dbPath),
             )
             try:
                 self.jobManager.start(record, spec)
@@ -778,6 +784,124 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return runtime_pb2.ListWorkflowsReply(workflows=workflows)
 
     @_withProjectStateLock
+    def ListGlobalCounters(self, request, context):  # type: ignore[override]
+        _ = context
+        projectError = self._globalCounterProjectError(
+            str(getattr(request, "project_id", ""))
+        )
+        if projectError is not None:
+            return runtime_pb2.ListGlobalCountersReply(
+                ok=False,
+                code=projectError[0],
+                message=projectError[1],
+            )
+        try:
+            records = self.sqliteStore.listGlobalCounters(self.loadedProjectId)
+        except Exception as err:
+            code, message = _globalCounterFailure(err)
+            return runtime_pb2.ListGlobalCountersReply(
+                ok=False,
+                code=code,
+                message=message,
+            )
+        return runtime_pb2.ListGlobalCountersReply(
+            ok=True,
+            message="ok",
+            counters=[_globalCounterInfo(record) for record in records],
+        )
+
+    @_withProjectStateLock
+    def GetGlobalCounter(self, request, context):  # type: ignore[override]
+        _ = context
+        projectError = self._globalCounterProjectError(
+            str(getattr(request, "project_id", ""))
+        )
+        if projectError is not None:
+            return runtime_pb2.GetGlobalCounterReply(
+                ok=False,
+                code=projectError[0],
+                message=projectError[1],
+            )
+        try:
+            record = self.sqliteStore.getGlobalCounter(
+                self.loadedProjectId,
+                str(getattr(request, "name", "")),
+            )
+        except Exception as err:
+            code, message = _globalCounterFailure(err)
+            return runtime_pb2.GetGlobalCounterReply(
+                ok=False,
+                code=code,
+                message=message,
+            )
+        return runtime_pb2.GetGlobalCounterReply(
+            ok=True,
+            message="ok",
+            counter=_globalCounterInfo(record),
+        )
+
+    @_withProjectStateLock
+    def SetGlobalCounter(self, request, context):  # type: ignore[override]
+        _ = context
+        projectError = self._globalCounterProjectError(
+            str(getattr(request, "project_id", ""))
+        )
+        if projectError is not None:
+            return runtime_pb2.SetGlobalCounterReply(
+                ok=False,
+                code=projectError[0],
+                message=projectError[1],
+            )
+        try:
+            record = self.sqliteStore.setGlobalCounter(
+                self.loadedProjectId,
+                str(getattr(request, "name", "")),
+                int(getattr(request, "value", 0)),
+            )
+        except Exception as err:
+            code, message = _globalCounterFailure(err)
+            return runtime_pb2.SetGlobalCounterReply(
+                ok=False,
+                code=code,
+                message=message,
+            )
+        return runtime_pb2.SetGlobalCounterReply(
+            ok=True,
+            message="ok",
+            counter=_globalCounterInfo(record),
+        )
+
+    @_withProjectStateLock
+    def ResetGlobalCounter(self, request, context):  # type: ignore[override]
+        _ = context
+        projectError = self._globalCounterProjectError(
+            str(getattr(request, "project_id", ""))
+        )
+        if projectError is not None:
+            return runtime_pb2.ResetGlobalCounterReply(
+                ok=False,
+                code=projectError[0],
+                message=projectError[1],
+            )
+        try:
+            record = self.sqliteStore.resetGlobalCounter(
+                self.loadedProjectId,
+                str(getattr(request, "name", "")),
+            )
+        except Exception as err:
+            code, message = _globalCounterFailure(err)
+            return runtime_pb2.ResetGlobalCounterReply(
+                ok=False,
+                code=code,
+                message=message,
+            )
+        return runtime_pb2.ResetGlobalCounterReply(
+            ok=True,
+            message="ok",
+            counter=_globalCounterInfo(record),
+        )
+
+    @_withProjectStateLock
     def close(self) -> None:
         if self._closed:
             return
@@ -967,6 +1091,15 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             str(Path(self.loadedProjectPath or "") / "project.json"),
         }
 
+    def _globalCounterProjectError(self, requested: str) -> tuple[str, str] | None:
+        if (
+            self.loadedDocument is None
+            or requested == ""
+            or not self._projectMatches(requested)
+        ):
+            return "E_PROJECT_NOT_LOADED", "requested project is not loaded"
+        return None
+
     def _validatePreviewNode(
         self,
         requestedProjectId: str,
@@ -1038,4 +1171,21 @@ def _safeIterationPath(value: str) -> tuple[int, ...]:
         item
         for item in parsed
         if isinstance(item, int) and not isinstance(item, bool)
+    )
+
+
+def _globalCounterInfo(record: GlobalCounterRecord):
+    return runtime_pb2.GlobalCounterInfo(
+        name=record.name,
+        value=record.value,
+        updated_at_ms=record.updatedAtMs,
+    )
+
+
+def _globalCounterFailure(error: Exception) -> tuple[str, str]:
+    if isinstance(error, GlobalCounterError):
+        return error.code, str(error)
+    return (
+        E_RUNTIME_STATE_UNAVAILABLE,
+        f"global counter state is unavailable: {error}",
     )

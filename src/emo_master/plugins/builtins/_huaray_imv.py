@@ -211,7 +211,7 @@ class ImvApi:
                 self._dllDirectory = os.add_dll_directory(runtimeDirectory)
             else:  # pragma: no cover - Python 3.10 Windows has add_dll_directory
                 os.environ["PATH"] = runtimeDirectory + os.pathsep + os.environ.get("PATH", "")
-            self.dll = ctypes.WinDLL(str(self.dllPath))
+            self.dll = ctypes.WinDLL(str(self.dllPath))  # type: ignore[attr-defined]
             self._configureFunctions()
         except HuarayCameraError:
             raise

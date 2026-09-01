@@ -1033,7 +1033,9 @@ def _plcWriteSource(
     params: dict[str, object],
 ) -> tuple[str, int, str, list[object]]:
     paramValues = cast(list[object], params.get("values", []))
-    sources = [name for name in ("data", "value", "values") if name in inputs]
+    sources: list[str] = [
+        name for name in ("data", "value", "values") if name in inputs
+    ]
     if paramValues:
         sources.append("params.values")
     if not sources:
@@ -1073,7 +1075,7 @@ def _tcpClientSource(
     params: dict[str, object],
 ) -> bytes:
     paramText = cast(str, params.get("text", ""))
-    sources = [name for name in ("message", "text") if name in inputs]
+    sources: list[str] = [name for name in ("message", "text") if name in inputs]
     if paramText:
         sources.append("params.text")
     if not sources:

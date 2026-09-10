@@ -2,6 +2,8 @@ from __future__ import annotations
 
 
 try:
+    from PySide2.QtCore import Qt
+    from emo_master.apps.designer.ui.icon_map import icon
     from PySide2.QtWidgets import (
         QDialog,
         QFileDialog,
@@ -29,14 +31,12 @@ try:
             self._recentCardMode = "card-list"
             self._actionSectionMode = "card-actions"
             self._recentRemoveMode = "inline-button"
-            self._recentEmptyStateText = (
-                "暂无最近项目\n点击“打开项目”或“新建空白”开始使用"
-            )
+            self._recentEmptyStateText = "暂无最近项目"
             self._visualSectionNames = ["hero", "actions", "recent-projects"]
 
             rootLayout = QVBoxLayout()
-            self._heroTitle = QLabel("开始使用 EmoMaster")
-            self._heroSubtitle = QLabel("打开项目，或从空白项目开始构建视觉流程")
+            self._heroTitle = QLabel("EmoMaster")
+            self._heroSubtitle = QLabel("项目")
             self._heroSection = QWidget()
             setHeroSectionName = getattr(self._heroSection, "setObjectName", None)
             if callable(setHeroSectionName):
@@ -61,6 +61,8 @@ try:
             self._openProjectButton = QPushButton("打开项目")
             self._newBlankButton = QPushButton("新建空白")
             self._cancelButton = QPushButton("取消")
+            self._openProjectButton.setIcon(icon("folder-open", "#ffffff"))
+            self._newBlankButton.setIcon(icon("file-plus-2"))
             setOpenName = getattr(self._openProjectButton, "setObjectName", None)
             if callable(setOpenName):
                 setOpenName("startupPrimaryAction")
@@ -73,7 +75,7 @@ try:
 
             buttonRow.addWidget(self._openProjectButton)
             buttonRow.addWidget(self._newBlankButton)
-            buttonRow.addWidget(self._cancelButton)
+            buttonRow.addStretch(1)
             self._actionSection.setLayout(buttonRow)
             rootLayout.addWidget(self._actionSection)
 
@@ -85,6 +87,7 @@ try:
             self._recentTitle = QLabel("最近项目")
             recentSectionLayout.addWidget(self._recentTitle)
             self._recentList = QListWidget()
+            self._recentList.setTextElideMode(Qt.ElideMiddle)
             setObjectName = getattr(self._recentList, "setObjectName", None)
             if callable(setObjectName):
                 setObjectName("recentProjectsList")
@@ -94,17 +97,16 @@ try:
             recentActionRow = QHBoxLayout()
             self._removeRecentButton = QPushButton("移除选中")
             self._clearRecentButton = QPushButton("清空历史")
+            self._removeRecentButton.setIcon(icon("x"))
+            self._clearRecentButton.setIcon(icon("trash-2"))
             recentActionRow.addWidget(self._removeRecentButton)
             recentActionRow.addWidget(self._clearRecentButton)
+            recentActionRow.addStretch(1)
+            recentActionRow.addWidget(self._cancelButton)
             recentSectionLayout.addLayout(recentActionRow)
             self._recentSection.setLayout(recentSectionLayout)
-            rootLayout.addWidget(self._recentSection)
-
-            host = QWidget()
-            host.setLayout(rootLayout)
-            containerLayout = QVBoxLayout()
-            containerLayout.addWidget(host)
-            self.setLayout(containerLayout)
+            rootLayout.addWidget(self._recentSection, 1)
+            self.setLayout(rootLayout)
 
             self._openProjectButton.clicked.connect(self._onOpenProject)
             self._newBlankButton.clicked.connect(self._onNewBlank)
@@ -124,6 +126,7 @@ try:
                 projectName = str(item.get("projectName", "项目"))
                 projectPath = str(item.get("projectPath", ""))
                 listItem = QListWidgetItem(f"{projectName}\n{projectPath}")
+                listItem.setToolTip(f"{projectName}\n{projectPath}")
                 setData = getattr(listItem, "setData", None)
                 if callable(setData):
                     setData(32, projectPath)
@@ -243,9 +246,7 @@ except Exception:  # pragma: no cover
             self._recentCardMode = "card-list"
             self._actionSectionMode = "card-actions"
             self._recentRemoveMode = "inline-button"
-            self._recentEmptyStateText = (
-                "暂无最近项目\n点击“打开项目”或“新建空白”开始使用"
-            )
+            self._recentEmptyStateText = "暂无最近项目"
             self._visualSectionNames = ["hero", "actions", "recent-projects"]
 
         def execSelection(self) -> tuple[str, str]:

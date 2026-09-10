@@ -30,12 +30,14 @@ try:
     from PySide2.QtWidgets import (
         QDialog,
         QHBoxLayout,
-        QLabel,
         QMessageBox,
         QPushButton,
         QVBoxLayout,
         QWidget,
     )
+    from emo_master.apps.designer.operator_editors.builtin_layout import prepareBuiltinLayout
+    from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
+    from emo_master.apps.designer.ui.icon_map import icon
 
     class OperatorWorkspaceWindow(QDialog):
         def __init__(
@@ -68,7 +70,7 @@ try:
             self.resize(980 if customRoot is not None else 620, 720)
 
             layout = QVBoxLayout()
-            self._statusLabel = QLabel("")
+            self._statusLabel = WrapLabel("")
             self._statusLabel.setObjectName("operatorEditorStatus")
             layout.addWidget(self._statusLabel)
             if fallbackReason:
@@ -76,7 +78,9 @@ try:
                 self._statusLabel.setStyleSheet("color: #d18b32;")
 
             if customRoot is not None and controller is not None:
+                prepareBuiltinLayout(cast(QWidget, customRoot), context.operatorId)
                 layout.addWidget(cast(QWidget, customRoot))
+                layout.setStretch(layout.count() - 1, 1)
                 controller.bind(customRoot, context)
                 controller.loadParams(dict(values))
             else:
@@ -84,11 +88,13 @@ try:
                 form.setWorkflowOptions(context.workflowOptions)
                 form.setSchema(schema, values)
                 self._schemaForm = form
-                layout.addWidget(form)
+                layout.addWidget(scrollContent(form), 1)
 
             buttons = QHBoxLayout()
             buttons.addStretch(1)
             self._applyButton = QPushButton("应用")
+            self._applyButton.setObjectName("primaryButton")
+            self._applyButton.setIcon(icon("save", "#ffffff"))
             self._closeButton = QPushButton("关闭")
             buttons.addWidget(self._applyButton)
             buttons.addWidget(self._closeButton)

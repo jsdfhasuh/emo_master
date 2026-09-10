@@ -3,15 +3,14 @@ from __future__ import annotations
 import json
 from typing import Callable
 
-from emo_master.apps.designer.ui.icon_map import getOperatorGlyph
 
 
 CreateHandler = Callable[[dict[str, object]], None]
 
 
 try:
-    from PySide2.QtCore import QByteArray, QEvent, QMimeData, QPoint, Qt
-    from PySide2.QtGui import QDrag
+    from PySide2.QtCore import QByteArray, QEvent, QMimeData, QPoint, QSize, Qt
+    from PySide2.QtGui import QColor, QDrag, QPainter
     from PySide2.QtWidgets import (
         QApplication,
         QGridLayout,
@@ -19,7 +18,11 @@ try:
         QPushButton,
         QVBoxLayout,
         QWidget,
+        QStyle, QStyleOptionButton, QSizePolicy,
     )
+    from emo_master.apps.designer.ui.icon_map import operatorIcon
+    from emo_master.apps.designer.ui.theme import uiFont
+    from emo_master.apps.designer.ui.widgets import scrollContent
 
     OPERATOR_MIME_TYPE = "application/x-emo-operator"
 
@@ -28,14 +31,41 @@ try:
             displayName = str(payload.get("displayName", ""))
             iconKey = str(payload.get("iconKey", "default"))
             operatorId = str(payload.get("operatorId", ""))
-            super().__init__(
-                f"{getOperatorGlyph(iconKey)}  {displayName}\n{operatorId}"
-            )
+            super().__init__(displayName)
+            self._displayName = displayName
+            self._operatorId = operatorId
+            self._icon = operatorIcon(iconKey)
+            self.setAccessibleName(displayName)
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
             self.payload = payload
             self._dragStartPos: QPoint | None = None
             self._dragStarted = False
             self.setObjectName(_getCardObjectName(str(payload.get("category", "其他"))))
             self.setToolTip(_buildTooltip(payload))
+
+        def sizeHint(self):
+            return QSize(240, max(72, self.fontMetrics().height() * 2 + 30))
+
+        def minimumSizeHint(self):
+            return QSize(140, self.sizeHint().height())
+
+        def paintEvent(self, event):
+            option = QStyleOptionButton()
+            self.initStyleOption(option)
+            option.text = ""
+            painter = QPainter(self)
+            self.style().drawControl(QStyle.CE_PushButton, option, painter, self)
+            self._icon.paint(painter, 12, 12, 20, 20)
+            painter.setFont(uiFont(bold=True))
+            painter.setPen(QColor("#20242b"))
+            fm = painter.fontMetrics()
+            title = fm.elidedText(self._displayName, Qt.ElideRight, max(0, self.width() - 52))
+            painter.drawText(42, 12 + fm.ascent(), title)
+            painter.setFont(uiFont(points=10.0))
+            painter.setPen(QColor("#626b78"))
+            fm = painter.fontMetrics()
+            subtitle = fm.elidedText(self._operatorId, Qt.ElideRight, max(0, self.width() - 24))
+            painter.drawText(12, self.height() - 14 - fm.descent(), subtitle)
 
         def mousePressEvent(self, event) -> None:  # type: ignore[override]
             self._dragStartPos = event.pos()
@@ -90,6 +120,8 @@ try:
             self._grid = QGridLayout()
             self._grid.setContentsMargins(8, 8, 8, 8)
             self._grid.setSpacing(8)
+            self._grid.setAlignment(Qt.AlignTop)
+            self._columns = 2
 
             self.searchInput = QLineEdit()
             self.searchInput.setPlaceholderText("搜索节点（名称/ID）")
@@ -98,8 +130,13 @@ try:
 
             rootLayout = QVBoxLayout()
             rootLayout.addWidget(self.searchInput)
-            rootLayout.addLayout(self._grid)
+            gridHost = QWidget()
+            gridHost.setLayout(self._grid)
+            self._scroll = scrollContent(gridHost)
+            rootLayout.addWidget(self._scroll, 1)
             self.setLayout(rootLayout)
+            self.resize(560, 420)
+            self.setMinimumSize(300, 180)
             self.setObjectName("operatorBubble")
             application = QApplication.instance()
             if application is not None:
@@ -144,6 +181,13 @@ try:
                     pointX = getattr(point, "x", lambda: 0)()
                     pointY = getattr(point, "y", lambda: 0)()
                     self._lastPopupPoint = (int(pointX), int(pointY))
+            screen = self.screen()
+            if screen is not None:
+                area = screen.availableGeometry().adjusted(12, 12, -12, -12)
+                self.resize(min(self.width(), area.width()), min(self.height(), area.height()))
+                self.move(max(area.left(), min(self.x(), area.right() - self.width() + 1)),
+                          max(area.top(), min(self.y(), area.bottom() - self.height() + 1)))
+                self._lastPopupPoint = (self.x(), self.y())
             self.show()
             self.raise_()
             self.activateWindow()
@@ -194,10 +238,19 @@ try:
                 button.clicked.connect(
                     lambda checked=False, current=payload: self._create(current)
                 )
-                row = index // 2
-                col = index % 2
+                row = index // self._columns
+                col = index % self._columns
                 self._grid.addWidget(button, row, col)
                 self._buttons.append(button)
+
+        def resizeEvent(self, event):
+            super().resizeEvent(event)
+            columns = 2 if self.width() >= 500 else 1
+            if columns != self._columns:
+                self._columns = columns
+                for index, button in enumerate(self._buttons):
+                    self._grid.removeWidget(button)
+                    self._grid.addWidget(button, index // columns, index % columns)
 
         def _filterAndSortOperators(self) -> list[dict[str, object]]:
             filtered: list[dict[str, object]] = []
@@ -246,7 +299,7 @@ try:
         summary = str(payload.get("summary", ""))
         category = str(payload.get("category", ""))
         version = str(payload.get("version", ""))
-        lines = [displayName]
+        lines = [displayName, str(payload.get("operatorId", ""))]
         if summary != "":
             lines.append(summary)
         extra = []

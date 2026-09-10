@@ -63,7 +63,9 @@ def testCanvasViewNodeRegionDoesNotStartPanMode() -> None:
     )
     beginPanAt = getattr(window.flowView, "beginPanAt", None)
     assert callable(beginPanAt)
-    assert beginPanAt(80.0, 100.0) is False
+    from PySide2.QtCore import QPointF
+    point = window.flowView.mapFromScene(QPointF(80.0, 100.0))
+    assert beginPanAt(float(point.x()), float(point.y())) is False
 
 
 def testMainWindowUsesDesignerGraphicsView() -> None:

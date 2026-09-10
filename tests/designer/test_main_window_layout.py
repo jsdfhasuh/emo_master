@@ -104,8 +104,8 @@ def testMainWindowUsesCompactCategoryLabelsAndRightSections() -> None:
     assert isinstance(labels, dict)
     assert "全部" in labels
     assert "控制流" in labels
-    assert labels["全部"].startswith("◌")
-    assert labels["输出"].startswith("⬒")
+    assert labels["全部"] == "全部"
+    assert labels["输出"] == "输出"
 
     getRightPanelSections = getattr(window, "getRightPanelSections", None)
     assert callable(getRightPanelSections)
@@ -142,7 +142,8 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
 
     restoredWindow = MainWindow(RuntimeClientStub(), settingsStore=settings)
     restoredSizes = restoredWindow.getMainSplitterSizes()
-    assert restoredSizes == [260, 900, 360]
+    assert restoredSizes[0] == 36
+    assert restoredWindow.layoutController._expandedSplitterSizes == [260, 900, 360]
 
 
 def testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth() -> None:
@@ -151,7 +152,7 @@ def testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth() -> None:
     getPanelConstraints = getattr(window, "getPanelConstraints", None)
     assert callable(getPanelConstraints)
     constraints = getPanelConstraints()
-    assert constraints["rightPanelMinWidth"] == 300
+    assert constraints["rightPanelMinWidth"] == 260
     assert constraints["rightPanelDefaultWidth"] in [320, 340]
 
 

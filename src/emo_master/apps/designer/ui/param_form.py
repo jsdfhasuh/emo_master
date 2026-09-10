@@ -75,7 +75,11 @@ try:
             self._filterText = filterText if filterText != "" else "所有文件 (*.*)"
             self._lineEdit = QLineEdit()
             self._lineEdit.setText(initialPath)
-            self._browseButton = QPushButton("浏览...")
+            from emo_master.apps.designer.ui.icon_map import icon
+            self._browseButton = QPushButton()
+            self._browseButton.setIcon(icon("folder-open"))
+            self._browseButton.setToolTip("选择文件")
+            self._browseButton.setFixedWidth(34)
             self._browseButton.clicked.connect(self._onBrowseClicked)
 
             layout = QHBoxLayout()
@@ -104,6 +108,11 @@ try:
         def __init__(self) -> None:
             super().__init__()
             self._layout = QFormLayout()
+            self._layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
+            self._layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            self._layout.setContentsMargins(8, 8, 8, 8)
+            self._layout.setHorizontalSpacing(12)
+            self._layout.setVerticalSpacing(10)
             self.setLayout(self._layout)
             self._controls: dict[str, QWidget] = {}
             self._fieldsByName: dict[str, FieldDefinition] = {}
@@ -136,7 +145,10 @@ try:
                 control = self._createControl(field, valuesWithDefaults)
                 self._controls[field.name] = control
                 self._fieldsByName[field.name] = field
-                self._layout.addRow(QLabel(labelText), control)
+                from emo_master.apps.designer.ui.widgets import WrapLabel
+                label = WrapLabel(labelText)
+                label.setToolTip(labelText)
+                self._layout.addRow(label, control)
 
             if len(self._controls) == 0:
                 tip = QLabel("No schema fields")

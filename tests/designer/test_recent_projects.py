@@ -162,7 +162,7 @@ def testRecentProjectsExposeHomepageCardMode() -> None:
     assert getRecentCardMode() == "card-list"
 
 
-def testRecentProjectsShowEmptyStateGuidance() -> None:
+def testRecentProjectsShowEmptyStateAndKeepProjectActions() -> None:
     from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
     ensureQApp()
@@ -172,7 +172,9 @@ def testRecentProjectsShowEmptyStateGuidance() -> None:
     assert callable(getRecentEmptyStateText)
     emptyState = getRecentEmptyStateText()
     assert "暂无最近项目" in emptyState
-    assert "打开项目" in emptyState
+    assert dialog._openProjectButton.text() == "打开项目"
+    assert dialog._openProjectButton.isEnabled()
+    assert dialog._newBlankButton.isEnabled()
 
 
 def testRecentProjectsExposeInlineRemoveMode() -> None:

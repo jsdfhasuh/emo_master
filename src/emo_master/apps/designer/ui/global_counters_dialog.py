@@ -25,7 +25,6 @@ try:
         QHBoxLayout,
         QHeaderView,
         QInputDialog,
-        QLabel,
         QLineEdit,
         QMessageBox,
         QPushButton,
@@ -33,6 +32,8 @@ try:
         QTableWidgetItem,
         QVBoxLayout,
     )
+    from emo_master.apps.designer.ui.widgets import ElidedLabel, WrapLabel
+    from emo_master.apps.designer.ui.icon_map import icon
 
     class GlobalCountersDialog(QDialog):
         def __init__(self, runtimeClient, parent=None) -> None:
@@ -54,7 +55,7 @@ try:
                 setAttribute(Qt.WA_DeleteOnClose, False)
 
             rootLayout = QVBoxLayout()
-            self._projectLabel = QLabel("当前项目：未加载")
+            self._projectLabel = ElidedLabel("当前项目：未加载")
             rootLayout.addWidget(self._projectLabel)
 
             self._table = QTableWidget(0, 3)
@@ -62,13 +63,16 @@ try:
             self._table.setSelectionBehavior(QAbstractItemView.SelectRows)
             self._table.setSelectionMode(QAbstractItemView.SingleSelection)
             self._table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            self._table.setAlternatingRowColors(True)
+            self._table.verticalHeader().setVisible(False)
+            self._table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
             header = self._table.horizontalHeader()
             header.setSectionResizeMode(0, QHeaderView.Stretch)
             header.setSectionResizeMode(1, QHeaderView.ResizeToContents)
             header.setSectionResizeMode(2, QHeaderView.ResizeToContents)
             rootLayout.addWidget(self._table)
 
-            self._statusLabel = QLabel("就绪")
+            self._statusLabel = WrapLabel("就绪")
             rootLayout.addWidget(self._statusLabel)
 
             buttonRow = QHBoxLayout()
@@ -77,6 +81,8 @@ try:
             self._resetButton = QPushButton("清零")
             self._refreshButton = QPushButton("刷新")
             self._closeButton = QPushButton("关闭")
+            self._newButton.setIcon(icon("plus"))
+            self._refreshButton.setIcon(icon("refresh-cw"))
             for button in (
                 self._newButton,
                 self._setButton,

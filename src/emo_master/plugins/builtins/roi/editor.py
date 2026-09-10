@@ -33,7 +33,7 @@ class _RoiCanvas(QWidget):
         self._panStart = None
         self._pan = QPointF(0.0, 0.0)
         self._zoom = 1.0
-        self.setMinimumSize(640, 360)
+        self.setMinimumSize(240, 180)
         self.setMouseTracking(True)
 
     def setImageBytes(self, content: bytes) -> None:
@@ -109,9 +109,9 @@ class _RoiCanvas(QWidget):
     def paintEvent(self, event) -> None:  # type: ignore[override]
         _ = event
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#171a20"))
+        painter.fillRect(self.rect(), QColor("#f0f2f5"))
         if self._image.isNull():
-            painter.setPen(QColor("#a8afbd"))
+            painter.setPen(QColor("#626b78"))
             painter.drawText(self.rect(), Qt.AlignCenter, "请选择图源")
             return
         scale, origin = self._transform()

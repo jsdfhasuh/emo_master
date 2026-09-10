@@ -18,7 +18,7 @@ class _HistogramChart(QWidget):
     def __init__(self) -> None:
         super().__init__()
         self._histogram: dict[str, object] = {}
-        self.setMinimumSize(640, 300)
+        self.setMinimumSize(240, 160)
 
     def setHistogram(self, histogram: dict[str, object]) -> None:
         self._histogram = dict(histogram)
@@ -27,7 +27,7 @@ class _HistogramChart(QWidget):
     def paintEvent(self, event) -> None:  # type: ignore[override]
         _ = event
         painter = QPainter(self)
-        painter.fillRect(self.rect(), QColor("#171a20"))
+        painter.fillRect(self.rect(), QColor("#ffffff"))
         margin = 28.0
         width = max(1.0, self.width() - margin * 2)
         height = max(1.0, self.height() - margin * 2)
@@ -36,7 +36,7 @@ class _HistogramChart(QWidget):
         painter.drawLine(QPointF(margin, margin + height), QPointF(margin + width, margin + height))
         channels = self._histogram.get("channels", [])
         if not isinstance(channels, list) or not channels:
-            painter.setPen(QColor("#a8afbd"))
+            painter.setPen(QColor("#626b78"))
             painter.drawText(self.rect(), Qt.AlignCenter, "空选区 / 无直方图数据")
             return
         valuesByChannel = []
@@ -52,14 +52,14 @@ class _HistogramChart(QWidget):
                 maximum = max(maximum, max(numeric))
                 valuesByChannel.append((str(channel.get("name", "GRAY")), numeric))
         if not valuesByChannel or maximum <= 0:
-            painter.setPen(QColor("#a8afbd"))
+            painter.setPen(QColor("#626b78"))
             painter.drawText(self.rect(), Qt.AlignCenter, "空选区 / 全零直方图")
             return
         colors = {
             "B": QColor("#3293ff"),
             "G": QColor("#42d477"),
             "R": QColor("#ff5252"),
-            "GRAY": QColor("#d4d7de"),
+            "GRAY": QColor("#475569"),
         }
         painter.setRenderHint(QPainter.Antialiasing, True)
         for name, values in valuesByChannel:
@@ -72,7 +72,7 @@ class _HistogramChart(QWidget):
                     path.moveTo(x, y)
                 else:
                     path.lineTo(x, y)
-            painter.setPen(QPen(colors.get(name, QColor("#d4d7de")), 1.5))
+            painter.setPen(QPen(colors.get(name, QColor("#475569")), 1.5))
             painter.drawPath(path)
 
 

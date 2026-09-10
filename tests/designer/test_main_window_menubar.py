@@ -104,7 +104,7 @@ def testRecentProjectsMenuCanOpenProject(tmp_path: Path) -> None:
     assert openRecentProject(projectFile.as_posix()) is True
 
 
-def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
+def testMenuBarFontSizeIsStableAcrossWindowWidths() -> None:
     ensureQApp()
     window = MainWindow(RuntimeClientStub())
     getMenuBarFontSize = getattr(window, "getMenuBarFontSize", None)
@@ -117,7 +117,7 @@ def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
     window.applyResponsiveLayout()
 
     largeSize = getMenuBarFontSize()
-    assert largeSize > smallSize
+    assert largeSize == smallSize
     assert largeSize >= 14
     assert smallSize >= 13
 

@@ -27,6 +27,10 @@ def setImageLabel(label: QLabel, content: bytes, fallbackText: str = "图像不�
         label.setText(fallbackText)
         return
     pixmap = QPixmap.fromImage(image)
+    from emo_master.apps.designer.ui.widgets import PreviewLabel
+    if isinstance(label, PreviewLabel):
+        label.setPixmap(pixmap)
+        return
     target = label.size()
     if target.width() > 1 and target.height() > 1:
         pixmap = pixmap.scaled(

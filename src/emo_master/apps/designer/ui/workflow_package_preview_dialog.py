@@ -86,7 +86,10 @@ try:
         QTreeWidget,
         QTreeWidgetItem,
         QVBoxLayout,
+        QWidget,
     )
+    from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
+    from emo_master.apps.designer.ui.icon_map import icon
 
     class WorkflowPackagePreviewDialog(QDialog):
         def __init__(
@@ -109,14 +112,14 @@ try:
             rootWorkflow = next(
                 workflow for workflow in preview.workflows if workflow.isRoot
             )
-            self._summaryLabel = QLabel(
+            self._summaryLabel = WrapLabel(
                 f"根工作流：{rootWorkflow.name} ({preview.rootWorkflowId}) | "
                 f"包含 {len(preview.workflows)} 个工作流"
             )
             self._summaryLabel.setObjectName("workflowPackageSummary")
             rootLayout.addWidget(self._summaryLabel)
 
-            self._warningLabel = QLabel(_warningText(preview))
+            self._warningLabel = WrapLabel(_warningText(preview))
             self._warningLabel.setObjectName("workflowPackageWarnings")
             setWordWrap = getattr(self._warningLabel, "setWordWrap", None)
             if callable(setWordWrap):
@@ -159,6 +162,18 @@ try:
             )
             rootLayout.addWidget(self._externalPathList)
 
+            for view in (self._workflowTree, self._dependencyList, self._conflictList,
+                         self._operatorList, self._externalPathList):
+                view.setMinimumHeight(self.fontMetrics().height() * 3 + 12)
+                view.setMaximumHeight(self.fontMetrics().height() * 5 + 12)
+                if isinstance(view, QListWidget):
+                    for index in range(view.count()):
+                        view.item(index).setToolTip(view.item(index).text())
+            body = QWidget()
+            body.setLayout(rootLayout)
+            rootLayout = QVBoxLayout()
+            rootLayout.addWidget(scrollContent(body), 1)
+
             self._insertSubflowCheckBox = QCheckBox(
                 "导入后在目标工作流插入 Subflow 调用节点"
             )
@@ -170,9 +185,11 @@ try:
 
             buttonRow = QHBoxLayout()
             self._importButton = QPushButton("导入")
+            self._importButton.setIcon(icon("upload", "#ffffff"))
             self._cancelButton = QPushButton("取消")
             self._importButton.setObjectName("workflowPackageImportButton")
             self._cancelButton.setObjectName("workflowPackageCancelButton")
+            buttonRow.addStretch(1)
             buttonRow.addWidget(self._importButton)
             buttonRow.addWidget(self._cancelButton)
             rootLayout.addLayout(buttonRow)

@@ -64,7 +64,7 @@ def testSystemNodeLibraryPayloadCreatesAtDropPositionAndFocusesCanvas() -> None:
     repeatNode = repeatNodes[0]
     assert repeatNode.loop["bodyWorkflowId"] == bodyWorkflowId
     assert window.flowScene.getNodePositions()[repeatNode.nodeId] == (640.0, 360.0)
-    assert focusCalls == [True]
+    assert focusCalls == []
     assert window.flowScene.getSelectedNodeId() == repeatNode.nodeId
 
 

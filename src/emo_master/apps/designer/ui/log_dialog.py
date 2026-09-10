@@ -109,6 +109,7 @@ try:
         QDialog,
         QDockWidget,
         QHBoxLayout,
+        QGridLayout,
         QLabel,
         QLineEdit,
         QPushButton,
@@ -118,7 +119,9 @@ try:
         QTextEdit,
         QVBoxLayout,
         QWidget,
+        QSizePolicy,
     )
+    from emo_master.apps.designer.ui.icon_map import icon
 
     class StructuredLogView(QWidget):
         columns = ("时间", "级别", "来源", "Job", "工作流", "节点", "迭代", "事件", "错误码", "消息")
@@ -138,7 +141,7 @@ try:
             self._pendingEntries: list[StructuredLogEntry] = []
             self._pendingEvicted: list[StructuredLogEntry] = []
             root = QVBoxLayout()
-            filters = QHBoxLayout()
+            filters = QGridLayout()
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
             self.sourceFilter = _combo(("全部", "runtime", "designer", "editor"))
             self.jobFilter = _combo(("全部",))
@@ -148,17 +151,21 @@ try:
             self.searchInput.setPlaceholderText("搜索日志")
             self.autoScrollCheck = QCheckBox("自动滚动")
             self.autoScrollCheck.setChecked(True)
-            for label, widget in (
+            for index, (label, widget) in enumerate((
                 ("等级", self.levelFilter),
                 ("来源", self.sourceFilter),
                 ("Job", self.jobFilter),
                 ("节点", self.nodeFilter),
                 ("事件", self.eventTypeFilter),
-            ):
-                filters.addWidget(QLabel(label))
-                filters.addWidget(widget)
-            filters.addWidget(self.searchInput, 1)
-            filters.addWidget(self.autoScrollCheck)
+            )):
+                widget.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+                widget.setMinimumContentsLength(6)
+                widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+                row, column = divmod(index, 3)
+                filters.addWidget(QLabel(label), row, column * 2)
+                filters.addWidget(widget, row, column * 2 + 1)
+            self.searchInput.setMinimumWidth(80)
+            filters.addWidget(self.searchInput, 1, 4, 1, 2)
             root.addLayout(filters)
 
             self.table = QTableWidget(0, len(self.columns))
@@ -168,7 +175,14 @@ try:
             self.table.setSelectionMode(QAbstractItemView.SingleSelection)
             self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
             self.table.verticalHeader().setVisible(False)
-            self.table.horizontalHeader().setStretchLastSection(True)
+            header = self.table.horizontalHeader()
+            header.setStretchLastSection(False)
+            header.setSectionsMovable(True)
+            header.moveSection(header.visualIndex(9), 3)
+            for column, width in enumerate((128, 64, 88, 120, 100, 100, 64, 100, 96, 360)):
+                self.table.setColumnWidth(column, width)
+            self.table.setAlternatingRowColors(True)
+            self.table.verticalHeader().setDefaultSectionSize(self.fontMetrics().height() + 14)
             self.detailViewer = QTextEdit()
             self.detailViewer.setObjectName("runtimeLogDetails")
             self.detailViewer.setReadOnly(True)
@@ -180,6 +194,8 @@ try:
             root.addWidget(splitter)
             actions = QHBoxLayout()
             self.clearButton = QPushButton("清空视图")
+            self.clearButton.setIcon(icon("trash-2"))
+            actions.addWidget(self.autoScrollCheck)
             actions.addStretch(1)
             actions.addWidget(self.clearButton)
             root.addLayout(actions)
@@ -358,7 +374,9 @@ try:
                 entry.message,
             )
             for column, value in enumerate(values):
-                self.table.setItem(row, column, QTableWidgetItem(value))
+                item = QTableWidgetItem(value)
+                item.setToolTip(value)
+                self.table.setItem(row, column, item)
 
         def _matches(self, entry: StructuredLogEntry) -> bool:
             for combo, value in (

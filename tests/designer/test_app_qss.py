@@ -2,34 +2,27 @@ from pathlib import Path
 
 
 def readAppQss() -> str:
-  return Path("src/emo_master/apps/designer/ui/styles/app.qss").read_text(
-    encoding="utf-8"
-  )
+    return Path("src/emo_master/apps/designer/ui/styles/app.qss").read_text(encoding="utf-8")
 
 
-def testAppQssUsesIndustrialMenuAndControlStyling() -> None:
-  qss = readAppQss()
-  assert "QMenuBar {" in qss
-  assert "background: #41403b;" in qss
-  assert "QMenu {" in qss
-  assert "background: #41403b;" in qss
-  assert "QLineEdit {" in qss or "QLineEdit," in qss
-  assert "background: #ffffff;" in qss
-  assert "QPushButton#secondaryButton," in qss or "QPushButton#secondaryButton {" in qss
-  assert "background: #f7f6f6;" in qss
+def testAppQssUsesLightWorkstationPalette() -> None:
+    qss = readAppQss()
+    assert "background: #ffffff" in qss
+    assert "#2563eb" in qss
+    assert "#f68656" not in qss
+    assert "qlineargradient" not in qss
+    assert "min-width: 96px" not in qss
 
 
-def testAppQssUsesDpiAwareFontsAndReadableWorkflowTabs() -> None:
-  qss = readAppQss()
-  assert 'font-size: 10pt;' in qss
-  assert "QTabWidget#workflowTabs QTabBar::tab {" in qss
-  assert "min-height: 26px;" in qss
-  assert "padding: 8px 14px;" in qss
+def testAppQssHighlightsSelectedWorkflowTab() -> None:
+    qss = readAppQss()
+    selected = qss.split("QTabWidget#workflowTabs QTabBar::tab:selected", 1)[1].split("}", 1)[0]
+    assert "font-weight: 600" in selected
+    assert "border-bottom-color: #2563eb" in selected
 
 
-def testAppQssStylesWorkflowPackagePreviewHierarchy() -> None:
-  qss = readAppQss()
-  assert "QLabel#workflowPackageSummary" in qss
-  assert "QLabel#workflowPackageWarnings" in qss
-  assert "QTreeWidget#workflowPackageWorkflowTree" in qss
-  assert "QPushButton#workflowPackageCancelButton" in qss
+def testAppQssIncludesOfflineControlIconsAndWarningStates() -> None:
+    qss = readAppQss()
+    assert "QLabel#workflowPackageWarnings" in qss
+    assert "url(:/designer/chevron-down.svg)" in qss
+    assert "QToolButton#primaryButton:disabled" in qss

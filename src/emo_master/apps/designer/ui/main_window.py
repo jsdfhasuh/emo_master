@@ -42,7 +42,7 @@ from emo_master.apps.designer.ui.workflow_package_preview_dialog import (
 )
 
 try:
-    from PySide2.QtCore import QSettings, Qt
+    from PySide2.QtCore import QPointF, QSettings, QSize, QTimer, Qt
     from PySide2.QtGui import QKeySequence, QPixmap
     from PySide2.QtWidgets import (
         QAction,
@@ -64,14 +64,20 @@ try:
         QTabWidget,
         QTextEdit,
         QToolBar,
+        QToolButton,
         QTreeWidget,
         QTreeWidgetItem,
         QVBoxLayout,
         QWidget,
     )
+    from emo_master.apps.designer.ui.icon_map import icon
+    from emo_master.apps.designer.ui.widgets import ElidedLabel, PreviewLabel, WorkflowTabs, WrapLabel, scrollContent
+    from emo_master.apps.designer.ui.theme import fitWindowToScreen
 
+    _nativeQt = True
     _userRole = int(Qt.UserRole)
 except Exception:  # pragma: no cover
+    _nativeQt = False
 
     class Qt:  # type: ignore[no-redef]
         AlignCenter = 0
@@ -765,10 +771,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._lastRunBlockedReason = ""
         self._addWorkflowTabIndex = -1
         self._menuActions: dict[str, QAction] = {}
+        self._toolbarActions: dict[str, QAction] = {}
+        self._focusedWorkflowId: tuple[str, str] | None = None
+        self._workflowViewStates: dict[tuple[str, str], tuple[float, QPointF]] = {}
         self.setWindowTitle("视觉流程设计器")
         self.resize(1200, 760)
 
         self.mainToolbar = QToolBar("主工具栏")
+        if _nativeQt:
+            self.mainToolbar.setIconSize(QSize(18, 18))
         setMovable = getattr(self.mainToolbar, "setMovable", None)
         if callable(setMovable):
             setMovable(False)
@@ -801,6 +812,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setToggleName):
             setToggleName("sidebarToggleButton")
         self.sidebarToggleButton.clicked.connect(self.toggleSidebar)
+        if _nativeQt:
+            self.sidebarToggleButton.setFixedHeight(34)
+            self.sidebarToggleButton.setIconSize(QSize(18, 18))
         sideBarLayout.addWidget(self.sidebarToggleButton)
 
         self.categoryPanel = QWidget()
@@ -829,9 +843,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if callable(setCategoryRowSpacing):
                 setCategoryRowSpacing(6)
             for categoryName in categoryNames[rowStart : rowStart + 2]:
-                categoryButton = QPushButton(
-                    f"{self._getCategoryGlyph(categoryName)} {categoryName}"
-                )
+                categoryButton = QPushButton(categoryName)
+                if _nativeQt:
+                    categoryButton.setIcon(icon({"全部": "layout-grid", "预处理": "sliders-horizontal",
+                                                 "检测": "scan-line", "测量": "ruler", "输出": "upload",
+                                                 "控制流": "git-branch"}.get(categoryName, "layout-grid")))
                 setCategoryName = getattr(categoryButton, "setObjectName", None)
                 if callable(setCategoryName):
                     setCategoryName("sideCategoryButton")
@@ -926,7 +942,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         addSidebarStretch = getattr(sideBarLayout, "addStretch", None)
         if callable(addSidebarStretch):
             addSidebarStretch(1)
-        self.sidebarContainer.setLayout(sideBarLayout)
+        if _nativeQt:
+            sideBarLayout.removeWidget(self.sidebarToggleButton)
+            sidebarBody = QWidget()
+            sidebarBody.setLayout(sideBarLayout)
+            sidebarOuter = QVBoxLayout(self.sidebarContainer)
+            sidebarOuter.setContentsMargins(0, 0, 0, 0)
+            sidebarOuter.addWidget(self.sidebarToggleButton)
+            self.sidebarScroll = scrollContent(sidebarBody)
+            sidebarOuter.addWidget(self.sidebarScroll, 1)
+        else:
+            self.sidebarContainer.setLayout(sideBarLayout)
 
         self.canvasPanel = QWidget()
         leftPanel = QVBoxLayout()
@@ -936,8 +962,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         setCanvasSpacing = getattr(leftPanel, "setSpacing", None)
         if callable(setCanvasSpacing):
             setCanvasSpacing(8)
-        leftPanel.addWidget(QLabel("流程画布"))
-        self.workflowTabs = QTabWidget()
+        self.workflowTabs = WorkflowTabs() if _nativeQt else QTabWidget()
         setWorkflowTabsName = getattr(self.workflowTabs, "setObjectName", None)
         if callable(setWorkflowTabsName):
             setWorkflowTabsName("workflowTabs")
@@ -963,6 +988,32 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setAcceptDrops):
             setAcceptDrops(True)
         leftPanel.addWidget(self.flowView)
+        if _nativeQt:
+            leftPanel.setStretch(leftPanel.indexOf(self.flowView), 1)
+            canvasTools = QHBoxLayout()
+            canvasTools.setContentsMargins(0, 0, 0, 0)
+            canvasTools.addStretch(1)
+            self.zoomOutButton = QToolButton()
+            self.zoomOutButton.setIcon(icon("minus"))
+            self.zoomOutButton.setToolTip("缩小")
+            self.zoomOutButton.clicked.connect(lambda: self.flowView.zoomByDelta(-1))
+            self.zoomResetButton = QToolButton()
+            self.zoomResetButton.setText("100%")
+            self.zoomResetButton.setFixedWidth(64)
+            self.zoomResetButton.setToolTip("恢复 100%")
+            self.zoomResetButton.clicked.connect(lambda: self.flowView.setZoomFactor(1.0))
+            self.zoomInButton = QToolButton()
+            self.zoomInButton.setIcon(icon("plus"))
+            self.zoomInButton.setToolTip("放大")
+            self.zoomInButton.clicked.connect(lambda: self.flowView.zoomByDelta(1))
+            self.fitCanvasButton = QToolButton()
+            self.fitCanvasButton.setIcon(icon("maximize"))
+            self.fitCanvasButton.setToolTip("适应画布")
+            self.fitCanvasButton.clicked.connect(self.focusGraphContent)
+            for tool in (self.zoomOutButton, self.zoomResetButton, self.zoomInButton, self.fitCanvasButton):
+                canvasTools.addWidget(tool)
+            self.flowView.zoomChanged.connect(lambda value: self.zoomResetButton.setText(f"{value:.0%}"))
+            leftPanel.addLayout(canvasTools)
         self.canvasPanel.setLayout(leftPanel)
 
         self.autoLayoutButton = QPushButton("自动布局")
@@ -1013,7 +1064,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         summaryLayout = QVBoxLayout()
         setSummaryMargins = getattr(summaryLayout, "setContentsMargins", None)
         if callable(setSummaryMargins):
-            setSummaryMargins(0, 0, 0, 0)
+            setSummaryMargins(12, 4, 12, 10)
         setSummarySpacing = getattr(summaryLayout, "setSpacing", None)
         if callable(setSummarySpacing):
             setSummarySpacing(6)
@@ -1029,7 +1080,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setStatusCardName("statusCard")
         summaryLayout.addWidget(self.jobStatusCard)
 
-        self.jobMessageCard = QLabel("消息：-")
+        self.jobMessageCard = ElidedLabel("消息：-") if _nativeQt else QLabel("消息：-")
         setMessageCardName = getattr(self.jobMessageCard, "setObjectName", None)
         if callable(setMessageCardName):
             setMessageCardName("statusCard")
@@ -1044,7 +1095,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         nodeStatusLayout = QVBoxLayout()
         setNodeStatusMargins = getattr(nodeStatusLayout, "setContentsMargins", None)
         if callable(setNodeStatusMargins):
-            setNodeStatusMargins(0, 0, 0, 0)
+            setNodeStatusMargins(12, 4, 12, 10)
         setNodeStatusSpacing = getattr(nodeStatusLayout, "setSpacing", None)
         if callable(setNodeStatusSpacing):
             setNodeStatusSpacing(6)
@@ -1055,10 +1106,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setNodeTitleName):
             setNodeTitleName("panelTitle")
         nodeStatusLayout.addWidget(nodeStatusTitle)
-        self.nodeDetailTitleCard = QLabel("未选中节点")
-        self.nodeDetailMetaCard = QLabel("点击画布节点或左侧当前节点列表查看详情")
-        self.nodeDetailPortsCard = QLabel("输入: 无\n输出: 无")
-        self.nodeDetailParamsCard = QLabel("参数:\n- 无")
+        detailLabel = WrapLabel if _nativeQt else QLabel
+        self.nodeDetailTitleCard = detailLabel("未选中节点")
+        self.nodeDetailMetaCard = detailLabel("")
+        self.nodeDetailPortsCard = detailLabel("输入: 无\n输出: 无")
+        self.nodeDetailParamsCard = detailLabel("参数:\n- 无")
         for detailWidget in [
             self.nodeDetailTitleCard,
             self.nodeDetailMetaCard,
@@ -1070,7 +1122,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 setDetailName("statusCard")
             nodeStatusLayout.addWidget(detailWidget)
         self.nodeStatusSection.setLayout(nodeStatusLayout)
-        rightPanel.addWidget(self.nodeStatusSection)
+        if _nativeQt:
+            nodeStatusLayout.addStretch(1)
+            self.nodeDetailsScroll = scrollContent(self.nodeStatusSection, name="nodeDetailsScroll")
+            self.nodeDetailsScroll.setMinimumHeight(72)
+            rightPanel.addWidget(self.nodeDetailsScroll, 1)
+        else:
+            rightPanel.addWidget(self.nodeStatusSection)
 
         self.previewSection = QWidget()
         setPreviewSectionName = getattr(self.previewSection, "setObjectName", None)
@@ -1079,7 +1137,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         previewLayout = QVBoxLayout()
         setPreviewMargins = getattr(previewLayout, "setContentsMargins", None)
         if callable(setPreviewMargins):
-            setPreviewMargins(0, 0, 0, 0)
+            setPreviewMargins(12, 4, 12, 10)
         setPreviewSpacing = getattr(previewLayout, "setSpacing", None)
         if callable(setPreviewSpacing):
             setPreviewSpacing(6)
@@ -1089,7 +1147,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setPreviewTitleName("panelTitle")
         previewLayout.addWidget(previewTitle)
 
-        self.previewImageLabel = QLabel("暂无图片")
+        self.previewImageLabel = PreviewLabel("暂无图片") if _nativeQt else QLabel("暂无图片")
         setPreviewLabelName = getattr(self.previewImageLabel, "setObjectName", None)
         if callable(setPreviewLabelName):
             setPreviewLabelName("previewCard")
@@ -1102,8 +1160,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         previewLayout.addWidget(self.previewImageLabel)
         self.previewSection.setLayout(previewLayout)
         rightPanel.addWidget(self.previewSection)
+        if _nativeQt:
+            rightPanel.setStretch(rightPanel.indexOf(self.previewSection), 1)
         addRightStretch = getattr(rightPanel, "addStretch", None)
-        if callable(addRightStretch):
+        if callable(addRightStretch) and not _nativeQt:
             addRightStretch(1)
         self.rightPanelContainer.setLayout(rightPanel)
         self.mainSplitter = QSplitter(Qt.Horizontal)
@@ -1142,7 +1202,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             flowModel=self.flowModel,
             flowScene=self.flowScene,
             refreshSidebarNodeList=self.refreshSidebarNodeList,
-            focusGraphContent=self.focusGraphContent,
+            focusGraphContent=lambda: self.focusGraphContent(automatic=True),
             updateToolbarState=self.updateToolbarState,
         )
         self.projectController = ProjectController(
@@ -1152,7 +1212,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             settingsStore=self.settingsStore,
             appendLog=self.appendRuntimeLog,
             refreshSidebarNodeList=self.refreshSidebarNodeList,
-            focusGraphContent=self.focusGraphContent,
+            focusGraphContent=lambda: self.focusGraphContent(automatic=True),
             refreshRuntimePanelView=self._refreshRuntimePanelView,
             updateToolbarState=self.updateToolbarState,
             updateRuntimeJobState=lambda status, message: (
@@ -1205,7 +1265,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             isSidebarCollapsedGetter=lambda: self.isSidebarCollapsed,
         )
 
-        self.refreshButton.clicked.connect(self.refreshOperators)
         workflowChanged = getattr(self.workflowTabs, "currentChanged", None)
         if workflowChanged is not None and hasattr(workflowChanged, "connect"):
             workflowChanged.connect(self._onWorkflowTabChanged)
@@ -1223,14 +1282,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             workflowTabContextMenu, "connect"
         ):
             workflowTabContextMenu.connect(self._onWorkflowTabContextMenuRequested)
-        self.loadButton.clicked.connect(self.loadProject)
-        self.saveProjectButton.clicked.connect(self.saveProjectAction)
-        self.validateButton.clicked.connect(self.validateProject)
-        self.startButton.clicked.connect(self.startJob)
-        self.stopButton.clicked.connect(self.stopJob)
-        self.openLogsButton.clicked.connect(self.openLogDialog)
-        self.autoLayoutButton.clicked.connect(self.autoLayoutNodes)
-        self.validateGraphButton.clicked.connect(self.validateGraph)
         self.deleteShortcut = QShortcut(QKeySequence.Delete, self)
         self.deleteShortcut.activated.connect(self.handleDeleteShortcut)
         self.backspaceDeleteShortcut = QShortcut(QKeySequence("Backspace"), self)
@@ -1335,6 +1386,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str) -> bool:
+        self._focusedWorkflowId = None
+        self._workflowViewStates.clear()
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.loadProjectDirectory(projectDirPath)
         )
@@ -1513,13 +1566,35 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         ]
 
     def _addToolbarGroup(self, title: str, buttons: list[QPushButton]) -> None:
-        titleLabel = QLabel(title)
-        setTitleName = getattr(titleLabel, "setObjectName", None)
-        if callable(setTitleName):
-            setTitleName("toolbarGroupLabel")
-        self.mainToolbar.addWidget(titleLabel)
+        commands = {
+            "加载项目": ("loadButton", "folder-open", self.loadProject),
+            "保存项目": ("saveProjectButton", "save", self.saveProjectAction),
+            "校验项目": ("validateButton", "shield-check", self.validateProject),
+            "开始运行": ("startButton", "play", self.startJob),
+            "停止运行": ("stopButton", "square", self.stopJob),
+            "自动布局": ("autoLayoutButton", "layout-grid", self.autoLayoutNodes),
+            "校验流程图": ("validateGraphButton", "shield-check", self.validateGraph),
+            "刷新算子": ("refreshButton", "refresh-cw", self.refreshOperators),
+            "打开日志": ("openLogsButton", "logs", self.openLogDialog),
+        }
         for button in buttons:
-            self.mainToolbar.addWidget(button)
+            label = button.text()
+            attribute, iconName, callback = commands[label]
+            if not _nativeQt:
+                self.mainToolbar.addWidget(button)
+                button.clicked.connect(callback)
+                continue
+            action = QAction(icon(iconName, "#ffffff" if label == "开始运行" else "#475569"), label, self)
+            action.setToolTip(label)
+            action.triggered.connect(lambda checked=False, command=callback: command())
+            self.mainToolbar.addAction(action)
+            tool = self.mainToolbar.widgetForAction(action)
+            tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if label in {
+                "加载项目", "保存项目", "开始运行", "停止运行"} else Qt.ToolButtonIconOnly)
+            tool.setObjectName("primaryButton" if label == "开始运行" else "dangerButton" if label == "停止运行" else "")
+            self._toolbarActions[label] = action
+            setattr(self, attribute, tool)
+            button.deleteLater()
 
     def _buildMainMenuBar(self) -> None:
         self._menuBarGroups = ["文件", "运行", "编辑", "视图"]
@@ -1552,9 +1627,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._addMenuAction(viewMenu, "聚焦画布内容", self.focusGraphContent)
 
     def _addMenuAction(self, menu, title: str, callback) -> None:
-        action = QAction(title, self)
+        sharedTitle = "加载项目" if title == "打开项目" else title
+        shared = self._toolbarActions.get(sharedTitle)
+        action = shared if shared is not None else QAction(title, self)
         triggered = getattr(action, "triggered", None)
-        if triggered is not None and hasattr(triggered, "connect"):
+        if shared is None and triggered is not None and hasattr(triggered, "connect"):
 
             def onTriggered(checked: bool = False) -> None:
                 _ = checked
@@ -2267,9 +2344,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         sceneY: float | None = None,
     ) -> None:
         node = self.flowModel.nodes[nodeId]
-        nodeIndex = len(self.flowModel.nodes) - 1
-        x = float(20 + (nodeIndex % 4) * 220) if sceneX is None else float(sceneX)
-        y = float(20 + (nodeIndex // 4) * 120) if sceneY is None else float(sceneY)
+        defaultX, defaultY = self.flowScene.nextNodePosition()
+        x = defaultX if sceneX is None else float(sceneX)
+        y = defaultY if sceneY is None else float(sceneY)
         self.flowScene.addFlowNode(
             FlowNodeViewModel(
                 nodeId=nodeId,
@@ -2286,7 +2363,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.setNodeSelected(nodeId)
         self.refreshSidebarNodeList()
         self.onNodeSelectionChanged()
-        self.focusGraphContent()
         self.updateToolbarState()
 
     def openRecentProject(self, projectPath: str) -> bool:
@@ -2317,11 +2393,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.layoutController.applyResponsiveLayout()
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
-        self.applyResponsiveLayout()
+        if hasattr(self, "layoutController"):
+            self.applyResponsiveLayout()
         try:
             super().resizeEvent(event)
         except Exception:
             _ = event
+
+    def showEvent(self, event) -> None:
+        if _nativeQt:
+            super().showEvent(event)
+            QTimer.singleShot(0, lambda: fitWindowToScreen(self))
+            if not getattr(self, "_screenSizingConnected", False) and self.windowHandle():
+                self.windowHandle().screenChanged.connect(lambda _screen: QTimer.singleShot(0, lambda: fitWindowToScreen(self)))
+                self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._saveRuntimeLogSettings()
@@ -2726,9 +2811,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             outputPorts=outputPorts,
             paramSchema=paramSchema,
         )
-        nodeIndex = len(self.flowModel.nodes) - 1
-        x = float(20 + (nodeIndex % 4) * 220) if sceneX is None else float(sceneX)
-        y = float(20 + (nodeIndex // 4) * 120) if sceneY is None else float(sceneY)
+        defaultX, defaultY = self.flowScene.nextNodePosition()
+        x = defaultX if sceneX is None else float(sceneX)
+        y = defaultY if sceneY is None else float(sceneY)
         self.flowScene.addFlowNode(
             FlowNodeViewModel(
                 nodeId=nodeId,
@@ -2747,7 +2832,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.setNodeSelected(nodeId)
         self.onNodeSelectionChanged()
         self.refreshSidebarNodeList()
-        self.focusGraphContent()
         self.updateToolbarState()
         self.collapseOperatorBubble()
 
@@ -2891,23 +2975,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.focusGraphContent()
         self.appendRuntimeLog("INFO", "已应用自动布局")
 
-    def focusGraphContent(self) -> None:
+    def focusGraphContent(self, checked: bool = False, *, automatic: bool = False) -> None:
+        workflowId = (str(self.workflowStore.project.get("projectId", "")), self.workflowStore.activeWorkflowId)
+        if automatic and self._focusedWorkflowId == workflowId:
+            return
+        if automatic and _nativeQt:
+            if self._focusedWorkflowId is not None:
+                center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
+                self._workflowViewStates[self._focusedWorkflowId] = (self.flowView.getZoomFactor(), center)
+            self._focusedWorkflowId = workflowId
+            state = self._workflowViewStates.get(workflowId)
+            if state is not None:
+                self.flowView.setZoomFactor(state[0])
+                self.flowView.centerOn(state[1])
+                return
         getContentBounds = getattr(self.flowScene, "getContentBounds", None)
         if not callable(getContentBounds):
             return
         bounds = getContentBounds()
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             return
-        fitInView = getattr(self.flowView, "fitInView", None)
-        if callable(fitInView):
-            resetTransform = getattr(self.flowView, "resetTransform", None)
-            if callable(resetTransform):
-                resetTransform()
-            fitInView(bounds[0], bounds[1], bounds[2], bounds[3], Qt.KeepAspectRatio)
-            if self._layoutMode == "large":
-                scaleMethod = getattr(self.flowView, "scale", None)
-                if callable(scaleMethod):
-                    scaleMethod(1.12, 1.12)
+        self.flowView.fitContent(bounds, minimumZoom=0.85 if automatic else 0.02)
 
     def _appendNodeHints(self, nodeId: str) -> None:
         node = self.flowModel.nodes.get(nodeId)
@@ -2968,9 +3056,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimeStatusOutput.setPlainText("")
         state = str(detailModel.get("state", "empty"))
         if state == "empty":
-            message = str(detailModel.get("message", "未选中节点"))
             self.nodeDetailTitleCard.setText("未选中节点")
-            self.nodeDetailMetaCard.setText(message)
+            self.nodeDetailMetaCard.setText("")
             self.nodeDetailPortsCard.setText("输入: 无\n输出: 无")
             self.nodeDetailParamsCard.setText("参数:\n- 无")
             return
@@ -3012,10 +3099,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.previewImageLabel.setText(f"预览加载失败\n{imagePath}")
             return
 
-        scaledPixmap = pixmap.scaled(
-            360, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation
-        )
-        self.previewImageLabel.setPixmap(scaledPixmap)
+        self.previewImageLabel.setPixmap(pixmap)
 
     def openLogDialog(self) -> None:
         if self.logDock is None:
@@ -3132,6 +3216,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.startButton.setEnabled(canRun)
         self.stopButton.setEnabled(canStop)
         self.validateButton.setEnabled(self.loadedProjectPath is not None)
+        for name, enabled in (("开始运行", canRun), ("停止运行", canStop),
+                              ("校验项目", self.loadedProjectPath is not None)):
+            if name in self._toolbarActions:
+                self._toolbarActions[name].setEnabled(enabled)
         self._updateRunBlockedHint(canRun)
 
     def _updateRunBlockedHint(self, canRun: bool) -> None:
@@ -3143,7 +3231,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         setToolTip = getattr(self.startButton, "setToolTip", None)
         if callable(setToolTip):
-            setToolTip("" if canRun else blockedReason)
+            setToolTip("开始运行" if canRun else blockedReason)
+        if "开始运行" in self._toolbarActions:
+            self._toolbarActions["开始运行"].setToolTip("开始运行" if canRun else blockedReason)
 
         if blockedReason != "" and blockedReason != self._lastRunBlockedReason:
             self.appendRuntimeLog("WARN", blockedReason)

@@ -17,6 +17,9 @@ def resolveRuntimeTarget() -> str:
 
 
 def applyDesignerStyle(app) -> None:
+    from emo_master.apps.designer.ui.theme import configureTheme
+
+    configureTheme(app)
     stylePath = Path(__file__).resolve().parent / "ui" / "styles" / "app.qss"
     if not stylePath.exists():
         return

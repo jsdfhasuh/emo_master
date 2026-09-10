@@ -22,6 +22,7 @@
 plugins/builtins/<name>/manifest.json
   + operator.py
   + 可选 ui/editor.ui + editor.py
+  + 可选 assets/icon.svg 或 assets/icon.png
       -> PluginRegistry.scan(...) / scanRoots(...)
       -> validateManifestFields(...)
       -> isVersionCompatible(...)
@@ -30,8 +31,9 @@ plugins/builtins/<name>/manifest.json
       -> Runtime activeOperators / rejectedOperators
       -> RuntimeService.ListOperators()
       -> 可选 GetOperatorEditorAsset()（注册时冻结的 UI 字节 + SHA-256）
-      -> RuntimeClient.listOperators()
-      -> MainWindow.refreshOperators()
+      -> OperatorCatalogWorker -> RuntimeClient.listOperators()
+      -> MainWindow 异步应用目录
+      -> OperatorIconProvider -> GetOperatorIconAsset()（按需取冻结图片）
       -> 左侧分类 / 气泡面板显示
       -> 用户拖到画布，保存到 project.json
       -> Runtime executeGraph() 通过 operatorId 找到 operator 并执行
@@ -57,6 +59,7 @@ plugins/builtins/<name>/manifest.json
 - `entry`
 - `category`
 - `iconKey`
+- 可选 `iconResource`（插件内相对图片路径，详见 9.4.1）
 - `summary`
 - `inputPorts`
 - `outputPorts`
@@ -143,6 +146,10 @@ plugins/builtins/<name>/manifest.json
 8. 成功则进入 `activeOperators`
 9. 失败则进入 `rejectedOperators`，错误消息包含来源 manifest 路径
 
+专用编辑器和图标在同一次 manifest 读取结果上独立校验。有效图标冻结为
+`PluginIconAsset(content, mimeType, sha256)`；图标无效只产生 `iconIssues`，
+不把原本有效的算法加入 `rejectedOperators`，也不导入 GUI 或初始化设备。
+
 ### 为什么这一步重要
 
 因为后面的一切都建立在这一步之上：
@@ -211,9 +218,11 @@ PortSpec 的 `type/required/nullable/schemaVersion` 规则以及几何、Blob、
 ### 调用链
 
 ```text
-RuntimeService.ListOperators()
-  -> RuntimeClient.listOperators()
-  -> MainWindow.refreshOperators()
+MainWindow.refreshOperators()
+  -> OperatorCatalogWorker（独立后台线程、合并重复刷新）
+  -> RuntimeClient.listOperators(timeoutMs=5000)
+  -> RuntimeService.ListOperators()
+  -> GUI 线程应用当前会话的目录结果
   -> 左侧分类 / 气泡算子面板
 ```
 
@@ -238,16 +247,27 @@ RuntimeService.ListOperators()
 - `summary`
 - `editor_spec_json`
 - `editor_issues_json`
+- `icon`：`status/mime_type/sha256/byte_size`，不带图片字节
+- `icon_issues`：独立图标诊断，不带 Runtime 绝对路径
 
 #### `RuntimeClient.listOperators()`
 Designer 端把这些协议对象解析成 `OperatorDefinition`，把 JSON schema 解析回字典。
 
 #### `MainWindow.refreshOperators()`
-这个函数把 Runtime 返回的数据转换成 UI 使用的 payload，供：
+这个函数提交异步刷新，不在 GUI 线程等待网络。目录控制器区分
+`loading/ready/failed`，失败时保留上次有效目录；同一会话的重复刷新会合并。
+首次目录未就绪时，专用参数编辑器和工作流包导入暂不执行，提示稍后重试，
+避免按空定义缓存通用编辑器或误报依赖缺失。已有有效目录的后台刷新不阻止这些操作。
+
+返回结果仅在当前 Runtime 会话及刷新请求仍有效时应用，转换为 UI payload，供：
 
 - 左侧分类列表
 - 顶部气泡面板
 - 拖拽添加节点
+
+目录应用通知图标消费者局部更新，不捕获画布写回项目，不改变项目 revision、
+选中节点、画布位置或运行态。卡片、画布、侧栏、详情和编辑器窗口共用
+`OperatorIconProvider`；系统节点仍使用本地图标，不调用插件图片 RPC。
 
 ### 结论
 
@@ -616,6 +636,91 @@ Designer 的 `OperatorEditorManager` 以 `(projectId, workflowId, nodeId)` 为�
 pure preview 的本地图片只上传到 Runtime 临时区，不写入项目；作业快照只在整个 Job
 成功后提升为项目最近结果，失败/取消不会覆盖旧快照。Loop 中同一节点端口由最后一次
 成功迭代覆盖，并保留其 `iterationPath`。
+
+### 9.4.1 为算子添加自带图标
+
+图标和专用编辑器互不依赖。不需要 `.ui`、Controller 或 Designer 中的算子 ID 对照表。
+在 `manifest.json` 所在目录下增加资源，然后向原 manifest 追加字段：
+
+```text
+example/
+  manifest.json
+  operator.py
+  assets/icon.svg
+```
+
+```json
+{
+  "iconKey": "edge",
+  "iconResource": "assets/icon.svg"
+}
+```
+
+上面只是字段增量，不可替代完整 manifest。`iconKey` 保留为加载中、错误和旧端兼容
+时的分类兜底；不声明或声明空字符串表示没有图片，显式 `null` 等错误类型产生图标
+诊断。路径基于 manifest 目录，必须使用 `/`，不允许绝对路径、URL、反斜杠、
+空段、`.`、`..` 或符号链接越界。只读取普通文件，单文件最多 256 KiB，
+一次扫描最多冻结 16 MiB 图片。
+
+一个最小合规 SVG：
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <rect x="4" y="4" width="16" height="16" rx="2" fill="#0891b2"/>
+  <path d="M8 12 L11 15 L16 9" fill="none" stroke="#ffffff" stroke-width="2"/>
+</svg>
+```
+
+v1 接受受限静态 SVG 或 PNG，不接受任意导出文件：
+
+- SVG 必须是 UTF-8、SVG 命名空间和有效 `viewBox`。只允许基础图元、有限数值、
+  `none/#RGB/#RRGGBB` 颜色及受限路径/变换。最多 512 个元素、16 层、2048 段路径。
+  不支持 `style`、字体、渐变、滤镜、动画、`use/image`、链接、脚本、DTD 或实体。
+- PNG 宽高最多 512，必须非隔行、非 APNG，校验数据块长度、CRC、顺序及有界 IDAT
+  解压。带 `iCCP/iTXt/zTXt/tEXt/eXIf` 等非白名单附加块也会被拒绝；重新导出为
+  不含附加元数据的静态 PNG，不能关闭校验来迁就导出器。
+- 图片损坏、缺失、格式超集或安全解析器不可用，只影响图片，不影响有效算子执行。
+  GUI 解码失败也回退分类图标；无 QtSvg 时还有不依赖 SVG 的绘制兜底。
+
+完整白名单和诊断码见 [图标计划第 5 节](plans/2026-09-10-operator-icon-registration-v1.md)。
+SVG 安全解析使用固定依赖 `defusedxml==0.7.1`；Core 不导入 Qt。
+
+资源读取一次即冻结，之后 `GetOperatorIconAsset(operator_id, version, expected_sha256)`
+只返回该快照。Designer 使用四个独立 worker，取图单次 2 秒、最多 128 个排队身份；
+目录请求独立于取图。bytes 缓存 16 MiB、GUI 渲染缓存 32 MiB/256 项，均只在内存中。
+版本、SHA、Runtime 会话、目录代次和控件绑定代次共同防止旧请求写到新节点。
+本地调用的两秒是接收结果期限，不是强制终止 Python 函数。
+
+**换图后必须重启 Runtime，再刷新 Designer 目录。** 仅删除磁盘图片或点击刷新
+不会重读磁盘；当前进程仍提供原冻结字节。默认嵌入式模式需保存并正常重启 Designer。
+收到新目录 `invalid/none` 才撤销旧图；短暂断网不清空同一会话已有的有效缓存。
+可观察的 gRPC `TRANSIENT_FAILURE -> READY` 会更新会话并重新取目录；未观察到连接
+失败的服务端变更仍需显式刷新，不承诺透明热更新。图标不会写入项目、工作流包、参数
+或拖拽 MIME，不触发未保存状态。更新正式插件资源时同步维护 manifest/meta 版本。
+
+排查时先看 `descriptor.iconStatus`（`none/ready/invalid`）和 `descriptor.iconIssues`，
+再查 Designer 的 WARNING 图标诊断。`ready` 只表示核心校验通过；真正显示成功还须
+`renderSource=custom`，不能以非空 QIcon 或兜底图案代替。
+
+本地复验（已安装项目依赖的 Python 3.10 环境）：
+
+```powershell
+$env:QT_QPA_PLATFORM = 'offscreen'
+$env:HUARAY_CAMERA_SMOKE = '0'
+python scripts/ci_check.py
+python -m emo_master.apps.windows_entry --self-test --gui-icons --result-json build/icon-self-test.json
+python scripts/operator_icon_visual_check.py --scale 1.5 --output build/icon-visual-150
+```
+
+不传 `--gui-icons` 的自检保持无 GUI；传入后必须真实渲染三个内置示例在
+24/36/48 物理像素下的九组图片，并核对 SHA 和特征色像素。新增/修改示例图时要同步
+更新包体自检基准和 [资源来源记录](operator-icon-assets.md)，不能放宽成仅检查兜底。
+
+发布 ZIP 必须包含整个插件资源目录、`defusedxml` 和 Qt SVG 运行依赖。
+`scripts/verify_windows_package.ps1 -Archive <portable.zip>` 解压到全新隔离目录，
+清除 `PYTHONPATH`，限时运行冻结 EXE 的全部自检；Windows 发布工作流已在上传 Release
+前加入此门禁。外部插件和系统节点不计入三个内置示例覆盖率。
+截图、实测环境和未完成环境验收见 [实施记录](testing/operator-icons-2026-09-10/README.md)。
 
 ### 9.5 本地检查是否注册成功
 

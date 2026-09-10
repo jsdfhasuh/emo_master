@@ -15,6 +15,9 @@ from emo_master.core.plugin.models import (
     RegistryScanResult,
     ValidationIssue,
 )
+from emo_master.core.plugin.icon_resources import (
+    IconValidationError, MAX_ICON_TOTAL_BYTES, loadIconAsset, parseIconResource,
+)
 from emo_master.core.plugin.validator import (
     isVersionCompatible,
     loadOperatorClass,
@@ -60,6 +63,7 @@ class _ManifestRecord:
     path: Path
     manifest: PluginManifest | None
     issues: tuple[ValidationIssue, ...]
+    rawData: dict[str, object]
 
 
 class PluginRegistry:
@@ -73,6 +77,7 @@ class PluginRegistry:
         activeOperators: dict[str, PluginDescriptor] = {}
         manifestPaths, rejectedOperators = self._discoverManifestPaths(pluginRoots)
         recordsByOperatorId: dict[str, list[_ManifestRecord]] = {}
+        iconBytesRemaining = MAX_ICON_TOTAL_BYTES
 
         for manifestPath in manifestPaths:
             manifestData, loadIssue = self._readManifest(manifestPath)
@@ -95,6 +100,7 @@ class PluginRegistry:
                 path=manifestPath,
                 manifest=manifest,
                 issues=tuple(fieldIssues),
+                rawData=manifestData,
             )
             if declaredOperatorId is None:
                 self._appendIssues(
@@ -131,7 +137,7 @@ class PluginRegistry:
 
             manifest = record.manifest
             issues: list[ValidationIssue] = list(record.issues)
-            rawManifest = self._loadManifestData(record.path) or {}
+            rawManifest = record.rawData
             editor, editorIssues = validateEditorSpec(
                 rawManifest.get("editor"), manifest.entry
             )
@@ -212,6 +218,15 @@ class PluginRegistry:
                 )
                 continue
 
+            resource, iconIssues = parseIconResource(rawManifest)
+            iconAsset = None
+            if resource and not iconIssues:
+                try:
+                    iconAsset = loadIconAsset(record.path.parent, resource, iconBytesRemaining)
+                    iconBytesRemaining -= len(iconAsset.content)
+                except IconValidationError as err:
+                    iconIssues = (err.issue(),)
+
             activeOperators[operatorId] = PluginDescriptor(
                 manifest=manifest,
                 operatorClass=operatorClass,
@@ -219,6 +234,8 @@ class PluginRegistry:
                 editorIssues=tuple(editorIssues),
                 editorUiContent=editorUiContent,
                 editorUiSha256=editorUiSha256,
+                iconAsset=iconAsset,
+                iconIssues=iconIssues,
             )
 
         return RegistryScanResult(

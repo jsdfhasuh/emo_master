@@ -23,7 +23,7 @@ class CannyEdgeOperator:
     meta = OperatorMeta(
         operatorId="vision.edge.canny",
         displayName="Canny Edge",
-        version="1.1.0",
+        version="1.1.1",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {

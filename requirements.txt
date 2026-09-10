@@ -9,3 +9,4 @@ fastapi>=0.110
 uvicorn>=0.29
 onnxruntime==1.23.2
 numpy<2
+defusedxml==0.7.1

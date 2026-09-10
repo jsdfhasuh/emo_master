@@ -9,7 +9,7 @@ CreateHandler = Callable[[dict[str, object]], None]
 
 
 try:
-    from PySide2.QtCore import QByteArray, QEvent, QMimeData, QPoint, QSize, Qt
+    from PySide2.QtCore import QByteArray, QEvent, QMimeData, QPoint, QRect, QSize, QTimer, Qt
     from PySide2.QtGui import QColor, QDrag, QPainter
     from PySide2.QtWidgets import (
         QApplication,
@@ -45,6 +45,10 @@ try:
 
         def sizeHint(self):
             return QSize(240, max(72, self.fontMetrics().height() * 2 + 30))
+
+        def setOperatorIcon(self, icon) -> None:
+            self._icon = icon
+            self.update()
 
         def minimumSizeHint(self):
             return QSize(140, self.sizeHint().height())
@@ -110,6 +114,7 @@ try:
         def __init__(self, parent: QWidget | None = None) -> None:
             super().__init__(parent, Qt.Tool | Qt.FramelessWindowHint)
             self._createHandler: CreateHandler | None = None
+            self._iconProvider = None
             self._buttons: list[_OperatorCardButton] = []
             self._operators: list[dict[str, object]] = []
             self._visibleOperators: list[dict[str, object]] = []
@@ -122,6 +127,9 @@ try:
             self._grid.setSpacing(8)
             self._grid.setAlignment(Qt.AlignTop)
             self._columns = 2
+            self._iconBindingTimer = QTimer(self)
+            self._iconBindingTimer.setSingleShot(True)
+            self._iconBindingTimer.timeout.connect(self._bindVisibleIcons)
 
             self.searchInput = QLineEdit()
             self.searchInput.setPlaceholderText("搜索节点（名称/ID）")
@@ -133,6 +141,7 @@ try:
             gridHost = QWidget()
             gridHost.setLayout(self._grid)
             self._scroll = scrollContent(gridHost)
+            self._scroll.verticalScrollBar().valueChanged.connect(self._bindVisibleIcons)
             rootLayout.addWidget(self._scroll, 1)
             self.setLayout(rootLayout)
             self.resize(560, 420)
@@ -144,6 +153,37 @@ try:
 
         def setCreateHandler(self, handler: CreateHandler | None) -> None:
             self._createHandler = handler
+
+        def setIconProvider(self, provider) -> None:
+            if self._iconProvider is not None:
+                for button in self._buttons:
+                    self._iconProvider.unbind(button)
+            self._iconProvider = provider
+            self._bindVisibleIcons()
+
+        def _bindVisibleIcons(self, *_args) -> None:
+            if self._iconProvider is None:
+                return
+            viewport = self._scroll.viewport()
+            for button in self._buttons:
+                visible = self.isVisible() and viewport.rect().intersects(
+                    QRect(button.mapTo(viewport, QPoint()), button.size())
+                )
+                if visible and not button.payload.get("systemNodeKind"):
+                    self._iconProvider.bind(button, button._operatorId, priority=0)
+                else:
+                    self._iconProvider.unbind(button)
+
+        def showEvent(self, event):
+            super().showEvent(event)
+            self._iconBindingTimer.start(0)
+
+        def hideEvent(self, event):
+            self._iconBindingTimer.stop()
+            if self._iconProvider is not None:
+                for button in self._buttons:
+                    self._iconProvider.unbind(button)
+            super().hideEvent(event)
 
         def setOperators(self, operators: list[dict[str, object]]) -> None:
             self._operators = list(operators)
@@ -199,7 +239,10 @@ try:
                     event.accept()
                     self.close()
                     return True
-            if event.type() == QEvent.MouseButtonPress and self.isVisible():
+            # The application filter also sees the native QWindow press first.
+            # Wait for QWidget dispatch to identify the actual clicked control.
+            if (event.type() == QEvent.MouseButtonPress and self.isVisible()
+                    and isinstance(watched, QWidget)):
                 if not self._isBubbleWidget(watched) and not self._isCategoryButton(
                     watched
                 ):
@@ -242,6 +285,7 @@ try:
                 col = index % self._columns
                 self._grid.addWidget(button, row, col)
                 self._buttons.append(button)
+            self._iconBindingTimer.start(0)
 
         def resizeEvent(self, event):
             super().resizeEvent(event)
@@ -251,6 +295,7 @@ try:
                 for index, button in enumerate(self._buttons):
                     self._grid.removeWidget(button)
                     self._grid.addWidget(button, index // columns, index % columns)
+            self._iconBindingTimer.start(0)
 
         def _filterAndSortOperators(self) -> list[dict[str, object]]:
             filtered: list[dict[str, object]] = []
@@ -281,6 +326,8 @@ try:
 
         def _clearButtons(self) -> None:
             for button in self._buttons:
+                if self._iconProvider is not None:
+                    self._iconProvider.unbind(button)
                 self._grid.removeWidget(button)
                 button.deleteLater()
             self._buttons = []

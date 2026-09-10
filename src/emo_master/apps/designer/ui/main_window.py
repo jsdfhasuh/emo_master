@@ -1,7 +1,10 @@
 from datetime import datetime
 import json
 from pathlib import Path
-from typing import Callable, cast
+from typing import Any, Callable, cast
+from uuid import uuid4
+
+from emo_master.apps.designer.services.operator_catalog_worker import OperatorCatalogWorker
 
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.controllers import (
@@ -723,6 +726,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> None:
         super().__init__()
         self.runtimeClient = runtimeClient
+        self.operatorIconProvider: Any = None
+        self.operatorCatalogWorker: OperatorCatalogWorker | None = None
+        self._operatorDisplayTimer: Any = None
+        self._operatorDisplayClosed = False
+        self._projectInstanceToken = uuid4().hex
+        self._sidebarIconItems: list[Any] = []
         self._showStartupEntry = showStartupEntry
         self._projectEntryDialogFactory = projectEntryDialogFactory
         self._workflowPackagePreviewDialogFactory = (
@@ -1108,6 +1117,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         nodeStatusLayout.addWidget(nodeStatusTitle)
         detailLabel = WrapLabel if _nativeQt else QLabel
         self.nodeDetailTitleCard = detailLabel("未选中节点")
+        self.nodeDetailIcon = QLabel("")
+        if _nativeQt:
+            self.nodeDetailIcon.setFixedSize(20, 20)
+            self.nodeDetailIcon.hide()
         self.nodeDetailMetaCard = detailLabel("")
         self.nodeDetailPortsCard = detailLabel("输入: 无\n输出: 无")
         self.nodeDetailParamsCard = detailLabel("参数:\n- 无")
@@ -1120,7 +1133,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setDetailName = getattr(detailWidget, "setObjectName", None)
             if callable(setDetailName):
                 setDetailName("statusCard")
-            nodeStatusLayout.addWidget(detailWidget)
+            if _nativeQt and detailWidget is self.nodeDetailTitleCard:
+                titleRow = QHBoxLayout()
+                titleRow.addWidget(self.nodeDetailIcon, 0, Qt.AlignTop)
+                titleRow.addWidget(detailWidget, 1)
+                nodeStatusLayout.addLayout(titleRow)
+            else:
+                nodeStatusLayout.addWidget(detailWidget)
         self.nodeStatusSection.setLayout(nodeStatusLayout)
         if _nativeQt:
             nodeStatusLayout.addStretch(1)
@@ -1287,7 +1306,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.backspaceDeleteShortcut = QShortcut(QKeySequence("Backspace"), self)
         self.backspaceDeleteShortcut.activated.connect(self.handleDeleteShortcut)
         self._buildMainMenuBar()
-        self.refreshOperators()
         self._layoutMode = "normal"
         self.workflowController.refreshActiveWorkflow()
         self.updateToolbarState()
@@ -1301,6 +1319,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.applyResponsiveLayout()
         self.restoreMainSplitterSizes()
         self._restoreRuntimeLogSettings()
+        self.operatorCatalogStatusLabel = QLabel("算子目录：加载中")
+        if _nativeQt:
+            from emo_master.apps.designer.ui.operator_icon_provider import OperatorIconProvider
+
+            self.statusBar().addPermanentWidget(self.operatorCatalogStatusLabel)
+            self.operatorCatalogWorker = OperatorCatalogWorker(self.runtimeClient)
+            self.operatorIconProvider = OperatorIconProvider(
+                self.runtimeClient, parent=self, appendLog=self.appendRuntimeLog,
+                onRecovery=lambda: self.refreshOperators(explicit=False),
+            )
+            self.flowScene.setIconProvider(self.operatorIconProvider, self._iconContext)
+            self.operatorBubble.setIconProvider(self.operatorIconProvider)
+            self._operatorDisplayTimer = QTimer(self)
+            self._operatorDisplayTimer.setInterval(20)
+            self._operatorDisplayTimer.timeout.connect(self._pollOperatorCatalog)
+            self._operatorDisplayTimer.start()
+        self.refreshOperators(explicit=False)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -1401,6 +1436,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _applyLoadedProjectState(
         self, loadedProjectPath: str | None, currentProjectDir: Path | None
     ) -> None:
+        self._projectInstanceToken = uuid4().hex
         self.operatorEditorManager.closeAll()
         self.nodeParamDialog = None
         self.activeParamNodeId = None
@@ -1417,8 +1453,19 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.activeWorkflowId = self.workflowController.activeWorkflowId
         self._restoreActiveWorkflowRuntimeState()
         self._refreshWorkflowTabs()
+        if self.operatorIconProvider is not None:
+            self.flowScene.rebindOperatorIcons()
+            self.refreshSidebarNodeList()
+            self._refreshNodeDetailsView()
+
+    def _iconContext(self) -> tuple[str, str]:
+        return self._projectInstanceToken, self.workflowController.activeWorkflowId
 
     def refreshSidebarNodeList(self) -> None:
+        if self.operatorIconProvider is not None:
+            for item in self._sidebarIconItems:
+                self.operatorIconProvider.unbind(item)
+        self._sidebarIconItems.clear()
         clearMethod = getattr(self.nodeListWidget, "clear", None)
         if callable(clearMethod):
             clearMethod()
@@ -1433,6 +1480,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             addItem = getattr(self.nodeListWidget, "addItem", None)
             if callable(addItem):
                 addItem(item)
+            if self.operatorIconProvider is not None:
+                self._sidebarIconItems.append(item)
+                if node.kind == "operator":
+                    self.operatorIconProvider.bind(item, node.operatorId, mode="list", priority=2,
+                                                   context=(*self._iconContext(), node.nodeId))
+                else:
+                    from emo_master.apps.designer.ui.icon_map import operatorIcon
+                    item.setIcon(operatorIcon("flow"))
         self.refreshWorkflowDependencyTree()
 
     def getSidebarNodeEntries(self) -> list[dict[str, object]]:
@@ -1943,6 +1998,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def importWorkflowPackageAction(
         self, parentWorkflowId: str | None = None
     ) -> str | None:
+        if not self._requireOperatorCatalog():
+            return None
         selectedPath, _ = QFileDialog.getOpenFileName(
             self,
             "导入工作流包",
@@ -2409,6 +2466,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        self.shutdownOperatorDisplay()
         self._saveRuntimeLogSettings()
         self.operatorEditorManager.closeAll()
         counterDialog = self._globalCountersDialog
@@ -2423,6 +2481,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             accept = getattr(event, "accept", None)
             if callable(accept):
                 accept()
+
+    def shutdownOperatorDisplay(self) -> bool:
+        self._operatorDisplayClosed = True
+        if self._operatorDisplayTimer is not None:
+            self._operatorDisplayTimer.stop()
+        if self.operatorIconProvider is not None:
+            return bool(self.operatorIconProvider.close(self.operatorCatalogWorker))
+        return True
 
     def getCategoryButtonLabels(self) -> dict[str, str]:
         labels: dict[str, str] = {}
@@ -2767,12 +2833,69 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             failedMessagePrefix="项目同步失败",
         )
 
-    def refreshOperators(self) -> None:
-        self.operatorCatalog = self.operatorCatalogController.refreshOperators(
-            self._classifyOperator
-        )
+    def refreshOperators(self, *, explicit: bool = True) -> None:
+        if self._operatorDisplayClosed:
+            return
+        if self.operatorCatalogWorker is not None:
+            if explicit:
+                self.operatorIconProvider.resetFailures()
+            self._setOperatorCatalogState("loading")
+            self.operatorCatalogWorker.refresh(self.operatorIconProvider.scope)
+            return
+        # Synchronous API remains available only for the no-Qt adapter.
+        self.operatorCatalog = self.operatorCatalogController.refreshOperators(self._classifyOperator)
         self._refreshBubbleOperators()
         self.updateToolbarState()
+
+    def _setOperatorCatalogState(self, state: str) -> None:
+        controller = self.operatorCatalogController
+        controller.state = state
+        text = {
+            "loading": "算子目录：刷新中" if controller.hasCatalog else "算子目录：加载中",
+            "failed": "算子目录：刷新失败（保留目录）" if controller.hasCatalog else "算子目录：加载失败，请刷新",
+            "ready": f"算子：{len(self.operatorCatalog)}",
+        }[state]
+        self.operatorCatalogStatusLabel.setText(text)
+
+    def _requireOperatorCatalog(self) -> bool:
+        if self.operatorCatalogController.hasCatalog:
+            return True
+        message = "算子目录尚未就绪，请等待加载完成；加载失败时请刷新算子。"
+        self.appendRuntimeLog("WARNING", message)
+        if _nativeQt:
+            self.statusBar().showMessage(message, 5000)
+        return False
+
+    def _pollOperatorCatalog(self) -> None:
+        if self._operatorDisplayClosed or self.operatorCatalogWorker is None:
+            return
+        provider = self.operatorIconProvider
+        scope = str(getattr(self.runtimeClient, "runtimeScope", id(self.runtimeClient)))
+        if scope != provider.scope:
+            provider.setScope(scope)
+            self.operatorCatalog = []
+            self.operatorCatalogController.operatorCatalog = []
+            self.operatorCatalogController.hasCatalog = False
+            self._refreshBubbleOperators()
+            self.refreshOperators(explicit=False)
+        for result in self.operatorCatalogWorker.poll():
+            if result.key[0] != provider.scope:
+                continue
+            if result.code:
+                self._setOperatorCatalogState("failed")
+                self.appendRuntimeLog("WARNING", f"算子目录加载失败：{result.code}: {result.message}")
+                continue
+            try:
+                self.operatorCatalog = self.operatorCatalogController.applyOperators(result.payload, self._classifyOperator)
+            except (TypeError, ValueError, AttributeError) as err:
+                self._setOperatorCatalogState("failed")
+                self.appendRuntimeLog("WARNING", f"算子目录无效：{err}")
+                continue
+            provider.setCatalog(self.operatorCatalog)
+            self._setOperatorCatalogState("ready")
+            self._refreshBubbleOperators()
+            self._refreshNodeDetailsView()
+            self.updateToolbarState()
 
     def addNodeFromOperatorPayload(
         self,
@@ -3056,6 +3179,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimeStatusOutput.setPlainText("")
         state = str(detailModel.get("state", "empty"))
         if state == "empty":
+            if self.operatorIconProvider is not None:
+                self.operatorIconProvider.unbind(self.nodeDetailIcon)
+                self.nodeDetailIcon.clear()
+                self.nodeDetailIcon.hide()
             self.nodeDetailTitleCard.setText("未选中节点")
             self.nodeDetailMetaCard.setText("")
             self.nodeDetailPortsCard.setText("输入: 无\n输出: 无")
@@ -3065,6 +3192,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         title = str(detailModel.get("title", ""))
         nodeId = str(detailModel.get("nodeId", ""))
         operatorId = str(detailModel.get("operatorId", ""))
+        if self.operatorIconProvider is not None:
+            bindingNodeId = self.flowModel.selectedNodeId or ""
+            node = self.flowModel.nodes.get(bindingNodeId)
+            self.nodeDetailIcon.show()
+            if node is not None and node.kind == "operator":
+                self.operatorIconProvider.bind(self.nodeDetailIcon, operatorId, mode="label", priority=0,
+                                               context=(*self._iconContext(), bindingNodeId))
+            else:
+                from emo_master.apps.designer.ui.icon_map import operatorIcon
+                self.operatorIconProvider.unbind(self.nodeDetailIcon)
+                self.nodeDetailIcon.setPixmap(operatorIcon("flow").pixmap(20, 20))
         inputs = str(detailModel.get("inputs", "无"))
         outputs = str(detailModel.get("outputs", "无"))
         required = str(detailModel.get("required", "无"))
@@ -3415,6 +3553,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", "未找到所选节点")
             return
 
+        if node.kind == "operator" and not self._requireOperatorCatalog():
+            return
+
         self.activeParamNodeId = nodeId
         schema = self._nodeEditorSchema(node)
         values = dict(node.params)
@@ -3437,6 +3578,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         # Kept as an alias for integrations that still inspect the last opened
         # parameter window. Ownership and uniqueness now live in the manager.
         self.nodeParamDialog = cast(NodeParamDialog, window)
+        if self.operatorIconProvider is not None and node.kind == "operator":
+            self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
+                                           context=(*self._iconContext(), nodeId))
 
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
         if nodeId not in self.flowModel.nodes:

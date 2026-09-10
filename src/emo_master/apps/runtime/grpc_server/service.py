@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import asdict
 from functools import wraps
 from pathlib import Path
@@ -432,6 +433,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         _ = context
         operators = []
         for operatorId, descriptor in self.pluginScanResult.activeOperators.items():
+            if context is not None and not context.is_active():
+                break
+            icon = descriptor.iconAsset if descriptor.iconStatus == "ready" else None
             editorSpec = (
                 asdict(descriptor.manifest.editor)
                 if descriptor.manifest.editor is not None
@@ -454,6 +458,15 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     param_schema_json=json.dumps(descriptor.manifest.paramSchema, ensure_ascii=True),
                     category=descriptor.manifest.category,
                     icon_key=descriptor.manifest.iconKey,
+                    icon=runtime_pb2.OperatorIconInfo(
+                        status=descriptor.iconStatus,
+                        mime_type=icon.mimeType if icon else "",
+                        sha256=icon.sha256 if icon else "",
+                        byte_size=len(icon.content) if icon else 0,
+                    ),
+                    icon_issues=[runtime_pb2.OperatorIconIssue(
+                        rule_id=issue.ruleId, code=issue.code, message=issue.message,
+                    ) for issue in descriptor.iconIssues],
                     summary=descriptor.manifest.summary,
                     editor_spec_json=json.dumps(editorSpec, ensure_ascii=True),
                     editor_issues_json=json.dumps(
@@ -470,6 +483,33 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 )
             )
         return runtime_pb2.ListOperatorsReply(operators=operators)
+
+    def GetOperatorIconAsset(self, request, context):  # type: ignore[override]
+        operatorId = request.operator_id
+        version = request.version
+        digest = request.expected_sha256
+        code = ""
+        if (not operatorId or any(c.isspace() or ord(c) < 32 for c in operatorId)
+                or re.fullmatch(r"(?:0|[1-9][0-9]*)(?:\.(?:0|[1-9][0-9]*)){0,2}", version) is None
+                or re.fullmatch(r"[a-fA-F0-9]{64}", digest) is None):
+            code = "E_ICON_REQUEST_INVALID"
+        descriptor = self.pluginScanResult.activeOperators.get(operatorId)
+        if not code:
+            if descriptor is None:
+                code = "E_ICON_OPERATOR_NOT_FOUND"
+            elif descriptor.manifest.version != version:
+                code = "E_ICON_VERSION_MISMATCH"
+            elif descriptor.iconStatus != "ready":
+                code = "E_ICON_ASSET_UNAVAILABLE"
+            elif descriptor.iconAsset.sha256 != digest.lower():
+                code = "E_ICON_DIGEST_MISMATCH"
+        if code:
+            return runtime_pb2.GetOperatorIconAssetReply(ok=False, code=code, message=code)
+        asset = descriptor.iconAsset
+        return runtime_pb2.GetOperatorIconAssetReply(
+            ok=True, content=asset.content, mime_type=asset.mimeType,
+            sha256=asset.sha256, version=descriptor.manifest.version,
+        )
 
     def GetOperatorEditorAsset(self, request, context):  # type: ignore[override]
         _ = context

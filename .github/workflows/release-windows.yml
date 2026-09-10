@@ -70,6 +70,9 @@ jobs:
     runs-on: windows-latest
 
     steps:
+      - name: Checkout package verification gate
+        uses: actions/checkout@v7
+
       - name: Download Windows artifacts
         uses: actions/download-artifact@v4
         with:
@@ -108,6 +111,12 @@ jobs:
           if ($manifest.assets.setup.name -ne $setupName -or $manifest.assets.setup.sha256 -ne $setupSha) {
             throw 'Setup asset metadata or SHA256 is invalid'
           }
+
+      - name: Require custom icon rendering from the frozen portable package
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ github.ref_name }}
+        run: ./scripts/verify_windows_package.ps1 -Archive "release-assets/emo-master-windows-$env:RELEASE_TAG.zip"
 
       - name: Create or update GitHub Release
         shell: pwsh

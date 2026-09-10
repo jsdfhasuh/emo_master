@@ -296,6 +296,8 @@ def testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot(
         staticmethod(lambda *args, **kwargs: (str(packagePath), "")),
     )
 
+    from tests.designer.qt_wait import waitForCatalog
+    waitForCatalog(window)
     importedRootId = window.importWorkflowPackageAction()
 
     assert importedRootId == bodyWorkflowId
@@ -337,6 +339,8 @@ def testWorkflowPackagePreviewCancelDoesNotCaptureOrImport(
         staticmethod(lambda *args, **kwargs: (str(packagePath), "")),
     )
 
+    from tests.designer.qt_wait import waitForCatalog
+    waitForCatalog(window)
     assert window.importWorkflowPackageAction() is None
 
     assert len(captured) == 1
@@ -372,6 +376,8 @@ def testWorkflowPackageImportCanInsertMappedSubflowIntoCurrentWorkflow(
         staticmethod(lambda *args, **kwargs: (str(packagePath), "")),
     )
 
+    from tests.designer.qt_wait import waitForCatalog
+    waitForCatalog(window)
     importedRootId = window.importWorkflowPackageAction(parentWorkflowId)
 
     assert importedRootId == "main-2"
@@ -422,6 +428,8 @@ def testWorkflowPackageImportFailureWarnsWithoutChangingProject(
         staticmethod(lambda *args, **kwargs: (str(invalidPath), "")),
     )
 
+    from tests.designer.qt_wait import waitForCatalog
+    waitForCatalog(window)
     assert window.importWorkflowPackageAction() is None
 
     after = {

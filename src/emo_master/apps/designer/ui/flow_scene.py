@@ -40,6 +40,7 @@ try:
     from PySide2.QtCore import QPointF, QRectF, Qt
     from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPen, QTransform
     from emo_master.apps.designer.ui.theme import uiFont
+    from emo_master.apps.designer.ui.icon_map import operatorIcon
     from PySide2.QtWidgets import (
         QGraphicsEllipseItem,
         QGraphicsItem,
@@ -64,6 +65,7 @@ try:
             variant = self._resolveVariant(model)
             self._variant = variant
             self._runtimeState = "IDLE"
+            self._operatorIcon = operatorIcon("default" if getattr(model, "kind", "operator") == "operator" else "flow")
             self.setPen(QPen(self._getBorderColor(variant, self._runtimeState), 1.4))
             self.setBrush(QBrush(self._getFillColor(variant, self._runtimeState)))
             self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -71,12 +73,13 @@ try:
             self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
             self.setData(int(Qt.UserRole), model.nodeId)
 
-            title = QFontMetricsF(self.titleFont).elidedText(model.title, Qt.ElideRight, self.geometry.width - 32)
+            title = QFontMetricsF(self.titleFont).elidedText(model.title, Qt.ElideRight, self.geometry.width - 60)
             titleText = QGraphicsSimpleTextItem(title, self)
             titleText.setFont(self.titleFont)
             titleText.setBrush(QColor("#20242b"))
             titleText.setToolTip(model.title)
-            titleText.setPos(16.0, 10.0)
+            titleText.setPos(44.0, 10.0)
+            titleText.setAcceptedMouseButtons(Qt.NoButton)
             self.setToolTip(model.title)
             if variant == "if":
                 branchText = QGraphicsSimpleTextItem("条件分支", self)
@@ -92,9 +95,14 @@ try:
             painter.setBrush(self.brush())
             painter.setPen(QPen(QColor("#2563eb"), 2.0) if self.isSelected() else self.pen())
             painter.drawRoundedRect(self.rect(), 6.0, 6.0)
+            self._operatorIcon.paint(painter, 16, 10, 20, 20)
             painter.setPen(QPen(QColor("#e5e7eb"), 1.0))
             painter.drawLine(QPointF(1, self.geometry.header),
                              QPointF(self.geometry.width - 1, self.geometry.header))
+
+        def setOperatorIcon(self, icon) -> None:
+            self._operatorIcon = icon
+            self.update(QRectF(16, 10, 20, 20))
 
         def getVisualStyle(self) -> dict[str, object]:
             return {
@@ -284,6 +292,8 @@ try:
         def __init__(self) -> None:
             super().__init__()
             self._nodeItems: dict[str, _NodeItem] = {}
+            self._iconProvider = None
+            self._iconContext: Callable[[], tuple] = lambda: ()
             self._portItems: dict[tuple[str, str, str], _PortItem] = {}
             self._edgeItems: dict[tuple[str, str, str, str], _EdgeItem] = {}
             self._inputEdgeIndex: dict[tuple[str, str], tuple[str, str, str, str]] = {}
@@ -303,6 +313,23 @@ try:
             self._dragSnapRadius = 26.0
             self._dragHintText = ""
             self._dragHintItem: QGraphicsSimpleTextItem | None = None
+
+        def setIconProvider(self, provider, contextSupplier: Callable[[], tuple]) -> None:
+            if self._iconProvider is not None:
+                for item in self._nodeItems.values():
+                    self._iconProvider.unbind(item)
+            self._iconProvider = provider
+            self._iconContext = contextSupplier
+            self.rebindOperatorIcons()
+
+        def rebindOperatorIcons(self) -> None:
+            for item in self._nodeItems.values():
+                self._bindOperatorIcon(item)
+
+        def _bindOperatorIcon(self, item: _NodeItem) -> None:
+            if self._iconProvider is not None and getattr(item.model, "kind", "operator") == "operator":
+                self._iconProvider.bind(item, getattr(item.model, "operatorId", ""),
+                                        context=(*self._iconContext(), item.model.nodeId))
 
         def setConnectionHandler(self, handler: ConnectionHandler | None) -> None:
             self._connectionHandler = handler
@@ -324,6 +351,9 @@ try:
             self._connectionErrorHandler = handler
 
         def clearGraph(self) -> None:
+            if self._iconProvider is not None:
+                for item in self._nodeItems.values():
+                    self._iconProvider.unbind(item)
             self.clear()
             self._nodeItems = {}
             self._portItems = {}
@@ -343,6 +373,7 @@ try:
             nodeItem = _NodeItem(model, self)
             self.addItem(nodeItem)
             self._nodeItems[model.nodeId] = nodeItem
+            self._bindOperatorIcon(nodeItem)
 
             geometry = nodeItem.geometry
             metrics = QFontMetricsF(nodeItem.bodyFont)
@@ -409,6 +440,8 @@ try:
                     del self._portItems[key]
 
             if nodeItem is not None:
+                if self._iconProvider is not None:
+                    self._iconProvider.unbind(nodeItem)
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
 

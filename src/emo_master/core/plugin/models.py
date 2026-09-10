@@ -28,6 +28,7 @@ class PluginManifest:
   minCoreVersion: str
   maxCoreVersion: str
   editor: OperatorEditorSpec | None = None
+  iconResource: str = ""
 
 
 @dataclass(frozen=True)
@@ -38,6 +39,13 @@ class ValidationIssue:
 
 
 @dataclass(frozen=True)
+class PluginIconAsset:
+    content: bytes
+    mimeType: str
+    sha256: str
+
+
+@dataclass(frozen=True)
 class PluginDescriptor:
     manifest: PluginManifest
     operatorClass: type
@@ -45,6 +53,12 @@ class PluginDescriptor:
     editorIssues: tuple[ValidationIssue, ...] = ()
     editorUiContent: bytes | None = None
     editorUiSha256: str = ""
+    iconAsset: PluginIconAsset | None = None
+    iconIssues: tuple[ValidationIssue, ...] = ()
+
+    @property
+    def iconStatus(self) -> str:
+        return "invalid" if self.iconIssues else "ready" if self.iconAsset else "none"
 
 
 @dataclass

@@ -102,6 +102,37 @@ message OperatorInfo {
   string output_port_specs_json = 11;
   string editor_spec_json = 12;
   string editor_issues_json = 13;
+  OperatorIconInfo icon = 14;
+  repeated OperatorIconIssue icon_issues = 15;
+}
+
+message OperatorIconInfo {
+  string status = 1;
+  string mime_type = 2;
+  string sha256 = 3;
+  uint32 byte_size = 4;
+}
+
+message OperatorIconIssue {
+  string rule_id = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message GetOperatorIconAssetRequest {
+  string operator_id = 1;
+  string version = 2;
+  string expected_sha256 = 3;
+}
+
+message GetOperatorIconAssetReply {
+  bool ok = 1;
+  bytes content = 2;
+  string mime_type = 3;
+  string sha256 = 4;
+  string code = 5;
+  string message = 6;
+  string version = 7;
 }
 
 message ListOperatorsReply {
@@ -337,6 +368,7 @@ service RuntimeService {
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
+  rpc GetOperatorIconAsset(GetOperatorIconAssetRequest) returns (GetOperatorIconAssetReply);
   rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);
   rpc ListNodePreviewSources(ListNodePreviewSourcesRequest) returns (ListNodePreviewSourcesReply);
   rpc UploadPreviewImage(stream PreviewUploadChunk) returns (PreviewAssetReply);

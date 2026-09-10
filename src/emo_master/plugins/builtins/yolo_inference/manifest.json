@@ -1,10 +1,11 @@
 {
   "operatorId": "vision.inference.yolo",
   "displayName": "YOLO Inference",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
   "category": "推理",
   "iconKey": "yolo",
+  "iconResource": "assets/icon.svg",
   "summary": "使用 ONNX Runtime CPU 执行 YOLOv8/YOLO11 目标检测，输出标准 DetectionCollection。",
   "inputPorts": {
     "image": {

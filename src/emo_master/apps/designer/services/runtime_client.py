@@ -6,6 +6,9 @@ from collections.abc import Iterable as IterableABC
 import inspect
 import threading
 from typing import Any, Iterable, Protocol, cast
+from uuid import uuid4
+
+from emo_master.apps.designer.services.display_calls import DisplayCallContext, DisplayCallError
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.context.global_counters import MAX_GLOBAL_COUNTER_VALUE
@@ -38,6 +41,8 @@ class OperatorDefinition:
     paramSchema: dict[str, object]
     editorSpec: dict[str, object] = field(default_factory=dict)
     editorIssues: tuple[dict[str, object], ...] = ()
+    icon: dict[str, object] = field(default_factory=dict)
+    iconIssues: tuple[dict[str, object], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -82,6 +87,8 @@ class RuntimeServiceProtocol(Protocol):
     def ListRejectedOperators(self, request, context): ...
 
     def GetOperatorEditorAsset(self, request, context): ...
+
+    def GetOperatorIconAsset(self, request, context): ...
 
     def ListNodePreviewSources(self, request, context): ...
 
@@ -184,8 +191,47 @@ class RuntimeClient:
         self._activeStreams: dict[str, RuntimeEventStream] = {}
         self._closed = False
 
-    def listOperators(self) -> list[OperatorDefinition]:
-        reply = self._call("ListOperators", runtime_pb2.ListOperatorsRequest())
+        self._displayLock = threading.RLock()
+        self._displayCalls: dict[str, set[DisplayCallContext]] = {}
+        self._closedDisplayOwners: set[str] = set()
+        self.runtimeScope = uuid4().hex
+        self._displayDisconnected = False
+        subscribe = getattr(ownedChannel, "subscribe", None)
+        if callable(subscribe):
+            subscribe(self._onChannelState, try_to_connect=False)
+
+    def _onChannelState(self, state) -> None:
+        if grpc is None:
+            return
+        with self._displayLock:
+            if self._closed:
+                return
+            if state == grpc.ChannelConnectivity.TRANSIENT_FAILURE:
+                self._displayDisconnected = True
+            elif state == grpc.ChannelConnectivity.READY and self._displayDisconnected:
+                self._displayDisconnected = False
+                self.renewDisplaySession()
+
+    def renewDisplaySession(self) -> None:
+        with self._displayLock:
+            self.runtimeScope = uuid4().hex
+            contexts = [ctx for calls in self._displayCalls.values() for ctx in calls]
+        for context in contexts:
+            context.cancel()
+
+    def closeDisplayOwner(self, owner: str) -> None:
+        with self._displayLock:
+            self._closedDisplayOwners.add(owner)
+            calls = self._displayCalls.pop(owner, set())
+        for context in calls:
+            context.cancel()
+
+    def listOperators(self, *, timeoutMs: int | None = None,
+                      cancellationToken: DisplayCallContext | None = None,
+                      owner: str = "catalog") -> list[OperatorDefinition]:
+        request = runtime_pb2.ListOperatorsRequest()
+        reply = (self._call("ListOperators", request) if timeoutMs is None and cancellationToken is None
+                 else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
         parsed: list[OperatorDefinition] = []
         for operatorInfo in getattr(reply, "operators", []):
             rawCategory = str(getattr(operatorInfo, "category", "Other")).strip()
@@ -226,9 +272,66 @@ class RuntimeClient:
                         )
                         if isinstance(item, dict)
                     ),
+                    icon={
+                        "status": str(getattr(getattr(operatorInfo, "icon", None), "status", "") or "none"),
+                        "mimeType": str(getattr(getattr(operatorInfo, "icon", None), "mime_type", "")),
+                        "sha256": str(getattr(getattr(operatorInfo, "icon", None), "sha256", "")),
+                        "byteSize": int(getattr(getattr(operatorInfo, "icon", None), "byte_size", 0)),
+                    },
+                    iconIssues=tuple({"ruleId": issue.rule_id, "code": issue.code, "message": issue.message}
+                                     for issue in getattr(operatorInfo, "icon_issues", ())),
                 )
             )
         return parsed
+
+    def getOperatorIconAsset(self, operatorId: str, version: str, expectedSha256: str,
+                             *, timeoutMs: int = 2000,
+                             cancellationToken: DisplayCallContext | None = None,
+                             owner: str = "icons") -> object:
+        if not callable(getattr(self.runtimeService, "GetOperatorIconAsset", None)):
+            raise RuntimeClientError("UNIMPLEMENTED", "Runtime has no icon asset API")
+        return self._displayCall("GetOperatorIconAsset", runtime_pb2.GetOperatorIconAssetRequest(
+            operator_id=operatorId, version=version, expected_sha256=expectedSha256,
+        ), timeoutMs, cancellationToken, owner)
+
+    def _displayCall(self, methodName: str, request: object, timeoutMs: int,
+                     token: DisplayCallContext | None, owner: str):
+        context = token or DisplayCallContext()
+        with self._displayLock:
+            if self._closed or owner in self._closedDisplayOwners:
+                raise RuntimeClientError("E_DISPLAY_CANCELLED", "display owner is closed")
+            self._displayCalls.setdefault(owner, set()).add(context)
+        try:
+            context.start(timeoutMs)
+            method = getattr(self.runtimeService, methodName)
+            future = getattr(method, "future", None)
+            if callable(future):
+                call = future(request, timeout=context.time_remaining(), wait_for_ready=False)
+                context.attach(call)
+                reply = call.result()
+            else:
+                parameters = _signatureParameters(method)
+                if "timeout" in parameters and "context" not in parameters:
+                    reply = method(request, timeout=context.time_remaining())
+                else:
+                    reply = method(request, context)
+            context.check()
+            return reply
+        except Exception as err:
+            try:
+                context.check()
+            except DisplayCallError as expired:
+                raise RuntimeClientError(expired.code, str(expired)) from err
+            if grpc is not None and isinstance(err, grpc.RpcError):
+                raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+            raise
+        finally:
+            with self._displayLock:
+                calls = self._displayCalls.get(owner)
+                if calls is not None:
+                    calls.discard(context)
+                    if not calls:
+                        self._displayCalls.pop(owner, None)
 
     def getOperatorEditorAsset(self, operatorId: str, version: str = "") -> object:
         return self._call(
@@ -526,6 +629,13 @@ class RuntimeClient:
             self._activeStreams.clear()
         for stream in streams:
             stream.cancel()
+        with self._displayLock:
+            displayOwners = list(self._displayCalls)
+        for owner in displayOwners:
+            self.closeDisplayOwner(owner)
+        unsubscribe = getattr(self._ownedChannel, "unsubscribe", None)
+        if callable(unsubscribe):
+            unsubscribe(self._onChannelState)
         self._closeOwned(self._ownedRuntimeService)
         self._closeOwned(self._ownedChannel)
 

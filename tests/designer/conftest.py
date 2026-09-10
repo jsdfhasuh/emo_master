@@ -38,8 +38,15 @@ def cleanupDesignerWidgets(designerApplication):
 
     existing = set(designerApplication.topLevelWidgets())
     yield
-    for widget in designerApplication.topLevelWidgets():
-        if widget not in existing and shiboken2.isValid(widget):
+    created = [widget for widget in designerApplication.topLevelWidgets()
+               if widget not in existing and shiboken2.isValid(widget)]
+    # Tool windows can also be children of a main window. Close all owners
+    # before scheduling destruction; worker shutdown can pump Qt events.
+    roots = [widget for widget in created if widget.parentWidget() not in created]
+    for widget in roots:
+        if shiboken2.isValid(widget):
             widget.close()
+    for widget in roots:
+        if shiboken2.isValid(widget):
             widget.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)

@@ -70,6 +70,7 @@ def runDesigner() -> None:
     applyDesignerStyle(app)
     runtimeTarget = resolveRuntimeTarget()
     runtimeClient: RuntimeClient | None = None
+    window = None
     try:
         if runtimeTarget != "":
             channel = grpc.insecure_channel(runtimeTarget)
@@ -94,6 +95,8 @@ def runDesigner() -> None:
         window.show()
         app.exec_()
     finally:
+        if window is not None:
+            window.shutdownOperatorDisplay()
         if runtimeClient is not None:
             runtimeClient.close()
 

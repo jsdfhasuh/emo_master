@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
+import os
 from pathlib import Path
 import sqlite3
 import sys
@@ -22,6 +24,12 @@ from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOpe
 
 _EXPECTED_MINIMUM_OPERATOR_COUNT = 49
 _EXPECTED_EDITOR_UI_COUNT = 3
+_ICON_EXAMPLES = {
+    "vision.edge.canny": ("1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37", "#0891b2"),
+    "vision.io.huaray_camera": ("23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70", "#059669"),
+    "vision.inference.yolo": ("989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf", "#db2777"),
+}
+_guiSelfTestApplication: object | None = None
 _EXPECTED_MIGRATIONS = (
     "001_init.sql",
     "002_runtime_workflow.sql",
@@ -78,6 +86,57 @@ def _checkDesignerStyle() -> dict[str, object]:
     if "QMainWindow" not in content or "QMenuBar" not in content:
         raise RuntimeError("Designer QSS is incomplete")
     return {"path": str(qssPath), "bytes": qssPath.stat().st_size}
+
+
+def _iconDescriptors():
+    scan = PluginRegistry(coreVersion=emo_master.__version__).scan(_packageRoot() / "plugins" / "builtins")
+    descriptors = {}
+    for operatorId, (expectedSha, _accent) in _ICON_EXAMPLES.items():
+        descriptor = scan.activeOperators.get(operatorId)
+        if descriptor is None or descriptor.iconStatus != "ready" or descriptor.iconAsset is None:
+            raise RuntimeError(f"required example icon is missing or invalid: {operatorId}")
+        asset = descriptor.iconAsset
+        if asset.sha256 != expectedSha or hashlib.sha256(asset.content).hexdigest() != expectedSha:
+            raise RuntimeError(f"example icon digest mismatch: {operatorId}")
+        descriptors[operatorId] = descriptor
+    return descriptors
+
+
+def _checkIconResources() -> dict[str, object]:
+    # Core-only gate: no QApplication or Qt imports, including on failure.
+    return {"examples": {operatorId: {"sha256": descriptor.iconAsset.sha256,
+                                     "byteSize": len(descriptor.iconAsset.content),
+                                     "mimeType": descriptor.iconAsset.mimeType}
+                         for operatorId, descriptor in _iconDescriptors().items()}}
+
+
+def _checkGuiIcons() -> dict[str, object]:
+    global _guiSelfTestApplication
+    os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
+    from emo_master.apps.designer.main import configureHighDpi
+    from PySide2.QtWidgets import QApplication
+    from emo_master.apps.designer.ui.operator_icon_provider import renderIconAsset
+
+    if QApplication.instance() is None:
+        configureHighDpi()
+        _guiSelfTestApplication = QApplication([])
+    samples = []
+    for operatorId, descriptor in _iconDescriptors().items():
+        expectedSha, accent = _ICON_EXAMPLES[operatorId]
+        for scale in (1.0, 1.5, 2.0):
+            rendered = renderIconAsset(descriptor.iconAsset, 24, scale)
+            size = int(24 * scale)
+            image = rendered.icon.pixmap(size, size).toImage()
+            colored = sum(image.pixelColor(x, y).name() == accent and image.pixelColor(x, y).alpha() > 200
+                          for y in range(image.height()) for x in range(image.width()))
+            if (rendered.source != "custom" or rendered.sha256 != expectedSha
+                    or rendered.pixelSize != size or rendered.nonTransparentPixels < 20
+                    or colored < 8):
+                raise RuntimeError(f"custom icon pixel assertion failed: {operatorId} at {scale}")
+            samples.append({"operatorId": operatorId, "renderSource": rendered.source,
+                            "sha256": rendered.sha256, "scale": scale, "pixelSize": rendered.pixelSize,
+                            "nonTransparentPixels": rendered.nonTransparentPixels, "accentPixels": colored})
+    return {"samples": samples}
 
 
 def _checkMigrations() -> dict[str, object]:
@@ -211,15 +270,19 @@ def runSelfTest(
     imagePath: Path | None = None,
     expectedDetections: int | None = None,
     progressCallback: Callable[[str], None] | None = None,
+    guiIcons: bool = False,
 ) -> dict[str, object]:
     checks: dict[str, object] = {}
     errors: list[str] = []
     checkFunctions: tuple[tuple[str, Callable[[], dict[str, object]]], ...] = (
         ("builtins", _checkBuiltins),
+        ("operatorIcons", _checkIconResources),
         ("designerQss", _checkDesignerStyle),
         ("migrations", _checkMigrations),
         ("onnxruntime", _checkOnnxRuntime),
     )
+    if guiIcons:
+        checkFunctions += (("guiIcons", _checkGuiIcons),)
     for name, checkFunction in checkFunctions:
         if progressCallback is not None:
             progressCallback(f"checking:{name}")
@@ -262,6 +325,7 @@ def runSelfTest(
 def _argumentParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate an Emo Master frozen package")
     parser.add_argument("--self-test", action="store_true", required=True)
+    parser.add_argument("--gui-icons", action="store_true", help="Require real Qt SVG rendering and example pixels")
     parser.add_argument("--model", type=Path)
     parser.add_argument("--image", type=Path)
     parser.add_argument("--result-json", type=Path)
@@ -292,6 +356,7 @@ def runSelfTestCommand(arguments: Sequence[str]) -> int:
         imagePath=parsed.image,
         expectedDetections=parsed.expected_detections,
         progressCallback=writeProgress,
+        guiIcons=parsed.gui_icons,
     )
     serialized = json.dumps(payload, ensure_ascii=False, indent=2)
     if parsed.result_json is not None:

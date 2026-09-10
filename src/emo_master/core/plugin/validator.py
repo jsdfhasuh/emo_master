@@ -4,6 +4,8 @@ from collections.abc import Mapping
 import importlib
 import re
 
+from emo_master.core.plugin.icon_resources import parseIconResource
+
 from emo_master.core.contracts.port_types import (
     PortSpecValidationError,
     normalizePortSpec,
@@ -239,6 +241,7 @@ def validateManifestFields(
         minCoreVersion=parsedStrings["minCoreVersion"],
         maxCoreVersion=parsedStrings["maxCoreVersion"],
         editor=editor,
+        iconResource=parseIconResource(manifestData)[0],
     )
     return manifest, []
 

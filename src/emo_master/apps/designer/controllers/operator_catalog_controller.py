@@ -6,10 +6,15 @@ class OperatorCatalogController:
         self.runtimeClient = runtimeClient
         self.appendLog = appendLog
         self.operatorCatalog: list[dict[str, object]] = []
+        self.state = "loading"
+        self.hasCatalog = False
 
     def refreshOperators(self, classifyOperator) -> list[dict[str, object]]:
         operators = self.runtimeClient.listOperators()
-        self.operatorCatalog = []
+        return self.applyOperators(operators, classifyOperator)
+
+    def applyOperators(self, operators, classifyOperator) -> list[dict[str, object]]:
+        catalog = []
         for operatorInfo in operators:
             displayName = getattr(operatorInfo, "display_name", None)
             if displayName is None:
@@ -45,6 +50,11 @@ class OperatorCatalogController:
                     if rawCategory != ""
                     else classifyOperator(operatorId),
                     "iconKey": str(getattr(operatorInfo, "iconKey", "default")),
+                    "icon": getattr(operatorInfo, "icon", {}),
+                    "iconIssues": [
+                        dict(issue) for issue in (getattr(operatorInfo, "iconIssues", ()) or ())
+                        if isinstance(issue, dict)
+                    ] if isinstance(getattr(operatorInfo, "iconIssues", ()), (list, tuple)) else [],
                     "summary": str(getattr(operatorInfo, "summary", "")),
                     "inputPorts": inputPorts if isinstance(inputPorts, dict) else {},
                     "outputPorts": outputPorts if isinstance(outputPorts, dict) else {},
@@ -64,7 +74,10 @@ class OperatorCatalogController:
                         getattr(operatorInfo, "editorIssues", ())
                     ),
                 }
-                self.operatorCatalog.append(payload)
+                catalog.append(payload)
+        self.operatorCatalog = catalog
+        self.state = "ready"
+        self.hasCatalog = True
         self.appendLog("INFO", f"算子加载完成：{len(operators)}")
         return list(self.operatorCatalog)
 

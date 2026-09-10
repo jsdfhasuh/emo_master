@@ -136,7 +136,7 @@ class HuarayCameraOperator:
     meta = OperatorMeta(
         operatorId="vision.io.huaray_camera",
         displayName="Huaray IMV Camera",
-        version="1.1.0",
+        version="1.1.1",
         inputPorts={},
         outputPorts={
             "image": {"type": "image", "required": True, "nullable": False},

@@ -1,10 +1,11 @@
 {
   "operatorId": "vision.io.huaray_camera",
   "displayName": "Huaray IMV Camera",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "entry": "emo_master.plugins.builtins.huaray_camera.operator:HuarayCameraOperator",
   "category": "图像采集",
   "iconKey": "camera",
+  "iconResource": "assets/icon.svg",
   "summary": "通过华睿 IMV SDK 直连相机，每次执行采集一帧并保留作业内连接。",
   "inputPorts": {},
   "outputPorts": {

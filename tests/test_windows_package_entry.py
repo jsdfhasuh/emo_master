@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import json
+import os
 from pathlib import Path
+import subprocess
 import sys
 from types import ModuleType
 
@@ -19,6 +21,23 @@ def testPackageSelfTestValidatesBundledResourcesAndOnnxRuntime() -> None:
     assert checks["onnxruntime"]["provider"] == "CPUExecutionProvider"
     assert checks["migrations"]["versions"] == [1, 2, 3, 4]
     assert checks["migrations"]["journalMode"] == "delete"
+    assert len(checks["operatorIcons"]["examples"]) == 3
+
+
+def testDefaultPackageSelfTestDoesNotImportQtOrCreateApplication():
+    root = Path(__file__).resolve().parents[1]
+    command = "from emo_master.apps.package_selftest import runSelfTest; import sys; assert runSelfTest()['status'] == 'ok'; assert 'PySide2.QtWidgets' not in sys.modules"
+    result = subprocess.run([sys.executable, "-c", command], env={**os.environ, "PYTHONPATH": str(root / "src")},
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stderr
+
+
+def testPackageResourceGateRejectsChangedExampleDigest(monkeypatch):
+    from emo_master.apps import package_selftest
+    monkeypatch.setattr(package_selftest, "_ICON_EXAMPLES", {"vision.edge.canny": ("0" * 64, "#0891b2")})
+    result = runSelfTest()
+    assert result["status"] == "error"
+    assert result["checks"]["operatorIcons"]["status"] == "error"
 
 
 def testPackageSelfTestCommandWritesResultJson(tmp_path: Path) -> None:

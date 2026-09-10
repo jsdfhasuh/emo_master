@@ -69,6 +69,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListOperatorsReply.FromString,
                 _registered_method=True)
+        self.GetOperatorIconAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+                request_serializer=runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetOperatorIconAssetReply.FromString,
+                _registered_method=True)
         self.GetOperatorEditorAsset = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetOperatorEditorAsset',
                 request_serializer=runtime__pb2.GetOperatorEditorAssetRequest.SerializeToString,
@@ -186,6 +191,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ListOperators(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOperatorIconAsset(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -318,6 +329,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.ListOperators,
                     request_deserializer=runtime__pb2.ListOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListOperatorsReply.SerializeToString,
+            ),
+            'GetOperatorIconAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorIconAsset,
+                    request_deserializer=runtime__pb2.GetOperatorIconAssetRequest.FromString,
+                    response_serializer=runtime__pb2.GetOperatorIconAssetReply.SerializeToString,
             ),
             'GetOperatorEditorAsset': grpc.unary_unary_rpc_method_handler(
                     servicer.GetOperatorEditorAsset,
@@ -584,6 +600,33 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListOperators',
             runtime__pb2.ListOperatorsRequest.SerializeToString,
             runtime__pb2.ListOperatorsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOperatorIconAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+            runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+            runtime__pb2.GetOperatorIconAssetReply.FromString,
             options,
             channel_credentials,
             insecure,

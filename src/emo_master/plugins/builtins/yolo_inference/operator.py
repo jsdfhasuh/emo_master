@@ -97,7 +97,7 @@ class YoloInferenceOperator:
     meta = OperatorMeta(
         operatorId="vision.inference.yolo",
         displayName="YOLO Inference",
-        version="1.2.0",
+        version="1.2.1",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {

@@ -10,6 +10,8 @@ import threading
 from typing import Any
 from uuid import uuid4
 
+import grpc
+
 from emo_master import __version__
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
@@ -128,7 +130,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self.previewAssetStore,
         )
         self.livePreviewManager = LivePreviewManager(
-            self.pluginScanResult.activeOperators
+            self.pluginScanResult.activeOperators,
+            eventPublisher=self.eventStore.append,
         )
         self._jobPreviewKeys: dict[str, str] = {}
         self._loadedProjectPreviewKey = ""
@@ -728,17 +731,23 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
 
     def StreamOperatorPreviewFrames(self, request, context):  # type: ignore[override]
         sessionId = str(getattr(request, "session_id", ""))
-        for frame in self.livePreviewManager.stream(sessionId, context):
-            yield runtime_pb2.OperatorPreviewFrame(
-                session_id=frame.sessionId,
-                jpeg=frame.jpeg,
-                sequence=frame.sequence,
-                block_id=frame.blockId,
-                device_timestamp=frame.deviceTimestamp,
-                actual_exposure_us=frame.actualExposureUs,
-                width=frame.width,
-                height=frame.height,
-            )
+        try:
+            for frame in self.livePreviewManager.stream(sessionId, context):
+                yield runtime_pb2.OperatorPreviewFrame(
+                    session_id=frame.sessionId,
+                    jpeg=frame.jpeg,
+                    sequence=frame.sequence,
+                    block_id=frame.blockId,
+                    device_timestamp=frame.deviceTimestamp,
+                    actual_exposure_us=frame.actualExposureUs,
+                    width=frame.width,
+                    height=frame.height,
+                )
+        except RuntimeError as err:
+            abort = getattr(context, "abort", None)
+            if callable(abort):
+                abort(grpc.StatusCode.FAILED_PRECONDITION, str(err))
+            raise
 
     def CloseOperatorPreviewSession(self, request, context):  # type: ignore[override]
         _ = context

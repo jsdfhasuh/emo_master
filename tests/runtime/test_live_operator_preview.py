@@ -4,6 +4,7 @@ import threading
 import time
 
 import numpy as np
+import pytest
 
 from emo_master.apps.runtime.preview.live import LivePreviewManager
 from emo_master.core.plugin.models import (
@@ -160,3 +161,118 @@ def testTimedOutLiveCloseDisposesWhenCaptureThreadEventuallyReturns() -> None:
     assert instance.disposed == 1
     assert sessionId not in manager._sessions
     assert manager.close(sessionId) is None
+
+
+class _FailingLiveCamera(_FakeLiveCamera):
+    release = threading.Event()
+
+    def executeNode(self, inputs, params, context):
+        assert self.release.wait(2.0)
+        return {
+            "status": "error",
+            "error": {
+                "code": "E_CAMERA_DEVICE_NOT_FOUND",
+                "message": "IMV_CreateHandle failed (-106)",
+            },
+        }
+
+
+@pytest.mark.parametrize("subscribeBeforeFailure", [False, True])
+def testPreviewFailureSurvivesCleanupAndReachesSubscriber(subscribeBeforeFailure) -> None:
+    _FailingLiveCamera.release.clear()
+    published = threading.Event()
+    events = []
+
+    def publish(**event):
+        events.append(event)
+        published.set()
+
+    manager = LivePreviewManager(
+        {"vision.io.fake_camera": _descriptor(_FailingLiveCamera)},
+        eventPublisher=publish,
+    )
+    sessionId, error = manager.open("vision.io.fake_camera", "p", "main", "camera", {})
+    assert error is None and sessionId
+    session = manager._sessions[sessionId]
+    stream = manager.stream(sessionId) if subscribeBeforeFailure else None
+    _FailingLiveCamera.release.set()
+    session.thread.join(2.0)
+    assert not session.thread.is_alive()
+    assert published.is_set()
+    assert sessionId not in manager._sessions
+    assert session.operator.disposed == 1
+    with pytest.raises(RuntimeError, match=r"E_CAMERA_DEVICE_NOT_FOUND.*-106"):
+        next(stream if stream is not None else manager.stream(sessionId))
+    assert events[0]["eventType"] == "node.preview.failed"
+    assert events[0]["nodeId"] == "camera"
+    assert events[0]["projectId"] == "p"
+    assert manager.close(sessionId) is None
+    assert sessionId not in manager._failures
+
+
+def testPreviewFailureIsWrittenToRuntimeLogAndExposedByService(tmp_path) -> None:
+    import json
+    from types import SimpleNamespace
+
+    import grpc
+
+    from emo_master.apps.runtime.grpc_server.service import RuntimeService
+
+    service = RuntimeService(dbPath=tmp_path / "runtime.db")
+    _FailingLiveCamera.release.clear()
+    service.livePreviewManager.operatorRegistry = {
+        "vision.io.fake_camera": _descriptor(_FailingLiveCamera)
+    }
+    try:
+        sessionId, error = service.livePreviewManager.open(
+            "vision.io.fake_camera", "p", "main", "camera", {}
+        )
+        assert error is None and sessionId
+        session = service.livePreviewManager._sessions[sessionId]
+        _FailingLiveCamera.release.set()
+        session.thread.join(2.0)
+        assert not session.thread.is_alive()
+        request = SimpleNamespace(session_id=sessionId)
+        with pytest.raises(RuntimeError, match="-106"):
+            next(service.StreamOperatorPreviewFrames(request, None))
+        aborted = []
+
+        def abort(code, message):
+            aborted.append((code, message))
+            raise RuntimeError(message)
+
+        with pytest.raises(RuntimeError, match="-106"):
+            next(service.StreamOperatorPreviewFrames(request, SimpleNamespace(abort=abort)))
+        assert aborted[0][0] == grpc.StatusCode.FAILED_PRECONDITION
+        from concurrent.futures import ThreadPoolExecutor
+
+        from emo_master.apps.runtime.grpc_server.generated import runtime_pb2, runtime_pb2_grpc
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            server = grpc.server(executor)
+            runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+            port = server.add_insecure_port("127.0.0.1:0")
+            server.start()
+            try:
+                with grpc.insecure_channel(f"127.0.0.1:{port}") as channel:
+                    stub = runtime_pb2_grpc.RuntimeServiceStub(channel)
+                    requestType = runtime_pb2.StreamOperatorPreviewFramesRequest
+                    with pytest.raises(grpc.RpcError) as remoteError:
+                        next(stub.StreamOperatorPreviewFrames(
+                            requestType(session_id=sessionId), timeout=3.0
+                        ))
+                    assert remoteError.value.code() == grpc.StatusCode.FAILED_PRECONDITION
+                    assert "-106" in remoteError.value.details()
+            finally:
+                server.stop(0).wait()
+    finally:
+        _FailingLiveCamera.release.set()
+        service.close()
+    records = [
+        json.loads(line)
+        for path in (tmp_path / "logs").glob("runtime-*.jsonl")
+        for line in path.read_text(encoding="utf-8").splitlines()
+    ]
+    failures = [record for record in records if record["eventType"] == "node.preview.failed"]
+    assert len(failures) == 1
+    assert "-106" in failures[0]["message"]

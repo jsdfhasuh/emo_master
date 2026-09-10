@@ -47,6 +47,7 @@ class _LiveSession:
         self.condition = threading.Condition()
         self.latest: LivePreviewFrame | None = None
         self.error: str = ""
+        self.errorCode = "E_PREVIEW_FAILED"
         self._disposeLock = threading.Lock()
         self._disposed = False
         self._disposeError: str | None = None
@@ -94,7 +95,7 @@ class _LiveSession:
                     delivered = self.latest.sequence
                     frame = self.latest
                 elif self.error:
-                    return
+                    raise RuntimeError(self.error)
             if frame is not None:
                 yield frame
 
@@ -119,7 +120,9 @@ class _LiveSession:
                 if not isinstance(result, dict) or result.get("status") != "ok":
                     error = result.get("error", {}) if isinstance(result, dict) else {}
                     message = error.get("message", "live preview failed") if isinstance(error, dict) else str(error)
-                    raise RuntimeError(str(message))
+                    if isinstance(error, dict):
+                        self.errorCode = str(error.get("code") or "E_PREVIEW_FAILED")
+                    raise RuntimeError(f"{self.errorCode}: {message}")
                 outputs = result.get("outputs", {})
                 image = outputs.get("image") if isinstance(outputs, dict) else None
                 if not isinstance(image, np.ndarray) or image.dtype != np.uint8:
@@ -197,9 +200,16 @@ class _LiveSession:
 
 
 class LivePreviewManager:
-    def __init__(self, operatorRegistry: Mapping[str, object]) -> None:
+    def __init__(
+        self,
+        operatorRegistry: Mapping[str, object],
+        eventPublisher: Callable[..., object] | None = None,
+    ) -> None:
         self.operatorRegistry = operatorRegistry
+        self.eventPublisher = eventPublisher
         self._sessions: dict[str, _LiveSession] = {}
+        # Keep only bounded error summaries, never disposed operators or images.
+        self._failures: dict[str, tuple[str, str]] = {}
         self._lock = threading.RLock()
 
     def open(
@@ -253,29 +263,60 @@ class LivePreviewManager:
     def stream(self, sessionId: str, context: object | None = None) -> Iterator[LivePreviewFrame]:
         with self._lock:
             session = self._sessions.get(sessionId)
+            failure = self._failures.get(sessionId)
         if session is None:
+            if failure is not None:
+                raise RuntimeError(failure[1])
             return iter(())
         return session.frames(context)
 
     def close(self, sessionId: str, timeoutSeconds: float = 3.0) -> str | None:
         with self._lock:
             session = self._sessions.get(sessionId)
+            self._failures.pop(sessionId, None)
         if session is None:
             return None
         error = session.close(timeoutSeconds)
         if error is None:
             with self._lock:
+                self._failures.pop(sessionId, None)
                 if self._sessions.get(sessionId) is session:
                     self._sessions.pop(sessionId, None)
         return error
 
     def _sessionTerminated(self, session: _LiveSession) -> None:
         with self._lock:
+            if session.error and not session.stopEvent.is_set():
+                self._failures[session.sessionId] = (session.projectId, session.error)
+                while len(self._failures) > 128:
+                    self._failures.pop(next(iter(self._failures)))
             if self._sessions.get(session.sessionId) is session:
                 self._sessions.pop(session.sessionId, None)
+        if session.error and self.eventPublisher is not None:
+            try:
+                self.eventPublisher(
+                    jobId="__runtime__",
+                    eventType="node.preview.failed",
+                    message=session.error,
+                    level="ERROR",
+                    code=session.errorCode,
+                    projectId=session.projectId,
+                    workflowId=session.workflowId,
+                    nodeId=session.nodeId,
+                    workflowRunId=session.sessionId,
+                    nodeRunId=session.sessionId,
+                    payload={"phase": "preview", "logs": session.logger.records()},
+                )
+            except Exception:
+                # A failed log sink must not prevent resource cleanup or delivery.
+                pass
 
     def closeProject(self, projectId: str, timeoutSeconds: float = 3.0) -> list[str]:
         with self._lock:
+            self._failures = {
+                key: value for key, value in self._failures.items()
+                if value[0] != projectId
+            }
             sessionIds = [
                 sessionId
                 for sessionId, session in self._sessions.items()
@@ -292,6 +333,7 @@ class LivePreviewManager:
 
     def closeAll(self) -> list[str]:
         with self._lock:
+            self._failures.clear()
             sessionIds = list(self._sessions)
         return [error for sessionId in sessionIds if (error := self.close(sessionId))]
 

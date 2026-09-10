@@ -515,14 +515,15 @@ class CameraSession:
         try:
             selectionMode = str(self.settings["selectionMode"])
             createMode, identifier = _createIdentifier(self.settings)
+            # IMV resolves every selector against its process-local device list.
+            enumResult, deviceCount = self.api.enumerate_devices(IMV_INTERFACE_ALL)
+            _checkSdkResult(
+                enumResult,
+                "E_CAMERA_IO",
+                "IMV_EnumDevices failed",
+                "IMV_EnumDevices",
+            )
             if selectionMode == "index":
-                enumResult, deviceCount = self.api.enumerate_devices(IMV_INTERFACE_ALL)
-                _checkSdkResult(
-                    enumResult,
-                    "E_CAMERA_IO",
-                    "IMV_EnumDevices failed",
-                    "IMV_EnumDevices",
-                )
                 if int(identifier) >= deviceCount:
                     raise HuarayCameraError(
                         "E_CAMERA_DEVICE_NOT_FOUND",

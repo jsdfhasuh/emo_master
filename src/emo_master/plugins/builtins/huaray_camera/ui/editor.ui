@@ -22,9 +22,9 @@
    </item>
    <item>
     <layout class="QHBoxLayout" name="metadataLayout">
-     <item><widget class="QLabel" name="blockIdLabel"><property name="text"><string>blockId: -</string></property></widget></item>
-     <item><widget class="QLabel" name="timestampLabel"><property name="text"><string>timestamp: -</string></property></widget></item>
-     <item><widget class="QLabel" name="exposureLabel"><property name="text"><string>actualExposureUs: -</string></property></widget></item>
+     <item><widget class="QLabel" name="blockIdLabel"><property name="text"><string>帧号：-</string></property></widget></item>
+     <item><widget class="QLabel" name="timestampLabel"><property name="text"><string>设备时间戳：-</string></property></widget></item>
+     <item><widget class="QLabel" name="exposureLabel"><property name="text"><string>实际曝光：- 微秒</string></property></widget></item>
     </layout>
    </item>
    <item>

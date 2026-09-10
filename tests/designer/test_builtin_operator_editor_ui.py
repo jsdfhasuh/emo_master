@@ -103,3 +103,31 @@ def testHistogramEditorToleratesMalformedPixelCount(
     value: object, expected: int
 ) -> None:
     assert _safePixelCount(value) == expected
+
+
+@pytest.mark.parametrize("singleFrame", [False, True])
+def testCameraEditorShowsOriginalStreamFailure(singleFrame) -> None:
+    from types import SimpleNamespace
+
+    from emo_master.plugins.builtins.huaray_camera.editor import HuarayCameraEditorController
+
+    errors = []
+    closed = []
+
+    def fail(_sessionId):
+        raise RuntimeError("E_CAMERA_DEVICE_NOT_FOUND: IMV_CreateHandle (-106)")
+
+    controller = HuarayCameraEditorController()
+    controller.context = SimpleNamespace(
+        streamLivePreview=fail,
+        closeLivePreview=closed.append,
+        setError=errors.append,
+        log=lambda *_args: None,
+    )
+    controller._sessionId = "failed-session"
+    controller._singleFrame = singleFrame
+    controller._streamFrames("failed-session")
+    controller._pollFrame()
+    assert len(errors) == 1
+    assert "E_CAMERA_DEVICE_NOT_FOUND" in errors[0] and "-106" in errors[0]
+    assert closed == ["failed-session"]

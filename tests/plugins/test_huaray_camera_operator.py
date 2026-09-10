@@ -24,6 +24,7 @@ from emo_master.plugins.builtins.huaray_camera.operator import HuarayCameraOpera
 class _FakeImvApi:
     def __init__(self) -> None:
         self.enumCount = 1
+        self.enumResult = IMV_OK
         self.enumerateCalls: list[int] = []
         self.createCalls: list[tuple[int, str | int]] = []
         self.openCount = 0
@@ -80,9 +81,10 @@ class _FakeImvApi:
 
     def enumerate_devices(self, interfaceType: int = 0) -> tuple[int, int]:
         self.enumerateCalls.append(interfaceType)
-        return IMV_OK, self.enumCount
+        return self.enumResult, self.enumCount
 
     def create_handle(self, mode: int, identifier: str | int) -> tuple[int, object]:
+        assert self.enumerateCalls, "device discovery must precede handle creation"
         self.createCalls.append((mode, identifier))
         return self.createResult, object()
 
@@ -276,8 +278,24 @@ def testCameraSupportsAllSelectionModes(
 
     assert result["status"] == "ok"
     assert api.createCalls == [(expectedMode, expectedIdentifier)]
-    assert bool(api.enumerateCalls) is (expectedMode == IMV_CREATE_BY_INDEX)
+    assert api.enumerateCalls == [0]
     operator.disposeOperator()
+
+
+def testCameraDiscoveryFailureDoesNotCreateHandleAndCanRetry() -> None:
+    api = _FakeImvApi()
+    api.enumResult = -101
+    operator = HuarayCameraOperator(lambda: api)
+    try:
+        result = operator.executeNode({}, _params(retryCount=0), {})
+        assert result["status"] == "error"
+        assert result["error"]["code"] == "E_CAMERA_IO"
+        assert api.createCalls == []
+        api.enumResult = IMV_OK
+        result = operator.executeNode({}, _params(retryCount=0), {})
+        assert result["status"] == "ok"
+    finally:
+        operator.disposeOperator()
 
 
 @pytest.mark.parametrize(

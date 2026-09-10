@@ -7,15 +7,15 @@ from typing import Any, cast
 from PySide2.QtCore import QObject, QTimer
 from PySide2.QtWidgets import QLabel, QPushButton, QWidget
 
-from emo_master.apps.designer.ui.param_form import SchemaParamForm
 from emo_master.plugins.builtins._editor_support import requiredChild, setImageLabel
+from emo_master.plugins.builtins.huaray_camera.parameter_form import CameraParameterForm
 
 
 class HuarayCameraEditorController:
     def __init__(self) -> None:
         self.root: Any = None
         self.context: Any = None
-        self.form: SchemaParamForm | None = None
+        self.form: CameraParameterForm | None = None
         self.previewLabel: QLabel | None = None
         self.connectionStatusLabel: QLabel | None = None
         self.blockIdLabel: QLabel | None = None
@@ -41,7 +41,7 @@ class HuarayCameraEditorController:
         self.timestampLabel = requiredChild(rootWidget, QLabel, "timestampLabel")
         self.exposureLabel = requiredChild(rootWidget, QLabel, "exposureLabel")
         placeholder = requiredChild(rootWidget, QWidget, "paramsPlaceholder")
-        form = SchemaParamForm()
+        form = CameraParameterForm()
         form.setWorkflowOptions(context.workflowOptions)
         placeholder.layout().addWidget(form)
         self.form = form
@@ -71,7 +71,7 @@ class HuarayCameraEditorController:
         return None
 
     def onOpen(self) -> None:
-        self.context.setStatus("相机预览待连接；预览会临时使用 freeRun")
+        self.context.setStatus("相机预览待连接；预览临时使用自由采集")
 
     def onClose(self) -> None:
         self._stopPreview()
@@ -93,7 +93,7 @@ class HuarayCameraEditorController:
         if self.connectionStatusLabel is not None:
             self.connectionStatusLabel.setText("正在采集")
         self.context.setStatus(
-            "正在采集单帧" if singleFrame else "实时预览中（最高 10 FPS）"
+            "正在采集单帧" if singleFrame else "实时预览中（最高每秒 10 帧）"
         )
         sessionId = self._sessionId
         self._streamThread = threading.Thread(
@@ -106,6 +106,8 @@ class HuarayCameraEditorController:
 
     def _streamFrames(self, sessionId: str) -> None:
         stream: Any = None
+        failure = ""
+        receivedFrame = False
         try:
             stream = self.context.streamLivePreview(sessionId)
             with self._streamLock:
@@ -116,6 +118,7 @@ class HuarayCameraEditorController:
             for frame in stream:
                 if self._stopEvent.is_set() or sessionId != self._sessionId:
                     break
+                receivedFrame = True
                 while True:
                     try:
                         self._frames.get_nowait()
@@ -128,19 +131,28 @@ class HuarayCameraEditorController:
                 if self._singleFrame:
                     break
         except Exception as err:
-            self.context.log("ERROR", f"相机预览流失败：{err}")
+            failure = f"相机预览流失败：{err}"
+            if not self._stopEvent.is_set() and sessionId == self._sessionId:
+                self.context.log("ERROR", failure)
         finally:
             with self._streamLock:
                 if self._streamCall is stream:
                     self._streamCall = None
-            if not self._stopEvent.is_set() and not self._singleFrame:
+            if (
+                not self._stopEvent.is_set()
+                and sessionId == self._sessionId
+                and (failure or not self._singleFrame or not receivedFrame)
+            ):
                 while True:
                     try:
                         self._frames.get_nowait()
                     except queue.Empty:
                         break
                 try:
-                    self._frames.put_nowait("__stream_ended__")
+                    self._frames.put_nowait((
+                        "__stream_ended__",
+                        failure or "相机预览流已结束，请检查设备连接和 Runtime 日志",
+                    ))
                 except queue.Full:
                     pass
 
@@ -153,22 +165,22 @@ class HuarayCameraEditorController:
                 break
         if latest is None:
             return
-        if latest == "__stream_ended__":
-            self.context.setError("相机预览流已结束，请检查设备连接和 Runtime 日志")
+        if isinstance(latest, tuple) and latest[0] == "__stream_ended__":
+            self.context.setError(str(latest[1]))
             self._stopPreview()
             return
         if self.previewLabel is not None:
             setImageLabel(self.previewLabel, bytes(getattr(latest, "jpeg", b"")))
         if self.blockIdLabel is not None:
-            self.blockIdLabel.setText(f"blockId: {int(getattr(latest, 'block_id', 0))}")
+            self.blockIdLabel.setText(f"帧号：{int(getattr(latest, 'block_id', 0))}")
         if self.timestampLabel is not None:
             self.timestampLabel.setText(
-                f"timestamp: {int(getattr(latest, 'device_timestamp', 0))}"
+                f"设备时间戳：{int(getattr(latest, 'device_timestamp', 0))}"
             )
         if self.exposureLabel is not None:
             self.exposureLabel.setText(
-                "actualExposureUs: "
-                f"{float(getattr(latest, 'actual_exposure_us', 0.0)):.3f}"
+                "实际曝光："
+                f"{float(getattr(latest, 'actual_exposure_us', 0.0)):.3f} 微秒"
             )
         if self._singleFrame:
             self._stopPreview()

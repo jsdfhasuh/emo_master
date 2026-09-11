@@ -1,0 +1,48 @@
+{
+  "operatorId": "vision.segment.in_range",
+  "displayName": "In Range",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.in_range.operator:InRangeOperator",
+  "category": "分割",
+  "iconKey": "range",
+  "summary": "按 GRAY、BGR、RGB、HSV 或 OpenCV uint8 LAB 通道范围生成 0/255 掩码。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "colorSpace": {
+        "type": "string",
+        "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
+        "default": "BGR"
+      },
+      "lower": {
+        "type": "array",
+        "items": {"type": "integer", "minimum": 0, "maximum": 255}
+      },
+      "upper": {
+        "type": "array",
+        "items": {"type": "integer", "minimum": 0, "maximum": 255}
+      }
+    },
+    "required": ["lower", "upper"]
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

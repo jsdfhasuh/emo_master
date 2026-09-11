@@ -104,8 +104,8 @@ def testMainWindowUsesCompactCategoryLabelsAndRightSections() -> None:
     assert isinstance(labels, dict)
     assert "全部" in labels
     assert "控制流" in labels
-    assert labels["全部"].startswith("◌")
-    assert labels["输出"].startswith("⬒")
+    assert labels["全部"] == "全部"
+    assert labels["输出"] == "输出"
 
     getRightPanelSections = getattr(window, "getRightPanelSections", None)
     assert callable(getRightPanelSections)
@@ -142,7 +142,8 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
 
     restoredWindow = MainWindow(RuntimeClientStub(), settingsStore=settings)
     restoredSizes = restoredWindow.getMainSplitterSizes()
-    assert restoredSizes == [260, 900, 360]
+    assert restoredSizes[0] == 36
+    assert restoredWindow.layoutController._expandedSplitterSizes == [260, 900, 360]
 
 
 def testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth() -> None:
@@ -151,7 +152,7 @@ def testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth() -> None:
     getPanelConstraints = getattr(window, "getPanelConstraints", None)
     assert callable(getPanelConstraints)
     constraints = getPanelConstraints()
-    assert constraints["rightPanelMinWidth"] == 300
+    assert constraints["rightPanelMinWidth"] == 260
     assert constraints["rightPanelDefaultWidth"] in [320, 340]
 
 
@@ -181,3 +182,53 @@ def testMainWindowDoesNotLimitCanvasMaxWidth() -> None:
     assert callable(getPanelConstraints)
     constraints = getPanelConstraints()
     assert constraints["canvasMaxWidth"] == -1
+
+
+def testRuntimeLogDockIsBottomDockedAndRestoresLocalSettings() -> None:
+    ensureQApp()
+    settings = SettingsStoreStub()
+    window = MainWindow(RuntimeClientStub(), settingsStore=settings)
+    assert window.logDock is not None
+    assert window.logDock.isVisible() is False
+
+    window.appendRuntimeLog("INFO", "designer message")
+    window.appendEditorLog("WARN", "editor message")
+    window.appendRuntimeEvent({
+        "timestampMs": 123,
+        "level": "ERROR",
+        "message": "runtime message",
+        "eventType": "node.log",
+        "jobId": "job",
+        "workflowId": "main",
+        "nodeId": "node",
+        "payload": {"operatorId": "test.operator"},
+    })
+    assert [entry.source for entry in window.logEntries[-3:]] == [
+        "designer", "editor", "runtime"
+    ]
+
+    window.openLogDialog()
+    window.logDock.setFloating(True)
+    window._saveRuntimeLogSettings()
+    assert settings.value("ui/runtime_log_dock_visible") is True
+    assert settings.value("ui/runtime_log_dock_floating") is True
+    assert isinstance(settings.value("ui/runtime_log_view"), dict)
+
+    restored = MainWindow(RuntimeClientStub(), settingsStore=settings)
+    assert restored.logDock is not None
+    assert restored.logDock.isVisible() is True
+    assert restored.logDock.isFloating() is True
+
+
+def testRuntimeLogDockClearAlsoReleasesMainWindowViewCache() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+    assert window.logDock is not None
+    window.appendRuntimeLog("INFO", "cached message")
+    assert window.logEntries
+    assert window.logBuffer
+
+    window.logDock.view.clearView()
+
+    assert window.logEntries == []
+    assert window.logBuffer == []

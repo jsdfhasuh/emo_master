@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import runtime_pb2 as runtime__pb2
+from . import runtime_pb2 as runtime__pb2
 
 GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
@@ -69,10 +69,85 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListOperatorsReply.FromString,
                 _registered_method=True)
+        self.GetOperatorIconAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+                request_serializer=runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetOperatorIconAssetReply.FromString,
+                _registered_method=True)
+        self.GetOperatorEditorAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorEditorAsset',
+                request_serializer=runtime__pb2.GetOperatorEditorAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetOperatorEditorAssetReply.FromString,
+                _registered_method=True)
+        self.ListNodePreviewSources = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListNodePreviewSources',
+                request_serializer=runtime__pb2.ListNodePreviewSourcesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListNodePreviewSourcesReply.FromString,
+                _registered_method=True)
+        self.UploadPreviewImage = channel.stream_unary(
+                '/emo_master.runtime.RuntimeService/UploadPreviewImage',
+                request_serializer=runtime__pb2.PreviewUploadChunk.SerializeToString,
+                response_deserializer=runtime__pb2.PreviewAssetReply.FromString,
+                _registered_method=True)
+        self.StreamPreviewAsset = channel.unary_stream(
+                '/emo_master.runtime.RuntimeService/StreamPreviewAsset',
+                request_serializer=runtime__pb2.GetPreviewAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PreviewDownloadChunk.FromString,
+                _registered_method=True)
+        self.RunOperatorPreview = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RunOperatorPreview',
+                request_serializer=runtime__pb2.RunOperatorPreviewRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunOperatorPreviewReply.FromString,
+                _registered_method=True)
+        self.CancelOperatorPreview = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CancelOperatorPreview',
+                request_serializer=runtime__pb2.CancelOperatorPreviewRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CancelOperatorPreviewReply.FromString,
+                _registered_method=True)
+        self.OpenOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenOperatorPreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.StreamOperatorPreviewFrames = channel.unary_stream(
+                '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
+                request_serializer=runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorPreviewFrame.FromString,
+                _registered_method=True)
+        self.CloseOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseOperatorPreviewSession',
+                request_serializer=runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
         self.ListRejectedOperators = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/ListRejectedOperators',
                 request_serializer=runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListRejectedOperatorsReply.FromString,
+                _registered_method=True)
+        self.ListWorkflows = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListWorkflows',
+                request_serializer=runtime__pb2.ListWorkflowsRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListWorkflowsReply.FromString,
+                _registered_method=True)
+        self.ListGlobalCounters = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+                request_serializer=runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListGlobalCountersReply.FromString,
+                _registered_method=True)
+        self.GetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+                request_serializer=runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.SetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+                request_serializer=runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.SetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.ResetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+                request_serializer=runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ResetGlobalCounterReply.FromString,
                 _registered_method=True)
 
 
@@ -121,7 +196,97 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetOperatorIconAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOperatorEditorAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListNodePreviewSources(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UploadPreviewImage(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamPreviewAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RunOperatorPreview(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CancelOperatorPreview(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamOperatorPreviewFrames(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ListRejectedOperators(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListWorkflows(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListGlobalCounters(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetGlobalCounter(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -165,10 +330,85 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=runtime__pb2.ListOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListOperatorsReply.SerializeToString,
             ),
+            'GetOperatorIconAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorIconAsset,
+                    request_deserializer=runtime__pb2.GetOperatorIconAssetRequest.FromString,
+                    response_serializer=runtime__pb2.GetOperatorIconAssetReply.SerializeToString,
+            ),
+            'GetOperatorEditorAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorEditorAsset,
+                    request_deserializer=runtime__pb2.GetOperatorEditorAssetRequest.FromString,
+                    response_serializer=runtime__pb2.GetOperatorEditorAssetReply.SerializeToString,
+            ),
+            'ListNodePreviewSources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListNodePreviewSources,
+                    request_deserializer=runtime__pb2.ListNodePreviewSourcesRequest.FromString,
+                    response_serializer=runtime__pb2.ListNodePreviewSourcesReply.SerializeToString,
+            ),
+            'UploadPreviewImage': grpc.stream_unary_rpc_method_handler(
+                    servicer.UploadPreviewImage,
+                    request_deserializer=runtime__pb2.PreviewUploadChunk.FromString,
+                    response_serializer=runtime__pb2.PreviewAssetReply.SerializeToString,
+            ),
+            'StreamPreviewAsset': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamPreviewAsset,
+                    request_deserializer=runtime__pb2.GetPreviewAssetRequest.FromString,
+                    response_serializer=runtime__pb2.PreviewDownloadChunk.SerializeToString,
+            ),
+            'RunOperatorPreview': grpc.unary_unary_rpc_method_handler(
+                    servicer.RunOperatorPreview,
+                    request_deserializer=runtime__pb2.RunOperatorPreviewRequest.FromString,
+                    response_serializer=runtime__pb2.RunOperatorPreviewReply.SerializeToString,
+            ),
+            'CancelOperatorPreview': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelOperatorPreview,
+                    request_deserializer=runtime__pb2.CancelOperatorPreviewRequest.FromString,
+                    response_serializer=runtime__pb2.CancelOperatorPreviewReply.SerializeToString,
+            ),
+            'OpenOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'StreamOperatorPreviewFrames': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamOperatorPreviewFrames,
+                    request_deserializer=runtime__pb2.StreamOperatorPreviewFramesRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorPreviewFrame.SerializeToString,
+            ),
+            'CloseOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.CloseOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.CloseOperatorPreviewSessionReply.SerializeToString,
+            ),
             'ListRejectedOperators': grpc.unary_unary_rpc_method_handler(
                     servicer.ListRejectedOperators,
                     request_deserializer=runtime__pb2.ListRejectedOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListRejectedOperatorsReply.SerializeToString,
+            ),
+            'ListWorkflows': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListWorkflows,
+                    request_deserializer=runtime__pb2.ListWorkflowsRequest.FromString,
+                    response_serializer=runtime__pb2.ListWorkflowsReply.SerializeToString,
+            ),
+            'ListGlobalCounters': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGlobalCounters,
+                    request_deserializer=runtime__pb2.ListGlobalCountersRequest.FromString,
+                    response_serializer=runtime__pb2.ListGlobalCountersReply.SerializeToString,
+            ),
+            'GetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGlobalCounter,
+                    request_deserializer=runtime__pb2.GetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.GetGlobalCounterReply.SerializeToString,
+            ),
+            'SetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalCounter,
+                    request_deserializer=runtime__pb2.SetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.SetGlobalCounterReply.SerializeToString,
+            ),
+            'ResetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetGlobalCounter,
+                    request_deserializer=runtime__pb2.ResetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.ResetGlobalCounterReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -371,6 +611,276 @@ class RuntimeService(object):
             _registered_method=True)
 
     @staticmethod
+    def GetOperatorIconAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+            runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+            runtime__pb2.GetOperatorIconAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOperatorEditorAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorEditorAsset',
+            runtime__pb2.GetOperatorEditorAssetRequest.SerializeToString,
+            runtime__pb2.GetOperatorEditorAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListNodePreviewSources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListNodePreviewSources',
+            runtime__pb2.ListNodePreviewSourcesRequest.SerializeToString,
+            runtime__pb2.ListNodePreviewSourcesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UploadPreviewImage(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            '/emo_master.runtime.RuntimeService/UploadPreviewImage',
+            runtime__pb2.PreviewUploadChunk.SerializeToString,
+            runtime__pb2.PreviewAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamPreviewAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/StreamPreviewAsset',
+            runtime__pb2.GetPreviewAssetRequest.SerializeToString,
+            runtime__pb2.PreviewDownloadChunk.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RunOperatorPreview(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RunOperatorPreview',
+            runtime__pb2.RunOperatorPreviewRequest.SerializeToString,
+            runtime__pb2.RunOperatorPreviewReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CancelOperatorPreview(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CancelOperatorPreview',
+            runtime__pb2.CancelOperatorPreviewRequest.SerializeToString,
+            runtime__pb2.CancelOperatorPreviewReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenOperatorPreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamOperatorPreviewFrames(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
+            runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
+            runtime__pb2.OperatorPreviewFrame.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseOperatorPreviewSession',
+            runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def ListRejectedOperators(request,
             target,
             options=(),
@@ -387,6 +897,141 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListRejectedOperators',
             runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
             runtime__pb2.ListRejectedOperatorsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListWorkflows(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListWorkflows',
+            runtime__pb2.ListWorkflowsRequest.SerializeToString,
+            runtime__pb2.ListWorkflowsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListGlobalCounters(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+            runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+            runtime__pb2.ListGlobalCountersReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+            runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.GetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+            runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.SetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+            runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.ResetGlobalCounterReply.FromString,
             options,
             channel_credentials,
             insecure,

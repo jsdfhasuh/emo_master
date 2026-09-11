@@ -1,0 +1,40 @@
+{
+  "operatorId": "communication.tcp.client",
+  "displayName": "TCP Client",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins._communication_operators:TcpClientOperator",
+  "category": "通讯",
+  "iconKey": "tcp-client",
+  "summary": "执行一次有界 TCP 发送或请求响应事务，支持显式消息分帧。",
+  "inputPorts": {
+    "message": {"type": "tcpMessage", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "text": {"type": "string", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "response": {"type": "tcpMessage", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "sentBytes": {"type": "integer", "required": true, "nullable": false},
+    "responseText": {"type": "string", "required": false, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "host": {"type": "string", "default": "127.0.0.1"},
+      "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 10001},
+      "operation": {"type": "string", "enum": ["send", "exchange"], "default": "send"},
+      "text": {"type": "string", "default": ""},
+      "textEncoding": {"type": "string", "enum": ["utf-8", "ascii", "latin-1", "hex", "base64"], "default": "utf-8"},
+      "appendNewline": {"type": "boolean", "default": false},
+      "shutdownWrite": {"type": "boolean", "default": false},
+      "connectTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "responseTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "responseFraming": {"type": "string", "enum": ["newline", "quoted", "idle", "fixedLength"], "default": "newline"},
+      "expectedBytes": {"type": "integer", "minimum": 0, "maximum": 16777216, "default": 0},
+      "maxResponseBytes": {"type": "integer", "minimum": 1, "maximum": 16777216, "default": 1048576},
+      "maxRequestBytes": {"type": "integer", "minimum": 1, "maximum": 16777216, "default": 1048576},
+      "responseEncoding": {"type": "string", "enum": ["utf-8", "ascii", "latin-1", "hex", "base64"], "default": "utf-8"},
+      "responseTextEncoding": {"type": "string", "enum": ["none", "utf-8", "ascii", "latin-1"], "default": "none"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

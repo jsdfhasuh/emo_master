@@ -1,0 +1,65 @@
+{
+  "operatorId": "vision.color.rgb_statistics",
+  "displayName": "RGB Statistics",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.rgb_statistics.operator:RgbStatisticsOperator",
+  "category": "分析",
+  "iconKey": "rgb",
+  "summary": "计算整图或几何 ROI 内的 RGB 最小值、最大值、均值和标准差。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "roi": {
+      "type": "geometry2d",
+      "required": false,
+      "nullable": true,
+      "schemaVersion": "1.x"
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "statistics": {
+      "type": "colorStatistics",
+      "required": true,
+      "schemaVersion": "1.x"
+    },
+    "mask": {
+      "type": "image",
+      "required": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "ddof": {
+        "type": "integer",
+        "enum": [0, 1],
+        "default": 0
+      },
+      "clipRoi": {
+        "type": "boolean",
+        "default": true
+      },
+      "emitMask": {
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

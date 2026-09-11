@@ -1,0 +1,38 @@
+{
+  "operatorId": "communication.plc.slmp_read",
+  "displayName": "PLC SLMP Read",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpReadOperator",
+  "category": "通讯",
+  "iconKey": "plc-read",
+  "summary": "通过三菱 SLMP/MC 3E 二进制协议有界读取 D/M 设备数据。",
+  "inputPorts": {},
+  "outputPorts": {
+    "values": {"type": "plcValueCollection", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "numberValue": {"type": "number", "required": false, "nullable": false},
+    "booleanValue": {"type": "boolean", "required": false, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "host": {"type": "string", "default": "127.0.0.1"},
+      "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 10001},
+      "device": {"type": "string", "enum": ["D", "M", "d", "m"], "default": "D"},
+      "startAddress": {"type": "integer", "minimum": 0, "maximum": 16777215, "default": 0},
+      "connectTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "responseTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "retryCount": {"type": "integer", "minimum": 0, "maximum": 3, "default": 1},
+      "retryDelayMs": {"type": "integer", "minimum": 0, "maximum": 10000, "default": 0},
+      "networkNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "pcNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 255},
+      "moduleIoNo": {"type": "integer", "minimum": 0, "maximum": 65535, "default": 1023},
+      "moduleStationNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "monitoringTimer": {"type": "integer", "minimum": 0, "maximum": 65535, "default": 0},
+      "dataType": {"type": "string", "enum": ["uint16", "int16", "uint32", "int32", "float32", "bit"], "default": "uint16"},
+      "count": {"type": "integer", "minimum": 1, "maximum": 960, "default": 1},
+      "outputIndex": {"type": "integer", "minimum": 0, "maximum": 959, "default": 0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

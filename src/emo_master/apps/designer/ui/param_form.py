@@ -75,7 +75,11 @@ try:
             self._filterText = filterText if filterText != "" else "所有文件 (*.*)"
             self._lineEdit = QLineEdit()
             self._lineEdit.setText(initialPath)
-            self._browseButton = QPushButton("浏览...")
+            from emo_master.apps.designer.ui.icon_map import icon
+            self._browseButton = QPushButton()
+            self._browseButton.setIcon(icon("folder-open"))
+            self._browseButton.setToolTip("选择文件")
+            self._browseButton.setFixedWidth(34)
             self._browseButton.clicked.connect(self._onBrowseClicked)
 
             layout = QHBoxLayout()
@@ -104,11 +108,22 @@ try:
         def __init__(self) -> None:
             super().__init__()
             self._layout = QFormLayout()
+            self._layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
+            self._layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
+            self._layout.setContentsMargins(8, 8, 8, 8)
+            self._layout.setHorizontalSpacing(12)
+            self._layout.setVerticalSpacing(10)
             self.setLayout(self._layout)
             self._controls: dict[str, QWidget] = {}
             self._fieldsByName: dict[str, FieldDefinition] = {}
             self._nestedFormsByControlId: dict[int, SchemaParamForm] = {}
             self._rawSchema: dict[str, object] = {}
+            self._workflowOptions: list[str] = []
+
+        def setWorkflowOptions(self, options: list[str]) -> None:
+            self._workflowOptions = [option for option in options if isinstance(option, str)]
+            if self._rawSchema:
+                self.setSchema(self._rawSchema, self.getValues())
 
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]
@@ -130,7 +145,10 @@ try:
                 control = self._createControl(field, valuesWithDefaults)
                 self._controls[field.name] = control
                 self._fieldsByName[field.name] = field
-                self._layout.addRow(QLabel(labelText), control)
+                from emo_master.apps.designer.ui.widgets import WrapLabel
+                label = WrapLabel(labelText)
+                label.setToolTip(labelText)
+                self._layout.addRow(label, control)
 
             if len(self._controls) == 0:
                 tip = QLabel("No schema fields")
@@ -162,11 +180,25 @@ try:
                         filterText=filterText,
                         initialPath=initialPath,
                     )
+                if widgetType in {"workflow-select", "workflow_select"}:
+                    combo = QComboBox()
+                    rawOptions = field.schema.get("xOptions", self._workflowOptions)
+                    options = (
+                        [option for option in rawOptions if isinstance(option, str)]
+                        if isinstance(rawOptions, list)
+                        else list(self._workflowOptions)
+                    )
+                    if isinstance(selectedValue, str) and selectedValue not in options:
+                        options.append(selectedValue)
+                    for option in options:
+                        combo.addItem(option, option)
+                    self._setComboValue(combo, selectedValue)
+                    return combo
 
             if len(field.enumValues) > 0:
                 combo = QComboBox()
-                for option in field.enumValues:
-                    combo.addItem(str(option), option)
+                for enumOption in field.enumValues:
+                    combo.addItem(str(enumOption), enumOption)
                 self._setComboValue(combo, selectedValue)
                 return combo
 
@@ -283,6 +315,10 @@ except Exception:  # pragma: no cover
         def __init__(self) -> None:
             self._schema: dict[str, object] = {}
             self._values: dict[str, object] = {}
+            self._workflowOptions: list[str] = []
+
+        def setWorkflowOptions(self, options: list[str]) -> None:
+            self._workflowOptions = [option for option in options if isinstance(option, str)]
 
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]

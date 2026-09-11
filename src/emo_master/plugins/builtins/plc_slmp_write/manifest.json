@@ -1,0 +1,39 @@
+{
+  "operatorId": "communication.plc.slmp_write",
+  "displayName": "PLC SLMP Write",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpWriteOperator",
+  "category": "通讯",
+  "iconKey": "plc-write",
+  "summary": "通过三菱 SLMP/MC 3E 二进制协议写入 D/M 字设备数据。",
+  "inputPorts": {
+    "data": {"type": "plcValueCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "value": {"type": "number", "required": false, "nullable": false},
+    "values": {"type": "list<number>", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "receipt": {"type": "plcWriteReceipt", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "host": {"type": "string", "default": "127.0.0.1"},
+      "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 10001},
+      "device": {"type": "string", "enum": ["D", "M", "d", "m"], "default": "D"},
+      "startAddress": {"type": "integer", "minimum": 0, "maximum": 16777215, "default": 0},
+      "connectTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "responseTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 2000},
+      "retryCount": {"type": "integer", "minimum": 0, "maximum": 3, "default": 0},
+      "retryDelayMs": {"type": "integer", "minimum": 0, "maximum": 10000, "default": 0},
+      "networkNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "pcNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 255},
+      "moduleIoNo": {"type": "integer", "minimum": 0, "maximum": 65535, "default": 1023},
+      "moduleStationNo": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "monitoringTimer": {"type": "integer", "minimum": 0, "maximum": 65535, "default": 0},
+      "dataType": {"type": "string", "enum": ["uint16", "int16", "uint32", "int32", "float32"], "default": "uint16"},
+      "values": {"type": "array", "items": {"type": "number"}, "default": []}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

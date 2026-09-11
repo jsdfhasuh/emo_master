@@ -1,0 +1,345 @@
+{
+  "platform": "windows",
+  "scale": 1.25,
+  "font": "Microsoft YaHei UI",
+  "screen": "\\\\.\\DISPLAY1",
+  "requested_window": [
+    1600,
+    900
+  ],
+  "screens": [
+    {
+      "name": "\\\\.\\DISPLAY1",
+      "dpr": 1.25,
+      "logical_size": [
+        1536,
+        864
+      ],
+      "logical_dpi": 96.0
+    },
+    {
+      "name": "\\\\.\\DISPLAY2",
+      "dpr": 1.5625,
+      "logical_size": [
+        1229,
+        691
+      ],
+      "logical_dpi": 96.0
+    }
+  ],
+  "available_screen": [
+    1536,
+    832
+  ],
+  "windows": {
+    "main": {
+      "size": [
+        1512,
+        784
+      ],
+      "minimum": [
+        616,
+        443
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1890,
+        980
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "main-expanded": {
+      "size": [
+        1512,
+        784
+      ],
+      "minimum": [
+        760,
+        443
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1890,
+        980
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "project-entry": {
+      "size": [
+        720,
+        520
+      ],
+      "minimum": [
+        322,
+        293
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        900,
+        650
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "parameters": {
+      "size": [
+        620,
+        560
+      ],
+      "minimum": [
+        164,
+        142
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        775,
+        700
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "global-counters": {
+      "size": [
+        720,
+        440
+      ],
+      "minimum": [
+        376,
+        176
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        900,
+        550
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "logs": {
+      "size": [
+        900,
+        520
+      ],
+      "minimum": [
+        543,
+        292
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1125,
+        650
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "workflow-package": {
+      "size": [
+        760,
+        680
+      ],
+      "minimum": [
+        320,
+        143
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        950,
+        850
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "huaray_camera": {
+      "size": [
+        980,
+        720
+      ],
+      "minimum": [
+        406,
+        320
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1225,
+        900
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "roi": {
+      "size": [
+        980,
+        720
+      ],
+      "minimum": [
+        522,
+        384
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1225,
+        900
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "histogram": {
+      "size": [
+        980,
+        720
+      ],
+      "minimum": [
+        384,
+        450
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1225,
+        900
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "operator-search": {
+      "size": [
+        560,
+        340
+      ],
+      "minimum": [
+        80,
+        118
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        700,
+        425
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "main-preview": {
+      "size": [
+        1512,
+        784
+      ],
+      "minimum": [
+        760,
+        443
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1890,
+        980
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    },
+    "main-fit": {
+      "size": [
+        1512,
+        784
+      ],
+      "minimum": [
+        616,
+        443
+      ],
+      "dpr": 1.25,
+      "pixels": [
+        1890,
+        980
+      ],
+      "text_clipping": [],
+      "screen": "\\\\.\\DISPLAY1",
+      "available": [
+        1536,
+        832
+      ]
+    }
+  },
+  "project_sha256": "74a67f1d6bf93507de92d6edd09b23411305a8143b23359609fed964478d2c85",
+  "initial_zoom": 0.8901349220255825,
+  "sidebar": {
+    "collapsed": true,
+    "width": 36,
+    "minimum": 36,
+    "maximum": 36
+  },
+  "node_geometry": [
+    {
+      "node": "camera",
+      "size": [
+        260.0,
+        182.0
+      ],
+      "overflow": []
+    },
+    {
+      "node": "input",
+      "size": [
+        260.0,
+        78.0
+      ],
+      "overflow": []
+    },
+    {
+      "node": "output",
+      "size": [
+        260.0,
+        182.0
+      ],
+      "overflow": []
+    }
+  ],
+  "project_sha256_after": "74a67f1d6bf93507de92d6edd09b23411305a8143b23359609fed964478d2c85",
+  "failures": []
+}

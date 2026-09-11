@@ -1,4 +1,5 @@
 from pathlib import Path
+import os
 import subprocess
 import sys
 
@@ -15,7 +16,9 @@ def runStep(command: list[str], name: str) -> int:
 
 
 def main() -> int:
+  os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
   steps = [
+    ([sys.executable, "scripts/gen_proto.py", "--check"], "proto-drift"),
     ([sys.executable, "-m", "ruff", "check", "src", "tests"], "ruff"),
     ([sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "src"], "mypy"),
     ([sys.executable, "-m", "pytest", "-q"], "pytest")

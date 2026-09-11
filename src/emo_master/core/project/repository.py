@@ -1,54 +1,128 @@
-from datetime import datetime, timezone
-from pathlib import Path
-from uuid import uuid4
-import json
+from __future__ import annotations
 
-import yaml
+import json
+import os
+import shutil
+import tempfile
+from pathlib import Path
+from typing import cast
+from uuid import uuid4
+
+from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
+from emo_master.core.project.models import ProjectDocument
 
 
 class ProjectRepository:
-  def __init__(self, workspaceRoot: Path) -> None:
-    self.workspaceRoot = workspaceRoot
-    self.workspaceRoot.mkdir(parents=True, exist_ok=True)
+    """Repository facade backed exclusively by project.json v2.1."""
 
-  def createProject(self, name: str) -> str:
-    projectId = str(uuid4())
-    projectDir = self.workspaceRoot / projectId
-    (projectDir / "graph").mkdir(parents=True, exist_ok=True)
-    (projectDir / "params").mkdir(parents=True, exist_ok=True)
-    (projectDir / "devices").mkdir(parents=True, exist_ok=True)
-    (projectDir / "resources").mkdir(parents=True, exist_ok=True)
-    (projectDir / "snapshots").mkdir(parents=True, exist_ok=True)
+    def __init__(self, workspaceRoot: Path) -> None:
+        self.workspaceRoot = workspaceRoot
+        self.workspaceRoot.mkdir(parents=True, exist_ok=True)
 
-    projectMeta = {
-      "projectId": projectId,
-      "name": name,
-      "version": "0.1.0",
-      "schemaVersion": "1.0",
-      "createdAt": _utcNow(),
-      "updatedAt": _utcNow()
-    }
-    with (projectDir / "project.yaml").open("w", encoding="utf-8") as fileObj:
-      yaml.safe_dump(projectMeta, fileObj, sort_keys=False, allow_unicode=False)
+    def createProject(self, name: str) -> str:
+        projectId = str(uuid4())
+        projectDir = self.workspaceRoot / projectId
+        projectDir.mkdir(parents=True, exist_ok=True)
+        (projectDir / "assets").mkdir(parents=True, exist_ok=True)
+        (projectDir / "outputs").mkdir(parents=True, exist_ok=True)
+        now = utc_now_iso()
+        payload: dict[str, object] = {
+            "schemaVersion": "2.1",
+            "project": {
+                "projectId": projectId,
+                "name": name,
+                "revision": 1,
+                "createdAt": now,
+                "updatedAt": now,
+            },
+            "entryWorkflowId": "main",
+            "workflowOrder": ["main"],
+            "workflows": {
+                "main": {
+                    "name": "Main",
+                    "inputs": {},
+                    "outputs": {},
+                    "nodes": [
+                        {"nodeId": "__workflow_input__", "kind": "workflow_input"},
+                        {"nodeId": "__workflow_output__", "kind": "workflow_output"},
+                    ],
+                    "edges": [],
+                    "layout": {"nodePositions": {}},
+                }
+            },
+            "runtime": {},
+            "dependencies": {"operators": []},
+            "devices": {"bindings": {}},
+        }
+        normalized = ProjectDocument.model_validate(
+            migrateProjectPayload(payload)
+        ).model_dump(mode="json")
+        self._write(projectDir / "project.json", normalized, backup=False)
+        return projectId
 
-    (projectDir / "graph" / "flow.json").write_text(
-      json.dumps({"schemaVersion": "1.0", "nodes": [], "edges": []}, ensure_ascii=True, indent=2),
-      encoding="utf-8"
-    )
-    (projectDir / "graph" / "layout.json").write_text("{}", encoding="utf-8")
-    (projectDir / "params" / "node_params.json").write_text("{}", encoding="utf-8")
-    (projectDir / "devices" / "bindings.json").write_text("{}", encoding="utf-8")
-    (projectDir / "plugins.lock").write_text("[]", encoding="utf-8")
-    return projectId
+    def loadProject(self, projectId: str) -> dict[str, object]:
+        projectDir = self.workspaceRoot / projectId
+        projectFile = projectDir / "project.json"
+        if not projectFile.exists():
+            raise ValueError("project.json not found")
+        parsed = json.loads(projectFile.read_text(encoding="utf-8"))
+        if not isinstance(parsed, dict):
+            raise ValueError("project.json content is invalid")
+        payload = migrateProjectPayload(parsed)
+        payload = ProjectDocument.model_validate(payload).model_dump(mode="json")
+        project = payload.get("project")
+        if isinstance(project, dict):
+            # Keep the small v1 repository API available to existing callers.
+            payload.setdefault("projectId", project.get("projectId", projectId))
+            payload.setdefault("name", project.get("name", projectId))
+        return payload
 
-  def loadProject(self, projectId: str) -> dict[str, object]:
-    projectFile = self.workspaceRoot / projectId / "project.yaml"
-    with projectFile.open("r", encoding="utf-8") as fileObj:
-      loaded = yaml.safe_load(fileObj)
-    if not isinstance(loaded, dict):
-      raise ValueError("project.yaml content is invalid")
-    return loaded
+    def saveProject(self, projectId: str, payload: dict[str, object]) -> None:
+        projectDir = self.workspaceRoot / projectId
+        projectDir.mkdir(parents=True, exist_ok=True)
+        normalized = cast(
+            dict[str, object],
+            ProjectDocument.model_validate(migrateProjectPayload(payload)).model_dump(
+                mode="json"
+            ),
+        )
+        self._write(projectDir / "project.json", normalized, backup=True)
+
+    def loadProjectDocument(self, projectId: str):
+        payload = self.loadProject(projectId)
+        payload.pop("projectId", None)
+        payload.pop("name", None)
+        return ProjectDocument.model_validate(migrateProjectPayload(payload))
+
+    def _write(self, projectFile: Path, payload: dict[str, object], backup: bool) -> None:
+        projectFile.parent.mkdir(parents=True, exist_ok=True)
+        if backup and projectFile.exists():
+            shutil.copy2(projectFile, projectFile.with_suffix(projectFile.suffix + ".bak"))
+        temporary: str | None = None
+        try:
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                encoding="utf-8",
+                dir=projectFile.parent,
+                prefix=f".{projectFile.name}.",
+                suffix=".tmp",
+                delete=False,
+            ) as handle:
+                temporary = handle.name
+                json.dump(payload, handle, ensure_ascii=True, indent=2)
+                handle.write("\n")
+                handle.flush()
+                os.fsync(handle.fileno())
+            os.replace(temporary, projectFile)
+            temporary = None
+        finally:
+            if temporary is not None:
+                try:
+                    Path(temporary).unlink()
+                except FileNotFoundError:
+                    pass
 
 
 def _utcNow() -> str:
-  return datetime.now(timezone.utc).isoformat()
+    """Compatibility alias for the pre-v2 repository module."""
+    return utc_now_iso()

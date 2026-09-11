@@ -41,3 +41,9 @@ tmp_demo_input*.png
 # Private handoff/reference material and local implementation plans
 learn/
 docs/plans/
+
+# Local Windows manual Designer acceptance workspace
+manual_test_workspace/
+
+# Local camera acceptance project with machine-specific settings
+/field_tests/camera_ui/

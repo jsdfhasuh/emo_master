@@ -6,10 +6,15 @@ class OperatorCatalogController:
         self.runtimeClient = runtimeClient
         self.appendLog = appendLog
         self.operatorCatalog: list[dict[str, object]] = []
+        self.state = "loading"
+        self.hasCatalog = False
 
     def refreshOperators(self, classifyOperator) -> list[dict[str, object]]:
         operators = self.runtimeClient.listOperators()
-        self.operatorCatalog = []
+        return self.applyOperators(operators, classifyOperator)
+
+    def applyOperators(self, operators, classifyOperator) -> list[dict[str, object]]:
+        catalog = []
         for operatorInfo in operators:
             displayName = getattr(operatorInfo, "display_name", None)
             if displayName is None:
@@ -24,6 +29,12 @@ class OperatorCatalogController:
             outputPorts = getattr(operatorInfo, "output_ports", None)
             if outputPorts is None:
                 outputPorts = getattr(operatorInfo, "outputPorts", None)
+            inputPortSpecs = getattr(operatorInfo, "input_port_specs", None)
+            if inputPortSpecs is None:
+                inputPortSpecs = getattr(operatorInfo, "inputPortSpecs", None)
+            outputPortSpecs = getattr(operatorInfo, "output_port_specs", None)
+            if outputPortSpecs is None:
+                outputPortSpecs = getattr(operatorInfo, "outputPortSpecs", None)
             paramSchema = getattr(operatorInfo, "param_schema", None)
             if paramSchema is None:
                 paramSchema = getattr(operatorInfo, "paramSchema", None)
@@ -39,12 +50,34 @@ class OperatorCatalogController:
                     if rawCategory != ""
                     else classifyOperator(operatorId),
                     "iconKey": str(getattr(operatorInfo, "iconKey", "default")),
+                    "icon": getattr(operatorInfo, "icon", {}),
+                    "iconIssues": [
+                        dict(issue) for issue in (getattr(operatorInfo, "iconIssues", ()) or ())
+                        if isinstance(issue, dict)
+                    ] if isinstance(getattr(operatorInfo, "iconIssues", ()), (list, tuple)) else [],
                     "summary": str(getattr(operatorInfo, "summary", "")),
                     "inputPorts": inputPorts if isinstance(inputPorts, dict) else {},
                     "outputPorts": outputPorts if isinstance(outputPorts, dict) else {},
+                    "inputPortSpecs": (
+                        inputPortSpecs if isinstance(inputPortSpecs, dict) else {}
+                    ),
+                    "outputPortSpecs": (
+                        outputPortSpecs if isinstance(outputPortSpecs, dict) else {}
+                    ),
                     "paramSchema": paramSchema if isinstance(paramSchema, dict) else {},
+                    "editorSpec": (
+                        dict(getattr(operatorInfo, "editorSpec", {}))
+                        if isinstance(getattr(operatorInfo, "editorSpec", {}), dict)
+                        else {}
+                    ),
+                    "editorIssues": list(
+                        getattr(operatorInfo, "editorIssues", ())
+                    ),
                 }
-                self.operatorCatalog.append(payload)
+                catalog.append(payload)
+        self.operatorCatalog = catalog
+        self.state = "ready"
+        self.hasCatalog = True
         self.appendLog("INFO", f"算子加载完成：{len(operators)}")
         return list(self.operatorCatalog)
 

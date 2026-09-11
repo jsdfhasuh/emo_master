@@ -1,0 +1,22 @@
+{
+  "operatorId": "vision.image.absdiff",
+  "displayName": "Absolute Difference",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._arithmetic_operators:AbsDiffOperator",
+  "category": "图像运算",
+  "iconKey": "absdiff",
+  "summary": "计算两张同尺寸、同通道图像的绝对差。",
+  "inputPorts": {
+    "imageA": {"type": "image", "required": true, "nullable": false},
+    "imageB": {"type": "image", "required": true, "nullable": false},
+    "frameA": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "frameB": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {"type": "object", "properties": {}},
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

@@ -23,12 +23,15 @@ message ValidateProjectReply {
 
 message StartJobRequest {
   string project_id = 1;
+  string workflow_id = 2;
+  string inputs_json = 3;
 }
 
 message StartJobReply {
   bool ok = 1;
   string job_id = 2;
   string message = 3;
+  string status = 4;
 }
 
 message StopJobRequest {
@@ -51,10 +54,18 @@ message GetJobStatusReply {
   string status = 2;
   string error_code = 3;
   string message = 4;
+  string project_id = 5;
+  string workflow_id = 6;
+  int64 pid = 7;
+  int64 accepted_at_ms = 8;
+  int64 started_at_ms = 9;
+  int64 ended_at_ms = 10;
 }
 
 message StreamJobEventsRequest {
   string job_id = 1;
+  int64 after_sequence = 2;
+  bool follow = 3;
 }
 
 message JobEvent {
@@ -66,6 +77,13 @@ message JobEvent {
   string message = 6;
   string payload_json = 7;
   int64 timestamp_ms = 8;
+  int64 sequence = 9;
+  string project_id = 10;
+  string workflow_id = 11;
+  string workflow_run_id = 12;
+  string parent_workflow_run_id = 13;
+  string node_run_id = 14;
+  string iteration_path_json = 15;
 }
 
 message ListOperatorsRequest {}
@@ -80,10 +98,184 @@ message OperatorInfo {
   string category = 7;
   string icon_key = 8;
   string summary = 9;
+  string input_port_specs_json = 10;
+  string output_port_specs_json = 11;
+  string editor_spec_json = 12;
+  string editor_issues_json = 13;
+  OperatorIconInfo icon = 14;
+  repeated OperatorIconIssue icon_issues = 15;
+}
+
+message OperatorIconInfo {
+  string status = 1;
+  string mime_type = 2;
+  string sha256 = 3;
+  uint32 byte_size = 4;
+}
+
+message OperatorIconIssue {
+  string rule_id = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message GetOperatorIconAssetRequest {
+  string operator_id = 1;
+  string version = 2;
+  string expected_sha256 = 3;
+}
+
+message GetOperatorIconAssetReply {
+  bool ok = 1;
+  bytes content = 2;
+  string mime_type = 3;
+  string sha256 = 4;
+  string code = 5;
+  string message = 6;
+  string version = 7;
 }
 
 message ListOperatorsReply {
   repeated OperatorInfo operators = 1;
+}
+
+message GetOperatorEditorAssetRequest {
+  string operator_id = 1;
+  string version = 2;
+}
+
+message GetOperatorEditorAssetReply {
+  bool ok = 1;
+  bytes content = 2;
+  string sha256 = 3;
+  string message = 4;
+}
+
+message ListNodePreviewSourcesRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+}
+
+message PreviewSourceInfo {
+  string source_id = 1;
+  string label = 2;
+  string source_kind = 3;
+  string workflow_id = 4;
+  string node_id = 5;
+  string port = 6;
+  int32 width = 7;
+  int32 height = 8;
+  string mime_type = 9;
+  string iteration_path_json = 10;
+}
+
+message ListNodePreviewSourcesReply {
+  repeated PreviewSourceInfo sources = 1;
+}
+
+message PreviewUploadChunk {
+  string upload_id = 1;
+  string filename = 2;
+  bytes content = 3;
+  string project_id = 4;
+}
+
+message PreviewAssetReply {
+  bool ok = 1;
+  string asset_id = 2;
+  string code = 3;
+  string message = 4;
+  int32 width = 5;
+  int32 height = 6;
+  string mime_type = 7;
+}
+
+message GetPreviewAssetRequest {
+  string asset_id = 1;
+  string project_id = 2;
+}
+
+message PreviewDownloadChunk {
+  string asset_id = 1;
+  string mime_type = 2;
+  bytes content = 3;
+}
+
+message RunOperatorPreviewRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+  string operator_id = 4;
+  string params_json = 5;
+  string image_asset_id = 6;
+  string request_id = 7;
+}
+
+message PreviewOutputAsset {
+  string port = 1;
+  string asset_id = 2;
+  string mime_type = 3;
+  int32 width = 4;
+  int32 height = 5;
+}
+
+message RunOperatorPreviewReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string outputs_json = 4;
+  repeated PreviewOutputAsset assets = 5;
+}
+
+message CancelOperatorPreviewRequest {
+  string request_id = 1;
+}
+
+message CancelOperatorPreviewReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+}
+
+message OpenOperatorPreviewSessionRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+  string operator_id = 4;
+  string params_json = 5;
+}
+
+message OpenOperatorPreviewSessionReply {
+  bool ok = 1;
+  string session_id = 2;
+  string code = 3;
+  string message = 4;
+}
+
+message StreamOperatorPreviewFramesRequest {
+  string session_id = 1;
+}
+
+message OperatorPreviewFrame {
+  string session_id = 1;
+  bytes jpeg = 2;
+  int64 sequence = 3;
+  int64 block_id = 4;
+  int64 device_timestamp = 5;
+  double actual_exposure_us = 6;
+  int32 width = 7;
+  int32 height = 8;
+}
+
+message CloseOperatorPreviewSessionRequest {
+  string session_id = 1;
+}
+
+message CloseOperatorPreviewSessionReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
 }
 
 message ListRejectedOperatorsRequest {}
@@ -98,6 +290,76 @@ message ListRejectedOperatorsReply {
   repeated RejectedOperatorInfo rejected = 1;
 }
 
+message ListWorkflowsRequest {
+  string project_id = 1;
+}
+
+message WorkflowInfo {
+  string workflow_id = 1;
+  string name = 2;
+  bool is_entry = 3;
+  string inputs_json = 4;
+  string outputs_json = 5;
+}
+
+message ListWorkflowsReply {
+  repeated WorkflowInfo workflows = 1;
+}
+
+message GlobalCounterInfo {
+  string name = 1;
+  int64 value = 2;
+  int64 updated_at_ms = 3;
+}
+
+message ListGlobalCountersRequest {
+  string project_id = 1;
+}
+
+message ListGlobalCountersReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  repeated GlobalCounterInfo counters = 4;
+}
+
+message GetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+}
+
+message GetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
+message SetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+  int64 value = 3;
+}
+
+message SetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
+message ResetGlobalCounterRequest {
+  string project_id = 1;
+  string name = 2;
+}
+
+message ResetGlobalCounterReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  GlobalCounterInfo counter = 4;
+}
+
 service RuntimeService {
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
@@ -106,5 +368,20 @@ service RuntimeService {
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
+  rpc GetOperatorIconAsset(GetOperatorIconAssetRequest) returns (GetOperatorIconAssetReply);
+  rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);
+  rpc ListNodePreviewSources(ListNodePreviewSourcesRequest) returns (ListNodePreviewSourcesReply);
+  rpc UploadPreviewImage(stream PreviewUploadChunk) returns (PreviewAssetReply);
+  rpc StreamPreviewAsset(GetPreviewAssetRequest) returns (stream PreviewDownloadChunk);
+  rpc RunOperatorPreview(RunOperatorPreviewRequest) returns (RunOperatorPreviewReply);
+  rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
+  rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);
+  rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
+  rpc ListWorkflows(ListWorkflowsRequest) returns (ListWorkflowsReply);
+  rpc ListGlobalCounters(ListGlobalCountersRequest) returns (ListGlobalCountersReply);
+  rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
+  rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
+  rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
 }

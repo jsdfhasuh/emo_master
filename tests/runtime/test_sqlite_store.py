@@ -20,7 +20,8 @@ def testSqliteStoreCreatesTables(tmp_path: Path) -> None:
     "jobs",
     "jobEvents",
     "pluginDiagnostics",
-    "deviceBindings"
+    "deviceBindings",
+    "globalCounters",
   }
   assert expected.issubset(tableNames)
 

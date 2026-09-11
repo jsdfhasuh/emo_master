@@ -1,0 +1,29 @@
+{
+  "operatorId": "vision.image.add_weighted",
+  "displayName": "Add Weighted",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._arithmetic_operators:AddWeightedOperator",
+  "category": "图像运算",
+  "iconKey": "blend",
+  "summary": "使用 alpha、beta 和 gamma 对两张图像执行饱和加权融合。",
+  "inputPorts": {
+    "imageA": {"type": "image", "required": true, "nullable": false},
+    "imageB": {"type": "image", "required": true, "nullable": false},
+    "frameA": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "frameB": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "alpha": {"type": "number", "default": 0.5},
+      "beta": {"type": "number", "default": 0.5},
+      "gamma": {"type": "number", "default": 0.0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

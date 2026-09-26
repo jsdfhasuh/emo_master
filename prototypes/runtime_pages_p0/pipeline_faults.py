@@ -73,6 +73,19 @@ def run(root):
         wait_until(lambda: all(c.rows and c.rows[-1]["decoded"] for c in clients))
         assert all(c.error is None for c in clients)
         assert len(mp.active_children()) == 2
+        # A client that cannot finish its read in 500ms must invalidate that
+        # product and keep consuming. The next product recovers without restart.
+        previous = len(clients[0].rows)
+        clients[0].slow = .02
+        detect("one")
+        wait_until(lambda: len(clients[0].rows) > previous)
+        assert clients[0].rows[-1]["status"] == "UNAVAILABLE"
+        assert not clients[0].rows[-1]["decoded"]
+        assert clients[0].live["status"] == "INCOMPLETE"
+        assert clients[0].error is None
+        clients[0].slow = 0
+        detect("one")
+        wait_until(lambda: clients[0].rows[-1]["decoded"])
         # Freeze both successful asset references before stopping subscriptions.
         assets = [dict(pipeline.results.snapshot(pipeline.identity(job))[0].values)["image"][1]["asset"] for job in ("one", "two")]
         for client in clients:

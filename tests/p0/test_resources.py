@@ -71,3 +71,40 @@ def test_asset_takeover_history_lease_quota_expiry_and_reader_ownership(tmp_path
     finally:
         assets.close()
     assert not ledger.tokens and not any(ledger.used.values())
+
+
+def test_cache_and_lease_turnover_without_recreating_store(tmp_path):
+    ledger = Resources()
+    assets = Assets(tmp_path / "cache", ledger)
+    data = b"x" * (6 * 1024 * 1024)
+    digest = hashlib.sha256(data).hexdigest()
+    plateaus = []
+    try:
+        for cycle in range(3):
+            leases = []
+            for index in range(40):
+                job = "one" if index % 2 else "two"
+                staging = ledger.reserve(job, "staging", len(data))
+                path = tmp_path / "staging.png"
+                path.write_bytes(data)
+                reference = assets.adopt(job, f"{cycle}-{index}", path, len(data), digest, (1080, 1920, 3))
+                ledger.release(staging)
+                if index < 10:
+                    leases.append(assets.pin(reference["asset_id"]))
+                if index == 10:
+                    with pytest.raises(Unavailable, match="lease"):
+                        assets.pin(reference["asset_id"])
+            for lease in leases:
+                assets.unpin(lease)
+            lease = assets.pin(reference["asset_id"], .01)
+            time.sleep(.02)
+            with assets.lock:
+                assets._expire()
+            assert lease not in assets.leases
+            plateaus.append(dict(ledger.used))
+            assert len(assets.entries) == 32 and ledger.used["lease"] == 0
+        assert plateaus[0] == plateaus[1] == plateaus[2]
+        assert assets.evictions == 88
+    finally:
+        assets.close()
+    assert not ledger.tokens

@@ -73,6 +73,39 @@ def run(root):
             assert set(service.previewAssetStore._assets) == before
         rows.append(dict(case="legacy-partial-cancel-no-asset-and-bulk-limit", status="PASS"))
 
+        def interrupted():
+            yield pb.PreviewUploadChunk(content=content[:1024], project_id="p0-project")
+            raise RuntimeError("injected sender interruption")
+        try:
+            stub.UploadPreviewImage(interrupted(), timeout=3)
+        except grpc.RpcError:
+            pass
+        else:
+            raise AssertionError("interrupted upload accepted")
+        wait_until(lambda: server.active["bulk"] == 0)
+        assert set(service.previewAssetStore._assets) == before
+        rows.append(dict(case="legacy-sender-interruption", status="PASS"))
+
+        entered, gate = threading.Event(), threading.Event()
+        gates.append(gate)
+        original_upload = service.UploadPreviewImage
+        def delayed_upload(iterator, context):
+            result = original_upload(iterator, context)
+            entered.set()
+            gate.wait(10)
+            return result
+        service.UploadPreviewImage = delayed_upload
+        upload = stub.UploadPreviewImage.future(chunks(), timeout=5)
+        wait_until(entered.is_set)
+        upload.cancel()
+        time.sleep(.03)
+        assert server.active["bulk"] == 1
+        gate.set()
+        wait_until(lambda: server.active["bulk"] == 0)
+        assert set(service.previewAssetStore._assets) == before
+        service.UploadPreviewImage = original_upload
+        rows.append(dict(case="legacy-cancel-during-running-upload", status="PASS"))
+
         # Each mode is a true iterator with separately controlled construction,
         # next and close, not an in-memory assertion about a fake server counter.
         for mode in ("construct-error", "construct-block", "first-next-block", "next-block", "close-error", "close-block", "serialize-error", "callback-block"):
@@ -169,6 +202,20 @@ def run(root):
         else:
             raise AssertionError("startup swallowed")
         rows.append(dict(case="startup-failure-cleanup", status="PASS"))
+        original_stop = server.server.stop
+        async def fail_stop(grace):
+            raise RuntimeError("injected stop failure")
+        server.server.stop = fail_stop
+        try:
+            server.close()
+        except RuntimeError as error:
+            assert "injected stop failure" in str(error)
+            assert server.thread.is_alive()
+        else:
+            raise AssertionError("stop failure swallowed")
+        finally:
+            server.server.stop = original_stop
+        rows.append(dict(case="stop-api-failure-retryable", status="PASS"))
         return dict(rows=rows, compatibility_status="PASS", errors_observed=list(server.errors), peak=server.peak)
     finally:
         for gate in gates:

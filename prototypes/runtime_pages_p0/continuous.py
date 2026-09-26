@@ -43,6 +43,31 @@ class NetworkConsumer:
         self.thread.start()
         assert self.ready.wait(5)
 
+    def _decode(self, snapshot, values, received):
+        asset = values["image"][1]["asset"]
+        assert asset["result_key"] == snapshot["key"] and asset["job"] == self.job
+        assert 0 < asset["size"] <= BUDGET.image_bytes * 2
+        # Client local budget, separate from server accounting:
+        # one <=16MiB bytearray + decoder buffer + one 8MiB image.
+        content = bytearray()
+        self.asset_call = self.assets({"asset_id": asset["asset_id"], "job": self.job}, timeout=BUDGET.read_seconds)
+        for chunk in self.asset_call:
+            assert len(content) + len(chunk) <= asset["size"]
+            content.extend(chunk)
+            if self.slow:
+                time.sleep(self.slow)
+        transferred = time.perf_counter_ns()
+        assert len(content) == asset["size"] and hashlib.sha256(content).hexdigest() == asset["sha256"]
+        decoded = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
+        assert decoded is not None and list(decoded.shape) == asset["shape"]
+        assert hashlib.sha256(decoded).hexdigest() == self.digest == values["image"][1]["raw_sha256"]
+        assert values["items"] == ["VALID", [[["count", 7]]]]
+        if (time.perf_counter_ns() - received) / 1e9 > BUDGET.read_seconds:
+            raise TimeoutError("client read/decode deadline")
+        del decoded, content
+        return dict(decoded=True, asset_id=asset["asset_id"], transfer_ms=(transferred-received)/1e6,
+                   decode_verify_ms=(time.perf_counter_ns()-transferred)/1e6)
+
     def _receive(self):
         try:
             grpc.channel_ready_future(self.channel).result(5)
@@ -57,27 +82,15 @@ class NetworkConsumer:
                            scope_end_ns=snapshot["scope_end_ns"], received_ns=received, decoded=False)
                 values = dict(snapshot["values"])
                 if snapshot["status"] == "COMMITTED" and values["image"][0] == "VALID":
-                    asset = values["image"][1]["asset"]
-                    assert asset["result_key"] == snapshot["key"] and asset["job"] == self.job
-                    assert 0 < asset["size"] <= BUDGET.image_bytes * 2
-                    # Client local budget, separate from server accounting:
-                    # one <=16MiB bytearray + decoder buffer + one 8MiB image.
-                    content = bytearray()
-                    self.asset_call = self.assets({"asset_id": asset["asset_id"], "job": self.job}, timeout=BUDGET.read_seconds)
-                    for chunk in self.asset_call:
-                        assert len(content) + len(chunk) <= asset["size"]
-                        content.extend(chunk)
-                        if self.slow:
-                            time.sleep(self.slow)
-                    transferred = time.perf_counter_ns()
-                    assert len(content) == asset["size"] and hashlib.sha256(content).hexdigest() == asset["sha256"]
-                    decoded = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
-                    assert decoded is not None and list(decoded.shape) == asset["shape"]
-                    assert hashlib.sha256(decoded).hexdigest() == self.digest == values["image"][1]["raw_sha256"]
-                    assert values["items"] == ["VALID", [[["count", 7]]]]
-                    del decoded, content
-                    row.update(decoded=True, asset_id=asset["asset_id"], transfer_ms=(transferred-received)/1e6,
-                               decode_verify_ms=(time.perf_counter_ns()-transferred)/1e6)
+                    try:
+                        row.update(self._decode(snapshot, values, received))
+                    except (grpc.RpcError, AssertionError, TimeoutError) as error:
+                        # A bad/late image invalidates this result, never leaves
+                        # the preceding OK visible or ends the subscription.
+                        row.update(status="UNAVAILABLE", read_error=str(error))
+                        snapshot = dict(snapshot, status="INCOMPLETE")
+                        if self.asset_call:
+                            self.asset_call.cancel()
                 committed = time.perf_counter_ns()
                 if self.live:
                     self.max_age_ms = max(self.max_age_ms, (committed-self.live["scope_end_ns"])/1e6)
@@ -87,6 +100,8 @@ class NetworkConsumer:
         except grpc.RpcError as error:
             if not self.stop.is_set():
                 self.error = str(error)
+                if self.live:
+                    self.live = dict(self.live, status="UNAVAILABLE")
         except BaseException as error:
             self.error = repr(error)
         finally:

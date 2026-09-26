@@ -31,3 +31,7 @@
 私有预览基线修复独立提交 `323f35d`：原测试长路径下临时PNG文件超过Windows传统路径限制，事件记录preview.snapshot.failed；私有存储使用扩展I/O路径。同时屏障复现GetJobStatus在终态资产promotion前返回COMPLETED，改为promotion完成后发布状态，回调异常仍发布终态。旧测试断言不变，新增长路径和回调屏障/异常回归。Runtime/core/e2e：356 passed、1 skipped（既有无符号链接权限）。完整CI的proto/Ruff/mypy通过，pytest仍原生访问冲突3221225477。
 
 Qt基线隔离：全部Designer在workflow-tabs import用例的processEvents路径崩溃；workflow-tabs单文件10 passed，main-window组34 passed；前置Designer文件拆成两半分别加workflow-tabs，61/46 passed。说明是组合运行/生命周期相关，尚无足够证据定位到某个Qt对象；没有据此猜测性改动Qt生产代码或调整原断言。后续独立进程结果与原失败分列。
+
+补充故障回归：在Designer分文件回归同时运行时，短窗口首次出现33/40与40/40不对称覆盖（`final-p0.txt`保留FAIL）。原客户端读图超时会结束订阅；修复为本件UNAVAILABLE/INCOMPLETE并继续接收，禁止旧OK继续占live。增加真实网络慢读超时后下一件恢复断言，保持500ms读/解码截止与完整率原断言不变。39项P0复验通过；新增3轮不重建AssetStore的120件缓存/租约周转（88次淘汰），以及上传发送中断、上传执行中取消、停服API异常重试。spawn时钟诊断历史也限制为64条，避免长期重复回收积累。
+
+Designer逐文件独立进程验证49个文件、333 passed；原完整CI的组合原生崩溃仍未解决。这是补充回归，不是全量CI通过。性能首组三轮（`final-evidence.json`）完整保留；客户端故障分支修改后再做完整三轮，使用另一证据文件，不择优替换。

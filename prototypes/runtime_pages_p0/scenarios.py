@@ -336,6 +336,7 @@ def run(name, parameters=None):
             service = RuntimeService(dbPath=root / "runtime.db")
             try:
                 report = window(root / "window", service, image_path, hashlib.sha256(image).hexdigest(), count=40)
+                print("P0_CONTINUOUS " + json.dumps(report), flush=True)
                 assert report["correctness_status"] == "PASS", report["coverage"]
                 assert report["stats"]["evictions"] > 0
                 assert report["stats"]["history"] <= 32

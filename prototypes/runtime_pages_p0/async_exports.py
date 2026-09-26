@@ -12,6 +12,11 @@ from .exporter import Exporters
 
 
 class AsyncExports(Exporters):
+    def _spawn(self):
+        slot = super()._spawn()
+        del self.clock_samples[:-64]
+        return slot
+
     def __init__(self, root, resources, assets):
         super().__init__(root)
         self.resources, self.assets = resources, assets

@@ -1,0 +1,19 @@
+.F.........................                                              [100%]
+================================== FAILURES ===================================
+___________________ testUnboundDraftAndPublishAreDifferent ____________________
+
+project = ProjectDocument(schemaVersion='2.2', project=ProjectMetadata(projectId='p1-test', name='Test', revision=1, createdAt='...sultScopeIds=['root'])}), resources=ResourcePlan(schemaVersion='1.0', items={}, parameterBindings=[], siteBindings=[]))
+manifests = {'vision.analysis.blob': PluginManifest(operatorId='vision.analysis.blob', displayName='Blob Analysis', version='1.2.0...t': 'color'}}, 'required': ['imagePath']}, minCoreVersion='0.1.0', maxCoreVersion='1.x', editor=None, iconResource='')}
+
+    def testUnboundDraftAndPublishAreDifferent(project, manifests):
+        project.presentation.pages["overview"].components[0].bindings = {}
+>       assert validateBindings(project, manifests) == []
+E       AssertionError: assert [Issue(path='...esult scope')] == []
+E         
+E         Left contains one more item: Issue(path='presentation.pages.overview.components.go.actions.clicked', code='binding_invalid', message='current page does not display selected result scope')
+E         Use -v to get more diff
+
+tests\core\presentation\test_contracts.py:25: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/core/presentation/test_contracts.py::testUnboundDraftAndPublishAreDifferent
+1 failed, 26 passed in 1.06s

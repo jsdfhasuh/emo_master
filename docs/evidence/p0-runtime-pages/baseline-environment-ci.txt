@@ -1,0 +1,3 @@
+[proto-drift] generated file differs: D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\generated\runtime_pb2.py
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] failed proto-drift with code 1

@@ -51,6 +51,7 @@ class JobProcessSpec:
     heartbeatTimeoutMs: int = 5000
     projectId: str = ""
     runtimeDbPath: str = ""
+    presentation: dict | None = None
 
     @property
     def inputs_json(self) -> str:

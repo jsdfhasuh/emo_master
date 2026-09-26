@@ -56,6 +56,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)),
             previewSnapshotStore=PreviewSnapshotWriter(Path(spec.jobWorkspacePath)),
             globalCounters=globalCounters,
+            resultCollector=_collector(spec, eventQueue),
         )
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         context = RunContext.root(
@@ -93,6 +94,13 @@ def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopE
     _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
     while not stopEvent.wait(interval):
         _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
+
+
+def _collector(spec, eventQueue):
+    if spec.presentation is None:
+        return None
+    from emo_master.apps.runtime.presentation.collector import ResultCollector
+    return ResultCollector(spec.presentation, eventQueue.put)
 
 
 def _eventPublisher(jobId: str, projectId: str, eventQueue):

@@ -50,6 +50,7 @@ class WorkflowRunner:
         artifactStore: object | None = None,
         previewSnapshotStore: object | None = None,
         globalCounters: object | None = None,
+        resultCollector: Any = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -58,6 +59,7 @@ class WorkflowRunner:
         self.artifactStore = artifactStore
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
+        self.resultCollector = resultCollector
         self._operatorLogManager = OperatorLogManager(
             self.publish if eventPublisher is not None else None
         )
@@ -80,15 +82,28 @@ class WorkflowRunner:
     ) -> WorkflowResult:
         isRootCall = self._runDepth == 0
         self._runDepth += 1
+        if self.resultCollector is not None:
+            self.resultCollector.begin(context)
+        terminal = "FAILED"
         try:
-            return self._runWorkflow(
+            result = self._runWorkflow(
                 workflowId,
                 inputs,
                 context,
                 cancellation,
                 disposeWhenComplete=isRootCall,
             )
+            if self.resultCollector is not None:
+                self.resultCollector.output(context, result.outputs, workflow=True)
+            terminal = "COMPLETED"
+            return result
+        except Exception as error:
+            if getattr(error, "code", "") == "E_CANCELLED":
+                terminal = "CANCELLED"
+            raise
         finally:
+            if self.resultCollector is not None:
+                self.resultCollector.end(context, terminal)
             self._runDepth -= 1
 
     def _runWorkflow(
@@ -150,6 +165,8 @@ class WorkflowRunner:
                         node, nodeInput, supplied, nodeContext, cancellation
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
+                    if self.resultCollector is not None:
+                        self.resultCollector.output(nodeContext, nodeOutputs)
                     self._capturePreviewSnapshot(
                         node, nodeOutputs, nodeContext
                     )
@@ -541,6 +558,8 @@ class WorkflowRunner:
                 nodeInputs.setdefault(edge.toNode, {})[edge.toPort] = outputs[edge.fromPort]
 
     def publish(self, eventType, context, message, level="INFO", code="", payload=None):
+        if self.resultCollector is not None:
+            self.resultCollector.event(eventType, context)
         if self.eventPublisher is None:
             return None
         return self.eventPublisher(

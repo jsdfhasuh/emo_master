@@ -6,6 +6,7 @@ from typing import Literal
 from pydantic import ConfigDict, Field, model_validator
 
 from emo_master.core.presentation.models import Id, Model
+from emo_master.core.presentation.values import readValue
 
 
 class FrozenModel(Model):
@@ -56,19 +57,17 @@ class ClosedSource(FrozenModel):
     valueJson: str | None = Field(default=None, max_length=256 * 1024)
     image: ImageRef | None = None
     reason: str | None = None
+    reasonCode: Literal["OPTIONAL_ABSENT", "BRANCH_SKIPPED", "NODE_FAILED", "EXECUTION_CANCELLED",
+                        "EXPORT_TIMEOUT", "EXPORT_FAILED", "RESOURCE_EXPIRED", "BUDGET_EXCEEDED",
+                        "INVALID_VALUE", "SOURCE_MISSING", "IPC_ERROR"] | None = None
 
     @model_validator(mode="after")
     def checkAvailability(self) -> ClosedSource:
         if self.state == "AVAILABLE":
-            if (self.valueJson is None) == (self.image is None) or self.reason is not None:
+            if (self.valueJson is None) == (self.image is None) or self.reason is not None or self.reasonCode is not None:
                 raise ValueError("available source requires exactly one frozen value or owned asset")
             if self.valueJson is not None:
-                import json
-                if len(self.valueJson.encode("utf-8")) > 256 * 1024:
-                    raise ValueError("source exceeds byte budget")
-                def rejectConstant(value):
-                    raise ValueError(f"non-finite JSON constant: {value}")
-                json.loads(self.valueJson, parse_constant=rejectConstant)
+                readValue(self.valueJson)
         elif not self.reason or self.valueJson is not None or self.image is not None:
             raise ValueError("unavailable source requires reason and no stale payload")
         return self

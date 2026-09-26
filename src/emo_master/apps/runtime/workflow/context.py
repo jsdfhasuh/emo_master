@@ -16,6 +16,7 @@ class RunContext:
     iterationPath: tuple[int, ...] = ()
     workspacePath: str = ""
     projectId: str = ""
+    callPath: tuple[tuple[str, str], ...] = ()
 
     @classmethod
     def root(
@@ -36,7 +37,7 @@ class RunContext:
     def forNode(self, nodeId: str) -> "RunContext":
         return replace(self, nodeRunId=str(uuid4()), callerNodeId=nodeId)
 
-    def childWorkflow(self, workflowId: str, callerNodeId: str) -> "RunContext":
+    def childWorkflow(self, workflowId: str, callerNodeId: str, relation: str = "subflow") -> "RunContext":
         return RunContext(
             jobId=self.jobId,
             workflowId=workflowId,
@@ -47,6 +48,7 @@ class RunContext:
             iterationPath=self.iterationPath,
             workspacePath=self.workspacePath,
             projectId=self.projectId,
+            callPath=(*self.callPath, (callerNodeId, relation)),
         )
 
     def forIteration(self, index: int) -> "RunContext":

@@ -1041,3 +1041,422 @@ class RuntimeService(object):
             timeout,
             metadata,
             _registered_method=True)
+
+
+class DisplayServiceStub(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Capabilities = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Capabilities',
+                request_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayCapabilities.FromString,
+                _registered_method=True)
+        self.Prepare = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Prepare',
+                request_serializer=runtime__pb2.DisplayPrepareRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayPrepared.FromString,
+                _registered_method=True)
+        self.Start = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Start',
+                request_serializer=runtime__pb2.DisplayStartRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJob.FromString,
+                _registered_method=True)
+        self.ListJobs = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ListJobs',
+                request_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJobs.FromString,
+                _registered_method=True)
+        self.Snapshot = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Snapshot',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplaySnapshot.FromString,
+                _registered_method=True)
+        self.Subscribe = channel.unary_stream(
+                '/emo_master.runtime.DisplayService/Subscribe',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplaySnapshot.FromString,
+                _registered_method=True)
+        self.ReadAsset = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReadAsset',
+                request_serializer=runtime__pb2.DisplayAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayAsset.FromString,
+                _registered_method=True)
+        self.AcquireLease = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/AcquireLease',
+                request_serializer=runtime__pb2.DisplayAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayLease.FromString,
+                _registered_method=True)
+        self.ReleaseLease = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReleaseLease',
+                request_serializer=runtime__pb2.DisplayLease.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
+
+
+class DisplayServiceServicer(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    def Capabilities(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Prepare(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Start(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListJobs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Snapshot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Subscribe(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AcquireLease(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReleaseLease(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_DisplayServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Capabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.Capabilities,
+                    request_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                    response_serializer=runtime__pb2.DisplayCapabilities.SerializeToString,
+            ),
+            'Prepare': grpc.unary_unary_rpc_method_handler(
+                    servicer.Prepare,
+                    request_deserializer=runtime__pb2.DisplayPrepareRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayPrepared.SerializeToString,
+            ),
+            'Start': grpc.unary_unary_rpc_method_handler(
+                    servicer.Start,
+                    request_deserializer=runtime__pb2.DisplayStartRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayJob.SerializeToString,
+            ),
+            'ListJobs': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListJobs,
+                    request_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                    response_serializer=runtime__pb2.DisplayJobs.SerializeToString,
+            ),
+            'Snapshot': grpc.unary_unary_rpc_method_handler(
+                    servicer.Snapshot,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplaySnapshot.SerializeToString,
+            ),
+            'Subscribe': grpc.unary_stream_rpc_method_handler(
+                    servicer.Subscribe,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplaySnapshot.SerializeToString,
+            ),
+            'ReadAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadAsset,
+                    request_deserializer=runtime__pb2.DisplayAssetRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayAsset.SerializeToString,
+            ),
+            'AcquireLease': grpc.unary_unary_rpc_method_handler(
+                    servicer.AcquireLease,
+                    request_deserializer=runtime__pb2.DisplayAssetRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayLease.SerializeToString,
+            ),
+            'ReleaseLease': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReleaseLease,
+                    request_deserializer=runtime__pb2.DisplayLease.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'emo_master.runtime.DisplayService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('emo_master.runtime.DisplayService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class DisplayService(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    @staticmethod
+    def Capabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Capabilities',
+            runtime__pb2.DisplayEmpty.SerializeToString,
+            runtime__pb2.DisplayCapabilities.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Prepare(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Prepare',
+            runtime__pb2.DisplayPrepareRequest.SerializeToString,
+            runtime__pb2.DisplayPrepared.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Start(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Start',
+            runtime__pb2.DisplayStartRequest.SerializeToString,
+            runtime__pb2.DisplayJob.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListJobs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ListJobs',
+            runtime__pb2.DisplayEmpty.SerializeToString,
+            runtime__pb2.DisplayJobs.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Snapshot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Snapshot',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplaySnapshot.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Subscribe(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Subscribe',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplaySnapshot.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReadAsset',
+            runtime__pb2.DisplayAssetRequest.SerializeToString,
+            runtime__pb2.DisplayAsset.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AcquireLease(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/AcquireLease',
+            runtime__pb2.DisplayAssetRequest.SerializeToString,
+            runtime__pb2.DisplayLease.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReleaseLease(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReleaseLease',
+            runtime__pb2.DisplayLease.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)

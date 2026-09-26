@@ -88,7 +88,7 @@ class LoopRunner:
             bodyInputs = dict(inputs)
             bodyInputs["__iteration__"] = index
             bodyContext = context.childWorkflow(
-                str(node.loop["bodyWorkflowId"]), node.nodeId
+                str(node.loop["bodyWorkflowId"]), node.nodeId, "loop_body"
             ).forIteration(index)
             bodyResult = self.workflowRunner.run(
                 node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
@@ -130,7 +130,7 @@ class LoopRunner:
             bodyInputs = dict(inputs)
             bodyInputs.update({"item": item, "index": index, "__iteration__": index})
             bodyContext = context.childWorkflow(
-                str(node.loop["bodyWorkflowId"]), node.nodeId
+                str(node.loop["bodyWorkflowId"]), node.nodeId, "loop_body"
             ).forIteration(index)
             bodyResult = self.workflowRunner.run(
                 node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
@@ -172,7 +172,7 @@ class LoopRunner:
                 bodyInputs[indexInputPort] = index
             bodyInputs["__iteration__"] = index
             bodyContext = context.childWorkflow(
-                str(node.loop["bodyWorkflowId"]), node.nodeId
+                str(node.loop["bodyWorkflowId"]), node.nodeId, "loop_body"
             ).forIteration(index)
             bodyResult = self.workflowRunner.run(
                 node.loop["bodyWorkflowId"], bodyInputs, bodyContext, cancellation
@@ -215,7 +215,7 @@ class LoopRunner:
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
             conditionContext = context.childWorkflow(
-                str(node.loop["conditionWorkflowId"]), node.nodeId
+                str(node.loop["conditionWorkflowId"]), node.nodeId, "loop_condition"
             ).forIteration(index)
             conditionResult = self.workflowRunner.run(
                 node.loop["conditionWorkflowId"],
@@ -232,7 +232,7 @@ class LoopRunner:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
                 return self.workflowRunner.result({"state": state}, metrics, diagnostics)
             bodyContext = context.childWorkflow(
-                str(node.loop["bodyWorkflowId"]), node.nodeId
+                str(node.loop["bodyWorkflowId"]), node.nodeId, "loop_body"
             ).forIteration(index)
             bodyResult = self.workflowRunner.run(
                 node.loop["bodyWorkflowId"],
@@ -280,7 +280,7 @@ class LoopRunner:
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
             conditionContext = context.childWorkflow(
-                conditionWorkflowId, node.nodeId
+                conditionWorkflowId, node.nodeId, "loop_condition"
             ).forIteration(index)
             conditionInputs = {
                 name: state[name]
@@ -304,7 +304,7 @@ class LoopRunner:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
                 return self.workflowRunner.result(state, metrics, diagnostics)
             bodyContext = context.childWorkflow(
-                bodyWorkflowId, node.nodeId
+                bodyWorkflowId, node.nodeId, "loop_body"
             ).forIteration(index)
             bodyInputs = {
                 name: state[name] for name in bodyWorkflow.inputs if name in state

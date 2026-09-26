@@ -28,6 +28,7 @@ class JobSupervisor:
         self.gracefulStopTimeoutMs = max(0, gracefulStopTimeoutMs)
         self.heartbeatTimeoutMs = max(100, heartbeatTimeoutMs)
         self.terminalCallback = terminalCallback
+        self.presentationCallback: Callable | None = None
         self._context = multiprocessing.get_context("spawn")
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
         self._bridges: dict[str, EventBridge] = {}
@@ -98,6 +99,9 @@ class JobSupervisor:
                 return
 
             eventType = str(event.get("eventType", "process.event"))
+            if eventType.startswith("display.") and self.presentationCallback is not None:
+                self.presentationCallback(jobId, event)
+                return
             if eventType == "process.heartbeat":
                 self._heartbeat[jobId] = nowMs()
                 self._heartbeatSeen.add(jobId)

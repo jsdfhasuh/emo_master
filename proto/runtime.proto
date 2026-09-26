@@ -385,3 +385,50 @@ service RuntimeService {
   rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
   rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
 }
+
+// Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+service DisplayService {
+  rpc Capabilities(DisplayEmpty) returns (DisplayCapabilities);
+  rpc Prepare(DisplayPrepareRequest) returns (DisplayPrepared);
+  rpc Start(DisplayStartRequest) returns (DisplayJob);
+  rpc ListJobs(DisplayEmpty) returns (DisplayJobs);
+  rpc Snapshot(DisplayRequest) returns (DisplaySnapshot);
+  rpc Subscribe(DisplayRequest) returns (stream DisplaySnapshot);
+  rpc ReadAsset(DisplayAssetRequest) returns (DisplayAsset);
+  rpc AcquireLease(DisplayAssetRequest) returns (DisplayLease);
+  rpc ReleaseLease(DisplayLease) returns (DisplayEmpty);
+}
+message DisplayEmpty {}
+message DisplayCapabilities { string runtime_instance_id = 1; string protocol_version = 2; repeated string capabilities = 3; }
+message DisplayPrepareRequest { string project_json = 1; string resource_root = 2; map<string,string> site_values = 3; }
+message DisplayPrepared { string prepared_id = 1; string execution_revision = 2; string capture_plan_revision = 3; }
+message DisplayStartRequest { string prepared_id = 1; }
+message DisplayJob { string job_id = 1; string status = 2; }
+message DisplayJobs { repeated DisplayJob jobs = 1; }
+message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; }
+message DisplayIdentity {
+  string runtime_instance_id = 1; string job_id = 2; string result_scope_id = 3;
+  string invocation_id = 4; string result_key = 5; uint64 result_ordinal = 6;
+  string execution_revision = 7; string capture_plan_revision = 8; string mode = 9;
+}
+message DisplayImage {
+  string resource_id = 1; string owner_result_key = 2; uint64 byte_size = 3;
+  string sha256 = 4; string mime_type = 5; string frame_identity = 6;
+  string coordinate_space_id = 7; string trust = 8; string adapter_version = 9;
+}
+message DisplaySource {
+  string source_id = 1; string state = 2; optional string value_json = 3;
+  DisplayImage image = 4; string reason_code = 5; string reason = 6;
+}
+message DisplayResult {
+  DisplayIdentity identity = 1; repeated string expected_source_ids = 2;
+  repeated DisplaySource sources = 3; string status = 4; string execution_terminal = 5;
+}
+message DisplaySnapshot {
+  string runtime_instance_id = 1; string job_id = 2; uint64 cursor = 3;
+  bool reset_required = 4; repeated DisplayResult results = 5;
+  map<string,uint64> latest_started_ordinals = 6;
+}
+message DisplayAssetRequest { string runtime_instance_id = 1; string job_id = 2; string resource_id = 3; uint32 ttl_ms = 4; }
+message DisplayAsset { bytes content = 1; string sha256 = 2; }
+message DisplayLease { string lease_id = 1; string resource_id = 2; uint32 ttl_ms = 3; }

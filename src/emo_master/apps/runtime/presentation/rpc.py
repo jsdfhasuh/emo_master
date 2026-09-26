@@ -77,3 +77,31 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                 cursor = result.cursor
                 request.runtime_instance_id = result.runtime_instance_id
             time.sleep(0.02)
+
+    def _asset(self, request, context, action):
+        if request.runtime_instance_id != self.service.runtimeInstanceId:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "RESET_REQUIRED")
+        try:
+            return action()
+        except KeyError:
+            context.abort(grpc.StatusCode.NOT_FOUND, "RESOURCE_EXPIRED")
+        except ValueError as error:
+            context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, str(error))
+        except TimeoutError as error:
+            context.abort(grpc.StatusCode.DEADLINE_EXCEEDED, str(error))
+
+    def ReadAsset(self, request, context):
+        def read():
+            data, sha = self.service.assets.read(request.job_id, request.resource_id)
+            return pb.DisplayAsset(content=data, sha256=sha)
+        return self._asset(request, context, read)
+
+    def AcquireLease(self, request, context):
+        def acquire():
+            leaseId = self.service.assets.lease(request.job_id, request.resource_id, request.ttl_ms)
+            return pb.DisplayLease(lease_id=leaseId, resource_id=request.resource_id, ttl_ms=request.ttl_ms)
+        return self._asset(request, context, acquire)
+
+    def ReleaseLease(self, request, context):
+        self.service.assets.release(request.lease_id)
+        return pb.DisplayEmpty()

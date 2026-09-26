@@ -16,6 +16,16 @@ class PreparedProject:
     snapshot: ProjectSnapshot
     projectPath: Path
     sourceJson: str
+    files: tuple[tuple[str, str], ...]
+
+    def verify(self):
+        for name, expected in self.files:
+            digest = hashlib.sha256()
+            with Path(name).open("rb") as stream:
+                for block in iter(lambda: stream.read(1024 * 1024), b""):
+                    digest.update(block)
+            if digest.hexdigest() != expected:
+                raise ValueError("prepared resource changed")
 
 
 def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=None,
@@ -79,7 +89,9 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
         SqliteStore(Path(snapshot.runtimeDbPath)).initialize()
         projectPath = destination / "project.json"
         projectPath.write_text(document.model_dump_json(), encoding="utf-8")
-        return PreparedProject(snapshot, projectPath, json.dumps({"sources": sources, "scopes": scopes}))
+        files = [(str(projectPath), hashlib.sha256(projectPath.read_bytes()).hexdigest())]
+        files.extend((paths[key], item.sha256) for key, item in document.resources.items.items())
+        return PreparedProject(snapshot, projectPath, json.dumps({"sources": sources, "scopes": scopes}), tuple(files))
     except BaseException:
         shutil.rmtree(destination)
         raise

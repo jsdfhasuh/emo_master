@@ -24,4 +24,31 @@
 - debug SQLite/outputs 使用 P1 的隔离命名空间，不迁移生产 SQLite，不创建第二个 Runtime。
 - 新 protobuf DisplayService 与旧 RuntimeService 并存；不替换旧客户端与无页面项目。
 
-首批只验证标量；图像资源实现和分类 aio 入口随之后批次补齐，不能把首批标量通过视为 P2 退出。
+## 图像与资源
+
+两个固定 spawn 编码单元，无待处理队列；每个展示 Job 独占一个槽，允许两个 Job 并发。
+这使 Worker 在复制中死亡且未发出描述符时仍能确定资源归属；同一 Job 忙时图像明确
+BUDGET_EXCEEDED，不等待展示，不增加线程。单来源原图 8 MiB、结果 16 MiB 上限仍保留，
+不承诺同一结果的多个图像同时可用。检测线程在槽位预留后 copyto 自有共享内存；仅小描述符
+进入原事件通道，标量在路由前序列化冻结。旧 PreviewSnapshotWriter 仍执行。
+
+任务提交后导出 500 ms；等待超时后 terminate/join/kill/join，最多 1 s 回收确认。
+未证明退出则隔离该槽，不归还额度。新进程启动预热独立于运行任务期限，期间仍占槽。
+封闭期限从 Worker 的 workflow 终态单调时钟起计 500 ms，不从客户端收到时重新计时。
+缺图进入本次 INCOMPLETE；迟到导出清理孤儿，不改已经封闭的结果。Supervisor 为没有
+workflow 终态的失败/强杀兜底。正常 Job 终态不等待导出线程、不提前抛弃封闭任务。
+
+结果只引用已原子移入资源库的 ID、摘要和大小。按 ID 读图核验 Job 所有权、摘要和大小。
+读图期限 500 ms，读取引用在真实读操作 finally 才释放；客户端取消不能提前回收。
+历史淘汰后，租约/读引用继续保留资产。租约最多 16 个、30 s、64 MiB；cache 256 MiB，
+两槽 staging 最多 16 MiB（既定上限 64 MiB），每图编码最多 8 MiB。
+
+资源固定计账：共享内存容量 16 MiB、导出含临时副本 2×6×8=96 MiB，
+每 Job 标量 OPEN/IPC/快照/历史保守预留 32 MiB，两读线程预留 16 MiB；
+两个 Job 合计预留 192 MiB，小于 Runtime 256 MiB，每 Job 32+48=80 MiB 小于 128 MiB。
+`resourceStats()` 同时报保留对象数量、字节及拒绝数量。固定预留是审计模型，不能代替
+Python/Qt/OpenCV 整进程 RSS、句柄和长期稳态实测；此项仍阻塞稳定性验收。
+
+每次冻结产生独立 frameIdentity / coordinateSpaceId；现阶段图像自身可显示，几何叠加
+来源统一 unknown，不按同尺寸或文件路径推断逐帧 lineage。可信算子链适配尚未完成，
+不能宣称 B09 的完整可信叠加已通过。原生 Qt 组合崩溃仍独立跟踪。

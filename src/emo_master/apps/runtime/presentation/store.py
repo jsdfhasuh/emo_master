@@ -47,7 +47,9 @@ class ResultStore:
             # 32 records and 8 MiB serialized metadata, included in Job reservation.
             while len(self.history) > 32 or sum(len(r.model_dump_json().encode()) for r in self.history) > 8 * 1024 * 1024:
                 old = self.history.popleft()
-                self.latest.pop((old.identity.jobId, old.identity.resultScopeId), None)
+                address = (old.identity.jobId, old.identity.resultScopeId)
+                if self.latest.get(address) is old:
+                    del self.latest[address]
             address = (result.identity.jobId, result.identity.resultScopeId)
             if result.identity.resultOrdinal == self.high[address]:
                 self.latest[address] = result

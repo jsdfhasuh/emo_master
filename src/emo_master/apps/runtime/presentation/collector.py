@@ -1,5 +1,7 @@
 """Worker-side bounded capture, after output validation and before routing."""
 import json
+from multiprocessing.shared_memory import SharedMemory
+import time
 from uuid import uuid4
 
 from emo_master.core.presentation.values import freezeValue
@@ -14,6 +16,8 @@ def projectField(value, path):
         return value
     key, *tail = path
     if key == "*" and isinstance(value, list):
+        if len(value) > 4096:
+            raise ValueError("projection collection budget exceeded")
         return [projectField(item, tail) for item in value]
     return projectField(value[key], tail)
 
@@ -33,6 +37,7 @@ class ResultCollector:
                 continue
             ordinal = self.ordinals.get(scopeId, 0) + 1
             self.ordinals[scopeId] = ordinal
+            self.config["ordinals"][self.config["scopeIds"].index(scopeId)] = ordinal
             if not self.config["credits"].acquire(False):
                 # Shared counter is bounded state; no unbounded rejected-event queue.
                 with self.config["rejected"].get_lock():
@@ -43,7 +48,7 @@ class ResultCollector:
             sources = {key: source for key, source in self.plan["sources"].items()
                        if source["resultScopeId"] == scopeId}
             item = {"identity": identity, "expected": list(sources), "values": {}, "bytes": 0,
-                    "sources": sources}
+                    "sources": sources, "rawBytes": 0}
             self.open[(context.workflowRunId, scopeId)] = item
             self.emit({"eventType": "display.open", "item": {"identity": identity, "expected": list(sources)}})
 
@@ -74,7 +79,37 @@ class ResultCollector:
                     item["values"][key] = unavailable(key, "INVALID_VALUE")
 
     def image(self, key, value, item):
-        return unavailable(key, "EXPORT_FAILED")
+        import numpy as np
+        if (not isinstance(value, np.ndarray) or value.dtype != np.uint8 or value.ndim not in (2, 3)
+                or (value.ndim == 3 and value.shape[2] not in (1, 3, 4)) or not value.size):
+            return unavailable(key, "INVALID_VALUE")
+        if value.nbytes > 8 * 1024 * 1024 or item["rawBytes"] + value.nbytes > 16 * 1024 * 1024:
+            return unavailable(key, "BUDGET_EXCEEDED")
+        for slot in self.config.get("slots", []):
+            if not slot["free"].acquire(False):
+                continue
+            transferred = False
+            try:
+                memory = SharedMemory(name=slot["name"])
+                try:
+                    target = np.ndarray(value.shape, value.dtype, buffer=memory.buf)
+                    np.copyto(target, value)
+                    del target
+                finally:
+                    memory.close()
+                descriptor = {"slot": slot["index"], "shape": list(value.shape), "sourceId": key,
+                              "key": item["identity"]["resultKey"], "jobId": item["identity"]["jobId"],
+                              "frozenAt": time.monotonic(), "rawBytes": value.nbytes,
+                              "provenance": {"frameIdentity": str(uuid4()), "coordinateSpaceId": str(uuid4()),
+                                             "trust": "unknown"}}
+                self.emit({"eventType": "display.image", "descriptor": descriptor})
+                transferred = True
+                item["rawBytes"] += value.nbytes
+                return {"sourceId": key, "pendingImage": True}
+            finally:
+                if not transferred:
+                    slot["free"].release()
+        return unavailable(key, "BUDGET_EXCEEDED")
 
     def event(self, eventType, context):
         if eventType not in {"node.skipped", "node.failed"}:
@@ -93,4 +128,4 @@ class ResultCollector:
             code = {"COMPLETED": "SOURCE_MISSING", "FAILED": "NODE_FAILED", "CANCELLED": "EXECUTION_CANCELLED"}[terminal]
             values = [item["values"].get(key, unavailable(key, code)) for key in item["expected"]]
             self.emit({"eventType": "display.seal", "key": item["identity"]["resultKey"],
-                       "sources": values, "terminal": terminal})
+                       "sources": values, "terminal": terminal, "sealedAt": time.monotonic()})

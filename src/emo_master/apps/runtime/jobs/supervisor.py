@@ -488,7 +488,6 @@ class JobSupervisor:
         stopMode: str | None = None,
     ) -> None:
         self._terminalEvents.add(jobId)
-        self.eventStore.markTerminal(jobId)
         changes: dict[str, object] = {
             "status": status,
             "endedAtMs": endedAtMs,
@@ -499,9 +498,15 @@ class JobSupervisor:
             changes["message"] = message
         if stopMode is not None:
             changes["stopMode"] = stopMode
-        self.jobRepository.update(jobId, **changes)
-        if self.terminalCallback is not None:
-            self.terminalCallback(jobId, status)
+        try:
+            if self.terminalCallback is not None:
+                self.terminalCallback(jobId, status)
+        finally:
+            # COMPLETED is observable through GetJobStatus. Publish it only
+            # after terminal assets have been promoted, including on callback
+            # failure so a failed cleanup cannot strand a RUNNING record.
+            self.jobRepository.update(jobId, **changes)
+            self.eventStore.markTerminal(jobId)
 
     def _markTerminalWithoutEvent(
         self,

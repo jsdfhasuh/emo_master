@@ -55,3 +55,20 @@ def testPersistedPreviewAssetsAreProjectIsolated(tmp_path: Path) -> None:
         assert store.isUsableByProject(transient.assetId, "any-project") is True
     finally:
         store.close()
+
+
+def testPreviewCaptureAndPromotionWithLongWindowsPaths(tmp_path: Path) -> None:
+    root = tmp_path / ("project-" + "x" * 80) / ("workspace-" + "y" * 80)
+    writer = PreviewSnapshotWriter(root / "job")
+    image = np.full((7, 9, 3), 123, dtype=np.uint8)
+    writer.capture(SimpleNamespace(nodeId="source", outputPorts={"image": "image"}),
+                   {"image": image}, SimpleNamespace(workflowId="main", iterationPath=()))
+    store = PreviewAssetStore(root / "cache")
+    try:
+        store.promote(root / "job" / "preview_staging", "project-key")
+        assets = store.listSources("project-key", "main", "source", [])
+        assert len(assets) == 1
+        assert len(str(assets[0].path)) > 260
+        assert np.array_equal(store.readImage(assets[0].assetId), image)
+    finally:
+        store.close()

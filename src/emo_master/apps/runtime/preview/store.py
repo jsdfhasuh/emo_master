@@ -32,6 +32,18 @@ _SNAPSHOT_TYPES = {
 }
 
 
+def _ioPath(path: Path) -> Path:
+    """Use Win32 extended paths only inside the private preview file store."""
+    if os.name != "nt":
+        return path
+    absolute = os.path.abspath(path)
+    if absolute.startswith("\\\\?\\"):
+        return Path(absolute)
+    if absolute.startswith("\\\\"):
+        return Path("\\\\?\\UNC\\" + absolute[2:])
+    return Path("\\\\?\\" + absolute)
+
+
 @dataclass(frozen=True)
 class PreviewAsset:
     assetId: str
@@ -50,7 +62,7 @@ class PreviewAsset:
 
 class PreviewSnapshotWriter:
     def __init__(self, jobWorkspace: Path) -> None:
-        self.root = jobWorkspace / "preview_staging"
+        self.root = _ioPath(jobWorkspace / "preview_staging")
         self.root.mkdir(parents=True, exist_ok=True)
         self._entries: dict[tuple[str, str, str], dict[str, object]] = {}
 
@@ -115,7 +127,7 @@ class PreviewSnapshotWriter:
 
 class PreviewAssetStore:
     def __init__(self, root: Path) -> None:
-        self.root = root
+        self.root = _ioPath(root)
         self.root.mkdir(parents=True, exist_ok=True)
         self.transientRoot = self.root / "_transient"
         self.transientRoot.mkdir(parents=True, exist_ok=True)
@@ -133,7 +145,7 @@ class PreviewAssetStore:
 
     def promote(self, stagingRoot: Path, projectKey: str) -> None:
         with self._lock:
-            self._promoteLocked(stagingRoot, projectKey)
+            self._promoteLocked(_ioPath(stagingRoot), projectKey)
 
     def _promoteLocked(self, stagingRoot: Path, projectKey: str) -> None:
         index = _readIndex(stagingRoot / "index.json")

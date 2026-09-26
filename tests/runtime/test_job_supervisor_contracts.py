@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import queue
-from threading import Event
+from threading import Event, Thread
 
 import pytest
 
@@ -83,6 +83,35 @@ def _supervisor() -> tuple[JobSupervisor, JobRepository, EventStore, _FakeProces
     supervisor._handles[record.jobId] = (process, Event(), object())
     supervisor._bridges[record.jobId] = _FakeBridge()
     return supervisor, repository, eventStore, process
+
+
+def testTerminalStatusWaitsForAssetPromotion() -> None:
+    supervisor, repository, _, _ = _supervisor()
+    entered, release = Event(), Event()
+    def promote(jobId, status):
+        entered.set()
+        assert release.wait(2)
+    supervisor.terminalCallback = promote
+    thread = Thread(target=supervisor._markTerminal, args=("job-stop", "COMPLETED", 123))
+    thread.start()
+    try:
+        assert entered.wait(1)
+        assert repository.get("job-stop").status == "RUNNING"
+    finally:
+        release.set()
+        thread.join(2)
+    assert not thread.is_alive()
+    assert repository.get("job-stop").status == "COMPLETED"
+
+
+def testTerminalCallbackFailureStillPublishesTerminalStatus() -> None:
+    supervisor, repository, _, _ = _supervisor()
+    def fail(jobId, status):
+        raise RuntimeError("promotion failure")
+    supervisor.terminalCallback = fail
+    with pytest.raises(RuntimeError, match="promotion failure"):
+        supervisor._markTerminal("job-stop", "COMPLETED", 123)
+    assert repository.get("job-stop").status == "COMPLETED"
 
 
 def testForceStopTerminatesImmediatelyAndIgnoresLateWorkerTerminal() -> None:

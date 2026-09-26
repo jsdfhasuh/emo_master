@@ -1,0 +1,44 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\jsdfhasuh\my_scripts\emo_master
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 34 items
+
+tests/designer/test_main_window_layout.py::testMainWindowUsesExpectedToolbarGroups <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [  2%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesBalancedPanelWidths <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [  5%]
+tests/designer/test_main_window_layout.py::testMainWindowDelegatesLayoutStateToController <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [  8%]
+tests/designer/test_main_window_layout.py::testMainWindowDelegatesOperatorCatalogToController <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 11%]
+tests/designer/test_main_window_layout.py::testMainWindowDoesNotKeepLegacyLayoutStateFields <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 14%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesCompactCategoryLabelsAndRightSections <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 17%]
+tests/designer/test_main_window_layout.py::testMainWindowClassifiesFlowOperatorsAsControlFlow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 20%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesHorizontalSplitterAndPersistsSizes <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 23%]
+tests/designer/test_main_window_layout.py::testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 26%]
+tests/designer/test_main_window_layout.py::testCollapsedSidebarUsesLiveSplitterSizes <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 29%]
+tests/designer/test_main_window_layout.py::testMainWindowDoesNotLimitCanvasMaxWidth <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 32%]
+tests/designer/test_main_window_layout.py::testRuntimeLogDockIsBottomDockedAndRestoresLocalSettings <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 35%]
+tests/designer/test_main_window_layout.py::testRuntimeLogDockClearAlsoReleasesMainWindowViewCache <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 38%]
+tests/designer/test_main_window_menubar.py::testMainWindowBuildsMenuBarGroups <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 41%]
+tests/designer/test_main_window_menubar.py::testControlFlowNodesAreNotAddedFromFileMenu <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 44%]
+tests/designer/test_main_window_menubar.py::testWorkflowActionsAreNotDuplicatedInFileMenu <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 47%]
+tests/designer/test_main_window_menubar.py::testRecentProjectsMenuEntriesExist <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 50%]
+tests/designer/test_main_window_menubar.py::testRecentProjectsMenuCanOpenProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 52%]
+tests/designer/test_main_window_menubar.py::testMenuBarFontSizeIsStableAcrossWindowWidths <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 55%]
+tests/designer/test_main_window_menubar.py::testGlobalCounterDialogUsesLoadedProjectAndShutsDown <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 58%]
+tests/designer/test_main_window_project_save_load.py::testMainWindowCanSaveAndLoadProjectDirectory <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 61%]
+tests/designer/test_main_window_project_save_load.py::testSaveProjectActionOverwritesLoadedProjectWithoutChooser <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 64%]
+tests/designer/test_main_window_project_save_load.py::testFailedProjectSaveDoesNotAdvanceRevision <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 67%]
+tests/designer/test_main_window_project_save_load.py::testFailedProjectLoadPreservesCurrentWorkflowAndTabs <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 70%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabsUseTabBarMetadataAndSwitchWithoutCreating <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 73%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuSetsSelectedTabAsEntry <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 76%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuActionsTargetClickedWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 79%]
+tests/designer/test_main_window_workflow_tabs.py::testPlusTabPromptsForNameAndCancelRestoresActiveTab <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 82%]
+tests/designer/test_main_window_workflow_tabs.py::testReferencedWorkflowDeleteFailureShowsReasonAndPreservesState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 85%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageExportDialogWritesDedicatedPackage <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 88%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 91%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackagePreviewCancelDoesNotCaptureOrImport <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 94%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportCanInsertMappedSubflowIntoCurrentWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 97%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportFailureWarnsWithoutChangingProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [100%]
+
+============================= 34 passed in 3.83s ==============================

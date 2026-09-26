@@ -95,6 +95,16 @@ def run(root):
         pipeline.assets.read = slow_read
         server = IsolatedServer(service, pipeline)
         channel = grpc.insecure_channel(f"127.0.0.1:{server.port}")
+        pin = channel.unary_unary("/p0.Display/Pin", request_serializer=lambda v: json.dumps(v).encode(),
+                                  response_deserializer=json.loads)
+        unpin = channel.unary_unary("/p0.Display/Unpin", request_serializer=lambda v: json.dumps(v).encode(),
+                                    response_deserializer=json.loads)
+        lease = pin({"asset_id": assets[0]["asset_id"], "seconds": 1}, timeout=1)["lease"]
+        assert pipeline.resources.used["lease"] == assets[0]["size"]
+        unpin({"lease": lease}, timeout=1)
+        assert pipeline.resources.used["lease"] == 0
+        pin({"asset_id": assets[0]["asset_id"], "seconds": .02}, timeout=1)
+        wait_until(lambda: pipeline.resources.used["lease"] == 0)
         call = channel.unary_stream("/p0.Display/GetDisplayAsset", request_serializer=lambda v: json.dumps(v).encode())(
             {"asset_id": assets[0]["asset_id"], "job": "one"}, timeout=3)
         assert next(call)

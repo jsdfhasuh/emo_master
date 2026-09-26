@@ -14,6 +14,8 @@ import time
 
 import grpc
 
+from .contracts import Unavailable
+
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 
@@ -162,6 +164,12 @@ class IsolatedServer:
                     yield message
             except RpcAbort as error:
                 await context.abort(error.code, error.details)
+            except Unavailable as error:
+                await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, str(error))
+            except KeyError as error:
+                await context.abort(grpc.StatusCode.NOT_FOUND, str(error))
+            except TimeoutError as error:
+                await context.abort(grpc.StatusCode.DEADLINE_EXCEEDED, str(error))
             finally:
                 self._cleanup(category, cancel, pending, iterator, constructing)
         return stream
@@ -203,7 +211,10 @@ class IsolatedServer:
                             if not size:
                                 return
                             yield pb.PreviewUploadChunk.FromString(spool.read(int.from_bytes(size, "little")))
-                    return self.service.UploadPreviewImage(chunks(), cancel)
+                    reply = self.service.UploadPreviewImage(chunks(), cancel)
+                    if not cancel.is_active() and reply.ok:
+                        self.service.previewAssetStore.removeTransient(reply.asset_id)
+                    return reply
                 pending = self.loop.run_in_executor(self.pools["bulk"], execute)
                 return await asyncio.shield(pending)
             finally:
@@ -271,7 +282,6 @@ class IsolatedServer:
                     response_serializer=lambda value: json.dumps(value).encode())}),))
         self.port = self.server.add_insecure_port("127.0.0.1:0")
         await self.server.start()
-        self.ready.set()
 
     def _run(self):
         self.loop = asyncio.new_event_loop()
@@ -284,6 +294,7 @@ class IsolatedServer:
                 self.loop.run_until_complete(self.server.stop(0))
             self.ready.set()
         else:
+            self.ready.set()
             self.loop.run_forever()
         finally:
             self.loop.close()

@@ -36,6 +36,7 @@ class Pipeline:
         self.runs = {}
         self.metadata = {}
         self.sessions = {}
+        self.session_tokens = {}
         self.events = deque(maxlen=64)
         self.generated = self.sealed = self.final = self.rejected = 0
         self.condition = threading.Condition(self.lock)
@@ -50,6 +51,10 @@ class Pipeline:
             if job not in self.sessions:
                 if len(self.sessions) >= 2:
                     raise Unavailable("two Job quota")
+                # Four concurrent control snapshots can outlive the handler
+                # while gRPC serializes/sends. Keep their worst-case copies
+                # charged for the entire session, not just asdict().
+                self.session_tokens[job] = self.resources.reserve(job, "memory", 16 * BUDGET.result_bytes)
                 self.sessions[job] = ("p0-continuous", 1, "p0-project", job, "main", ())
             return self.sessions[job]
 
@@ -189,5 +194,8 @@ class Pipeline:
                 self.resources.release(token)
             self.metadata.clear()
             self.assets.close()
+            for token in self.session_tokens.values():
+                self.resources.release(token)
+            self.session_tokens.clear()
         assert not self.exporter.errors, list(self.exporter.errors)
         assert all(value == 0 for value in self.resources.used.values()), self.resources.snapshot()

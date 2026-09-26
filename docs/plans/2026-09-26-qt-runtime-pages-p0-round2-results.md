@@ -21,3 +21,13 @@
 外层监督实测：构造抛错/阻塞、首条前取消、next中取消、close抛错/延迟、序列化异常、回调阻塞、启动失败、停服超时后释放门闩并重试。另用两个真实 Runner Job共享同一Pipeline，重复hang/IPC故障、第三导出拒绝、INCOMPLETE封闭、恢复后两网络客户端解码、慢读取消保留资产引用、500ms读期限、运行中close和最终子进程归零。
 
 `pytest tests/p0 -q`：38 passed（38.07s）；R09六排列/重复/换Job、R10真实spawn回收、R11临时debug隔离及C1—C4均重跑。正式长流若第三方next永久不响应取消，Python线程不能强杀，槽位不会复用；此情况被报告为不可回收并由测试外层进程树监督结束，不能当作正式设备驱动已验收。
+
+## 批次三：测量口径与基线修复
+
+测量使用3轮、每组预热8件+测量96件；五组为原功能、无presentation、采集零客户端、一个客户端、两个客户端。每轮轮换起始组，按本轮原功能P95配对计算回退。绝对5Hz输入不等待导出，保留Runner串行语义；scopeEnd仍来自Runner实际workflow终态。模型P95只统计实际完整解码，同时以全部96件为覆盖率分母；任何缺失/INCOMPLETE都使正确性和性能门槛失败，不能用有效样本P95掩盖缺失。
+
+单任务导出/读图/封闭500ms、回收1s全部不变；外层benchmark watchdog根据固定窗口长度计算，默认432s，其他故障场景90s。证据同时记录执行、正确性、性能、兼容性；写入起止HEAD/status、diff SHA256及受测源码SHA256，禁止覆盖已有证据。
+
+私有预览基线修复独立提交 `323f35d`：原测试长路径下临时PNG文件超过Windows传统路径限制，事件记录preview.snapshot.failed；私有存储使用扩展I/O路径。同时屏障复现GetJobStatus在终态资产promotion前返回COMPLETED，改为promotion完成后发布状态，回调异常仍发布终态。旧测试断言不变，新增长路径和回调屏障/异常回归。Runtime/core/e2e：356 passed、1 skipped（既有无符号链接权限）。完整CI的proto/Ruff/mypy通过，pytest仍原生访问冲突3221225477。
+
+Qt基线隔离：全部Designer在workflow-tabs import用例的processEvents路径崩溃；workflow-tabs单文件10 passed，main-window组34 passed；前置Designer文件拆成两半分别加workflow-tabs，61/46 passed。说明是组合运行/生命周期相关，尚无足够证据定位到某个Qt对象；没有据此猜测性改动Qt生产代码或调整原断言。后续独立进程结果与原失败分列。

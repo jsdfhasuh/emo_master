@@ -151,23 +151,34 @@ def window(root, service, image_path, digest, count=96, viewers=2, enabled=True,
                 time.sleep(.01)
             assert not pipeline.results.open and not pipeline.runs
             assert pipeline.final == count + warmup
-            for consumer in consumers:
-                assert not consumer.error, consumer.error
             stats = pipeline.stats()
         else:
             stats = None
         measured = rows[warmup:]
         client_rows = [[r for r in consumer.rows if r["ordinal"] > warmup] for consumer in consumers]
         latency = [r["latency_ms"] for client in client_rows for r in client if r["decoded"]]
+        measured_commits = [c for c in commits if c["ordinal"] > warmup]
+        if not consumers and pipeline:
+            latency = [(c["commit_ns"]-c["scope_end_ns"])/1e6 for c in measured_commits]
+        observed_end = time.perf_counter_ns()
+        for consumer in consumers:
+            if consumer.live:
+                consumer.max_age_ms = max(consumer.max_age_ms, (observed_end-consumer.live["scope_end_ns"])/1e6)
+        correct = (not pipeline or (len(measured_commits) == count and all(c["status"] == "COMMITTED" for c in measured_commits)))
+        correct = correct and all(not c.error for c in consumers) and all(len(c) == count and all(r["decoded"] for r in c) for c in client_rows)
         execution_p95 = float(np.percentile([r["execution_ms"] for r in measured], 95))
         throughput = (count - 1) * 1e9 / (measured[-1]["start_ns"]-measured[0]["start_ns"])
-        return dict(enabled=enabled, viewers=viewers, count=count, warmup=warmup, rows=rows,
+        report = dict(enabled=enabled, viewers=viewers, count=count, warmup=warmup, rows=rows,
                     commits=commits, clients=client_rows, samples=samples, stats=stats,
                     before=before, after=resources(), execution_p95_ms=execution_p95,
+                    client_errors=[c.error for c in consumers],
+                    max_schedule_lateness_ms=max(r["lateness_ms"] for r in measured),
+                    incomplete=sum(c["status"] != "COMMITTED" for c in measured_commits),
                     model_p95_ms=float(np.percentile(latency, 95)) if latency else None,
                     achieved_hz=throughput, coverage=[sum(r["decoded"] for r in client)/count for client in client_rows],
                     max_live_age_ms=[consumer.max_age_ms for consumer in consumers],
-                    correctness_status="PASS" if all(len(client) == count and all(r["decoded"] for r in client) for client in client_rows) else "FAIL")
+                    correctness_status="PASS" if correct else "FAIL")
+        return report
     finally:
         for consumer in consumers:
             consumer.close()
@@ -175,3 +186,6 @@ def window(root, service, image_path, digest, count=96, viewers=2, enabled=True,
             server.close()
         if pipeline:
             pipeline.close()
+            if "report" in locals():
+                report["cleanup"] = pipeline.resources.snapshot()
+                report["after_close"] = resources()

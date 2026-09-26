@@ -160,6 +160,7 @@ def run(root):
             rows.append(dict(case=mode, status="PASS", active_after=dict(server.active)))
         class BadStartup(IsolatedServer):
             async def _start(self):
+                await super()._start()
                 raise RuntimeError("injected startup")
         try:
             BadStartup(service, feed)

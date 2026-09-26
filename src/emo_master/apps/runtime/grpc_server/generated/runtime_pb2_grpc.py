@@ -1098,6 +1098,16 @@ class DisplayServiceStub(object):
                 request_serializer=runtime__pb2.DisplayLease.SerializeToString,
                 response_deserializer=runtime__pb2.DisplayEmpty.FromString,
                 _registered_method=True)
+        self.ReleaseJob = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReleaseJob',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
+        self.DiscardPrepared = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/DiscardPrepared',
+                request_serializer=runtime__pb2.DisplayStartRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
 
 
 class DisplayServiceServicer(object):
@@ -1158,6 +1168,18 @@ class DisplayServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ReleaseJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DiscardPrepared(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_DisplayServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -1204,6 +1226,16 @@ def add_DisplayServiceServicer_to_server(servicer, server):
             'ReleaseLease': grpc.unary_unary_rpc_method_handler(
                     servicer.ReleaseLease,
                     request_deserializer=runtime__pb2.DisplayLease.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+            'ReleaseJob': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReleaseJob,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+            'DiscardPrepared': grpc.unary_unary_rpc_method_handler(
+                    servicer.DiscardPrepared,
+                    request_deserializer=runtime__pb2.DisplayStartRequest.FromString,
                     response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
             ),
     }
@@ -1450,6 +1482,60 @@ class DisplayService(object):
             target,
             '/emo_master.runtime.DisplayService/ReleaseLease',
             runtime__pb2.DisplayLease.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReleaseJob(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReleaseJob',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DiscardPrepared(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/DiscardPrepared',
+            runtime__pb2.DisplayStartRequest.SerializeToString,
             runtime__pb2.DisplayEmpty.FromString,
             options,
             channel_credentials,

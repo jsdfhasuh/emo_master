@@ -100,7 +100,7 @@ def _collector(spec, eventQueue):
     if spec.presentation is None:
         return None
     from emo_master.apps.runtime.presentation.collector import ResultCollector
-    return ResultCollector(spec.presentation, eventQueue.put)
+    return ResultCollector(spec.presentation, spec.presentation["queue"].put_nowait)
 
 
 def _eventPublisher(jobId: str, projectId: str, eventQueue):

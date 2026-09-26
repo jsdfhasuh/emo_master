@@ -5,6 +5,7 @@ import time
 from uuid import uuid4
 
 from emo_master.core.presentation.values import freezeValue
+from emo_master.apps.runtime.presentation.provenance import FrameTracker
 
 
 def unavailable(sourceId, code):
@@ -29,11 +30,21 @@ class ResultCollector:
         self.emit = emit
         self.open = {}
         self.ordinals = {}
+        self.frames = FrameTracker(config.get("versions", {}))
+        self.telemetry = {}
+
+    def observe(self, node, inputs, outputs):
+        if self.config.get("capture", True):
+            self.frames.observe(node, inputs, outputs)
 
     def begin(self, context):
         path = [{"nodeId": n, "relation": r} for n, r in context.callPath]
         for scopeId, scope in self.plan["scopes"].items():
             if scope["scopeWorkflowId"] != context.workflowId or scope["callPath"] != path:
+                continue
+            if self.config.get("measure"):
+                self.telemetry[(context.workflowRunId, scopeId)] = time.perf_counter_ns()
+            if not self.config.get("capture", True):
                 continue
             ordinal = self.ordinals.get(scopeId, 0) + 1
             self.ordinals[scopeId] = ordinal
@@ -50,7 +61,13 @@ class ResultCollector:
             item = {"identity": identity, "expected": list(sources), "values": {}, "bytes": 0,
                     "sources": sources, "rawBytes": 0}
             self.open[(context.workflowRunId, scopeId)] = item
-            self.emit({"eventType": "display.open", "item": {"identity": identity, "expected": list(sources)}})
+            try:
+                self.emit({"eventType": "display.open", "item": {"identity": identity, "expected": list(sources),
+                                                                  "captureStartedNs": time.perf_counter_ns()}})
+            except Exception:
+                self.open.pop((context.workflowRunId, scopeId))
+                self.config["credits"].release()
+                raise
 
     def output(self, context, outputs, workflow=False):
         for (runId, _scopeId), item in self.open.items():
@@ -100,8 +117,8 @@ class ResultCollector:
                 descriptor = {"slot": slot["index"], "shape": list(value.shape), "sourceId": key,
                               "key": item["identity"]["resultKey"], "jobId": item["identity"]["jobId"],
                               "frozenAt": time.monotonic(), "rawBytes": value.nbytes,
-                              "provenance": {"frameIdentity": str(uuid4()), "coordinateSpaceId": str(uuid4()),
-                                             "trust": "unknown"}}
+                              "provenance": self.frames.lookup(value) or {"frameIdentity": str(uuid4()),
+                                  "coordinateSpaceId": str(uuid4()), "trust": "unknown"}}
                 self.emit({"eventType": "display.image", "descriptor": descriptor})
                 transferred = True
                 item["rawBytes"] += value.nbytes
@@ -121,6 +138,10 @@ class ResultCollector:
                         item["values"][key] = unavailable(key, "BRANCH_SKIPPED" if eventType == "node.skipped" else "NODE_FAILED")
 
     def end(self, context, terminal):
+        for address in list(self.telemetry):
+            if address[0] == context.workflowRunId:
+                self.emit({"eventType": "display.timing", "startNs": self.telemetry.pop(address),
+                           "endNs": time.perf_counter_ns(), "scope": address[1], "invocation": address[0]})
         for address in list(self.open):
             if address[0] != context.workflowRunId:
                 continue
@@ -128,4 +149,5 @@ class ResultCollector:
             code = {"COMPLETED": "SOURCE_MISSING", "FAILED": "NODE_FAILED", "CANCELLED": "EXECUTION_CANCELLED"}[terminal]
             values = [item["values"].get(key, unavailable(key, code)) for key in item["expected"]]
             self.emit({"eventType": "display.seal", "key": item["identity"]["resultKey"],
-                       "sources": values, "terminal": terminal, "sealedAt": time.monotonic()})
+                       "sources": values, "terminal": terminal, "sealedAt": time.monotonic(),
+                       "scopeEndedNs": time.perf_counter_ns()})

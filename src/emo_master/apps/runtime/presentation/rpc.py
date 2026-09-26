@@ -17,6 +17,11 @@ def wireResult(result):
         execution_revision=identity.executionRevision, capture_plan_revision=identity.capturePlanRevision,
         mode=identity.mode), expected_source_ids=result.expectedSourceIds,
         status=result.status, execution_terminal=result.executionTerminal)
+    if result.timing:
+        wire.capture_started_ns = result.timing.captureStartedNs
+        wire.scope_ended_ns = result.timing.scopeEndedNs
+        wire.closed_ns = result.timing.closedNs
+        wire.owner_age_ms = max(0, (time.perf_counter_ns() - result.timing.scopeEndedNs) / 1e6)
     for source in result.sources:
         item = wire.sources.add(source_id=source.sourceId, state=source.state,
                                 reason_code=source.reasonCode or "", reason=source.reason or "")
@@ -27,7 +32,8 @@ def wireResult(result):
             item.image.CopyFrom(pb.DisplayImage(resource_id=image.resourceId, owner_result_key=image.ownerResultKey,
                 byte_size=image.byteSize, sha256=image.sha256, mime_type=image.mimeType,
                 frame_identity=image.provenance.frameIdentity, coordinate_space_id=image.provenance.coordinateSpaceId,
-                trust=image.provenance.trust, adapter_version=image.provenance.adapterVersion or ""))
+                trust=image.provenance.trust, adapter_version=image.provenance.adapterVersion or "",
+                parent_frame_identity=image.provenance.parentFrameIdentity or ""))
     return wire
 
 
@@ -37,7 +43,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def Capabilities(self, request, context):
         return pb.DisplayCapabilities(runtime_instance_id=self.service.runtimeInstanceId,
-                                      protocol_version="1.0", capabilities=["snapshot", "subscribe", "explicit_start"])
+                                      protocol_version="1.0", capabilities=["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease", "bounded_replay"])
 
     def Prepare(self, request, context):
         from pathlib import Path
@@ -56,13 +62,17 @@ class DisplayRpc(rpc.DisplayServiceServicer):
             context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(error))
 
     def ListJobs(self, request, context):
-        return pb.DisplayJobs(jobs=[pb.DisplayJob(job_id=key, status=self.service.runtime.jobRepository.get(key).status)
-                                   for key in self.service.jobs])
+        with self.service.lock:
+            return pb.DisplayJobs(jobs=[pb.DisplayJob(job_id=key, status=self.service.runtime.jobRepository.get(key).status)
+                                       for key in self.service.jobs])
 
     def Snapshot(self, request, context):
+        return self._snapshot(request, context, incremental=request.replay)
+
+    def _snapshot(self, request, context, incremental=False):
         if request.job_id not in self.service.jobs:
             context.abort(grpc.StatusCode.NOT_FOUND, "unknown display Job")
-        snapshot = self.service.store.snapshot(request.job_id, request.after_cursor)
+        snapshot = self.service.store.snapshot(request.job_id, request.after_cursor, incremental)
         return pb.DisplaySnapshot(runtime_instance_id=self.service.runtimeInstanceId, job_id=request.job_id,
             cursor=snapshot["cursor"], reset_required=snapshot["reset"] or request.runtime_instance_id != self.service.runtimeInstanceId,
             results=[wireResult(result) for result in snapshot["results"]], latest_started_ordinals=snapshot["high"])
@@ -71,7 +81,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
         cursor = request.after_cursor
         while context.is_active():
             request.after_cursor = cursor
-            result = self.Snapshot(request, context)
+            result = self._snapshot(request, context, incremental=True)
             if result.cursor != cursor or result.reset_required:
                 yield result
                 cursor = result.cursor
@@ -104,4 +114,20 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def ReleaseLease(self, request, context):
         self.service.assets.release(request.lease_id)
+        return pb.DisplayEmpty()
+
+    def ReleaseJob(self, request, context):
+        if request.runtime_instance_id != self.service.runtimeInstanceId:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "RESET_REQUIRED")
+        try:
+            self.service.release(request.job_id)
+        except ValueError as error:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(error))
+        return pb.DisplayEmpty()
+
+    def DiscardPrepared(self, request, context):
+        try:
+            self.service.discardPrepared(request.prepared_id)
+        except (ValueError, KeyError) as error:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(error))
         return pb.DisplayEmpty()

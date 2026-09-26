@@ -105,3 +105,58 @@ def testRealRepeatedSubflowsAndLoopInvocations(channel, tmp_path, sample):
     assert [r.identity.resultOrdinal for r in results if r.identity.resultScopeId == "loop"] == [1, 2, 3]
     assert len({r.identity.invocationId for r in results}) == 5
     assert all(r.sources[0].valueJson == "2" for r in results)
+
+
+def testDebugSaverCannotOverwriteReleaseOutputAndUnicodeResourceRoot(channel, tmp_path, sample):
+    from pathlib import Path
+    from emo_master.core.project.models import ProjectDocument
+    raw = sample(tmp_path, image=False).model_dump()
+    raw["workflows"]["main"]["nodes"].append({"nodeId": "save", "operatorId": "vision.io.image_saver"})
+    raw["workflows"]["main"]["edges"].append({"fromNode": "load", "fromPort": "image", "toNode": "save", "toPort": "image"})
+    raw["resources"]["siteBindings"] = [{"target": {"workflowId": "main", "nodeId": "save", "parameterPath": ["outputPath"]},
+                                         "field": "output", "purpose": "output_file", "required": True}]
+    sourceRoot = tmp_path / "中文 resource folder"
+    sourceRoot.mkdir()
+    (sourceRoot / "input.png").write_bytes((tmp_path / "input.png").read_bytes())
+    project = ProjectDocument.model_validate(raw)
+    release = channel.prepare(project, sourceRoot, mode="release", releaseRevision="release-test", siteValues={"output": "saved.png"})
+    releaseFile = Path(release.snapshot.outputRoot) / "saved.png"
+    releaseFile.write_bytes(b"production output sentinel")
+    debug = channel.prepare(project, sourceRoot, siteValues={"output": "saved.png"})
+    job = channel.start(debug.snapshot.snapshotId)
+    assert waitResult(channel, job).sources[0].valueJson == "2"
+    assert (Path(debug.snapshot.outputRoot) / "saved.png").is_file()
+    assert releaseFile.read_bytes() == b"production output sentinel"
+
+
+def testValidRebindOnlyChangesNextExplicitJob(channel, tmp_path, sample):
+    from emo_master.core.project.models import WorkflowNode, WorkflowEdge
+    project = sample(tmp_path, image=False)
+    project.workflows["main"].nodes.append(WorkflowNode(nodeId="second", operatorId="vision.collection.count"))
+    project.workflows["main"].edges.append(WorkflowEdge(fromNode="blob", fromPort="blobs", toNode="second", toPort="blobs"))
+    original = channel.prepare(project, tmp_path)
+    project.presentation.dataSources["count"].nodeId = "second"
+    rebound = channel.prepare(project, tmp_path)
+    assert original.snapshot.executionRevision == rebound.snapshot.executionRevision
+    assert original.snapshot.capturePlanRevision != rebound.snapshot.capturePlanRevision
+    first = waitResult(channel, channel.start(original.snapshot.snapshotId))
+    second = waitResult(channel, channel.start(rebound.snapshot.snapshotId))
+    assert first.sources[0].valueJson == second.sources[0].valueJson == "2"
+    assert first.identity.capturePlanRevision == original.snapshot.capturePlanRevision
+    assert second.identity.capturePlanRevision == rebound.snapshot.capturePlanRevision
+
+
+def testOnePresentationOwnerAndFailedPrepareDoesNotLeakAdmission(channel, tmp_path, sample, monkeypatch):
+    from emo_master.apps.runtime.presentation.service import PresentationService
+    import emo_master.apps.runtime.presentation.service as module
+    with pytest.raises(ValueError, match="already"):
+        PresentationService(channel.runtime, tmp_path / "second")
+
+    def fail(*args, **kwargs):
+        raise RuntimeError("injected exporter startup failure")
+    monkeypatch.setattr(module, "ExportPool", fail)
+    with pytest.raises(RuntimeError, match="startup"):
+        channel.prepare(sample(tmp_path), tmp_path)
+    assert not channel.prepared and not channel.jobs
+    assert not list((channel.root / "prepared").iterdir())
+    assert not list(channel.root.rglob("runtime.sqlite3"))

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import multiprocessing
+from collections import deque
 import threading
 from dataclasses import replace
 from typing import Any, Callable, cast
@@ -29,6 +30,7 @@ class JobSupervisor:
         self.heartbeatTimeoutMs = max(100, heartbeatTimeoutMs)
         self.terminalCallback = terminalCallback
         self.presentationCallback: Callable | None = None
+        self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
         self._bridges: dict[str, EventBridge] = {}
@@ -100,7 +102,12 @@ class JobSupervisor:
 
             eventType = str(event.get("eventType", "process.event"))
             if eventType.startswith("display.") and self.presentationCallback is not None:
-                self.presentationCallback(jobId, event)
+                try:
+                    self.presentationCallback(jobId, event)
+                except Exception as error:
+                    # A display consumer failure must not become a detector crash.
+                    # Pending source/terminal fences provide unavailable results.
+                    self.presentationErrors.append(repr(error))
                 return
             if eventType == "process.heartbeat":
                 self._heartbeat[jobId] = nowMs()

@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def identity():
     result = sourceIdentity(ROOT)
-    for path in (ROOT / "proto").glob("*.proto"):
+    for path in [*(ROOT / "proto").glob("*.proto"), *(ROOT / "examples").rglob("*.py")]:
         result["files"][path.relative_to(ROOT).as_posix()] = hashlib.sha256(path.read_bytes()).hexdigest()
     result["digest"] = hashlib.sha256(json.dumps(result["files"], sort_keys=True).encode()).hexdigest()
     return result
@@ -23,7 +23,7 @@ def identity():
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--suite", choices=["focused", "regression", "ci", "demo", "measure"], default="focused")
+    parser.add_argument("--suite", choices=["focused", "regression", "ci", "demo", "measure", "network"], default="focused")
     parser.add_argument("--timeout", default=300, type=float)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
@@ -34,6 +34,7 @@ def main():
                     [sys.executable, "-m", "mypy", "--config-file", "mypy.ini", "src"]],
         "regression": [[sys.executable, "-m", "pytest", "-q", "tests/core", "tests/runtime", "tests/e2e", "-rs"]],
         "ci": [[sys.executable, "scripts/ci_check.py"]],
+        "network": [[sys.executable, "-m", "pytest", "-q", "-s", "tests/runtime/presentation/test_network.py"]],
         "demo": [[sys.executable, "scripts/p2_demo.py"]],
         "measure": [[sys.executable, "scripts/p2_measure.py"]],
     }

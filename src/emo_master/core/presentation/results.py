@@ -73,12 +73,20 @@ class ClosedSource(FrozenModel):
         return self
 
 
+class ResultTiming(FrozenModel):
+    captureStartedNs: int = Field(ge=0)
+    scopeEndedNs: int = Field(ge=0)
+    closedNs: int = Field(ge=0)
+    clock: Literal["runtime_monotonic"] = "runtime_monotonic"
+
+
 class ClosedResult(FrozenModel):
     identity: ResultIdentity
     expectedSourceIds: tuple[Id, ...] = Field(max_length=16)
     sources: tuple[ClosedSource, ...] = Field(max_length=16)
     status: Literal["COMPLETE", "INCOMPLETE", "FAILED", "CANCELLED"]
-    executionTerminal: Literal["COMPLETED", "FAILED", "CANCELLED"]
+    executionTerminal: Literal["COMPLETED", "FAILED", "CANCELLED", "UNKNOWN"]
+    timing: ResultTiming | None = None
 
     @model_validator(mode="after")
     def checkManifest(self) -> ClosedResult:
@@ -88,6 +96,8 @@ class ClosedResult(FrozenModel):
             raise ValueError("closed result must account for every expected source exactly once")
         complete = all(source.state == "AVAILABLE" for source in self.sources)
         expected = ("COMPLETE" if complete else "INCOMPLETE") if self.executionTerminal == "COMPLETED" else self.executionTerminal
+        if self.executionTerminal == "UNKNOWN":
+            expected = "INCOMPLETE"
         if self.status != expected:
             raise ValueError("status contradicts execution terminal or export outcome")
         if sum(len(source.valueJson.encode()) for source in self.sources if source.valueJson) > 1024 * 1024:

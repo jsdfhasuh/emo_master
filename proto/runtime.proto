@@ -397,6 +397,8 @@ service DisplayService {
   rpc ReadAsset(DisplayAssetRequest) returns (DisplayAsset);
   rpc AcquireLease(DisplayAssetRequest) returns (DisplayLease);
   rpc ReleaseLease(DisplayLease) returns (DisplayEmpty);
+  rpc ReleaseJob(DisplayRequest) returns (DisplayEmpty);
+  rpc DiscardPrepared(DisplayStartRequest) returns (DisplayEmpty);
 }
 message DisplayEmpty {}
 message DisplayCapabilities { string runtime_instance_id = 1; string protocol_version = 2; repeated string capabilities = 3; }
@@ -405,7 +407,7 @@ message DisplayPrepared { string prepared_id = 1; string execution_revision = 2;
 message DisplayStartRequest { string prepared_id = 1; }
 message DisplayJob { string job_id = 1; string status = 2; }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
-message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; }
+message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; bool replay = 4; }
 message DisplayIdentity {
   string runtime_instance_id = 1; string job_id = 2; string result_scope_id = 3;
   string invocation_id = 4; string result_key = 5; uint64 result_ordinal = 6;
@@ -415,6 +417,7 @@ message DisplayImage {
   string resource_id = 1; string owner_result_key = 2; uint64 byte_size = 3;
   string sha256 = 4; string mime_type = 5; string frame_identity = 6;
   string coordinate_space_id = 7; string trust = 8; string adapter_version = 9;
+  string parent_frame_identity = 10;
 }
 message DisplaySource {
   string source_id = 1; string state = 2; optional string value_json = 3;
@@ -423,6 +426,8 @@ message DisplaySource {
 message DisplayResult {
   DisplayIdentity identity = 1; repeated string expected_source_ids = 2;
   repeated DisplaySource sources = 3; string status = 4; string execution_terminal = 5;
+  uint64 capture_started_ns = 6; uint64 scope_ended_ns = 7; uint64 closed_ns = 8;
+  double owner_age_ms = 9;
 }
 message DisplaySnapshot {
   string runtime_instance_id = 1; string job_id = 2; uint64 cursor = 3;

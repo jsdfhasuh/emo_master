@@ -1,0 +1,39 @@
+{
+  "job": "0f4c44be-519f-498c-b2e2-811d0ffd2b17",
+  "same_result": "bf70e586-10ed-4b0f-a550-78b04c966c90",
+  "count": 2,
+  "image_sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+  "clients": [
+    {
+      "received": 1,
+      "decoded": 1,
+      "dropped": 0,
+      "read_failed": 0,
+      "resets": 1
+    },
+    {
+      "received": 1,
+      "decoded": 1,
+      "dropped": 0,
+      "read_failed": 0,
+      "resets": 1
+    }
+  ],
+  "resources": {
+    "cache_bytes": 654,
+    "lease_handles": 0,
+    "readers": 0,
+    "assets": 1,
+    "open_results": 0,
+    "history_results": 1,
+    "history_bytes": 1379,
+    "rejected": 0,
+    "shared_capacity": 16777216,
+    "export_reserved": 100663296,
+    "metadata_reserved": 67108864,
+    "read_reserved": 16777216,
+    "total_reserved": 201326592,
+    "limit": 268435456
+  },
+  "single_client_exit_preserved_job": true
+}

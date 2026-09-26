@@ -60,6 +60,7 @@ class WorkflowRunner:
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
         self.resultCollector = resultCollector
+        self.captureErrors = 0
         self._operatorLogManager = OperatorLogManager(
             self.publish if eventPublisher is not None else None
         )
@@ -83,7 +84,7 @@ class WorkflowRunner:
         isRootCall = self._runDepth == 0
         self._runDepth += 1
         if self.resultCollector is not None:
-            self.resultCollector.begin(context)
+            self._capture("begin", context)
         terminal = "FAILED"
         try:
             result = self._runWorkflow(
@@ -94,7 +95,7 @@ class WorkflowRunner:
                 disposeWhenComplete=isRootCall,
             )
             if self.resultCollector is not None:
-                self.resultCollector.output(context, result.outputs, workflow=True)
+                self._capture("output", context, result.outputs, workflow=True)
             terminal = "COMPLETED"
             return result
         except Exception as error:
@@ -103,7 +104,7 @@ class WorkflowRunner:
             raise
         finally:
             if self.resultCollector is not None:
-                self.resultCollector.end(context, terminal)
+                self._capture("end", context, terminal)
             self._runDepth -= 1
 
     def _runWorkflow(
@@ -166,7 +167,8 @@ class WorkflowRunner:
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
                     if self.resultCollector is not None:
-                        self.resultCollector.output(nodeContext, nodeOutputs)
+                        self._capture("observe", node, nodeInput, nodeOutputs)
+                        self._capture("output", nodeContext, nodeOutputs)
                     self._capturePreviewSnapshot(
                         node, nodeOutputs, nodeContext
                     )
@@ -559,7 +561,7 @@ class WorkflowRunner:
 
     def publish(self, eventType, context, message, level="INFO", code="", payload=None):
         if self.resultCollector is not None:
-            self.resultCollector.event(eventType, context)
+            self._capture("event", eventType, context)
         if self.eventPublisher is None:
             return None
         return self.eventPublisher(
@@ -570,6 +572,19 @@ class WorkflowRunner:
             code=code,
             payload={} if payload is None else payload,
         )
+
+    def _capture(self, method, *args, **kwargs):
+        try:
+            return getattr(self.resultCollector, method)(*args, **kwargs)
+        except Exception:
+            self.captureErrors += 1
+            # Bounded diagnostics in shared state; no unbounded error event queue.
+            config = getattr(self.resultCollector, "config", {})
+            rejected = config.get("rejected")
+            if rejected is not None:
+                with rejected.get_lock():
+                    rejected.value += 1
+            return None
 
     def result(
         self,

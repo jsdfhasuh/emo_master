@@ -158,3 +158,12 @@ def testLoopV2SurvivesExplicitProjectUpgrade(project):
     assert next(node for node in upgraded["workflows"]["main"]["nodes"] if node["nodeId"] == "loop")["loop"] == loop["loop"]
     assert validateProjectDocument(ProjectDocument.model_validate(raw)) == validateProjectDocument(
         ProjectDocument.model_validate(upgraded))
+
+
+def testVersionRelabelIsRejectedButExplicitMigrationIsSupported(project):
+    complete = project.model_dump()
+    assert migrateProjectPayload(complete)["schemaVersion"] == "2.2"
+    for missing in ["presentation", "resources"]:
+        incomplete = {key: value for key, value in complete.items() if key != missing}
+        with pytest.raises(ValueError, match="unsupported project schemaVersion.*required"):
+            migrateProjectPayload(incomplete)

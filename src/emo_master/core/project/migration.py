@@ -73,6 +73,13 @@ def migrateProjectPayload(
                         resources=ResourcePlan().model_dump())
         return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
     source = deepcopy(payload)
+    if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+        # Merely relabelling a legacy-shaped document is not the explicit 2.2
+        # migration. Preserve the public unsupported-schema diagnostic prefix.
+        raise ValueError(
+            "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+            "presentation and resources are required"
+        )
     if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2"}:
         # v2.1 is already the canonical source. Validate it before returning so
         # unknown fields and invalid kinds cannot disappear in normalization.

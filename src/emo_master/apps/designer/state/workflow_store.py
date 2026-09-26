@@ -48,6 +48,7 @@ class WorkflowStore:
         self.runtime: dict[str, object] = {}
         self.dependencies: dict[str, object] = {"operators": []}
         self.devices: dict[str, object] = {"bindings": {}}
+        self.projectExtensions: dict[str, object] = {}
         self.workflowOrder: list[str] = []
         self.entryWorkflowId = ""
         self.activeWorkflowId = ""
@@ -72,6 +73,7 @@ class WorkflowStore:
         }
         self.dependencies = {"operators": []}
         self.devices = {"bindings": {}}
+        self.projectExtensions = {}
         self.workflowOrder = ["main"]
         self.entryWorkflowId = "main"
         self.activeWorkflowId = "main"
@@ -85,6 +87,11 @@ class WorkflowStore:
         self.runtime = document.runtime.model_dump(mode="python")
         self.dependencies = document.dependencies.model_dump(mode="python")
         self.devices = document.devices.model_dump(mode="python")
+        self.projectExtensions = (
+            {"presentation": document.presentation.model_dump(),
+             "resources": document.resources.model_dump()}
+            if document.presentation is not None and document.resources is not None else {}
+        )
         self.workflowOrder = list(document.workflowOrder)
         self.entryWorkflowId = document.entryWorkflowId
         self.activeWorkflowId = self.entryWorkflowId
@@ -541,7 +548,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": "2.1",
+            "schemaVersion": "2.2" if self.projectExtensions else "2.1",
+            **deepcopy(self.projectExtensions),
             "project": project,
             "entryWorkflowId": self.entryWorkflowId,
             "workflowOrder": list(self.workflowOrder),

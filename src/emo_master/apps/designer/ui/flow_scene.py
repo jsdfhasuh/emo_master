@@ -5,6 +5,8 @@ from dataclasses import dataclass
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
+from emo_master.apps.designer.ui.node_geometry import gridPositions, measureNode
 
 
 @dataclass
@@ -16,6 +18,7 @@ class FlowNodeViewModel:
     inputPorts: dict[str, str]
     outputPorts: dict[str, str]
     operatorId: str = ""
+    kind: str = "operator"
 
 
 @dataclass(frozen=True)
@@ -35,7 +38,9 @@ OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
 try:
     from PySide2.QtCore import QPointF, QRectF, Qt
-    from PySide2.QtGui import QBrush, QColor, QPainterPath, QPen, QTransform
+    from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPen, QTransform
+    from emo_master.apps.designer.ui.theme import uiFont
+    from emo_master.apps.designer.ui.icon_map import operatorIcon
     from PySide2.QtWidgets import (
         QGraphicsEllipseItem,
         QGraphicsItem,
@@ -48,13 +53,19 @@ try:
 
     class _NodeItem(QGraphicsRectItem):
         def __init__(self, model: FlowNodeViewModel, scene: object) -> None:
-            super().__init__(QRectF(0.0, 0.0, 220.0, 92.0))
+            self.bodyFont = uiFont()
+            self.titleFont = uiFont(bold=True)
+            metrics = QFontMetricsF(self.bodyFont)
+            self.geometry = measureNode(model, metrics.horizontalAdvance,
+                                        QFontMetricsF(self.titleFont).horizontalAdvance, metrics.height())
+            super().__init__(QRectF(0.0, 0.0, self.geometry.width, self.geometry.height))
             self.model = model
             self._sceneRef = scene
             self.setPos(model.x, model.y)
             variant = self._resolveVariant(model)
             self._variant = variant
             self._runtimeState = "IDLE"
+            self._operatorIcon = operatorIcon("default" if getattr(model, "kind", "operator") == "operator" else "flow")
             self.setPen(QPen(self._getBorderColor(variant, self._runtimeState), 1.4))
             self.setBrush(QBrush(self._getFillColor(variant, self._runtimeState)))
             self.setFlag(QGraphicsItem.ItemIsMovable, True)
@@ -62,14 +73,36 @@ try:
             self.setFlag(QGraphicsItem.ItemSendsGeometryChanges, True)
             self.setData(int(Qt.UserRole), model.nodeId)
 
-            titleText = QGraphicsSimpleTextItem(model.title, self)
-            titleText.setPos(8.0, 8.0)
+            title = QFontMetricsF(self.titleFont).elidedText(model.title, Qt.ElideRight, self.geometry.width - 60)
+            titleText = QGraphicsSimpleTextItem(title, self)
+            titleText.setFont(self.titleFont)
+            titleText.setBrush(QColor("#20242b"))
+            titleText.setToolTip(model.title)
+            titleText.setPos(44.0, 10.0)
+            titleText.setAcceptedMouseButtons(Qt.NoButton)
+            self.setToolTip(model.title)
             if variant == "if":
                 branchText = QGraphicsSimpleTextItem("条件分支", self)
-                branchText.setPos(8.0, 28.0)
+                branchText.setFont(self.bodyFont)
+                branchText.setPos(16.0, 14.0 + metrics.height())
             elif variant == "switch":
                 branchText = QGraphicsSimpleTextItem("多路分支", self)
-                branchText.setPos(8.0, 28.0)
+                branchText.setFont(self.bodyFont)
+                branchText.setPos(16.0, 14.0 + metrics.height())
+
+        def paint(self, painter, option, widget=None):
+            painter.setRenderHint(QPainter.Antialiasing)
+            painter.setBrush(self.brush())
+            painter.setPen(QPen(QColor("#2563eb"), 2.0) if self.isSelected() else self.pen())
+            painter.drawRoundedRect(self.rect(), 6.0, 6.0)
+            self._operatorIcon.paint(painter, 16, 10, 20, 20)
+            painter.setPen(QPen(QColor("#e5e7eb"), 1.0))
+            painter.drawLine(QPointF(1, self.geometry.header),
+                             QPointF(self.geometry.width - 1, self.geometry.header))
+
+        def setOperatorIcon(self, icon) -> None:
+            self._operatorIcon = icon
+            self.update(QRectF(16, 10, 20, 20))
 
         def getVisualStyle(self) -> dict[str, object]:
             return {
@@ -108,11 +141,7 @@ try:
                 return QColor("#fde2e2")
             if runtimeState == "COMPLETED":
                 return QColor("#dcfce7")
-            if variant == "if":
-                return QColor("#fff7d6")
-            if variant == "switch":
-                return QColor("#efe4ff")
-            return QColor("#dfe6e9")
+            return QColor("#ffffff")
 
         def _getBorderColor(self, variant: str, runtimeState: str) -> QColor:
             if runtimeState == "RUNNING":
@@ -123,11 +152,7 @@ try:
                 return QColor("#dc2626")
             if runtimeState == "COMPLETED":
                 return QColor("#16a34a")
-            if variant == "if":
-                return QColor("#f39c12")
-            if variant == "switch":
-                return QColor("#8e44ad")
-            return QColor("#2d3436")
+            return QColor("#bdc5d1")
 
         def itemChange(
             self, change: QGraphicsItem.GraphicsItemChange, value: object
@@ -167,15 +192,15 @@ try:
             self.direction = direction
             self._sceneRef = scene
             self.setPos(x, y)
-            self.setPen(QPen(QColor("#2d3436"), 1.2))
+            self.setPen(QPen(QColor("#2563eb"), 1.2))
             fillColor = (
-                QColor("#00b894") if direction == "output" else QColor("#e17055")
+                QColor("#2563eb") if direction == "output" else QColor("#ffffff")
             )
             self.setBrush(QBrush(fillColor))
             self.setAcceptHoverEvents(True)
             self._defaultFillColor = fillColor
             self._hoverFillColor = (
-                QColor("#55efc4") if direction == "output" else QColor("#fab1a0")
+                QColor("#60a5fa") if direction == "output" else QColor("#dbeafe")
             )
             self._snapFillColor = QColor("#0984e3")
 
@@ -197,7 +222,7 @@ try:
                 self.setPen(QPen(QColor("#0984e3"), 1.8))
                 return
             self.setBrush(QBrush(self._defaultFillColor))
-            self.setPen(QPen(QColor("#2d3436"), 1.2))
+            self.setPen(QPen(QColor("#2563eb"), 1.2))
 
         def setSnapHint(self, enabled: bool) -> None:
             if enabled:
@@ -267,6 +292,8 @@ try:
         def __init__(self) -> None:
             super().__init__()
             self._nodeItems: dict[str, _NodeItem] = {}
+            self._iconProvider = None
+            self._iconContext: Callable[[], tuple] = lambda: ()
             self._portItems: dict[tuple[str, str, str], _PortItem] = {}
             self._edgeItems: dict[tuple[str, str, str, str], _EdgeItem] = {}
             self._inputEdgeIndex: dict[tuple[str, str], tuple[str, str, str, str]] = {}
@@ -286,6 +313,23 @@ try:
             self._dragSnapRadius = 26.0
             self._dragHintText = ""
             self._dragHintItem: QGraphicsSimpleTextItem | None = None
+
+        def setIconProvider(self, provider, contextSupplier: Callable[[], tuple]) -> None:
+            if self._iconProvider is not None:
+                for item in self._nodeItems.values():
+                    self._iconProvider.unbind(item)
+            self._iconProvider = provider
+            self._iconContext = contextSupplier
+            self.rebindOperatorIcons()
+
+        def rebindOperatorIcons(self) -> None:
+            for item in self._nodeItems.values():
+                self._bindOperatorIcon(item)
+
+        def _bindOperatorIcon(self, item: _NodeItem) -> None:
+            if self._iconProvider is not None and getattr(item.model, "kind", "operator") == "operator":
+                self._iconProvider.bind(item, getattr(item.model, "operatorId", ""),
+                                        context=(*self._iconContext(), item.model.nodeId))
 
         def setConnectionHandler(self, handler: ConnectionHandler | None) -> None:
             self._connectionHandler = handler
@@ -307,6 +351,9 @@ try:
             self._connectionErrorHandler = handler
 
         def clearGraph(self) -> None:
+            if self._iconProvider is not None:
+                for item in self._nodeItems.values():
+                    self._iconProvider.unbind(item)
             self.clear()
             self._nodeItems = {}
             self._portItems = {}
@@ -326,28 +373,26 @@ try:
             nodeItem = _NodeItem(model, self)
             self.addItem(nodeItem)
             self._nodeItems[model.nodeId] = nodeItem
+            self._bindOperatorIcon(nodeItem)
 
-            inputNames = list(model.inputPorts.items())
-            outputNames = list(model.outputPorts.items())
-            for index, (portName, portType) in enumerate(inputNames):
-                portY = 34.0 + index * 20.0
-                portItem = _PortItem(
-                    model.nodeId, portName, portType, "input", self, 4.0, portY
-                )
-                portLabel = QGraphicsSimpleTextItem(portName, nodeItem)
-                portLabel.setPos(20.0, portY - 2.0)
-                portItem.setParentItem(nodeItem)
-                self._portItems[(model.nodeId, "input", portName)] = portItem
-
-            for index, (portName, portType) in enumerate(outputNames):
-                portY = 34.0 + index * 20.0
-                portItem = _PortItem(
-                    model.nodeId, portName, portType, "output", self, 204.0, portY
-                )
-                portLabel = QGraphicsSimpleTextItem(portName, nodeItem)
-                portLabel.setPos(132.0, portY - 2.0)
-                portItem.setParentItem(nodeItem)
-                self._portItems[(model.nodeId, "output", portName)] = portItem
+            geometry = nodeItem.geometry
+            metrics = QFontMetricsF(nodeItem.bodyFont)
+            for direction, ports in (("input", model.inputPorts), ("output", model.outputPorts)):
+                for index, (portName, portType) in enumerate(ports.items()):
+                    centerY = geometry.header + (index + 0.5) * geometry.rowHeight
+                    x = 6.0 if direction == "input" else geometry.width - 18.0
+                    portItem = _PortItem(model.nodeId, portName, portType, direction, self, x, centerY - 6)
+                    portItem.setParentItem(nodeItem)
+                    portItem.setToolTip(f"{portName}: {portType}")
+                    available = geometry.inputWidth if direction == "input" else geometry.outputWidth
+                    label = QGraphicsSimpleTextItem(metrics.elidedText(portName, Qt.ElideRight, available), nodeItem)
+                    label.setFont(nodeItem.bodyFont)
+                    label.setBrush(QColor("#475569"))
+                    label.setToolTip(f"{portName}: {portType}")
+                    rect = label.boundingRect()
+                    labelX = 28.0 if direction == "input" else geometry.width - 28.0 - rect.width()
+                    label.setPos(labelX, centerY - rect.height() / 2)
+                    self._portItems[(model.nodeId, direction, portName)] = portItem
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:
             sourcePort = self._portItems.get((edge.fromNodeId, "output", edge.fromPort))
@@ -376,6 +421,12 @@ try:
                     edgeItem.refreshPath()
 
         def removeFlowNode(self, nodeId: str) -> None:
+            nodeItem = self._nodeItems.get(nodeId)
+            if nodeItem is not None and nodeItem.model.kind in {
+                "workflow_input",
+                "workflow_output",
+            }:
+                return
             edgeKeysToRemove = [
                 edgeKey
                 for edgeKey in self._edgeItems.keys()
@@ -388,8 +439,9 @@ try:
                 if key[0] == nodeId:
                     del self._portItems[key]
 
-            nodeItem = self._nodeItems.get(nodeId)
             if nodeItem is not None:
+                if self._iconProvider is not None:
+                    self._iconProvider.unbind(nodeItem)
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
 
@@ -423,15 +475,14 @@ try:
             return edgeKeys
 
         def layoutNodesGrid(self, columns: int = 4) -> None:
-            if columns <= 0:
-                columns = 1
-            nodeIds = list(self._nodeItems.keys())
-            for index, nodeId in enumerate(nodeIds):
-                nodeItem = self._nodeItems[nodeId]
-                newX = float(20 + (index % columns) * 240)
-                newY = float(20 + (index // columns) * 130)
-                nodeItem.setPos(newX, newY)
+            positions = gridPositions({key: item.geometry for key, item in self._nodeItems.items()}, columns)
+            for nodeId, (x, y) in positions.items():
+                self._nodeItems[nodeId].setPos(x, y)
                 self.refreshEdgesForNode(nodeId)
+
+        def nextNodePosition(self) -> tuple[float, float]:
+            bottom = max((item.sceneBoundingRect().bottom() for item in self._nodeItems.values()), default=-28)
+            return (20.0, float(bottom + 48))
 
         def startConnectionDrag(self, sourcePort: _PortItem) -> None:
             self._dragSourcePort = sourcePort
@@ -620,6 +671,14 @@ try:
                 return
             nodeItem.setRuntimeState(state)
 
+        def resetRuntimeStates(self) -> None:
+            for nodeItem in self._nodeItems.values():
+                nodeItem.setRuntimeState("IDLE")
+
+        def setAllNodeRuntimeStates(self, state: str) -> None:
+            for nodeItem in self._nodeItems.values():
+                nodeItem.setRuntimeState(state)
+
         def getContentBounds(self) -> tuple[float, float, float, float] | None:
             if len(self._nodeItems) == 0:
                 return None
@@ -654,7 +713,7 @@ try:
                 nodeItem.setSelected(currentNodeId == nodeId)
 
         def drawBackground(self, painter, rect: QRectF) -> None:  # type: ignore[override]
-            painter.fillRect(rect, QColor("#f5f6fa"))
+            painter.fillRect(rect, QColor("#f5f6f8"))
 
         def simulateOperatorDrop(
             self, payload: dict[str, object], x: float, y: float
@@ -672,7 +731,7 @@ try:
             targetPort = self._portItems.get((toNodeId, "input", toPort))
             if targetPort is None:
                 return f"无效输入端口：{toNodeId}.{toPort}"
-            if sourcePort.portType != targetPort.portType:
+            if not arePortTypesCompatible(sourcePort.portType, targetPort.portType):
                 return (
                     "端口类型不匹配："
                     f"{fromNodeId}.{fromPort}({sourcePort.portType}) -> {toNodeId}.{toPort}({targetPort.portType})"
@@ -772,7 +831,7 @@ try:
                 if portItem.direction != "input":
                     continue
                 isCompatible = (
-                    sourcePort.portType == portItem.portType
+                    arePortTypesCompatible(sourcePort.portType, portItem.portType)
                     and sourcePort.nodeId != portItem.nodeId
                 )
                 portItem.setHoverHint(isCompatible)
@@ -895,6 +954,8 @@ except Exception:  # pragma: no cover
             self._dragSourceNodeId: str | None = None
             self._dragSourcePortName: str | None = None
             self._sceneRect: tuple[float, float, float, float] = (0.0, 0.0, 0.0, 0.0)
+            self._nodeRuntimeStates: dict[str, str] = {}
+            self._selectedEdges: set[tuple[str, str, str, str]] = set()
 
         def setSceneRect(self, x: float, y: float, width: float, height: float) -> None:
             self._sceneRect = (float(x), float(y), float(width), float(height))
@@ -935,15 +996,17 @@ except Exception:  # pragma: no cover
             self._nodes = {}
             self._edges = []
             self._selectedNodeId = None
+            self._nodeRuntimeStates = {}
             self._dragHintText = ""
             self._dragSourceNodeId = None
             self._dragSourcePortName = None
 
         def itemAtPoint(self, x: float, y: float):
             for node in self._nodes.values():
+                geometry = measureNode(node)
                 if (
-                    float(node.x) <= float(x) <= float(node.x) + 220.0
-                    and float(node.y) <= float(y) <= float(node.y) + 92.0
+                    float(node.x) <= float(x) <= float(node.x) + geometry.width
+                    and float(node.y) <= float(y) <= float(node.y) + geometry.height
                 ):
                     return node
             return None
@@ -964,6 +1027,9 @@ except Exception:  # pragma: no cover
             self._edges.append(edge)
 
         def removeFlowNode(self, nodeId: str) -> None:
+            node = self._nodes.get(nodeId)
+            if node is not None and node.kind in {"workflow_input", "workflow_output"}:
+                return
             if nodeId in self._nodes:
                 del self._nodes[nodeId]
             self._edges = [
@@ -992,20 +1058,23 @@ except Exception:  # pragma: no cover
             return []
 
         def layoutNodesGrid(self, columns: int = 4) -> None:
-            if columns <= 0:
-                columns = 1
-            nodeIds = list(self._nodes.keys())
-            for index, nodeId in enumerate(nodeIds):
+            positions = gridPositions({key: measureNode(node) for key, node in self._nodes.items()}, columns)
+            for nodeId, (x, y) in positions.items():
                 current = self._nodes[nodeId]
                 self._nodes[nodeId] = FlowNodeViewModel(
                     nodeId=current.nodeId,
                     title=current.title,
-                    x=float(20 + (index % columns) * 240),
-                    y=float(20 + (index // columns) * 130),
+                    x=x,
+                    y=y,
                     inputPorts=current.inputPorts,
                     outputPorts=current.outputPorts,
                     operatorId=current.operatorId,
+                    kind=current.kind,
                 )
+
+        def nextNodePosition(self) -> tuple[float, float]:
+            bottom = max((node.y + measureNode(node).height for node in self._nodes.values()), default=-28)
+            return (20.0, float(bottom + 48))
 
         def getSelectedNodeId(self) -> str | None:
             return self._selectedNodeId
@@ -1028,23 +1097,37 @@ except Exception:  # pragma: no cover
             node = self._nodes.get(nodeId)
             if node is None:
                 return None
-            return (float(node.x) + 110.0, float(node.y) + 46.0)
+            geometry = measureNode(node)
+            return (float(node.x) + geometry.width / 2, float(node.y) + geometry.height / 2)
 
         def getNodeVisualStyle(self, nodeId: str) -> dict[str, object]:
             node = self._nodes.get(nodeId)
             if node is None:
                 return {}
+            runtimeState = self._nodeRuntimeStates.get(nodeId, "IDLE")
             if node.operatorId == "vision.flow.if":
-                return {"variant": "if"}
+                return {"variant": "if", "runtimeState": runtimeState}
             if node.operatorId == "vision.flow.switch":
-                return {"variant": "switch"}
+                return {"variant": "switch", "runtimeState": runtimeState}
             if node.operatorId != "":
-                return {"variant": "default"}
+                return {"variant": "default", "runtimeState": runtimeState}
             if set(node.outputPorts.keys()) == {"true", "false"}:
-                return {"variant": "if"}
+                return {"variant": "if", "runtimeState": runtimeState}
             if set(node.outputPorts.keys()) == {"case0", "case1", "case2", "case3", "default"}:
-                return {"variant": "switch"}
-            return {"variant": "default"}
+                return {"variant": "switch", "runtimeState": runtimeState}
+            return {"variant": "default", "runtimeState": runtimeState}
+
+        def setNodeRuntimeState(self, nodeId: str, state: str) -> None:
+            if nodeId in self._nodes:
+                self._nodeRuntimeStates[nodeId] = state
+
+        def resetRuntimeStates(self) -> None:
+            self._nodeRuntimeStates = {}
+
+        def setAllNodeRuntimeStates(self, state: str) -> None:
+            self._nodeRuntimeStates = {
+                nodeId: state for nodeId in self._nodes
+            }
 
         def getContentBounds(self) -> tuple[float, float, float, float] | None:
             if len(self._nodes) == 0:
@@ -1057,8 +1140,9 @@ except Exception:  # pragma: no cover
             for node in self._nodes.values():
                 left = float(node.x)
                 top = float(node.y)
-                right = left + 220.0
-                bottom = top + 92.0
+                geometry = measureNode(node)
+                right = left + geometry.width
+                bottom = top + geometry.height
                 if not initialized:
                     minX = left
                     minY = top
@@ -1123,7 +1207,7 @@ except Exception:  # pragma: no cover
                 return f"无效输入端口：{toNodeId}.{toPort}"
             sourceType = sourceNode.outputPorts[fromPort]
             targetType = targetNode.inputPorts[toPort]
-            if sourceType != targetType:
+            if not arePortTypesCompatible(sourceType, targetType):
                 return f"端口类型不匹配：{fromNodeId}.{fromPort}({sourceType}) -> {toNodeId}.{toPort}({targetType})"
             return ""
 
@@ -1218,9 +1302,13 @@ except Exception:  # pragma: no cover
         def setEdgeSelected(
             self, edgeKey: tuple[str, str, str, str], selected: bool
         ) -> None:
-            _ = edgeKey
-            _ = selected
+            if selected:
+                self._selectedEdges.add(edgeKey)
+            else:
+                self._selectedEdges.discard(edgeKey)
 
         def getEdgeStyle(self, edgeKey: tuple[str, str, str, str]) -> dict[str, object]:
-            _ = edgeKey
-            return {"width": 2.0, "color": "#0984e3"}
+            return {
+                "width": 3.2 if edgeKey in self._selectedEdges else 2.0,
+                "color": "#0652dd" if edgeKey in self._selectedEdges else "#0984e3",
+            }

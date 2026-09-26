@@ -1,0 +1,51 @@
+{
+  "operatorId": "vision.geometry.coordinate_calculator",
+  "displayName": "Coordinate Calculator",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateCalculatorOperator",
+  "category": "几何",
+  "iconKey": "measure",
+  "summary": "Measure, transform, subtract, dot, or scalar-multiply strongly typed point2d coordinates.",
+  "inputPorts": {
+    "points": {"type": "list<point2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "otherPoints": {"type": "list<point2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "scalar": {"type": "number", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "points": {"type": "list<point2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "centroid": {"type": "point2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "bounds": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "segmentLengths": {"type": "list<number>", "required": false, "nullable": false},
+    "pathLength": {"type": "number", "required": false, "nullable": false},
+    "perimeter": {"type": "number", "required": false, "nullable": false},
+    "signedArea": {"type": "number", "required": false, "nullable": false},
+    "area": {"type": "number", "required": false, "nullable": false},
+    "firstToLastDistance": {"type": "number", "required": false, "nullable": false},
+    "firstToLastAngleDegrees": {"type": "number", "required": false, "nullable": false},
+    "polygon": {"type": "polygon2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "vectors": {"type": "list<vector2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "magnitudes": {"type": "list<number>", "required": false, "nullable": false},
+    "values": {"type": "list<number>", "required": false, "nullable": false},
+    "dotSum": {"type": "number", "required": false, "nullable": false},
+    "resultCount": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {"type": "string", "enum": ["measure", "transform", "subtract", "dot", "scalarMultiply"], "default": "transform"},
+      "pairing": {"type": "string", "enum": ["strict", "broadcast"], "default": "strict"},
+      "scalarValue": {"type": "number", "default": 1.0},
+      "closed": {"type": "boolean", "default": false},
+      "offsetX": {"type": "number", "default": 0.0},
+      "offsetY": {"type": "number", "default": 0.0},
+      "scaleX": {"type": "number", "default": 1.0},
+      "scaleY": {"type": "number", "default": 1.0},
+      "rotationDegrees": {"type": "number", "minimum": -360.0, "maximum": 360.0, "default": 0.0},
+      "pivot": {"type": "string", "enum": ["origin", "centroid", "first", "custom"], "default": "origin"},
+      "pivotX": {"type": "number", "default": 0.0},
+      "pivotY": {"type": "number", "default": 0.0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

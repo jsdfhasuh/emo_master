@@ -1,0 +1,92 @@
+{
+  "operatorId": "vision.analysis.blob",
+  "displayName": "Blob Analysis",
+  "version": "1.2.0",
+  "entry": "emo_master.plugins.builtins.blob_analysis.operator:BlobAnalysisOperator",
+  "category": "分析",
+  "iconKey": "blob",
+  "summary": "从图像或外部二值掩码提取连通域，并输出 Blob 集合、过滤后掩码和可选叠加图。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "mask": {
+      "type": "image",
+      "required": false,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "blobs": {
+      "type": "blobCollection",
+      "required": true,
+      "schemaVersion": "1.x"
+    },
+    "mask": {
+      "type": "image",
+      "required": true
+    },
+    "overlay": {
+      "type": "image",
+      "required": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "threshold": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 127
+      },
+      "invert": {
+        "type": "boolean",
+        "default": false
+      },
+      "useOtsu": {
+        "type": "boolean",
+        "default": false
+      },
+      "connectivity": {
+        "type": "integer",
+        "enum": [4, 8],
+        "default": 8
+      },
+      "minArea": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 1
+      },
+      "maxArea": {
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "includeContour": {
+        "type": "boolean",
+        "default": true
+      },
+      "drawOverlay": {
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,67 @@
+{
+  "operatorId": "vision.preprocess.resize",
+  "displayName": "Resize / Letterbox",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.resize.operator:ResizeOperator",
+  "category": "预处理",
+  "iconKey": "resize",
+  "summary": "拉伸、等比缩放或 Letterbox 图像，并输出可回源的有效内容 frame。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "width": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "height": {
+        "type": "integer",
+        "minimum": 1
+      },
+      "mode": {
+        "type": "string",
+        "enum": ["stretch", "fit", "letterbox"],
+        "default": "stretch"
+      },
+      "interpolation": {
+        "type": "string",
+        "enum": ["nearest", "linear", "area", "cubic"],
+        "default": "linear"
+      },
+      "padValue": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      }
+    },
+    "required": ["width", "height"]
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

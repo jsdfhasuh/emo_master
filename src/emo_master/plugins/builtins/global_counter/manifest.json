@@ -1,0 +1,26 @@
+{
+  "operatorId": "vision.state.counter",
+  "displayName": "Global Counter",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.global_counter.operator:GlobalCounterOperator",
+  "category": "数值与逻辑",
+  "iconKey": "count",
+  "summary": "按项目和名称持久化共享计数，可由任意布尔信号递增或复位。",
+  "inputPorts": {
+    "increment": {"type": "boolean", "required": false, "nullable": false},
+    "reset": {"type": "boolean", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "count": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "name": {"type": "string", "minLength": 1, "maxLength": 128}
+    },
+    "required": ["name"],
+    "additionalProperties": false
+  },
+  "minCoreVersion": "0.4.0",
+  "maxCoreVersion": "1.x"
+}

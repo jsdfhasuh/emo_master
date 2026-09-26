@@ -1,0 +1,43 @@
+F..........                                                              [100%]
+================================== FAILURES ===================================
+_________ testSuccessfulJobPromotesCurrentAndDirectUpstreamSnapshots __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-258/testSuccessfulJobPromotesCurre0')
+
+    def testSuccessfulJobPromotesCurrentAndDirectUpstreamSnapshots(tmp_path: Path) -> None:
+        projectDir = tmp_path / "project"
+        projectDir.mkdir()
+        image = np.full((16, 18, 3), 80, dtype=np.uint8)
+        imagePath = projectDir / "source.png"
+        assert cv2.imwrite(str(imagePath), image)
+        _writePreviewProject(projectDir, imagePath)
+        service = RuntimeService(
+            dbPath=tmp_path / "runtime.db",
+            workspaceRoot=tmp_path / "jobs",
+        )
+        try:
+            assert service.LoadProject(
+                runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
+            ).ok
+            started = service.StartJob(
+                runtime_pb2.StartJobRequest(project_id=service.loadedProjectId), None
+            )
+            assert started.ok
+            assert waitForTerminal(service, started.job_id).status == "COMPLETED"
+    
+            sources = service.ListNodePreviewSources(
+                runtime_pb2.ListNodePreviewSourcesRequest(
+                    project_id=service.loadedProjectId,
+                    workflow_id="main",
+                    node_id="roi",
+                ),
+                None,
+            )
+            identities = {(item.source_kind, item.node_id, item.port) for item in sources.sources}
+>           assert ("upstream", "loader", "image") in identities
+E           AssertionError: assert ('upstream', 'loader', 'image') in set()
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_operator_editor_preview.py:206: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_operator_editor_preview.py::testSuccessfulJobPromotesCurrentAndDirectUpstreamSnapshots
+1 failed, 10 passed in 2.65s

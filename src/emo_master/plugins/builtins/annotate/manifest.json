@@ -1,0 +1,43 @@
+{
+  "operatorId": "vision.render.annotate",
+  "displayName": "Annotate",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.annotate.operator:AnnotateOperator",
+  "category": "结果渲染",
+  "iconKey": "annotate",
+  "summary": "在图像副本上统一绘制 Blob、Detection、轮廓、测量、直线、圆、模板匹配和 ROI。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "roi": {"type": "geometry2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "overlay": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "drawnCount": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "drawBBoxes": {"type": "boolean", "default": true},
+      "drawContours": {"type": "boolean", "default": true},
+      "drawCentroids": {"type": "boolean", "default": true},
+      "drawLabels": {"type": "boolean", "default": true},
+      "drawRoi": {"type": "boolean", "default": true},
+      "thickness": {"type": "integer", "minimum": 1, "default": 2},
+      "fontScale": {"type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
+      "blobColor": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [0, 255, 0]},
+      "detectionColor": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [0, 165, 255]},
+      "roiColor": {"type": "array", "items": {"type": "integer", "minimum": 0, "maximum": 255}, "minItems": 3, "maxItems": 3, "default": [255, 0, 255]}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

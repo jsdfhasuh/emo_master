@@ -9,35 +9,37 @@ ApplyHandler = Callable[[str, dict[str, object]], None]
 
 
 try:
-  from PySide2.QtWidgets import QDialog, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+  from PySide2.QtWidgets import QDialog, QHBoxLayout, QPushButton, QVBoxLayout
+  from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
+  from emo_master.apps.designer.ui.icon_map import icon
 
   class NodeParamDialog(QDialog):
     def __init__(self) -> None:
       super().__init__()
       self.setModal(False)
       self.setWindowTitle("节点参数")
+      self.resize(620, 560)
       self._currentNodeId: str | None = None
       self._applyHandler: ApplyHandler | None = None
 
       rootLayout = QVBoxLayout()
-      self._metaLabel = QLabel("")
+      self._metaLabel = WrapLabel("")
       rootLayout.addWidget(self._metaLabel)
 
       self._paramForm = SchemaParamForm()
-      rootLayout.addWidget(self._paramForm)
+      rootLayout.addWidget(scrollContent(self._paramForm), 1)
 
       buttonRow = QHBoxLayout()
       self._applyButton = QPushButton("应用")
+      self._applyButton.setObjectName("primaryButton")
+      self._applyButton.setIcon(icon("save", "#ffffff"))
       self._closeButton = QPushButton("关闭")
+      buttonRow.addStretch(1)
       buttonRow.addWidget(self._applyButton)
       buttonRow.addWidget(self._closeButton)
       rootLayout.addLayout(buttonRow)
 
-      container = QWidget()
-      container.setLayout(rootLayout)
-      hostLayout = QVBoxLayout()
-      hostLayout.addWidget(container)
-      self.setLayout(hostLayout)
+      self.setLayout(rootLayout)
 
       self._applyButton.clicked.connect(self._onApplyClicked)
       self._closeButton.clicked.connect(self.close)
@@ -55,6 +57,11 @@ try:
       self._currentNodeId = nodeId
       self._metaLabel.setText(f"节点：{nodeId} | 算子：{operatorId}")
       self._paramForm.setSchema(schema, values)
+
+    def setWorkflowOptions(self, options: list[str]) -> None:
+      setOptions = getattr(self._paramForm, "setWorkflowOptions", None)
+      if callable(setOptions):
+        setOptions(options)
 
     def _onApplyClicked(self) -> None:
       if self._currentNodeId is None:
@@ -87,6 +94,9 @@ except Exception:  # pragma: no cover
       self._operatorId = operatorId
       self._schema = dict(schema)
       self._values = dict(values)
+
+    def setWorkflowOptions(self, options: list[str]) -> None:
+      _ = options
 
     def show(self) -> None:
       self._visible = True

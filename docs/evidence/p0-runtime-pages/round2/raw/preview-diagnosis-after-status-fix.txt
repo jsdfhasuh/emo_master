@@ -1,0 +1,68 @@
+callback starts, repository status RUNNING
+callback ends assets 9
+wait terminal COMPLETED assets 9
+after 500ms assets 9
+loaded key 043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229 workflow keys ['main']
+assets [('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'loader', 'image', 'image'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'loader', 'frame', 'bbox2d'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'croppedImage', 'image'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'croppedMask', 'image'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'croppedFrame', 'bbox2d'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'maskedImage', 'image'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'fullMask', 'image'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'maskedFrame', 'bbox2d'), ('043480c6fe1bf1968120f00a33fb480d6d1853e9247cf7589501156478c51229', 'main', 'roi', 'roi', 'geometry2d')]
+sources {
+  source_id: "snapshot-539b727895130c1ce210529442d83196b76405d2366201db2420a8bba52ab827"
+  label: "��ǰ�ڵ� croppedImage"
+  source_kind: "current"
+  workflow_id: "main"
+  node_id: "roi"
+  port: "croppedImage"
+  width: 8
+  height: 7
+  mime_type: "image/png"
+  iteration_path_json: "[]"
+}
+sources {
+  source_id: "snapshot-8759527a6a320efe12a31a4533b43a9479974fa0c032936b2251e22e53411a10"
+  label: "��ǰ�ڵ� croppedMask"
+  source_kind: "current"
+  workflow_id: "main"
+  node_id: "roi"
+  port: "croppedMask"
+  width: 8
+  height: 7
+  mime_type: "image/png"
+  iteration_path_json: "[]"
+}
+sources {
+  source_id: "snapshot-b0f61e9d6d898ebe3814fdc4f9b955a0309d842df630401a964a55e676d26f0f"
+  label: "��ǰ�ڵ� fullMask"
+  source_kind: "current"
+  workflow_id: "main"
+  node_id: "roi"
+  port: "fullMask"
+  width: 18
+  height: 16
+  mime_type: "image/png"
+  iteration_path_json: "[]"
+}
+sources {
+  source_id: "snapshot-084568528a2b9553d94b29d14e512d05369bcdb1c7b8e96cf1fb532ba02de6df"
+  label: "��ǰ�ڵ� maskedImage"
+  source_kind: "current"
+  workflow_id: "main"
+  node_id: "roi"
+  port: "maskedImage"
+  width: 18
+  height: 16
+  mime_type: "image/png"
+  iteration_path_json: "[]"
+}
+sources {
+  source_id: "snapshot-eb15a7d392cff77c1ec552cb70aef27899e69cdb2b39666a5dfb27969e205f49"
+  label: "���� loader.image"
+  source_kind: "upstream"
+  workflow_id: "main"
+  node_id: "loader"
+  port: "image"
+  width: 18
+  height: 16
+  mime_type: "image/png"
+  iteration_path_json: "[]"
+}
+
+[]

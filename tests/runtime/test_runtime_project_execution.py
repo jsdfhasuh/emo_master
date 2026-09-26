@@ -6,6 +6,7 @@ import numpy as np
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from tests.runtime.runtime_test_utils import waitForTerminal
 
 
 def testRuntimeExecutesSavedProjectGraph(tmp_path: Path) -> None:
@@ -69,6 +70,7 @@ def testRuntimeExecutesSavedProjectGraph(tmp_path: Path) -> None:
         None,
     )
     assert startReply.ok is True
+    waitForTerminal(runtimeService, startReply.job_id)
     assert outputImagePath.exists()
 
 
@@ -162,6 +164,7 @@ def testRuntimeExecutesIfTrueBranchAndSkipsFalseBranch(tmp_path: Path) -> None:
         None,
     )
     assert startReply.ok is True
+    waitForTerminal(runtimeService, startReply.job_id)
     assert trueOutputPath.exists()
     assert not falseOutputPath.exists()
 
@@ -260,5 +263,6 @@ def testRuntimeExecutesSwitchMatchedCaseAndSkipsOthers(tmp_path: Path) -> None:
         None,
     )
     assert startReply.ok is True
+    waitForTerminal(runtimeService, startReply.job_id)
     assert case1OutputPath.exists()
     assert not defaultOutputPath.exists()

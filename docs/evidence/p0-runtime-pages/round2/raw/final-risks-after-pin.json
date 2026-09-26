@@ -1,0 +1,888 @@
+{
+  "code": {
+    "head": "e09e657f26cf9abf1f510f556f853d24098b7f46",
+    "status": " M docs/evidence/p0-runtime-pages/README.md\n M docs/plans/2026-09-25-qt-runtime-pages-v1.md\n M docs/plans/2026-09-26-qt-runtime-pages-p0-results.md\n M docs/plans/2026-09-26-qt-runtime-pages-p0-round2-results.md\n M prototypes/runtime_pages_p0/pipeline_faults.py\n",
+    "diff_sha256": "477baffca822fc1a1cada6a3e0c1e7095f621c67108a95ea0495b5801121f332",
+    "source_sha256": {
+      "prototypes/runtime_pages_p0/__init__.py": "f509e553c30bb0f79aee45ca3a98a6951d294750f21f66037e6c029d4360478c",
+      "prototypes/runtime_pages_p0/async_exports.py": "6e10c3a1ef817302501b41b801b13fd7129dd4222b2b4db527cd785e4fee84dd",
+      "prototypes/runtime_pages_p0/benchmark.py": "c29e110114a97dc5b49a4a9d883663cd087ff9b69d3ac1084435b4618f2d8ff9",
+      "prototypes/runtime_pages_p0/continuous.py": "1d2d070db28719d67af60469a31478c2ea8b4f361472e89096cfc7636cf83350",
+      "prototypes/runtime_pages_p0/contracts.py": "060a90bf6fdd7dae3175261d14d95ccc87819390d58e9ea0ddb7a068cbe10f66",
+      "prototypes/runtime_pages_p0/exporter.py": "e66fb67b793a533f308a460fdb7842347673a6b772742f3cb618e2bba4bdab74",
+      "prototypes/runtime_pages_p0/isolation.py": "4cfa5c8f2e60446a55a68e4fef311481fd52fe7ce673925a2cfa17a0aa4f70b1",
+      "prototypes/runtime_pages_p0/network.py": "25e0e452e35f58cfde79e83cb46a16b5f03c6920fd140ad7390a327699c1904f",
+      "prototypes/runtime_pages_p0/network_faults.py": "580608c70d175ab234dfa918f95c748f6e176f1daa221798ac7b0c6803ff5fa3",
+      "prototypes/runtime_pages_p0/pipeline.py": "d5f9963da1df9fdf93551606d4e7b808539321e0017fef40c7e68c7b2a96826d",
+      "prototypes/runtime_pages_p0/pipeline_faults.py": "7bc2146edf0b0b20a49d9d1bc2dfd534d714543e537ebaeb17a82e6ee5ec46f6",
+      "prototypes/runtime_pages_p0/resources.py": "6fa4b454409977ed69853c682b00664c6a79ca9a2780107eb37a8163658b5762",
+      "prototypes/runtime_pages_p0/runner_probe.py": "7f19d149e65625318b89a4bd530e75dd1a926db5c0b674be4d871ad6ee58f6e4",
+      "prototypes/runtime_pages_p0/scenarios.py": "157a39c1d19c3d404c61e10dde58950a3a44596efd0631b8967c00570a88400e",
+      "prototypes/runtime_pages_p0/watchdog.py": "238bc775b96903bb5811b99dab738a48432ea74be34e02bc4e3470cdb9903fa1",
+      "scripts/p0_validate.py": "dfadda004169b1351aefd33b7cd7a08739405032a2dbc2a3ee91922927dd0a8f",
+      "src/emo_master/apps/designer/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/controllers/__init__.py": "6b17ec8eb5e6e00965fccc784bef8294d56ca61edf6a1fbd70d2834e373a7243",
+      "src/emo_master/apps/designer/controllers/layout_controller.py": "96a9d9c2632653ab28bb4af5ccc49dde0670867e573042ee37eefd6c5aa76d89",
+      "src/emo_master/apps/designer/controllers/operator_catalog_controller.py": "b23bc16b071b8647b50dc1ecea0cba766f3a06d705d1f6c77b9166b95505f57a",
+      "src/emo_master/apps/designer/controllers/project_controller.py": "916176506b79e87bce12b2414232b81779ba59c0677777c53678c133b8257f7f",
+      "src/emo_master/apps/designer/controllers/runtime_controller.py": "69dba70e309a396f4081924e1432b727461e45392a872a2a286385fd23f46f01",
+      "src/emo_master/apps/designer/controllers/workflow_controller.py": "0dca621df0708be3358756613ab2063950bb143ec31705d1d65bb0186359e6a4",
+      "src/emo_master/apps/designer/main.py": "4a0cc686b0eff5b9bce70bb75ade3e92e6c5f93299989ea457d0ccf57c310f46",
+      "src/emo_master/apps/designer/operator_editors/__init__.py": "4476c45f8d0d4922e41887e464703bd74e7df0783cdc81dfc0838efb7b557ece",
+      "src/emo_master/apps/designer/operator_editors/builtin_layout.py": "d73529a4b31a4b311596e6c431e08e9679c67fac1b028756d3fb9840f02eca29",
+      "src/emo_master/apps/designer/operator_editors/controller_protocol.py": "d60d197648c62b27ca7f7e08ba3a4dde57ef1b011080c11533a3acb99b4a7343",
+      "src/emo_master/apps/designer/operator_editors/manager.py": "9f2ca4fb2c4c8d6b2d9fc5f97cb58fa9c0df56e9ebe260c7a1f4e555c336125f",
+      "src/emo_master/apps/designer/operator_editors/trust.py": "e55433f1bb7d427dffc4892bfdf074f47878f21d9f01f5f767f6114c8403c7e5",
+      "src/emo_master/apps/designer/operator_editors/ui_loader.py": "9fccc7a7b7d15d25e42d4243035e69c1c3380116c64533b7d89970c64db32941",
+      "src/emo_master/apps/designer/operator_editors/workspace_window.py": "74a871b0d4484150cbe6724aa0f880020b891a86ae80d2a356d16a50aba1aba8",
+      "src/emo_master/apps/designer/presenters/__init__.py": "cf57939b8a7ea0a65fb32dd374f7a12bb7bf8cd9cfb9d669125d1c5b208f64a8",
+      "src/emo_master/apps/designer/presenters/node_details_presenter.py": "3bff9f060067aa26f608139d7ca6094ca407aa49f39791d1108cce37ff79a4aa",
+      "src/emo_master/apps/designer/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/services/display_calls.py": "998f8eeffb9d878b03cc3f1410d7dd156b9e66ce69145f6c0d2fdcfd38195786",
+      "src/emo_master/apps/designer/services/global_counter_worker.py": "f0bf1b5d14dda1a8d6cbd3ab1a0a63f615cb3454cb0346edd3df9af6261aa110",
+      "src/emo_master/apps/designer/services/operator_catalog_worker.py": "5f9d9e4725bd578e1eb92e0bd361a2e18183e391b8634aeda87433add9f6ec28",
+      "src/emo_master/apps/designer/services/operator_icon_cache.py": "155eb9b4860a4c636f7ad5d444a9d8275a1a84290a2d4d128fa5c30abbcf5537",
+      "src/emo_master/apps/designer/services/operator_icon_worker.py": "df15b59b556d350154e0c1a84e85bed2c900e5d79e529a6eb3eb4297d1c92b94",
+      "src/emo_master/apps/designer/services/runtime_client.py": "3c8f165308ae939c8871231cec6a2ba788dab56b0a1ea5d629ae43ce795d47e1",
+      "src/emo_master/apps/designer/services/runtime_worker.py": "2ec4f3988d12780727f253785d4afba5a40d24a5c93cb025b2435debabd55c83",
+      "src/emo_master/apps/designer/state/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/state/flow_graph_model.py": "76cc9ac2667953d01e96cf9f5286df07e01efebffe1c3ca1a9fbf14c08c18278",
+      "src/emo_master/apps/designer/state/project_store.py": "fb5576fd8b0cdf302915b904b5f8bc13fc139a1b5c64b111b6c539541ea6d418",
+      "src/emo_master/apps/designer/state/schema_utils.py": "964a0988a392d67a20b583db80912e4114c2c1c54e12458eb5a3adb1d69ca552",
+      "src/emo_master/apps/designer/state/system_node_catalog.py": "4c6186ecad9fe9e20957ba7ebe85ce94e7e9244735fe450a4e19b1e233d7c2d7",
+      "src/emo_master/apps/designer/state/workflow_package.py": "95a0f48c454e07e4d6ec39c42a4e5b5e3e93f297da42ddb05d127daad426de58",
+      "src/emo_master/apps/designer/state/workflow_store.py": "50e3484d5c4e21337417a22eb09c6a8629c2c646545f02f27e146b9b79003e16",
+      "src/emo_master/apps/designer/ui/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/ui/_lucide_data.py": "89f56c9c6a1d6fa4784efd5498e93c6417782c78c7c17414f91e42e6f850057b",
+      "src/emo_master/apps/designer/ui/control_icons_rc.py": "216b25b109e77a42b9e02c478ad72a60bb25856d7fe4ff255d44dee7d21e694d",
+      "src/emo_master/apps/designer/ui/designer_graphics_view.py": "107498b41d431f6daa8fc0176f2316f937a5818f5112316eee40a5afede76bbf",
+      "src/emo_master/apps/designer/ui/flow_scene.py": "b8d4305671a7f16cea18b22646c767c44a50644eacac642ddc29bf3c7142d0f8",
+      "src/emo_master/apps/designer/ui/global_counters_dialog.py": "52cf883d44e41a7f4165a51f7bda093f0536f7cf6a7eb4bf07b7325a69087ea6",
+      "src/emo_master/apps/designer/ui/icon_map.py": "42bdef33f1cd9b6257bf4030d06f53573a8120ee2f2b4e6d82a784676b129816",
+      "src/emo_master/apps/designer/ui/log_dialog.py": "0a3d3b2b298e0039e9ea0a97056d5b8eafd667f11e6a7c532fd9914f8f2b8272",
+      "src/emo_master/apps/designer/ui/main_window.py": "da52149073adc2e7bca019076ab1e38cbaff1fb40d83ece8bac283e71d2e65a7",
+      "src/emo_master/apps/designer/ui/node_geometry.py": "fa4b8bd0468a2d4904a11966ccd5be2757c8ad6719044d7b7cef8a0eb7d379bb",
+      "src/emo_master/apps/designer/ui/node_param_dialog.py": "238cba008436dbd14e3b7260220a683c07fa660023cdc3fea7b3c74f8509bcdf",
+      "src/emo_master/apps/designer/ui/operator_bubble.py": "132a0074676cb08e391d73e986ca184e190a164f3aca35eeb374e864cd02b9a8",
+      "src/emo_master/apps/designer/ui/operator_icon_provider.py": "2a6fdd0960234ce08fffe99655b3a88ba2072c9aec2f28de112d9e0abb1d8f3c",
+      "src/emo_master/apps/designer/ui/param_form.py": "ba93704deacd4fa206d9f0eb569a8009b92d95a00301c48e616ca087dcd3c021",
+      "src/emo_master/apps/designer/ui/project_entry_dialog.py": "d537eb2a1df9f9e6cbd8105091d976404c2b8507724fa0b55dd69f4ed7325216",
+      "src/emo_master/apps/designer/ui/runtime_panel.py": "f0510aa7dd2c4dd3bdc6f61ff73097acd4605f62b9bf7b6d8ae5bcc9dc2b7b9f",
+      "src/emo_master/apps/designer/ui/theme.py": "d303ac986b7348a8012854aa80758a79fbe30456ec3866f4898103329727950f",
+      "src/emo_master/apps/designer/ui/widgets.py": "83ae662e23e37dda4862eb587bce928b503dd92f4f00328d80dbe06dc63cbf77",
+      "src/emo_master/apps/designer/ui/workflow_package_preview_dialog.py": "b348746873d45d2b6a0971d68098462ea4eb3c8ab372c5238323a0f1a5ceb502",
+      "src/emo_master/apps/runtime/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/artifacts/__init__.py": "3596095f6d249141f1a6e48c2746dc1dc19ed2c35c5dedf2a58840cf92c9511d",
+      "src/emo_master/apps/runtime/artifacts/models.py": "b51571871a716cea600195a627630ee04c7f8294748a60c6fced6dd00d994bdc",
+      "src/emo_master/apps/runtime/artifacts/store.py": "7c8e643af7d5bf3c873fedf307624707728d2c653f45a1a0dc4c5e845cb58eb5",
+      "src/emo_master/apps/runtime/context/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/context/global_counters.py": "4ea49eb8efd894071c202216800447aa87c2fc6fa5a2e566f538adebf34f55e9",
+      "src/emo_master/apps/runtime/context/rollback_manager.py": "f2e4c4deb1ee41af7ee7ac9ea37105f810d137d1825d571796ed5f32ad6742bf",
+      "src/emo_master/apps/runtime/context/runtime_lock.py": "cca476457f6893ee3dda8a567dae45ea670a89c4419211f046bd490a14ebeab4",
+      "src/emo_master/apps/runtime/context/sqlite_store.py": "004f72e441413a5baad53284a536aaeae2d5f0657aed9b4e7d89f5841a33654c",
+      "src/emo_master/apps/runtime/events/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/events/event_bus.py": "7ff525ab4a5aba8b8efd9dc17cae1094354a40639478990074149de09bd7ebbc",
+      "src/emo_master/apps/runtime/events/event_store.py": "6afd68ec8e79eb7ae8a83574cc6d1f35d7d627d7b95050b3a10e3912bd9f83c3",
+      "src/emo_master/apps/runtime/events/jsonl_writer.py": "0bb89a2e21c24eca60cffff849bd994b27071f93f683e3c4c4b60b4a08dbebaf",
+      "src/emo_master/apps/runtime/events/models.py": "84071edfd852373ea7050616ecb2f1ef26e2b8c3410ae8a91d226cb43e1586d0",
+      "src/emo_master/apps/runtime/events/operator_logger.py": "94a6f5e00d44cb1ce86a630d296c37d1ff5fc3d35eaddd5b29ebc905c56d3889",
+      "src/emo_master/apps/runtime/execution/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/execution/dag_executor.py": "241314363461cb1464e2f3c0aa0d79fde601915bffe5b3ec2bb85eec86f761ab",
+      "src/emo_master/apps/runtime/execution/models.py": "9759e0f08f318d8f9939d5a5d58ba41edfc7ee1d631137954da52068e08ad767",
+      "src/emo_master/apps/runtime/grpc_server/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/grpc_server/generated/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py": "9600484bfb514b37573442b174fde641b66b0a62a402b791ff4f17a5431e9369",
+      "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py": "a87051b0cb162f1a9e8c3334fafd02fb5d72cc51c92d9c26db7dea1bc8295c34",
+      "src/emo_master/apps/runtime/grpc_server/service.py": "21489f1556a072964b43f0d0472d30fba47fce94ded779dfe2360ad70f555957",
+      "src/emo_master/apps/runtime/jobs/__init__.py": "280e30ba5aef7b86e0b0eaa43b5d27c765c888ce2f93f0629d7e0dccd43e344d",
+      "src/emo_master/apps/runtime/jobs/event_bridge.py": "762cd6f64ee585738f8feb170967633ae29fae00834f37878dac80217cc2485d",
+      "src/emo_master/apps/runtime/jobs/manager.py": "f35a9af2c98418c1d869df3bd88d70419b77cc58d2a7d44c09f577025cf02b26",
+      "src/emo_master/apps/runtime/jobs/models.py": "1b721c8ff9de389a65bfbf9cce32861c0cbc07993ad2fb131ad44fc69e4c9eef",
+      "src/emo_master/apps/runtime/jobs/repository.py": "0b99e1f27a056217565dee7fc7380bf408113e4ec9a4c84cb30a8a5e0a7ecad4",
+      "src/emo_master/apps/runtime/jobs/supervisor.py": "fecdacde3dcd6e1fde267f85d5a836bdc43b3ffd1975cc11b55e385e27d0f60c",
+      "src/emo_master/apps/runtime/jobs/worker_main.py": "d0627065eb716fcb5d4b123e9fe9ba37482a8ecb2fe988bb57d6867389f57371",
+      "src/emo_master/apps/runtime/main.py": "c50ad802e468ac2719c96f994002a6fd9769a119cb2e0361af1d766a9a70af10",
+      "src/emo_master/apps/runtime/open_api/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/open_api/routes.py": "627565a951465d151ddb6089d3264e276852b387d3c2114028bcc9daf22a8f04",
+      "src/emo_master/apps/runtime/open_api/server.py": "22d604fff8cdbd6508e653198a87764b2461b1c254b04813f0df23e4bbfdf254",
+      "src/emo_master/apps/runtime/open_api/ws_hub.py": "a6cb655bd3199c0d68373b59fc560c11e62fefd7bfe1a370e74cafe100d830f8",
+      "src/emo_master/apps/runtime/preview/__init__.py": "97437db390f795efbf5cbdc10c5ea54db14af0ab562fa27572aa4cc27167e5c9",
+      "src/emo_master/apps/runtime/preview/executor.py": "00742fe16173f1f9ea5a66cf11aabb4d269f2bc73157a119e91b95d1e2acdb0c",
+      "src/emo_master/apps/runtime/preview/live.py": "f7d84564bb1109fa7b22941dd0ffb0d95479791fab1b03179c5937160dad0492",
+      "src/emo_master/apps/runtime/preview/store.py": "50afd55ddd05c08587a4d10b02bb3ebe24ba6b05119cb85c2ef008c6a1b4fec2",
+      "src/emo_master/apps/runtime/scheduler/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/scheduler/job_service.py": "df173193af499633b35eb2120f6823ee1a2590bf4af6029e4d7ba33dff0d45ab",
+      "src/emo_master/apps/runtime/scheduler/state_machine.py": "f5c9c737f9a9b075f353f3b28d55d5fa3c4586341d853da1ab6a83bfc24a5624",
+      "src/emo_master/apps/runtime/workflow/__init__.py": "6f4a39c4605436816aa27bc27f376dfb65e50e735c5ceb21a8a342902db124bd",
+      "src/emo_master/apps/runtime/workflow/cancellation.py": "2607e9a4e5cc30281195075fe9116c52df131abcfd2ff8a6e34733b0c4f20406",
+      "src/emo_master/apps/runtime/workflow/context.py": "2473e0c969436c3bf279041af620543fa457d21951ee96d32a03a3900b0ba43e",
+      "src/emo_master/apps/runtime/workflow/loop_runner.py": "da251eeb3c36bc9e906ec6b3854faae911cec678110fc076cfb7c08d9f73b398",
+      "src/emo_master/apps/runtime/workflow/runner.py": "c6b4f0f49458ab67d258925b35a63d08d12f0c3c0f02a50ed951ee29eeec42c5",
+      "src/emo_master/apps/runtime/workflow/subflow_runner.py": "6c0dc849dbd56a16aa73bfea3f314015be69568c2bf1da428a68c874c30c3a7a",
+      "tests/p0/__init__.py": "edb41a17fa622a951707247b68c44265b61f2f9694a77b450bcf0b6d22ef6bc3",
+      "tests/p0/test_continuous.py": "6ce363396b0199d84e318caa3feaec20c989b941583786ff5507665ada71d16e",
+      "tests/p0/test_contracts.py": "88c4d40115add59272da42fa6aacfc52693b43c7ec53ccc70d94fb3115c470c1",
+      "tests/p0/test_network_faults.py": "ab605eb44dd95f1cb7ae598d47f411d4cd6d79433fda52649401b92080b1fb54",
+      "tests/p0/test_resources.py": "f5509ed6e0f1e184f3061c8c00f080cbee4a8552871760185e08887559f44e6a",
+      "tests/p0/test_supervised.py": "645ce801df0801f91aec82524268df89a2c4e0adb658b1ebe9ee597afd174a60"
+    }
+  },
+  "started_utc": "2026-09-26T02:58:32.867394+00:00",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "os": "Windows-10-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+  "versions": {
+    "PySide2": "5.15.2.1",
+    "grpcio": "1.78.0",
+    "grpcio-tools": "1.78.0",
+    "protobuf": "6.33.6",
+    "numpy": "1.26.4",
+    "opencv-python": "4.10.0.84",
+    "pydantic": "2.13.5",
+    "pytest": "9.1.1",
+    "ruff": "0.15.6",
+    "mypy": "2.3.1"
+  },
+  "single_task_deadlines": "unchanged: export/read/seal 500ms, reap 1s",
+  "p0_exit": "NOT_EVALUATED",
+  "exports": {
+    "execution_status": "PASS",
+    "correctness_status": "PASS",
+    "performance_status": "NOT_RUN",
+    "compatibility_status": "NOT_RUN",
+    "evidence": {
+      "rows": [
+        {
+          "mode": "hang",
+          "elapsed_ms": 519.8256000876427,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "hang",
+          "elapsed_ms": 519.1456999164075,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "hang",
+          "elapsed_ms": 519.4954000180587,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "ipc",
+          "elapsed_ms": 11.866600019857287,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        }
+      ],
+      "peak_reserved_bytes": 74649600,
+      "clock_samples": [
+        [
+          599519053617200,
+          599519784682500,
+          599519784809100
+        ],
+        [
+          599519784948300,
+          599520529216300,
+          599520529316800
+        ],
+        [
+          599521076467900,
+          599521808345500,
+          599521808449600
+        ],
+        [
+          599522354736300,
+          599523122096500,
+          599523122204900
+        ],
+        [
+          599523668324100,
+          599524388302700,
+          599524388409300
+        ],
+        [
+          599524427572600,
+          599525145022300,
+          599525145123200
+        ],
+        [
+          599525706440000,
+          599526519658000,
+          599526519756900
+        ],
+        [
+          599526519894100,
+          599527358689000,
+          599527358812500
+        ]
+      ],
+      "children_after": 0,
+      "staging_files_after": 0,
+      "quota_rejected": true
+    },
+    "stderr": "",
+    "outer_watchdog_seconds": 90
+  },
+  "code_after": {
+    "head": "e09e657f26cf9abf1f510f556f853d24098b7f46",
+    "status": " M docs/evidence/p0-runtime-pages/README.md\n M docs/plans/2026-09-25-qt-runtime-pages-v1.md\n M docs/plans/2026-09-26-qt-runtime-pages-p0-results.md\n M docs/plans/2026-09-26-qt-runtime-pages-p0-round2-results.md\n M prototypes/runtime_pages_p0/pipeline_faults.py\n",
+    "diff_sha256": "477baffca822fc1a1cada6a3e0c1e7095f621c67108a95ea0495b5801121f332",
+    "source_sha256": {
+      "prototypes/runtime_pages_p0/__init__.py": "f509e553c30bb0f79aee45ca3a98a6951d294750f21f66037e6c029d4360478c",
+      "prototypes/runtime_pages_p0/async_exports.py": "6e10c3a1ef817302501b41b801b13fd7129dd4222b2b4db527cd785e4fee84dd",
+      "prototypes/runtime_pages_p0/benchmark.py": "c29e110114a97dc5b49a4a9d883663cd087ff9b69d3ac1084435b4618f2d8ff9",
+      "prototypes/runtime_pages_p0/continuous.py": "1d2d070db28719d67af60469a31478c2ea8b4f361472e89096cfc7636cf83350",
+      "prototypes/runtime_pages_p0/contracts.py": "060a90bf6fdd7dae3175261d14d95ccc87819390d58e9ea0ddb7a068cbe10f66",
+      "prototypes/runtime_pages_p0/exporter.py": "e66fb67b793a533f308a460fdb7842347673a6b772742f3cb618e2bba4bdab74",
+      "prototypes/runtime_pages_p0/isolation.py": "4cfa5c8f2e60446a55a68e4fef311481fd52fe7ce673925a2cfa17a0aa4f70b1",
+      "prototypes/runtime_pages_p0/network.py": "25e0e452e35f58cfde79e83cb46a16b5f03c6920fd140ad7390a327699c1904f",
+      "prototypes/runtime_pages_p0/network_faults.py": "580608c70d175ab234dfa918f95c748f6e176f1daa221798ac7b0c6803ff5fa3",
+      "prototypes/runtime_pages_p0/pipeline.py": "d5f9963da1df9fdf93551606d4e7b808539321e0017fef40c7e68c7b2a96826d",
+      "prototypes/runtime_pages_p0/pipeline_faults.py": "7bc2146edf0b0b20a49d9d1bc2dfd534d714543e537ebaeb17a82e6ee5ec46f6",
+      "prototypes/runtime_pages_p0/resources.py": "6fa4b454409977ed69853c682b00664c6a79ca9a2780107eb37a8163658b5762",
+      "prototypes/runtime_pages_p0/runner_probe.py": "7f19d149e65625318b89a4bd530e75dd1a926db5c0b674be4d871ad6ee58f6e4",
+      "prototypes/runtime_pages_p0/scenarios.py": "157a39c1d19c3d404c61e10dde58950a3a44596efd0631b8967c00570a88400e",
+      "prototypes/runtime_pages_p0/watchdog.py": "238bc775b96903bb5811b99dab738a48432ea74be34e02bc4e3470cdb9903fa1",
+      "scripts/p0_validate.py": "dfadda004169b1351aefd33b7cd7a08739405032a2dbc2a3ee91922927dd0a8f",
+      "src/emo_master/apps/designer/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/controllers/__init__.py": "6b17ec8eb5e6e00965fccc784bef8294d56ca61edf6a1fbd70d2834e373a7243",
+      "src/emo_master/apps/designer/controllers/layout_controller.py": "96a9d9c2632653ab28bb4af5ccc49dde0670867e573042ee37eefd6c5aa76d89",
+      "src/emo_master/apps/designer/controllers/operator_catalog_controller.py": "b23bc16b071b8647b50dc1ecea0cba766f3a06d705d1f6c77b9166b95505f57a",
+      "src/emo_master/apps/designer/controllers/project_controller.py": "916176506b79e87bce12b2414232b81779ba59c0677777c53678c133b8257f7f",
+      "src/emo_master/apps/designer/controllers/runtime_controller.py": "69dba70e309a396f4081924e1432b727461e45392a872a2a286385fd23f46f01",
+      "src/emo_master/apps/designer/controllers/workflow_controller.py": "0dca621df0708be3358756613ab2063950bb143ec31705d1d65bb0186359e6a4",
+      "src/emo_master/apps/designer/main.py": "4a0cc686b0eff5b9bce70bb75ade3e92e6c5f93299989ea457d0ccf57c310f46",
+      "src/emo_master/apps/designer/operator_editors/__init__.py": "4476c45f8d0d4922e41887e464703bd74e7df0783cdc81dfc0838efb7b557ece",
+      "src/emo_master/apps/designer/operator_editors/builtin_layout.py": "d73529a4b31a4b311596e6c431e08e9679c67fac1b028756d3fb9840f02eca29",
+      "src/emo_master/apps/designer/operator_editors/controller_protocol.py": "d60d197648c62b27ca7f7e08ba3a4dde57ef1b011080c11533a3acb99b4a7343",
+      "src/emo_master/apps/designer/operator_editors/manager.py": "9f2ca4fb2c4c8d6b2d9fc5f97cb58fa9c0df56e9ebe260c7a1f4e555c336125f",
+      "src/emo_master/apps/designer/operator_editors/trust.py": "e55433f1bb7d427dffc4892bfdf074f47878f21d9f01f5f767f6114c8403c7e5",
+      "src/emo_master/apps/designer/operator_editors/ui_loader.py": "9fccc7a7b7d15d25e42d4243035e69c1c3380116c64533b7d89970c64db32941",
+      "src/emo_master/apps/designer/operator_editors/workspace_window.py": "74a871b0d4484150cbe6724aa0f880020b891a86ae80d2a356d16a50aba1aba8",
+      "src/emo_master/apps/designer/presenters/__init__.py": "cf57939b8a7ea0a65fb32dd374f7a12bb7bf8cd9cfb9d669125d1c5b208f64a8",
+      "src/emo_master/apps/designer/presenters/node_details_presenter.py": "3bff9f060067aa26f608139d7ca6094ca407aa49f39791d1108cce37ff79a4aa",
+      "src/emo_master/apps/designer/services/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/services/display_calls.py": "998f8eeffb9d878b03cc3f1410d7dd156b9e66ce69145f6c0d2fdcfd38195786",
+      "src/emo_master/apps/designer/services/global_counter_worker.py": "f0bf1b5d14dda1a8d6cbd3ab1a0a63f615cb3454cb0346edd3df9af6261aa110",
+      "src/emo_master/apps/designer/services/operator_catalog_worker.py": "5f9d9e4725bd578e1eb92e0bd361a2e18183e391b8634aeda87433add9f6ec28",
+      "src/emo_master/apps/designer/services/operator_icon_cache.py": "155eb9b4860a4c636f7ad5d444a9d8275a1a84290a2d4d128fa5c30abbcf5537",
+      "src/emo_master/apps/designer/services/operator_icon_worker.py": "df15b59b556d350154e0c1a84e85bed2c900e5d79e529a6eb3eb4297d1c92b94",
+      "src/emo_master/apps/designer/services/runtime_client.py": "3c8f165308ae939c8871231cec6a2ba788dab56b0a1ea5d629ae43ce795d47e1",
+      "src/emo_master/apps/designer/services/runtime_worker.py": "2ec4f3988d12780727f253785d4afba5a40d24a5c93cb025b2435debabd55c83",
+      "src/emo_master/apps/designer/state/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/state/flow_graph_model.py": "76cc9ac2667953d01e96cf9f5286df07e01efebffe1c3ca1a9fbf14c08c18278",
+      "src/emo_master/apps/designer/state/project_store.py": "fb5576fd8b0cdf302915b904b5f8bc13fc139a1b5c64b111b6c539541ea6d418",
+      "src/emo_master/apps/designer/state/schema_utils.py": "964a0988a392d67a20b583db80912e4114c2c1c54e12458eb5a3adb1d69ca552",
+      "src/emo_master/apps/designer/state/system_node_catalog.py": "4c6186ecad9fe9e20957ba7ebe85ce94e7e9244735fe450a4e19b1e233d7c2d7",
+      "src/emo_master/apps/designer/state/workflow_package.py": "95a0f48c454e07e4d6ec39c42a4e5b5e3e93f297da42ddb05d127daad426de58",
+      "src/emo_master/apps/designer/state/workflow_store.py": "50e3484d5c4e21337417a22eb09c6a8629c2c646545f02f27e146b9b79003e16",
+      "src/emo_master/apps/designer/ui/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/designer/ui/_lucide_data.py": "89f56c9c6a1d6fa4784efd5498e93c6417782c78c7c17414f91e42e6f850057b",
+      "src/emo_master/apps/designer/ui/control_icons_rc.py": "216b25b109e77a42b9e02c478ad72a60bb25856d7fe4ff255d44dee7d21e694d",
+      "src/emo_master/apps/designer/ui/designer_graphics_view.py": "107498b41d431f6daa8fc0176f2316f937a5818f5112316eee40a5afede76bbf",
+      "src/emo_master/apps/designer/ui/flow_scene.py": "b8d4305671a7f16cea18b22646c767c44a50644eacac642ddc29bf3c7142d0f8",
+      "src/emo_master/apps/designer/ui/global_counters_dialog.py": "52cf883d44e41a7f4165a51f7bda093f0536f7cf6a7eb4bf07b7325a69087ea6",
+      "src/emo_master/apps/designer/ui/icon_map.py": "42bdef33f1cd9b6257bf4030d06f53573a8120ee2f2b4e6d82a784676b129816",
+      "src/emo_master/apps/designer/ui/log_dialog.py": "0a3d3b2b298e0039e9ea0a97056d5b8eafd667f11e6a7c532fd9914f8f2b8272",
+      "src/emo_master/apps/designer/ui/main_window.py": "da52149073adc2e7bca019076ab1e38cbaff1fb40d83ece8bac283e71d2e65a7",
+      "src/emo_master/apps/designer/ui/node_geometry.py": "fa4b8bd0468a2d4904a11966ccd5be2757c8ad6719044d7b7cef8a0eb7d379bb",
+      "src/emo_master/apps/designer/ui/node_param_dialog.py": "238cba008436dbd14e3b7260220a683c07fa660023cdc3fea7b3c74f8509bcdf",
+      "src/emo_master/apps/designer/ui/operator_bubble.py": "132a0074676cb08e391d73e986ca184e190a164f3aca35eeb374e864cd02b9a8",
+      "src/emo_master/apps/designer/ui/operator_icon_provider.py": "2a6fdd0960234ce08fffe99655b3a88ba2072c9aec2f28de112d9e0abb1d8f3c",
+      "src/emo_master/apps/designer/ui/param_form.py": "ba93704deacd4fa206d9f0eb569a8009b92d95a00301c48e616ca087dcd3c021",
+      "src/emo_master/apps/designer/ui/project_entry_dialog.py": "d537eb2a1df9f9e6cbd8105091d976404c2b8507724fa0b55dd69f4ed7325216",
+      "src/emo_master/apps/designer/ui/runtime_panel.py": "f0510aa7dd2c4dd3bdc6f61ff73097acd4605f62b9bf7b6d8ae5bcc9dc2b7b9f",
+      "src/emo_master/apps/designer/ui/theme.py": "d303ac986b7348a8012854aa80758a79fbe30456ec3866f4898103329727950f",
+      "src/emo_master/apps/designer/ui/widgets.py": "83ae662e23e37dda4862eb587bce928b503dd92f4f00328d80dbe06dc63cbf77",
+      "src/emo_master/apps/designer/ui/workflow_package_preview_dialog.py": "b348746873d45d2b6a0971d68098462ea4eb3c8ab372c5238323a0f1a5ceb502",
+      "src/emo_master/apps/runtime/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/artifacts/__init__.py": "3596095f6d249141f1a6e48c2746dc1dc19ed2c35c5dedf2a58840cf92c9511d",
+      "src/emo_master/apps/runtime/artifacts/models.py": "b51571871a716cea600195a627630ee04c7f8294748a60c6fced6dd00d994bdc",
+      "src/emo_master/apps/runtime/artifacts/store.py": "7c8e643af7d5bf3c873fedf307624707728d2c653f45a1a0dc4c5e845cb58eb5",
+      "src/emo_master/apps/runtime/context/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/context/global_counters.py": "4ea49eb8efd894071c202216800447aa87c2fc6fa5a2e566f538adebf34f55e9",
+      "src/emo_master/apps/runtime/context/rollback_manager.py": "f2e4c4deb1ee41af7ee7ac9ea37105f810d137d1825d571796ed5f32ad6742bf",
+      "src/emo_master/apps/runtime/context/runtime_lock.py": "cca476457f6893ee3dda8a567dae45ea670a89c4419211f046bd490a14ebeab4",
+      "src/emo_master/apps/runtime/context/sqlite_store.py": "004f72e441413a5baad53284a536aaeae2d5f0657aed9b4e7d89f5841a33654c",
+      "src/emo_master/apps/runtime/events/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/events/event_bus.py": "7ff525ab4a5aba8b8efd9dc17cae1094354a40639478990074149de09bd7ebbc",
+      "src/emo_master/apps/runtime/events/event_store.py": "6afd68ec8e79eb7ae8a83574cc6d1f35d7d627d7b95050b3a10e3912bd9f83c3",
+      "src/emo_master/apps/runtime/events/jsonl_writer.py": "0bb89a2e21c24eca60cffff849bd994b27071f93f683e3c4c4b60b4a08dbebaf",
+      "src/emo_master/apps/runtime/events/models.py": "84071edfd852373ea7050616ecb2f1ef26e2b8c3410ae8a91d226cb43e1586d0",
+      "src/emo_master/apps/runtime/events/operator_logger.py": "94a6f5e00d44cb1ce86a630d296c37d1ff5fc3d35eaddd5b29ebc905c56d3889",
+      "src/emo_master/apps/runtime/execution/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/execution/dag_executor.py": "241314363461cb1464e2f3c0aa0d79fde601915bffe5b3ec2bb85eec86f761ab",
+      "src/emo_master/apps/runtime/execution/models.py": "9759e0f08f318d8f9939d5a5d58ba41edfc7ee1d631137954da52068e08ad767",
+      "src/emo_master/apps/runtime/grpc_server/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/grpc_server/generated/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py": "9600484bfb514b37573442b174fde641b66b0a62a402b791ff4f17a5431e9369",
+      "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py": "a87051b0cb162f1a9e8c3334fafd02fb5d72cc51c92d9c26db7dea1bc8295c34",
+      "src/emo_master/apps/runtime/grpc_server/service.py": "21489f1556a072964b43f0d0472d30fba47fce94ded779dfe2360ad70f555957",
+      "src/emo_master/apps/runtime/jobs/__init__.py": "280e30ba5aef7b86e0b0eaa43b5d27c765c888ce2f93f0629d7e0dccd43e344d",
+      "src/emo_master/apps/runtime/jobs/event_bridge.py": "762cd6f64ee585738f8feb170967633ae29fae00834f37878dac80217cc2485d",
+      "src/emo_master/apps/runtime/jobs/manager.py": "f35a9af2c98418c1d869df3bd88d70419b77cc58d2a7d44c09f577025cf02b26",
+      "src/emo_master/apps/runtime/jobs/models.py": "1b721c8ff9de389a65bfbf9cce32861c0cbc07993ad2fb131ad44fc69e4c9eef",
+      "src/emo_master/apps/runtime/jobs/repository.py": "0b99e1f27a056217565dee7fc7380bf408113e4ec9a4c84cb30a8a5e0a7ecad4",
+      "src/emo_master/apps/runtime/jobs/supervisor.py": "fecdacde3dcd6e1fde267f85d5a836bdc43b3ffd1975cc11b55e385e27d0f60c",
+      "src/emo_master/apps/runtime/jobs/worker_main.py": "d0627065eb716fcb5d4b123e9fe9ba37482a8ecb2fe988bb57d6867389f57371",
+      "src/emo_master/apps/runtime/main.py": "c50ad802e468ac2719c96f994002a6fd9769a119cb2e0361af1d766a9a70af10",
+      "src/emo_master/apps/runtime/open_api/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/open_api/routes.py": "627565a951465d151ddb6089d3264e276852b387d3c2114028bcc9daf22a8f04",
+      "src/emo_master/apps/runtime/open_api/server.py": "22d604fff8cdbd6508e653198a87764b2461b1c254b04813f0df23e4bbfdf254",
+      "src/emo_master/apps/runtime/open_api/ws_hub.py": "a6cb655bd3199c0d68373b59fc560c11e62fefd7bfe1a370e74cafe100d830f8",
+      "src/emo_master/apps/runtime/preview/__init__.py": "97437db390f795efbf5cbdc10c5ea54db14af0ab562fa27572aa4cc27167e5c9",
+      "src/emo_master/apps/runtime/preview/executor.py": "00742fe16173f1f9ea5a66cf11aabb4d269f2bc73157a119e91b95d1e2acdb0c",
+      "src/emo_master/apps/runtime/preview/live.py": "f7d84564bb1109fa7b22941dd0ffb0d95479791fab1b03179c5937160dad0492",
+      "src/emo_master/apps/runtime/preview/store.py": "50afd55ddd05c08587a4d10b02bb3ebe24ba6b05119cb85c2ef008c6a1b4fec2",
+      "src/emo_master/apps/runtime/scheduler/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "src/emo_master/apps/runtime/scheduler/job_service.py": "df173193af499633b35eb2120f6823ee1a2590bf4af6029e4d7ba33dff0d45ab",
+      "src/emo_master/apps/runtime/scheduler/state_machine.py": "f5c9c737f9a9b075f353f3b28d55d5fa3c4586341d853da1ab6a83bfc24a5624",
+      "src/emo_master/apps/runtime/workflow/__init__.py": "6f4a39c4605436816aa27bc27f376dfb65e50e735c5ceb21a8a342902db124bd",
+      "src/emo_master/apps/runtime/workflow/cancellation.py": "2607e9a4e5cc30281195075fe9116c52df131abcfd2ff8a6e34733b0c4f20406",
+      "src/emo_master/apps/runtime/workflow/context.py": "2473e0c969436c3bf279041af620543fa457d21951ee96d32a03a3900b0ba43e",
+      "src/emo_master/apps/runtime/workflow/loop_runner.py": "da251eeb3c36bc9e906ec6b3854faae911cec678110fc076cfb7c08d9f73b398",
+      "src/emo_master/apps/runtime/workflow/runner.py": "c6b4f0f49458ab67d258925b35a63d08d12f0c3c0f02a50ed951ee29eeec42c5",
+      "src/emo_master/apps/runtime/workflow/subflow_runner.py": "6c0dc849dbd56a16aa73bfea3f314015be69568c2bf1da428a68c874c30c3a7a",
+      "tests/p0/__init__.py": "edb41a17fa622a951707247b68c44265b61f2f9694a77b450bcf0b6d22ef6bc3",
+      "tests/p0/test_continuous.py": "6ce363396b0199d84e318caa3feaec20c989b941583786ff5507665ada71d16e",
+      "tests/p0/test_contracts.py": "88c4d40115add59272da42fa6aacfc52693b43c7ec53ccc70d94fb3115c470c1",
+      "tests/p0/test_network_faults.py": "ab605eb44dd95f1cb7ae598d47f411d4cd6d79433fda52649401b92080b1fb54",
+      "tests/p0/test_resources.py": "f5509ed6e0f1e184f3061c8c00f080cbee4a8552871760185e08887559f44e6a",
+      "tests/p0/test_supervised.py": "645ce801df0801f91aec82524268df89a2c4e0adb658b1ebe9ee597afd174a60"
+    }
+  },
+  "finished_utc": "2026-09-26T02:59:03.149546+00:00",
+  "network": {
+    "execution_status": "PASS",
+    "correctness_status": "PASS",
+    "performance_status": "NOT_RUN",
+    "compatibility_status": "NOT_RUN",
+    "evidence": {
+      "rows": [
+        {
+          "phase": "C1",
+          "start_reply_ms": 32.3341,
+          "start_running_ms": 942.9975
+        },
+        {
+          "phase": "C1",
+          "get_status_ms": [
+            1.4213,
+            1.2096,
+            0.9809,
+            2.8052,
+            0.9695,
+            0.9551,
+            1.1112,
+            1.2975,
+            1.1414,
+            4.0508,
+            0.8559,
+            1.0444,
+            0.9881,
+            0.9831,
+            1.5348,
+            1.3804,
+            1.1304,
+            1.2291,
+            1.4139,
+            1.5931
+          ],
+          "active": {
+            "control": 1,
+            "events": 1,
+            "display": 1,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C2",
+          "get_status_ms": [
+            18.5614,
+            1.2061,
+            1.0113,
+            1.0894,
+            1.186,
+            0.9673,
+            4.4118,
+            1.6765,
+            0.91,
+            1.0706,
+            0.9149,
+            0.8578,
+            0.9171,
+            0.819,
+            0.7621,
+            1.0344,
+            0.8322,
+            0.793,
+            0.7911,
+            0.807
+          ],
+          "active": {
+            "control": 1,
+            "events": 1,
+            "display": 1,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C3",
+          "get_status_ms": [
+            1.3434,
+            1.1054,
+            0.9535,
+            0.9104,
+            0.9386,
+            0.7588,
+            0.8478,
+            0.7186,
+            0.7641,
+            0.6234,
+            0.9007,
+            1.3206,
+            25.9234,
+            0.9884,
+            0.8061,
+            0.7591,
+            0.8575,
+            0.9656,
+            0.729,
+            0.9501
+          ],
+          "active": {
+            "control": 1,
+            "events": 1,
+            "display": 2,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C4",
+          "start_reply_ms": 31.4355,
+          "start_running_ms": 1196.2612
+        },
+        {
+          "phase": "C4",
+          "get_status_ms": [
+            3.3392,
+            1.623,
+            1.416,
+            1.4013,
+            1.0221,
+            1.3515,
+            1.0712,
+            0.9717,
+            1.4362,
+            1.1309,
+            1.125,
+            0.9344,
+            1.2595,
+            0.7956,
+            1.514,
+            1.2662,
+            3.2686,
+            1.1667,
+            1.3745,
+            1.0812
+          ],
+          "active": {
+            "control": 1,
+            "events": 2,
+            "display": 2,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "export-hang-with-C4",
+          "two_status_rtt_ms": 2.2217,
+          "jobs_still_running": 2,
+          "export_memory_after": 0
+        },
+        {
+          "phase": "C4",
+          "stop_accept_ms": 0.5355,
+          "stop_reply_ms": 121.0949,
+          "stop_terminal_ms": 121.1154
+        },
+        {
+          "phase": "C4",
+          "stop_accept_ms": 0.5538,
+          "stop_reply_ms": 49.5734,
+          "stop_terminal_ms": 49.5986
+        }
+      ],
+      "peak": {
+        "control": 1,
+        "events": 2,
+        "display": 2,
+        "preview": 1,
+        "asset": 0,
+        "bulk": 1
+      },
+      "spawn_jobs": 2,
+      "network_order_cases": 18,
+      "original_server_idle_status_ms": [
+        4.4119,
+        3.5466,
+        3.5919,
+        3.3463,
+        3.3259,
+        3.5085,
+        3.2537,
+        3.5449,
+        3.1105,
+        3.2389,
+        3.2061,
+        3.2718,
+        3.6519,
+        3.7336,
+        3.4779,
+        3.3907,
+        3.8186,
+        3.3414,
+        3.4257,
+        3.3383
+      ],
+      "supervisor_incomplete_scopes": 4,
+      "quota_rejected": true,
+      "simulated_preview": "640x480 JPEG, 10 fps, no hardware"
+    },
+    "stderr": "",
+    "outer_watchdog_seconds": 90
+  },
+  "network-faults": {
+    "execution_status": "PASS",
+    "correctness_status": "PASS",
+    "performance_status": "NOT_RUN",
+    "compatibility_status": "PASS",
+    "evidence": {
+      "rows": [
+        {
+          "case": "legacy-upload-read-decode",
+          "status": "PASS",
+          "bytes": 923772
+        },
+        {
+          "case": "legacy-cumulative-and-chunk-limit",
+          "status": "PASS"
+        },
+        {
+          "case": "legacy-partial-cancel-no-asset-and-bulk-limit",
+          "status": "PASS"
+        },
+        {
+          "case": "legacy-sender-interruption",
+          "status": "PASS"
+        },
+        {
+          "case": "legacy-cancel-during-running-upload",
+          "status": "PASS"
+        },
+        {
+          "case": "construct-error",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "construct-block",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "first-next-block",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "next-block",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "close-error",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "close-block",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "serialize-error",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "callback-block",
+          "status": "PASS",
+          "active_after": {
+            "control": 0,
+            "events": 0,
+            "display": 0,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "case": "startup-failure-cleanup",
+          "status": "PASS"
+        },
+        {
+          "case": "stop-api-failure-retryable",
+          "status": "PASS"
+        }
+      ],
+      "compatibility_status": "PASS",
+      "errors_observed": [],
+      "peak": {
+        "control": 1,
+        "events": 0,
+        "display": 1,
+        "preview": 0,
+        "asset": 0,
+        "bulk": 0
+      }
+    },
+    "stderr": "",
+    "outer_watchdog_seconds": 90
+  },
+  "pipeline-faults": {
+    "execution_status": "PASS",
+    "correctness_status": "PASS",
+    "performance_status": "NOT_RUN",
+    "compatibility_status": "NOT_RUN",
+    "evidence": {
+      "correctness_status": "PASS",
+      "phases": [
+        {
+          "mode": "hang",
+          "detection_ms": [
+            18.44609994441271,
+            17.71369995549321
+          ],
+          "stats": {
+            "generated": 3,
+            "sealed": 3,
+            "final": 3,
+            "rejected": 1,
+            "open": 0,
+            "history": 3,
+            "runs": 0,
+            "metadata": 3,
+            "diagnostics": 36,
+            "assets": 0,
+            "evictions": 0,
+            "resources": {
+              "used": {
+                "memory": 35323904,
+                "staging": 0,
+                "cache": 0,
+                "lease": 0
+              },
+              "peak": {
+                "memory": 114167808,
+                "staging": 33554432,
+                "cache": 0,
+                "lease": 0
+              },
+              "jobs": {
+                "one": 17956864,
+                "two": 17367040
+              },
+              "owners": 5
+            }
+          }
+        },
+        {
+          "mode": "hang",
+          "detection_ms": [
+            19.457499962300062,
+            17.916199984028935
+          ],
+          "stats": {
+            "generated": 6,
+            "sealed": 6,
+            "final": 6,
+            "rejected": 2,
+            "open": 0,
+            "history": 6,
+            "runs": 0,
+            "metadata": 6,
+            "diagnostics": 64,
+            "assets": 0,
+            "evictions": 0,
+            "resources": {
+              "used": {
+                "memory": 37093376,
+                "staging": 0,
+                "cache": 0,
+                "lease": 0
+              },
+              "peak": {
+                "memory": 115937280,
+                "staging": 33554432,
+                "cache": 0,
+                "lease": 0
+              },
+              "jobs": {
+                "one": 19136512,
+                "two": 17956864
+              },
+              "owners": 8
+            }
+          }
+        },
+        {
+          "mode": "ipc",
+          "detection_ms": [
+            18.206399981863797,
+            19.60749994032085
+          ],
+          "stats": {
+            "generated": 8,
+            "sealed": 8,
+            "final": 8,
+            "rejected": 2,
+            "open": 0,
+            "history": 8,
+            "runs": 0,
+            "metadata": 8,
+            "diagnostics": 64,
+            "assets": 0,
+            "evictions": 0,
+            "resources": {
+              "used": {
+                "memory": 38273024,
+                "staging": 0,
+                "cache": 0,
+                "lease": 0
+              },
+              "peak": {
+                "memory": 115937280,
+                "staging": 33554432,
+                "cache": 0,
+                "lease": 0
+              },
+              "jobs": {
+                "one": 19726336,
+                "two": 18546688
+              },
+              "owners": 10
+            }
+          }
+        },
+        {
+          "mode": "running-close",
+          "stats": {
+            "generated": 13,
+            "sealed": 13,
+            "final": 13,
+            "rejected": 2,
+            "open": 0,
+            "history": 13,
+            "runs": 0,
+            "metadata": 13,
+            "diagnostics": 64,
+            "assets": 4,
+            "evictions": 0,
+            "resources": {
+              "used": {
+                "memory": 41238528,
+                "staging": 0,
+                "cache": 24931804,
+                "lease": 0
+              },
+              "peak": {
+                "memory": 115937280,
+                "staging": 33554432,
+                "cache": 24931804,
+                "lease": 6232951
+              },
+              "jobs": {
+                "one": 22097920,
+                "two": 19140608
+              },
+              "owners": 23
+            }
+          }
+        }
+      ],
+      "two_jobs": true,
+      "two_network_decoders": true,
+      "slow_read_cancel": true,
+      "read_deadline": true,
+      "children_after": 0
+    },
+    "stderr": "",
+    "outer_watchdog_seconds": 90
+  }
+}

@@ -41,6 +41,33 @@ def testMainWindowBuildsMenuBarGroups() -> None:
     assert callable(getMenuBarGroups)
     groups = getMenuBarGroups()
     assert groups == ["文件", "运行", "编辑", "视图"]
+    assert "全局计数器…" in window._menuActions
+
+
+def testControlFlowNodesAreNotAddedFromFileMenu() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+
+    assert {
+        "添加 Subflow 节点",
+        "添加 Repeat 节点",
+        "添加 ForEach 节点",
+        "添加 While 节点",
+    }.isdisjoint(window._menuActions)
+
+
+def testWorkflowActionsAreNotDuplicatedInFileMenu() -> None:
+    ensureQApp()
+    window = MainWindow(RuntimeClientStub())
+
+    assert {"打开项目", "保存项目"}.issubset(window._menuActions)
+    assert {
+        "新建工作流",
+        "重命名当前工作流",
+        "删除当前工作流",
+        "设置当前为入口",
+        "设置工作流接口",
+    }.isdisjoint(window._menuActions)
 
 
 def testRecentProjectsMenuEntriesExist() -> None:
@@ -77,7 +104,7 @@ def testRecentProjectsMenuCanOpenProject(tmp_path: Path) -> None:
     assert openRecentProject(projectFile.as_posix()) is True
 
 
-def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
+def testMenuBarFontSizeIsStableAcrossWindowWidths() -> None:
     ensureQApp()
     window = MainWindow(RuntimeClientStub())
     getMenuBarFontSize = getattr(window, "getMenuBarFontSize", None)
@@ -90,5 +117,37 @@ def testMenuBarFontSizeAdaptsToWindowWidth() -> None:
     window.applyResponsiveLayout()
 
     largeSize = getMenuBarFontSize()
-    assert largeSize > smallSize
+    assert largeSize == smallSize
     assert largeSize >= 14
+    assert smallSize >= 13
+
+
+def testGlobalCounterDialogUsesLoadedProjectAndShutsDown() -> None:
+    ensureQApp()
+
+    class Dialog:
+        def __init__(self) -> None:
+            self.projects = []
+            self.shutdownCalls = 0
+
+        def showForProject(self, projectId: str) -> None:
+            self.projects.append(projectId)
+
+        def shutdown(self) -> None:
+            self.shutdownCalls += 1
+
+    class CloseEvent:
+        def accept(self) -> None:
+            self.accepted = True
+
+    dialog = Dialog()
+    window = MainWindow(
+        RuntimeClientStub(),
+        globalCountersDialogFactory=lambda: dialog,
+    )
+    window.loadedProjectPath = "C:/demo"
+
+    assert window.openGlobalCountersDialog() is dialog
+    assert dialog.projects == ["C:/demo"]
+    window.closeEvent(CloseEvent())
+    assert dialog.shutdownCalls == 1

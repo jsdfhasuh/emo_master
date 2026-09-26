@@ -1,0 +1,39 @@
+{
+  "operatorId": "vision.collection.select",
+  "displayName": "Select Collection",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.collection_select.operator:CollectionSelectOperator",
+  "category": "结果处理",
+  "iconKey": "select",
+  "summary": "从强类型视觉集合中选择首项、末项、指定索引或 Top-K。",
+  "inputPorts": {
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+  },
+  "outputPorts": {
+    "selectedBlobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "selectedDetections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "selectedContours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "selectedMeasurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "selectedLines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "selectedCircles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "selectedMatches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "selectedCount": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {"type": "string", "enum": ["first", "last", "index", "topK"], "default": "first"},
+      "index": {"type": "integer", "minimum": 0, "default": 0},
+      "count": {"type": "integer", "minimum": 1, "default": 1},
+      "onOutOfRange": {"type": "string", "enum": ["empty", "error"], "default": "empty"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,28 @@
+{
+  "execution_status": "PASS",
+  "correctness_status": "FAIL",
+  "performance_status": "FAIL",
+  "compatibility_status": "PASS",
+  "ledger_and_lifetime_status": "PASS",
+  "process_steady_state_assertions": "NOT_RUN",
+  "ci_status": "FAIL",
+  "p0_exit": "FAIL",
+  "reasons": [
+    "Final fixed-load first two-consumer window decoded 90/96 and 91/96; failed images remain in denominator.",
+    "Original 200ms model P95, <=5% paired detection P95 regression and <=500ms live age targets are not all met.",
+    "Whole-process RSS/handle plateau remains unproven; known Qt native combined-CI crash is unresolved."
+  ],
+  "not_run": [
+    "Qt visibility/rendering",
+    "frozen Windows bundle",
+    "industrial PC",
+    "real devices"
+  ],
+  "evidence_files": [
+    "raw/final-evidence.json",
+    "raw/final-code-evidence.json",
+    "raw/final-risks-after-pin.json",
+    "raw/final-gate-p0.txt"
+  ],
+  "stop_at": "P0; do not enter P1"
+}

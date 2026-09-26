@@ -1,6 +1,10 @@
 from datetime import datetime
+import json
 from pathlib import Path
-from typing import Callable, cast
+from typing import Any, Callable, cast
+from uuid import uuid4
+
+from emo_master.apps.designer.services.operator_catalog_worker import OperatorCatalogWorker
 
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.controllers import (
@@ -8,45 +12,75 @@ from emo_master.apps.designer.controllers import (
     OperatorCatalogController,
     ProjectController,
     RuntimeController,
+    WorkflowController,
 )
+from emo_master.apps.designer.state.workflow_store import (
+    WorkflowStore,
+    defaultNodePosition,
+)
+from emo_master.apps.designer.state.workflow_package import (
+    WORKFLOW_PACKAGE_EXTENSION,
+)
+from emo_master.apps.designer.state.system_node_catalog import SYSTEM_NODE_CATALOG
 from emo_master.apps.designer.presenters import NodeDetailsPresenter
+from emo_master.apps.designer.operator_editors import EditorKey, OperatorEditorManager
 from emo_master.apps.designer.ui.flow_scene import (
     FlowEdgeViewModel,
     FlowNodeViewModel,
     FlowScene,
 )
 from emo_master.apps.designer.ui.designer_graphics_view import DesignerGraphicsView
-from emo_master.apps.designer.ui.log_dialog import LogDialog
+from emo_master.apps.designer.ui.log_dialog import (
+    DEFAULT_MAX_LOG_ENTRIES,
+    RuntimeLogDock,
+    StructuredLogEntry,
+)
 from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
+from emo_master.apps.designer.ui.global_counters_dialog import GlobalCountersDialog
 from emo_master.apps.designer.ui.icon_map import getOperatorGlyph
 from emo_master.apps.designer.ui.operator_bubble import OperatorBubble
 from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
+from emo_master.apps.designer.ui.workflow_package_preview_dialog import (
+    WorkflowPackagePreviewDialog,
+)
 
 try:
-    from PySide2.QtCore import QSettings, Qt
+    from PySide2.QtCore import QPointF, QSettings, QSize, QTimer, Qt
     from PySide2.QtGui import QKeySequence, QPixmap
     from PySide2.QtWidgets import (
         QAction,
         QFileDialog,
         QGraphicsView,
         QHBoxLayout,
+        QInputDialog,
         QLabel,
+        QLineEdit,
         QListWidget,
         QListWidgetItem,
         QMainWindow,
+        QMessageBox,
         QMenu,
         QMenuBar,
         QPushButton,
         QShortcut,
         QSplitter,
+        QTabWidget,
         QTextEdit,
         QToolBar,
+        QToolButton,
+        QTreeWidget,
+        QTreeWidgetItem,
         QVBoxLayout,
         QWidget,
     )
+    from emo_master.apps.designer.ui.icon_map import icon
+    from emo_master.apps.designer.ui.widgets import ElidedLabel, PreviewLabel, WorkflowTabs, WrapLabel, scrollContent
+    from emo_master.apps.designer.ui.theme import fitWindowToScreen
 
+    _nativeQt = True
     _userRole = int(Qt.UserRole)
 except Exception:  # pragma: no cover
+    _nativeQt = False
 
     class Qt:  # type: ignore[no-redef]
         AlignCenter = 0
@@ -54,6 +88,8 @@ except Exception:  # pragma: no cover
         KeepAspectRatio = 0
         SmoothTransformation = 0
         Horizontal = 0
+        CustomContextMenu = 0
+        BottomDockWidgetArea = 0
 
     class QWidget:  # type: ignore[no-redef]
         def setLayout(self, layout) -> None:
@@ -107,6 +143,9 @@ except Exception:  # pragma: no cover
         def __init__(self) -> None:
             self._items: list[object] = []
 
+        def addLayout(self, layout) -> None:
+            _ = layout
+
         def addWidget(self, widget) -> None:
             _ = widget
 
@@ -132,6 +171,9 @@ except Exception:  # pragma: no cover
         def setText(self, text: str) -> None:
             self._text = text
 
+        def text(self) -> str:
+            return self._text
+
         def setMinimumHeight(self, height: int) -> None:
             _ = height
 
@@ -151,8 +193,15 @@ except Exception:  # pragma: no cover
             return self._styleSheet
 
     class _SignalStub:
-        def connect(self, callback) -> None:
-            _ = callback
+        def __init__(self) -> None:
+            self._callbacks: list[Callable[..., object]] = []
+
+        def connect(self, callback: Callable[..., object]) -> None:
+            self._callbacks.append(callback)
+
+        def emit(self, *args) -> None:
+            for callback in list(self._callbacks):
+                callback(*args)
 
     class QSettings:  # type: ignore[no-redef]
         _store: dict[str, object] = {}
@@ -225,6 +274,7 @@ except Exception:  # pragma: no cover
         def __init__(self) -> None:
             self._width = 1200
             self._menuBar = None
+            self._dockWidgets: list[tuple[object, object]] = []
 
         def setWindowTitle(self, text: str) -> None:
             _ = text
@@ -247,6 +297,16 @@ except Exception:  # pragma: no cover
 
         def menuBar(self):
             return self._menuBar
+
+        def addDockWidget(self, area, dockWidget) -> None:
+            self._dockWidgets.append((area, dockWidget))
+
+        def saveState(self):
+            return b""
+
+        def restoreState(self, state) -> bool:
+            _ = state
+            return True
 
     class QGraphicsView:  # type: ignore[no-redef]
         def __init__(self, scene) -> None:
@@ -307,6 +367,143 @@ except Exception:  # pragma: no cover
         def item(self, index: int):
             return self._items[index]
 
+    class QTreeWidgetItem:  # type: ignore[no-redef]
+        def __init__(self, texts) -> None:
+            self._texts = [texts] if isinstance(texts, str) else list(texts)
+            self._data: dict[tuple[int, int], object] = {}
+            self._children: list[object] = []
+            self._tooltips: dict[int, str] = {}
+            self._expanded = False
+
+        def setData(self, column: int, role: int, value: object) -> None:
+            self._data[(column, role)] = value
+
+        def data(self, column: int, role: int) -> object:
+            return self._data.get((column, role))
+
+        def text(self, column: int = 0) -> str:
+            return self._texts[column] if column < len(self._texts) else ""
+
+        def addChild(self, item) -> None:
+            self._children.append(item)
+
+        def childCount(self) -> int:
+            return len(self._children)
+
+        def child(self, index: int):
+            return self._children[index]
+
+        def setToolTip(self, column: int, text: str) -> None:
+            self._tooltips[column] = text
+
+        def toolTip(self, column: int) -> str:
+            return self._tooltips.get(column, "")
+
+        def setExpanded(self, expanded: bool) -> None:
+            self._expanded = expanded
+
+    class QTreeWidget(QWidget):  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            self.itemClicked = _SignalStub()
+            self.itemDoubleClicked = _SignalStub()
+            self._items: list[QTreeWidgetItem] = []
+            self._headerHidden = False
+
+        def clear(self) -> None:
+            self._items = []
+
+        def addTopLevelItem(self, item) -> None:
+            self._items.append(item)
+
+        def topLevelItemCount(self) -> int:
+            return len(self._items)
+
+        def topLevelItem(self, index: int):
+            return self._items[index]
+
+        def setHeaderHidden(self, hidden: bool) -> None:
+            self._headerHidden = hidden
+
+        def isHeaderHidden(self) -> bool:
+            return self._headerHidden
+
+        def setFixedHeight(self, height: int) -> None:
+            _ = height
+
+        def expandAll(self) -> None:
+            for item in self._items:
+                item.setExpanded(True)
+
+    class _QTabBarStub:
+        def __init__(self, owner) -> None:
+            self._owner = owner
+            self.customContextMenuRequested = _SignalStub()
+            self._contextMenuPolicy = None
+
+        def setTabData(self, index: int, value: object) -> None:
+            self._owner._tabData[index] = value
+
+        def tabData(self, index: int):
+            return self._owner._tabData[index]
+
+        def setContextMenuPolicy(self, policy) -> None:
+            self._contextMenuPolicy = policy
+
+        def contextMenuPolicy(self):
+            return self._contextMenuPolicy
+
+        def tabAt(self, position) -> int:
+            return position if isinstance(position, int) else -1
+
+        def mapToGlobal(self, position):
+            return position
+
+    class QTabWidget(QWidget):  # type: ignore[no-redef]
+        def __init__(self) -> None:
+            self.currentChanged = _SignalStub()
+            self.tabBarClicked = _SignalStub()
+            self.tabBarDoubleClicked = _SignalStub()
+            self._tabs: list[tuple[object, str]] = []
+            self._tabData: list[object] = []
+            self._currentIndex = -1
+            self._tabBar = _QTabBarStub(self)
+
+        def addTab(self, widget, title: str) -> int:
+            self._tabs.append((widget, title))
+            self._tabData.append(None)
+            if self._currentIndex < 0:
+                self._currentIndex = 0
+            return len(self._tabs) - 1
+
+        def clear(self) -> None:
+            self._tabs = []
+            self._tabData = []
+            self._currentIndex = -1
+
+        def setCurrentIndex(self, index: int) -> None:
+            if 0 <= index < len(self._tabs):
+                self._currentIndex = index
+                self.currentChanged.emit(index)
+
+        def currentIndex(self) -> int:
+            return self._currentIndex
+
+        def count(self) -> int:
+            return len(self._tabs)
+
+        def tabText(self, index: int) -> str:
+            return self._tabs[index][1]
+
+        def setTabText(self, index: int, title: str) -> None:
+            widget, _ = self._tabs[index]
+            self._tabs[index] = (widget, title)
+
+        def tabBar(self):
+            return self._tabBar
+
+        def setTabsClosable(self, closable: bool) -> None:
+            _ = closable
+
     class QSplitter(QWidget):  # type: ignore[no-redef]
         def __init__(self, orientation) -> None:
             _ = orientation
@@ -362,9 +559,20 @@ except Exception:  # pragma: no cover
             self._text = text
             self.triggered = _SignalStub()
             self._fontPointSize = 12
+            self._enabled = True
 
         def text(self) -> str:
             return self._text
+
+        def trigger(self) -> None:
+            if self._enabled:
+                self.triggered.emit(False)
+
+        def setEnabled(self, enabled: bool) -> None:
+            self._enabled = enabled
+
+        def isEnabled(self) -> bool:
+            return self._enabled
 
         def setFontPointSize(self, size: int) -> None:
             self._fontPointSize = size
@@ -373,10 +581,12 @@ except Exception:  # pragma: no cover
             return self._fontPointSize
 
     class QMenu:  # type: ignore[no-redef]
-        def __init__(self, title: str) -> None:
+        def __init__(self, title: str, parent=None) -> None:
+            _ = parent
             self._title = title
             self._actions: list[object] = []
             self._styleSheet = ""
+            self._executedAt = None
 
         def addAction(self, action) -> None:
             self._actions.append(action)
@@ -387,6 +597,9 @@ except Exception:  # pragma: no cover
         def addSeparator(self) -> None:
             return
 
+        def actions(self) -> list[object]:
+            return list(self._actions)
+
         def title(self) -> str:
             return self._title
 
@@ -395,6 +608,9 @@ except Exception:  # pragma: no cover
 
         def setStyleSheet(self, style: str) -> None:
             self._styleSheet = style
+
+        def exec_(self, position) -> None:
+            self._executedAt = position
 
     class QMenuBar(QWidget):  # type: ignore[no-redef]
         def __init__(self) -> None:
@@ -425,9 +641,76 @@ except Exception:  # pragma: no cover
             _ = directory
             return ""
 
+        @staticmethod
+        def getSaveFileName(parent, title: str, directory: str, filterText: str):
+            _ = parent
+            _ = title
+            _ = directory
+            _ = filterText
+            return "", ""
+
+    class QInputDialog:  # type: ignore[no-redef]
+        @staticmethod
+        def getText(parent, title: str, label: str, echo=0, text: str = ""):
+            _ = parent
+            _ = title
+            _ = label
+            _ = echo
+            return text, False
+
+    class QMessageBox:  # type: ignore[no-redef]
+        @staticmethod
+        def warning(parent, title: str, message: str):
+            _ = parent
+            _ = title
+            _ = message
+            return None
+
+    class QLineEdit:  # type: ignore[no-redef]
+        Normal = 0
+
     _userRole = 0
 
 USER_ROLE: int = _userRole
+
+
+def _runtimeSequence(value: dict[str, object]) -> int:
+    rawSequence = value.get("sequence", 0)
+    if isinstance(rawSequence, bool):
+        return 0
+    if isinstance(rawSequence, int):
+        return rawSequence
+    if isinstance(rawSequence, float):
+        return int(rawSequence)
+    if isinstance(rawSequence, str):
+        try:
+            return int(rawSequence)
+        except ValueError:
+            return 0
+    return 0
+
+
+def _runtimeStateBelongsToJob(value: dict[str, object], jobId: str | None) -> bool:
+    valueJobId = value.get("jobId", "")
+    if not isinstance(valueJobId, str):
+        valueJobId = ""
+    if jobId is None:
+        return valueJobId == ""
+    return valueJobId in {"", jobId}
+
+
+def _settingBool(value: object, default: bool) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        return bool(value)
+    if isinstance(value, str):
+        normalized = value.strip().casefold()
+        if normalized in {"1", "true", "yes", "on"}:
+            return True
+        if normalized in {"0", "false", "no", "off"}:
+            return False
+    return default
 
 
 class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
@@ -437,27 +720,50 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         showStartupEntry: bool = False,
         projectEntryDialogFactory: Callable[[], object] | None = None,
         settingsStore: object | None = None,
+        workflowPackagePreviewDialogFactory: Callable[[object], object]
+        | None = None,
+        globalCountersDialogFactory: Callable[[], object] | None = None,
     ) -> None:
         super().__init__()
         self.runtimeClient = runtimeClient
+        self.operatorIconProvider: Any = None
+        self.operatorCatalogWorker: OperatorCatalogWorker | None = None
+        self._operatorDisplayTimer: Any = None
+        self._operatorDisplayClosed = False
+        self._projectInstanceToken = uuid4().hex
+        self._sidebarIconItems: list[Any] = []
         self._showStartupEntry = showStartupEntry
         self._projectEntryDialogFactory = projectEntryDialogFactory
+        self._workflowPackagePreviewDialogFactory = (
+            workflowPackagePreviewDialogFactory
+        )
+        self._globalCountersDialogFactory = globalCountersDialogFactory
+        self._globalCountersDialog: object | None = None
         self._startupEntryHandled = False
         self.settingsStore = (
             settingsStore
             if settingsStore is not None
             else QSettings("emo_master", "designer")
         )
-        self._nodeRuntimeState: dict[str, dict[str, str]] = {}
+        self._nodeRuntimeState: dict[str, dict[str, object]] = {}
+        self._nodeRuntimeStateByRun: dict[tuple[str, str], dict[str, object]] = {}
+        self._nodeRuntimeStateByWorkflowRun: dict[
+            tuple[str, str, str], dict[str, object]
+        ] = {}
         self.flowModel = FlowGraphModel()
+        self.workflowStore = WorkflowStore()
+        self.activeWorkflowId = self.workflowStore.activeWorkflowId
         self.nodeDetailsPresenter = NodeDetailsPresenter(
             flowModel=self.flowModel,
             nodeRuntimeState=self._nodeRuntimeState,
+            getActiveWorkflowId=lambda: self.activeWorkflowId,
         )
         self.runtimePanelState = RuntimePanelState()
         self.nodeParamDialog: NodeParamDialog | None = None
-        self.logDialog: LogDialog | None = None
+        self.logDock: RuntimeLogDock | None = None
+        self.logDialog: RuntimeLogDock | None = None
         self.logBuffer: list[str] = []
+        self.logEntries: list[StructuredLogEntry] = []
         self.operatorCatalog: list[dict[str, object]] = []
         self.recentOperatorIds: list[str] = []
         self.maxRecentOperators = 6
@@ -469,12 +775,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.loadedProjectPath: str | None = None
         self.currentProjectDir: Path | None = None
         self.currentJobId: str | None = None
+        self._allowRuntimeEventsWithoutActiveJob = True
         self.isJobRunning = False
         self._lastRunBlockedReason = ""
+        self._addWorkflowTabIndex = -1
+        self._menuActions: dict[str, QAction] = {}
+        self._toolbarActions: dict[str, QAction] = {}
+        self._focusedWorkflowId: tuple[str, str] | None = None
+        self._workflowViewStates: dict[tuple[str, str], tuple[float, QPointF]] = {}
         self.setWindowTitle("视觉流程设计器")
         self.resize(1200, 760)
 
         self.mainToolbar = QToolBar("主工具栏")
+        if _nativeQt:
+            self.mainToolbar.setIconSize(QSize(18, 18))
         setMovable = getattr(self.mainToolbar, "setMovable", None)
         if callable(setMovable):
             setMovable(False)
@@ -507,6 +821,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setToggleName):
             setToggleName("sidebarToggleButton")
         self.sidebarToggleButton.clicked.connect(self.toggleSidebar)
+        if _nativeQt:
+            self.sidebarToggleButton.setFixedHeight(34)
+            self.sidebarToggleButton.setIconSize(QSize(18, 18))
         sideBarLayout.addWidget(self.sidebarToggleButton)
 
         self.categoryPanel = QWidget()
@@ -520,23 +837,86 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         setCategorySpacing = getattr(categoryLayout, "setSpacing", None)
         if callable(setCategorySpacing):
             setCategorySpacing(6)
-        for categoryName in ["全部", "预处理", "检测", "测量", "输出", "控制流", "其他"]:
-            categoryButton = QPushButton(
-                f"{self._getCategoryGlyph(categoryName)} {categoryName}"
-            )
-            setCategoryName = getattr(categoryButton, "setObjectName", None)
-            if callable(setCategoryName):
-                setCategoryName("sideCategoryButton")
-            setCheckable = getattr(categoryButton, "setCheckable", None)
-            if callable(setCheckable):
-                setCheckable(True)
-            categoryButton.clicked.connect(
-                self._buildCategoryClickHandler(categoryName)
-            )
-            categoryLayout.addWidget(categoryButton)
-            self.categoryButtons[categoryName] = categoryButton
+        categoryNames = [
+            "全部",
+            "预处理",
+            "检测",
+            "测量",
+            "输出",
+            "控制流",
+            "其他",
+        ]
+        for rowStart in range(0, len(categoryNames), 2):
+            categoryRow = QHBoxLayout()
+            setCategoryRowSpacing = getattr(categoryRow, "setSpacing", None)
+            if callable(setCategoryRowSpacing):
+                setCategoryRowSpacing(6)
+            for categoryName in categoryNames[rowStart : rowStart + 2]:
+                categoryButton = QPushButton(categoryName)
+                if _nativeQt:
+                    categoryButton.setIcon(icon({"全部": "layout-grid", "预处理": "sliders-horizontal",
+                                                 "检测": "scan-line", "测量": "ruler", "输出": "upload",
+                                                 "控制流": "git-branch"}.get(categoryName, "layout-grid")))
+                setCategoryName = getattr(categoryButton, "setObjectName", None)
+                if callable(setCategoryName):
+                    setCategoryName("sideCategoryButton")
+                setCheckable = getattr(categoryButton, "setCheckable", None)
+                if callable(setCheckable):
+                    setCheckable(True)
+                categoryButton.clicked.connect(
+                    self._buildCategoryClickHandler(categoryName)
+                )
+                categoryRow.addWidget(categoryButton)
+                self.categoryButtons[categoryName] = categoryButton
+            if len(categoryNames[rowStart : rowStart + 2]) == 1:
+                categoryRow.addStretch(1)
+            categoryLayout.addLayout(categoryRow)
         self.categoryPanel.setLayout(categoryLayout)
         sideBarLayout.addWidget(self.categoryPanel)
+
+        self.dependencyTreeContainer = QWidget()
+        setDependencyContainerName = getattr(
+            self.dependencyTreeContainer, "setObjectName", None
+        )
+        if callable(setDependencyContainerName):
+            setDependencyContainerName("sidebarDependencySection")
+        dependencyLayout = QVBoxLayout()
+        setDependencyMargins = getattr(dependencyLayout, "setContentsMargins", None)
+        if callable(setDependencyMargins):
+            setDependencyMargins(0, 0, 0, 0)
+        setDependencySpacing = getattr(dependencyLayout, "setSpacing", None)
+        if callable(setDependencySpacing):
+            setDependencySpacing(6)
+        self.dependencyTreeTitle = QLabel("工作流依赖")
+        setDependencyTitleName = getattr(
+            self.dependencyTreeTitle, "setObjectName", None
+        )
+        if callable(setDependencyTitleName):
+            setDependencyTitleName("panelTitle")
+        dependencyLayout.addWidget(self.dependencyTreeTitle)
+        self.workflowDependencyTree = QTreeWidget()
+        setDependencyTreeName = getattr(
+            self.workflowDependencyTree, "setObjectName", None
+        )
+        if callable(setDependencyTreeName):
+            setDependencyTreeName("workflowDependencyTree")
+        setHeaderHidden = getattr(self.workflowDependencyTree, "setHeaderHidden", None)
+        if callable(setHeaderHidden):
+            setHeaderHidden(True)
+        setDependencyHeight = getattr(
+            self.workflowDependencyTree, "setFixedHeight", None
+        )
+        if callable(setDependencyHeight):
+            setDependencyHeight(150)
+        self.workflowDependencyTree.itemClicked.connect(
+            self.navigateToWorkflowDependencyItem
+        )
+        self.workflowDependencyTree.itemDoubleClicked.connect(
+            self.navigateToWorkflowDependencyItem
+        )
+        dependencyLayout.addWidget(self.workflowDependencyTree)
+        self.dependencyTreeContainer.setLayout(dependencyLayout)
+        sideBarLayout.addWidget(self.dependencyTreeContainer)
 
         self.nodeListContainer = QWidget()
         setNodeListContainerName = getattr(
@@ -562,7 +942,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setNodeListName("sidebarNodeList")
         setFixedHeight = getattr(self.nodeListWidget, "setFixedHeight", None)
         if callable(setFixedHeight):
-            setFixedHeight(220)
+            setFixedHeight(110)
         self.nodeListWidget.itemClicked.connect(self.selectNodeFromSidebar)
         self.nodeListWidget.itemDoubleClicked.connect(self.navigateToSidebarItem)
         nodeListLayout.addWidget(self.nodeListWidget)
@@ -571,7 +951,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         addSidebarStretch = getattr(sideBarLayout, "addStretch", None)
         if callable(addSidebarStretch):
             addSidebarStretch(1)
-        self.sidebarContainer.setLayout(sideBarLayout)
+        if _nativeQt:
+            sideBarLayout.removeWidget(self.sidebarToggleButton)
+            sidebarBody = QWidget()
+            sidebarBody.setLayout(sideBarLayout)
+            sidebarOuter = QVBoxLayout(self.sidebarContainer)
+            sidebarOuter.setContentsMargins(0, 0, 0, 0)
+            sidebarOuter.addWidget(self.sidebarToggleButton)
+            self.sidebarScroll = scrollContent(sidebarBody)
+            sidebarOuter.addWidget(self.sidebarScroll, 1)
+        else:
+            self.sidebarContainer.setLayout(sideBarLayout)
 
         self.canvasPanel = QWidget()
         leftPanel = QVBoxLayout()
@@ -581,7 +971,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         setCanvasSpacing = getattr(leftPanel, "setSpacing", None)
         if callable(setCanvasSpacing):
             setCanvasSpacing(8)
-        leftPanel.addWidget(QLabel("流程画布"))
+        self.workflowTabs = WorkflowTabs() if _nativeQt else QTabWidget()
+        setWorkflowTabsName = getattr(self.workflowTabs, "setObjectName", None)
+        if callable(setWorkflowTabsName):
+            setWorkflowTabsName("workflowTabs")
+        leftPanel.addWidget(self.workflowTabs)
         self.flowScene = FlowScene()
         setSceneRect = getattr(self.flowScene, "setSceneRect", None)
         if callable(setSceneRect):
@@ -603,6 +997,32 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setAcceptDrops):
             setAcceptDrops(True)
         leftPanel.addWidget(self.flowView)
+        if _nativeQt:
+            leftPanel.setStretch(leftPanel.indexOf(self.flowView), 1)
+            canvasTools = QHBoxLayout()
+            canvasTools.setContentsMargins(0, 0, 0, 0)
+            canvasTools.addStretch(1)
+            self.zoomOutButton = QToolButton()
+            self.zoomOutButton.setIcon(icon("minus"))
+            self.zoomOutButton.setToolTip("缩小")
+            self.zoomOutButton.clicked.connect(lambda: self.flowView.zoomByDelta(-1))
+            self.zoomResetButton = QToolButton()
+            self.zoomResetButton.setText("100%")
+            self.zoomResetButton.setFixedWidth(64)
+            self.zoomResetButton.setToolTip("恢复 100%")
+            self.zoomResetButton.clicked.connect(lambda: self.flowView.setZoomFactor(1.0))
+            self.zoomInButton = QToolButton()
+            self.zoomInButton.setIcon(icon("plus"))
+            self.zoomInButton.setToolTip("放大")
+            self.zoomInButton.clicked.connect(lambda: self.flowView.zoomByDelta(1))
+            self.fitCanvasButton = QToolButton()
+            self.fitCanvasButton.setIcon(icon("maximize"))
+            self.fitCanvasButton.setToolTip("适应画布")
+            self.fitCanvasButton.clicked.connect(self.focusGraphContent)
+            for tool in (self.zoomOutButton, self.zoomResetButton, self.zoomInButton, self.fitCanvasButton):
+                canvasTools.addWidget(tool)
+            self.flowView.zoomChanged.connect(lambda value: self.zoomResetButton.setText(f"{value:.0%}"))
+            leftPanel.addLayout(canvasTools)
         self.canvasPanel.setLayout(leftPanel)
 
         self.autoLayoutButton = QPushButton("自动布局")
@@ -653,7 +1073,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         summaryLayout = QVBoxLayout()
         setSummaryMargins = getattr(summaryLayout, "setContentsMargins", None)
         if callable(setSummaryMargins):
-            setSummaryMargins(0, 0, 0, 0)
+            setSummaryMargins(12, 4, 12, 10)
         setSummarySpacing = getattr(summaryLayout, "setSpacing", None)
         if callable(setSummarySpacing):
             setSummarySpacing(6)
@@ -669,7 +1089,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setStatusCardName("statusCard")
         summaryLayout.addWidget(self.jobStatusCard)
 
-        self.jobMessageCard = QLabel("消息：-")
+        self.jobMessageCard = ElidedLabel("消息：-") if _nativeQt else QLabel("消息：-")
         setMessageCardName = getattr(self.jobMessageCard, "setObjectName", None)
         if callable(setMessageCardName):
             setMessageCardName("statusCard")
@@ -684,7 +1104,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         nodeStatusLayout = QVBoxLayout()
         setNodeStatusMargins = getattr(nodeStatusLayout, "setContentsMargins", None)
         if callable(setNodeStatusMargins):
-            setNodeStatusMargins(0, 0, 0, 0)
+            setNodeStatusMargins(12, 4, 12, 10)
         setNodeStatusSpacing = getattr(nodeStatusLayout, "setSpacing", None)
         if callable(setNodeStatusSpacing):
             setNodeStatusSpacing(6)
@@ -695,10 +1115,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setNodeTitleName):
             setNodeTitleName("panelTitle")
         nodeStatusLayout.addWidget(nodeStatusTitle)
-        self.nodeDetailTitleCard = QLabel("未选中节点")
-        self.nodeDetailMetaCard = QLabel("点击画布节点或左侧当前节点列表查看详情")
-        self.nodeDetailPortsCard = QLabel("输入: 无\n输出: 无")
-        self.nodeDetailParamsCard = QLabel("参数:\n- 无")
+        detailLabel = WrapLabel if _nativeQt else QLabel
+        self.nodeDetailTitleCard = detailLabel("未选中节点")
+        self.nodeDetailIcon = QLabel("")
+        if _nativeQt:
+            self.nodeDetailIcon.setFixedSize(20, 20)
+            self.nodeDetailIcon.hide()
+        self.nodeDetailMetaCard = detailLabel("")
+        self.nodeDetailPortsCard = detailLabel("输入: 无\n输出: 无")
+        self.nodeDetailParamsCard = detailLabel("参数:\n- 无")
         for detailWidget in [
             self.nodeDetailTitleCard,
             self.nodeDetailMetaCard,
@@ -708,9 +1133,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setDetailName = getattr(detailWidget, "setObjectName", None)
             if callable(setDetailName):
                 setDetailName("statusCard")
-            nodeStatusLayout.addWidget(detailWidget)
+            if _nativeQt and detailWidget is self.nodeDetailTitleCard:
+                titleRow = QHBoxLayout()
+                titleRow.addWidget(self.nodeDetailIcon, 0, Qt.AlignTop)
+                titleRow.addWidget(detailWidget, 1)
+                nodeStatusLayout.addLayout(titleRow)
+            else:
+                nodeStatusLayout.addWidget(detailWidget)
         self.nodeStatusSection.setLayout(nodeStatusLayout)
-        rightPanel.addWidget(self.nodeStatusSection)
+        if _nativeQt:
+            nodeStatusLayout.addStretch(1)
+            self.nodeDetailsScroll = scrollContent(self.nodeStatusSection, name="nodeDetailsScroll")
+            self.nodeDetailsScroll.setMinimumHeight(72)
+            rightPanel.addWidget(self.nodeDetailsScroll, 1)
+        else:
+            rightPanel.addWidget(self.nodeStatusSection)
 
         self.previewSection = QWidget()
         setPreviewSectionName = getattr(self.previewSection, "setObjectName", None)
@@ -719,7 +1156,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         previewLayout = QVBoxLayout()
         setPreviewMargins = getattr(previewLayout, "setContentsMargins", None)
         if callable(setPreviewMargins):
-            setPreviewMargins(0, 0, 0, 0)
+            setPreviewMargins(12, 4, 12, 10)
         setPreviewSpacing = getattr(previewLayout, "setSpacing", None)
         if callable(setPreviewSpacing):
             setPreviewSpacing(6)
@@ -729,7 +1166,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setPreviewTitleName("panelTitle")
         previewLayout.addWidget(previewTitle)
 
-        self.previewImageLabel = QLabel("暂无图片")
+        self.previewImageLabel = PreviewLabel("暂无图片") if _nativeQt else QLabel("暂无图片")
         setPreviewLabelName = getattr(self.previewImageLabel, "setObjectName", None)
         if callable(setPreviewLabelName):
             setPreviewLabelName("previewCard")
@@ -742,8 +1179,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         previewLayout.addWidget(self.previewImageLabel)
         self.previewSection.setLayout(previewLayout)
         rightPanel.addWidget(self.previewSection)
+        if _nativeQt:
+            rightPanel.setStretch(rightPanel.indexOf(self.previewSection), 1)
         addRightStretch = getattr(rightPanel, "addStretch", None)
-        if callable(addRightStretch):
+        if callable(addRightStretch) and not _nativeQt:
             addRightStretch(1)
         self.rightPanelContainer.setLayout(rightPanel)
         self.mainSplitter = QSplitter(Qt.Horizontal)
@@ -766,7 +1205,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         rootLayout.addWidget(self.mainSplitter)
         rootWidget.setLayout(rootLayout)
         self.setCentralWidget(rootWidget)
+        self.logDock = RuntimeLogDock(
+            self,
+            onClear=self._clearRuntimeLogCache,
+            maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
+        )
+        self.logDialog = self.logDock
+        addDockWidget = getattr(self, "addDockWidget", None)
+        if callable(addDockWidget):
+            addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
+        self.logDock.hide()
 
+        self.workflowController = WorkflowController(
+            workflowStore=self.workflowStore,
+            flowModel=self.flowModel,
+            flowScene=self.flowScene,
+            refreshSidebarNodeList=self.refreshSidebarNodeList,
+            focusGraphContent=lambda: self.focusGraphContent(automatic=True),
+            updateToolbarState=self.updateToolbarState,
+        )
         self.projectController = ProjectController(
             runtimeClient=self.runtimeClient,
             flowModel=self.flowModel,
@@ -774,12 +1231,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             settingsStore=self.settingsStore,
             appendLog=self.appendRuntimeLog,
             refreshSidebarNodeList=self.refreshSidebarNodeList,
-            focusGraphContent=self.focusGraphContent,
+            focusGraphContent=lambda: self.focusGraphContent(automatic=True),
             refreshRuntimePanelView=self._refreshRuntimePanelView,
             updateToolbarState=self.updateToolbarState,
             updateRuntimeJobState=lambda status, message: (
                 self.runtimePanelState.updateJob(status, message)
             ),
+            workflowController=self.workflowController,
         )
         self.runtimeController = RuntimeController(
             runtimeClient=self.runtimeClient,
@@ -793,21 +1251,32 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setIsJobRunning=self._setIsJobRunning,
             getLoadedProjectPath=lambda: self.loadedProjectPath,
             getCurrentJobId=lambda: self.currentJobId,
+            getActiveWorkflowId=lambda: self.activeWorkflowId,
+            getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
+            appendEvent=self.appendRuntimeEvent,
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
             appendLog=self.appendRuntimeLog,
+        )
+        self.operatorEditorManager = OperatorEditorManager(
+            runtimeClient=self.runtimeClient,
+            settingsStore=self.settingsStore,
+            applyParams=self._applyEditorParams,
+            appendLog=self.appendEditorLog,
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,
             sidebarContainer=self.sidebarContainer,
             rightPanelContainer=self.rightPanelContainer,
             canvasPanel=self.canvasPanel,
+            dependencyTreeWidget=self.workflowDependencyTree,
             nodeListWidget=self.nodeListWidget,
             runtimeStatusOutput=self.runtimeStatusOutput,
             previewImageLabel=self.previewImageLabel,
             sidebarToggleButton=self.sidebarToggleButton,
             categoryPanel=self.categoryPanel,
+            dependencyTreeContainer=self.dependencyTreeContainer,
             nodeListContainer=self.nodeListContainer,
             mainMenuBar=self.mainMenuBar,
             settingsStore=self.settingsStore,
@@ -815,31 +1284,58 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             isSidebarCollapsedGetter=lambda: self.isSidebarCollapsed,
         )
 
-        self.refreshButton.clicked.connect(self.refreshOperators)
-        self.loadButton.clicked.connect(self.loadProject)
-        self.saveProjectButton.clicked.connect(self.saveProjectAction)
-        self.validateButton.clicked.connect(self.validateProject)
-        self.startButton.clicked.connect(self.startJob)
-        self.stopButton.clicked.connect(self.stopJob)
-        self.openLogsButton.clicked.connect(self.openLogDialog)
-        self.autoLayoutButton.clicked.connect(self.autoLayoutNodes)
-        self.validateGraphButton.clicked.connect(self.validateGraph)
+        workflowChanged = getattr(self.workflowTabs, "currentChanged", None)
+        if workflowChanged is not None and hasattr(workflowChanged, "connect"):
+            workflowChanged.connect(self._onWorkflowTabChanged)
+        workflowTabClicked = getattr(self.workflowTabs, "tabBarClicked", None)
+        if workflowTabClicked is not None and hasattr(workflowTabClicked, "connect"):
+            workflowTabClicked.connect(self._onWorkflowTabClicked)
+        workflowTabBar = self.workflowTabs.tabBar()
+        setContextMenuPolicy = getattr(workflowTabBar, "setContextMenuPolicy", None)
+        if callable(setContextMenuPolicy):
+            setContextMenuPolicy(Qt.CustomContextMenu)
+        workflowTabContextMenu = getattr(
+            workflowTabBar, "customContextMenuRequested", None
+        )
+        if workflowTabContextMenu is not None and hasattr(
+            workflowTabContextMenu, "connect"
+        ):
+            workflowTabContextMenu.connect(self._onWorkflowTabContextMenuRequested)
         self.deleteShortcut = QShortcut(QKeySequence.Delete, self)
         self.deleteShortcut.activated.connect(self.handleDeleteShortcut)
         self.backspaceDeleteShortcut = QShortcut(QKeySequence("Backspace"), self)
         self.backspaceDeleteShortcut.activated.connect(self.handleDeleteShortcut)
         self._buildMainMenuBar()
-        self.refreshOperators()
+        self._layoutMode = "normal"
+        self.workflowController.refreshActiveWorkflow()
         self.updateToolbarState()
         self._refreshRuntimePanelView()
         self.setActiveCategory("全部")
         self.applySidebarState()
-        self.operatorBubble = OperatorBubble()
+        self.operatorBubble = OperatorBubble(self)
         self.operatorBubble.setCreateHandler(self.addNodeFromOperatorPayload)
         self.refreshSidebarNodeList()
-        self._layoutMode = "normal"
+        self._refreshWorkflowTabs()
         self.applyResponsiveLayout()
         self.restoreMainSplitterSizes()
+        self._restoreRuntimeLogSettings()
+        self.operatorCatalogStatusLabel = QLabel("算子目录：加载中")
+        if _nativeQt:
+            from emo_master.apps.designer.ui.operator_icon_provider import OperatorIconProvider
+
+            self.statusBar().addPermanentWidget(self.operatorCatalogStatusLabel)
+            self.operatorCatalogWorker = OperatorCatalogWorker(self.runtimeClient)
+            self.operatorIconProvider = OperatorIconProvider(
+                self.runtimeClient, parent=self, appendLog=self.appendRuntimeLog,
+                onRecovery=lambda: self.refreshOperators(explicit=False),
+            )
+            self.flowScene.setIconProvider(self.operatorIconProvider, self._iconContext)
+            self.operatorBubble.setIconProvider(self.operatorIconProvider)
+            self._operatorDisplayTimer = QTimer(self)
+            self._operatorDisplayTimer.setInterval(20)
+            self._operatorDisplayTimer.timeout.connect(self._pollOperatorCatalog)
+            self._operatorDisplayTimer.start()
+        self.refreshOperators(explicit=False)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -925,19 +1421,57 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str) -> bool:
+        self._focusedWorkflowId = None
+        self._workflowViewStates.clear()
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.loadProjectDirectory(projectDirPath)
         )
         if ok:
-            self.loadedProjectPath = loadedProjectPath
-            self.currentProjectDir = currentProjectDir
+            self._applyLoadedProjectState(loadedProjectPath, currentProjectDir)
+        else:
+            self._refreshWorkflowTabs()
+            self.updateToolbarState()
         return bool(ok)
 
+    def _applyLoadedProjectState(
+        self, loadedProjectPath: str | None, currentProjectDir: Path | None
+    ) -> None:
+        self._projectInstanceToken = uuid4().hex
+        self.operatorEditorManager.closeAll()
+        self.nodeParamDialog = None
+        self.activeParamNodeId = None
+        self._resetRuntimeVisualState(clearHistory=True)
+        self.currentJobId = None
+        self.runtimePanelState.setActiveJob(None)
+        self.loadedProjectPath = loadedProjectPath
+        self.currentProjectDir = currentProjectDir
+        counterDialog = self._globalCountersDialog
+        if counterDialog is not None:
+            bindProject = getattr(counterDialog, "bindProject", None)
+            if callable(bindProject):
+                bindProject(loadedProjectPath or "")
+        self.activeWorkflowId = self.workflowController.activeWorkflowId
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowTabs()
+        if self.operatorIconProvider is not None:
+            self.flowScene.rebindOperatorIcons()
+            self.refreshSidebarNodeList()
+            self._refreshNodeDetailsView()
+
+    def _iconContext(self) -> tuple[str, str]:
+        return self._projectInstanceToken, self.workflowController.activeWorkflowId
+
     def refreshSidebarNodeList(self) -> None:
+        if self.operatorIconProvider is not None:
+            for item in self._sidebarIconItems:
+                self.operatorIconProvider.unbind(item)
+        self._sidebarIconItems.clear()
         clearMethod = getattr(self.nodeListWidget, "clear", None)
         if callable(clearMethod):
             clearMethod()
         for node in self.flowModel.nodes.values():
+            if node.kind in {"workflow_input", "workflow_output"}:
+                continue
             shortId = node.nodeId[:8]
             item = QListWidgetItem(f"{node.displayName}\n{shortId}")
             setData = getattr(item, "setData", None)
@@ -946,10 +1480,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             addItem = getattr(self.nodeListWidget, "addItem", None)
             if callable(addItem):
                 addItem(item)
+            if self.operatorIconProvider is not None:
+                self._sidebarIconItems.append(item)
+                if node.kind == "operator":
+                    self.operatorIconProvider.bind(item, node.operatorId, mode="list", priority=2,
+                                                   context=(*self._iconContext(), node.nodeId))
+                else:
+                    from emo_master.apps.designer.ui.icon_map import operatorIcon
+                    item.setIcon(operatorIcon("flow"))
+        self.refreshWorkflowDependencyTree()
 
     def getSidebarNodeEntries(self) -> list[dict[str, object]]:
         entries: list[dict[str, object]] = []
         for node in self.flowModel.nodes.values():
+            if node.kind in {"workflow_input", "workflow_output"}:
+                continue
             entries.append(
                 {
                     "nodeId": node.nodeId,
@@ -958,6 +1503,114 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 }
             )
         return entries
+
+    def getWorkflowDependencyEntries(self) -> list[dict[str, object]]:
+        controller = getattr(self, "workflowController", None)
+        captureActiveWorkflow = getattr(controller, "captureActiveWorkflow", None)
+        if callable(captureActiveWorkflow):
+            captureActiveWorkflow()
+        return self.workflowStore.getWorkflowDependencyTree()
+
+    def refreshWorkflowDependencyTree(self) -> None:
+        treeWidget = getattr(self, "workflowDependencyTree", None)
+        if treeWidget is None:
+            return
+        clearMethod = getattr(treeWidget, "clear", None)
+        if callable(clearMethod):
+            clearMethod()
+        for entry in self.getWorkflowDependencyEntries():
+            item = self._buildWorkflowDependencyTreeItem(entry)
+            addTopLevelItem = getattr(treeWidget, "addTopLevelItem", None)
+            if callable(addTopLevelItem):
+                addTopLevelItem(item)
+        expandAll = getattr(treeWidget, "expandAll", None)
+        if callable(expandAll):
+            expandAll()
+
+    def _buildWorkflowDependencyTreeItem(
+        self, entry: dict[str, object]
+    ) -> QTreeWidgetItem:
+        item = QTreeWidgetItem([self._workflowDependencyItemText(entry)])
+        itemType = entry.get("itemType")
+        workflowId = entry.get("workflowId")
+        status = entry.get("status")
+        setData = getattr(item, "setData", None)
+        if callable(setData):
+            setData(
+                0,
+                USER_ROLE,
+                {
+                    "itemType": itemType,
+                    "workflowId": workflowId,
+                    "status": status,
+                },
+            )
+        setToolTip = getattr(item, "setToolTip", None)
+        if callable(setToolTip):
+            setToolTip(0, self._workflowDependencyItemToolTip(entry))
+        rawChildren = entry.get("children", [])
+        children = rawChildren if isinstance(rawChildren, list) else []
+        addChild = getattr(item, "addChild", None)
+        if callable(addChild):
+            for child in children:
+                if isinstance(child, dict):
+                    addChild(self._buildWorkflowDependencyTreeItem(child))
+        return item
+
+    def _workflowDependencyItemText(self, entry: dict[str, object]) -> str:
+        if entry.get("itemType") == "group":
+            count = entry.get("count", 0)
+            return f"{entry.get('label', '未使用工作流')} ({count})"
+
+        name = str(entry.get("name", "未设置"))
+        relation = str(entry.get("relation", ""))
+        relationLabel = str(entry.get("relationLabel", ""))
+        text = (
+            f"{relationLabel} → {name}"
+            if relation
+            not in {
+                "entry",
+                "unreachable-root",
+            }
+            else name
+        )
+        if relation == "entry":
+            text = f"★ {text}"
+
+        badges: list[str] = []
+        workflowId = entry.get("workflowId")
+        if bool(entry.get("isEntry", False)):
+            badges.append("入口")
+        if workflowId == self.activeWorkflowId and bool(entry.get("exists", False)):
+            badges.append("当前")
+        status = entry.get("status")
+        if status == "cycle":
+            badges.append("循环引用")
+        elif status == "missing":
+            badges.append("目标缺失")
+        elif relation == "unreachable-root":
+            badges.append(
+                "未被引用" if bool(entry.get("isUnreferenced", False)) else "入口不可达"
+            )
+        return f"{text} [{' · '.join(badges)}]" if badges else text
+
+    def _workflowDependencyItemToolTip(self, entry: dict[str, object]) -> str:
+        if entry.get("itemType") == "group":
+            return "这些工作流无法从入口工作流到达。"
+        workflowId = entry.get("workflowId")
+        lines = [f"工作流：{workflowId or '未设置'}"]
+        relationLabel = entry.get("relationLabel")
+        if relationLabel not in {None, "", "入口", "入口不可达"}:
+            lines.append(f"引用类型：{relationLabel}")
+        sourceNodeId = entry.get("sourceNodeId")
+        if isinstance(sourceNodeId, str) and sourceNodeId:
+            lines.append(f"来源节点：{sourceNodeId}")
+        status = entry.get("status")
+        if status == "cycle":
+            lines.append("此引用返回当前依赖路径中的上级工作流。")
+        elif status == "missing":
+            lines.append("引用目标不存在或尚未配置。")
+        return "\n".join(lines)
 
     def getToolbarGroups(self) -> list[list[str]]:
         return [
@@ -968,13 +1621,35 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         ]
 
     def _addToolbarGroup(self, title: str, buttons: list[QPushButton]) -> None:
-        titleLabel = QLabel(title)
-        setTitleName = getattr(titleLabel, "setObjectName", None)
-        if callable(setTitleName):
-            setTitleName("toolbarGroupLabel")
-        self.mainToolbar.addWidget(titleLabel)
+        commands = {
+            "加载项目": ("loadButton", "folder-open", self.loadProject),
+            "保存项目": ("saveProjectButton", "save", self.saveProjectAction),
+            "校验项目": ("validateButton", "shield-check", self.validateProject),
+            "开始运行": ("startButton", "play", self.startJob),
+            "停止运行": ("stopButton", "square", self.stopJob),
+            "自动布局": ("autoLayoutButton", "layout-grid", self.autoLayoutNodes),
+            "校验流程图": ("validateGraphButton", "shield-check", self.validateGraph),
+            "刷新算子": ("refreshButton", "refresh-cw", self.refreshOperators),
+            "打开日志": ("openLogsButton", "logs", self.openLogDialog),
+        }
         for button in buttons:
-            self.mainToolbar.addWidget(button)
+            label = button.text()
+            attribute, iconName, callback = commands[label]
+            if not _nativeQt:
+                self.mainToolbar.addWidget(button)
+                button.clicked.connect(callback)
+                continue
+            action = QAction(icon(iconName, "#ffffff" if label == "开始运行" else "#475569"), label, self)
+            action.setToolTip(label)
+            action.triggered.connect(lambda checked=False, command=callback: command())
+            self.mainToolbar.addAction(action)
+            tool = self.mainToolbar.widgetForAction(action)
+            tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if label in {
+                "加载项目", "保存项目", "开始运行", "停止运行"} else Qt.ToolButtonIconOnly)
+            tool.setObjectName("primaryButton" if label == "开始运行" else "dangerButton" if label == "停止运行" else "")
+            self._toolbarActions[label] = action
+            setattr(self, attribute, tool)
+            button.deleteLater()
 
     def _buildMainMenuBar(self) -> None:
         self._menuBarGroups = ["文件", "运行", "编辑", "视图"]
@@ -995,6 +1670,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         runMenu = addMenu("运行")
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
+        self._addMenuAction(runMenu, "全局计数器…", self.openGlobalCountersDialog)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -1006,19 +1682,61 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._addMenuAction(viewMenu, "聚焦画布内容", self.focusGraphContent)
 
     def _addMenuAction(self, menu, title: str, callback) -> None:
-        action = QAction(title, self)
+        sharedTitle = "加载项目" if title == "打开项目" else title
+        shared = self._toolbarActions.get(sharedTitle)
+        action = shared if shared is not None else QAction(title, self)
         triggered = getattr(action, "triggered", None)
-        if triggered is not None and hasattr(triggered, "connect"):
-            triggered.connect(callback)
+        if shared is None and triggered is not None and hasattr(triggered, "connect"):
+
+            def onTriggered(checked: bool = False) -> None:
+                _ = checked
+                callback()
+
+            triggered.connect(onTriggered)
         addAction = getattr(menu, "addAction", None)
         if callable(addAction):
             addAction(action)
+        self._menuActions[title] = action
 
     def getMenuBarFontSize(self) -> int:
         return self.layoutController.getMenuBarFontSize()
 
+    def openGlobalCountersDialog(self) -> object | None:
+        if not self.loadedProjectPath:
+            QMessageBox.warning(self, "全局计数器", "请先加载项目")
+            return None
+        dialog = self._globalCountersDialog
+        if dialog is None:
+            dialog = (
+                self._globalCountersDialogFactory()
+                if self._globalCountersDialogFactory is not None
+                else GlobalCountersDialog(self.runtimeClient, self)
+            )
+            self._globalCountersDialog = dialog
+        showForProject = getattr(dialog, "showForProject", None)
+        if callable(showForProject):
+            showForProject(self.loadedProjectPath)
+        else:
+            bindProject = getattr(dialog, "bindProject", None)
+            if callable(bindProject):
+                bindProject(self.loadedProjectPath)
+            show = getattr(dialog, "show", None)
+            if callable(show):
+                show()
+        return dialog
+
     def _setCurrentJobId(self, jobId: str | None) -> None:
+        if self.currentJobId == jobId:
+            return
+        hadActiveJob = self.currentJobId is not None
         self.currentJobId = jobId
+        self._allowRuntimeEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
+        self._resetRuntimeVisualState()
+        setActiveJob = getattr(self.runtimePanelState, "setActiveJob", None)
+        if callable(setActiveJob):
+            setActiveJob(jobId)
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshRuntimePanelView()
 
     def _setIsJobRunning(self, isRunning: bool) -> None:
         self.isJobRunning = isRunning
@@ -1047,8 +1765,662 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def getMenuBarGroups(self) -> list[str]:
         return list(getattr(self, "_menuBarGroups", ["文件", "运行", "编辑", "视图"]))
 
+    def getSystemNodeCatalog(self) -> list[dict[str, object]]:
+        return [
+            {
+                "kind": definition.kind,
+                "displayName": definition.displayName,
+                "category": definition.category,
+                "canvasVisible": definition.canvasVisible,
+            }
+            for definition in SYSTEM_NODE_CATALOG
+        ]
+
+    def _getSystemNodeLibraryPayloads(self) -> list[dict[str, object]]:
+        operatorIds = {
+            "subflow": "system.subflow",
+            "loop:repeat": "system.repeat",
+            "loop:foreach": "system.foreach",
+            "loop:while": "system.while",
+        }
+        return [
+            {
+                "operatorId": operatorIds[definition.kind],
+                "displayName": definition.displayName,
+                "version": "",
+                "category": definition.category,
+                "iconKey": "flow",
+                "summary": "",
+                "inputPorts": {},
+                "outputPorts": {},
+                "paramSchema": {},
+                "systemNodeKind": definition.kind,
+            }
+            for definition in SYSTEM_NODE_CATALOG
+            if definition.canvasVisible and definition.kind in operatorIds
+        ]
+
     def getRecentProjectsMenuEntries(self) -> list[dict[str, str]]:
         return [dict(item) for item in self.getRecentProjects()]
+
+    def _refreshWorkflowTabs(self) -> None:
+        labels = self.workflowController.getWorkflowTabLabels()
+        self._workflowTabsUpdating = True
+        self._addWorkflowTabIndex = -1
+        blockSignals = getattr(self.workflowTabs, "blockSignals", None)
+        previousBlock = blockSignals(True) if callable(blockSignals) else None
+        tabBarGetter = getattr(self.workflowTabs, "tabBar", None)
+        tabBar = tabBarGetter() if callable(tabBarGetter) else None
+        setTabData = getattr(tabBar, "setTabData", None)
+        try:
+            self.workflowTabs.clear()
+            for label in labels:
+                title = str(label["name"])
+                if bool(label.get("isEntry", False)):
+                    title = f"{title} [入口]"
+                index = self.workflowTabs.addTab(QWidget(), title)
+                if callable(setTabData):
+                    setTabData(index, str(label["workflowId"]))
+            addTab = getattr(self.workflowTabs, "addTab", None)
+            if callable(addTab):
+                plusIndex = addTab(QWidget(), "+")
+                self._addWorkflowTabIndex = plusIndex
+                if callable(setTabData):
+                    setTabData(plusIndex, None)
+            activeIndex = 0
+            for index, label in enumerate(labels):
+                if bool(label.get("isActive", False)):
+                    activeIndex = index
+                    break
+            if labels:
+                self.workflowTabs.setCurrentIndex(activeIndex)
+        finally:
+            if callable(blockSignals) and previousBlock is not None:
+                blockSignals(previousBlock)
+            self._workflowTabsUpdating = False
+        self.refreshWorkflowDependencyTree()
+
+    def _onWorkflowTabChanged(self, index: int) -> None:
+        if getattr(self, "_workflowTabsUpdating", False):
+            return
+        workflowId = self._workflowIdForTab(index)
+        if not isinstance(workflowId, str) or workflowId == "":
+            return
+        if workflowId == self.activeWorkflowId:
+            return
+        self.workflowController.switchWorkflow(workflowId)
+        self.activeWorkflowId = workflowId
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowTabs()
+
+    def _onWorkflowTabClicked(self, index: int) -> None:
+        if index != self._addWorkflowTabIndex:
+            return
+        self.promptCreateWorkflow()
+
+    def _onWorkflowTabContextMenuRequested(self, position) -> None:
+        tabBar = self.workflowTabs.tabBar()
+        tabAt = getattr(tabBar, "tabAt", None)
+        if not callable(tabAt):
+            return
+        index = tabAt(position)
+        if not isinstance(index, int):
+            return
+        menu = self._buildWorkflowTabContextMenu(index)
+        if menu is None:
+            return
+        mapToGlobal = getattr(tabBar, "mapToGlobal", None)
+        globalPosition = mapToGlobal(position) if callable(mapToGlobal) else position
+        execMenu = getattr(menu, "exec_", None)
+        if callable(execMenu):
+            execMenu(globalPosition)
+
+    def _buildWorkflowTabContextMenu(self, index: int):
+        workflowId = self._workflowIdForTab(index)
+        if workflowId is None:
+            return None
+        isActive = workflowId == self.activeWorkflowId
+        isEntry = workflowId == self.workflowStore.entryWorkflowId
+        menu = QMenu("工作流", self)
+        self._addContextMenuAction(
+            menu,
+            "当前已打开" if isActive else "打开工作流",
+            lambda: self.activateWorkflow(workflowId),
+            enabled=not isActive,
+        )
+        self._addContextMenuAction(
+            menu,
+            "当前入口工作流" if isEntry else "设为入口工作流",
+            lambda: self.setEntryWorkflow(workflowId),
+            enabled=not isEntry,
+        )
+        menu.addSeparator()
+        self._addContextMenuAction(
+            menu,
+            "重命名工作流",
+            lambda: self.promptRenameWorkflow(workflowId),
+        )
+        self._addContextMenuAction(
+            menu,
+            "设置工作流接口",
+            lambda: self.editWorkflowInterfaceFor(workflowId),
+        )
+        menu.addSeparator()
+        self._addContextMenuAction(
+            menu,
+            "导出工作流包",
+            lambda: self.exportWorkflowPackageFor(workflowId),
+        )
+        self._addContextMenuAction(
+            menu,
+            "导入为子工作流",
+            lambda: self.importWorkflowPackageAction(workflowId),
+        )
+        menu.addSeparator()
+        self._addContextMenuAction(
+            menu,
+            "删除工作流",
+            lambda: self.deleteWorkflow(workflowId),
+        )
+        return menu
+
+    def _addContextMenuAction(
+        self,
+        menu,
+        title: str,
+        callback: Callable[[], object],
+        enabled: bool = True,
+    ) -> QAction:
+        action = QAction(title, self)
+        setEnabled = getattr(action, "setEnabled", None)
+        if callable(setEnabled):
+            setEnabled(enabled)
+        triggered = getattr(action, "triggered", None)
+        if triggered is not None and hasattr(triggered, "connect"):
+
+            def onTriggered(checked: bool = False) -> None:
+                _ = checked
+                callback()
+
+            triggered.connect(onTriggered)
+        menu.addAction(action)
+        return action
+
+    def _workflowIdForTab(self, index: int) -> str | None:
+        if index < 0 or index >= self.workflowTabs.count():
+            return None
+        tabBarGetter = getattr(self.workflowTabs, "tabBar", None)
+        tabBar = tabBarGetter() if callable(tabBarGetter) else None
+        tabData = getattr(tabBar, "tabData", None)
+        workflowId = tabData(index) if callable(tabData) else None
+        return workflowId if isinstance(workflowId, str) and workflowId else None
+
+    def getWorkflowTabs(self) -> list[dict[str, object]]:
+        return self.workflowController.getWorkflowTabLabels()
+
+    def exportWorkflowPackageFor(self, workflowId: str) -> str | None:
+        try:
+            workflow = self.workflowStore.get(workflowId)
+        except KeyError:
+            self.appendRuntimeLog("ERROR", f"导出工作流失败：{workflowId} 不存在")
+            return None
+        suggestedName = f"{workflowId}{WORKFLOW_PACKAGE_EXTENSION}"
+        defaultPath = (
+            str(self.currentProjectDir / suggestedName)
+            if self.currentProjectDir is not None
+            else suggestedName
+        )
+        selectedPath, _ = QFileDialog.getSaveFileName(
+            self,
+            "导出工作流包",
+            defaultPath,
+            "EmoMaster 工作流包 (*.emowf.json)",
+        )
+        if selectedPath == "":
+            self.appendRuntimeLog("INFO", "已取消导出工作流")
+            return None
+        try:
+            result = self.workflowController.exportWorkflowPackage(
+                workflowId, selectedPath
+            )
+        except (KeyError, OSError, TypeError, ValueError) as err:
+            message = f"导出工作流失败：{err}"
+            self.appendRuntimeLog("ERROR", message)
+            QMessageBox.warning(self, "导出工作流失败", message)
+            return None
+        self.appendRuntimeLog(
+            "INFO",
+            f"工作流已导出：{result.packagePath} | 根工作流：{workflow.name} | "
+            f"包含 {len(result.workflowIds)} 个工作流",
+        )
+        return str(result.packagePath)
+
+    def importWorkflowPackageAction(
+        self, parentWorkflowId: str | None = None
+    ) -> str | None:
+        if not self._requireOperatorCatalog():
+            return None
+        selectedPath, _ = QFileDialog.getOpenFileName(
+            self,
+            "导入工作流包",
+            str(self.currentProjectDir) if self.currentProjectDir is not None else "",
+            "EmoMaster 工作流包 (*.emowf.json);;JSON 文件 (*.json)",
+        )
+        if selectedPath == "":
+            self.appendRuntimeLog("INFO", "已取消导入工作流")
+            return None
+        selectedParentWorkflowId = parentWorkflowId or self.activeWorkflowId
+        availableOperatorIds = [
+            str(item.get("operatorId"))
+            for item in self.operatorCatalog
+            if isinstance(item.get("operatorId"), str)
+            and str(item.get("operatorId")) != ""
+        ]
+        try:
+            preview = self.workflowController.previewWorkflowPackageImport(
+                selectedPath,
+                availableOperatorIds=availableOperatorIds,
+            )
+        except (OSError, TypeError, ValueError) as err:
+            message = f"导入工作流失败：{err}"
+            self.appendRuntimeLog("ERROR", message)
+            QMessageBox.warning(self, "导入工作流失败", message)
+            return None
+        dialog = self._createWorkflowPackagePreviewDialog(preview)
+        accepted, insertSubflow = dialog.execSelection()
+        if not accepted:
+            self.appendRuntimeLog("INFO", "已在预览中取消导入工作流")
+            return None
+        try:
+            result = self.workflowController.importWorkflowPackage(
+                selectedPath,
+                insertIntoWorkflowId=(
+                    selectedParentWorkflowId if insertSubflow else None
+                ),
+            )
+        except (KeyError, OSError, TypeError, ValueError) as err:
+            message = f"导入工作流失败：{err}"
+            self.appendRuntimeLog("ERROR", message)
+            QMessageBox.warning(self, "导入工作流失败", message)
+            return None
+        self.activeWorkflowId = (
+            result.parentWorkflowId or result.rootWorkflowId
+        )
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowTabs()
+        if result.insertedSubflowNodeId is not None:
+            self.flowModel.selectNode(result.insertedSubflowNodeId)
+            self.flowScene.setNodeSelected(result.insertedSubflowNodeId)
+            self.onNodeSelectionChanged()
+        self.appendRuntimeLog(
+            "INFO",
+            f"工作流已导入：{selectedPath} | 包含 {len(result.workflowIds)} 个工作流"
+            + (
+                f" | 已在 {selectedParentWorkflowId} 插入 Subflow："
+                f"{result.insertedSubflowNodeId}"
+                if result.insertedSubflowNodeId is not None
+                else ""
+            )
+            + " | 请保存项目以持久化更改",
+        )
+        if preview.missingOperators:
+            self.appendRuntimeLog(
+                "WARN",
+                "导入的工作流包含未加载算子："
+                + ", ".join(preview.missingOperators),
+            )
+        pathWarnings = [
+            item for item in preview.externalPaths if item.status != "available"
+        ]
+        if pathWarnings:
+            self.appendRuntimeLog(
+                "WARN",
+                f"导入的工作流有 {len(pathWarnings)} 个外部路径需要核对",
+            )
+        return result.rootWorkflowId
+
+    def _createWorkflowPackagePreviewDialog(self, preview):
+        if self._workflowPackagePreviewDialogFactory is not None:
+            return self._workflowPackagePreviewDialogFactory(preview)
+        return WorkflowPackagePreviewDialog(preview, self)
+
+    def getActiveWorkflowId(self) -> str:
+        return self.activeWorkflowId
+
+    def activateWorkflow(self, workflowId: str) -> None:
+        if workflowId == self.activeWorkflowId:
+            return
+        try:
+            self.workflowController.switchWorkflow(workflowId)
+        except KeyError:
+            self.appendRuntimeLog("ERROR", f"工作流不存在：{workflowId}")
+            return
+        self.activeWorkflowId = workflowId
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowTabs()
+
+    def createWorkflow(self, name: str = "New Workflow") -> str:
+        workflowId = self.workflowController.createWorkflow(name)
+        self.activeWorkflowId = workflowId
+        self._refreshWorkflowTabs()
+        return workflowId
+
+    def promptCreateWorkflow(self) -> str | None:
+        name = self._promptWorkflowName("新建工作流", "New Workflow")
+        if name is None:
+            self._refreshWorkflowTabs()
+            return None
+        return self.createWorkflow(name)
+
+    def renameWorkflow(self, workflowId: str, name: str) -> None:
+        self.workflowController.renameWorkflow(workflowId, name)
+        self._refreshWorkflowTabs()
+
+    def renameActiveWorkflow(self, name: str) -> None:
+        self.renameWorkflow(self.activeWorkflowId, name)
+
+    def promptRenameActiveWorkflow(self) -> bool:
+        return self.promptRenameWorkflow(self.activeWorkflowId)
+
+    def promptRenameWorkflow(self, workflowId: str) -> bool:
+        try:
+            currentName = self.workflowStore.get(workflowId).name
+        except KeyError:
+            self.appendRuntimeLog("ERROR", f"重命名工作流失败：{workflowId} 不存在")
+            return False
+        name = self._promptWorkflowName("重命名工作流", currentName)
+        if name is None:
+            return False
+        try:
+            self.renameWorkflow(workflowId, name)
+        except (KeyError, ValueError) as err:
+            self.appendRuntimeLog("ERROR", f"重命名工作流失败：{err}")
+            return False
+        return True
+
+    def _promptWorkflowName(self, title: str, currentName: str) -> str | None:
+        text, accepted = QInputDialog.getText(
+            self,
+            title,
+            "工作流名称",
+            QLineEdit.Normal,
+            currentName,
+        )
+        if not accepted:
+            return None
+        name = str(text).strip()
+        if name == "":
+            self.appendRuntimeLog("WARN", "工作流名称不能为空")
+            return None
+        return name
+
+    def deleteActiveWorkflow(self) -> None:
+        self.deleteWorkflow(self.activeWorkflowId)
+
+    def deleteWorkflow(self, workflowId: str) -> None:
+        try:
+            self.workflowController.deleteWorkflow(workflowId)
+        except (KeyError, ValueError) as err:
+            message = self._formatWorkflowDeleteFailure(workflowId, err)
+            self.appendRuntimeLog("ERROR", message)
+            QMessageBox.warning(self, "无法删除工作流", message)
+            return
+        self.operatorEditorManager.closeWorkflow(
+            self._currentProjectId(), workflowId
+        )
+        self.activeWorkflowId = self.workflowController.activeWorkflowId
+        self._refreshWorkflowTabs()
+
+    def _formatWorkflowDeleteFailure(
+        self, workflowId: str, error: KeyError | ValueError
+    ) -> str:
+        references = self.workflowStore.referencesTo(workflowId)
+        if references:
+            workflowName = self.workflowStore.get(workflowId).name
+            referenceNames = [
+                self.workflowStore.get(referenceId).name for referenceId in references
+            ]
+            return (
+                f"无法删除工作流“{workflowName}”：它正被以下工作流引用："
+                f"{', '.join(referenceNames)}。请先删除或重新配置相关引用节点。"
+            )
+        if isinstance(error, ValueError) and "at least one workflow" in str(error):
+            return "无法删除工作流：项目必须至少保留一个工作流。"
+        if isinstance(error, KeyError):
+            return "无法删除工作流：工作流不存在。"
+        return f"无法删除工作流：{error}"
+
+    def setEntryWorkflow(self, workflowId: str | None = None) -> None:
+        selected = workflowId or self.activeWorkflowId
+        try:
+            self.workflowController.setEntryWorkflow(selected)
+        except KeyError as err:
+            self.appendRuntimeLog("ERROR", f"入口工作流不存在：{err}")
+            return
+        self._refreshWorkflowTabs()
+
+    def editWorkflowInterface(
+        self,
+        inputs: dict[str, object] | None = None,
+        outputs: dict[str, object] | None = None,
+    ) -> None:
+        self.editWorkflowInterfaceFor(self.activeWorkflowId, inputs, outputs)
+
+    def editWorkflowInterfaceFor(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None = None,
+        outputs: dict[str, object] | None = None,
+    ) -> None:
+        try:
+            workflow = self.workflowStore.get(workflowId)
+        except KeyError:
+            self.appendRuntimeLog("ERROR", f"工作流接口设置失败：{workflowId} 不存在")
+            return
+        if inputs is None:
+            inputs = self._promptInterfaceMap("输入接口", workflow.inputs)
+        if inputs is None:
+            return
+        if outputs is None:
+            outputs = self._promptInterfaceMap("输出接口", workflow.outputs)
+        if outputs is None:
+            return
+        try:
+            refreshReport = self.workflowController.setWorkflowInterface(
+                workflowId, inputs, outputs
+            )
+        except (TypeError, ValueError) as err:
+            self.appendRuntimeLog("ERROR", f"工作流接口设置失败：{err}")
+            return
+        self.appendRuntimeLog("INFO", f"工作流接口已更新：{workflowId}")
+        if refreshReport:
+            message = "接口同步时发现以下变化：\n" + "\n".join(refreshReport)
+            self.appendRuntimeLog("WARN", message.replace("\n", " | "))
+            QMessageBox.warning(self, "工作流引用已更新", message)
+        self._refreshWorkflowTabs()
+
+    def _promptInterfaceMap(
+        self, label: str, current: dict[str, object]
+    ) -> dict[str, object] | None:
+        text, accepted = QInputDialog.getText(
+            self,
+            "设置工作流接口",
+            f"{label} JSON",
+            QLineEdit.Normal,
+            json.dumps(current, ensure_ascii=True),
+        )
+        if not accepted:
+            return None
+        try:
+            parsed = json.loads(str(text))
+        except json.JSONDecodeError as err:
+            self.appendRuntimeLog("ERROR", f"{label} JSON 无效：{err}")
+            return None
+        if not isinstance(parsed, dict):
+            self.appendRuntimeLog("ERROR", f"{label} 必须是 JSON 对象")
+            return None
+        return parsed
+
+    def addSubflowNode(
+        self,
+        targetWorkflowId: str | None = None,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        target = targetWorkflowId or self._firstOtherWorkflow()
+        if target is None:
+            self.appendRuntimeLog("WARN", "请先创建一个可调用的工作流")
+            return None
+        nodeId = self.flowModel.addNode("", "Subflow", {}, {}, kind="subflow")
+        try:
+            self.workflowController.configureSubflowNode(nodeId, target)
+        except (KeyError, ValueError) as err:
+            self.flowModel.removeNode(nodeId)
+            self.appendRuntimeLog("ERROR", f"Subflow 节点创建失败：{err}")
+            return None
+        self._addControlNodeToScene(nodeId, sceneX=sceneX, sceneY=sceneY)
+        return nodeId
+
+    def addRepeatNode(
+        self,
+        config: dict[str, object] | None = None,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        target = self._firstOtherWorkflow()
+        if target is None:
+            self.appendRuntimeLog("WARN", "请先创建 Repeat 的 body 工作流")
+            return None
+        loopConfig = config or {
+            "contractVersion": 2,
+            "mode": "repeat",
+            "bodyWorkflowId": target,
+            "repeatCount": 1,
+            "maxIterations": 1,
+            "timeoutMs": 0,
+        }
+        return self._addLoopNode(loopConfig, "Repeat", sceneX=sceneX, sceneY=sceneY)
+
+    def addForEachNode(
+        self,
+        config: dict[str, object] | None = None,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        target = self._firstOtherWorkflow()
+        if target is None:
+            self.appendRuntimeLog("WARN", "请先创建 ForEach 的 body 工作流")
+            return None
+        loopConfig = config or {
+            "contractVersion": 2,
+            "mode": "foreach",
+            "bodyWorkflowId": target,
+            "maxIterations": 100,
+            "timeoutMs": 0,
+        }
+        return self._addLoopNode(loopConfig, "ForEach", sceneX=sceneX, sceneY=sceneY)
+
+    def addWhileNode(
+        self,
+        config: dict[str, object] | None = None,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        targets = self._otherWorkflowIds()
+        if config is None:
+            if len(targets) < 2:
+                self.appendRuntimeLog(
+                    "WARN", "While 需要独立的 condition 和 body 工作流"
+                )
+                return None
+            config = self._findCompatibleWhileConfig(targets)
+            if config is None:
+                self.appendRuntimeLog(
+                    "WARN",
+                    "没有兼容的 While 工作流：Body 输入/输出必须同名同类型，"
+                    "Condition 必须输出 continue:boolean",
+                )
+                return None
+        return self._addLoopNode(config, "While", sceneX=sceneX, sceneY=sceneY)
+
+    def _findCompatibleWhileConfig(
+        self, workflowIds: list[str]
+    ) -> dict[str, object] | None:
+        for bodyWorkflowId in workflowIds:
+            for conditionWorkflowId in workflowIds:
+                if bodyWorkflowId == conditionWorkflowId:
+                    continue
+                candidate: dict[str, object] = {
+                    "contractVersion": 2,
+                    "mode": "while",
+                    "conditionWorkflowId": conditionWorkflowId,
+                    "bodyWorkflowId": bodyWorkflowId,
+                    "maxIterations": 100,
+                    "timeoutMs": 30000,
+                }
+                try:
+                    contract = self.workflowController.previewLoopContract(candidate)
+                except (KeyError, ValueError):
+                    continue
+                if not contract.issues:
+                    return candidate
+        return None
+
+    def _addLoopNode(
+        self,
+        config: dict[str, object],
+        title: str,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        nodeId = self.flowModel.addNode("", title, {}, {}, kind="loop")
+        try:
+            self.workflowController.configureLoopNode(nodeId, config)
+        except (KeyError, ValueError) as err:
+            self.flowModel.removeNode(nodeId)
+            self.appendRuntimeLog("ERROR", f"{title} 节点创建失败：{err}")
+            return None
+        self._addControlNodeToScene(nodeId, sceneX=sceneX, sceneY=sceneY)
+        return nodeId
+
+    def _otherWorkflowIds(self) -> list[str]:
+        return [
+            workflow.workflowId
+            for workflow in self.workflowStore.listWorkflows()
+            if workflow.workflowId != self.activeWorkflowId
+        ]
+
+    def _firstOtherWorkflow(self) -> str | None:
+        values = self._otherWorkflowIds()
+        return values[0] if values else None
+
+    def _addControlNodeToScene(
+        self,
+        nodeId: str,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> None:
+        node = self.flowModel.nodes[nodeId]
+        defaultX, defaultY = self.flowScene.nextNodePosition()
+        x = defaultX if sceneX is None else float(sceneX)
+        y = defaultY if sceneY is None else float(sceneY)
+        self.flowScene.addFlowNode(
+            FlowNodeViewModel(
+                nodeId=nodeId,
+                title=node.displayName,
+                x=x,
+                y=y,
+                inputPorts=node.inputPorts,
+                outputPorts=node.outputPorts,
+                operatorId=node.operatorId,
+                kind=node.kind,
+            )
+        )
+        self.flowModel.selectNode(nodeId)
+        self.flowScene.setNodeSelected(nodeId)
+        self.refreshSidebarNodeList()
+        self.onNodeSelectionChanged()
+        self.updateToolbarState()
 
     def openRecentProject(self, projectPath: str) -> bool:
         return self.loadProjectSelection(projectPath)
@@ -1078,11 +2450,45 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.layoutController.applyResponsiveLayout()
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
-        self.applyResponsiveLayout()
+        if hasattr(self, "layoutController"):
+            self.applyResponsiveLayout()
         try:
             super().resizeEvent(event)
         except Exception:
             _ = event
+
+    def showEvent(self, event) -> None:
+        if _nativeQt:
+            super().showEvent(event)
+            QTimer.singleShot(0, lambda: fitWindowToScreen(self))
+            if not getattr(self, "_screenSizingConnected", False) and self.windowHandle():
+                self.windowHandle().screenChanged.connect(lambda _screen: QTimer.singleShot(0, lambda: fitWindowToScreen(self)))
+                self._screenSizingConnected = True
+
+    def closeEvent(self, event) -> None:  # type: ignore[override]
+        self.shutdownOperatorDisplay()
+        self._saveRuntimeLogSettings()
+        self.operatorEditorManager.closeAll()
+        counterDialog = self._globalCountersDialog
+        if counterDialog is not None:
+            shutdown = getattr(counterDialog, "shutdown", None)
+            if callable(shutdown):
+                shutdown()
+        self.runtimeController.close()
+        try:
+            super().closeEvent(event)
+        except Exception:
+            accept = getattr(event, "accept", None)
+            if callable(accept):
+                accept()
+
+    def shutdownOperatorDisplay(self) -> bool:
+        self._operatorDisplayClosed = True
+        if self._operatorDisplayTimer is not None:
+            self._operatorDisplayTimer.stop()
+        if self.operatorIconProvider is not None:
+            return bool(self.operatorIconProvider.close(self.operatorCatalogWorker))
+        return True
 
     def getCategoryButtonLabels(self) -> dict[str, str]:
         labels: dict[str, str] = {}
@@ -1106,7 +2512,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return self.nodeDetailsPresenter.buildModel()
 
     def setCurrentNodeRuntimeState(self, nodeId: str, status: str, branch: str) -> None:
-        self._nodeRuntimeState[nodeId] = {"status": status, "branch": branch}
+        self._nodeRuntimeState[nodeId] = {
+            "status": status,
+            "branch": branch,
+            "workflowId": self.activeWorkflowId,
+        }
         setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
         if callable(setNodeRuntimeState):
             setNodeRuntimeState(nodeId, status)
@@ -1121,14 +2531,106 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         statusRaw = payloadRaw.get("status", "")
         branchRaw = payloadRaw.get("branch", "")
+        eventType = event.get("eventType")
+        if not isinstance(statusRaw, str) or statusRaw == "":
+            statusRaw = {
+                "node.started": "RUNNING",
+                "node.completed": "COMPLETED",
+                "node.failed": "FAILED",
+                "node.skipped": "SKIPPED",
+            }.get(eventType if isinstance(eventType, str) else "", "")
         status = statusRaw if isinstance(statusRaw, str) else ""
         branch = branchRaw if isinstance(branchRaw, str) else ""
         if status == "":
             return
-        self.setCurrentNodeRuntimeState(nodeIdRaw, status, branch)
+        workflowRunIdRaw = event.get("workflowRunId", "")
+        workflowRunId = workflowRunIdRaw if isinstance(workflowRunIdRaw, str) else ""
+        workflowIdRaw = event.get("workflowId", "")
+        workflowId = workflowIdRaw if isinstance(workflowIdRaw, str) else ""
+        jobIdRaw = event.get("jobId", "")
+        jobId = jobIdRaw if isinstance(jobIdRaw, str) else ""
+        isCurrentJobEvent = (
+            self.currentJobId is None and self._allowRuntimeEventsWithoutActiveJob
+        ) or (self.currentJobId is not None and jobId == self.currentJobId)
+        if not isCurrentJobEvent:
+            return
+        info: dict[str, object] = {
+            "status": status,
+            "branch": branch,
+            "jobId": jobId,
+            "workflowId": workflowId,
+            "workflowRunId": workflowRunId,
+            "parentWorkflowRunId": event.get("parentWorkflowRunId", ""),
+            "nodeRunId": event.get("nodeRunId", ""),
+            "iterationPath": event.get("iterationPath", ()),
+            "sequence": event.get("sequence", 0),
+        }
+        if workflowRunId:
+            self._nodeRuntimeStateByRun[(workflowRunId, nodeIdRaw)] = dict(info)
+            self._nodeRuntimeStateByWorkflowRun[
+                (workflowId, workflowRunId, nodeIdRaw)
+            ] = dict(info)
+        if workflowId == self.activeWorkflowId or (
+            workflowId == "" and (jobId == "" or jobId == self.currentJobId)
+        ):
+            self._nodeRuntimeState[nodeIdRaw] = info
+            setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
+            if callable(setNodeRuntimeState):
+                setNodeRuntimeState(nodeIdRaw, status)
+            self._refreshRuntimePanelView()
+
+    def _restoreActiveWorkflowRuntimeState(self) -> None:
+        expectedJobId = self.currentJobId
+        resetRuntimeStates = getattr(self.flowScene, "resetRuntimeStates", None)
+        if callable(resetRuntimeStates):
+            resetRuntimeStates()
+        self._nodeRuntimeState.clear()
+        for nodeId in self.flowModel.nodes:
+            candidates = [
+                value
+                for (
+                    workflowId,
+                    _runId,
+                    candidateNodeId,
+                ), value in self._nodeRuntimeStateByWorkflowRun.items()
+                if workflowId == self.activeWorkflowId
+                and candidateNodeId == nodeId
+                and _runtimeStateBelongsToJob(value, expectedJobId)
+            ]
+            if not candidates:
+                continue
+            latest = max(candidates, key=_runtimeSequence)
+            self._nodeRuntimeState[nodeId] = dict(latest)
+            setNodeRuntimeState = getattr(self.flowScene, "setNodeRuntimeState", None)
+            if callable(setNodeRuntimeState):
+                setNodeRuntimeState(nodeId, str(latest.get("status", "IDLE")))
+
+    def _resetRuntimeVisualState(self, clearHistory: bool = False) -> None:
+        self._nodeRuntimeState.clear()
+        if clearHistory:
+            self._nodeRuntimeStateByRun.clear()
+            self._nodeRuntimeStateByWorkflowRun.clear()
+        resetRuntimeStates = getattr(self.flowScene, "resetRuntimeStates", None)
+        if callable(resetRuntimeStates):
+            resetRuntimeStates()
 
     def getToolbarGroupNames(self) -> list[str]:
         return ["项目", "运行", "编辑", "辅助"]
+
+    def navigateToWorkflowDependencyItem(self, item, column: int = 0) -> None:
+        getData = getattr(item, "data", None)
+        if not callable(getData):
+            return
+        payload = getData(column, USER_ROLE)
+        if not isinstance(payload, dict) or payload.get("itemType") != "workflow":
+            return
+        workflowId = payload.get("workflowId")
+        if (
+            not isinstance(workflowId, str)
+            or workflowId not in self.workflowStore.workflows
+        ):
+            return
+        self.activateWorkflow(workflowId)
 
     def selectNodeFromSidebar(self, item) -> None:
         getData = getattr(item, "data", None)
@@ -1161,6 +2663,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.onNodeSelectionChanged()
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
+        if hasattr(self, "workflowController"):
+            return self.workflowController.buildPayload(projectName)
         graphPayload = self.flowModel.toProjectGraph()
         nodePositions = self.flowScene.getNodePositions()
 
@@ -1202,6 +2706,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         }
 
     def _restoreProjectPayload(self, payload: dict[str, object]) -> None:
+        if hasattr(self, "workflowController"):
+            self.workflowController.loadPayload(payload)
+            self.activeWorkflowId = self.workflowController.activeWorkflowId
+            self._restoreActiveWorkflowRuntimeState()
+            self._refreshWorkflowTabs()
+            return
         designerRaw = payload.get("designer", {})
         designer = designerRaw if isinstance(designerRaw, dict) else {}
         graphPayload = {
@@ -1212,16 +2722,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.clearGraph()
 
         for node in self.flowModel.nodes.values():
-            xValue = 20.0
-            yValue = 20.0
+            defaultX, defaultY = defaultNodePosition(node.kind)
+            xValue = defaultX
+            yValue = defaultY
             for rawNode in graphPayload.get("nodes", []):
                 if not isinstance(rawNode, dict):
                     continue
                 rawNodeId = rawNode.get("nodeId")
                 if not isinstance(rawNodeId, str) or rawNodeId != node.nodeId:
                     continue
-                xRaw = rawNode.get("x", 20.0)
-                yRaw = rawNode.get("y", 20.0)
+                xRaw = rawNode.get("x", defaultX)
+                yRaw = rawNode.get("y", defaultY)
                 if isinstance(xRaw, (int, float)):
                     xValue = float(xRaw)
                 if isinstance(yRaw, (int, float)):
@@ -1237,6 +2748,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     inputPorts=node.inputPorts,
                     outputPorts=node.outputPorts,
                     operatorId=node.operatorId,
+                    kind=node.kind,
                 )
             )
 
@@ -1289,8 +2801,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             )
         )
         if ok:
-            self.loadedProjectPath = loadedProjectPath
-            self.currentProjectDir = currentProjectDir
+            self._applyLoadedProjectState(loadedProjectPath, currentProjectDir)
         return bool(ok)
 
     def validateProject(self) -> None:
@@ -1322,12 +2833,69 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             failedMessagePrefix="项目同步失败",
         )
 
-    def refreshOperators(self) -> None:
-        self.operatorCatalog = self.operatorCatalogController.refreshOperators(
-            self._classifyOperator
-        )
+    def refreshOperators(self, *, explicit: bool = True) -> None:
+        if self._operatorDisplayClosed:
+            return
+        if self.operatorCatalogWorker is not None:
+            if explicit:
+                self.operatorIconProvider.resetFailures()
+            self._setOperatorCatalogState("loading")
+            self.operatorCatalogWorker.refresh(self.operatorIconProvider.scope)
+            return
+        # Synchronous API remains available only for the no-Qt adapter.
+        self.operatorCatalog = self.operatorCatalogController.refreshOperators(self._classifyOperator)
         self._refreshBubbleOperators()
         self.updateToolbarState()
+
+    def _setOperatorCatalogState(self, state: str) -> None:
+        controller = self.operatorCatalogController
+        controller.state = state
+        text = {
+            "loading": "算子目录：刷新中" if controller.hasCatalog else "算子目录：加载中",
+            "failed": "算子目录：刷新失败（保留目录）" if controller.hasCatalog else "算子目录：加载失败，请刷新",
+            "ready": f"算子：{len(self.operatorCatalog)}",
+        }[state]
+        self.operatorCatalogStatusLabel.setText(text)
+
+    def _requireOperatorCatalog(self) -> bool:
+        if self.operatorCatalogController.hasCatalog:
+            return True
+        message = "算子目录尚未就绪，请等待加载完成；加载失败时请刷新算子。"
+        self.appendRuntimeLog("WARNING", message)
+        if _nativeQt:
+            self.statusBar().showMessage(message, 5000)
+        return False
+
+    def _pollOperatorCatalog(self) -> None:
+        if self._operatorDisplayClosed or self.operatorCatalogWorker is None:
+            return
+        provider = self.operatorIconProvider
+        scope = str(getattr(self.runtimeClient, "runtimeScope", id(self.runtimeClient)))
+        if scope != provider.scope:
+            provider.setScope(scope)
+            self.operatorCatalog = []
+            self.operatorCatalogController.operatorCatalog = []
+            self.operatorCatalogController.hasCatalog = False
+            self._refreshBubbleOperators()
+            self.refreshOperators(explicit=False)
+        for result in self.operatorCatalogWorker.poll():
+            if result.key[0] != provider.scope:
+                continue
+            if result.code:
+                self._setOperatorCatalogState("failed")
+                self.appendRuntimeLog("WARNING", f"算子目录加载失败：{result.code}: {result.message}")
+                continue
+            try:
+                self.operatorCatalog = self.operatorCatalogController.applyOperators(result.payload, self._classifyOperator)
+            except (TypeError, ValueError, AttributeError) as err:
+                self._setOperatorCatalogState("failed")
+                self.appendRuntimeLog("WARNING", f"算子目录无效：{err}")
+                continue
+            provider.setCatalog(self.operatorCatalog)
+            self._setOperatorCatalogState("ready")
+            self._refreshBubbleOperators()
+            self._refreshNodeDetailsView()
+            self.updateToolbarState()
 
     def addNodeFromOperatorPayload(
         self,
@@ -1337,6 +2905,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> None:
         if not isinstance(payload, dict):
             self.appendRuntimeLog("ERROR", "算子数据无效")
+            return
+
+        systemNodeKind = payload.get("systemNodeKind")
+        if isinstance(systemNodeKind, str) and systemNodeKind != "":
+            nodeId = self._addSystemNodeFromLibrary(
+                systemNodeKind, sceneX=sceneX, sceneY=sceneY
+            )
+            if nodeId is not None:
+                operatorId = str(payload.get("operatorId", systemNodeKind))
+                self.appendRuntimeLog("INFO", f"已添加节点：{nodeId}")
+                self._recordRecentOperator(operatorId)
+            self.collapseOperatorBubble()
             return
 
         operatorId = str(payload.get("operatorId", "unknown"))
@@ -1354,9 +2934,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             outputPorts=outputPorts,
             paramSchema=paramSchema,
         )
-        nodeIndex = len(self.flowModel.nodes) - 1
-        x = float(20 + (nodeIndex % 4) * 220) if sceneX is None else float(sceneX)
-        y = float(20 + (nodeIndex // 4) * 120) if sceneY is None else float(sceneY)
+        defaultX, defaultY = self.flowScene.nextNodePosition()
+        x = defaultX if sceneX is None else float(sceneX)
+        y = defaultY if sceneY is None else float(sceneY)
         self.flowScene.addFlowNode(
             FlowNodeViewModel(
                 nodeId=nodeId,
@@ -1366,6 +2946,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 inputPorts=inputPorts,
                 outputPorts=outputPorts,
                 operatorId=operatorId,
+                kind="operator",
             )
         )
         self.appendRuntimeLog("INFO", f"已添加节点：{nodeId}")
@@ -1374,9 +2955,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.setNodeSelected(nodeId)
         self.onNodeSelectionChanged()
         self.refreshSidebarNodeList()
-        self.focusGraphContent()
         self.updateToolbarState()
         self.collapseOperatorBubble()
+
+    def _addSystemNodeFromLibrary(
+        self,
+        systemNodeKind: str,
+        sceneX: float | None = None,
+        sceneY: float | None = None,
+    ) -> str | None:
+        if systemNodeKind == "subflow":
+            return self.addSubflowNode(sceneX=sceneX, sceneY=sceneY)
+        if systemNodeKind == "loop:repeat":
+            return self.addRepeatNode(sceneX=sceneX, sceneY=sceneY)
+        if systemNodeKind == "loop:foreach":
+            return self.addForEachNode(sceneX=sceneX, sceneY=sceneY)
+        if systemNodeKind == "loop:while":
+            return self.addWhileNode(sceneX=sceneX, sceneY=sceneY)
+        self.appendRuntimeLog("ERROR", f"未知系统节点类型：{systemNodeKind}")
+        return None
 
     def addNodeFromOperatorDrop(
         self, payload: dict[str, object], sceneX: float, sceneY: float
@@ -1474,10 +3071,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         selectedNodeIds = self.flowScene.getSelectedNodeIds()
         for nodeId in selectedNodeIds:
+            if self.flowModel.isBoundaryNode(nodeId):
+                self.appendRuntimeLog("WARN", "Workflow Input/Output 节点不能删除")
+                continue
             self.flowModel.removeNode(nodeId)
             self.flowScene.removeFlowNode(nodeId)
+            self.operatorEditorManager.closeNode(
+                self._currentProjectId(), self.activeWorkflowId, nodeId
+            )
             if self.activeParamNodeId == nodeId and self.nodeParamDialog is not None:
-                self.nodeParamDialog.close()
                 self.nodeParamDialog = None
                 self.activeParamNodeId = None
 
@@ -1496,23 +3098,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.focusGraphContent()
         self.appendRuntimeLog("INFO", "已应用自动布局")
 
-    def focusGraphContent(self) -> None:
+    def focusGraphContent(self, checked: bool = False, *, automatic: bool = False) -> None:
+        workflowId = (str(self.workflowStore.project.get("projectId", "")), self.workflowStore.activeWorkflowId)
+        if automatic and self._focusedWorkflowId == workflowId:
+            return
+        if automatic and _nativeQt:
+            if self._focusedWorkflowId is not None:
+                center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
+                self._workflowViewStates[self._focusedWorkflowId] = (self.flowView.getZoomFactor(), center)
+            self._focusedWorkflowId = workflowId
+            state = self._workflowViewStates.get(workflowId)
+            if state is not None:
+                self.flowView.setZoomFactor(state[0])
+                self.flowView.centerOn(state[1])
+                return
         getContentBounds = getattr(self.flowScene, "getContentBounds", None)
         if not callable(getContentBounds):
             return
         bounds = getContentBounds()
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             return
-        fitInView = getattr(self.flowView, "fitInView", None)
-        if callable(fitInView):
-            resetTransform = getattr(self.flowView, "resetTransform", None)
-            if callable(resetTransform):
-                resetTransform()
-            fitInView(bounds[0], bounds[1], bounds[2], bounds[3], Qt.KeepAspectRatio)
-            if self._layoutMode == "large":
-                scaleMethod = getattr(self.flowView, "scale", None)
-                if callable(scaleMethod):
-                    scaleMethod(1.12, 1.12)
+        self.flowView.fitContent(bounds, minimumZoom=0.85 if automatic else 0.02)
 
     def _appendNodeHints(self, nodeId: str) -> None:
         node = self.flowModel.nodes.get(nodeId)
@@ -1547,6 +3153,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             "IDLE": "空闲",
             "READY": "就绪",
             "RUNNING": "运行中",
+            "STARTING": "启动中",
+            "STOPPING": "停止中",
             "COMPLETED": "已完成",
             "FAILED": "失败",
             "ABORTED": "已中止",
@@ -1571,9 +3179,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.runtimeStatusOutput.setPlainText("")
         state = str(detailModel.get("state", "empty"))
         if state == "empty":
-            message = str(detailModel.get("message", "未选中节点"))
+            if self.operatorIconProvider is not None:
+                self.operatorIconProvider.unbind(self.nodeDetailIcon)
+                self.nodeDetailIcon.clear()
+                self.nodeDetailIcon.hide()
             self.nodeDetailTitleCard.setText("未选中节点")
-            self.nodeDetailMetaCard.setText(message)
+            self.nodeDetailMetaCard.setText("")
             self.nodeDetailPortsCard.setText("输入: 无\n输出: 无")
             self.nodeDetailParamsCard.setText("参数:\n- 无")
             return
@@ -1581,6 +3192,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         title = str(detailModel.get("title", ""))
         nodeId = str(detailModel.get("nodeId", ""))
         operatorId = str(detailModel.get("operatorId", ""))
+        if self.operatorIconProvider is not None:
+            bindingNodeId = self.flowModel.selectedNodeId or ""
+            node = self.flowModel.nodes.get(bindingNodeId)
+            self.nodeDetailIcon.show()
+            if node is not None and node.kind == "operator":
+                self.operatorIconProvider.bind(self.nodeDetailIcon, operatorId, mode="label", priority=0,
+                                               context=(*self._iconContext(), bindingNodeId))
+            else:
+                from emo_master.apps.designer.ui.icon_map import operatorIcon
+                self.operatorIconProvider.unbind(self.nodeDetailIcon)
+                self.nodeDetailIcon.setPixmap(operatorIcon("flow").pixmap(20, 20))
         inputs = str(detailModel.get("inputs", "无"))
         outputs = str(detailModel.get("outputs", "无"))
         required = str(detailModel.get("required", "无"))
@@ -1615,29 +3237,115 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.previewImageLabel.setText(f"预览加载失败\n{imagePath}")
             return
 
-        scaledPixmap = pixmap.scaled(
-            360, 220, Qt.KeepAspectRatio, Qt.SmoothTransformation
-        )
-        self.previewImageLabel.setPixmap(scaledPixmap)
+        self.previewImageLabel.setPixmap(pixmap)
 
     def openLogDialog(self) -> None:
-        if self.logDialog is None:
-            self.logDialog = LogDialog()
-            self.logDialog.setLogs(self.logBuffer)
-        self.logDialog.show()
-        raiseWindow = getattr(self.logDialog, "raise_", None)
+        if self.logDock is None:
+            self.logDock = RuntimeLogDock(
+                self,
+                onClear=self._clearRuntimeLogCache,
+                maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
+            )
+            self.logDialog = self.logDock
+            addDockWidget = getattr(self, "addDockWidget", None)
+            if callable(addDockWidget):
+                addDockWidget(Qt.BottomDockWidgetArea, self.logDock)
+            self.logDock.setEntries(self.logEntries)
+        self.logDock.show()
+        raiseWindow = getattr(self.logDock, "raise_", None)
         if callable(raiseWindow):
             raiseWindow()
-        activateWindow = getattr(self.logDialog, "activateWindow", None)
+        activateWindow = getattr(self.logDock, "activateWindow", None)
         if callable(activateWindow):
             activateWindow()
 
     def appendRuntimeLog(self, level: str, message: str) -> None:
-        timestamp = datetime.now().strftime("%H:%M:%S")
-        logLine = f"[{timestamp}][{level}] {message}"
-        self.logBuffer.append(logLine)
-        if self.logDialog is not None:
-            self.logDialog.appendLog(logLine)
+        self._appendLocalLog("designer", level, message)
+
+    def appendEditorLog(self, level: str, message: str) -> None:
+        self._appendLocalLog("editor", level, message)
+
+    def _appendLocalLog(self, source: str, level: str, message: str) -> None:
+        now = datetime.now()
+        normalizedLevel = str(level).strip().upper()
+        if normalizedLevel == "WARNING":
+            normalizedLevel = "WARN"
+        if normalizedLevel not in {"DEBUG", "INFO", "WARN", "ERROR"}:
+            normalizedLevel = "INFO"
+        entry = StructuredLogEntry(
+            timestampMs=int(now.timestamp() * 1000.0),
+            level=normalizedLevel,
+            message=str(message),
+            source=source,
+        )
+        logLine = f"[{now.strftime('%H:%M:%S')}][{normalizedLevel}] {message}"
+        self._storeRuntimeLogEntry(entry, logLine)
+        if self.logDock is not None:
+            self.logDock.appendEntry(entry)
+
+    def appendRuntimeEvent(self, event: dict[str, object]) -> None:
+        entry = StructuredLogEntry.fromRuntimeEvent(event)
+        self._storeRuntimeLogEntry(entry, entry.displayLine())
+        if self.logDock is not None:
+            self.logDock.appendEntry(entry)
+
+    def _storeRuntimeLogEntry(
+        self,
+        entry: StructuredLogEntry,
+        line: str,
+    ) -> None:
+        self.logEntries.append(entry)
+        self.logBuffer.append(line)
+        overflow = len(self.logEntries) - DEFAULT_MAX_LOG_ENTRIES
+        if overflow > 0:
+            del self.logEntries[:overflow]
+            del self.logBuffer[:overflow]
+
+    def _clearRuntimeLogCache(self) -> None:
+        self.logEntries.clear()
+        self.logBuffer.clear()
+
+    def _saveRuntimeLogSettings(self) -> None:
+        dock = self.logDock
+        setValue = getattr(self.settingsStore, "setValue", None)
+        if dock is None or not callable(setValue):
+            return
+        saveState = getattr(self, "saveState", None)
+        if callable(saveState):
+            setValue("ui/runtime_log_dock_state", saveState())
+        saveGeometry = getattr(dock, "saveGeometry", None)
+        if callable(saveGeometry):
+            setValue("ui/runtime_log_dock_geometry", saveGeometry())
+        setValue("ui/runtime_log_dock_visible", bool(dock.isVisible()))
+        setValue("ui/runtime_log_dock_floating", bool(dock.isFloating()))
+        setValue("ui/runtime_log_view", dock.view.settings())
+        sync = getattr(self.settingsStore, "sync", None)
+        if callable(sync):
+            sync()
+
+    def _restoreRuntimeLogSettings(self) -> None:
+        dock = self.logDock
+        value = getattr(self.settingsStore, "value", None)
+        if dock is None or not callable(value):
+            return
+        state = value("ui/runtime_log_dock_state", None)
+        restoreState = getattr(self, "restoreState", None)
+        if state is not None and callable(restoreState):
+            restoreState(state)
+        geometry = value("ui/runtime_log_dock_geometry", None)
+        restoreGeometry = getattr(dock, "restoreGeometry", None)
+        if geometry is not None and callable(restoreGeometry):
+            restoreGeometry(geometry)
+        dock.setFloating(
+            _settingBool(value("ui/runtime_log_dock_floating", False), False)
+        )
+        viewSettings = value("ui/runtime_log_view", {})
+        if isinstance(viewSettings, dict):
+            dock.view.restoreSettings(viewSettings)
+        if _settingBool(value("ui/runtime_log_dock_visible", False), False):
+            dock.show()
+        else:
+            dock.hide()
 
     def updateToolbarState(self) -> None:
         canRun = self.loadedProjectPath is not None and not self.isJobRunning
@@ -1646,6 +3354,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.startButton.setEnabled(canRun)
         self.stopButton.setEnabled(canStop)
         self.validateButton.setEnabled(self.loadedProjectPath is not None)
+        for name, enabled in (("开始运行", canRun), ("停止运行", canStop),
+                              ("校验项目", self.loadedProjectPath is not None)):
+            if name in self._toolbarActions:
+                self._toolbarActions[name].setEnabled(enabled)
         self._updateRunBlockedHint(canRun)
 
     def _updateRunBlockedHint(self, canRun: bool) -> None:
@@ -1657,7 +3369,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         setToolTip = getattr(self.startButton, "setToolTip", None)
         if callable(setToolTip):
-            setToolTip("" if canRun else blockedReason)
+            setToolTip("开始运行" if canRun else blockedReason)
+        if "开始运行" in self._toolbarActions:
+            self._toolbarActions["开始运行"].setToolTip("开始运行" if canRun else blockedReason)
 
         if blockedReason != "" and blockedReason != self._lastRunBlockedReason:
             self.appendRuntimeLog("WARN", blockedReason)
@@ -1695,9 +3409,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.expandOperatorBubble(categoryName, keepPosition=keepPosition)
 
     def _getOperatorsByCategory(self) -> list[dict[str, object]]:
-        return self.operatorCatalogController.getOperatorsByCategory(
+        operators = self.operatorCatalogController.getOperatorsByCategory(
             self.activeOperatorCategory
         )
+        if self.activeOperatorCategory not in {"全部", "控制流"}:
+            return operators
+        return operators + self._getSystemNodeLibraryPayloads()
 
     def _buildCategoryClickHandler(self, categoryName: str):
         def handler() -> None:
@@ -1836,32 +3553,165 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", "未找到所选节点")
             return
 
-        if self.nodeParamDialog is None:
-            self.nodeParamDialog = NodeParamDialog()
-            self.nodeParamDialog.setApplyHandler(self.applyNodeParams)
+        if node.kind == "operator" and not self._requireOperatorCatalog():
+            return
 
         self.activeParamNodeId = nodeId
-        self.nodeParamDialog.setNodeContext(
+        schema = self._nodeEditorSchema(node)
+        values = dict(node.params)
+        if node.kind == "subflow":
+            values["targetWorkflowId"] = node.targetWorkflowId or ""
+        elif node.kind == "loop":
+            values.update(node.loop)
+        window = self.operatorEditorManager.open(
+            projectId=self._currentProjectId(),
+            workflowId=self.activeWorkflowId,
             nodeId=nodeId,
-            operatorId=node.operatorId,
-            schema=node.paramSchema,
-            values=node.params,
+            operatorId=node.operatorId or node.displayName,
+            displayName=node.displayName,
+            schema=schema,
+            values=values,
+            operatorDefinition=self._operatorDefinition(node.operatorId),
+            workflowOptions=self._otherWorkflowIds(),
+            parent=self,
         )
-        self.nodeParamDialog.show()
-        raiseWindow = getattr(self.nodeParamDialog, "raise_", None)
-        if callable(raiseWindow):
-            raiseWindow()
-        activateWindow = getattr(self.nodeParamDialog, "activateWindow", None)
-        if callable(activateWindow):
-            activateWindow()
+        # Kept as an alias for integrations that still inspect the last opened
+        # parameter window. Ownership and uniqueness now live in the manager.
+        self.nodeParamDialog = cast(NodeParamDialog, window)
+        if self.operatorIconProvider is not None and node.kind == "operator":
+            self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
+                                           context=(*self._iconContext(), nodeId))
 
-    def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> None:
+    def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
         if nodeId not in self.flowModel.nodes:
             self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
-            return
-        self.flowModel.setNodeParams(nodeId, params)
+            return False
+        node = self.flowModel.nodes[nodeId]
+        try:
+            if node.kind == "subflow":
+                targetWorkflowId = params.get("targetWorkflowId")
+                if not isinstance(targetWorkflowId, str) or targetWorkflowId == "":
+                    raise ValueError("请选择 Subflow 目标工作流")
+                self.workflowController.configureSubflowNode(nodeId, targetWorkflowId)
+            elif node.kind == "loop":
+                loopParams = dict(params)
+                loopParams["mode"] = node.loop.get("mode")
+                loopParams["contractVersion"] = 2
+                self.workflowController.configureLoopNode(nodeId, loopParams)
+            else:
+                self.flowModel.setNodeParams(nodeId, params)
+        except (KeyError, TypeError, ValueError) as err:
+            self.appendRuntimeLog("ERROR", f"节点配置失败：{err}")
+            return False
+        if node.kind in {"subflow", "loop"}:
+            refresh = getattr(self.workflowController, "refreshActiveWorkflow", None)
+            if callable(refresh):
+                refresh()
+            self.flowModel.selectNode(nodeId)
+            self.flowScene.setNodeSelected(nodeId)
+            self.refreshSidebarNodeList()
+            self.onNodeSelectionChanged()
         self.appendRuntimeLog("INFO", f"参数已更新：{nodeId}")
+        self.updateToolbarState()
         self._refreshRuntimePanelView()
+        return True
 
     def updateNodeParams(self, nodeId: str, params: dict[str, object]) -> None:
         self.applyNodeParams(nodeId, params)
+
+    def _applyEditorParams(
+        self, key: EditorKey, params: dict[str, object]
+    ) -> bool:
+        if key.projectId != self._currentProjectId():
+            self.appendRuntimeLog("ERROR", "参数应用失败：编辑器所属项目已关闭")
+            return False
+        if key.workflowId == self.activeWorkflowId:
+            return self.applyNodeParams(key.nodeId, params)
+        workflow = self.workflowStore.workflows.get(key.workflowId)
+        if workflow is None:
+            self.appendRuntimeLog("ERROR", "参数应用失败：编辑器所属工作流已关闭")
+            return False
+        for rawNode in workflow.nodes:
+            if rawNode.get("nodeId") != key.nodeId:
+                continue
+            if rawNode.get("kind", "operator") != "operator":
+                self.appendRuntimeLog(
+                    "ERROR", "参数应用失败：请切回对应工作流配置控制节点"
+                )
+                return False
+            rawNode["params"] = dict(params)
+            self.appendRuntimeLog("INFO", f"参数已更新：{key.nodeId}")
+            self.updateToolbarState()
+            return True
+        self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
+        return False
+
+    def _currentProjectId(self) -> str:
+        projectId = self.workflowStore.project.get("projectId", "")
+        return str(projectId) if projectId is not None else ""
+
+    def _operatorDefinition(self, operatorId: str) -> dict[str, object]:
+        for definition in self.operatorCatalogController.getCatalog():
+            if definition.get("operatorId") == operatorId:
+                return dict(definition)
+        return {}
+
+    def _nodeEditorSchema(self, node) -> dict[str, object]:
+        options = self._otherWorkflowIds()
+        workflowSelect = {
+            "type": "string",
+            "xWidget": "workflow-select",
+            "xOptions": options,
+        }
+        if node.kind == "subflow":
+            return {
+                "type": "object",
+                "properties": {"targetWorkflowId": workflowSelect},
+                "required": ["targetWorkflowId"],
+            }
+        if node.kind != "loop":
+            return node.paramSchema
+        mode = node.loop.get("mode")
+        modeValue = mode if isinstance(mode, str) else "repeat"
+        properties: dict[str, object] = {
+            "mode": {"type": "string", "enum": [modeValue]},
+            "bodyWorkflowId": workflowSelect,
+            "repeatCount": {"type": "integer", "minimum": 0},
+            "maxIterations": {
+                "type": "integer",
+                "minimum": 1 if modeValue == "while" else 0,
+            },
+            "timeoutMs": {"type": "integer", "minimum": 0},
+            "conditionWorkflowId": workflowSelect,
+        }
+        required = ["mode", "bodyWorkflowId", "maxIterations", "timeoutMs"]
+        if modeValue == "repeat":
+            required.append("repeatCount")
+        elif modeValue == "while":
+            required.append("conditionWorkflowId")
+        elif modeValue == "foreach":
+            bodyWorkflowId = node.loop.get("bodyWorkflowId")
+            body = (
+                self.workflowStore.workflows.get(bodyWorkflowId)
+                if isinstance(bodyWorkflowId, str)
+                else None
+            )
+            inputNames = list(body.inputs) if body is not None else []
+            integerInputs = [
+                name
+                for name, portType in (body.inputs.items() if body is not None else [])
+                if portType == "integer"
+                or (isinstance(portType, dict) and portType.get("type") == "integer")
+            ]
+            properties["itemInputPort"] = {
+                "type": "string",
+                "enum": inputNames,
+            }
+            properties["indexInputPort"] = {
+                "type": "string",
+                "enum": ["", *integerInputs],
+                "default": "",
+            }
+            if inputNames:
+                required.append("itemInputPort")
+        return {"type": "object", "properties": properties, "required": required}

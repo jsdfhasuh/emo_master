@@ -1,0 +1,34 @@
+{
+  "operatorId": "vision.analysis.template_match",
+  "displayName": "Template Matching",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._detection_operators:TemplateMatchingOperator",
+  "category": "分析",
+  "iconKey": "template-match",
+  "summary": "对第二个图像端口提供的模板执行单尺度匹配、局部峰值提取与 NMS。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "template": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "roi": {"type": "geometry2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "matches": {"type": "templateMatchCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "method": {"type": "string", "enum": ["sqdiff", "sqdiffNormed", "ccorr", "ccorrNormed", "ccoeff", "ccoeffNormed"], "default": "ccoeffNormed"},
+      "colorMode": {"type": "string", "enum": ["gray", "native"], "default": "gray"},
+      "thresholdMode": {"type": "string", "enum": ["quality", "raw"], "default": "quality"},
+      "threshold": {"type": "number", "default": 0.8},
+      "peakKernelSize": {"type": "integer", "minimum": 1, "maximum": 31, "default": 3},
+      "nmsIouThreshold": {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.3},
+      "maxMatches": {"type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
+      "label": {"type": "string", "default": "template"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,32 @@
+{
+  "operatorId": "vision.preprocess.perspective",
+  "displayName": "Perspective Transform",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._transform_operators:PerspectiveOperator",
+  "category": "预处理",
+  "iconKey": "perspective",
+  "summary": "把源四边形校正为指定尺寸矩形并输出精确 Homography 回源坐标。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "srcPoints": {"type": "array", "minItems": 4, "maxItems": 4},
+      "outputWidth": {"type": "integer", "minimum": 2},
+      "outputHeight": {"type": "integer", "minimum": 2},
+      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
+      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+    },
+    "required": ["srcPoints", "outputWidth", "outputHeight"]
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

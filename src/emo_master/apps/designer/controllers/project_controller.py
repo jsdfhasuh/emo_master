@@ -2,13 +2,16 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable
+from uuid import uuid4
 
 from emo_master.apps.designer.state.project_store import (
     createProjectSkeleton,
     loadProject,
     saveProject,
 )
+from emo_master.apps.designer.state.workflow_store import defaultNodePosition
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeViewModel
+from emo_master.core.project.migration import utc_now_iso
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
 
@@ -25,6 +28,7 @@ class ProjectController:
         refreshRuntimePanelView: Callable[[], None],
         updateToolbarState: Callable[[], None],
         updateRuntimeJobState: Callable[[str, str], None],
+        workflowController=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.flowModel = flowModel
@@ -36,6 +40,14 @@ class ProjectController:
         self.refreshRuntimePanelView = refreshRuntimePanelView
         self.updateToolbarState = updateToolbarState
         self.updateRuntimeJobState = updateRuntimeJobState
+        self.workflowController = workflowController
+        self._fallbackProjectMetadata: dict[str, object] = {
+            "projectId": str(uuid4()),
+            "name": "project",
+            "revision": 1,
+            "createdAt": utc_now_iso(),
+            "updatedAt": utc_now_iso(),
+        }
 
     def getRecentProjects(self) -> list[dict[str, str]]:
         valueMethod = getattr(self.settingsStore, "value", None)
@@ -138,7 +150,6 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        self._restoreProjectPayload(payload)
         loaded, runtimePath = self.loadProjectFromPath(
             str(projectDir),
             successMessagePrefix="项目已加载",
@@ -146,6 +157,11 @@ class ProjectController:
         )
         if not loaded:
             return False, None, None
+        self._captureFallbackProjectMetadata(payload)
+        if self.workflowController is not None:
+            self.workflowController.loadPayload(payload)
+        else:
+            self._restoreProjectPayload(payload)
         self.recordRecentProject(str(projectDir / "project.json"))
         self.appendLog("INFO", f"项目已加载：{projectDir / 'project.json'}")
         return True, runtimePath, projectDir
@@ -154,9 +170,17 @@ class ProjectController:
         self, projectDirPath: str, projectName: str, loadedProjectPath: str | None
     ) -> tuple[bool, Path | None]:
         projectDir = Path(projectDirPath)
-        createProjectSkeleton(projectDir, projectName)
-        payload = self._buildProjectPayload(projectName, loadedProjectPath)
-        saveProject(projectDir, payload)
+        try:
+            createProjectSkeleton(projectDir, projectName)
+            payload = self._buildProjectPayload(projectName, loadedProjectPath)
+            saveProject(projectDir, payload)
+        except Exception as err:
+            self.appendLog("ERROR", f"项目保存失败：{err}")
+            return False, None
+        if self.workflowController is not None:
+            self.workflowController.commitSavedPayload(payload)
+        else:
+            self._captureFallbackProjectMetadata(payload)
         self.appendLog("INFO", f"项目已保存：{projectDir / 'project.json'}")
         return True, projectDir
 
@@ -213,24 +237,27 @@ class ProjectController:
             selectedDir = chooseProjectDirectory("为新建空白项目选择文件夹")
             if selectedDir != "":
                 projectDir = Path(selectedDir)
-                self.saveProjectToDirectory(
+                saved, savedProjectDir = self.saveProjectToDirectory(
                     selectedDir, projectDir.name or "project", None
                 )
+                if not saved or savedProjectDir is None:
+                    return False, None, None
                 self.appendLog("INFO", f"空白项目已初始化：{selectedDir}")
-                return (
-                    self.loadProjectFromPath(
-                        str(projectDir),
-                        successMessagePrefix="空白项目已加载",
-                        failedMessagePrefix="加载空白项目失败",
-                    )[0],
-                    str(projectDir),
-                    projectDir,
+                loaded, runtimePath = self.loadProjectFromPath(
+                    str(savedProjectDir),
+                    successMessagePrefix="空白项目已加载",
+                    failedMessagePrefix="加载空白项目失败",
                 )
+                if not loaded:
+                    return False, None, None
+                return True, runtimePath, savedProjectDir
         return False, None, None
 
     def _buildProjectPayload(
         self, projectName: str, loadedProjectPath: str | None
     ) -> dict[str, object]:
+        if self.workflowController is not None:
+            return self.workflowController.buildPayload(projectName)
         graphPayload = self.flowModel.toProjectGraph()
         nodePositions = self.flowScene.getNodePositions()
 
@@ -240,58 +267,95 @@ class ProjectController:
         for rawNode in nodes:
             if not isinstance(rawNode, dict):
                 continue
-            node = dict(rawNode)
-            nodeIdRaw = node.get("nodeId", "")
-            nodeId = nodeIdRaw if isinstance(nodeIdRaw, str) else ""
-            if nodeId in nodePositions:
-                posX, posY = nodePositions[nodeId]
-                node["x"] = float(posX)
-                node["y"] = float(posY)
-            else:
-                node["x"] = float(node.get("x", 20.0))
-                node["y"] = float(node.get("y", 20.0))
-            patchedNodes.append(node)
+            patchedNodes.append(dict(rawNode))
 
         edgesRaw = graphPayload.get("edges", [])
         edges = edgesRaw if isinstance(edgesRaw, list) else []
 
+        project = dict(self._fallbackProjectMetadata)
+        project["name"] = projectName
+        project["updatedAt"] = utc_now_iso()
+        revision = project.get("revision", 1)
+        project["revision"] = (revision if isinstance(revision, int) else 1) + 1
+
         return {
-            "version": "1.0",
-            "meta": {
-                "name": projectName,
+            "schemaVersion": "2.1",
+            "project": project,
+            "entryWorkflowId": "main",
+            "workflowOrder": ["main"],
+            "workflows": {
+                "main": {
+                    "name": projectName,
+                    "inputs": {},
+                    "outputs": {},
+                    "nodes": patchedNodes,
+                    "edges": edges,
+                    "layout": {
+                        "nodePositions": {
+                            nodeId: {"x": float(position[0]), "y": float(position[1])}
+                            for nodeId, position in nodePositions.items()
+                        }
+                    },
+                }
             },
-            "runtime": {
-                "sourceImagePath": ""
-                if loadedProjectPath is None
-                else loadedProjectPath,
-            },
-            "designer": {
-                "nodes": patchedNodes,
-                "edges": edges,
-            },
+            "runtime": {},
+            "dependencies": {"operators": []},
+            "devices": {"bindings": {}},
         }
 
+    def _captureFallbackProjectMetadata(self, payload: dict[str, object]) -> None:
+        project = payload.get("project")
+        if isinstance(project, dict):
+            self._fallbackProjectMetadata = dict(project)
+
     def _restoreProjectPayload(self, payload: dict[str, object]) -> str | None:
-        designerRaw = payload.get("designer", {})
-        designer = designerRaw if isinstance(designerRaw, dict) else {}
+        workflowsRaw = payload.get("workflows")
+        entryWorkflowId = payload.get("entryWorkflowId", "main")
+        workflow = (
+            workflowsRaw.get(entryWorkflowId)
+            if isinstance(workflowsRaw, dict) and isinstance(entryWorkflowId, str)
+            else None
+        )
+        if isinstance(workflow, dict):
+            graphPayload = {
+                "nodes": workflow.get("nodes", []),
+                "edges": workflow.get("edges", []),
+            }
+            layoutRaw = workflow.get("layout")
+            layout = layoutRaw if isinstance(layoutRaw, dict) else {}
+            positionsRaw = layout.get("nodePositions", {})
+            positions = positionsRaw if isinstance(positionsRaw, dict) else {}
+        else:
+            designerRaw = payload.get("designer", {})
+            designer = designerRaw if isinstance(designerRaw, dict) else {}
+            graphPayload = {
+                "nodes": designer.get("nodes", []),
+                "edges": designer.get("edges", []),
+            }
+            positions = {}
         graphPayload = {
-            "nodes": designer.get("nodes", []),
-            "edges": designer.get("edges", []),
+            "nodes": graphPayload.get("nodes", []),
+            "edges": graphPayload.get("edges", []),
         }
         self.flowModel.loadProjectGraph(graphPayload)
         self.flowScene.clearGraph()
 
         for node in self.flowModel.nodes.values():
-            xValue = 20.0
-            yValue = 20.0
+            defaultX, defaultY = defaultNodePosition(node.kind)
+            xValue = defaultX
+            yValue = defaultY
             for rawNode in graphPayload.get("nodes", []):
                 if not isinstance(rawNode, dict):
                     continue
                 rawNodeId = rawNode.get("nodeId")
                 if not isinstance(rawNodeId, str) or rawNodeId != node.nodeId:
                     continue
-                xRaw = rawNode.get("x", 20.0)
-                yRaw = rawNode.get("y", 20.0)
+                xRaw = rawNode.get("x", defaultX)
+                yRaw = rawNode.get("y", defaultY)
+                layoutPosition = positions.get(node.nodeId)
+                if isinstance(layoutPosition, dict):
+                    xRaw = layoutPosition.get("x", xRaw)
+                    yRaw = layoutPosition.get("y", yRaw)
                 if isinstance(xRaw, (int, float)):
                     xValue = float(xRaw)
                 if isinstance(yRaw, (int, float)):
@@ -307,6 +371,7 @@ class ProjectController:
                     inputPorts=node.inputPorts,
                     outputPorts=node.outputPorts,
                     operatorId=node.operatorId,
+                    kind=node.kind,
                 )
             )
 

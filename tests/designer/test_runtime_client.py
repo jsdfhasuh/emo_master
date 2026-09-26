@@ -94,6 +94,99 @@ def testRuntimeClientReadsStreamJobEvents() -> None:
     assert getattr(events[0], "event_type", "") == "job.started"
 
 
+class _FakeStreamCall:
+    def __init__(self, events) -> None:
+        self.events = iter(events)
+        self.nextCalls = 0
+        self.cancelCalls = 0
+        self.closeCalls = 0
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        self.nextCalls += 1
+        return next(self.events)
+
+    def cancel(self) -> None:
+        self.cancelCalls += 1
+
+    def close(self) -> None:
+        self.closeCalls += 1
+
+
+def _streamEvent(eventType: str) -> object:
+    return type(
+        "Event",
+        (),
+        {"event_type": eventType, "message": eventType, "level": "INFO"},
+    )()
+
+
+def testRuntimeClientFollowIsLazyAndPassesReplayArguments() -> None:
+    call = _FakeStreamCall([_streamEvent("job.started")])
+
+    class StubService:
+        def StreamJobEvents(self, request, context):
+            _ = context
+            assert request.job_id == "job-follow"
+            assert request.after_sequence == 7
+            assert request.follow is True
+            return call
+
+    client = RuntimeClient(runtimeService=StubService())
+    stream = client.streamJobEvents("job-follow", afterSequence=7, follow=True)
+
+    assert call.nextCalls == 0
+    event = next(stream)
+    assert event.eventType == "job.started"
+    assert call.nextCalls == 1
+
+    assert client.cancelEventStream("job-follow") is True
+    assert call.cancelCalls == 1
+    assert call.closeCalls == 1
+    assert client.cancelEventStream("job-follow") is False
+
+
+def testRuntimeClientFollowClosesAndUnregistersOnExhaustion() -> None:
+    call = _FakeStreamCall([])
+
+    class StubService:
+        def StreamJobEvents(self, request, context):
+            _ = request
+            _ = context
+            return call
+
+    client = RuntimeClient(runtimeService=StubService())
+    stream = client.streamJobEvents("job-exhausted", follow=True)
+
+    assert list(stream) == []
+    assert call.closeCalls == 1
+    assert client.cancelEventStream("job-exhausted") is False
+
+
+def testRuntimeClientReplacesPreviousFollowWithoutRemovingNewStream() -> None:
+    first = _FakeStreamCall([])
+    second = _FakeStreamCall([])
+    calls = iter([first, second])
+
+    class StubService:
+        def StreamJobEvents(self, request, context):
+            _ = request
+            _ = context
+            return next(calls)
+
+    client = RuntimeClient(runtimeService=StubService())
+    client.streamJobEvents("job-replaced", follow=True)
+    client.streamJobEvents("job-replaced", follow=True)
+
+    assert first.cancelCalls == 1
+    assert first.closeCalls == 1
+    assert client.cancelEventStream("job-replaced") is True
+    assert second.cancelCalls == 1
+    assert second.closeCalls == 1
+
+
 def testRuntimeClientParsesEventPayloadJson() -> None:
     class StubService:
         def StreamJobEvents(self, request, context):
@@ -143,3 +236,76 @@ def testRuntimeClientParsesProtoMapContainerPorts() -> None:
     assert len(operators) == 1
     assert operators[0].inputPorts == {"image": "image"}
     assert operators[0].outputPorts == {"edges": "image"}
+
+
+def testRuntimeClientCloseIsIdempotentAndClosesOwnedResources() -> None:
+    class Call:
+        def __iter__(self):
+            return self
+
+        def __next__(self):
+            raise RuntimeError("stream should be cancelled")
+
+        def cancel(self) -> None:
+            self.cancelled = getattr(self, "cancelled", 0) + 1
+
+        def close(self) -> None:
+            self.closed = getattr(self, "closed", 0) + 1
+
+    class Service:
+        def __init__(self) -> None:
+            self.call = Call()
+            self.closed = 0
+
+        def StreamJobEvents(self, request, context):
+            _ = request
+            _ = context
+            return self.call
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Channel:
+        def __init__(self) -> None:
+            self.closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    service = Service()
+    channel = Channel()
+    client = RuntimeClient(
+        runtimeService=service,
+        ownedRuntimeService=service,
+        ownedChannel=channel,
+    )
+    client.streamJobEvents("job-owned", follow=True)
+
+    client.close()
+    client.close()
+
+    assert service.call.cancelled == 1
+    assert service.call.closed == 1
+    assert service.closed == 1
+    assert channel.closed == 1
+
+
+def testRuntimeClientDoesNotCloseUnownedRuntimeService() -> None:
+    class Service:
+        def __init__(self) -> None:
+            self.closed = 0
+
+        def close(self) -> None:
+            self.closed += 1
+
+    class Channel:
+        def close(self) -> None:
+            self.closed = getattr(self, "closed", 0) + 1
+
+    service = Service()
+    channel = Channel()
+    client = RuntimeClient(runtimeService=service, ownedChannel=channel)
+    client.close()
+
+    assert service.closed == 0
+    assert channel.closed == 1

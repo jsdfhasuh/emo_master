@@ -1,0 +1,38 @@
+{
+  "operatorId": "vision.analysis.histogram",
+  "displayName": "Histogram",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.histogram.operator:HistogramOperator",
+  "category": "分析",
+  "iconKey": "histogram",
+  "summary": "统计灰度或 BGR 图像在 Frame、ROI 与 Mask 交集中的等宽直方图。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "roi": {"type": "geometry2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "mask": {"type": "image", "required": false, "nullable": false},
+    "maskFrame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "histogram": {"type": "histogram", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "bins": {"type": "integer", "minimum": 1, "maximum": 256, "default": 256},
+      "normalization": {"type": "string", "enum": ["counts", "probability"], "default": "counts"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x",
+  "editor": {
+    "schemaVersion": "1.0",
+    "kind": "customUi",
+    "openMode": "window",
+    "uiResource": "ui/editor.ui",
+    "controllerEntry": "emo_master.plugins.builtins.histogram.editor:HistogramEditorController",
+    "fallback": "schemaForm",
+    "previewMode": "pure"
+  }
+}

@@ -3,6 +3,7 @@ from pathlib import Path
 import cv2
 import numpy as np
 
+from emo_master.core.contracts.geometry2d import BBox2D
 from emo_master.plugins.builtins.image_loader.operator import ImageLoaderOperator
 
 
@@ -25,6 +26,9 @@ def testImageLoaderReadsImageFromPath(tmp_path: Path) -> None:
     loadedImage = outputs.get("image")
     assert isinstance(loadedImage, np.ndarray)
     assert loadedImage.shape == sampleImage.shape
+    frame = BBox2D.fromPayload(outputs["frame"])
+    assert (frame.width, frame.height) == (32.0, 32.0)
+    assert frame.coordinateSpace.sourceId == str(imagePath.resolve())
 
 
 def testImageLoaderReturnsErrorWhenPathMissing() -> None:

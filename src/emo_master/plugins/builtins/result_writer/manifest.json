@@ -1,0 +1,37 @@
+{
+  "operatorId": "vision.io.result_writer",
+  "displayName": "Result Writer",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.result_writer.operator:ResultWriterOperator",
+  "category": "输入输出",
+  "iconKey": "save",
+  "summary": "将强类型视觉结果或基础值安全写入 Job 工作区的 JSON、JSONL 或 CSV 文件。",
+  "inputPorts": {
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "histogram": {"type": "histogram", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "statistics": {"type": "colorStatistics", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "geometry": {"type": "geometry2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "numberValue": {"type": "number", "required": false, "nullable": false},
+    "booleanValue": {"type": "boolean", "required": false, "nullable": false},
+    "stringValue": {"type": "string", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "result": {"type": "json", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "format": {"type": "string", "enum": ["json", "jsonl", "csv"], "default": "json"},
+      "relativePath": {"type": "string", "default": "results/result"},
+      "overwrite": {"type": "boolean", "default": false}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

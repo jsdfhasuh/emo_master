@@ -1,0 +1,41 @@
+{
+  "operatorId": "vision.io.coordinate_reader",
+  "displayName": "Coordinate Reader",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateReaderOperator",
+  "category": "输入输出",
+  "iconKey": "source",
+  "summary": "Read TXT or CSV rows as strongly typed point2d coordinates.",
+  "inputPorts": {
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "points": {"type": "list<point2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "pointCount": {"type": "integer", "required": true, "nullable": false},
+    "polygon": {"type": "polygon2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "filePath": {"type": "string", "default": "", "xWidget": "file", "xFileMode": "open", "xFilter": "Coordinate files (*.txt *.csv)"},
+      "fileFormat": {"type": "string", "enum": ["auto", "csv", "txt"], "default": "auto"},
+      "encoding": {"type": "string", "enum": ["utf-8", "utf-8-sig", "gb18030", "ascii"], "default": "utf-8"},
+      "delimiter": {"type": "string", "enum": ["auto", "comma", "tab", "space", "semicolon"], "default": "auto"},
+      "headerMode": {"type": "string", "enum": ["auto", "present", "absent"], "default": "auto"},
+      "xColumn": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0},
+      "yColumn": {"type": "integer", "minimum": 0, "maximum": 255, "default": 1},
+      "commentPrefix": {"type": "string", "default": "#"},
+      "onInvalidRow": {"type": "string", "enum": ["error", "skip"], "default": "error"},
+      "maxPoints": {"type": "integer", "minimum": 1, "maximum": 100000, "default": 10000},
+      "maxFileBytes": {"type": "integer", "minimum": 1, "maximum": 16777216, "default": 4194304},
+      "asPolygon": {"type": "boolean", "default": false},
+      "sourceId": {"type": "string", "default": ""},
+      "imageWidth": {"type": "integer", "minimum": 0, "maximum": 1000000, "default": 0},
+      "imageHeight": {"type": "integer", "minimum": 0, "maximum": 1000000, "default": 0},
+      "transformToSource": {"type": "array", "items": {"type": "number"}, "minItems": 6, "maxItems": 6, "default": [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]}
+    },
+    "required": ["filePath"]
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

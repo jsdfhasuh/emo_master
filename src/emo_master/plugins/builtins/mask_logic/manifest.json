@@ -1,0 +1,46 @@
+{
+  "operatorId": "vision.mask.logic",
+  "displayName": "Mask Logic",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.mask_logic.operator:MaskLogicOperator",
+  "category": "分割",
+  "iconKey": "mask-logic",
+  "summary": "对一个或两个同尺寸二值掩码执行 AND、OR、XOR、NOT 或差集。",
+  "inputPorts": {
+    "maskA": {"type": "image", "required": true, "nullable": false},
+    "maskB": {"type": "image", "required": false, "nullable": false},
+    "frameA": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "frameB": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "operation": {
+        "type": "string",
+        "enum": ["and", "or", "xor", "not", "subtract"],
+        "default": "and"
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

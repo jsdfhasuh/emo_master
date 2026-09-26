@@ -1,0 +1,33 @@
+{
+  "operatorId": "vision.preprocess.affine",
+  "displayName": "Affine Transform",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._transform_operators:AffineOperator",
+  "category": "预处理",
+  "iconKey": "affine",
+  "summary": "使用三组源点和目标点执行仿射变换并传播回源坐标。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "validMask": {"type": "image", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "srcPoints": {"type": "array", "minItems": 3, "maxItems": 3},
+      "dstPoints": {"type": "array", "minItems": 3, "maxItems": 3},
+      "outputWidth": {"type": "integer", "minimum": 0, "default": 0},
+      "outputHeight": {"type": "integer", "minimum": 0, "default": 0},
+      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
+      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+    },
+    "required": ["srcPoints", "dstPoints"]
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

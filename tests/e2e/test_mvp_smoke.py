@@ -5,6 +5,7 @@ import cv2
 import numpy as np
 
 from emo_master.apps.runtime.main import createRuntimeService
+from tests.runtime.runtime_test_utils import waitForTerminal
 
 
 def _createProjectWithLoaderSaver(
@@ -75,6 +76,7 @@ def testMvpPipelineSmoke(tmp_path: Path) -> None:
     )
     assert startReply.ok is True
     assert startReply.job_id != ""
+    waitForTerminal(runtimeService, startReply.job_id)
     assert outputPath.exists()
 
 
@@ -94,6 +96,7 @@ def testMvpPipelineSmokeWithImage(tmp_path: Path) -> None:
         type("Req", (), {"project_id": str(projectDir)})(), None
     )
     assert startReply.ok is True
+    waitForTerminal(runtimeService, startReply.job_id)
 
     statusReply = runtimeService.GetJobStatus(
         type("Req", (), {"job_id": startReply.job_id})(), None
@@ -102,7 +105,7 @@ def testMvpPipelineSmokeWithImage(tmp_path: Path) -> None:
     assert statusReply.status == "COMPLETED"
     events = list(
         runtimeService.StreamJobEvents(
-            type("Req", (), {"job_id": startReply.job_id})(), None
+            type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
         )
     )
     assert any(getattr(event, "event_type", "") == "job.completed" for event in events)
@@ -123,10 +126,11 @@ def testEndToEndDagWithEventStreamAndPreviewArtifacts(tmp_path: Path) -> None:
         type("Req", (), {"project_id": str(projectDir)})(), None
     )
     assert startReply.ok is True
+    waitForTerminal(runtimeService, startReply.job_id)
 
     events = list(
         runtimeService.StreamJobEvents(
-            type("Req", (), {"job_id": startReply.job_id})(), None
+            type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
         )
     )
     assert any(getattr(event, "event_type", "") == "job.completed" for event in events)

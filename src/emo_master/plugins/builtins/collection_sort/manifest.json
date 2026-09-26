@@ -1,0 +1,36 @@
+{
+  "operatorId": "vision.collection.sort",
+  "displayName": "Sort Collection",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.collection_sort.operator:CollectionSortOperator",
+  "category": "结果处理",
+  "iconKey": "sort",
+  "summary": "按类型白名单字段稳定排序强类型视觉集合。",
+  "inputPorts": {
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+  },
+  "outputPorts": {
+    "sortedBlobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "sortedDetections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "sortedContours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "sortedMeasurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "sortedLines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "sortedCircles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "sortedMatches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "key": {"type": "string", "enum": ["angle", "area", "bboxHeight", "bboxWidth", "bboxX", "bboxY", "centerX", "centerY", "centroidX", "centroidY", "circularity", "classId", "confidence", "depth", "diameter", "endX", "endY", "id", "isHole", "label", "length", "minRectAngle", "minRectHeight", "minRectWidth", "perimeter", "quality", "radius", "rawScore", "sourceId", "sourceType", "startX", "startY"], "default": "area"},
+      "direction": {"type": "string", "enum": ["ascending", "descending"], "default": "descending"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

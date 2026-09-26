@@ -1,0 +1,24 @@
+docs/evidence/p0-runtime-pages/README.md
+docs/plans/2026-09-25-qt-runtime-pages-v1.md
+docs/plans/2026-09-26-qt-runtime-pages-p0-results.md
+docs/plans/2026-09-26-qt-runtime-pages-p0-round2-results.md
+prototypes/runtime_pages_p0/async_exports.py
+prototypes/runtime_pages_p0/benchmark.py
+prototypes/runtime_pages_p0/continuous.py
+prototypes/runtime_pages_p0/exporter.py
+prototypes/runtime_pages_p0/network.py
+prototypes/runtime_pages_p0/network_faults.py
+prototypes/runtime_pages_p0/pipeline.py
+prototypes/runtime_pages_p0/pipeline_faults.py
+prototypes/runtime_pages_p0/resources.py
+prototypes/runtime_pages_p0/scenarios.py
+prototypes/runtime_pages_p0/watchdog.py
+scripts/p0_validate.py
+src/emo_master/apps/runtime/jobs/supervisor.py
+src/emo_master/apps/runtime/preview/store.py
+tests/p0/test_continuous.py
+tests/p0/test_network_faults.py
+tests/p0/test_resources.py
+tests/runtime/test_job_supervisor_contracts.py
+tests/runtime/test_preview_snapshot_store.py
+docs/evidence/p0-runtime-pages/round2/ (new raw evidence, manifest and acceptance)

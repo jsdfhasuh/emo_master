@@ -1,0 +1,30 @@
+{
+  "operatorId": "vision.analysis.hough_circle",
+  "displayName": "Hough Circle",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._detection_operators:HoughCircleOperator",
+  "category": "分析",
+  "iconKey": "hough-circle",
+  "summary": "在灰度或 BGR 图像上使用 Hough Gradient 检测圆。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "circles": {"type": "circleCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "dp": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+      "minDist": {"type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
+      "param1": {"type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
+      "param2": {"type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
+      "minRadius": {"type": "integer", "minimum": 0, "default": 0},
+      "maxRadius": {"type": "integer", "minimum": 0, "default": 0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

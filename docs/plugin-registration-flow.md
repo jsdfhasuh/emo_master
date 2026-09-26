@@ -21,15 +21,19 @@
 ```text
 plugins/builtins/<name>/manifest.json
   + operator.py
-      -> PluginRegistry.scan(...)
+  + 可选 ui/editor.ui + editor.py
+  + 可选 assets/icon.svg 或 assets/icon.png
+      -> PluginRegistry.scan(...) / scanRoots(...)
       -> validateManifestFields(...)
       -> isVersionCompatible(...)
       -> loadOperatorClass(entry)
       -> validateConsistency(...)
       -> Runtime activeOperators / rejectedOperators
       -> RuntimeService.ListOperators()
-      -> RuntimeClient.listOperators()
-      -> MainWindow.refreshOperators()
+      -> 可选 GetOperatorEditorAsset()（注册时冻结的 UI 字节 + SHA-256）
+      -> OperatorCatalogWorker -> RuntimeClient.listOperators()
+      -> MainWindow 异步应用目录
+      -> OperatorIconProvider -> GetOperatorIconAsset()（按需取冻结图片）
       -> 左侧分类 / 气泡面板显示
       -> 用户拖到画布，保存到 project.json
       -> Runtime executeGraph() 通过 operatorId 找到 operator 并执行
@@ -55,12 +59,14 @@ plugins/builtins/<name>/manifest.json
 - `entry`
 - `category`
 - `iconKey`
+- 可选 `iconResource`（插件内相对图片路径，详见 9.4.1）
 - `summary`
 - `inputPorts`
 - `outputPorts`
 - `paramSchema`
 - `minCoreVersion`
 - `maxCoreVersion`
+- 可选 `editor`
 
 示例：`src/emo_master/plugins/builtins/image_loader/manifest.json`
 
@@ -119,25 +125,30 @@ plugins/builtins/<name>/manifest.json
 1. Runtime 启动
 2. `RuntimeService.__init__()`
 3. `_scanBuiltins()`
-4. `PluginRegistry.scan(pluginRoot)`
+4. `PluginRegistry.scanRoots(pluginRoots)`（单目录入口 `scan()` 会委托给它）
 
 关键文件：
 
 - `src/emo_master/apps/runtime/grpc_server/service.py`
 - `src/emo_master/core/plugin/registry.py`
 
-### `PluginRegistry.scan(...)` 做了什么
+### `PluginRegistry.scanRoots(...)` 做了什么
 
-在 `src/emo_master/core/plugin/registry.py` 中，`scan(pluginRoot)` 负责完整注册流程：
+在 `src/emo_master/core/plugin/registry.py` 中，`scanRoots(pluginRoots)` 负责完整注册流程：
 
-1. 找到所有 `**/manifest.json`
-2. 调 `_loadManifestData(manifestPath)` 读取 JSON
+1. 按配置顺序扫描所有根目录下的 `**/manifest.json`，并去重重复根和重复文件
+2. 调 `_readManifest(manifestPath)` 读取 JSON，并保留解析/读取失败原因
 3. 调 `validateManifestFields(...)` 校验字段结构
-4. 调 `isVersionCompatible(...)` 校验当前 coreVersion 是否兼容
-5. 调 `loadOperatorClass(entry)` 动态导入类
-6. 调 `validateConsistency(...)` 校验 manifest 与 operator meta 是否一致
-7. 成功则进入 `activeOperators`
-8. 失败则进入 `rejectedOperators`
+4. 在导入代码前汇总 `operatorId`；同目录或跨目录的重复声明全部拒绝
+5. 调 `isVersionCompatible(...)` 校验当前 coreVersion 是否兼容
+6. 调 `loadOperatorClass(entry)` 动态导入类，并确认必需方法可调用
+7. 调 `validateConsistency(...)` 校验 manifest 与 operator meta 是否一致
+8. 成功则进入 `activeOperators`
+9. 失败则进入 `rejectedOperators`，错误消息包含来源 manifest 路径
+
+专用编辑器和图标在同一次 manifest 读取结果上独立校验。有效图标冻结为
+`PluginIconAsset(content, mimeType, sha256)`；图标无效只产生 `iconIssues`，
+不把原本有效的算法加入 `rejectedOperators`，也不导入 GUI 或初始化设备。
 
 ### 为什么这一步重要
 
@@ -158,9 +169,12 @@ plugins/builtins/<name>/manifest.json
 它主要检查：
 
 - 必需字段是否都存在
-- `inputPorts` 是否是 `dict[str, str]`
-- `outputPorts` 是否是 `dict[str, str]`
+- `inputPorts` 是否是端口名到类型字符串或 PortSpec 描述对象的映射
+- `outputPorts` 是否是端口名到类型字符串或 PortSpec 描述对象的映射
 - `paramSchema` 是否是对象
+
+PortSpec 的 `type/required/nullable/schemaVersion` 规则以及几何、Blob、Detection、
+颜色统计 payload，统一见 `docs/operator-io-contracts.md`。
 
 如果这里失败，这个算子甚至还没进入“尝试导入 Python 类”的阶段。
 
@@ -168,7 +182,8 @@ plugins/builtins/<name>/manifest.json
 
 它检查当前 coreVersion 是否在插件支持范围内。
 
-现在实现比较简单，主要按 major version 判断。
+版本采用一到三段纯数字比较，拒绝前导零和预发布后缀；最大版本还支持
+`1.x`、`1.2.x` 这样的通配范围。格式错误只会拒绝对应插件，不会中断整个扫描。
 
 ### 5.3 `loadOperatorClass(entry)`
 
@@ -176,16 +191,23 @@ plugins/builtins/<name>/manifest.json
 
 1. 解析 `entry`，格式必须是 `module:Class`
 2. 动态 import 模块
-3. 检查类是否存在，并且是否至少有：
+3. 检查目标确实是类，并且以下方法存在且可调用：
    - `validateParams`
    - `executeNode`
 
 ### 5.4 `validateConsistency(manifest, operatorClass)`
 
-这一步检查 manifest 与类的 `meta` 是否一致，当前重点是：
+这一步检查 manifest 与类的 `meta` 是否一致，当前包括：
 
+- `operatorId`
+- `displayName`
+- `version`
 - `inputPorts`
 - `outputPorts`
+- `paramSchema`
+
+为兼容早期第三方算子，上述字段只有在 `meta` 中声明时才比较；`meta` 本身仍然
+是必需的。
 
 这能防止“Designer 以为端口长这样，Runtime 实际执行却不是这样”的错配。
 
@@ -196,9 +218,11 @@ plugins/builtins/<name>/manifest.json
 ### 调用链
 
 ```text
-RuntimeService.ListOperators()
-  -> RuntimeClient.listOperators()
-  -> MainWindow.refreshOperators()
+MainWindow.refreshOperators()
+  -> OperatorCatalogWorker（独立后台线程、合并重复刷新）
+  -> RuntimeClient.listOperators(timeoutMs=5000)
+  -> RuntimeService.ListOperators()
+  -> GUI 线程应用当前会话的目录结果
   -> 左侧分类 / 气泡算子面板
 ```
 
@@ -221,16 +245,29 @@ RuntimeService.ListOperators()
 - `category`
 - `icon_key`
 - `summary`
+- `editor_spec_json`
+- `editor_issues_json`
+- `icon`：`status/mime_type/sha256/byte_size`，不带图片字节
+- `icon_issues`：独立图标诊断，不带 Runtime 绝对路径
 
 #### `RuntimeClient.listOperators()`
 Designer 端把这些协议对象解析成 `OperatorDefinition`，把 JSON schema 解析回字典。
 
 #### `MainWindow.refreshOperators()`
-这个函数把 Runtime 返回的数据转换成 UI 使用的 payload，供：
+这个函数提交异步刷新，不在 GUI 线程等待网络。目录控制器区分
+`loading/ready/failed`，失败时保留上次有效目录；同一会话的重复刷新会合并。
+首次目录未就绪时，专用参数编辑器和工作流包导入暂不执行，提示稍后重试，
+避免按空定义缓存通用编辑器或误报依赖缺失。已有有效目录的后台刷新不阻止这些操作。
+
+返回结果仅在当前 Runtime 会话及刷新请求仍有效时应用，转换为 UI payload，供：
 
 - 左侧分类列表
 - 顶部气泡面板
 - 拖拽添加节点
+
+目录应用通知图标消费者局部更新，不捕获画布写回项目，不改变项目 revision、
+选中节点、画布位置或运行态。卡片、画布、侧栏、详情和编辑器窗口共用
+`OperatorIconProvider`；系统节点仍使用本地图标，不调用插件图片 RPC。
 
 ### 结论
 
@@ -309,75 +346,460 @@ Designer 端把这些协议对象解析成 `OperatorDefinition`，把 JSON schem
 
 ---
 
-## 9. 新增一个算子的最短路径（实战）
+## 9. 如何注册一个算子（可直接照做）
 
-下面这组步骤，是未来工程师最常会走的一条路。
+先明确当前机制：**没有中央 `registerOperator()` 方法，也不需要修改一份算子列表。**
+Runtime 默认递归扫描 `src/emo_master/plugins/**/manifest.json`。一个 manifest 通过字段、
+core 版本、entry 导入和 meta 一致性校验后，其 `operatorId` 就会进入
+`activeOperators`，这一步就是注册。
 
-### 第一步：创建目录
+完整流程只有六步：创建算子目录；编写 manifest；实现带 `meta` 的 operator class；为
+语义端口声明准确的类型与 `schemaVersion`；补算子单测和注册期望集合；扫描确认进入
+`activeOperators`。不需要修改 Runtime/Designer 的中央列表，也不要在 import 时执行
+网络连接、模型加载或设备初始化。
 
-例如新增：
+### 9.1 创建目录
+
+内置算子放到默认扫描根下。例如新增一个乘法算子：
 
 ```text
-src/emo_master/plugins/builtins/my_operator/
+src/emo_master/plugins/builtins/example_multiply/
   ├── __init__.py
   ├── manifest.json
   └── operator.py
 ```
 
-### 第二步：写 `manifest.json`
+`__init__.py` 可以为空，但必须保证 `entry` 指向的 Python 模块可 import。
 
-必须最少包含：
+### 9.2 编写完整 manifest
 
-- `operatorId`
-- `displayName`
-- `version`
-- `entry`
-- `inputPorts`
-- `outputPorts`
-- `paramSchema`
-- `minCoreVersion`
-- `maxCoreVersion`
+`manifest.json`：
 
-建议还写：
+```json
+{
+  "operatorId": "vision.example.multiply",
+  "displayName": "Multiply",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.example_multiply.operator:ExampleMultiplyOperator",
+  "category": "示例",
+  "iconKey": "number",
+  "summary": "将输入数值乘以参数 factor。",
+  "inputPorts": {
+    "value": {"type": "number", "required": true, "nullable": false}
+  },
+  "outputPorts": {
+    "result": {"type": "number", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "factor": {"type": "number", "default": 1.0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}
+```
 
-- `category`
-- `iconKey`
-- `summary`
+必需字段是：
 
-参考：`src/emo_master/plugins/builtins/image_loader/manifest.json`
+- `operatorId`：所有扫描根范围内全局唯一，建议使用稳定的反向域式命名。
+- `displayName/version/entry`：entry 必须是 `module:Class`，不能写文件路径。
+- `inputPorts/outputPorts`：端口可用字符串简写，也可使用包含
+  `type/required/nullable/schemaVersion` 的 PortSpec。
+- `paramSchema`：必须是对象；Designer 用它生成参数面板，算子仍须自行严格校验。
+- `minCoreVersion/maxCoreVersion`：版本为一到三段数字；最大版本支持 `1.x` 或
+  `1.2.x`。
 
-### 第三步：写 `operator.py`
+`category/iconKey/summary` 可省略，但建议填写。语义端口和 schemaVersion 的规则见
+`docs/operator-io-contracts.md`。
 
-最少实现：
+复杂算子可以额外声明专用编辑器；不声明时继续使用通用 Schema 表单：
 
-- `meta`
-- `validateParams(...)`
-- `executeNode(...)`
+```json
+"editor": {
+  "schemaVersion": "1.0",
+  "kind": "customUi",
+  "openMode": "window",
+  "uiResource": "ui/editor.ui",
+  "controllerEntry": "emo_master.plugins.builtins.example.editor:ExampleEditorController",
+  "fallback": "schemaForm",
+  "previewMode": "none"
+}
+```
 
-参考：
+`uiResource` 必须是插件目录内不含 `.`、`..` 或空段的相对 `.ui` 路径，大小不超过
+2 MiB。首版只允许 Qt 内置控件；自定义画布和图表由 Controller 插入 `.ui` 占位
+`QWidget`。`controllerEntry` 必须与运行算子 `entry` 位于同一插件包命名空间。
+注册阶段只校验并冻结 `.ui` 字节，不导入 Controller，所以专用页面损坏不会让 Runtime
+算子退出 `activeOperators`，而是通过 `editor_issues_json` 告知 Designer 回退通用表单。
 
-- `src/emo_master/plugins/builtins/image_loader/operator.py`
-- `src/emo_master/plugins/builtins/flow_if/operator.py`
+`previewMode` 的含义：
 
-### 第四步：启动 Runtime 看能否注册
+- `none`：不允许 Runtime 预览。
+- `pure`：允许以正式算子类做无副作用单节点预览，单次上限 5 秒。
+- `live`：用于相机等有状态采集页面，页面关闭或正式 Job 接管时释放会话。
 
-如果注册成功：
+坐标或视觉集合端口应使用明确的强类型，不能为了省事全部声明成 `json`。只传播仿射
+1.1 payload 的生产者可以声明精确 `1.1`；能接收或传播 Homography 的端口应声明
+`schemaVersion: "1.x"`；Line、Circle 及第二批经典视觉集合由 DTO 固定写出 `1.2`。
 
-- `ListOperators()` 会返回它
-- Designer 左侧会出现它
+### 9.3 实现 operator class
 
-如果注册失败：
+`operator.py`：
 
-- 它会进入 `rejectedOperators`
+```python
+from __future__ import annotations
 
-### 第五步：拖到画布并运行
+import math
+from dataclasses import dataclass
+from typing import Any, TypeGuard, cast
 
-如果能拖到画布，说明：
 
-- Runtime 已经注册成功
-- Designer 已经拿到了 metadata
+@dataclass(frozen=True)
+class OperatorMeta:
+    operatorId: str
+    displayName: str
+    version: str
+    inputPorts: dict[str, object]
+    outputPorts: dict[str, object]
+    paramSchema: dict[str, object]
 
-如果运行时报错，再去查执行器和 `executeNode()`。
+
+PARAM_SCHEMA: dict[str, object] = {
+    "type": "object",
+    "properties": {
+        "factor": {"type": "number", "default": 1.0},
+    },
+}
+
+
+class ExampleMultiplyOperator:
+    meta = OperatorMeta(
+        operatorId="vision.example.multiply",
+        displayName="Multiply",
+        version="1.0.0",
+        inputPorts={
+            "value": {"type": "number", "required": True, "nullable": False},
+        },
+        outputPorts={
+            "result": {"type": "number", "required": True, "nullable": False},
+        },
+        paramSchema=PARAM_SCHEMA,
+    )
+
+    def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
+        factor = params.get("factor", 1.0)
+        if not _isFiniteNumber(factor):
+            return {
+                "code": "E_PARAM_INVALID",
+                "message": "factor must be a finite number",
+            }
+        return None
+
+    def executeNode(
+        self,
+        inputs: dict[str, object],
+        params: dict[str, object],
+        runtimeContext: dict[str, object],
+    ) -> dict[str, Any]:
+        _ = runtimeContext
+        if "value" not in inputs:
+            return {
+                "status": "error",
+                "error": {"code": "E_INPUT_MISSING", "message": "value is required"},
+            }
+        value = inputs["value"]
+        if not _isFiniteNumber(value):
+            return {
+                "status": "error",
+                "error": {"code": "E_INPUT_TYPE", "message": "value must be a number"},
+            }
+        paramError = self.validateParams(params)
+        if paramError is not None:
+            return {"status": "error", "error": paramError}
+        factor = cast(int | float, params.get("factor", 1.0))
+        result = float(value) * float(factor)
+        return {
+            "status": "ok",
+            "outputs": {"result": result},
+            "metrics": {},
+            "diagnostics": {},
+        }
+
+
+def _isFiniteNumber(value: object) -> TypeGuard[int | float]:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(float(value))
+    )
+```
+
+operator class 必须满足以下规则：
+
+- 有 `meta`；其中声明的 `operatorId/displayName/version/inputPorts/outputPorts/paramSchema`
+  必须与 manifest 一致。
+- `validateParams(params)` 和 `executeNode(inputs, params, runtimeContext)` 必须存在且可调用。
+- 成功返回 `status=ok` 和按端口名组织的 `outputs`；失败返回标准 `error.code/message`。
+- 不得返回 manifest 未声明的输出；所有 required 输出都必须返回且类型正确。
+- 几何、Blob、Detection 等语义 DTO 必须先调用 `toPayload()`，不能直接跨端口传实例。
+
+有状态设备算子可以额外实现可选生命周期：
+
+```python
+def initOperator(self, initContext: dict[str, object]) -> None:
+    # 只做轻量对象初始化；设备连接仍可延迟到首次 executeNode。
+    ...
+
+def disposeOperator(self) -> None:
+    # 必须幂等；失败时抛带明确 code 的异常。
+    ...
+```
+
+Runtime 只缓存声明了 `initOperator` 或 `disposeOperator` 的算子，缓存键为
+`(workflowId, nodeId)`；普通算子仍在每次执行时重新实例化。有状态实例仅在单个 Job 内复用，
+Loop 和重复 Subflow 调用共享同一节点实例，最外层工作流结束时按创建逆序释放。成功路径的
+清理失败会使 Job 以 `E_RESOURCE_CLEANUP_FAILED` 失败；已有执行错误或取消时保留原错误，
+并附加清理诊断。长时间阻塞的设备调用应周期性调用
+`runtimeContext["raiseIfCancellationRequested"]()`，不要只读取一次性的
+`isCancellationRequested` 快照。
+
+Runner 还会向 `runtimeContext["logger"]` 和 `initContext["logger"]` 注入结构化日志对象。
+算子不要直接依赖 Runtime 内部实现，也不要在 manifest 增加日志字段；统一通过公共 helper：
+
+```python
+from emo_master.core.contracts import getOperatorLogger
+
+def executeNode(self, inputs, params, runtimeContext):
+    logger = getOperatorLogger(runtimeContext)
+    logger.info("request started", payload={"count": len(inputs)})
+    ...
+```
+
+可用方法为 `debug/info/warning/error/log/isEnabledFor`。记录会形成带完整 Job、Workflow、Node、
+NodeRun 和 Loop iteration 上下文的 `node.log`，不需要也不允许用输出端口传递。旧 Runtime、
+纯单测或缺少注入的预览环境会得到 `NullOperatorLogger`，因此无需自行判断键是否存在。
+
+日志只应记录阶段、数量、耗时、设备选择器和有限的错误摘要。不要写原始图像、完整 PLC 值、
+完整 TCP 报文、密码、token 或私钥；Runtime 虽会限流、截断和脱敏，但这不是算子主动控制
+数据面的替代方案。日志持久化和轮转规则见 `docs/runtime-event-flow.md`。
+
+上面的数值算子只是为了让注册样例足够短。图像算子的注册步骤完全相同：基础预处理可
+参考 `roi`、`threshold`；集合适配可参考 `collection_filter`；Homography 传播可参考
+`perspective`；经典分析可参考 `contour`、`template_match`；文件副作用可参考
+`result_writer`；坐标文件和几何测量可参考 `coordinate_reader/coordinate_calculator`；
+有界设备通讯可参考 `plc_slmp_read/plc_slmp_write/tcp_client/`
+`tcp_receive_once`。PLC 标量选择与 TCP 文本解码作为可选输出直接声明在对应 I/O 算子的
+manifest 和 `OperatorMeta` 中，完整强类型 payload 端口继续保留。
+需要作业内连接复用、延迟加载厂商 SDK 和可取消分段等待的设备节点可参考
+`huaray_camera` 与 `_huaray_imv.py`。
+每个目录都应让 manifest 与 `OperatorMeta` 的 ID、版本、端口和参数
+schema 完全一致。通讯类的连接、bind、模型或设备探测只能发生在 `executeNode()` 中，
+绝不能在模块 import、manifest 扫描或 `meta` 构造阶段触发。
+
+### 9.4 为复杂算子实现 `.ui + Controller`
+
+推荐目录：
+
+```text
+example/
+  ├── manifest.json
+  ├── operator.py
+  ├── editor.py
+  └── ui/editor.ui
+```
+
+Controller 固定实现七个方法：
+
+```python
+class ExampleEditorController:
+    def bind(self, rootWidget, context) -> None: ...
+    def loadParams(self, params: dict[str, object]) -> None: ...
+    def collectParams(self) -> dict[str, object]: ...
+    def validate(self) -> object: ...
+    def onOpen(self) -> None: ...
+    def onClose(self) -> None: ...
+    def dispose(self) -> None: ...
+```
+
+控件通过稳定 `objectName` 查找。Controller 只能通过受限 `EditorContext` 应用参数、记录
+日志、列出/上传/下载预览图源、运行 pure preview 或管理 live preview；不要导入或保存
+`MainWindow`。`dispose()` 必须幂等并关闭线程、Timer、future 和预览 session。
+
+Designer 的 `OperatorEditorManager` 以 `(projectId, workflowId, nodeId)` 为键，每节点最多
+一个非模态窗口。builtin Controller 自动信任；外部 Controller 以
+`operatorId + version + controllerEntry + uiHash` 作为信任身份，任一项变化都需要重新
+确认。远端或旧 Runtime 不支持 UI RPC、资源校验失败、Controller 不可导入时，Designer
+自动回退 Schema 表单。
+
+pure preview 的本地图片只上传到 Runtime 临时区，不写入项目；作业快照只在整个 Job
+成功后提升为项目最近结果，失败/取消不会覆盖旧快照。Loop 中同一节点端口由最后一次
+成功迭代覆盖，并保留其 `iterationPath`。
+
+### 9.4.1 为算子添加自带图标
+
+图标和专用编辑器互不依赖。不需要 `.ui`、Controller 或 Designer 中的算子 ID 对照表。
+在 `manifest.json` 所在目录下增加资源，然后向原 manifest 追加字段：
+
+```text
+example/
+  manifest.json
+  operator.py
+  assets/icon.svg
+```
+
+```json
+{
+  "iconKey": "edge",
+  "iconResource": "assets/icon.svg"
+}
+```
+
+上面只是字段增量，不可替代完整 manifest。`iconKey` 保留为加载中、错误和旧端兼容
+时的分类兜底；不声明或声明空字符串表示没有图片，显式 `null` 等错误类型产生图标
+诊断。路径基于 manifest 目录，必须使用 `/`，不允许绝对路径、URL、反斜杠、
+空段、`.`、`..` 或符号链接越界。只读取普通文件，单文件最多 256 KiB，
+一次扫描最多冻结 16 MiB 图片。
+
+一个最小合规 SVG：
+
+```xml
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
+  <rect x="4" y="4" width="16" height="16" rx="2" fill="#0891b2"/>
+  <path d="M8 12 L11 15 L16 9" fill="none" stroke="#ffffff" stroke-width="2"/>
+</svg>
+```
+
+v1 接受受限静态 SVG 或 PNG，不接受任意导出文件：
+
+- SVG 必须是 UTF-8、SVG 命名空间和有效 `viewBox`。只允许基础图元、有限数值、
+  `none/#RGB/#RRGGBB` 颜色及受限路径/变换。最多 512 个元素、16 层、2048 段路径。
+  不支持 `style`、字体、渐变、滤镜、动画、`use/image`、链接、脚本、DTD 或实体。
+- PNG 宽高最多 512，必须非隔行、非 APNG，校验数据块长度、CRC、顺序及有界 IDAT
+  解压。带 `iCCP/iTXt/zTXt/tEXt/eXIf` 等非白名单附加块也会被拒绝；重新导出为
+  不含附加元数据的静态 PNG，不能关闭校验来迁就导出器。
+- 图片损坏、缺失、格式超集或安全解析器不可用，只影响图片，不影响有效算子执行。
+  GUI 解码失败也回退分类图标；无 QtSvg 时还有不依赖 SVG 的绘制兜底。
+
+完整白名单和诊断码见 [图标计划第 5 节](plans/2026-09-10-operator-icon-registration-v1.md)。
+SVG 安全解析使用固定依赖 `defusedxml==0.7.1`；Core 不导入 Qt。
+
+资源读取一次即冻结，之后 `GetOperatorIconAsset(operator_id, version, expected_sha256)`
+只返回该快照。Designer 使用四个独立 worker，取图单次 2 秒、最多 128 个排队身份；
+目录请求独立于取图。bytes 缓存 16 MiB、GUI 渲染缓存 32 MiB/256 项，均只在内存中。
+版本、SHA、Runtime 会话、目录代次和控件绑定代次共同防止旧请求写到新节点。
+本地调用的两秒是接收结果期限，不是强制终止 Python 函数。
+
+**换图后必须重启 Runtime，再刷新 Designer 目录。** 仅删除磁盘图片或点击刷新
+不会重读磁盘；当前进程仍提供原冻结字节。默认嵌入式模式需保存并正常重启 Designer。
+收到新目录 `invalid/none` 才撤销旧图；短暂断网不清空同一会话已有的有效缓存。
+可观察的 gRPC `TRANSIENT_FAILURE -> READY` 会更新会话并重新取目录；未观察到连接
+失败的服务端变更仍需显式刷新，不承诺透明热更新。图标不会写入项目、工作流包、参数
+或拖拽 MIME，不触发未保存状态。更新正式插件资源时同步维护 manifest/meta 版本。
+
+排查时先看 `descriptor.iconStatus`（`none/ready/invalid`）和 `descriptor.iconIssues`，
+再查 Designer 的 WARNING 图标诊断。`ready` 只表示核心校验通过；真正显示成功还须
+`renderSource=custom`，不能以非空 QIcon 或兜底图案代替。
+
+本地复验（已安装项目依赖的 Python 3.10 环境）：
+
+```powershell
+$env:QT_QPA_PLATFORM = 'offscreen'
+$env:HUARAY_CAMERA_SMOKE = '0'
+python scripts/ci_check.py
+python -m emo_master.apps.windows_entry --self-test --gui-icons --result-json build/icon-self-test.json
+python scripts/operator_icon_visual_check.py --scale 1.5 --output build/icon-visual-150
+```
+
+不传 `--gui-icons` 的自检保持无 GUI；传入后必须真实渲染三个内置示例在
+24/36/48 物理像素下的九组图片，并核对 SHA 和特征色像素。新增/修改示例图时要同步
+更新包体自检基准和 [资源来源记录](operator-icon-assets.md)，不能放宽成仅检查兜底。
+
+发布 ZIP 必须包含整个插件资源目录、`defusedxml` 和 Qt SVG 运行依赖。
+`scripts/verify_windows_package.ps1 -Archive <portable.zip>` 解压到全新隔离目录，
+清除 `PYTHONPATH`，限时运行冻结 EXE 的全部自检；Windows 发布工作流已在上传 Release
+前加入此门禁。外部插件和系统节点不计入三个内置示例覆盖率。
+截图、实测环境和未完成环境验收见 [实施记录](testing/operator-icons-2026-09-10/README.md)。
+
+### 9.5 本地检查是否注册成功
+
+无需先启动 UI，可以直接扫描默认插件根：
+
+```python
+from pathlib import Path
+
+from emo_master.core.plugin.registry import PluginRegistry
+
+
+operatorId = "vision.example.multiply"
+scan = PluginRegistry(coreVersion="0.6.0").scan(
+    Path("src/emo_master/plugins")
+)
+
+if operatorId in scan.rejectedOperators:
+    for issue in scan.rejectedOperators[operatorId]:
+        print(issue.code, issue.message)
+    raise SystemExit(1)
+
+assert operatorId in scan.activeOperators
+print("registered:", operatorId)
+```
+
+`scan()` 返回本次扫描结果，不会写数据库或修改中央状态。Runtime 初始化时会执行同类
+扫描，并持有该结果。新增或修改算子后应重启 Runtime；Designer 重新获取 catalog 后
+才会显示新定义。
+
+### 9.6 外部算子根目录
+
+外部算子也使用相同的 manifest 机制。创建 RuntimeService 时可传多个根：
+
+```python
+service = RuntimeService(
+    dbPath=databasePath,
+    pluginRootPaths=(
+        "src/emo_master/plugins",
+        "D:/vision_plugins",
+    ),
+)
+```
+
+注意：
+
+- 显式传入 `pluginRootPaths` 会替代默认根；仍需 builtins 时必须把
+  `src/emo_master/plugins` 一并传入。
+- 扫描根只负责发现 manifest，不会自动修改 `sys.path`；外部 entry 对应的 Python
+  包必须已安装，或其父目录已经在 Python import path 中。
+- 同一个 `operatorId` 在任意两个 manifest 中重复时，这些声明会全部进入
+  `rejectedOperators`，不会随机选择一个。
+
+### 9.7 添加注册测试
+
+至少补三类测试：
+
+1. 算子单测：直接调用 `validateParams()` 和 `executeNode()`，覆盖成功、参数错误、输入
+   错误和输出契约。
+2. Runtime 注册测试：把新 `operatorId` 加入
+   `tests/runtime/test_operator_registration.py` 的 expected 集合，确保它处于 active 且
+   `rejectedOperators` 为空。
+3. 契约/工作流测试：语义 DTO 覆盖 round-trip、未知字段、非有限值和坐标空间不一致；
+   有图像/集合链路时再覆盖实际端口路由。使用 Homography 的算子还必须验证变换方向、
+   连续组合、仿射互操作、奇异矩阵和 `w=0` 映射失败。
+
+网络算子必须使用本机随机端口的 fake peer，不依赖现场设备；至少覆盖拆包、提前 EOF、
+超时、畸形响应、远端拒绝、重试边界和资源关闭。通用发送不应默认重试非幂等消息。
+
+推荐验证命令：
+
+```bash
+pytest -q tests/core/plugin/test_registry.py tests/runtime/test_operator_registration.py
+pytest -q tests/core/contracts tests/plugins tests/runtime/test_builtin_vision_operator_workflows.py
+ruff check src/emo_master/plugins/builtins/example_multiply
+mypy src/emo_master/plugins/builtins/example_multiply
+```
+
+注册成功后再启动 Runtime/Designer 做一次实际连线和运行验证。看到节点只说明 metadata
+已经注册；工作流运行成功才说明 `executeNode()`、端口路由和输出契约也正确。
 
 ---
 
@@ -436,18 +858,19 @@ src/emo_master/plugins/builtins/my_operator/
 
 外部插件目录、多来源插件仍未形成完整方案。
 
-### 11.2 manifest 表达能力还偏基础
+### 11.2 manifest 已支持可选复杂编辑器
 
-现在已经够支持：
+现在已经支持：
 
 - 分类
 - 图标
 - 摘要
 - 参数 schema
+- `.ui + Controller` 独立窗口
+- pure/live 两类 Runtime 预览
 
-但未来如果想支持更复杂 UI，可能还需要：
+后续仍可继续补充：
 
-- richer schema metadata
 - 示例值
 - 文档链接
 - 控制流语义标记

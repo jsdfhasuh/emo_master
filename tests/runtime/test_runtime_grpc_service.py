@@ -6,6 +6,7 @@ import numpy as np
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from tests.runtime.runtime_test_utils import waitForTerminal
 
 
 def testLoadProjectReturnsReadyStatus(tmp_path: Path) -> None:
@@ -51,6 +52,35 @@ def testListOperatorsReturnsRegisteredEntries() -> None:
     assert operatorInfo.param_schema_json.startswith("{")
     assert operatorInfo.category != ""
     assert operatorInfo.icon_key != ""
+
+
+def testRuntimeServiceCleansTerminalWorkspacesAndJobMessages(tmp_path: Path) -> None:
+    workspaceRoot = tmp_path / "job-workspaces"
+    service = RuntimeService(
+        dbPath=tmp_path / "runtime.db",
+        workspaceRoot=workspaceRoot,
+    )
+    try:
+        failedWorkspace = workspaceRoot / "job-failed"
+        failedWorkspace.mkdir(parents=True)
+        service._workspacePaths["job-failed"] = failedWorkspace
+        service.jobMessages["job-failed"] = "accepted"
+
+        service._onJobTerminal("job-failed", "FAILED")
+
+        assert not failedWorkspace.exists()
+        assert "job-failed" not in service.jobMessages
+        assert "job-failed" not in service._workspacePaths
+
+        completedWorkspace = workspaceRoot / "job-completed"
+        completedWorkspace.mkdir(parents=True)
+        service._workspacePaths["job-completed"] = completedWorkspace
+        service._onJobTerminal("job-completed", "COMPLETED")
+        assert completedWorkspace.exists()
+    finally:
+        service.close()
+
+    assert not completedWorkspace.exists()
 
 
 def testStreamJobEventsReturnsLifecycleEvents(tmp_path: Path) -> None:
@@ -111,10 +141,11 @@ def testStreamJobEventsReturnsLifecycleEvents(tmp_path: Path) -> None:
         runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
     )
     assert startReply.job_id != ""
+    waitForTerminal(service, startReply.job_id)
 
     events = list(
         service.StreamJobEvents(
-            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id), None
+            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
         )
     )
     assert len(events) >= 2
@@ -194,12 +225,17 @@ def testStreamJobEventsIncludeSwitchBranchPayload(tmp_path: Path) -> None:
     startReply = service.StartJob(
         runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
     )
+    waitForTerminal(service, startReply.job_id)
     events = list(
         service.StreamJobEvents(
-            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id), None
+            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
         )
     )
-    switchEvents = [event for event in events if event.node_id == "switch1"]
+    switchEvents = [
+        event
+        for event in events
+        if event.node_id == "switch1" and event.event_type == "node.completed"
+    ]
     assert len(switchEvents) == 1
     payload = json.loads(switchEvents[0].payload_json)
     assert payload["status"] == "COMPLETED"

@@ -1,0 +1,247 @@
+[
+  {
+    "file": "tests\\designer\\test_app_qss.py",
+    "exit": 0,
+    "seconds": 3.172194099985063
+  },
+  {
+    "file": "tests\\designer\\test_builtin_operator_editor_ui.py",
+    "exit": 0,
+    "seconds": 2.388562300009653
+  },
+  {
+    "file": "tests\\designer\\test_camera_parameter_form.py",
+    "exit": 0,
+    "seconds": 1.7843261000234634
+  },
+  {
+    "file": "tests\\designer\\test_canvas_area.py",
+    "exit": 0,
+    "seconds": 1.585276799974963
+  },
+  {
+    "file": "tests\\designer\\test_canvas_view_navigation.py",
+    "exit": 0,
+    "seconds": 1.7934184999903664
+  },
+  {
+    "file": "tests\\designer\\test_current_node_details.py",
+    "exit": 0,
+    "seconds": 2.390497599961236
+  },
+  {
+    "file": "tests\\designer\\test_delete_shortcut.py",
+    "exit": 0,
+    "seconds": 1.5492559999693185
+  },
+  {
+    "file": "tests\\designer\\test_designer_bootstrap.py",
+    "exit": 0,
+    "seconds": 1.4184055000077933
+  },
+  {
+    "file": "tests\\designer\\test_flow_graph_model.py",
+    "exit": 0,
+    "seconds": 1.473646100028418
+  },
+  {
+    "file": "tests\\designer\\test_flow_graph_project_codec.py",
+    "exit": 0,
+    "seconds": 1.4306769999675453
+  },
+  {
+    "file": "tests\\designer\\test_flow_scene_interactions.py",
+    "exit": 0,
+    "seconds": 1.5461003000382334
+  },
+  {
+    "file": "tests\\designer\\test_global_counter_client.py",
+    "exit": 0,
+    "seconds": 1.324216799926944
+  },
+  {
+    "file": "tests\\designer\\test_global_counter_worker.py",
+    "exit": 0,
+    "seconds": 1.359578900039196
+  },
+  {
+    "file": "tests\\designer\\test_global_counters_dialog.py",
+    "exit": 0,
+    "seconds": 3.3273608000017703
+  },
+  {
+    "file": "tests\\designer\\test_log_dialog.py",
+    "exit": 0,
+    "seconds": 4.010985199944116
+  },
+  {
+    "file": "tests\\designer\\test_main_window_layout.py",
+    "exit": 0,
+    "seconds": 5.536531499936245
+  },
+  {
+    "file": "tests\\designer\\test_main_window_menubar.py",
+    "exit": 0,
+    "seconds": 2.1211643998976797
+  },
+  {
+    "file": "tests\\designer\\test_main_window_project_save_load.py",
+    "exit": 0,
+    "seconds": 2.2895464999601245
+  },
+  {
+    "file": "tests\\designer\\test_main_window_workflow_tabs.py",
+    "exit": 0,
+    "seconds": 2.955724500003271
+  },
+  {
+    "file": "tests\\designer\\test_node_param_dialog.py",
+    "exit": 0,
+    "seconds": 1.6198377999244258
+  },
+  {
+    "file": "tests\\designer\\test_operator_bubble.py",
+    "exit": 0,
+    "seconds": 1.5238158999709412
+  },
+  {
+    "file": "tests\\designer\\test_operator_bubble_mouse_events.py",
+    "exit": 0,
+    "seconds": 1.5082009000470862
+  },
+  {
+    "file": "tests\\designer\\test_operator_catalog_controller.py",
+    "exit": 0,
+    "seconds": 1.536849300027825
+  },
+  {
+    "file": "tests\\designer\\test_operator_catalog_worker.py",
+    "exit": 0,
+    "seconds": 1.4823848999803886
+  },
+  {
+    "file": "tests\\designer\\test_operator_editor_manager.py",
+    "exit": 0,
+    "seconds": 1.518641300033778
+  },
+  {
+    "file": "tests\\designer\\test_operator_icon_cache.py",
+    "exit": 0,
+    "seconds": 1.5351845000404865
+  },
+  {
+    "file": "tests\\designer\\test_operator_icon_integration.py",
+    "exit": 0,
+    "seconds": 3.119239900028333
+  },
+  {
+    "file": "tests\\designer\\test_operator_icon_provider.py",
+    "exit": 0,
+    "seconds": 2.96385860000737
+  },
+  {
+    "file": "tests\\designer\\test_operator_icon_worker.py",
+    "exit": 0,
+    "seconds": 1.797846500063315
+  },
+  {
+    "file": "tests\\designer\\test_package_gui_icons.py",
+    "exit": 0,
+    "seconds": 2.1259883999591693
+  },
+  {
+    "file": "tests\\designer\\test_param_form.py",
+    "exit": 0,
+    "seconds": 1.5873133999994025
+  },
+  {
+    "file": "tests\\designer\\test_param_form_file_picker.py",
+    "exit": 0,
+    "seconds": 3.842169300070964
+  },
+  {
+    "file": "tests\\designer\\test_project_store.py",
+    "exit": 0,
+    "seconds": 3.4134038999909535
+  },
+  {
+    "file": "tests\\designer\\test_recent_projects.py",
+    "exit": 0,
+    "seconds": 2.274480800027959
+  },
+  {
+    "file": "tests\\designer\\test_runtime_client.py",
+    "exit": 0,
+    "seconds": 1.6537495999364182
+  },
+  {
+    "file": "tests\\designer\\test_runtime_controller.py",
+    "exit": 0,
+    "seconds": 1.604043599916622
+  },
+  {
+    "file": "tests\\designer\\test_runtime_panel.py",
+    "exit": 0,
+    "seconds": 1.5314407000551
+  },
+  {
+    "file": "tests\\designer\\test_runtime_worker.py",
+    "exit": 0,
+    "seconds": 3.1270603999728337
+  },
+  {
+    "file": "tests\\designer\\test_schema_utils.py",
+    "exit": 0,
+    "seconds": 1.3683040000032634
+  },
+  {
+    "file": "tests\\designer\\test_sidebar_collapse.py",
+    "exit": 0,
+    "seconds": 1.562009899993427
+  },
+  {
+    "file": "tests\\designer\\test_sidebar_node_navigation.py",
+    "exit": 0,
+    "seconds": 1.6122870999388397
+  },
+  {
+    "file": "tests\\designer\\test_startup_project_entry.py",
+    "exit": 0,
+    "seconds": 2.137731699971482
+  },
+  {
+    "file": "tests\\designer\\test_system_nodes.py",
+    "exit": 0,
+    "seconds": 2.2360013999277726
+  },
+  {
+    "file": "tests\\designer\\test_visual_layout.py",
+    "exit": 0,
+    "seconds": 2.143726299982518
+  },
+  {
+    "file": "tests\\designer\\test_workflow_boundary_nodes.py",
+    "exit": 0,
+    "seconds": 2.132971700048074
+  },
+  {
+    "file": "tests\\designer\\test_workflow_dependency_tree.py",
+    "exit": 0,
+    "seconds": 1.6400321000255644
+  },
+  {
+    "file": "tests\\designer\\test_workflow_package.py",
+    "exit": 0,
+    "seconds": 1.5985346999950707
+  },
+  {
+    "file": "tests\\designer\\test_workflow_package_preview_dialog.py",
+    "exit": 0,
+    "seconds": 1.6839168999576941
+  },
+  {
+    "file": "tests\\designer\\test_workflow_store.py",
+    "exit": 0,
+    "seconds": 1.6684913999633864
+  }
+]

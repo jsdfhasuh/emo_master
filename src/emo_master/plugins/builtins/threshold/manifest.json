@@ -1,0 +1,77 @@
+{
+  "operatorId": "vision.preprocess.threshold",
+  "displayName": "Threshold",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.threshold.operator:ThresholdOperator",
+  "category": "预处理",
+  "iconKey": "threshold",
+  "summary": "将 uint8 灰度或 BGR 图像转换为可复用的 0/255 二值掩码。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "mask": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "threshold": {
+      "type": "number",
+      "required": true,
+      "nullable": true
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {
+        "type": "string",
+        "enum": [
+          "fixed",
+          "otsu",
+          "triangle",
+          "adaptiveMean",
+          "adaptiveGaussian"
+        ],
+        "default": "fixed"
+      },
+      "threshold": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 127
+      },
+      "invert": {
+        "type": "boolean",
+        "default": false
+      },
+      "blockSize": {
+        "type": "integer",
+        "minimum": 3,
+        "default": 11
+      },
+      "constant": {
+        "type": "number",
+        "default": 2.0
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,46 @@
+{
+  "operatorId": "vision.preprocess.morphology",
+  "displayName": "Morphology",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.morphology.operator:MorphologyOperator",
+  "category": "预处理",
+  "iconKey": "morphology",
+  "summary": "对二值掩码执行腐蚀、膨胀、开闭、梯度、顶帽或黑帽运算。",
+  "inputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "operation": {
+        "type": "string",
+        "enum": ["erode", "dilate", "open", "close", "gradient", "tophat", "blackhat"],
+        "default": "open"
+      },
+      "kernelShape": {
+        "type": "string",
+        "enum": ["rect", "ellipse", "cross"],
+        "default": "rect"
+      },
+      "kernelSize": {"type": "integer", "minimum": 1, "default": 3},
+      "iterations": {"type": "integer", "minimum": 1, "default": 1}
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

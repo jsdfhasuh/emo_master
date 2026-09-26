@@ -49,10 +49,14 @@ def _worker(pipe):
             read_ms = (time.perf_counter_ns() - read_start) / 1e6
             if read_ms > BUDGET.read_seconds * 1000:
                 raise TimeoutError("asset read/decode deadline")
-            pipe.send(("DONE", task, len(content), hashlib.sha256(content).hexdigest(), read_ms,
-                       raw_digest, encode_start, time.perf_counter_ns()))
+            reply = ("DONE", task, len(content), hashlib.sha256(content).hexdigest(), read_ms,
+                     raw_digest, encode_start, time.perf_counter_ns())
         finally:
+            # Idle workers must not retain last task buffers after the parent
+            # releases its reservation. DONE is sent only after actual release.
+            image = data = content = decoded = None
             segment.close()
+        pipe.send(reply)
 
 
 class Exporters:

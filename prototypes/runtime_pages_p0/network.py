@@ -4,6 +4,8 @@ P0 server only. The production service, proto and four-thread entry stay intact.
 Long-running next() calls never consume a control worker. No private grpc APIs.
 """
 import asyncio
+from collections import deque
+import tempfile
 from dataclasses import asdict
 from concurrent.futures import ThreadPoolExecutor
 import json
@@ -23,18 +25,30 @@ class CancelContext:
     def __init__(self):
         self.cancelled = threading.Event()
         self.callbacks = []
+        self.lock = threading.Lock()
 
     def is_active(self):
         return not self.cancelled.is_set()
 
     def add_callback(self, callback):
-        self.callbacks.append(callback)
-        return True
+        with self.lock:
+            if self.cancelled.is_set():
+                return False
+            self.callbacks.append(callback)
+            return True
 
     def cancel(self):
         self.cancelled.set()
-        for callback in self.callbacks:
-            callback()
+        with self.lock:
+            callbacks, self.callbacks = self.callbacks, []
+        errors = []
+        for callback in callbacks:
+            try:
+                callback()
+            except Exception as error:
+                errors.append(repr(error))
+        if errors:
+            raise RuntimeError(str(errors))
 
     def abort(self, code, details):
         raise RpcAbort(code, details)
@@ -59,18 +73,58 @@ class IsolatedServer:
         self.peak = dict(self.active)
         self.pools = {name: ThreadPoolExecutor(max_workers=limit, thread_name_prefix=f"p0-{name}")
                       for name, limit in LIMITS.items()}
+        self.cleanup_pool = ThreadPoolExecutor(max_workers=sum(LIMITS.values()), thread_name_prefix="p0-cancel")
+        self.cleanups = set()
+        self.errors = deque(maxlen=64)
+        self.start_error = None
         self.ready = threading.Event()
-        self.accepted = []
+        self.accepted = deque(maxlen=64)
         self.thread = threading.Thread(target=self._run, name="p0-aio")
         self.thread.start()
         if not self.ready.wait(10):
             raise TimeoutError("aio startup")
+        if self.start_error:
+            self.thread.join(2)
+            self._shutdown_pools()
+            raise RuntimeError("aio startup failed") from self.start_error
 
     async def _admit(self, category, context):
         if self.active[category] >= LIMITS[category]:
             await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, category)
         self.active[category] += 1
         self.peak[category] = max(self.peak[category], self.active[category])
+
+    def _cleanup(self, category, cancel, pending, iterator=None, constructing=False, resource=None):
+        # Only the Event is set on the loop. Arbitrary old callbacks run off-loop.
+        cancel.cancelled.set()
+        async def finish():
+            nonlocal iterator
+            callbacks = self.loop.run_in_executor(self.cleanup_pool, cancel.cancel)
+            try:
+                if pending is not None:
+                    try:
+                        value = await asyncio.shield(pending)
+                        if constructing:
+                            iterator = value
+                    except Exception as error:
+                        self.errors.append(repr(error))
+                try:
+                    await callbacks
+                except Exception as error:
+                    self.errors.append(repr(error))
+                if iterator is not None and hasattr(iterator, "close"):
+                    await self.loop.run_in_executor(self.pools[category], iterator.close)
+            except Exception as error:
+                self.errors.append(repr(error))
+            finally:
+                try:
+                    if resource is not None:
+                        await self.loop.run_in_executor(self.pools[category], resource.close)
+                finally:
+                    self.active[category] -= 1
+        task = self.loop.create_task(finish())
+        self.cleanups.add(task)
+        task.add_done_callback(self.cleanups.discard)
 
     def _unary(self, name, category="control"):
         async def call(request, context):
@@ -84,11 +138,7 @@ class IsolatedServer:
             except RpcAbort as error:
                 await context.abort(error.code, error.details)
             finally:
-                cancel.cancel()
-                if future is not None and not future.done():
-                    future.add_done_callback(lambda _: self._release(category))
-                else:
-                    self._release(category)
+                self._cleanup(category, cancel, future)
         return call
 
     def _release(self, category):
@@ -98,14 +148,12 @@ class IsolatedServer:
         async def stream(request, context):
             await self._admit(category, context)
             cancel = CancelContext()
-            iterator = method(request, cancel)
-            pending = None
-
-            def cleanup(_=None):
-                iterator.close()
-                self._release(category)
-
+            iterator = pending = None
+            constructing = True
             try:
+                pending = self.loop.run_in_executor(self.pools[category], method, request, cancel)
+                iterator = await asyncio.shield(pending)
+                constructing = False
                 while not context.cancelled():
                     pending = self.loop.run_in_executor(self.pools[category], _next, iterator)
                     valid, message = await asyncio.shield(pending)
@@ -115,13 +163,56 @@ class IsolatedServer:
             except RpcAbort as error:
                 await context.abort(error.code, error.details)
             finally:
-                cancel.cancel()
-                # A running generator owns the slot until next() really exits.
-                if pending is not None and not pending.done():
-                    pending.add_done_callback(cleanup)
-                else:
-                    cleanup()
+                self._cleanup(category, cancel, pending, iterator, constructing)
         return stream
+
+    def _upload(self):
+        async def upload(requests, context):
+            await self._admit("bulk", context)
+            cancel = CancelContext()
+            pending = None
+            spool = None
+            try:
+                pending = self.loop.run_in_executor(self.pools["bulk"], tempfile.TemporaryFile)
+                spool = await asyncio.shield(pending)
+                total = 0
+                count = 0
+                spool_bytes = 0
+                async for chunk in requests:
+                    count += 1
+                    total += len(chunk.content)
+                    if total > 64 * 1024 * 1024:
+                        return pb.PreviewAssetReply(ok=False, code="E_PREVIEW_ASSET_INVALID",
+                                                    message="preview upload exceeds 64 MiB")
+                    raw = chunk.SerializeToString()
+                    spool_bytes += len(raw) + 4
+                    if count > 1024 or spool_bytes > 68 * 1024 * 1024:
+                        await context.abort(grpc.StatusCode.RESOURCE_EXHAUSTED, "upload metadata/chunk count quota")
+                    def write(data=raw):
+                        spool.write(len(data).to_bytes(4, "little"))
+                        spool.write(data)
+                    pending = self.loop.run_in_executor(self.pools["bulk"], write)
+                    await asyncio.shield(pending)
+                def execute():
+                    spool.seek(0)
+                    def chunks():
+                        while True:
+                            if not cancel.is_active():
+                                raise RuntimeError("upload cancelled")
+                            size = spool.read(4)
+                            if not size:
+                                return
+                            yield pb.PreviewUploadChunk.FromString(spool.read(int.from_bytes(size, "little")))
+                    return self.service.UploadPreviewImage(chunks(), cancel)
+                pending = self.loop.run_in_executor(self.pools["bulk"], execute)
+                return await asyncio.shield(pending)
+            finally:
+                if spool is None and pending is not None:
+                    # A cancelled TemporaryFile construction still owns a handle.
+                    self._cleanup("bulk", cancel, pending, constructing=True)
+                else:
+                    self._cleanup("bulk", cancel, pending, resource=spool)
+        return upload
 
     async def _start(self):
         self.server = grpc.aio.server(options=[("grpc.max_receive_message_length", 1024 * 1024)])
@@ -129,7 +220,7 @@ class IsolatedServer:
         for method in pb.DESCRIPTOR.services_by_name["RuntimeService"].methods:
             name = method.name
             if method.client_streaming:
-                # Upload is deliberately not an implemented P0 capability.
+                setattr(adapter, name, self._upload())
                 continue
             category = "control"
             if name == "StreamJobEvents":
@@ -185,23 +276,37 @@ class IsolatedServer:
     def _run(self):
         self.loop = asyncio.new_event_loop()
         asyncio.set_event_loop(self.loop)
-        self.loop.run_until_complete(self._start())
-        self.loop.run_forever()
-        self.loop.close()
+        try:
+            self.loop.run_until_complete(self._start())
+        except BaseException as error:
+            self.start_error = error
+            if hasattr(self, "server"):
+                self.loop.run_until_complete(self.server.stop(0))
+            self.ready.set()
+        else:
+            self.loop.run_forever()
+        finally:
+            self.loop.close()
 
-    def close(self):
+    def _shutdown_pools(self):
+        for pool in (*self.pools.values(), self.cleanup_pool):
+            pool.shutdown(wait=True)
+
+    def close(self, timeout=4):
         async def stop():
             await self.server.stop(0)
-            deadline = time.monotonic() + 4
-            while any(self.active.values()) and time.monotonic() < deadline:
+            deadline = time.monotonic() + timeout
+            while (any(self.active.values()) or self.cleanups) and time.monotonic() < deadline:
                 await asyncio.sleep(.01)
-            assert not any(self.active.values()), self.active
-        asyncio.run_coroutine_threadsafe(stop(), self.loop).result(6)
+            if any(self.active.values()) or self.cleanups:
+                # Keep loop/pools alive and quotas charged. Caller can release
+                # the test gate and retry; outer watchdog owns a permanent hang.
+                raise TimeoutError(f"unretired RPC work: {self.active}")
+        asyncio.run_coroutine_threadsafe(stop(), self.loop).result(timeout + 2)
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.thread.join(2)
         assert not self.thread.is_alive()
-        for pool in self.pools.values():
-            pool.shutdown(wait=True)
+        self._shutdown_pools()
 
 
 class DisplayFeed:
@@ -233,6 +338,11 @@ class DisplayFeed:
             return {"latest": self.latest.get(request["job"]), "cursor": self.cursor}
 
     def follow(self, request, context):
+        if getattr(self, "follow_override", False):
+            return self.test_method(request, context)
+        return self._follow(request, context)
+
+    def _follow(self, request, context):
         cursor = request.get("cursor", -1)
         while context.is_active():
             snapshot = self.snapshot_json(request)

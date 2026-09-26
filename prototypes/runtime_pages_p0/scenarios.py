@@ -311,16 +311,22 @@ def network_scenario(root):
         assert not mp.active_children()
 
 
-def run(name):
+def run(name, parameters=None):
     with tempfile.TemporaryDirectory(prefix="emo-p0-") as temporary:
         root = Path(temporary)
         if name == "exports":
             return export_scenario(root)
         if name == "network":
             return network_scenario(root)
+        if name == "network-faults":
+            from .network_faults import run as network_faults
+            return network_faults(root)
+        if name == "pipeline-faults":
+            from .pipeline_faults import run as pipeline_faults
+            return pipeline_faults(root)
         if name == "benchmark":
             from .benchmark import benchmark
-            return benchmark(root)
+            return benchmark(root, **(parameters or {}))
         if name == "continuous":
             from .continuous import window
             import hashlib
@@ -344,4 +350,4 @@ if __name__ == "__main__":
     mp.freeze_support()
     if sys.stdin.readline().strip() != "GO":
         raise RuntimeError("invoke via watchdog.supervised")
-    print(json.dumps(run(sys.argv[1]), ensure_ascii=True))
+    print(json.dumps(run(sys.argv[1], json.loads(sys.argv[2]) if len(sys.argv) > 2 else {}), ensure_ascii=True))

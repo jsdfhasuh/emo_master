@@ -1,5 +1,6 @@
 """External deadline, including final process-tree cleanup on Windows."""
 import os
+import json
 from pathlib import Path
 import signal
 import subprocess
@@ -55,11 +56,11 @@ class ProcessTree:
             self.handle = None
 
 
-def supervised(name, timeout=90):
+def supervised(name, timeout=90, parameters=None):
     root = Path(__file__).resolve().parents[2]
     env = dict(os.environ, PYTHONPATH=os.pathsep.join((str(root), str(root / "src"))),
                HUARAY_CAMERA_SMOKE="0", QT_QPA_PLATFORM="offscreen")
-    process = subprocess.Popen([sys.executable, "-m", "prototypes.runtime_pages_p0.scenarios", name],
+    process = subprocess.Popen([sys.executable, "-m", "prototypes.runtime_pages_p0.scenarios", name, json.dumps(parameters or {})],
                                cwd=root, env=env, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                stdin=subprocess.PIPE, text=True, start_new_session=os.name != "nt")
     tree = None
@@ -67,7 +68,7 @@ def supervised(name, timeout=90):
         tree = ProcessTree(process.pid)
         # Child waits for this line, so no descendant can escape assignment.
         stdout, stderr = process.communicate(input="GO\n", timeout=timeout)
-    except BaseException:
+    except BaseException as error:
         if tree:
             tree.close()
         if os.name == "nt":
@@ -76,7 +77,9 @@ def supervised(name, timeout=90):
         else:
             os.killpg(process.pid, signal.SIGKILL)
         process.kill()
-        process.communicate(timeout=10)
+        stdout, stderr = process.communicate(timeout=10)
+        if isinstance(error, subprocess.TimeoutExpired):
+            raise AssertionError(f"{name}: outer watchdog {timeout}s\n{stdout}\n{stderr}") from error
         raise
     finally:
         if tree:

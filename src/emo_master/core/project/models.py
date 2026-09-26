@@ -2,7 +2,10 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, model_validator, model_serializer
+
+from emo_master.core.presentation.models import Presentation
+from emo_master.core.project.resources import ResourcePlan
 
 
 class StrictModel(BaseModel):
@@ -68,7 +71,7 @@ class ProjectDevices(StrictModel):
 
 
 class ProjectDocument(StrictModel):
-    schemaVersion: Literal["2.0", "2.1"]
+    schemaVersion: Literal["2.0", "2.1", "2.2"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -76,6 +79,25 @@ class ProjectDocument(StrictModel):
     runtime: RuntimeSettings = Field(default_factory=RuntimeSettings)
     dependencies: ProjectDependencies = Field(default_factory=ProjectDependencies)
     devices: ProjectDevices = Field(default_factory=ProjectDevices)
+    presentation: Presentation | None = None
+    resources: ResourcePlan | None = None
+
+    @model_validator(mode="after")
+    def validateVersion(self) -> "ProjectDocument":
+        if self.schemaVersion != "2.2":
+            if {"presentation", "resources"} & self.model_fields_set:
+                raise ValueError("presentation/resources require explicit project 2.2 migration")
+        elif self.presentation is None or self.resources is None:
+            raise ValueError("project 2.2 requires presentation and resources")
+        return self
+
+    @model_serializer(mode="wrap")
+    def serializeVersion(self, handler):
+        payload = handler(self)
+        if self.schemaVersion != "2.2":
+            payload.pop("presentation", None)
+            payload.pop("resources", None)
+        return payload
 
     @model_validator(mode="after")
     def validateWorkflowIndex(self) -> "ProjectDocument":

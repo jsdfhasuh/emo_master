@@ -148,7 +148,7 @@ class PresentationStore:
             if scope not in pageScopes(p, current) or scope not in pageScopes(p, target):
                 raise ValueError("detail scope unsupported")
             # Capture the result actually displayed by the originating page, never global latest.
-            displayed = self.frozenResults.get(current, self.displayedResults.get(current, {}))
+            displayed = {**self.displayedResults.get(current, {}), **self.frozenResults.get(current, {})}
             resultKey = displayed.get(scope)
             if resultKey is None:
                 raise ValueError("selected scope has no displayed result")

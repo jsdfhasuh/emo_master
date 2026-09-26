@@ -176,12 +176,12 @@ def validateProjectDocument(
                     )
                 if (
                     node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION
-                    and document.schemaVersion != "2.1"
+                    and document.schemaVersion not in {"2.1", "2.2"}
                 ):
                     issues.append(
                         ValidationIssue(
                             "E_LOOP_CONTRACT_SCHEMA_UNSUPPORTED",
-                            "loop contractVersion=2 requires project schemaVersion 2.1",
+                            "loop contractVersion=2 requires project schemaVersion 2.1 or 2.2",
                             projectId=projectId,
                             workflowId=workflowId,
                             nodeId=node.nodeId,

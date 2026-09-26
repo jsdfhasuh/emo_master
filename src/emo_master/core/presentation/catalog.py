@@ -4,7 +4,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from collections.abc import Mapping
 
-from emo_master.core.contracts.port_types import normalizePortSpec, normalizePortType
+from emo_master.core.contracts.port_types import JSON_PAYLOAD_PORT_TYPES, normalizePortSpec, normalizePortType
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.presentation.models import CallStep, DataSource
@@ -51,7 +51,9 @@ def presentationType(spec: object) -> str:
         return "collection"
     if value in {"geometry2d", "point2d", "bbox2d", "rotatedBox2d", "polygon2d", "line2d", "circle2d"}:
         return "geometry"
-    return "json"
+    if value in {"any", "object", "json"} or value in JSON_PAYLOAD_PORT_TYPES:
+        return "json"
+    raise ValueError(f"unsupported presentation output type: {value}")
 
 
 def buildOutputCatalog(

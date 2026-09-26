@@ -1,8 +1,13 @@
-# project.json v2.1 规范
+# project.json v2.1 / v2.2 规范
 
 `project.json v2.1` 是 Designer 与 Runtime 的唯一项目源。磁盘模型由
 `ProjectDocument` 严格校验；Designer 读取 v1/v2.0 时只在内存中迁移，保存 v2.1
 前先备份旧文件并通过临时文件原子替换。
+
+2026-09-26 P1 扩展：显式页面编辑可迁移为 2.2，新增严格 `presentation`（1.0）和
+`resources`（1.0）；两者均不能为空对象之外的 null，缺字段拒绝。普通旧项目仍保持上述 2.1 路径。
+完整 API、字段、调用作用域、写时复制、资源和快照规则见 [P1 正式契约](runtime-pages-p1-contract.md)。
+默认入口尚未启用页面执行链路，2.2 完整发布在 P5 前被旧发布器明确拒绝。
 
 ## 目录
 

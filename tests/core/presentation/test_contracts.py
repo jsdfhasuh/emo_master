@@ -116,7 +116,7 @@ def testExplicitVersionMigrationIsStrictIdempotentAndPreservesLoops(project):
     migrated = migrateProjectPayload(raw, enablePresentation=True)
     assert raw == before and migrated == migrateProjectPayload(migrated, enablePresentation=True)
     assert migrated["presentation"]["pages"] == {}
-    assert migrated["workflows"]["main"]["nodes"][-1]["loop"]["contractVersion"] == 1
+    assert next(n for n in migrated["workflows"]["main"]["nodes"] if n["nodeId"] == "loop")["loop"]["contractVersion"] == 1
     bad = {**before, "presentation": {}}
     with pytest.raises(ValueError):
         migrateProjectPayload(bad, enablePresentation=True)
@@ -132,3 +132,29 @@ def testLegacyV1AndJsonRoundtrip():
     parsed = ProjectDocument.model_validate(migrated)
     assert ProjectDocument.model_validate_json(parsed.model_dump_json()) == parsed
     assert parsed.schemaVersion == "2.2" and parsed.presentation.pages == {}
+
+
+def testReadOnlyCounterAndRuntimeStatusRequireExplicitNames(project, manifests):
+    from emo_master.core.presentation.models import DataSource
+    project.presentation.dataSources["count"] = DataSource(
+        kind="global_counter", name="production", resultScopeId="root", expectedType="integer")
+    assert validateBindings(project, manifests)
+    assert validateBindings(project, manifests, counterNames=frozenset({"production"})) == []
+    project.presentation.dataSources["count"] = DataSource(
+        kind="runtime_status", name="job_state", resultScopeId="root", expectedType="string")
+    project.presentation.pages["overview"].components[0].type = "runtime_status"
+    assert validateBindings(project, manifests) == []
+
+
+def testLoopV2SurvivesExplicitProjectUpgrade(project):
+    from emo_master.core.workflow.validation import validateProjectDocument
+    raw = project.model_dump()
+    raw.pop("presentation")
+    raw.pop("resources")
+    raw["schemaVersion"] = "2.1"
+    loop = next(node for node in raw["workflows"]["main"]["nodes"] if node["nodeId"] == "loop")
+    loop["loop"]["contractVersion"] = 2
+    upgraded = migrateProjectPayload(raw, enablePresentation=True)
+    assert next(node for node in upgraded["workflows"]["main"]["nodes"] if node["nodeId"] == "loop")["loop"] == loop["loop"]
+    assert validateProjectDocument(ProjectDocument.model_validate(raw)) == validateProjectDocument(
+        ProjectDocument.model_validate(upgraded))

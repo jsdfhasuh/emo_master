@@ -36,10 +36,16 @@ def project(manifests):
                    {"nodeId": "blob", "operatorId": "vision.analysis.blob"},
                    {"nodeId": "callA", "kind": "subflow", "targetWorkflowId": "child"},
                    {"nodeId": "callB", "kind": "subflow", "targetWorkflowId": "child"},
-                   {"nodeId": "loop", "kind": "loop", "loop": {"bodyWorkflowId": "child"}},
+                   {"nodeId": "loop", "kind": "loop", "loop": {"bodyWorkflowId": "child",
+                    "contractVersion": 1, "mode": "repeat", "repeatCount": 1, "maxIterations": 1}},
                ]},
                "child": {"name": "Child", "nodes": [{"nodeId": "c", "operatorId": count}]},
            }}
+    for workflow in raw["workflows"].values():
+        workflow["nodes"].extend([
+            {"nodeId": "input", "kind": "workflow_input"},
+            {"nodeId": "output", "kind": "workflow_output", "inputPorts": workflow.get("outputs", {})},
+        ])
     payload = migrateProjectPayload(raw, enablePresentation=True)
     payload["presentation"] = {
         "defaultPageId": "overview", "pageOrder": ["overview", "detail"],

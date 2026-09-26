@@ -1,5 +1,7 @@
 from copy import deepcopy
 import json
+import subprocess
+import sys
 
 import pytest
 
@@ -152,3 +154,38 @@ def testWorkflowTransactionRollsBackAndHistoryBounded(project):
         session.presentation.renamePage("overview", name)
     assert session.undo() and session.undo() and not session.undo()
     assert session.presentation.snapshot().pages["overview"].name == "one"
+
+
+def testFormalModelAndStateImportsDoNotLoadQtOrRuntime():
+    code = """
+import sys
+from emo_master.core.project import snapshots
+from emo_master.core.presentation import results, catalog, validation
+from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+assert not any(name.startswith(('PySide', 'PyQt', 'emo_master.apps.runtime',
+                               'emo_master.plugins.builtins')) for name in sys.modules)
+"""
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=15)
+    assert result.returncode == 0, result.stderr
+
+
+def testWorkflowFragmentKeepsItsOldScopeAndPreservesDestinationPages(project):
+    from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage
+    session = ProjectEditSession(project.model_dump())
+    before = session.presentation.snapshot()
+    fragment = buildWorkflowPackage(session.workflows, "child")
+    assert "presentation" not in fragment.model_dump() and "resources" not in fragment.model_dump()
+    with session.transaction():
+        imported = importWorkflowPackage(session.workflows, fragment)
+    assert imported.rootWorkflowId != "child"
+    assert session.presentation.snapshot() == before
+    assert session.undo() and imported.rootWorkflowId not in session.workflows.workflows
+
+
+def testLegacyPackagePublisherCannotBypassP1Acceptance(project, tmp_path):
+    from emo_master.core.project.package_builder import buildPackage
+    directory = tmp_path / "project"
+    ProjectEditSession(project.model_dump()).save(directory)
+    with pytest.raises(ValueError, match="P5"):
+        buildPackage(directory, tmp_path / "packages")
+    assert not (tmp_path / "packages").exists()

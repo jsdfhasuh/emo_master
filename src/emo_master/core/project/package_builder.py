@@ -25,6 +25,8 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
     payload = ProjectDocument.model_validate(migrateProjectPayload(parsed)).model_dump(
         mode="json"
     )
+    if payload["schemaVersion"] == "2.2":
+        raise ValueError("project 2.2 package publication requires the P5 resource/presentation pipeline")
     projectJsonBytes = (
         json.dumps(payload, ensure_ascii=True, indent=2) + "\n"
     ).encode("utf-8")

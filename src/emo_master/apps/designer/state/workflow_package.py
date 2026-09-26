@@ -644,6 +644,7 @@ def replaceWorkflowStoreState(target: WorkflowStore, source: WorkflowStore) -> N
         "runtime",
         "dependencies",
         "devices",
+        "projectExtensions",
         "workflowOrder",
         "entryWorkflowId",
         "activeWorkflowId",

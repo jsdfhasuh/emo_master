@@ -43,7 +43,7 @@ class ResourceBinding(Model):
 class SiteBinding(Model):
     target: ParameterTarget
     field: Id
-    purpose: Literal["output_directory", "device_address", "camera_serial", "secret_ref"]
+    purpose: Literal["output_directory", "output_file", "device_address", "camera_serial", "secret_ref"]
     required: bool = True
 
 

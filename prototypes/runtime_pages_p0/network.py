@@ -160,6 +160,24 @@ class IsolatedServer:
             "StreamDisplayUpdates": grpc.unary_stream_rpc_method_handler(
                 self._stream(self.display.follow, "display"), request_deserializer=json.loads,
                 response_serializer=lambda v: json.dumps(v).encode())}),))
+        if hasattr(self.display, "assets"):
+            async def pin(request, context):
+                await self._admit("control", context)
+                try:
+                    return {"lease": self.display.assets.pin(request["asset_id"], request.get("seconds", 30))}
+                finally:
+                    self._release("control")
+            async def unpin(request, context):
+                self.display.assets.unpin(request["lease"])
+                return {}
+            self.server.add_generic_rpc_handlers((grpc.method_handlers_generic_handler("p0.Display", {
+                "GetDisplayAsset": grpc.unary_stream_rpc_method_handler(
+                    self._stream(self.display.assets.read, "asset"), request_deserializer=json.loads,
+                    response_serializer=lambda value: value),
+                "Pin": grpc.unary_unary_rpc_method_handler(pin, request_deserializer=json.loads,
+                    response_serializer=lambda value: json.dumps(value).encode()),
+                "Unpin": grpc.unary_unary_rpc_method_handler(unpin, request_deserializer=json.loads,
+                    response_serializer=lambda value: json.dumps(value).encode())}),))
         self.port = self.server.add_insecure_port("127.0.0.1:0")
         await self.server.start()
         self.ready.set()

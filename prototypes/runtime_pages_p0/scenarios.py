@@ -321,6 +321,21 @@ def run(name):
         if name == "benchmark":
             from .benchmark import benchmark
             return benchmark(root)
+        if name == "continuous":
+            from .continuous import window
+            import hashlib
+            image_path = root / "1080p.png"
+            image = np.random.default_rng(20260926).integers(0, 256, (1080, 1920, 3), np.uint8)
+            assert cv2.imwrite(str(image_path), image)
+            service = RuntimeService(dbPath=root / "runtime.db")
+            try:
+                report = window(root / "window", service, image_path, hashlib.sha256(image).hexdigest(), count=40)
+                assert report["correctness_status"] == "PASS", report["coverage"]
+                assert report["stats"]["evictions"] > 0
+                assert report["stats"]["history"] <= 32
+                return report
+            finally:
+                service.close()
         raise ValueError(name)
 
 

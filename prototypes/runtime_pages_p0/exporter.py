@@ -33,6 +33,8 @@ def _worker(pipe):
         segment = shared_memory.SharedMemory(name=name)
         try:
             image = np.ndarray(shape, dtype=np.uint8, buffer=segment.buf)
+            encode_start = time.perf_counter_ns()
+            raw_digest = hashlib.sha256(image).hexdigest()
             ok, data = cv2.imencode(".png", image)
             if not ok or data.nbytes > BUDGET.image_bytes * 2:
                 raise ValueError("encoded image budget")
@@ -47,7 +49,8 @@ def _worker(pipe):
             read_ms = (time.perf_counter_ns() - read_start) / 1e6
             if read_ms > BUDGET.read_seconds * 1000:
                 raise TimeoutError("asset read/decode deadline")
-            pipe.send(("DONE", task, len(content), hashlib.sha256(content).hexdigest(), read_ms))
+            pipe.send(("DONE", task, len(content), hashlib.sha256(content).hexdigest(), read_ms,
+                       raw_digest, encode_start, time.perf_counter_ns()))
         finally:
             segment.close()
 

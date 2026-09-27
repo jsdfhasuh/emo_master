@@ -1,3 +1,4 @@
 src/emo_master/plugins/builtins/*/assets/*.svg text eol=lf
 # Raw Windows evidence is hash-verified; preserve CRLF and pytest diagnostic spaces.
 docs/evidence/p1-runtime-pages/** -text -whitespace
+docs/evidence/p4/** -text -whitespace

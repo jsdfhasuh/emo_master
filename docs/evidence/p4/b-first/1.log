@@ -1,0 +1,34 @@
+.F...................................................................... [ 72%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_____________ testNativeDragComponentVariablePropertiesAndOverlap _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e4f0adf9b0) at 0x000001E4F27DCEC0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E4F27964A0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-399/testNativeDragComponentVariabl0')
+
+    def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, tmp_path):
+        c = designer.pageCoordinator
+        designer.workflowController.loadPayload(blank(tmp_path).model_dump())
+        c.session.acceptLoaded()
+        catalog = []
+        from dataclasses import asdict
+        for manifest in metadata().values():
+            catalog.append(asdict(manifest))
+        designer.operatorCatalog = catalog
+        c.showPages()
+        e = c.editor
+        monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('Ê×Ò³', True))
+        e.run(e.newPage)
+        QApplication.processEvents()
+        body = next(w for w in e.renderer.findChildren(QWidget) if w.property('pageGrid') == e.pageId)
+        assert sendDrop(body, {'kind': 'number'})
+        item = e.store.snapshot().pages[e.pageId].components[0]
+        original = c.session.payload()
+        body = e.renderer.pages[e.pageId].widget()
+>       assert not sendDrop(body, {'kind': 'text'})  # occupied cell, atomic rollback
+E       AssertionError: assert not True
+E        +  where True = sendDrop(<PySide2.QtWidgets.QWidget(0x1e4f2bf2cf0) at 0x000001E4F381D040>, {'kind': 'text'})
+
+tests\ui\page_designer\test_editing.py:99: AssertionError
+1 failed, 98 passed in 62.52s (0:01:02)

@@ -37,6 +37,8 @@ class PageWorkspace(QWidget):
         self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
         self.message.setWordWrap(True)
         sidebar.addWidget(self.message)
+        from .tools import EditingTools
+        self.tools = EditingTools(self, sidebar)
         self.refresh()
 
     def run(self, command):
@@ -62,12 +64,15 @@ class PageWorkspace(QWidget):
         self.renderer.reload(p)
         if self.pageId:
             self.renderer.navigate(self.pageId)
+        if hasattr(self, 'tools'):
+            self.tools.refresh()
 
     def choosePage(self, row):
         item = self.pageList.item(row)
         if item:
             self.pageId = item.data(Qt.UserRole)
             self.renderer.navigate(self.pageId)
+            self.tools.install()
 
     def newPage(self):
         name, ok = QInputDialog.getText(self, '新建页面', '页面名称')

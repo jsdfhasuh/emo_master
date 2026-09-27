@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+import os
 
 import cv2
 import numpy as np
@@ -98,7 +99,16 @@ class ImageSaverOperator:
             }
 
         outputFile.parent.mkdir(parents=True, exist_ok=True)
-        writeOk = cv2.imwrite(str(outputFile), image)
+        if os.name == 'nt' and not str(outputFile).isascii():
+            try:
+                writeOk, encoded = cv2.imencode(outputFile.suffix, image)
+                if writeOk:
+                    with outputFile.open('wb' if overwrite else 'xb') as stream:
+                        stream.write(encoded.tobytes())
+            except (OSError, cv2.error):
+                writeOk = False
+        else:
+            writeOk = cv2.imwrite(str(outputFile), image)
         if not writeOk:
             return {
                 "status": "error",

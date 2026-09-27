@@ -2,8 +2,10 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+import os
 
 import cv2
+import numpy as np
 
 from emo_master.plugins.builtins._image_frame import defaultFrame
 
@@ -99,7 +101,16 @@ class ImageLoaderOperator:
         readFlag = (
             cv2.IMREAD_GRAYSCALE if colorMode == "grayscale" else cv2.IMREAD_COLOR
         )
-        image = cv2.imread(str(pathObj), readFlag)
+        if os.name == 'nt' and not str(pathObj).isascii():
+            # OpenCV's Windows narrow filename API cannot open Unicode paths.
+            # Python/NumPy own the file I/O; keep the same decoder and color flag.
+            try:
+                encoded = np.fromfile(pathObj, dtype=np.uint8)
+                image = cv2.imdecode(encoded, readFlag) if encoded.size else None
+            except (OSError, cv2.error):
+                image = None
+        else:
+            image = cv2.imread(str(pathObj), readFlag)
         if image is None:
             return {
                 "status": "error",

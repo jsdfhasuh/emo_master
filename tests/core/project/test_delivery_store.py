@@ -144,3 +144,20 @@ def testCrossProcessOwnerAndNonProjectCwd(delivered, tmp_path):
     result = subprocess.run([sys.executable, str(script), 'status', '--store', str(store.root)],
         cwd=tmp_path, env=env, capture_output=True, timeout=30)
     assert result.returncode == 0 and revision.encode() in result.stdout
+
+
+def testArchiveAndTotalInflatedBudgetsRejectBeforeStaging(delivered, tmp_path):
+    _, _, _, store, revision = delivered
+    large = tmp_path/'archive-limit.vxpkg'
+    with large.open('wb') as stream:
+        stream.truncate(72*1024*1024+1)
+    with pytest.raises(ValueError, match='72 MiB'):
+        store.importPackage(large)
+    bomb = tmp_path/'inflated.vxpkg'
+    with zipfile.ZipFile(bomb, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+        for i in range(9):
+            archive.writestr(f'{i}.png', b'0'*(8*1024*1024))
+    with pytest.raises(ValueError, match='uncompressed budget'):
+        store.importPackage(bomb)
+    assert store.state()['active'] == revision
+    assert not list(store.root.glob('.stage-*'))

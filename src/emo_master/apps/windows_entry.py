@@ -12,6 +12,12 @@ def main(arguments: Sequence[str] | None = None) -> int:
         from emo_master.apps.package_selftest import runSelfTestCommand
 
         return runSelfTestCommand(commandArguments)
+    if commandArguments and commandArguments[0] in {"--runtime", "--operator-view"}:
+        if commandArguments[0] == "--runtime":
+            from emo_master.apps.runtime.release_host import main as runEntry
+        else:
+            from emo_master.apps.operator_view.main import main as runEntry
+        return runEntry(commandArguments[1:])
     if commandArguments:
         raise SystemExit(f"unsupported arguments: {' '.join(commandArguments)}")
 

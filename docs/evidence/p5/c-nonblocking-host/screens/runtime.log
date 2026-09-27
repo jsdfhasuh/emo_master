@@ -1,0 +1,18 @@
+Runtime ready; project ready; no Job started. Use --stop --ready-file or Ctrl+C to stop this host.
+127.0.0.1:58563
+[ WARN:0@0.421] global loadsave.cpp:241 cv::findDecoder imread_('C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-430\testDesignerExportRelocatedSta0\Áã¨Á´ã Runtime Êï∞ÊçÆ\display\prepared\5e357a51-0793-407b-a681-ab92c7f31ae1\resource-0.png'): can't open/read file: check file path/integrity
+Process emo-master-job-a07c2712-b82e-429c-a8c7-f511d457e9b1:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 68, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 90, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 165, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 342, in _runNode
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: failed to decode image: C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-430\testDesignerExportRelocatedSta0\∂¿¡¢ Runtime  ˝æ›\display\prepared\5e357a51-0793-407b-a681-ab92c7f31ae1\resource-0.png

@@ -10,9 +10,10 @@ from uuid import uuid4
 import zipfile
 
 from emo_master.core.project.models import ProjectDocument
+from emo_master import __version__
 from emo_master.core.project.test_delivery import (
     MAX_ARCHIVE, MAX_ENTRIES, MAX_PROJECT, MAX_RESOURCE, MAX_TOTAL,
-    canonicalJson, manifestFor, packagePath, readJson, sha, trustedRegistry, validateTestProject,
+    FORMAT, OPERATORS, canonicalJson, manifestFor, packagePath, readJson, sha, trustedRegistry, validateTestProject,
 )
 
 
@@ -136,6 +137,13 @@ def verifyContents(files):
     if not {'project.json', 'manifest.json'} <= files.keys():
         raise ValueError('package metadata missing')
     manifest = readJson(files['manifest.json'])
+    compatibility = manifest.get('compatibility', {})
+    if (manifest.get('format') != FORMAT or compatibility.get('application') != __version__ or
+            compatibility.get('projectSchema') != '2.2' or compatibility.get('presentationSchema') != '1.0' or
+            any(key not in OPERATORS or value != OPERATORS[key][1]
+                for key, value in compatibility.get('operators', {}).items()) or
+            any(value != '1.0' for value in compatibility.get('components', {}).values())):
+        raise ValueError('incompatible package format / application / plugin / component')
     document = ProjectDocument.model_validate(readJson(files['project.json']))
     if document.resources is None:
         raise ValueError('2.2 resources required')

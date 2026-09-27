@@ -32,8 +32,9 @@ def packagePath(name):
     if len(name) > 220 or unicodedata.normalize('NFC', name) != name:
         raise ValueError('noncanonical or overlong package path')
     for part in name.split('/'):
-        if (part.endswith((' ', '.')) or any(ord(c) < 32 or c in '<>"|?*~' for c in part)
-                or re.fullmatch(r'(CON|PRN|AUX|NUL|COM[1-9¹²³]|LPT[1-9¹²³])', part.split('.')[0], re.I)):
+        if (part.startswith(' ') or part.endswith((' ', '.')) or any(ord(c) < 32 or c in '<>"|?*~' for c in part)
+                or re.fullmatch(r'(CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|CLOCK\$|COM[1-9¹²³]|LPT[1-9¹²³])',
+                                part.split('.')[0].rstrip(' '), re.I)):
             raise ValueError('Windows path alias or reserved name')
     return name
 
@@ -81,6 +82,10 @@ def validateTestProject(document, root, registry):
     """Same formal release snapshot and compiler as Runtime, without execution."""
     if document.resources is None or document.presentation is None or not document.presentation.pages:
         raise ValueError('nonempty project 2.2 pages required')
+    if document.devices.bindings:
+        raise ValueError('device configuration is not part of a local test delivery')
+    if any(not isinstance(item, str) or item not in OPERATORS for item in document.dependencies.operators):
+        raise ValueError('unsupported dependency declaration; packages cannot install plugins')
     plan = document.resources
     if len(plan.items) > MAX_ENTRIES - 2 or sum(i.size for i in plan.items.values()) > MAX_TOTAL - 2 * MIB:
         raise ValueError('resource budget exceeded')

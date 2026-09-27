@@ -1,0 +1,19 @@
+....EE.......                                                            [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of testReadyNavigationExplicitStartSharedWindowsAndBorrowedClose _
+file D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_view.py, line 46
+  def testReadyNavigationExplicitStartSharedWindowsAndBorrowedClose(qtApp, tmp_path):
+E       fixture 'qtApp' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_view.py:46
+____ ERROR at setup of testStaleDescriptorAndCloseDuringConnectDoNotStart _____
+file D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_view.py, line 95
+  def testStaleDescriptorAndCloseDuringConnectDoNotStart(qtApp, tmp_path, monkeypatch):
+E       fixture 'qtApp' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_view.py:95
+11 passed, 2 errors in 12.79s

@@ -1,0 +1,241 @@
+Runtime ready; project ready; no Job started. Type stop + Enter or Ctrl+C to stop this host.
+127.0.0.1:56352
+Timeout (0:00:08)!
+Thread 0x0000d1f8 (most recent call first):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\mailbox.py", line 45 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 115 in _read
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00006bcc (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 81 in _worker
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x000023f4 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\popen_spawn_win32.py", line 70 in __init__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\context.py", line 336 in _Popen
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 121 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\supervisor.py", line 73 in startJob
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\manager.py", line 46 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 102 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 33 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\rpc.py", line 60 in Start
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 58 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 83 in _worker
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012554 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x000085fc (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 797 in _poll
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 444 in select
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\base_events.py", line 1871 in _run_once
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\base_events.py", line 603 in run_forever
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 321 in run_forever
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\aio_entry.py", line 250 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001064c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012bf0 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011d3c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 188 in _monitor
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011e70 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 977 in _eventMaintenanceLoop
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001010c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 188 in _nextEvent
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 159 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001218c (most recent call first):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 122 in main
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\p5_runtime.py", line 15 in <module>
+Timeout (0:00:08)!
+Thread 0x0000d1f8 (most recent call first):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\mailbox.py", line 45 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 115 in _read
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00006bcc (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 81 in _worker
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x000023f4 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\popen_spawn_win32.py", line 70 in __init__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\context.py", line 336 in _Popen
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 121 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\supervisor.py", line 73 in startJob
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\manager.py", line 46 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 102 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 33 in start
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\rpc.py", line 60 in Start
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 58 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py", line 83 in _worker
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012554 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x000085fc (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 797 in _poll
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 444 in select
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\base_events.py", line 1871 in _run_once
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\base_events.py", line 603 in run_forever
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\asyncio\windows_events.py", line 321 in run_forever
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\aio_entry.py", line 250 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001064c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012bf0 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011d3c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 188 in _monitor
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011e70 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 977 in _eventMaintenanceLoop
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001010c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 188 in _nextEvent
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 159 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001218c (most recent call first):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 122 in main
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\p5_runtime.py", line 15 in <module>
+Timeout (0:00:08)!
+Thread 0x0000d1f8 (most recent call first):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\mailbox.py", line 45 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 115 in _read
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012554 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001064c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00012bf0 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\queue.py", line 180 in get
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\exporter.py", line 105 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011d3c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 188 in _monitor
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00011e70 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\grpc_server\service.py", line 977 in _eventMaintenanceLoop
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001010c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 324 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 607 in wait
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 188 in _nextEvent
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\events\jsonl_writer.py", line 159 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0001218c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1116 in _wait_for_tstate_lock
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1100 in join
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\presentation\service.py", line 274 in close
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 93 in close
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\release_host.py", line 128 in main
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\p5_runtime.py", line 15 in <module>

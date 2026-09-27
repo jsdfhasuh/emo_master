@@ -1,5 +1,9 @@
 # 开发指南
 
+2026-09-27增量：P5-A测试项目可从Designer“导出测试项目包”交付到独立目录，
+导入/启用/源码Runtime/只读页面命令见 [P5-A契约](runtime-pages-p5-contract.md)。
+这不改变下述默认Designer/Runtime开发路径，不代表EXE已更新或现场验收通过。
+
 适用分支：`agent/runtime-workflow-architecture-v1`。本次文档核对基线为 `33fc53e`（应用版本 `0.6.1`），整理日期为 2026-09-25。后续命令以所在提交的源码和依赖文件为准。
 
 本指南负责从源码开发和调试；交付 EXE、安装包和正式发布见 [部署与发布指南](deployment-guide.md)，架构边界见 [工程师导读](engineer-guide.md)。

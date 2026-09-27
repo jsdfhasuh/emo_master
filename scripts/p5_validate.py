@@ -15,16 +15,19 @@ ROOT = Path(__file__).resolve().parents[1]
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--suite', choices=['export', 'import', 'runtime', 'affected', 'ci', 'visual'], required=True)
+    parser.add_argument('--suite', choices=['export', 'import', 'runtime', 'image-io', 'affected', 'ci', 'visual'], required=True)
     parser.add_argument('--output', type=Path, required=True)
     parser.add_argument('--timeout', type=float, default=300)
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     tests = {
+        'image-io': ['tests/plugins/test_image_loader_operator.py', 'tests/plugins/test_image_saver_operator.py',
+                     'tests/plugins/test_unicode_image_io.py'],
         'export': ['tests/core/project/test_page_delivery.py', 'tests/core/project/test_package_builder.py',
                    'tests/core/presentation'],
         'import': ['tests/core/project/test_page_delivery.py', 'tests/core/project/test_delivery_store.py'],
-        'runtime': ['tests/runtime/test_release_host.py', 'tests/ui/operator_view', 'tests/test_windows_package_entry.py'],
+        'runtime': ['tests/runtime/test_release_host.py', 'tests/ui/operator_view', 'tests/test_windows_package_entry.py',
+                    'tests/test_p5_windows_dispatch.py'],
         'affected': ['tests/core/presentation', 'tests/runtime/presentation', 'tests/ui/presentation',
                      'tests/ui/page_designer', 'tests/core/project', 'tests/test_windows_package_entry.py'],
     }

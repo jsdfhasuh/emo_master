@@ -39,7 +39,7 @@ def testExportFrozenAllowlistAndLegacyGuard(tmp_path, registry):
 
 
 @pytest.mark.parametrize('name', ['../x', '/a', 'C:/x', 'a\\b', 'a//b', 'NUL.png',
-    'con.foo', 'a./b', 'a /b', 'a:stream', 'COM¹.jpg', 'a~1.png', 'a/../b'])
+    'con.foo', 'a./b', 'a /b', 'a:stream', 'COM¹.jpg', 'a~1.png', 'a/../b', 'NUL .png', 'CONOUT$.png'])
 def testPortablePathRejectsAliases(name):
     with pytest.raises(ValueError):
         packagePath(name)
@@ -72,3 +72,30 @@ def testStaticLabelsAndPlatformStatusAreNotUnboundBusinessData(tmp_path, registr
     doc.presentation.pages['main'].components[-2].props.text = ''
     with pytest.raises(ValueError, match='unbound'):
         buildPageTestPackage(doc, tmp_path, tmp_path.parent/'static-packages', registry)
+
+
+def testDeviceMetadataAndUnknownDependenciesAreExplicitlyRejected(tmp_path, registry):
+    doc = sampleProject(tmp_path)
+    doc.devices.bindings['camera'] = {'ip': 'not-a-real-device'}
+    with pytest.raises(ValueError, match='device configuration'):
+        buildPageTestPackage(doc, tmp_path, tmp_path.parent/'packages', registry)
+    doc.devices.bindings.clear()
+    doc.dependencies.operators = ['unknown.plugin']
+    with pytest.raises(ValueError, match='dependency'):
+        buildPageTestPackage(doc, tmp_path, tmp_path.parent/'packages', registry)
+
+
+def testSourceReplacementDuringExportNeverPublishesPartialPackage(tmp_path, registry, monkeypatch):
+    from emo_master.core.project import test_delivery
+    root = tmp_path/'draft'
+    root.mkdir()
+    document = sampleProject(root)
+    validate = test_delivery.validateTestProject
+    def replaced(*args):
+        compatibility = validate(*args)
+        (root/'input.png').write_bytes(b'changed during export')
+        return compatibility
+    monkeypatch.setattr(test_delivery, 'validateTestProject', replaced)
+    with pytest.raises(ValueError, match='changed during export'):
+        buildPageTestPackage(document, root, tmp_path/'out', registry)
+    assert not list((tmp_path/'out').iterdir())

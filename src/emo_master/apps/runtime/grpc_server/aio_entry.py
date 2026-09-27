@@ -225,7 +225,8 @@ class AioRuntimeServer:
         return adapter
 
     async def _start(self):
-        self.server = grpc.aio.server(options=[("grpc.max_receive_message_length", 1024 * 1024),
+        self.server = grpc.aio.server(options=[("grpc.so_reuseport", 0),
+                                              ("grpc.max_receive_message_length", 1024 * 1024),
                                               ("grpc.max_send_message_length", 9 * 1024 * 1024)])
         rpc.add_RuntimeServiceServicer_to_server(self._adapter("RuntimeService", self.runtime, rpc.RuntimeServiceServicer()), self.server)
         rpc.add_DisplayServiceServicer_to_server(self._adapter("DisplayService", DisplayRpc(self.presentation), rpc.DisplayServiceServicer()), self.server)

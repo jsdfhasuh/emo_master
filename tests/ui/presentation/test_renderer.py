@@ -14,9 +14,9 @@ from emo_master.ui.presentation.renderer import RuntimePages
 from examples.runtime_pages_p3 import sampleProjectP3
 
 
-def resultView(ordinal=1, count="2", image=None, generation=1):
+def resultView(ordinal=1, count="2", image=None, generation=1, capture="b"*64):
     identity=ResultIdentity(runtimeInstanceId="runtime",jobId="job",resultScopeId="root",invocationId=str(ordinal),
-        resultKey=f"result-{ordinal}",resultOrdinal=ordinal,executionRevision="a"*64,capturePlanRevision="b"*64,mode="debug")
+        resultKey=f"result-{ordinal}",resultOrdinal=ordinal,executionRevision="a"*64,capturePlanRevision=capture,mode="debug")
     result=ClosedResult(identity=identity,expectedSourceIds=("count",),sources=(ClosedSource(sourceId="count",state="AVAILABLE",valueJson=count),),
                         status="COMPLETE",executionTerminal="COMPLETED")
     scope=ScopeView(result,MappingProxyType({} if image is None else {"image":image}),MappingProxyType({}),time.perf_counter_ns())
@@ -55,7 +55,7 @@ def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):
     config=project.presentation
     window=RuntimePages(config)
     window.show()
-    window.submit(resultView(count="0"))
+    window.submit(resultView(count="0",capture=window.expectedCapture))
     assert window.widgets['overview']['overview-count'][1].text()=="0 个"
     assert window.displayed['root'].result.identity.resultKey=='result-1'
     window.navigate('detail')
@@ -64,11 +64,14 @@ def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):
     raw['pages']['alternate']=raw['pages'].pop('overview')
     raw['pageOrder']=['detail','alternate']
     raw['defaultPageId']='alternate'
-    raw['pages']['detail']['components'][-1]['actions']['clicked']['pageId']='alternate'
+    for component in raw['pages']['detail']['components']:
+        action=component.get('actions',{}).get('clicked',{})
+        if action.get('type')=='navigate':
+            action['pageId']='alternate'
     raw['pages']['alternate']['layout']['columns']=4
     second=RuntimePages(Presentation.model_validate(raw))
     assert second.currentPageId=='alternate'
-    second.submit(resultView(2,'3'))
+    second.submit(resultView(2,'3',capture=second.expectedCapture))
     assert second.widgets['alternate']['overview-count'][1].text()=='3 个'
     window.close()
     second.close()

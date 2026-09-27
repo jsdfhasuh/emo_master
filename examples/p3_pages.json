@@ -90,7 +90,8 @@
             "clicked": {
               "type": "navigate",
               "pageId": "detail",
-              "context": "live"
+              "context": "displayed_result",
+              "resultScopeId": "root"
             }
           }
         }
@@ -176,6 +177,23 @@
               "type": "navigate",
               "pageId": "overview",
               "context": "live"
+            }
+          }
+        },
+        {
+          "componentId": "detail-freeze",
+          "type": "navigation_button",
+          "layout": {
+            "row": 4,
+            "columnSpan": 3
+          },
+          "props": {
+            "text": "冻结当前显示结果（最长30秒）"
+          },
+          "actions": {
+            "clicked": {
+              "type": "freeze",
+              "resultScopeId": "root"
             }
           }
         }

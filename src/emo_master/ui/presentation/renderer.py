@@ -1,7 +1,9 @@
 """A reusable QWidget shell. No Runtime, Designer or algorithm imports."""
 from collections import deque
+from dataclasses import replace
 import json
 import time
+from types import MappingProxyType
 
 from PySide2.QtCore import Qt, QRect
 from PySide2.QtGui import QPainter, QColor, QImage
@@ -12,6 +14,8 @@ from PySide2.QtWidgets import (
 
 from emo_master.core.presentation.models import Presentation
 from emo_master.core.presentation.values import readValue
+from emo_master.core.project.snapshots import captureDefinition, revisionOf
+from emo_master.core.presentation.validation import pageScopes
 from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 
 
@@ -55,6 +59,10 @@ class RuntimePages(QWidget):
         super().__init__(parent)
         assertGuiThread()
         self.config = Presentation.model_validate(presentation.model_dump())
+        try:
+            self.expectedCapture = revisionOf(captureDefinition(self.config))
+        except KeyError:
+            self.expectedCapture = None
         self.hub = hub
         self.detached = False
         self.currentPageId = None
@@ -63,12 +71,16 @@ class RuntimePages(QWidget):
         self.displayed = {}
         self.lastView = None
         self.frozen = None
+        self.frozenGeneration = None
         self.records = deque(maxlen=256)
         self._recordedPaints = deque(maxlen=128)
         self.setWindowTitle(label)
         self.resize(1060, 720)
         self.setMinimumSize(460, 360)
         self.setMaximumSize(1600, 1000)
+        # Bound each Qt backing surface to 16MiB even at high DPI.
+        ratio = max(1, self.devicePixelRatioF() / 1.5)
+        self.setMaximumSize(int(1600 / ratio), int(1000 / ratio))
         self.setStyleSheet("QWidget {font-family: 'Microsoft YaHei'; font-size: 13px; color:#223247;} "
             "QWidget#runtimePages {background:#f5f7fa;} QFrame#card {background:white; border:1px solid #dce3eb; border-radius:6px;} "
             "QPushButton {padding:9px 14px; background:#e3edf8; border:1px solid #c4d7ec; border-radius:4px;} "
@@ -81,6 +93,13 @@ class RuntimePages(QWidget):
         self.status = QLabel("未连接 · 等待明确选择任务")
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        controls = QHBoxLayout()
+        self.resumeButton = QPushButton("恢复实时")
+        self.resumeButton.clicked.connect(self.resumeLive)
+        controls.addWidget(self.resumeButton)
+        self.modeLabel = QLabel("实时 · 冻结仅影响本窗口")
+        controls.addWidget(self.modeLabel, 1)
+        layout.addLayout(controls)
         navigation = QHBoxLayout()
         self.buttons = {}
         for pageId in self.config.pageOrder:
@@ -154,11 +173,13 @@ class RuntimePages(QWidget):
             p = component.layout
             layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
 
-    def navigate(self, pageId):
+    def navigate(self, pageId, keepFrozen=False):
         assertGuiThread()
         if pageId not in self.config.pages:
             self.status.setText("导航目标不存在")
             return
+        if not keepFrozen and self.frozen:
+            self.resumeLive(submit=False)
         if self.currentPageId in self.widgets:
             for _component, widget in self.widgets[self.currentPageId].values():
                 if isinstance(widget, ImageView):
@@ -177,8 +198,29 @@ class RuntimePages(QWidget):
             self.status.setText("此按钮未配置动作")
         elif action.type == "navigate" and action.context == "live":
             self.navigate(action.pageId)
+        elif action.type == "resume_live":
+            self.resumeLive()
         else:
-            self.status.setText("冻结/详情接入尚未启用")
+            scopeId = action.resultScopeId
+            target = action.pageId if action.type == "navigate" else self.currentPageId
+            if not self.hub or scopeId not in self.displayed or target not in self.config.pages or scopeId not in pageScopes(self.config, target):
+                self.status.setText("所选作用域没有可锁定的已显示结果")
+                return
+            try:
+                # This is the committed GUI value, deliberately not session.latest.
+                self.frozen = self.hub.freeze(self, self.displayed[scopeId], self.lastView.generation)
+                self.frozenGeneration = self.lastView.generation
+                self.navigate(target, keepFrozen=True)
+            except ValueError as error:
+                self.status.setText(str(error))
+
+    def resumeLive(self, _checked=False, *, submit=True):
+        if self.hub:
+            self.hub.resume(self)
+        self.frozen = self.frozenGeneration = None
+        self.modeLabel.setText("实时 · 冻结仅影响本窗口")
+        if submit and self.hub:
+            self.submit(self.hub.session.readSnapshot())
 
     def _value(self, component, view):
         if not component.bindings:
@@ -192,6 +234,8 @@ class RuntimePages(QWidget):
         scope = view.scopes.get(source.resultScopeId)
         if scope is None:
             return None, None, "当前结果准备中" if source.resultScopeId in view.loading else "等待触发 / 尚无结果"
+        if self.expectedCapture is None or scope.result.identity.capturePlanRevision != self.expectedCapture:
+            return None, None, "CAPTURE_REVISION_MISMATCH · 绑定变更需明确启动新任务"
         value = next((item for item in scope.result.sources if item.sourceId == sourceId), None)
         if value is None:
             return scope, None, "SOURCE_MISSING"
@@ -211,6 +255,20 @@ class RuntimePages(QWidget):
             return
         self.lastView = view
         self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
+        if self.frozen and view.generation != self.frozenGeneration:
+            self.resumeLive(submit=False)
+        if self.frozen:
+            pin = self.hub.session.pins().read(self.frozen)
+            self.modeLabel.setText(f"冻结 · {pin.state} · 不暂停检测，不自动续租")
+            if pin.scope is not None:
+                scope = pin.scope
+                view = replace(view, connection="CONNECTED", scopes=MappingProxyType({scope.result.identity.resultScopeId: scope}), loading=MappingProxyType({}))
+            else:
+                view = replace(view, connection="PIN_EXPIRED", detail=pin.error,
+                               scopes=MappingProxyType({}), loading=MappingProxyType({}))
+        else:
+            self.modeLabel.setText("实时 · 下一件处理中" if any(view.started.get(s, 0) > r.result.identity.resultOrdinal for s, r in view.scopes.items())
+                                   else "实时 · 等待触发")
         page = self.currentPageId
         if page is None:
             return
@@ -259,6 +317,20 @@ class RuntimePages(QWidget):
                 if record["key"] == key:
                     record["paint_ns"] = stamp
                     break
+
+    def showEvent(self, event):
+        super().showEvent(event)
+        if self.hub and not self.detached:
+            self.submit(self.hub.session.readSnapshot())
+
+    def hideEvent(self, event):
+        self.displayed.clear()
+        self.lastView = None
+        for rows in self.widgets.values():
+            for _component, widget in rows.values():
+                if isinstance(widget, ImageView):
+                    widget.setImage(QImage(), "", "隐藏页面")
+        super().hideEvent(event)
 
     def closeEvent(self, event):
         self.detached = True

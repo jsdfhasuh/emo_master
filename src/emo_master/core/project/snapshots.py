@@ -284,15 +284,7 @@ def freezeProjectSnapshot(
             nodes.append(graphNode)
         algorithms[workflowId] = {"inputs": workflow.inputs, "outputs": workflow.outputs,
                                   "nodes": nodes, "edges": [e.model_dump() for e in workflow.edges]}
-    presentation = project.presentation
-    used = {sourceId for page in presentation.pages.values()
-            for component in walkComponents(page.components) for sourceId in component.bindings.values()}
-    sources = sorted({canonicalJson(presentation.dataSources[key].model_dump()) for key in used})
-    scopes = {presentation.dataSources[key].resultScopeId for key in used}
-    for page in presentation.pages.values():
-        scopes.update(page.resultScopeIds)
-    capture = {"ruleVersion": "1.0", "sources": [json.loads(value) for value in sources],
-               "scopes": {key: presentation.resultScopes[key].model_dump() for key in sorted(scopes)}}
+    capture = captureDefinition(project.presentation)
     execution = {"entry": project.entryWorkflowId, "workflows": algorithms, "plugins": versions,
                  "resources": {key: item.model_dump(exclude={"path"})
                                for key, item in project.resources.items.items()
@@ -306,3 +298,15 @@ def freezeProjectSnapshot(
                                    if wid == workflowId} for workflowId in project.workflows}),
         str(stateRoot / "runtime.sqlite3"), str(outputRoot),
     )
+
+
+def captureDefinition(presentation):
+    """Shared capture fingerprint input for Runtime and read-only UI validation."""
+    used = {sourceId for page in presentation.pages.values()
+            for component in walkComponents(page.components) for sourceId in component.bindings.values()}
+    sources = sorted({canonicalJson(presentation.dataSources[key].model_dump()) for key in used})
+    scopes = {presentation.dataSources[key].resultScopeId for key in used}
+    for page in presentation.pages.values():
+        scopes.update(page.resultScopeIds)
+    return {"ruleVersion": "1.0", "sources": [json.loads(value) for value in sources],
+               "scopes": {key: presentation.resultScopes[key].model_dump() for key in sorted(scopes)}}

@@ -28,4 +28,3 @@ class SessionView:
     scopes: Mapping[str, ScopeView]
     loading: Mapping[str, ClosedResult]
     started: Mapping[str, int]
-

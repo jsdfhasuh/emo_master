@@ -90,6 +90,8 @@ class DisplaySession:
         self.revision = 0
         self.loading = {}
         self.readyAt = {}
+        self._pinStore = None
+        self.compatible = False
         self.threads = [threading.Thread(target=self._receive, name="display-metadata"),
                         threading.Thread(target=self._health, name="display-snapshot-health"),
                         threading.Thread(target=self._decode, name="display-read-decode")]
@@ -117,6 +119,13 @@ class DisplaySession:
             return SessionView(self.revision, self.generation, self.instanceId, self.jobId,
                 self.connection, self.connectionDetail, MappingProxyType(scopes),
                 MappingProxyType(dict(self.loading)), MappingProxyType(dict(self.started)))
+
+    def pins(self):
+        with self.lock:
+            if self._pinStore is None:
+                from emo_master.clients.runtime.pins import PinStore
+                self._pinStore = PinStore(self)
+            return self._pinStore
 
     def _connection(self, state, detail=""):
         with self.lock:
@@ -147,6 +156,8 @@ class DisplaySession:
                 self.started[scope] = max(ordinal, self.started.get(scope, 0))
             for wire in snapshot.results:
                 result = decodeResult(wire)
+                if (result.identity.jobId != self.jobId or result.identity.runtimeInstanceId != self.instanceId):
+                    raise ValueError("result belongs to another Runtime/Job")
                 if result.identity.resultKey in self.seen:
                     continue
                 scope = result.identity.resultScopeId
@@ -170,6 +181,12 @@ class DisplaySession:
         while not self.stop.is_set():
             try:
                 capabilities = self.stub.Capabilities(pb.DisplayEmpty(), timeout=.5)
+                if capabilities.protocol_version != "1.0" or not {"snapshot", "subscribe", "asset_id"}.issubset(capabilities.capabilities):
+                    self.compatible = False
+                    self._connection("INCOMPATIBLE", "服务端不支持正式展示协议")
+                    self.stop.wait(.5)
+                    continue
+                self.compatible = True
                 with self.lock:
                     if self.instanceId and capabilities.runtime_instance_id != self.instanceId:
                         self.generation += 1
@@ -177,6 +194,8 @@ class DisplaySession:
                         self.high.clear()
                         self.started.clear()
                         self.seen.clear()
+                        self.loading.clear()
+                        self.readyAt.clear()
                         self.cursor = 0
                         self.instanceId = capabilities.runtime_instance_id
                         self.stats["resets"] += 1
@@ -206,10 +225,20 @@ class DisplaySession:
 
     def _health(self):
         while not self.stop.wait(.5):
+            if not self.compatible:
+                continue
+            with self.lock:
+                generation = self.generation
+                request = pb.DisplayRequest(runtime_instance_id=self.instanceId,
+                    job_id=self.jobId, after_cursor=self.cursor, replay=True)
             try:
-                self._accept(self.stub.Snapshot(pb.DisplayRequest(runtime_instance_id=self.instanceId,
-                    job_id=self.jobId, after_cursor=self.cursor, replay=True), timeout=.5))
+                snapshot = self.stub.Snapshot(request, timeout=.5)
+                with self.lock:
+                    if generation == self.generation:
+                        self._accept(snapshot)
             except grpc.RpcError as error:
+                if generation != self.generation:
+                    continue
                 if not self.stop.is_set():
                     self._connection(error.code().name, error.details() or "连接失效")
                 if error.code() == grpc.StatusCode.NOT_FOUND:
@@ -219,7 +248,8 @@ class DisplaySession:
                     self.errors.append((error.code().name, error.details()))
 
             except (ValueError, TypeError) as error:
-                self._connection("INVALID_RESULT", str(error))
+                if generation == self.generation:
+                    self._connection("INVALID_RESULT", str(error))
 
     def _decode(self):
         while not self.stop.is_set():
@@ -227,6 +257,9 @@ class DisplaySession:
                 generation, result, receivedAt, ownerAge = self.pending.get(timeout=.05)
             except queue.Empty:
                 continue
+            with self.lock:
+                if generation != self.generation or result.identity.jobId != self.jobId:
+                    continue
             images = {}
             failures = {}
             started = time.monotonic()
@@ -293,6 +326,12 @@ class DisplaySession:
         self.stop.set()
         if self.stream is not None:
             self.stream.cancel()
+        pinError = None
+        if self._pinStore is not None:
+            try:
+                self._pinStore.close()
+            except RuntimeError as error:
+                pinError = error
         self.channel.close()
         for thread in self.threads:
             thread.join(2)
@@ -306,3 +345,5 @@ class DisplaySession:
             self._connection("CLOSED", "会话已关闭")
             while not self.pending.empty():
                 self.pending.get_nowait()
+        if pinError is not None:
+            raise pinError

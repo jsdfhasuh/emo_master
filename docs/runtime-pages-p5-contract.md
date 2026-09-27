@@ -26,3 +26,21 @@ Designer 的 `EMO_PAGE_DESIGNER=1` 工作区工具栏增加“导出测试项目
 预算：项目JSON1MiB、清单1MiB、单图8MiB、最多32资源/34文件、总解压64MiB、ZIP72MiB。
 这些是开发包准入上限，不扩大P2图像、导出/读图期限或P3客户端预算。
 有限复制后复核摘要，输出使用临时文件和原子替换；草稿后续编辑不改变已有包。
+
+## 导入与启用
+
+`python scripts/p5_project.py export --project DIR --output OUTSIDE_DIR`
+复用Designer导出API。`import --package FILE --store EMPTY_DIR`仅导入，输出内容revision；
+`activate --revision REVISION --store DIR`单独启用；`rollback --store DIR`回到上一完整版；
+`status --store DIR`查询。脚本通过自身位置确定源码，支持非项目cwd和中文/空格目录。
+
+`core.project.delivery_store.DeliveryStore`先限制ZIP大小、中央目录64KiB及条目数量，再检查所有
+规范路径、Windows别名/保留名称、大小、重复项、链接/特殊文件、压缩方式和CRC/SHA256。
+最多64MiB校验内容在内存中，所有条目完整性验证后才写独立暂存。拒绝额外脚本/DB等未声明文件。
+暂存完成正式模型、插件版本、release绑定和编译复核，目录整体改名成为不可变内容revision。
+`active.json`一个原子指针同时记录active/previous；失败不修改现用版，回退重验目标全部文件。
+最多8个保留版本，超额拒绝，不自动删上一版或运行数据。没有数据库降级/迁移。
+
+OS文件锁从Runtime准备开始持有至明确停服；持有时拒绝导入/启用/回退，包含尚未运行阶段。
+这是比“仅检测中不可切换”更保守的P5-A策略。跨进程与同进程冲突都拒绝；崩溃由OS释放锁，
+锁文件不通过删除来抢占。只读页面关闭不归还Runtime所有权。状态查询不隐式启用或启动。

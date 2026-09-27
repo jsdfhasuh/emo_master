@@ -27,3 +27,15 @@ proto/Ruff/mypy通过；pytest原生访问冲突3221225477，外层4294967295，
 77 passed / 2 failed；新代码Windows只读fd调用fsync报Bad file descriptor。改为r+b同步，不弱化断言。
 `a-fixed`同命令：79 passed / 0 skipped，Ruff/mypy PASS。全部原始结果保留。
 两轮测试均记录HEAD+dirty、逐文件摘要、环境和code_stable；不是在未来提交SHA上运行。
+
+A提交 `c2d6eeb` 后一次正常push仍curl55，独立远端仍2e45f3b，未同步。
+
+## 批次B
+
+新增DeliveryStore、跨进程目录所有权、ZIP前置准入和原子active/previous指针。
+导入与启用分开；失败、坏回退目标和Runtime占用都保留当前版本。上限8个不可变版本，不自动清理运行数据。
+`python scripts/p5_validate.py --suite import --output docs/evidence/p5/b-first --timeout 300`：
+32 passed / 0 skipped，Ruff/mypy PASS，code_stable=true。
+包括坏摘要/缺文件/不兼容版本、脚本、重复/别名/越界/链接/单文件和条目超限、原资源目录改名后验证、
+中文空格目录和非项目cwd、跨进程锁、回退损坏时现用版及运行数据不变。
+此时只完成包/版本机制，尚不称独立运行UI闭环通过；跨机、跨盘、EXE均NOT_RUN。

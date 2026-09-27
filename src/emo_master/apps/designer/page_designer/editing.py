@@ -88,7 +88,10 @@ class PageCommands:
             if actions is not None:
                 item.actions = actions
             if columns is not None:
-                item.grid.columns = columns
+                if item.type == 'container':
+                    item.grid.columns = columns
+                else:
+                    p.pages[pageId].layout.columns = columns
         self.session.editPresentation(edit)
 
     def move(self, pageId, componentId, row, column, parentId=None):

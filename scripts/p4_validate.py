@@ -24,17 +24,25 @@ def identity():
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--suite',choices=['ui','regression','ci','visual'],required=True)
+    parser.add_argument('--suite',choices=['focused','ui','regression','affected','ci','visual'],required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--timeout',type=float,default=300)
     args=parser.parse_args()
     args.output.mkdir(parents=True,exist_ok=False)
     commands={
+        'focused':[[sys.executable,'-m','pytest','-q','tests/ui/page_designer','-rs'],
+                   [sys.executable,'-m','ruff','check','src','tests'],
+                   [sys.executable,'-m','mypy','--config-file','mypy.ini','src']],
         'ui':[[sys.executable,'-m','pytest','-q','tests/ui/page_designer','tests/ui/presentation','tests/core/presentation','-rs'],
               [sys.executable,'-m','ruff','check','src','tests'],
               [sys.executable,'-m','mypy','--config-file','mypy.ini','src']],
         'regression':[[sys.executable,'-m','pytest','-q','tests/designer','tests/runtime/presentation','-rs'],
                       [sys.executable,'scripts/gen_proto.py','--check']],
+        'affected':[[sys.executable,'-m','pytest','-q','tests/core/presentation','tests/runtime/presentation','-rs'],
+                    [sys.executable,'-m','pytest','-q',*["tests/designer/"+name for name in (
+                        'test_project_store.py','test_workflow_store.py','test_workflow_package.py',
+                        'test_flow_graph_project_codec.py','test_main_window_project_save_load.py',
+                        'test_main_window_workflow_tabs.py','test_workflow_boundary_nodes.py')],'-rs']],
         'ci':[[sys.executable,'scripts/ci_check.py']],
         'visual':[[sys.executable,'scripts/p4_visual_check.py','--output',str(args.output/'screens')]],
     }

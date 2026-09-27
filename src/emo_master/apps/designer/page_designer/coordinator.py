@@ -13,6 +13,9 @@ class PageCoordinator:
         self.commandDepth = 0
         self.directory = None
         self.editor = None
+        self.closeApproved = None
+        from .preview import PreviewController
+        self.preview = PreviewController(self)
         self.session = ProjectEditSession(window.workflowStore.toPayload(),
             workflows=window.workflowStore, enablePresentation=False)
         self.stack = QStackedWidget()
@@ -69,6 +72,28 @@ class PageCoordinator:
                     self.editor.refresh()
 
     def confirmLeave(self):
+        if not self.confirmDraft():
+            return False
+        if self.preview.active():
+            self.preview.closeAsync()
+            self.preview.message('项目切换等待本观察者收尾；完成后请重新选择项目')
+            return False
+        return True
+
+    def prepareClose(self):
+        self.sync()
+        if self.closeApproved != self.session._signature():
+            if not self.confirmDraft():
+                return False
+            self.closeApproved = self.session._signature()
+        if self.preview.active():
+            if not self.preview.closing:
+                self.preview.closeAsync(self.window.close)
+            return False
+        self.preview.timer.stop()
+        return True
+
+    def confirmDraft(self):
         self.sync()
         if not self.session.dirty:
             return True
@@ -85,12 +110,34 @@ class PageCoordinator:
     def loaded(self, directory):
         self.shutdown()
         self.directory = directory
+        self.window.workflowController.captureActiveWorkflow()
         self.session.acceptLoaded()
         self.showFlow()
 
     def saved(self, directory):
         self.directory = directory
         self.session.markSaved()
+        self.window.setWindowTitle('视觉流程设计器')
+
+    def normalizeDraft(self, payload):
+        from copy import deepcopy
+        from .editing import manifestsFromCatalog
+        from emo_master.core.contracts.port_types import normalizePortType
+        runtime = getattr(self.window.runtimeClient, 'runtimeService', None)
+        scan = getattr(runtime, 'pluginScanResult', None)
+        manifests = ({key: value.manifest for key, value in scan.activeOperators.items()} if scan
+                     else manifestsFromCatalog(self.window.operatorCatalog))
+        result = deepcopy(payload)
+        for workflow in result['workflows'].values():
+            for node in workflow['nodes']:
+                manifest = manifests.get(node.get('operatorId'))
+                if manifest:
+                    for field in ('inputPorts', 'outputPorts'):
+                        if not node.get(field):
+                            node[field] = {key: normalizePortType(spec) for key, spec in getattr(manifest, field).items()}
+                    if not node.get('paramSchema'):
+                        node['paramSchema'] = manifest.paramSchema
+        return result
 
     def copyResources(self, directory):
         """Save-as copies declared immutable inputs only, never DB/output trees."""
@@ -124,9 +171,32 @@ class PageCoordinator:
                     raise ValueError('另存目标资源冲突，不覆盖')
                 continue
             target.parent.mkdir(parents=True, exist_ok=True)
-            import shutil
-            with source.open('rb') as stream, target.open('xb') as output:
-                shutil.copyfileobj(stream, output, 1024 * 1024)
+            import tempfile
+            import os
+            temporary = None
+            try:
+                with source.open('rb') as stream, tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as output:
+                    temporary = Path(output.name)
+                    copied = hashlib.sha256()
+                    remaining = item.size
+                    while remaining:
+                        chunk = stream.read(min(remaining, 1024 * 1024))
+                        if not chunk:
+                            raise ValueError('另存期间资源改变')
+                        output.write(chunk)
+                        copied.update(chunk)
+                        remaining -= len(chunk)
+                    if stream.read(1) or copied.hexdigest() != item.sha256:
+                        raise ValueError('另存期间资源改变')
+                    output.flush()
+                    os.fsync(output.fileno())
+                # Target was absent; refuse an intervening file instead of replacing it.
+                with temporary.open('rb') as stream, target.open('xb') as output:
+                    import shutil
+                    shutil.copyfileobj(stream, output, 1024 * 1024)
+            finally:
+                if temporary:
+                    temporary.unlink(missing_ok=True)
 
     def shutdown(self):
         if self.editor:

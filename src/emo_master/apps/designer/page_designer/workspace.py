@@ -15,6 +15,7 @@ class PageWorkspace(QWidget):
         self.session = coordinator.session
         self.store = self.session.presentation
         self.pageId = None
+        self.closed = False
         self.root = QHBoxLayout(self)
         sidebar = QVBoxLayout()
         self.root.addLayout(sidebar)
@@ -51,6 +52,7 @@ class PageWorkspace(QWidget):
 
     def refresh(self):
         p = self.store.snapshot()
+        self.coordinator.window.setWindowTitle('视觉流程设计器' + (' *' if self.session.dirty else ''))
         if self.pageId not in p.pages:
             self.pageId = p.defaultPageId
         self.pageList.blockSignals(True)
@@ -119,5 +121,6 @@ class PageWorkspace(QWidget):
         self.store.deletePage(self.pageId, repairTo=repair)
 
     def closeEvent(self, event):
+        self.closed = True
         self.renderer.close()
         super().closeEvent(event)

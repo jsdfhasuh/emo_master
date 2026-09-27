@@ -153,16 +153,26 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        loaded, runtimePath = self.loadProjectFromPath(
-            str(projectDir),
-            successMessagePrefix="项目已加载",
-            failedMessagePrefix="加载项目失败",
-        )
+        if self.editCoordinator is not None and payload.get('schemaVersion') == '2.2':
+            # Opening an editable draft must not compile unresolved resource paths
+            # through the legacy execution API. P2 preparation happens on explicit start.
+            loaded, runtimePath = True, str(projectDir)
+            payload = self.editCoordinator.normalizeDraft(payload)
+            self.appendLog('INFO', '2.2 草稿已打开；明确启动本地调试时物化资源和编译')
+        else:
+            loaded, runtimePath = self.loadProjectFromPath(
+                str(projectDir),
+                successMessagePrefix="项目已加载",
+                failedMessagePrefix="加载项目失败",
+            )
         if not loaded:
             return False, None, None
         self._captureFallbackProjectMetadata(payload)
         if self.workflowController is not None:
-            self.workflowController.loadPayload(payload)
+            if self.editCoordinator is not None:
+                self.workflowController.loadPayload(payload, preserveEdges=True)
+            else:
+                self.workflowController.loadPayload(payload)
         else:
             self._restoreProjectPayload(payload)
         if self.editCoordinator is not None:

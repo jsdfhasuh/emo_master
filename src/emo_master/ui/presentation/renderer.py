@@ -142,12 +142,14 @@ class RuntimePages(QWidget):
                     widget.clear('配置更新')
         while self.stack.count():
             widget = self.stack.widget(0)
+            widget.hide()
             self.stack.removeWidget(widget)
             widget.deleteLater()
         self.pages.clear()
         self.widgets.clear()
         while self.navigationLayout.count():
             widget = self.navigationLayout.takeAt(0).widget()
+            widget.hide()
             widget.deleteLater()
         self.buttons.clear()
         self.config = config
@@ -211,6 +213,8 @@ class RuntimePages(QWidget):
                     box.addWidget(title)
                 if component.type == "image":
                     widget = ImageView()
+                    if component.bindings:
+                        widget.message = '已绑定 · 等待明确任务结果'
                     widget.painted = self._painted
                 elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:
                     widget = CollectionView(component.props)
@@ -218,7 +222,8 @@ class RuntimePages(QWidget):
                     widget = QPushButton(component.props.text or component.props.title or "导航")
                     widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
                 else:
-                    widget = QLabel(component.props.text if component.type == "text" and not component.bindings else "未绑定")
+                    widget = QLabel(component.props.text if component.type == "text" and not component.bindings
+                                    else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
                     widget.setWordWrap(True)
                     widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
                     if component.type == "number":
@@ -235,7 +240,7 @@ class RuntimePages(QWidget):
             return
         if not keepFrozen and self.frozen:
             self.resumeLive(submit=False)
-        if self.currentPageId in self.widgets:
+        if self.currentPageId != pageId and self.currentPageId in self.widgets:
             for _component, widget in self.widgets[self.currentPageId].values():
                 if isinstance(widget, ImageView):
                     widget.setImage(QImage(), "", "隐藏页面")

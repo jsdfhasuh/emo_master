@@ -81,6 +81,8 @@ def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, t
     c = designer.pageCoordinator
     designer.workflowController.loadPayload(blank(tmp_path).model_dump())
     c.session.acceptLoaded()
+    from test_preview import waitFor
+    waitFor(lambda: designer.operatorCatalogController.state == 'ready')
     catalog = []
     from dataclasses import asdict
     for manifest in metadata().values():
@@ -101,7 +103,7 @@ def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, t
     widget = e.renderer.widgets[e.pageId][item.componentId][1]
     index = next(i for i, choice in enumerate(e.tools.choices) if choice.source.nodeId == 'count')
     monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: ('bind', True))
-    assert sendDrop(widget, {'choice': index})
+    assert sendDrop(widget, {'choice': index}), e.message.text()
     assert e.store.snapshot().pages[e.pageId].components[0].bindings
     e.tools.select(item.componentId)
     e.tools.fields['title'].setText('真实数量')

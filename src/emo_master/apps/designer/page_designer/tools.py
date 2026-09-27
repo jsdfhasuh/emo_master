@@ -6,7 +6,7 @@ from PySide2.QtGui import QDrag
 from PySide2.QtWidgets import (
     QWidget, QFormLayout, QListWidget, QListWidgetItem, QTreeWidget,
     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
-    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem,
+    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog,
 )
 
 from emo_master.core.presentation.models import Props, Placement, Action
@@ -105,6 +105,13 @@ class EditingTools(QObject):
         self.preview.setCheckable(True)
         self.preview.toggled.connect(self.previewMode)
         self.form.addRow(self.preview)
+        for text, command in [('登记本地输入图片', self.importInput),
+                ('明确开始本地草稿调试', workspace.coordinator.preview.startDebug),
+                ('只读连接已有 Job', self.connectJob),
+                ('停止自有调试 / 断开观察', workspace.coordinator.preview.closeAsync)]:
+            button = QPushButton(text)
+            button.clicked.connect(lambda _checked=False, fn=command: self.w.run(fn))
+            self.form.addRow(button)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
@@ -121,12 +128,30 @@ class EditingTools(QObject):
         self.choices = outputChoices(self.w.session.document(), manifests)
         self.outputs.clear()
         self.binding.clear()
+        groups = {}
+        nodes = {}
         for index, choice in enumerate(self.choices):
-            item = QTreeWidgetItem([choice.title])
+            address = (choice.source.workflowId, tuple((step.nodeId, step.relation) for step in choice.source.callPath))
+            if address not in groups:
+                path = '/'.join(step.nodeId + ':' + step.relation for step in choice.source.callPath) or '入口'
+                group = QTreeWidgetItem([self.w.session.document().workflows[choice.source.workflowId].name + ' · ' + path])
+                group.setFlags(group.flags() & ~Qt.ItemIsDragEnabled)
+                self.outputs.addTopLevelItem(group)
+                groups[address] = group
+            nodeAddress = (address, choice.source.nodeId)
+            if nodeAddress not in nodes:
+                node = QTreeWidgetItem([choice.source.nodeId or '工作流出口'])
+                node.setFlags(node.flags() & ~Qt.ItemIsDragEnabled)
+                groups[address].addChild(node)
+                nodes[nodeAddress] = node
+            item = QTreeWidgetItem([choice.source.port + ('.' + '.'.join(choice.source.fieldPath) if choice.source.fieldPath else '')
+                                    + ' · ' + choice.source.expectedType])
             item.setData(0, Qt.UserRole, index)
-            item.setToolTip(0, choice.hint)
-            self.outputs.addTopLevelItem(item)
+            item.setToolTip(0, choice.title + '\n' + choice.hint)
+            nodes[nodeAddress].addChild(item)
             self.binding.addItem(choice.title, index)
+            self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
+        self.outputs.expandAll()
         problems = validateBindings(self.w.session.document(), manifests)
         if problems:
             self.w.message.setText('\n'.join(f'{p.path}: {p.message}' for p in problems[:8]))
@@ -144,6 +169,19 @@ class EditingTools(QObject):
         for widget in [self.w.renderer, *self.w.renderer.findChildren(QWidget)]:
             widget.installEventFilter(self)
             widget.setAcceptDrops(not self.preview.isChecked())
+        if self.w.pageId in self.w.renderer.pages:
+            body = self.w.renderer.pages[self.w.pageId].widget()
+            grids = [(body, self.w.store.snapshot().pages[self.w.pageId].components)]
+            for widget in body.findChildren(QWidget):
+                key = widget.property('componentId')
+                if key:
+                    item = _component(self.w.store.snapshot(), self.w.pageId, key)
+                    if item.type == 'container':
+                        grids.append((widget, item.children))
+            for widget, children in grids:
+                row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
+                widget.layout().setRowMinimumHeight(row, 0 if self.preview.isChecked() else 64)
+                widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
 
     def previewMode(self, preview):
         self.w.renderer.editing = not preview
@@ -162,6 +200,14 @@ class EditingTools(QObject):
             self.title.setText('未选择控件 · 可调整页面列数')
             return
         self.title.setText(f'{component.type} · {component.componentId[:8]}')
+        source = self.w.store.snapshot().dataSources.get(next(iter(component.bindings.values()), ''))
+        if source:
+            comparable = source.model_dump(exclude={'resultScopeId'})
+            index = next((i for i, choice in enumerate(self.choices)
+                          if choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
+            self.binding.setCurrentIndex(index)
+            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId) + '.' + str(source.port))
+            self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
             self.fields[name].setText(getattr(component.props, name))
         for name in ['row', 'column', 'rowSpan', 'columnSpan']:
@@ -172,6 +218,7 @@ class EditingTools(QObject):
                                        else self.w.store.snapshot().pages[self.w.pageId].layout.columns)
         action = component.actions.get('clicked')
         self.destination.setCurrentIndex(max(0, self.destination.findData(action.pageId if action else None)))
+        self.destination.setEnabled(component.type == 'navigation_button' and (action is None or action.type == 'navigate'))
         self.extra.setRowCount(0)
         data = [(c.title, '.'.join(c.fieldPath), '') for c in component.props.columns] if component.type == 'table' else [
             (key, style.text, style.color) for key, style in component.props.indicatorStates.items()]
@@ -203,9 +250,16 @@ class EditingTools(QObject):
         actions = item.actions
         if item.type == 'navigation_button':
             target = self.destination.currentData()
-            actions = {'clicked': Action(type='navigate', pageId=target)} if target else {}
+            previous = item.actions.get('clicked')
+            if previous is None or previous.type == 'navigate':
+                if target:
+                    action = previous.model_copy(deep=True) if previous else Action(type='navigate', pageId=target)
+                    action.pageId = target
+                    actions = {'clicked': action}
+                else:
+                    actions = {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
-            actions=actions, columns=columns if item.type == 'container' else None)
+            actions=actions, columns=columns)
 
     def bindChoice(self, index, key):
         choice = self.choices[index]
@@ -302,7 +356,34 @@ class EditingTools(QObject):
 
     def finishRefresh(self):
         self.pendingRefresh = False
-        self.w.refresh()
+        if not self.w.closed:
+            self.w.refresh()
+
+    def connectJob(self):
+        address, ok = QInputDialog.getText(self.w, '只读连接', 'loopback 地址（如 127.0.0.1:50051）')
+        if not ok:
+            return
+        job, ok = QInputDialog.getText(self.w, '明确选择任务', '已有展示 Job ID（不启动检测）')
+        if ok:
+            self.w.coordinator.preview.connect(address, job)
+
+    def importInput(self):
+        from .resources import registerImage
+        document = self.w.session.document()
+        nodes = [(workflowId, node.nodeId, f'{workflow.name}/{node.displayName or node.nodeId} [{node.nodeId}]')
+                 for workflowId, workflow in document.workflows.items() for node in workflow.nodes
+                 if node.operatorId == 'vision.io.image_loader']
+        if not nodes:
+            raise ValueError('请先在流程设计中添加 ImageLoader 节点')
+        label, ok = QInputDialog.getItem(self.w, '输入资源目标', '明确选择 ImageLoader 实例',
+            [n[2] for n in nodes], 0, False)
+        if not ok:
+            return
+        workflow, node, _ = next(n for n in nodes if n[2] == label)
+        path, _ = QFileDialog.getOpenFileName(self.w, '选择本地测试图片', '', 'Images (*.png *.jpg *.jpeg *.bmp)')
+        if path:
+            registerImage(self.w.session, self.w.coordinator.directory, workflow, node, path)
+            self.w.message.setText('图片已复制为声明资源；下一次明确调试使用新快照')
 
     def eventFilter(self, obj, event):
         if self.preview.isChecked():
@@ -321,6 +402,8 @@ class EditingTools(QObject):
                 event.ignore()
             return True
         key, _card = self.componentAt(obj)
+        if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and not key:
+            self.select(None)
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and key:
             self.select(key)
             self.dragStart = (key, event.globalPos())

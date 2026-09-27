@@ -2481,7 +2481,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         if self.pageCoordinator is not None:
-            if not self.pageCoordinator.confirmLeave():
+            if not self.pageCoordinator.prepareClose():
                 event.ignore()
                 return
             self.pageCoordinator.shutdown()

@@ -48,9 +48,13 @@ class WorkflowController:
     def activeWorkflowId(self) -> str:
         return self.workflowStore.activeWorkflowId
 
-    def loadPayload(self, payload: dict[str, object]) -> None:
+    def loadPayload(self, payload: dict[str, object], *, preserveEdges: bool = False) -> None:
         self.workflowStore.loadPayload(payload)
+        edges = {key: deepcopy(w.edges) for key, w in self.workflowStore.workflows.items()}
         self._refreshWorkflowReferences()
+        if preserveEdges:
+            for key, values in edges.items():
+                self.workflowStore.workflows[key].edges = values
         self._renderActive()
 
     def loadProjectPayload(self, payload: dict[str, object]) -> None:

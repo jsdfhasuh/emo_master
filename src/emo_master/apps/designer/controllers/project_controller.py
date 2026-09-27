@@ -41,6 +41,7 @@ class ProjectController:
         self.updateToolbarState = updateToolbarState
         self.updateRuntimeJobState = updateRuntimeJobState
         self.workflowController = workflowController
+        self.editCoordinator = None
         self._fallbackProjectMetadata: dict[str, object] = {
             "projectId": str(uuid4()),
             "name": "project",
@@ -145,6 +146,8 @@ class ProjectController:
         self, projectDirPath: str
     ) -> tuple[bool, str | None, Path | None]:
         projectDir = Path(projectDirPath)
+        if self.editCoordinator is not None and not self.editCoordinator.confirmLeave():
+            return False, None, None
         try:
             payload = loadProject(projectDir)
         except ValueError as err:
@@ -162,6 +165,8 @@ class ProjectController:
             self.workflowController.loadPayload(payload)
         else:
             self._restoreProjectPayload(payload)
+        if self.editCoordinator is not None:
+            self.editCoordinator.loaded(projectDir)
         self.recordRecentProject(str(projectDir / "project.json"))
         self.appendLog("INFO", f"项目已加载：{projectDir / 'project.json'}")
         return True, runtimePath, projectDir
@@ -171,6 +176,9 @@ class ProjectController:
     ) -> tuple[bool, Path | None]:
         projectDir = Path(projectDirPath)
         try:
+            if self.editCoordinator is not None:
+                self.editCoordinator.sync()
+                self.editCoordinator.copyResources(projectDir)
             createProjectSkeleton(projectDir, projectName)
             payload = self._buildProjectPayload(projectName, loadedProjectPath)
             saveProject(projectDir, payload)
@@ -181,6 +189,8 @@ class ProjectController:
             self.workflowController.commitSavedPayload(payload)
         else:
             self._captureFallbackProjectMetadata(payload)
+        if self.editCoordinator is not None:
+            self.editCoordinator.saved(projectDir)
         self.appendLog("INFO", f"项目已保存：{projectDir / 'project.json'}")
         return True, projectDir
 

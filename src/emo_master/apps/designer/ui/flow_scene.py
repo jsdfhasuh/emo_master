@@ -589,6 +589,9 @@ try:
                 self._clearInputHints()
                 self._setDragHint("", None)
             super().mouseReleaseEvent(event)
+            callback = getattr(self, "editCompleted", None)
+            if callback is not None:
+                callback()
 
         def dragEnterEvent(self, event) -> None:  # type: ignore[override]
             mimeData = event.mimeData()

@@ -66,6 +66,7 @@ class RuntimePages(QWidget):
             self.expectedCapture = None
         self.hub = hub
         self.detached = False
+        self.editing = False
         self.currentPageId = None
         self.pages = {}
         self.widgets = {}
@@ -102,6 +103,7 @@ class RuntimePages(QWidget):
         controls.addWidget(self.modeLabel, 1)
         layout.addLayout(controls)
         navigation = QHBoxLayout()
+        self.navigationLayout = navigation
         self.buttons = {}
         for pageId in self.config.pageOrder:
             button = QPushButton(self.config.pages[pageId].name)
@@ -123,6 +125,52 @@ class RuntimePages(QWidget):
         if hub:
             hub.attach(self)
 
+    def reload(self, presentation):
+        """Replace only widgets/configuration; retain the borrowed hub/session."""
+        assertGuiThread()
+        config = Presentation.model_validate(presentation.model_dump())
+        pageId = self.currentPageId
+        self.resumeLive(submit=False)
+        self.displayed.clear()
+        self.lastView = None
+        for rows in self.widgets.values():
+            for _component, widget in rows.values():
+                if isinstance(widget, ImageView):
+                    widget.painted = None
+                    widget.setImage(QImage(), '')
+                elif isinstance(widget, CollectionView):
+                    widget.clear('配置更新')
+        while self.stack.count():
+            widget = self.stack.widget(0)
+            self.stack.removeWidget(widget)
+            widget.deleteLater()
+        self.pages.clear()
+        self.widgets.clear()
+        while self.navigationLayout.count():
+            widget = self.navigationLayout.takeAt(0).widget()
+            widget.deleteLater()
+        self.buttons.clear()
+        self.config = config
+        try:
+            self.expectedCapture = revisionOf(captureDefinition(config))
+        except KeyError:
+            self.expectedCapture = None
+        self.currentPageId = None
+        for key in config.pageOrder:
+            button = QPushButton(config.pages[key].name)
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, target=key: self.navigate(target))
+            self.navigationLayout.addWidget(button)
+            self.buttons[key] = button
+        target = pageId if pageId in config.pages else config.defaultPageId
+        if target:
+            self.navigate(target)
+        else:
+            self.stack.addWidget(QLabel('此项目尚无运行页面'))
+        if self.hub:
+            self.hub.lastToken = None
+            self.submit(self.hub.session.readSnapshot())
+
     def _build(self, pageId):
         # Retire a hidden page before allocating its replacement, so its table
         # quota does not reject otherwise valid controls on the new page.
@@ -136,6 +184,8 @@ class RuntimePages(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         body = QWidget()
+        body.setProperty('pageGrid', pageId)
+        body.setMinimumHeight(240)
         self.widgets[pageId] = {}
         self._children(body, page.components, page.layout, pageId)
         scroll.setWidget(body)
@@ -150,6 +200,7 @@ class RuntimePages(QWidget):
         for component in components:
             card = QFrame()
             card.setObjectName("card")
+            card.setProperty('componentId', component.componentId)
             if component.type == "container":
                 self._children(card, component.children, component.grid, pageId)
             else:
@@ -200,6 +251,8 @@ class RuntimePages(QWidget):
             self.submit(self.lastView)
 
     def act(self, action):
+        if self.editing:
+            return
         if action is None:
             self.status.setText("此按钮未配置动作")
         elif action.type == "navigate" and action.context == "live":

@@ -1,3 +1,5 @@
+from emo_master.apps.designer.page_designer.commands import draftCommand
+import os
 from datetime import datetime
 import json
 from pathlib import Path
@@ -1336,6 +1338,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._operatorDisplayTimer.timeout.connect(self._pollOperatorCatalog)
             self._operatorDisplayTimer.start()
         self.refreshOperators(explicit=False)
+        self.pageCoordinator = None
+        if _nativeQt and os.environ.get("EMO_PAGE_DESIGNER") == "1":
+            from emo_master.apps.designer.page_designer.coordinator import PageCoordinator
+            self.pageCoordinator = PageCoordinator(self, rootWidget)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -1995,6 +2001,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         return str(result.packagePath)
 
+    @draftCommand
     def importWorkflowPackageAction(
         self, parentWorkflowId: str | None = None
     ) -> str | None:
@@ -2099,6 +2106,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._restoreActiveWorkflowRuntimeState()
         self._refreshWorkflowTabs()
 
+    @draftCommand
     def createWorkflow(self, name: str = "New Workflow") -> str:
         workflowId = self.workflowController.createWorkflow(name)
         self.activeWorkflowId = workflowId
@@ -2112,6 +2120,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         return self.createWorkflow(name)
 
+    @draftCommand
     def renameWorkflow(self, workflowId: str, name: str) -> None:
         self.workflowController.renameWorkflow(workflowId, name)
         self._refreshWorkflowTabs()
@@ -2157,6 +2166,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def deleteActiveWorkflow(self) -> None:
         self.deleteWorkflow(self.activeWorkflowId)
 
+    @draftCommand
     def deleteWorkflow(self, workflowId: str) -> None:
         try:
             self.workflowController.deleteWorkflow(workflowId)
@@ -2190,6 +2200,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return "无法删除工作流：工作流不存在。"
         return f"无法删除工作流：{error}"
 
+    @draftCommand
     def setEntryWorkflow(self, workflowId: str | None = None) -> None:
         selected = workflowId or self.activeWorkflowId
         try:
@@ -2206,6 +2217,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> None:
         self.editWorkflowInterfaceFor(self.activeWorkflowId, inputs, outputs)
 
+    @draftCommand
     def editWorkflowInterfaceFor(
         self,
         workflowId: str,
@@ -2261,6 +2273,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         return parsed
 
+    @draftCommand
     def addSubflowNode(
         self,
         targetWorkflowId: str | None = None,
@@ -2366,6 +2379,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     return candidate
         return None
 
+    @draftCommand
     def _addLoopNode(
         self,
         config: dict[str, object],
@@ -2466,6 +2480,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        if self.pageCoordinator is not None:
+            if not self.pageCoordinator.confirmLeave():
+                event.ignore()
+                return
+            self.pageCoordinator.shutdown()
         self.shutdownOperatorDisplay()
         self._saveRuntimeLogSettings()
         self.operatorEditorManager.closeAll()
@@ -2897,6 +2916,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._refreshNodeDetailsView()
             self.updateToolbarState()
 
+    @draftCommand
     def addNodeFromOperatorPayload(
         self,
         payload: dict[str, object],
@@ -3000,6 +3020,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshRuntimePanelView()
         self.updateToolbarState()
 
+    @draftCommand
     def connectSelectedNodes(self) -> None:
         selectedNodeIds = self.flowScene.getSelectedNodeIds()
         if len(selectedNodeIds) != 2:
@@ -3025,6 +3046,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
 
+    @draftCommand
     def connectPorts(
         self, fromNodeId: str, fromPort: str, toNodeId: str, toPort: str
     ) -> FlowEdgeViewModel | None:
@@ -3063,6 +3085,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         for errorText in errors:
             self.appendRuntimeLog("ERROR", f"  - {errorText}")
 
+    @draftCommand
     def deleteSelectedElements(self) -> None:
         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
         for fromNode, fromPort, toNode, toPort in selectedEdgeKeys:
@@ -3091,8 +3114,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.updateToolbarState()
 
     def handleDeleteShortcut(self) -> None:
+        if self.pageCoordinator is not None and self.pageCoordinator.pageActive():
+            return
         self.deleteSelectedElements()
 
+    @draftCommand
     def autoLayoutNodes(self) -> None:
         self.flowScene.layoutNodesGrid(columns=4)
         self.focusGraphContent()
@@ -3582,6 +3608,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
                                            context=(*self._iconContext(), nodeId))
 
+    @draftCommand
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
         if nodeId not in self.flowModel.nodes:
             self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")

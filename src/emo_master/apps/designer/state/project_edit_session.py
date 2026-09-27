@@ -19,21 +19,49 @@ class ProjectEditSession:
     The legacy canvas is not switched to this coordinator until its P4 integration.
     """
 
-    def __init__(self, payload: dict[str, object], *, historyLimit: int = 100) -> None:
+    def __init__(self, payload: dict[str, object], *, historyLimit: int = 100,
+                 enablePresentation: bool = True, workflows: WorkflowStore | None = None) -> None:
         if historyLimit < 1:
             raise ValueError("historyLimit must be positive")
-        self.workflows = WorkflowStore(migrateProjectPayload(payload, enablePresentation=True))
+        self.workflows = workflows if workflows is not None else WorkflowStore()
+        self.workflows.loadPayload(migrateProjectPayload(payload, enablePresentation=enablePresentation))
         self.historyLimit = historyLimit
         self._undo: list[dict[str, object]] = []
         self._redo: list[dict[str, object]] = []
         self._editing = False
         self._saved = self._signature()
         # An explicit upgrade is a change until persisted, including an empty page set.
-        if payload.get("schemaVersion") != "2.2":
+        if enablePresentation and payload.get("schemaVersion") != "2.2":
             self._saved = "unpersisted-2.2-upgrade"
         from emo_master.apps.designer.state.presentation_store import PresentationStore
 
         self.presentation = PresentationStore(self)
+        self._checkpoint = self.payload()
+
+    def enablePresentation(self) -> None:
+        if self.document().presentation is None:
+            with self.transaction():
+                self._restore(migrateProjectPayload(self.payload(), enablePresentation=True))
+
+    def acceptLoaded(self) -> None:
+        """Called only after the shared workflow controller has loaded a project."""
+        self._undo.clear()
+        self._redo.clear()
+        self.markSaved()
+
+    def markSaved(self) -> None:
+        self._saved = self._signature()
+        self._checkpoint = self.payload()
+
+    def checkpoint(self) -> None:
+        """Commit a completed legacy canvas command to the same history."""
+        current = self.payload()
+        if current != self._checkpoint:
+            self.document()
+            self._undo.append(self._checkpoint)
+            del self._undo[:-self.historyLimit]
+            self._redo.clear()
+            self._checkpoint = current
 
     @classmethod
     def load(cls, directory: Path) -> ProjectEditSession:
@@ -77,6 +105,7 @@ class ProjectEditSession:
             raise
         finally:
             self._editing = False
+            self._checkpoint = self.payload()
 
     def editPresentation(self, edit: Callable) -> None:
         with self.transaction():
@@ -108,6 +137,7 @@ class ProjectEditSession:
         previous["project"] = metadata
         self._restore(previous)
         target.append(current)
+        self._checkpoint = self.payload()
         return True
 
     def undo(self) -> bool:

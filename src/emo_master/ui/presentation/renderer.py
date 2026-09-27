@@ -1,0 +1,274 @@
+"""A reusable QWidget shell. No Runtime, Designer or algorithm imports."""
+from collections import deque
+import json
+import time
+
+from PySide2.QtCore import Qt, QRect
+from PySide2.QtGui import QPainter, QColor, QImage
+from PySide2.QtWidgets import (
+    QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
+    QStackedWidget, QScrollArea, QFrame, QSizePolicy,
+)
+
+from emo_master.core.presentation.models import Presentation
+from emo_master.core.presentation.values import readValue
+from emo_master.ui.presentation.images import assertGuiThread, ownedImage
+
+
+class ImageView(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.image = QImage()
+        self.message = "尚无结果"
+        self.key = ""
+        self.painted = None
+        self.setMinimumSize(240, 180)
+        self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+    def setImage(self, image, key, message=""):
+        assertGuiThread()
+        self.image, self.key, self.message = image, key, message
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.fillRect(self.rect(), QColor("#e9eef4"))
+        if not self.image.isNull():
+            size = self.image.size().scaled(self.size(), Qt.KeepAspectRatio)
+            x, y = (self.width() - size.width()) // 2, (self.height() - size.height()) // 2
+            painter.drawImage(QRect(x, y, size.width(), size.height()), self.image)
+            if self.painted:
+                self.painted(self.key, time.perf_counter_ns())
+        else:
+            painter.setPen(QColor("#576477"))
+            painter.drawText(self.rect().adjusted(14, 14, -14, -14), Qt.AlignCenter | Qt.TextWordWrap, self.message)
+        painter.end()
+
+
+class RuntimePages(QWidget):
+    """Stable page IDs, bounded lazy pages, one atomic submission per scope.
+
+    A hub supplies snapshots and shared image conversion; manual submit remains
+    useful for clearly labelled simulation and deterministic widget tests.
+    """
+    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None):
+        super().__init__(parent)
+        assertGuiThread()
+        self.config = Presentation.model_validate(presentation.model_dump())
+        self.hub = hub
+        self.detached = False
+        self.currentPageId = None
+        self.pages = {}
+        self.widgets = {}
+        self.displayed = {}
+        self.lastView = None
+        self.frozen = None
+        self.records = deque(maxlen=256)
+        self._recordedPaints = deque(maxlen=128)
+        self.setWindowTitle(label)
+        self.resize(1060, 720)
+        self.setMinimumSize(460, 360)
+        self.setMaximumSize(1600, 1000)
+        self.setStyleSheet("QWidget {font-family: 'Microsoft YaHei'; font-size: 13px; color:#223247;} "
+            "QWidget#runtimePages {background:#f5f7fa;} QFrame#card {background:white; border:1px solid #dce3eb; border-radius:6px;} "
+            "QPushButton {padding:9px 14px; background:#e3edf8; border:1px solid #c4d7ec; border-radius:4px;} "
+            "QPushButton:checked {background:#2168ae; color:white;} QLabel#number {font-size:36px; font-weight:600;}")
+        self.setObjectName("runtimePages")
+        layout = QVBoxLayout(self)
+        self.banner = QLabel(label)
+        self.banner.setWordWrap(True)
+        layout.addWidget(self.banner)
+        self.status = QLabel("未连接 · 等待明确选择任务")
+        self.status.setWordWrap(True)
+        layout.addWidget(self.status)
+        navigation = QHBoxLayout()
+        self.buttons = {}
+        for pageId in self.config.pageOrder:
+            button = QPushButton(self.config.pages[pageId].name)
+            button.setCheckable(True)
+            button.clicked.connect(lambda _checked=False, key=pageId: self.navigate(key))
+            navigation.addWidget(button)
+            self.buttons[pageId] = button
+        layout.addLayout(navigation)
+        self.stack = QStackedWidget()
+        layout.addWidget(self.stack, 1)
+        self.identity = QLabel("尚无已显示结果")
+        self.identity.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        self.identity.setWordWrap(True)
+        layout.addWidget(self.identity)
+        if self.config.defaultPageId:
+            self.navigate(self.config.defaultPageId)
+        else:
+            self.stack.addWidget(QLabel("此项目尚无运行页面"))
+        if hub:
+            hub.attach(self)
+
+    def _build(self, pageId):
+        page = self.config.pages[pageId]
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        body = QWidget()
+        self.widgets[pageId] = {}
+        self._children(body, page.components, page.layout, pageId)
+        scroll.setWidget(body)
+        self.stack.addWidget(scroll)
+        self.pages[pageId] = scroll
+        # At most two instantiated pages per window; hidden pages own no images.
+        if len(self.pages) > 2:
+            old = next(key for key in self.pages if key not in (pageId, self.currentPageId))
+            widget = self.pages.pop(old)
+            self.widgets.pop(old)
+            self.stack.removeWidget(widget)
+            widget.deleteLater()
+
+    def _children(self, parent, components, grid, pageId):
+        layout = QGridLayout(parent)
+        layout.setSpacing(grid.spacing)
+        for column in range(grid.columns):
+            layout.setColumnStretch(column, 1)
+        for component in components:
+            card = QFrame()
+            card.setObjectName("card")
+            if component.type == "container":
+                self._children(card, component.children, component.grid, pageId)
+            else:
+                box = QVBoxLayout(card)
+                if component.props.title:
+                    title = QLabel(component.props.title)
+                    title.setWordWrap(True)
+                    box.addWidget(title)
+                if component.type == "image":
+                    widget = ImageView()
+                    widget.painted = self._painted
+                elif component.type == "navigation_button":
+                    widget = QPushButton(component.props.text or component.props.title or "导航")
+                    widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
+                else:
+                    widget = QLabel(component.props.text if component.type == "text" and not component.bindings else "未绑定")
+                    widget.setWordWrap(True)
+                    widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
+                    if component.type == "number":
+                        widget.setObjectName("number")
+                box.addWidget(widget, 1)
+                self.widgets[pageId][component.componentId] = (component, widget)
+            p = component.layout
+            layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
+
+    def navigate(self, pageId):
+        assertGuiThread()
+        if pageId not in self.config.pages:
+            self.status.setText("导航目标不存在")
+            return
+        if self.currentPageId in self.widgets:
+            for _component, widget in self.widgets[self.currentPageId].values():
+                if isinstance(widget, ImageView):
+                    widget.setImage(QImage(), "", "隐藏页面")
+        if pageId not in self.pages:
+            self._build(pageId)
+        self.currentPageId = pageId
+        self.stack.setCurrentWidget(self.pages[pageId])
+        for key, button in self.buttons.items():
+            button.setChecked(key == pageId)
+        if self.lastView is not None:
+            self.submit(self.lastView)
+
+    def act(self, action):
+        if action is None:
+            self.status.setText("此按钮未配置动作")
+        elif action.type == "navigate" and action.context == "live":
+            self.navigate(action.pageId)
+        else:
+            self.status.setText("冻结/详情接入尚未启用")
+
+    def _value(self, component, view):
+        if not component.bindings:
+            return None, None, "未绑定"
+        sourceId = next(iter(component.bindings.values()))
+        source = self.config.dataSources.get(sourceId)
+        if source is None:
+            return None, None, "来源不存在"
+        if source.kind not in ("node_output", "workflow_output"):
+            return None, None, "不支持此来源: " + source.kind
+        scope = view.scopes.get(source.resultScopeId)
+        if scope is None:
+            return None, None, "当前结果准备中" if source.resultScopeId in view.loading else "等待触发 / 尚无结果"
+        value = next((item for item in scope.result.sources if item.sourceId == sourceId), None)
+        if value is None:
+            return scope, None, "SOURCE_MISSING"
+        if value.state != "AVAILABLE":
+            return scope, None, value.reasonCode or value.reason
+        if sourceId in scope.failures:
+            return scope, None, scope.failures[sourceId]
+        if component.type == "image":
+            return scope, scope.images.get(sourceId), "" if sourceId in scope.images else "IMAGE_UNAVAILABLE"
+        if value.valueJson is None:
+            return scope, None, "绑定类型不支持"
+        return scope, readValue(value.valueJson), ""
+
+    def submit(self, view):
+        assertGuiThread()
+        if self.detached:
+            return
+        self.lastView = view
+        self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
+        page = self.currentPageId
+        if page is None:
+            return
+        shown = {}
+        self.setUpdatesEnabled(False)
+        try:
+            for component, widget in self.widgets[page].values():
+                if component.type == "navigation_button":
+                    continue
+                if component.type == "text" and not component.bindings:
+                    continue
+                scope, value, error = self._value(component, view)
+                if view.connection != "CONNECTED":
+                    value, error, scope = None, view.connection + ": " + view.detail, None
+                if scope:
+                    shown[scope.result.identity.resultScopeId] = scope
+                if isinstance(widget, ImageView):
+                    image = QImage()
+                    if not error and value is not None:
+                        try:
+                            image = self.hub.image(scope, next(iter(component.bindings.values())), value) if self.hub else ownedImage(value)
+                        except ValueError as problem:
+                            error = str(problem)
+                    widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
+                elif component.type == "number":
+                    widget.setText(error or ("null" if value is None else
+                        (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
+                elif component.type == "text":
+                    widget.setText(error or json.dumps(value, ensure_ascii=False))
+                else:
+                    widget.setText("组件尚未支持: " + component.type)
+            # Record only after all widgets have committed this scope together.
+            self.displayed = shown
+            self.identity.setText(" | ".join(f"{scope}: #{item.result.identity.resultOrdinal} · {item.result.status} · {item.result.identity.resultKey}"
+                                             for scope, item in shown.items()) or "尚无当前有效结果")
+            for scope in shown.values():
+                self.records.append({"key": scope.result.identity.resultKey, "ready_ns": scope.readyNs,
+                                     "gui_ns": time.perf_counter_ns(), "scope_end_ns": scope.result.timing.scopeEndedNs if scope.result.timing else None})
+        finally:
+            self.setUpdatesEnabled(True)
+
+    def _painted(self, key, stamp):
+        if key and key not in self._recordedPaints:
+            self._recordedPaints.append(key)
+            for record in reversed(self.records):
+                if record["key"] == key:
+                    record["paint_ns"] = stamp
+                    break
+
+    def closeEvent(self, event):
+        self.detached = True
+        if self.hub:
+            self.hub.detach(self)
+        self.displayed.clear()
+        self.lastView = self.frozen = None
+        for rows in self.widgets.values():
+            for _component, widget in rows.values():
+                if isinstance(widget, ImageView):
+                    widget.painted = None
+                    widget.setImage(QImage(), "")
+        super().closeEvent(event)

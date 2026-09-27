@@ -9,12 +9,14 @@ import json
 import queue
 import threading
 import time
+from types import MappingProxyType
 
 import grpc
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.core.presentation.results import ClosedResult
+from emo_master.clients.runtime.view_state import ScopeView, SessionView
 
 
 def decodeResult(wire):
@@ -57,8 +59,8 @@ def decodePng(content):
     pixels = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
     if pixels is None or pixels.nbytes > 8 * 1024 * 1024:
         raise ValueError("image decoding failed or exceeded budget")
-    pixels.flags.writeable = False
-    return pixels
+    # Immutable bytes prevent observers from enabling writes again.
+    return np.frombuffer(pixels.tobytes(), dtype=pixels.dtype).reshape(pixels.shape)
 
 
 class DisplaySession:
@@ -83,6 +85,11 @@ class DisplaySession:
         self.listeners = set()
         self.generation = 0
         self.stream = None
+        self.connection = "CONNECTING"
+        self.connectionDetail = "连接指定任务"
+        self.revision = 0
+        self.loading = {}
+        self.readyAt = {}
         self.threads = [threading.Thread(target=self._receive, name="display-metadata"),
                         threading.Thread(target=self._health, name="display-snapshot-health"),
                         threading.Thread(target=self._decode, name="display-read-decode")]
@@ -97,10 +104,32 @@ class DisplaySession:
                 self.listeners.discard(callback)
         return detach
 
+    def readSnapshot(self):
+        """Atomic initial/current read; no RPC, execution or writable mappings.
+
+        Qt adapters poll at a bounded rate instead of queueing one GUI event per
+        result. Legacy observe(callback(result)) remains supported.
+        """
+        with self.lock:
+            scopes = {key: ScopeView(result, MappingProxyType(dict(images)),
+                       MappingProxyType(dict(errors)), self.readyAt.get(key, 0))
+                      for key, (result, images, errors) in self.latest.items()}
+            return SessionView(self.revision, self.generation, self.instanceId, self.jobId,
+                self.connection, self.connectionDetail, MappingProxyType(scopes),
+                MappingProxyType(dict(self.loading)), MappingProxyType(dict(self.started)))
+
+    def _connection(self, state, detail=""):
+        with self.lock:
+            if (state, detail) != (self.connection, self.connectionDetail):
+                self.connection, self.connectionDetail = state, detail
+                self.revision += 1
+
     def _accept(self, snapshot):
         with self.lock:
             if snapshot.job_id != self.jobId:
                 return
+            self._connection("CONNECTED")
+            self.revision += 1
             changed = snapshot.runtime_instance_id != self.instanceId
             if changed or snapshot.reset_required:
                 self.generation += 1
@@ -108,6 +137,8 @@ class DisplaySession:
                 self.high.clear()
                 self.started.clear()
                 self.seen.clear()
+                self.loading.clear()
+                self.readyAt.clear()
                 self.stats["resets"] += 1
             elif snapshot.cursor < self.cursor:
                 return
@@ -124,6 +155,7 @@ class DisplaySession:
                     # An actual new closed result invalidates the preceding image,
                     # including when this result is incomplete/failed.
                     self.latest.pop(scope, None)
+                    self.loading[scope] = result
                 self.stats["received"] += 1
                 task = (self.generation, result, time.perf_counter_ns(), wire.owner_age_ms)
                 try:
@@ -159,10 +191,13 @@ class DisplaySession:
                     if self.stop.is_set():
                         break
             except grpc.RpcError as error:
+                if not self.stop.is_set():
+                    self._connection(error.code().name, error.details() or "连接失效")
                 if error.code() not in (grpc.StatusCode.DEADLINE_EXCEEDED, grpc.StatusCode.CANCELLED):
                     self.errors.append((error.code().name, error.details()))
                     self.stop.wait(.05)
             except (ValueError, TypeError) as error:
+                self._connection("INVALID_RESULT", str(error))
                 self.errors.append(("INVALID_RESULT", str(error)))
                 self.stop.wait(.05)
             finally:
@@ -175,11 +210,16 @@ class DisplaySession:
                 self._accept(self.stub.Snapshot(pb.DisplayRequest(runtime_instance_id=self.instanceId,
                     job_id=self.jobId, after_cursor=self.cursor, replay=True), timeout=.5))
             except grpc.RpcError as error:
+                if not self.stop.is_set():
+                    self._connection(error.code().name, error.details() or "连接失效")
                 if error.code() == grpc.StatusCode.NOT_FOUND:
                     with self.lock:
                         self.latest.clear()
                 if not self.stop.is_set():
                     self.errors.append((error.code().name, error.details()))
+
+            except (ValueError, TypeError) as error:
+                self._connection("INVALID_RESULT", str(error))
 
     def _decode(self):
         while not self.stop.is_set():
@@ -218,6 +258,9 @@ class DisplaySession:
                 if not applied:
                     continue
                 self.latest[result.identity.resultScopeId] = (result, images, failures)
+                self.loading.pop(result.identity.resultScopeId, None)
+                self.readyAt[result.identity.resultScopeId] = decodedNs
+                self.revision += 1
                 while sum(image.nbytes for _, frames, _ in self.latest.values() for image in frames.values()) > 16 * 1024 * 1024:
                     scope = next(key for key, (_, frames, _) in self.latest.items() if frames)
                     oldResult, oldFrames, oldFailures = self.latest[scope]
@@ -240,6 +283,9 @@ class DisplaySession:
             self.high.clear()
             self.started.clear()
             self.seen.clear()
+            self.loading.clear()
+            self.readyAt.clear()
+            self._connection("CONNECTING", "切换指定任务")
         if self.stream is not None:
             self.stream.cancel()
 
@@ -255,5 +301,8 @@ class DisplaySession:
         with self.lock:
             self.listeners.clear()
             self.latest.clear()
+            self.loading.clear()
+            self.readyAt.clear()
+            self._connection("CLOSED", "会话已关闭")
             while not self.pending.empty():
                 self.pending.get_nowait()

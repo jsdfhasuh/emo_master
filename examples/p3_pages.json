@@ -1,0 +1,185 @@
+{
+  "schemaVersion": "1.0",
+  "defaultPageId": "overview",
+  "pageOrder": [
+    "overview",
+    "detail"
+  ],
+  "navigation": {
+    "mode": "buttons"
+  },
+  "resultScopes": {},
+  "dataSources": {},
+  "pages": {
+    "overview": {
+      "name": "运行总览",
+      "layout": {
+        "columns": 3
+      },
+      "resultScopeIds": [
+        "root"
+      ],
+      "components": [
+        {
+          "componentId": "overview-intro",
+          "type": "text",
+          "layout": {
+            "row": 0,
+            "columnSpan": 3
+          },
+          "props": {
+            "text": "本地图像功能演示 · 实际 Blob / Count 输出 · 不涉及真实设备"
+          }
+        },
+        {
+          "componentId": "overview-image",
+          "type": "image",
+          "layout": {
+            "row": 1,
+            "columnSpan": 2,
+            "rowSpan": 3
+          },
+          "props": {
+            "title": "检测结果图 / 算子 overlay"
+          },
+          "bindings": {
+            "image": "image"
+          }
+        },
+        {
+          "componentId": "overview-count",
+          "type": "number",
+          "layout": {
+            "row": 1,
+            "column": 2
+          },
+          "props": {
+            "title": "本次检测数量",
+            "unit": " 个",
+            "decimals": 0
+          },
+          "bindings": {
+            "value": "count"
+          }
+        },
+        {
+          "componentId": "overview-caption",
+          "type": "text",
+          "layout": {
+            "row": 2,
+            "column": 2
+          },
+          "props": {
+            "title": "计数来源原值"
+          },
+          "bindings": {
+            "value": "count"
+          }
+        },
+        {
+          "componentId": "overview-nav",
+          "type": "navigation_button",
+          "layout": {
+            "row": 3,
+            "column": 2
+          },
+          "props": {
+            "text": "查看检测详情"
+          },
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "detail",
+              "context": "live"
+            }
+          }
+        }
+      ]
+    },
+    "detail": {
+      "name": "检测详情",
+      "layout": {
+        "columns": 3
+      },
+      "resultScopeIds": [
+        "root"
+      ],
+      "components": [
+        {
+          "componentId": "detail-intro",
+          "type": "text",
+          "layout": {
+            "row": 0,
+            "columnSpan": 3
+          },
+          "props": {
+            "text": "本地图像功能演示 · 实际 Blob / Count 输出 · 不涉及真实设备"
+          }
+        },
+        {
+          "componentId": "detail-image",
+          "type": "image",
+          "layout": {
+            "row": 1,
+            "columnSpan": 2,
+            "rowSpan": 3
+          },
+          "props": {
+            "title": "检测结果图 / 算子 overlay"
+          },
+          "bindings": {
+            "image": "image"
+          }
+        },
+        {
+          "componentId": "detail-count",
+          "type": "number",
+          "layout": {
+            "row": 1,
+            "column": 2
+          },
+          "props": {
+            "title": "本次检测数量",
+            "unit": " 个",
+            "decimals": 0
+          },
+          "bindings": {
+            "value": "count"
+          }
+        },
+        {
+          "componentId": "detail-caption",
+          "type": "text",
+          "layout": {
+            "row": 2,
+            "column": 2
+          },
+          "props": {
+            "title": "计数来源原值"
+          },
+          "bindings": {
+            "value": "count"
+          }
+        },
+        {
+          "componentId": "detail-nav",
+          "type": "navigation_button",
+          "layout": {
+            "row": 3,
+            "column": 2
+          },
+          "props": {
+            "text": "返回运行总览"
+          },
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "overview",
+              "context": "live"
+            }
+          }
+        }
+      ]
+    }
+  }
+}

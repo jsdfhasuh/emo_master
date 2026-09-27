@@ -24,7 +24,9 @@ class PageCoordinator:
         window.setCentralWidget(self.stack)
         window.projectController.editCoordinator = self
         window.flowScene.editCompleted = self.sync
+        from .delivery import exportDialog
         for title, handler, shortcut in [('流程设计', self.showFlow, ''),
+                ('导出测试项目包', lambda: exportDialog(self), ''),
                 ('页面设计', self.showPages, ''), ('撤销项目编辑', lambda: self.history(False), 'Ctrl+Z'),
                 ('重做项目编辑', lambda: self.history(True), 'Ctrl+Shift+Z')]:
             action = QAction(title, window)

@@ -13,6 +13,50 @@ from emo_master.core.project.models import ProjectDocument
 PACKAGE_MANIFEST_SCHEMA_VERSION = "2.0"
 
 
+def buildPageTestPackage(document, projectDir: Path, outputDir: Path, registry=None) -> Path:
+    """Explicit P5-A allowlist entry; the legacy 2.2 guard remains unchanged."""
+    import os
+    import tempfile
+    from uuid import uuid4
+    from emo_master.core.project.test_delivery import (
+        MAX_PROJECT, canonicalJson, manifestFor, portableDocument, trustedRegistry, validateTestProject,
+    )
+    root = projectDir.resolve(strict=True)
+    if outputDir.resolve().is_relative_to(root):
+        raise ValueError('test package output must be outside the project')
+    document = portableDocument(document)
+    compatibility = validateTestProject(document, root, registry if registry is not None else trustedRegistry())
+    data = canonicalJson(document.model_dump()).encode('utf-8')
+    if len(data) > MAX_PROJECT:
+        raise ValueError('project metadata exceeds 1 MiB')
+    manifest = manifestFor(document, data, compatibility)
+    outputDir.mkdir(parents=True, exist_ok=True)
+    destination = outputDir / f'test-{manifest["revision"][:16]}-{uuid4().hex[:8]}.vxpkg'
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(dir=outputDir, delete=False) as stream:
+            temporary = Path(stream.name)
+        with zipfile.ZipFile(temporary, 'w', compression=zipfile.ZIP_DEFLATED) as archive:
+            archive.writestr('project.json', data)
+            for item in document.resources.items.values():
+                # Recheck after validation and copy a fixed bounded amount, verifying
+                # the copied bytes rather than relying on a prior filesystem hash.
+                from emo_master.core.project.snapshots import _inside
+                with _inside(root, item.path).open('rb') as stream:
+                    blob = stream.read(item.size + 1)
+                if len(blob) != item.size or hashlib.sha256(blob).hexdigest() != item.sha256:
+                    raise ValueError('resource changed during export')
+                archive.writestr(item.path, blob)
+            archive.writestr('manifest.json', canonicalJson(manifest))
+        with temporary.open('r+b') as stream:
+            os.fsync(stream.fileno())
+        os.replace(temporary, destination)
+        return destination
+    finally:
+        if temporary:
+            temporary.unlink(missing_ok=True)
+
+
 def buildPackage(projectDir: Path, outputDir: Path) -> Path:
     if not projectDir.exists():
         raise FileNotFoundError(f"project directory not found: {projectDir}")

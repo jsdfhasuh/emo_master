@@ -84,7 +84,9 @@ def validateBindings(
                 report(f"presentation.pages.{pageId}.resultScopeIds", "result scope missing")
         for component in walkComponents(page.components):
             path = f"presentation.pages.{pageId}.components.{component.componentId}"
-            if publish and component.type in accepted and not component.bindings:
+            static = ((component.type == "text" and bool(component.props.text))
+                      or component.type == "runtime_status")
+            if publish and component.type in accepted and not component.bindings and not static:
                 report(path, "unbound component cannot be published", "unbound")
             for prop, sourceId in component.bindings.items():
                 source = presentation.dataSources.get(sourceId)

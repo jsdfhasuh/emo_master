@@ -17,6 +17,7 @@ from emo_master.core.presentation.values import readValue
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.validation import pageScopes
 from emo_master.ui.presentation.images import assertGuiThread, ownedImage
+from emo_master.ui.presentation.table import CollectionView
 
 
 class ImageView(QWidget):
@@ -58,7 +59,7 @@ class RuntimePages(QWidget):
     def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None):
         super().__init__(parent)
         assertGuiThread()
-        self.config = Presentation.model_validate(presentation.model_dump())
+        self.config = Presentation.model_validate(presentation.model_dump()) if presentation is not None else Presentation()
         try:
             self.expectedCapture = revisionOf(captureDefinition(self.config))
         except KeyError:
@@ -123,6 +124,14 @@ class RuntimePages(QWidget):
             hub.attach(self)
 
     def _build(self, pageId):
+        # Retire a hidden page before allocating its replacement, so its table
+        # quota does not reject otherwise valid controls on the new page.
+        if len(self.pages) >= 2:
+            old = next(key for key in self.pages if key != self.currentPageId)
+            widget = self.pages.pop(old)
+            self.widgets.pop(old)
+            self.stack.removeWidget(widget)
+            widget.deleteLater()
         page = self.config.pages[pageId]
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -132,13 +141,6 @@ class RuntimePages(QWidget):
         scroll.setWidget(body)
         self.stack.addWidget(scroll)
         self.pages[pageId] = scroll
-        # At most two instantiated pages per window; hidden pages own no images.
-        if len(self.pages) > 2:
-            old = next(key for key in self.pages if key not in (pageId, self.currentPageId))
-            widget = self.pages.pop(old)
-            self.widgets.pop(old)
-            self.stack.removeWidget(widget)
-            widget.deleteLater()
 
     def _children(self, parent, components, grid, pageId):
         layout = QGridLayout(parent)
@@ -159,6 +161,8 @@ class RuntimePages(QWidget):
                 if component.type == "image":
                     widget = ImageView()
                     widget.painted = self._painted
+                elif component.type == 'table' and sum(isinstance(w, CollectionView) for rows in self.widgets.values() for _c, w in rows.values()) < 4:
+                    widget = CollectionView(component.props)
                 elif component.type == "navigation_button":
                     widget = QPushButton(component.props.text or component.props.title or "导航")
                     widget.clicked.connect(lambda _checked=False, item=component: self.act(item.actions.get("clicked")))
@@ -184,6 +188,8 @@ class RuntimePages(QWidget):
             for _component, widget in self.widgets[self.currentPageId].values():
                 if isinstance(widget, ImageView):
                     widget.setImage(QImage(), "", "隐藏页面")
+                elif isinstance(widget, CollectionView):
+                    widget.clear('隐藏页面')
         if pageId not in self.pages:
             self._build(pageId)
         self.currentPageId = pageId
@@ -280,6 +286,9 @@ class RuntimePages(QWidget):
                     continue
                 if component.type == "text" and not component.bindings:
                     continue
+                if component.type == 'runtime_status' and not component.bindings:
+                    widget.setText('客户端连接：' + self.lastView.connection + ' · ' + self.lastView.detail)
+                    continue
                 scope, value, error = self._value(component, view)
                 if view.connection != "CONNECTED":
                     value, error, scope = None, view.connection + ": " + view.detail, None
@@ -297,7 +306,19 @@ class RuntimePages(QWidget):
                     widget.setText(error or ("null" if value is None else
                         (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
                 elif component.type == "text":
-                    widget.setText(error or json.dumps(value, ensure_ascii=False))
+                    text = error or json.dumps(value, ensure_ascii=False)
+                    widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
+                elif component.type == 'indicator':
+                    state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
+                    colors = {'neutral': '#576477', 'green': '#176f42', 'red': '#af2734', 'amber': '#925900'}
+                    widget.setStyleSheet('color:' + colors[state.color if state else 'neutral'])
+                    widget.setText(error or (state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
+                elif component.type == 'runtime_status':
+                    widget.setText(error or str(value))
+                elif isinstance(widget, CollectionView):
+                    widget.submit(value, scope.result.identity.resultKey if scope else '', error)
+                elif component.type == 'table':
+                    widget.setText('UI_TABLE_BUDGET · 每窗口最多4个已创建表格')
                 else:
                     widget.setText("组件尚未支持: " + component.type)
             # Record only after all widgets have committed this scope together.
@@ -330,6 +351,8 @@ class RuntimePages(QWidget):
             for _component, widget in rows.values():
                 if isinstance(widget, ImageView):
                     widget.setImage(QImage(), "", "隐藏页面")
+                elif isinstance(widget, CollectionView):
+                    widget.clear('隐藏页面')
         super().hideEvent(event)
 
     def closeEvent(self, event):
@@ -343,4 +366,6 @@ class RuntimePages(QWidget):
                 if isinstance(widget, ImageView):
                     widget.painted = None
                     widget.setImage(QImage(), "")
+                elif isinstance(widget, CollectionView):
+                    widget.clear('已关闭')
         super().closeEvent(event)

@@ -39,6 +39,12 @@ def testRealAlternatingImagesOneJobTwoPagesAndSharedWindows(qtApp):
         assert hub.conversions==converted
         until(qtApp,lambda:a.widgets['detail']['detail-count'][1].text()=='3 个')
         assert a.displayed['root'].result==b.displayed['root'].result
+        table=a.widgets['detail']['detail-table'][1]
+        assert len(table.model.rows)==3
+        assert table.model.key==a.displayed['root'].result.identity.resultKey
+        assert table.model.data(table.model.index(0,0))=='300.0'
+        table.move(1)
+        assert table.model.rowCount()==1
         assert len(backend.presentation.jobs)==1
         assert session.stats['decoded']==2
         assert a.records[-1]['gui_ns']>=a.displayed['root'].readyNs

@@ -22,7 +22,11 @@ def ownedImage(pixels):
         data = np.ascontiguousarray(pixels[:, :, ::-1])
         format_ = QImage.Format_RGB888
     elif channels == 4:
-        data = np.ascontiguousarray(pixels[:, :, [2, 1, 0, 3]])
+        # One scratch allocation; advanced indexing followed by ascontiguousarray
+        # can otherwise transiently allocate two full BGRA images.
+        data = np.empty(pixels.shape, dtype=np.uint8)
+        for target, source in enumerate((2, 1, 0, 3)):
+            data[:, :, target] = pixels[:, :, source]
         format_ = QImage.Format_RGBA8888
     else:
         data = np.ascontiguousarray(pixels.reshape(pixels.shape[:2]))

@@ -44,6 +44,8 @@ def sampleProjectP3(root, count=12):
     raw['presentation']['resultScopes']['root'].update(scopeWorkflowId='detect',callPath=path)
     for source in raw['presentation']['dataSources'].values():
         source.update(workflowId='detect',callPath=path)
+    raw['presentation']['dataSources']['blobs']=dict(raw['presentation']['dataSources']['count'],
+        nodeId='blob',port='blobs',expectedType='collection')
     raw['presentation']=pageConfiguration(raw['presentation']['dataSources'],raw['presentation']['resultScopes'])
     return ProjectDocument.model_validate(raw)
 

@@ -50,6 +50,14 @@ def main():
         assert window.grab().save(str(args.output/'detail.png'))
         second=window.displayed['root'].result.identity.resultKey
         assert first!=second
+        table=window.widgets['detail']['detail-table'][1]
+        assert len(table.model.rows)==3 and table.model.key==second
+        table.move(1)
+        assert table.model.rowCount()==1
+        QTest.mouseClick(window.widgets['detail']['detail-freeze'][1],Qt.LeftButton)
+        until(lambda:'PINNED' in window.modeLabel.text())
+        assert window.displayed['root'].result.identity.resultKey==second
+        assert window.grab().save(str(args.output/'frozen-table.png'))
         QTest.mouseClick(launcher.second,Qt.LeftButton)
         until(lambda:len(launcher.hub.windows)==2)
         assert len(launcher.backend.presentation.jobs)==1

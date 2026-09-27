@@ -56,6 +56,9 @@ def testDetailsPinGuiValueWhileAnotherWindowContinues(qtApp,live):
                 break
             time.sleep(.01)  # intentionally don't pump GUI; background proceeds
         assert latest.result.identity.resultKey!=displayed.result.identity.resultKey
+        ledger=hub.stats()
+        assert ledger['live_ui_decoded_bytes']>=latest.images['image'].nbytes+displayed.images['image'].nbytes
+        assert ledger['decoded_retention_accounted_bytes']<=ledger['decoded_retention_reserved']
         a.act(Action(type='navigate',pageId='detail',context='displayed_result',resultScopeId='root'))
         hub.timer.start()
         until(qtApp,lambda:session.pins().read(a.frozen).state=='PINNED')
@@ -188,7 +191,99 @@ def testExpiredViewClearsImageWithoutFallingBackToLive(qtApp,live):
         until(qtApp,lambda:'EXPIRED' in window.modeLabel.text())
         assert not window.displayed
         assert window.widgets['overview']['overview-image'][1].image.isNull()
+        assert 'CONNECTED' in window.widgets['overview']['overview-status'][1].text()
         window.resumeLive()
         assert window.displayed
     finally:
         window.close()
+
+
+@pytest.mark.parametrize('fault',['timeout','corrupt'])
+def testRealAssetFailureIsNotHiddenByComplete(qtApp,live,monkeypatch,fault):
+    backend,session=live
+    original=backend.presentation.assets.read
+    def broken(*args):
+        if fault=='timeout':
+            raise TimeoutError('controlled read deadline')
+        data,sha=original(*args)
+        return data[:-1],sha
+    monkeypatch.setattr(backend.presentation.assets,'read',broken)
+    hub=DisplayHub(session)
+    window=RuntimePages(backend.project.presentation,hub=hub)
+    window.show()
+    try:
+        until(qtApp,lambda:window.displayed and bool(window.displayed['root'].failures))
+        scope=window.displayed['root']
+        image=window.widgets['overview']['overview-image'][1]
+        assert scope.result.status=='COMPLETE'
+        assert image.image.isNull() and image.message
+        assert window.widgets['overview']['overview-count'][1].text() in ('2 个','3 个')
+        monkeypatch.setattr(backend.presentation.assets,'read',original)
+        until(qtApp,lambda:not image.image.isNull())
+    finally:
+        window.close()
+
+
+def testRealMalformedJsonInvalidatesWindow(qtApp,live,monkeypatch):
+    from emo_master.apps.runtime.presentation import rpc
+    backend,session=live
+    hub=DisplayHub(session)
+    window=RuntimePages(backend.project.presentation,hub=hub)
+    window.show()
+    try:
+        until(qtApp,lambda:bool(window.displayed))
+        original=rpc.wireResult
+        def invalid(result):
+            wire=original(result)
+            for source in wire.sources:
+                if source.source_id=='count':
+                    source.value_json='1e999'
+            return wire
+        monkeypatch.setattr(rpc,'wireResult',invalid)
+        until(qtApp,lambda:session.readSnapshot().connection=='INVALID_RESULT')
+        hub.tick()
+        assert not window.displayed
+        assert 'INVALID_RESULT' in window.widgets['overview']['overview-count'][1].text()
+    finally:
+        window.close()
+
+
+def testIncompatibleCapabilitiesDoNotAppearHealthy(qtApp,monkeypatch):
+    from emo_master.apps.runtime.presentation.rpc import DisplayRpc
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+    monkeypatch.setattr(DisplayRpc,'Capabilities',lambda self,request,context:pb.DisplayCapabilities(protocol_version='incompatible'))
+    backend=LocalDemo(count=2)
+    session=DisplaySession(backend.address,backend.jobId)
+    window=RuntimePages(backend.project.presentation,hub=DisplayHub(session))
+    window.show()
+    try:
+        until(qtApp,lambda:session.readSnapshot().connection=='INCOMPATIBLE')
+        window.hub.tick()
+        assert 'INCOMPATIBLE' in window.status.text() and not window.displayed
+        assert len(backend.presentation.jobs)==1
+    finally:
+        window.close()
+        session.close()
+        backend.close()
+
+
+def testBorrowedLauncherClosesOwnSessionWithoutStartingOrStoppingRuntime(qtApp,live,monkeypatch):
+    from scripts.p3_demo import Launcher
+    backend,_session=live
+    def forbidden(*args,**kwargs):
+        raise AssertionError('read-only viewer attempted to start a Job')
+    monkeypatch.setattr(backend.presentation,'start',forbidden)
+    launcher=Launcher(backend.address,backend.jobId,backend.project)
+    launcher.show()
+    until(qtApp,lambda:launcher.hub and any(w.displayed for w in launcher.hub.windows))
+    assert '只读观察已有任务' in launcher.message.text()
+    # Repeated windows must retire, with only current observers held by the hub.
+    for _ in range(3):
+        window=next(iter(launcher.hub.windows))
+        window.close()
+        launcher.openWindow()
+        assert len(launcher.hub.windows)==1
+    launcher.close()
+    until(qtApp,lambda:launcher.done)
+    assert not backend.runtime._closed and len(backend.presentation.jobs)==1
+    assert all(not thread.is_alive() for thread in launcher.session.threads)

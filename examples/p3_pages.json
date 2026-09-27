@@ -94,6 +94,17 @@
               "resultScopeId": "root"
             }
           }
+        },
+        {
+          "componentId": "overview-status",
+          "type": "runtime_status",
+          "layout": {
+            "row": 4,
+            "columnSpan": 3
+          },
+          "props": {
+            "title": "只读客户端状态（非设备业务状态）"
+          }
         }
       ]
     },
@@ -195,6 +206,43 @@
               "type": "freeze",
               "resultScopeId": "root"
             }
+          }
+        },
+        {
+          "componentId": "detail-table",
+          "type": "table",
+          "layout": {
+            "row": 5,
+            "columnSpan": 3
+          },
+          "bindings": {
+            "rows": "blobs"
+          },
+          "props": {
+            "title": "本次 Blob 集合",
+            "pageSize": 2,
+            "columns": [
+              {
+                "title": "面积",
+                "fieldPath": [
+                  "area"
+                ]
+              },
+              {
+                "title": "中心 X",
+                "fieldPath": [
+                  "centroid",
+                  "x"
+                ]
+              },
+              {
+                "title": "中心 Y",
+                "fieldPath": [
+                  "centroid",
+                  "y"
+                ]
+              }
+            ]
           }
         }
       ]

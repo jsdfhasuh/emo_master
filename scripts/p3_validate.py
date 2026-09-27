@@ -24,7 +24,7 @@ def identity():
 
 def main():
     parser=argparse.ArgumentParser()
-    parser.add_argument('--suite',choices=['ui','regression','ci','visual','measure'],required=True)
+    parser.add_argument('--suite',choices=['ui','regression','broad','ci','visual','measure'],required=True)
     parser.add_argument('--output',type=Path,required=True)
     parser.add_argument('--timeout',type=float,default=300)
     args=parser.parse_args()
@@ -34,8 +34,11 @@ def main():
               [sys.executable,'-m','ruff','check','src','tests'],
               [sys.executable,'-m','mypy','--config-file','mypy.ini','src']],
         'regression':[[sys.executable,'-m','pytest','-q','tests/core/presentation','tests/runtime/presentation','-rs']],
+        'broad':[[sys.executable,'-m','pytest','-q','tests/core','tests/runtime','tests/e2e','-rs'],
+                 [sys.executable,'scripts/gen_proto.py','--check']],
         'ci':[[sys.executable,'scripts/ci_check.py']],
-        'visual':[[sys.executable,'scripts/p3_visual_check.py','--output',str(args.output/'screens'),'--native']],
+        'visual':[[sys.executable,'scripts/p3_visual_check.py','--output',str(args.output/('scale-'+scale)),
+                   '--native','--scale',scale] for scale in ('1','1.25','1.5')],
         'measure':[[sys.executable,'scripts/p3_measure.py']],
     }
     report={'started_utc':datetime.now(timezone.utc).isoformat(),'head':git('rev-parse','HEAD'),

@@ -1,0 +1,32 @@
+{
+  "platform": "windows",
+  "scale": "1",
+  "device_pixel_ratio": 1.0,
+  "keys": [
+    "fabf699b-4cc8-4dc8-b2a3-d4e33cd05acd",
+    "ea1aff9f-096d-478a-8423-5d31d6aa2489"
+  ],
+  "observed_counts": [
+    2,
+    3
+  ],
+  "jobs": 1,
+  "resources": {
+    "windows": 2,
+    "qt_image_bytes": 57600,
+    "qt_image_limit": 25165824,
+    "conversions": 2,
+    "coalesced_results": 0,
+    "pending_gui_notifications": 0,
+    "live_decoded_bytes": 57600,
+    "pin_decoded_bytes": 57600,
+    "pin_limit": 16777216,
+    "conversion_scratch_limit": 8388608,
+    "window_surface_reserved": 33554432,
+    "table_bytes": 56,
+    "table_limit": 16777216
+  },
+  "keyboard_navigation": true,
+  "window_visible": true,
+  "shutdown_confirmed": true
+}

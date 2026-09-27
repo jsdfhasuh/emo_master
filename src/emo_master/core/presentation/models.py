@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from typing import Annotated, Literal
+import json
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
@@ -67,12 +68,35 @@ class Placement(Model):
     columnSpan: int = Field(default=1, ge=1, le=24)
 
 
+class IndicatorStyle(Model):
+    text: str = Field(max_length=256)
+    color: Literal['neutral', 'green', 'red', 'amber'] = 'neutral'
+
+
+class TableColumn(Model):
+    title: str = Field(max_length=256)
+    fieldPath: list[Id] = Field(default_factory=list, max_length=16)
+
+
 class Props(Model):
     title: str = Field(default="", max_length=1024)
     text: str = Field(default="", max_length=4096)
     emptyText: str = Field(default="—", max_length=256)
     unit: str = Field(default="", max_length=64)
     decimals: int = Field(default=2, ge=0, le=12)
+    indicatorStates: dict[str, IndicatorStyle] = Field(default_factory=dict, max_length=16)
+    columns: list[TableColumn] = Field(default_factory=list, max_length=16)
+    pageSize: int = Field(default=20, ge=1, le=100)
+
+    @model_validator(mode='after')
+    def checkStates(self) -> Props:
+        for key in self.indicatorStates:
+            if len(key) > 256:
+                raise ValueError('indicator key too long')
+            value = json.loads(key)
+            if type(value) not in (bool, str) or json.dumps(value, ensure_ascii=False) != key:
+                raise ValueError('indicator keys must be canonical JSON boolean/string literals')
+        return self
 
 
 class Action(Model):

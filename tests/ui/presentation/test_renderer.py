@@ -80,6 +80,9 @@ def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):
 def testEmptyUnboundAndUnsupportedAreExplicit(qtApp,tmp_path):
     empty=RuntimePages(Presentation())
     assert empty.currentPageId is None
+    legacy=RuntimePages(None)
+    assert legacy.currentPageId is None
+    legacy.close()
     config=sampleProjectP3(tmp_path).presentation
     # Construct a valid unsupported source; never infer a fake Runtime value.
     from emo_master.core.presentation.models import DataSource

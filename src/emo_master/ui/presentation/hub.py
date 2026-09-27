@@ -113,10 +113,29 @@ class DisplayHub(QObject):
 
     def stats(self):
         snapshot = self.session.readSnapshot()
+        from emo_master.ui.presentation.table import CollectionView
+        live = {id(image): image.nbytes for scope in snapshot.scopes.values() for image in scope.images.values()}
+        retained = {}
+        for window in self.windows:
+            scopes = list(window.displayed.values())
+            if window.lastView:
+                scopes.extend(window.lastView.scopes.values())
+            for scope in scopes:
+                retained.update({id(image): image.nbytes for image in scope.images.values()})
+        pins = self.session._pinStore.bytesHeld() if self.session._pinStore else 0
         return {"windows": len(self.windows), "qt_image_bytes": self.imageBytes(),
                 "qt_image_limit": self.imageLimit, "conversions": self.conversions,
                 "coalesced_results": self.coalesced, "pending_gui_notifications": 0,
-                "live_decoded_bytes": sum(image.nbytes for scope in snapshot.scopes.values() for image in scope.images.values()),
-                "pin_decoded_bytes": self.session._pinStore.bytesHeld() if self.session._pinStore else 0,
+                "live_decoded_bytes": sum(live.values()),
+                "ui_decoded_reference_bytes": sum(retained.values()),
+                "live_ui_decoded_bytes": sum({**live, **retained}.values()),
+                # Conservative: pins may overlap visible references; include
+                # canceled pins until their worker has actually released them.
+                "decoded_retention_accounted_bytes": sum({**live, **retained}.values()) + pins,
+                "decoded_retention_reserved": (16 + 16 * len(self.windows) + 16) * 1024 * 1024,
+                "pin_decoded_bytes": pins,
                 "pin_limit": 16 * 1024 * 1024, "conversion_scratch_limit": 8 * 1024 * 1024,
-                "window_surface_reserved": len(self.windows) * 16 * 1024 * 1024}
+                "window_surface_reserved": len(self.windows) * 16 * 1024 * 1024,
+                "table_bytes": sum(w.model.bytesHeld for window in self.windows for rows in window.widgets.values()
+                                   for _c, w in rows.values() if isinstance(w, CollectionView)),
+                "table_limit": len(self.windows) * 8 * 1024 * 1024}

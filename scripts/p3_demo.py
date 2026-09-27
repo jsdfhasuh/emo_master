@@ -22,7 +22,6 @@ class Launcher(QWidget):
         self.setWindowTitle('EmoMaster · P3 本地功能演示 / 只读连接')
         self.resize(520,220)
         self.backend=self.session=self.hub=None
-        self.windows=[]
         self.events=queue.Queue(maxsize=2)
         self.busy=False
         self.closing=False
@@ -72,7 +71,8 @@ class Launcher(QWidget):
         window=RuntimePages(self.project.presentation,hub=self.hub,
             label='本地图像功能演示 · 只读页面' if self.backend else '已有任务 · 只读页面')
         window.setAttribute(Qt.WA_DeleteOnClose)
-        self.windows.append(window)
+        # The hub owns only currently attached windows; don't retain every
+        # destroyed Python wrapper across repeated open/close cycles.
         window.show()
 
     def poll(self):
@@ -83,7 +83,9 @@ class Launcher(QWidget):
         self.busy=False
         if kind=='ready':
             self.hub=DisplayHub(self.session,self)
-            self.message.setText(f'已连接 {self.job}\n本地样例交替选择两幅图，真实 Blob/Count 产生变化；不会随一轮结果自动退出。')
+            description = ('本地样例交替选择两幅图，真实 Blob/Count 产生变化；不会随一轮结果自动退出。'
+                           if self.backend else '只读观察已有任务；退出仅断开本客户端，不停止外部 Runtime。')
+            self.message.setText(f'已连接 {self.job}\n{description}')
             self.second.setEnabled(True)
             if not self.closing:
                 self.openWindow()

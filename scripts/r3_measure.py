@@ -312,15 +312,26 @@ def executeTrial(args):
     app = QApplication.instance() or QApplication([])
     app.setQuitOnLastWindowClosed(False)
     OWNER_TRACE = Trace("owner")
-    ownerBefore = resources()
+    sampler = None
+    sampleResources = resources
+    samplerMode = getattr(args, "sampler_mode", "legacy-blocking")
+    if samplerMode == "background":
+        from scripts.r3_sampling import CachedResources
+        sampler = CachedResources()
+        def sampleResources(pid=None):
+            return OWNER_TRACE.call("observer.cached_resource_read", sampler, pid)
+    ownerBefore = None
+    ownerAfter = None
     result = None
     started = time.perf_counter_ns()
     try:
+        ownerBefore = sampler.sampleNow() if sampler is not None else sampleResources()
+        started = time.perf_counter_ns()
         with patches() as patch:
             patch(supervisor, "runJobProcess", measuredJob)
             patch(service, "ExportPool", MeasuredPool)
             for module in (p2_measure, p3_measure):
-                patch(module, "processResources", resources)
+                patch(module, "processResources", sampleResources)
                 patch(module, "DisplaySession", MeasuredSession)
             originalDecode = display_session.decodeResult
 
@@ -353,15 +364,24 @@ def executeTrial(args):
             workload = args.output / "work-trial"
             workload.mkdir()
             result = function(workload / "workload", bool(args.enabled), args.count, args.warmup)
+            if sampler is not None:
+                # Original trial has returned through every owner close. A
+                # fresh, bounded background read now measures actual cleanup.
+                ownerAfter = sampler.sampleNow()
+                sampler.close()
             (args.output / "owners-closed.json").write_text(
                 json.dumps({"all_original_trial_close_calls_returned": True}), encoding="utf-8")
         addDenominators(result, args.count, args.warmup)
         result["observed_result_outcomes"] = OBSERVED_RESULTS
         result.update(family=args.family, owner_resources_before=ownerBefore,
-                      owner_resources_after_cleanup=resources(),
+                      owner_resources_after_cleanup=ownerAfter if sampler is not None else sampleResources(),
+                      sampler_mode=samplerMode, sampler=sampler.report() if sampler else None,
+                      owner_resource_delta_status=("fresh background native reads before setup and after original trial cleanup" if sampler else "original synchronous before/after native readings"),
                       trial_elapsed_ms=(time.perf_counter_ns() - started) / 1e6,
                       qt_platform=app.platformName(), instrumentation="measurement-only inclusive wrappers")
     finally:
+        if sampler is not None and not sampler.closed:
+            sampler.close()
         OWNER_TRACE.save()
         for pid, trace in ENCODER_TRACES.items():
             content = json.dumps(trace, separators=(",", ":"))
@@ -523,6 +543,8 @@ def run(args):
         "incomplete_stage_attempts": "killed/timed-out exporter stages cannot acknowledge timings; report export timeout/failure counters and trace role counts, never fabricate their durations",
         "load": "fixed seed 20260926; 1920x1080x3; scheduled 5 Hz; legacy snapshots ALL in every arm",
         "runtime_route": "original isolated presentation.prepare/start baseline; separate from normal StartJob user-path acceptance",
+        "sampler_mode": getattr(args, "sampler_mode", "legacy-blocking"),
+        "sampler_note": "legacy-blocking preserves the original observer; background is a separately identified workload-identical rerun with timestamped cache reads; original FAIL results remain unchanged",
         "native_claim": "Qt paint events only; offscreen never passes native acceptance",
         "not_proven": ["actual user project", "field SLA", "five pages/fifty controls", "long-run steady state"],
         "disk_preflight": diskPreflight(args.output),
@@ -541,7 +563,8 @@ def run(args):
                 directory.mkdir()
                 command = [sys.executable, str(Path(__file__).resolve()), "--child", "--output", str(directory),
                     "--family", family, "--enabled", str(int(enabled)), "--count", str(args.count),
-                    "--warmup", str(args.warmup), "--qt-platform", args.qt_platform]
+                    "--warmup", str(args.warmup), "--qt-platform", args.qt_platform,
+                    "--sampler-mode", getattr(args, "sampler_mode", "legacy-blocking")]
                 disk = diskPreflight(directory)
                 watch = supervisedTrial(command, directory)
                 entry = {"family": family, "pair": pair, "enabled": enabled,
@@ -559,7 +582,9 @@ def run(args):
                     entry["trace_roles"] = dict(Counter(t["role"] for t in traces))
                     entry["trace_dropped_rows"] = sum(t["dropped_rows"] for t in traces)
                     entry["raw_evidence"] = str((directory / "trial.json").relative_to(args.output))
-                    entry["trace_complete"] = entry["trace_roles"] == {"exporter": 2, "job": 1, "owner": 1} and not entry["trace_dropped_rows"] and not payload["record_retention"]["capacity_reached"]
+                    sample = payload.get("sampler")
+                    entry["sampler_complete"] = sample is None or (sample["retired"] and sample["resource_coverage_complete"] and not sample["overflow"] and not sample["errors"] and not sample["registry_overflow"])
+                    entry["trace_complete"] = entry["trace_roles"] == {"exporter": 2, "job": 1, "owner": 1} and not entry["trace_dropped_rows"] and not payload["record_retention"]["capacity_reached"] and entry["sampler_complete"]
                     pairRows[enabled] = payload
                 manifest["trials"].append(entry)
                 writeManifest(args.output, manifest)
@@ -588,6 +613,8 @@ def main():
     parser.add_argument("--warmup", type=int, default=8)
     parser.add_argument("--pairs", type=int, default=3)
     parser.add_argument("--qt-platform", default="windows" if os.name == "nt" else "offscreen")
+    parser.add_argument("--sampler-mode", choices=("legacy-blocking", "background"), default="legacy-blocking",
+                        help="background is separate observer-effect evidence; default retains the original blocking sampler")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--enabled", type=int, choices=(0, 1), default=0, help=argparse.SUPPRESS)
     args = parser.parse_args()

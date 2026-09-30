@@ -36,6 +36,7 @@ from PySide2.QtCore import QCoreApplication, QEvent  # noqa: E402
 from PySide2.QtWidgets import QApplication  # noqa: E402
 from shiboken2 import isValid  # noqa: E402
 from scripts.r3_resources import resources  # noqa: E402
+from scripts.r3_sampling import BoundedSampler  # noqa: E402
 
 
 class Observations:
@@ -79,6 +80,81 @@ class Evidence:
             raise RuntimeError("measurement log budget exceeded (32 MiB)")
         self.file.write(row)
         self.file.flush()
+
+
+class SoakSampler:
+    """Bounded native history, streamed once, with explicit cache age on GUI ticks."""
+    # One immediate request then at most one per second over the longest allowed
+    # input period plus its existing 45-second startup/drain allowance.
+    MAX_SAMPLES = 1800 + 45 + 1
+    MAX_PROCESSES = 4  # owner, one Job, two existing exporter slots
+
+    def __init__(self, sample=resources):
+        self.sampler = BoundedSampler(sample, limit=self.MAX_SAMPLES)
+        self.logged = 0
+        self.requestedProcesses = set()
+
+    def observe(self, processes, evidence):
+        if len(processes) > self.MAX_PROCESSES:
+            raise RuntimeError("native sampler process batch budget exceeded")
+        requested = set(processes.items())
+        if len(self.requestedProcesses | requested) > self.MAX_SAMPLES * self.MAX_PROCESSES:
+            raise RuntimeError("native sampler process identity budget exceeded")
+        self.requestedProcesses.update(requested)
+        stamp = time.perf_counter_ns()
+        admitted = self.sampler.request(processes, stamp)
+        rows = self.flush(evidence)
+        observed = time.perf_counter_ns()
+        values = {}
+        for label, pid in processes.items():
+            row = next((row for row in reversed(rows)
+                        if row["processes"].get(label, {}).get("pid") == pid), None)
+            if row is None:
+                values[label] = {"pid": pid, "status": "SAMPLE_PENDING", "observed_ns": observed,
+                                 "sample_age_ms": None, "sample_end_ns": None}
+                continue
+            boundary = row["per_process_timestamps"][label]
+            values[label] = {**row["processes"][label], "observed_ns": observed,
+                "sample_requested_ns": row["requested_ns"], "sample_start_ns": boundary["start_ns"],
+                "sample_end_ns": boundary["end_ns"], "sample_age_ms": (observed-boundary["end_ns"])/1e6,
+                "sample_batch_end_ns": row["end_ns"], "sample_batch_ms": row["elapsed_ms"],
+                "cached": True}
+        return values, {"requested_ns": stamp, "request_admitted": admitted,
+                        "completed_samples": len(rows), "observed_ns": observed}
+
+    def flush(self, evidence):
+        rows = self.sampler.snapshot()
+        for row in rows[self.logged:]:
+            evidence.write("resource_sample", row)
+            self.logged += 1
+        return rows
+
+    def close(self):
+        self.sampler.close()
+
+    def report(self):
+        report = self.sampler.report()
+        rows = report.pop("samples")
+        observed = {(label, value["pid"]) for row in rows for label, value in row["processes"].items()
+                    if value.get("status") == "OBSERVED"}
+        missing = self.requestedProcesses - observed
+        return {**report, "completed_samples": len(rows), "logged_samples": self.logged,
+            "requested_processes": [{"role": label, "pid": pid} for label, pid in sorted(self.requestedProcesses)],
+            "unobserved_processes": [{"role": label, "pid": pid} for label, pid in sorted(missing)],
+            "resource_coverage_complete": bool(self.requestedProcesses) and not missing,
+            "semantics": "Native reads run on one background thread. Sample rows contain timestamped cached reads; pending is not zero. Each native batch is logged once as resource_sample."}
+
+
+def postCleanupResources(sampler):
+    """A real native read after the measurement thread has also relinquished ownership."""
+    report = sampler.report()
+    if not report["retired"]:
+        raise RuntimeError("resource sampler must retire before postcleanup resource claims")
+    start = time.perf_counter_ns()
+    value = resources()
+    end = time.perf_counter_ns()
+    return {**value, "sample_start_ns": start, "sample_end_ns": end,
+            "sample_age_ms": 0, "cached": False, "sampler_retired": True}
 
 
 class ObservedPages(RuntimePages):
@@ -137,7 +213,7 @@ def disposeGuiHub(hub):
     assert not isValid(hub) and not isValid(timer), "native observer owner did not retire"
 
 
-def retireOwned(windows, clients, runtime, server, job, hub=None):
+def retireOwned(windows, clients, runtime, server, job, hub=None, sampler=None):
     """Try every independent owner, without pretending any failed close worked."""
     errors = []
 
@@ -159,6 +235,8 @@ def retireOwned(windows, clients, runtime, server, job, hub=None):
         attempt("server", server.close)
     if runtime:
         attempt("runtime", runtime.close)
+    if sampler is not None:
+        attempt("resource-sampler", sampler.close)
     return errors
 
 
@@ -171,12 +249,16 @@ def run(args, evidence):
         "windows": 2, "sessions": 2, "image_sources": 1, "result_scopes": 1,
         "safety": "temporary data; fixed offline image; no device operators",
         "owner_before_runtime": resources(),
+        "sampler_mode": "background", "resource_sample_capacity": SoakSampler.MAX_SAMPLES,
+        "sampling_clock": "perf_counter_ns; per-process native start/end and cache age",
+        "sampler_note": "Separate observer-effect run; prior synchronous evidence remains unchanged",
         "not_proven": ["actual project", "field SLA", "unlimited steady state", "real devices", "frozen package"]})
     clients, windows = [], []
-    runtime = display = server = hub = None
+    runtime = display = server = hub = sampler = None
     job = ""
     root = Path(tempfile.mkdtemp(prefix="emo-r3-soak-"))
     try:
+        sampler = SoakSampler()
         document = pacedProject(root, count=expected)
         document.workflows["detect"].nodes[1].params["imagePath"] = str(root / "input.png")
         second = deepcopy(document.presentation.pages["main"])
@@ -218,19 +300,17 @@ def run(args, evidence):
                 raise TimeoutError("Job exceeded planned duration plus bounded startup/drain allowance")
             if now >= nextSample:
                 nextSample = now + args.sample_seconds
-                processes = {"owner": resources()}
+                processIds = {"owner": os.getpid()}
                 record = runtime.jobRepository.get(job)
                 for label, pid in [("job", record.pid), *[(f"exporter-{slot['index']}", slot["process"].pid)
                                   for slot in display.exporter.slots if slot["process"] is not None]]:
                     if pid:
-                        try:
-                            processes[label] = resources(pid)
-                        except (OSError, KeyError):
-                            processes[label] = {"pid": pid, "status": "EXITED_DURING_SAMPLE"}
+                        processIds[label] = pid
+                processes, sampling = sampler.observe(processIds, evidence)
                 stats = display.resourceStats()
                 assert stats["total_reserved"] <= stats["limit"]
                 assert stats["open_results"] <= 8 and stats["history_results"] <= 32
-                evidence.write("sample", {"elapsed_seconds": now - start, "processes": processes,
+                evidence.write("sample", {"elapsed_seconds": now - start, "processes": processes, "sampling": sampling,
                     "display": stats, "qt": hub.stats(), "bulk_admission": dict(server.active),
                     "clients": [dict(c.stats) for c in clients],
                     "window_observations": [w.observations() for w in windows],
@@ -280,12 +360,21 @@ def run(args, evidence):
         display = None
         QApplication.processEvents()
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-        evidence.write("cleanup", {"owner": resources(), "all_job_display_owners_retired": True})
+        sampler.close()
+        sampler.flush(evidence)
+        sampling = sampler.report()
+        evidence.write("cleanup", {"owner": postCleanupResources(sampler),
+            "all_job_display_owners_retired": True, "resource_sampler": sampling})
+        assert sampling["resource_coverage_complete"], sampling
+        assert sampling["retired"] and not sampling["overflow"] and not sampling["errors"], sampling
     finally:
-        errors = retireOwned(windows, clients, runtime, server, job, hub)
+        errors = retireOwned(windows, clients, runtime, server, job, hub, sampler)
         if errors:
             evidence.write("cleanup_failure", {"errors": errors, "preserved_temporary_root": str(root)})
             raise RuntimeError(f"measurement owners did not all close: {errors}")
+        if sampler is not None:
+            sampler.flush(evidence)
+            evidence.write("resource_sampler", sampler.report())
         # Delete only after successful real owner shutdown. Failed shutdown keeps evidence/data.
         shutil.rmtree(root)
     after = sourceIdentity()

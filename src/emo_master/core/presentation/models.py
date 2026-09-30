@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 
 Id = Annotated[str, Field(min_length=1, max_length=160, pattern=r"^\S+$")]
@@ -87,6 +87,18 @@ class Props(Model):
     indicatorStates: dict[str, IndicatorStyle] = Field(default_factory=dict, max_length=16)
     columns: list[TableColumn] = Field(default_factory=list, max_length=16)
     pageSize: int = Field(default=20, ge=1, le=100)
+    fontFamily: Literal["system", "sans", "serif", "monospace"] = "system"
+    fontSize: int = Field(default=0, ge=0, le=48)
+    fontWeight: Literal["normal", "bold"] = "normal"
+    textColor: Literal["default", "neutral", "green", "red", "amber"] = "default"
+    cardStyle: Literal["plain", "soft", "outlined"] = "plain"
+
+    @field_validator('fontSize')
+    @classmethod
+    def checkFontSize(cls, value: int) -> int:
+        if 0 < value < 8:
+            raise ValueError('fontSize must be 0 (automatic) or 8–48 pixels')
+        return value
 
     @model_validator(mode='after')
     def checkStates(self) -> Props:

@@ -12,7 +12,7 @@ from PySide2.QtCore import QPoint, QRectF, QResource, QTimer, Qt
 from PySide2.QtGui import QImage, QPainter, QPixmap
 from PySide2.QtWidgets import QGraphicsSimpleTextItem, QStackedWidget, QToolButton, QVBoxLayout, QWidget
 
-from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel, FlowScene
+from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.ui.widgets import ElidedLabel, PreviewLabel, WorkflowTabs
 from emo_master.apps.designer.ui.icon_map import icon
@@ -33,8 +33,8 @@ def makeWindow():
 
 
 @pytest.mark.parametrize("inputs,outputs", [(0, 0), (0, 5), (5, 0), (6, 8), (16, 16)])
-def testNodeContainsAllTextAndPorts(styledApp, inputs, outputs):
-    scene = FlowScene()
+def testNodeContainsAllTextAndPorts(ownedFlowScene, styledApp, inputs, outputs):
+    scene = ownedFlowScene()
     model = FlowNodeViewModel("test", "相机采集 Camera - 192.168.125.28", 0, 0,
                               {f"输入图像_{i}": "image" for i in range(inputs)},
                               {f"actualExposureUs_{i}": "number" for i in range(outputs)})
@@ -48,8 +48,8 @@ def testNodeContainsAllTextAndPorts(styledApp, inputs, outputs):
     assert all(label.font().pointSizeF() == 10.5 for label in labels)
 
 
-def testLongNodeNamesAreElidedWithFullTooltips(styledApp):
-    scene = FlowScene()
+def testLongNodeNamesAreElidedWithFullTooltips(ownedFlowScene, styledApp):
+    scene = ownedFlowScene()
     title = "非常长的节点名称-" * 30
     port = "unbroken_output_identifier_" * 20
     scene.addFlowNode(FlowNodeViewModel("test", title, 0, 0, {}, {port: "image"}))
@@ -61,8 +61,8 @@ def testLongNodeNamesAreElidedWithFullTooltips(styledApp):
     assert f"{port}: image" in tooltips
 
 
-def testAutoLayoutUsesVariableNodeHeights(styledApp):
-    scene = FlowScene()
+def testAutoLayoutUsesVariableNodeHeights(ownedFlowScene, styledApp):
+    scene = ownedFlowScene()
     for index, count in enumerate((2, 14, 6, 8, 20, 1)):
         scene.addFlowNode(FlowNodeViewModel(str(index), "Camera", 0, 0, {},
                                           {f"port_{i}": "number" for i in range(count)}))
@@ -327,8 +327,8 @@ def testThirdPartyEditorLayoutIsNotReplaced(styledApp, name, operatorId):
     assert layout.itemAt(0).widget() is content
 
 
-def testSelectedNodePaintsAnUnclippedHighlight(styledApp):
-    scene = FlowScene()
+def testSelectedNodePaintsAnUnclippedHighlight(ownedFlowScene, styledApp):
+    scene = ownedFlowScene()
     scene.addFlowNode(FlowNodeViewModel("camera", "相机 Camera", 0, 0,
                                       {"输入图像": "image"}, {"image": "image"}))
     node = scene._nodeItems["camera"]

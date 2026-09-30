@@ -2,14 +2,15 @@
 from collections import deque
 from dataclasses import replace
 import json
+import math
 import time
 from types import MappingProxyType
 
 from PySide2.QtCore import Qt, QRect
-from PySide2.QtGui import QPainter, QColor, QImage
+from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
-    QStackedWidget, QScrollArea, QFrame, QSizePolicy,
+    QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication,
 )
 
 from emo_master.core.presentation.models import Presentation
@@ -18,6 +19,33 @@ from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.validation import pageScopes
 from emo_master.ui.presentation.images import assertGuiThread, ownedImage
 from emo_master.ui.presentation.table import CollectionView
+
+
+COLORS = {'default': '#223247', 'neutral': '#576477', 'green': '#176f42',
+          'red': '#af2734', 'amber': '#925900'}
+SURFACE_LIMIT = 16 * 1024 * 1024
+
+
+def surfaceBounds(width, height, ratio):
+    """Retain the 16 MiB reservation, adapting its aspect to an actual target."""
+    if width <= 0 or height <= 0 or not math.isfinite(ratio) or ratio <= 0:
+        raise ValueError('窗口尺寸与像素比例必须为正数')
+    if math.ceil(ratio) ** 2 * 4 > SURFACE_LIMIT:
+        raise ValueError('像素比例超出单窗口表面预算')
+    scale = min(1., math.sqrt(SURFACE_LIMIT / (math.ceil(width * ratio) * math.ceil(height * ratio) * 4)))
+    width, height = max(1, int(width * scale)), max(1, int(height * scale))
+    while math.ceil(width * ratio) * math.ceil(height * ratio) * 4 > SURFACE_LIMIT:
+        width -= 1
+    return width, height
+
+
+def appearanceStyle(props):
+    # Every interpolated token is a validated enum or bounded integer.
+    family = {'system': QApplication.font().family(), 'sans': 'sans-serif',
+              'serif': 'serif', 'monospace': QFontDatabase.systemFont(QFontDatabase.FixedFont).family()}[props.fontFamily]
+    family = family.replace("'", '').replace(';', '')
+    size = f'font-size:{props.fontSize}px;' if props.fontSize else ''
+    return f"font-family:'{family}';{size}font-weight:{props.fontWeight};color:{COLORS[props.textColor]};"
 
 
 class ImageView(QWidget):
@@ -66,6 +94,7 @@ class RuntimePages(QWidget):
             self.expectedCapture = None
         self.hub = hub
         self.captureCoverage = None
+        self.simulationState = None
         self.detached = False
         self.editing = False
         self.currentPageId = None
@@ -77,13 +106,12 @@ class RuntimePages(QWidget):
         self.frozenGeneration = None
         self.records = deque(maxlen=256)
         self._recordedPaints = deque(maxlen=128)
+        self._screenWindow = None
+        self._screenSource = None
         self.setWindowTitle(label)
         self.resize(1060, 720)
         self.setMinimumSize(460, 360)
-        self.setMaximumSize(1600, 1000)
-        # Bound each Qt backing surface to 16MiB even at high DPI.
-        ratio = max(1, self.devicePixelRatioF() / 1.5)
-        self.setMaximumSize(int(1600 / ratio), int(1000 / ratio))
+        self.fitToAvailableScreen(resize=False)
         self.setStyleSheet("QWidget {font-family: 'Microsoft YaHei'; font-size: 13px; color:#223247;} "
             "QWidget#runtimePages {background:#f5f7fa;} QFrame#card {background:white; border:1px solid #dce3eb; border-radius:6px;} "
             "QPushButton {padding:9px 14px; background:#e3edf8; border:1px solid #c4d7ec; border-radius:4px;} "
@@ -91,15 +119,20 @@ class RuntimePages(QWidget):
         self.setObjectName("runtimePages")
         layout = QVBoxLayout(self)
         self.banner = QLabel(label)
+        self.banner.setTextFormat(Qt.PlainText)
         self.banner.setWordWrap(True)
         layout.addWidget(self.banner)
         self.status = QLabel("未连接 · 等待明确选择任务")
+        self.status.setTextFormat(Qt.PlainText)
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
         controls = QHBoxLayout()
         self.resumeButton = QPushButton("恢复实时")
         self.resumeButton.clicked.connect(self.resumeLive)
         controls.addWidget(self.resumeButton)
+        self.fitButton = QPushButton('适配当前屏幕')
+        self.fitButton.clicked.connect(lambda: self.fitToAvailableScreen())
+        controls.addWidget(self.fitButton)
         self.modeLabel = QLabel("实时 · 冻结仅影响本窗口")
         controls.addWidget(self.modeLabel, 1)
         layout.addLayout(controls)
@@ -116,6 +149,7 @@ class RuntimePages(QWidget):
         self.stack = QStackedWidget()
         layout.addWidget(self.stack, 1)
         self.identity = QLabel("尚无已显示结果")
+        self.identity.setTextFormat(Qt.PlainText)
         self.identity.setTextInteractionFlags(Qt.TextSelectableByMouse)
         self.identity.setWordWrap(True)
         layout.addWidget(self.identity)
@@ -125,6 +159,73 @@ class RuntimePages(QWidget):
             self.stack.addWidget(QLabel("此项目尚无运行页面"))
         if hub:
             hub.attach(self)
+
+    def fitToAvailableScreen(self, *, resize=True, screen=None):
+        screen = screen or self.screen() or QApplication.primaryScreen()
+        available = screen.availableGeometry() if screen else QRect(0, 0, 1060, 720)
+        ratio = max(self.devicePixelRatioF(), screen.devicePixelRatio() if screen else 1.)
+        width, height = surfaceBounds(available.width(), available.height(), ratio)
+        self.setMinimumSize(min(460, width), min(360, height))
+        self.setMaximumSize(width, height)
+        if resize:
+            self.resize(width, height)
+        if resize and hasattr(self, 'status'):
+            self.status.setText(f'当前屏幕适配 {width}×{height} · 16 MiB 表面预算；现场目标规格尚待确认')
+
+    def _screenChanged(self, screen=None):
+        screen = screen or self.screen()
+        if screen is not self._screenSource:
+            if self._screenSource is not None:
+                for name in ('availableGeometryChanged', 'logicalDotsPerInchChanged', 'physicalDotsPerInchChanged'):
+                    try:
+                        getattr(self._screenSource, name).disconnect(self._screenMetricsChanged)
+                    except RuntimeError:
+                        pass
+            self._screenSource = screen
+            if screen is not None:
+                for name in ('availableGeometryChanged', 'logicalDotsPerInchChanged', 'physicalDotsPerInchChanged'):
+                    getattr(screen, name).connect(self._screenMetricsChanged)
+        self.fitToAvailableScreen(resize=False, screen=screen)
+
+    def _screenMetricsChanged(self, _value=None):
+        self.fitToAvailableScreen(resize=False)
+
+    def surfaceBytes(self):
+        ratio = self.devicePixelRatioF()
+        return math.ceil(self.width() * ratio) * math.ceil(self.height() * ratio) * 4
+
+    def setSimulationState(self, state):
+        if state not in (None, 'OK', 'NG', 'WAITING', 'ERROR'):
+            raise ValueError('未知离线模拟状态')
+        if state is not None and (self.hub or self.captureCoverage is not None):
+            raise ValueError('请先断开任务观察，再使用离线模拟；模拟不读取 Runtime')
+        self.simulationState = state
+        self.displayed.clear()
+        self.lastView = None
+        from emo_master.clients.runtime.view_state import SessionView
+        if state is not None:
+            self.submit(SessionView(0, 0, 'offline-simulation', 'offline-simulation', 'CONNECTED',
+                '仅检查界面，不读取或写入 Runtime / 计数', {}, {}, {}))
+        else:
+            self.banner.setText('离线模拟布局预览 · 无业务结果')
+            self.submit(SessionView(0, 0, '', '', 'OFFLINE', '无当前结果', {}, {}, {}))
+
+    def _simulationValue(self, component):
+        if self.simulationState == 'WAITING':
+            return None, None, '模拟 · 等待触发 / 尚无结果'
+        if self.simulationState == 'ERROR':
+            return None, None, '模拟 · NODE_FAILED · 示例错误'
+        if component.type == 'image':
+            return None, None, '模拟图像区域 · ' + self.simulationState
+        if component.type == 'indicator':
+            color = 'green' if self.simulationState == 'OK' else 'red'
+            key = next((key for key, style in component.props.indicatorStates.items() if style.color == color), None)
+            if key is None:
+                return None, None, '模拟 · 未配置 ' + self.simulationState + ' 对应颜色映射'
+            return None, json.loads(key), ''
+        if component.type == 'table':
+            return None, [], ''
+        return None, (1 if self.simulationState == 'OK' else 0) if component.type == 'number' else '模拟 · ' + self.simulationState, ''
 
     def reload(self, presentation):
         """Replace only widgets/configuration; retain the borrowed hub/session."""
@@ -173,6 +274,8 @@ class RuntimePages(QWidget):
         if self.hub:
             self.hub.lastToken = None
             self.submit(self.hub.session.readSnapshot())
+        elif self.simulationState:
+            self.setSimulationState(self.simulationState)
 
     def _build(self, pageId):
         # Retire a hidden page before allocating its replacement, so its table
@@ -204,12 +307,17 @@ class RuntimePages(QWidget):
             card = QFrame()
             card.setObjectName("card")
             card.setProperty('componentId', component.componentId)
+            backgrounds = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
+            card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
+                ';border:1px solid #c4d0de;border-radius:6px;}')
             if component.type == "container":
                 self._children(card, component.children, component.grid, pageId)
             else:
                 box = QVBoxLayout(card)
                 if component.props.title:
                     title = QLabel(component.props.title)
+                    title.setTextFormat(Qt.PlainText)
+                    title.setStyleSheet(appearanceStyle(component.props))
                     title.setWordWrap(True)
                     box.addWidget(title)
                 if component.type == "image":
@@ -225,11 +333,13 @@ class RuntimePages(QWidget):
                 else:
                     widget = QLabel(component.props.text if component.type == "text" and not component.bindings
                                     else '已绑定 · 等待明确任务结果' if component.bindings else "未绑定")
+                    widget.setTextFormat(Qt.PlainText)
                     widget.setWordWrap(True)
                     widget.setTextInteractionFlags(Qt.TextSelectableByMouse)
                     if component.type == "number":
                         widget.setObjectName("number")
                 box.addWidget(widget, 1)
+                widget.setStyleSheet(appearanceStyle(component.props))
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
             layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
@@ -286,8 +396,12 @@ class RuntimePages(QWidget):
         self.modeLabel.setText("实时 · 冻结仅影响本窗口")
         if submit and self.hub:
             self.submit(self.hub.session.readSnapshot())
+        elif submit and self.simulationState:
+            self.setSimulationState(self.simulationState)
 
     def _value(self, component, view):
+        if self.simulationState:
+            return self._simulationValue(component)
         if not component.bindings:
             return None, None, "未绑定"
         sourceId = next(iter(component.bindings.values()))
@@ -302,6 +416,8 @@ class RuntimePages(QWidget):
                 return None, None, problem
         scope = view.scopes.get(source.resultScopeId)
         if scope is None:
+            if source.resultScopeId in getattr(view, 'expiredScopes', {}):
+                return None, None, 'RESOURCE_EXPIRED · 此作用域结果已因资源限额过期，等待下次结果'
             return None, None, "当前结果准备中" if source.resultScopeId in view.loading else "等待触发 / 尚无结果"
         if self.captureCoverage is not None:
             if not self.captureCoverage.matches(scope.result.identity):
@@ -327,6 +443,8 @@ class RuntimePages(QWidget):
         if coverage is not None and not isinstance(coverage, CaptureCoverage):
             raise TypeError('validated capture coverage required')
         self.captureCoverage = coverage
+        if coverage is not None:
+            self.simulationState = None
         if self.hub:
             self.hub.lastToken = None
             self.submit(self.hub.session.readSnapshot())
@@ -337,6 +455,9 @@ class RuntimePages(QWidget):
             return
         self.lastView = view
         self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
+        if self.simulationState:
+            self.banner.setText('离线模拟 · ' + self.simulationState + ' · 示例状态，不代表真实检测')
+            self.status.setText('模拟 · 不读取或写入 Runtime / 计数')
         if self.frozen and view.generation != self.frozenGeneration:
             self.resumeLive(submit=False)
         if self.frozen:
@@ -349,7 +470,7 @@ class RuntimePages(QWidget):
                 view = replace(view, connection="PIN_EXPIRED", detail=pin.error,
                                scopes=MappingProxyType({}), loading=MappingProxyType({}))
         else:
-            self.modeLabel.setText("实时 · 下一件处理中" if any(view.started.get(s, 0) > r.result.identity.resultOrdinal for s, r in view.scopes.items())
+            self.modeLabel.setText('模拟 · 无可冻结的真实结果' if self.simulationState else "实时 · 下一件处理中" if any(view.started.get(s, 0) > r.result.identity.resultOrdinal for s, r in view.scopes.items())
                                    else "实时 · 等待触发")
         page = self.currentPageId
         if page is None:
@@ -379,20 +500,19 @@ class RuntimePages(QWidget):
                             error = str(problem)
                     widget.setImage(image, scope.result.identity.resultKey if scope else "", error)
                 elif component.type == "number":
-                    widget.setText(error or ("null" if value is None else
+                    widget.setText(error or (component.props.emptyText if value is None else
                         (f"{value:.{component.props.decimals}f}" if type(value) is float else str(value)) + component.props.unit))
                 elif component.type == "text":
-                    text = error or json.dumps(value, ensure_ascii=False)
+                    text = error or (component.props.emptyText if value is None else json.dumps(value, ensure_ascii=False))
                     widget.setText(text if len(text) <= 4096 else text[:4096] + '…（显示截断）')
                 elif component.type == 'indicator':
                     state = component.props.indicatorStates.get(json.dumps(value, ensure_ascii=False)) if not error else None
-                    colors = {'neutral': '#576477', 'green': '#176f42', 'red': '#af2734', 'amber': '#925900'}
-                    widget.setStyleSheet('color:' + colors[state.color if state else 'neutral'])
-                    widget.setText(error or (state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
+                    widget.setStyleSheet(appearanceStyle(component.props) + 'color:' + COLORS[state.color if state else 'neutral'])
+                    widget.setText(error or (component.props.emptyText if value is None else state.text if state else '未映射判定值: ' + json.dumps(value, ensure_ascii=False)))
                 elif component.type == 'runtime_status':
                     widget.setText(error or str(value))
                 elif isinstance(widget, CollectionView):
-                    widget.submit(value, scope.result.identity.resultKey if scope else '', error)
+                    widget.submit(value, scope.result.identity.resultKey if scope else 'simulation-' + self.simulationState if self.simulationState else '', error)
                 elif component.type == 'table':
                     widget.setText('UI_TABLE_BUDGET · 每窗口最多4个已创建表格')
                 else:
@@ -417,6 +537,16 @@ class RuntimePages(QWidget):
 
     def showEvent(self, event):
         super().showEvent(event)
+        handle = self.window().windowHandle()
+        if handle is not None and handle is not self._screenWindow:
+            if self._screenWindow is not None:
+                try:
+                    self._screenWindow.screenChanged.disconnect(self._screenChanged)
+                except RuntimeError:
+                    pass
+            self._screenWindow = handle
+            handle.screenChanged.connect(self._screenChanged)
+        self._screenChanged()
         if self.hub and not self.detached:
             self.submit(self.hub.session.readSnapshot())
 
@@ -433,6 +563,19 @@ class RuntimePages(QWidget):
 
     def closeEvent(self, event):
         self.detached = True
+        if self._screenWindow is not None:
+            try:
+                self._screenWindow.screenChanged.disconnect(self._screenChanged)
+            except RuntimeError:
+                pass
+            self._screenWindow = None
+        if self._screenSource is not None:
+            for name in ('availableGeometryChanged', 'logicalDotsPerInchChanged', 'physicalDotsPerInchChanged'):
+                try:
+                    getattr(self._screenSource, name).disconnect(self._screenMetricsChanged)
+                except RuntimeError:
+                    pass
+            self._screenSource = None
         if self.hub:
             self.hub.detach(self)
         self.displayed.clear()

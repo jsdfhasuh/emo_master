@@ -181,9 +181,10 @@ def testKnownRejectionAndCaptureQuotasDoNotExecute(channel, tmp_path):
 def testCaptureFreezeRejectsUnsupportedScopeWithoutPreparing(channel, tmp_path):
     runtime = channel.runtime
     directory, document = load(runtime, tmp_path)
-    document.presentation.resultScopes["other"] = document.presentation.resultScopes["root"].model_copy()
-    document.presentation.pages["two"].resultScopeIds = ["other"]
-    with pytest.raises(ValueError, match="one result scope"):
+    for index in range(16):
+        document.presentation.resultScopes[f"other-{index}"] = document.presentation.resultScopes["root"].model_copy()
+    document.presentation.pages["two"].resultScopeIds = [f"other-{index}" for index in range(16)]
+    with pytest.raises(ValueError, match="scope budget"):
         freezeNormalCapture(document, runtime.pluginScanResult.activeOperators, directory, "main")
     assert not runtime.jobRepository.all() and not channel.prepared
 

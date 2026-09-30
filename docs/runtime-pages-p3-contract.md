@@ -68,3 +68,25 @@ GUI性能记录scopeEnd→decodeReady→guiCommit→首次paintEvent，绝不把
 paintEvent是绘制观测，不是显示器物理呈现。records最多256、首次paint去重128。
 hub统计coalesced_results，性能分母保持全部88个预热后结果；读/导出500ms期限不改。
 完整性、实际频率、年龄、执行回退与UI增量分别列出，低速截图不可替代5Hz验收。
+
+## R3 §5.1 渲染补充（2026-09-30）
+
+同一个 RuntimePages 支持上述受限外观属性；标题/值/故障标签强制纯文本，
+不能借富文本图片或任意 QSS 绕过图像账本。判定色仍来自显式 bool/string 映射，
+执行 COMPLETE 不推导 OK。字体使用系统/通用字族，无自定义字体下载。
+
+`emptyText` 用于 AVAILABLE 的合法 null，以及合法空集合；空表保留 `0 行`，null表保留
+`null` 标记。0、false、空字符串、空集合、缺失各自保留语义。
+OPTIONAL_ABSENT、BRANCH_SKIPPED、NODE_FAILED、图片过期、断线等继续显示明确原因，
+不被自定义空值文字覆盖；未绑定/等待触发也不会伪装成合法空结果。
+
+离线 OK/NG/等待/错误通过同一渲染器检查外观，始终标注“离线模拟”；
+OK/NG 只演示已配置绿色/红色映射，未配置则明示；图像区是标注占位，不伪造采集图片。
+无 DisplaySession、Runtime、计数访问，不登记真实 displayed resultKey；无真实结果不能冻结详情。
+连接实际任务时清除模拟状态。实际详情继续取 GUI 已提交的 scope/resultKey，不取后台最新值。
+
+取消固定1600×1000尺寸假设。当前屏幕可用尺寸/宽高比及像素比例确定有界最大尺寸；
+“适配当前屏幕”是本地视图操作。每窗口16 MiB backing surface预留保持不变，
+`surfaceBytes()`/hub `window_surface_estimated_bytes` 按向上取整物理宽高×4记录估算值，
+不等于整个Qt/驱动缓存或进程RSS。图像、转换、冻结、表格额度均不扩容。
+实际现场屏幕/来源规格仍未取得；虚拟屏幕单元测试不是现场适配或性能通过证明。

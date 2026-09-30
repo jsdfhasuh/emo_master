@@ -99,9 +99,11 @@ class CollectionModel(QAbstractTableModel):
 class CollectionView(QWidget):
     def __init__(self, props, parent=None):
         super().__init__(parent)
+        self.emptyText = props.emptyText
         self.model = CollectionModel(props.columns, props.pageSize, self)
         layout = QVBoxLayout(self)
         self.message = QLabel('尚无集合')
+        self.message.setTextFormat(Qt.PlainText)
         layout.addWidget(self.message)
         self.table = QTableView()
         self.table.setModel(self.model)
@@ -133,11 +135,14 @@ class CollectionView(QWidget):
         if error or not self.model.columns:
             self.clear(error or '未配置表格列')
             return
+        if value is None:
+            self.clear(self.emptyText + ' · null')
+            return
         if key == self.model.key:
             return  # preserves view-only page/sort during health updates
         try:
             self.model.replace(value, key)
             self.table.horizontalHeader().setSortIndicator(-1, Qt.AscendingOrder)
-            self.message.setText('本次结果集合 · 无历史查询')
+            self.message.setText(self.emptyText + ' · 0 行' if not self.model.rows else '本次结果集合 · 无历史查询')
         except ValueError as problem:
             self.clear(str(problem))

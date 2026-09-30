@@ -72,16 +72,19 @@ class DisplaySession:
         self.jobId = jobId
         self.instanceId = ""
         self.cursor = 0
+        self._acceptedCursor = 0
         self.lock = threading.RLock()
         self.stop = threading.Event()
         self.pending = queue.Queue(maxsize=8)
         self.latest = {}
         self.high = {}
         self.started = {}
+        self.expired = {}
         self.seen = deque(maxlen=32)
         self.records = deque(maxlen=128)
         self.errors = deque(maxlen=64)
-        self.stats = {"received": 0, "decoded": 0, "dropped": 0, "read_failed": 0, "resets": 0}
+        self.stats = {"received": 0, "decoded": 0, "dropped": 0, "read_failed": 0, "resets": 0,
+                      "expired_scopes": 0}
         self.listeners = set()
         self.generation = 0
         self.stream = None
@@ -118,7 +121,9 @@ class DisplaySession:
                       for key, (result, images, errors) in self.latest.items()}
             return SessionView(self.revision, self.generation, self.instanceId, self.jobId,
                 self.connection, self.connectionDetail, MappingProxyType(scopes),
-                MappingProxyType(dict(self.loading)), MappingProxyType(dict(self.started)))
+                MappingProxyType(dict(self.loading)), MappingProxyType(dict(self.started)),
+                MappingProxyType({scope: ordinal for scope, ordinal in self.expired.items()
+                                  if self.high.get(scope, 0) <= ordinal}))
 
     def pins(self):
         with self.lock:
@@ -140,25 +145,37 @@ class DisplaySession:
             self._connection("CONNECTED")
             self.revision += 1
             changed = snapshot.runtime_instance_id != self.instanceId
+            if not changed and snapshot.cursor < self._acceptedCursor:
+                return  # A delayed reset from the same generation is stale too.
             if changed or snapshot.reset_required:
                 self.generation += 1
                 self.latest.clear()
                 self.high.clear()
                 self.started.clear()
+                self.expired.clear()
                 self.seen.clear()
                 self.loading.clear()
                 self.readyAt.clear()
                 self.stats["resets"] += 1
-            elif snapshot.cursor < self.cursor:
-                return
             self.instanceId, self.cursor = snapshot.runtime_instance_id, snapshot.cursor
+            self._acceptedCursor = snapshot.cursor
             for scope, ordinal in snapshot.latest_started_ordinals.items():
                 self.started[scope] = max(ordinal, self.started.get(scope, 0))
+            for scope, ordinal in snapshot.expired_scope_ordinals.items():
+                if ordinal > self.expired.get(scope, 0):
+                    self.stats["expired_scopes"] += 1
+                self.expired[scope] = max(ordinal, self.expired.get(scope, 0))
+                if self.high.get(scope, 0) <= ordinal:
+                    self.high[scope] = ordinal
+                    self.latest.pop(scope, None)
+                    self.loading.pop(scope, None)
+                    self.readyAt.pop(scope, None)
             for wire in snapshot.results:
                 result = decodeResult(wire)
                 if (result.identity.jobId != self.jobId or result.identity.runtimeInstanceId != self.instanceId):
                     raise ValueError("result belongs to another Runtime/Job")
-                if result.identity.resultKey in self.seen:
+                if (result.identity.resultKey in self.seen
+                        or result.identity.resultOrdinal <= self.expired.get(result.identity.resultScopeId, 0)):
                     continue
                 scope = result.identity.resultScopeId
                 if result.identity.resultOrdinal > self.high.get(scope, 0):
@@ -193,10 +210,12 @@ class DisplaySession:
                         self.latest.clear()
                         self.high.clear()
                         self.started.clear()
+                        self.expired.clear()
                         self.seen.clear()
                         self.loading.clear()
                         self.readyAt.clear()
                         self.cursor = 0
+                        self._acceptedCursor = 0
                         self.instanceId = capabilities.runtime_instance_id
                         self.stats["resets"] += 1
                 request = pb.DisplayRequest(runtime_instance_id=self.instanceId, job_id=self.jobId, after_cursor=self.cursor, replay=True)
@@ -262,24 +281,33 @@ class DisplaySession:
                     continue
             images = {}
             failures = {}
+            decodedAssets = {}
             started = time.monotonic()
             for source in result.sources:
                 if source.image is None:
                     continue
                 try:
                     image = source.image
+                    assetKey = (image.resourceId, image.sha256, image.byteSize)
+                    if assetKey in decodedAssets:
+                        images[source.sourceId] = decodedAssets[assetKey]
+                        continue
                     reply = self.stub.ReadAsset(pb.DisplayAssetRequest(runtime_instance_id=result.identity.runtimeInstanceId,
                         job_id=result.identity.jobId, resource_id=image.resourceId), timeout=.5)
                     content = reply.content
                     if len(content) != image.byteSize or hashlib.sha256(content).hexdigest() != image.sha256 or reply.sha256 != image.sha256:
                         raise ValueError("asset digest/size mismatch")
                     images[source.sourceId] = decodePng(content)
+                    decodedAssets[assetKey] = images[source.sourceId]
                     self.stats["decoded"] += 1
                 except (grpc.RpcError, ValueError) as error:
                     failures[source.sourceId] = str(error)
                     self.stats["read_failed"] += 1
             with self.lock:
-                applied = generation == self.generation and result.identity.resultOrdinal >= self.high.get(result.identity.resultScopeId, 0)
+                scopeId = result.identity.resultScopeId
+                applied = (generation == self.generation
+                    and result.identity.resultOrdinal >= self.high.get(scopeId, 0)
+                    and result.identity.resultOrdinal > self.expired.get(scopeId, 0))
                 decodedNs = time.perf_counter_ns()
                 self.records.append({"key": result.identity.resultKey, "ordinal": result.identity.resultOrdinal,
                     "decoded": list(images), "failures": failures, "read_decode_ms": (time.monotonic() - started) * 1000,
@@ -294,7 +322,8 @@ class DisplaySession:
                 self.loading.pop(result.identity.resultScopeId, None)
                 self.readyAt[result.identity.resultScopeId] = decodedNs
                 self.revision += 1
-                while sum(image.nbytes for _, frames, _ in self.latest.values() for image in frames.values()) > 16 * 1024 * 1024:
+                while sum({id(image): image.nbytes for _, frames, _ in self.latest.values()
+                           for image in frames.values()}.values()) > 16 * 1024 * 1024:
                     scope = next(key for key, (_, frames, _) in self.latest.items() if frames)
                     oldResult, oldFrames, oldFailures = self.latest[scope]
                     self.latest[scope] = (oldResult, {}, {**oldFailures, **{key: "CLIENT_BUDGET" for key in oldFrames}})
@@ -311,10 +340,12 @@ class DisplaySession:
         with self.lock:
             self.jobId = jobId
             self.cursor = 0
+            self._acceptedCursor = 0
             self.generation += 1
             self.latest.clear()
             self.high.clear()
             self.started.clear()
+            self.expired.clear()
             self.seen.clear()
             self.loading.clear()
             self.readyAt.clear()

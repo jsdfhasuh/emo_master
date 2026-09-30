@@ -7,6 +7,7 @@ import grpc
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.presentation.capture_limits import normalCaptureProfile
 
 
 def wireResult(result):
@@ -44,11 +45,12 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def Capabilities(self, request, context):
         capabilities = ["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease",
-                        "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup"]
+                        "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup", "scope_retention"]
         if self.service.supportsNormalCapture:
-            capabilities.append("normal_start_capture")
+            capabilities.extend(["normal_start_capture", "normal_multi_scope", "normal_two_image_lanes"])
         return pb.DisplayCapabilities(runtime_instance_id=self.service.runtimeInstanceId,
-                                      protocol_version="1.0", capabilities=capabilities)
+                                      protocol_version="1.0", capabilities=capabilities,
+            normal_capture_limits_json=json.dumps(normalCaptureProfile()) if self.service.supportsNormalCapture else "")
 
     def Prepare(self, request, context):
         from pathlib import Path
@@ -84,6 +86,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                     source_ids=list(plan.get("sources", {})),
                     sources_json=json.dumps(plan.get("sources", {})),
                     capture_definition_json=config.get("captureDefinitionJson", ""),
+                    capture_limits_json=config.get("limitsJson", ""),
                     capture_plan_revision=identity.get("capturePlanRevision", ""),
                     execution_revision=identity.get("executionRevision", ""),
                     runtime_instance_id=self.service.runtimeInstanceId,
@@ -102,7 +105,8 @@ class DisplayRpc(rpc.DisplayServiceServicer):
         snapshot = self.service.store.snapshot(request.job_id, request.after_cursor, incremental)
         return pb.DisplaySnapshot(runtime_instance_id=self.service.runtimeInstanceId, job_id=request.job_id,
             cursor=snapshot["cursor"], reset_required=snapshot["reset"] or request.runtime_instance_id != self.service.runtimeInstanceId,
-            results=[wireResult(result) for result in snapshot["results"]], latest_started_ordinals=snapshot["high"])
+            results=[wireResult(result) for result in snapshot["results"]], latest_started_ordinals=snapshot["high"],
+            expired_scope_ordinals=snapshot["expired"])
 
     def Subscribe(self, request, context):
         cursor = request.after_cursor

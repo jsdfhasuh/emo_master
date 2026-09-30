@@ -33,3 +33,31 @@ def testWindowOwnsSceneAndDestroysItOnGuiThreadBeforeWorkerGc():
     worker.join(timeout=3)
     assert not worker.is_alive()
     assert destroyed == [guiThread]
+
+
+def testStandaloneSceneFixtureRetiresNativeObjectsBeforeBackgroundGc(ownedFlowScene):
+    from PySide2.QtCore import Qt
+    from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
+
+    scene = ownedFlowScene()
+    scene.addFlowNode(FlowNodeViewModel('node', 'Node', 0, 0, {}, {'out': 'image'}))
+    node = scene._nodeItems['node']
+    # A real scene/item cycle plus an active drag hint exercises GUI resources
+    # which previously survived the test and were destroyed by a later RPC GC.
+    assert node._sceneRef is scene
+    assert scene.beginDragPreview('node', 'out')
+    destroyed = []
+    guiThread = threading.get_ident()
+    scene.destroyed.connect(lambda *_: destroyed.append(threading.get_ident()), Qt.DirectConnection)
+    ownedFlowScene.retire()
+    assert not shiboken2.isValid(scene)
+    assert not shiboken2.isValid(node)
+    assert destroyed == [guiThread]
+    # Retain both wrappers while forcing collection in a background thread.
+    # Retirement is also idempotent when the fixture's finalizer runs later.
+    worker = threading.Thread(target=gc.collect, name='standalone-scene-gc-regression')
+    worker.start()
+    worker.join(timeout=3)
+    assert not worker.is_alive()
+    assert not shiboken2.isValid(scene) and not shiboken2.isValid(node)
+    assert destroyed == [guiThread]

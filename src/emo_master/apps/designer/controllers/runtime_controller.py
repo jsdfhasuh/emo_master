@@ -23,7 +23,7 @@ class RuntimeController:
         getActiveWorkflowId: Callable[[], str | None] | None = None,
         getEntryWorkflowId: Callable[[], str | None] | None = None,
         appendEvent: Callable[[dict[str, object]], None] | None = None,
-        getCapturePresentation: Callable[[], bool] | None = None,
+        getCapturePresentation: Callable[[], bool | dict] | None = None,
         onJobAccepted: Callable[[object], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
@@ -72,7 +72,8 @@ class RuntimeController:
         if not self.syncRuntimeProjectBeforeRun():
             return
         try:
-            capturePresentation = bool(self.getCapturePresentation())
+            captureRequest = self.getCapturePresentation()
+            capturePresentation = bool(captureRequest)
         except Exception as error:
             self.appendLog("ERROR", f"页面采集准备失败：{error}")
             return
@@ -88,6 +89,7 @@ class RuntimeController:
             capturePresentation=capturePresentation,
             previousCaptureJob=self._previousCaptureJob,
         )
+        worker.captureRequirements = dict(captureRequest) if isinstance(captureRequest, dict) else {}
         worker.jobAccepted.connect(self._onJobAccepted)
         worker.eventReceived.connect(self._onRuntimeEvent)
         worker.statusChanged.connect(self._onJobStatus)

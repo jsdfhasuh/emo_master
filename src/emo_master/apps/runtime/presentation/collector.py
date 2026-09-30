@@ -8,8 +8,8 @@ from emo_master.core.presentation.values import freezeValue
 from emo_master.apps.runtime.presentation.provenance import FrameTracker
 
 
-def unavailable(sourceId, code):
-    return {"sourceId": sourceId, "state": "UNAVAILABLE", "reason": code, "reasonCode": code}
+def unavailable(sourceId, code, detail=""):
+    return {"sourceId": sourceId, "state": "UNAVAILABLE", "reason": detail or code, "reasonCode": code}
 
 
 def projectField(value, path):
@@ -111,18 +111,31 @@ class ResultCollector:
         if value.nbytes > 8 * 1024 * 1024 or item["rawBytes"] + value.nbytes > 16 * 1024 * 1024:
             return unavailable(key, "BUDGET_EXCEEDED")
         for slot in self.config.get("slots", []):
+            lane = self.config.get("imageLaneBySource", {}).get(key, 0)
+            if slot.get("lane", 0) != lane:
+                continue
+            capacity = slot.get("capacity", 8 * 1024 * 1024)
+            if value.nbytes > capacity:
+                return unavailable(key, "BUDGET_EXCEEDED",
+                    f"raw image {value.nbytes} bytes exceeds source lane limit {capacity}; no implicit resize")
+            quarantined = slot.get("quarantined")
+            if quarantined is not None and quarantined.value:
+                return unavailable(key, "BUDGET_EXCEEDED", "image slab quarantined until actual owner retirement")
             if not slot["free"].acquire(False):
                 continue
             transferred = False
             try:
+                if quarantined is not None and quarantined.value:
+                    return unavailable(key, "BUDGET_EXCEEDED", "image slab quarantined until actual owner retirement")
                 memory = SharedMemory(name=slot["name"])
                 try:
-                    target = np.ndarray(value.shape, value.dtype, buffer=memory.buf)
+                    target = np.ndarray(value.shape, value.dtype, buffer=memory.buf, offset=slot.get("offset", 0))
                     np.copyto(target, value)
                     del target
                 finally:
                     memory.close()
-                descriptor = {"slot": slot["index"], "shape": list(value.shape), "sourceId": key,
+                descriptor = {"slot": slot["index"], "lane": slot.get("lane", 0),
+                              "offset": slot.get("offset", 0), "shape": list(value.shape), "sourceId": key,
                               "key": item["identity"]["resultKey"], "jobId": item["identity"]["jobId"],
                               "frozenAt": time.monotonic(), "rawBytes": value.nbytes,
                               "provenance": self.frames.lookup(value) or {"frameIdentity": str(uuid4()),
@@ -132,9 +145,9 @@ class ResultCollector:
                 item["rawBytes"] += value.nbytes
                 return {"sourceId": key, "pendingImage": True}
             finally:
-                if not transferred:
+                if not transferred and not (quarantined is not None and quarantined.value):
                     slot["free"].release()
-        return unavailable(key, "BUDGET_EXCEEDED")
+        return unavailable(key, "BUDGET_EXCEEDED", "source image lane is busy; capture never waits")
 
     def event(self, eventType, context):
         if eventType not in {"node.skipped", "node.failed"}:

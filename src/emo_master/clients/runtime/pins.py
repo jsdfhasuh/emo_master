@@ -30,7 +30,7 @@ class PinStore:
     def acquire(self, scope, generation, ttlMs=30000):
         if not 0 < ttlMs <= 30000:
             raise ValueError("租约必须为1—30000ms")
-        size = sum(image.nbytes for image in scope.images.values())
+        size = sum({id(image): image.nbytes for image in scope.images.values()}.values())
         with self.lock:
             if len(self.entries) >= 2 or self.bytesHeld() + size > self.limit or self.stop.is_set():
                 raise ValueError("PIN_BUDGET")
@@ -84,12 +84,15 @@ class PinStore:
                     continue
                 try:
                     identity = entry["scope"].result.identity
+                    leased = set()
                     for source in entry["scope"].result.sources:
-                        if source.image is not None and source.sourceId in entry["scope"].images:
+                        if (source.image is not None and source.sourceId in entry["scope"].images
+                                and source.image.resourceId not in leased):
                             lease = self.session.stub.AcquireLease(pb.DisplayAssetRequest(
                                 runtime_instance_id=identity.runtimeInstanceId, job_id=identity.jobId,
                                 resource_id=source.image.resourceId, ttl_ms=entry["ttl"]), timeout=.5)
                             entry["leases"].append(lease)
+                            leased.add(source.image.resourceId)
                     with self.lock:
                         entry["state"] = "PINNED"
                 except Exception as error:

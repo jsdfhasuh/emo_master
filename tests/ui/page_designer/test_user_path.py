@@ -106,11 +106,13 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         # Navigate by stable ID through the property panel, not a JSON patch.
         detailNav = next(c for c in editor.store.snapshot().pages[detail].components if c.type == 'navigation_button').componentId
         editor.tools.select(detailNav)
+        editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(overview))
         editor.tools.fields['text'].setText('返回总览')
         click(editor, '应用属性 / 布局')
         editor.pageList.setCurrentRow(editor.store.snapshot().pageOrder.index(overview))
         editor.tools.select(navigation)
+        editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(detail))
         editor.tools.fields['text'].setText('检测详情')
         click(editor, '应用属性 / 布局')

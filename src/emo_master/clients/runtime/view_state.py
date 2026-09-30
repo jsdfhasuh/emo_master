@@ -3,7 +3,8 @@
 Images share immutable byte-backed numpy storage; envelopes never expose session
 dictionaries. Consumers must bound the snapshots they retain.
 """
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, Mapping
 
 from emo_master.core.presentation.results import ClosedResult
@@ -28,3 +29,4 @@ class SessionView:
     scopes: Mapping[str, ScopeView]
     loading: Mapping[str, ClosedResult]
     started: Mapping[str, int]
+    expiredScopes: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))

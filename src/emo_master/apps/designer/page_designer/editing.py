@@ -136,20 +136,7 @@ class PageCommands:
         if actual not in ACCEPTED.get(item.type, set()):
             raise ValueError(f'类型不兼容：{actual} → {item.type}')
         p = document.presentation
-        if actual == 'image':
-            otherImages = {p.dataSources[key].model_dump_json(exclude={'resultScopeId'})
-                for currentPageId, page in p.pages.items() for component in walkComponents(page.components)
-                if not (currentPageId == pageId and component.componentId == componentId)
-                for key in component.bindings.values() if key in p.dataSources
-                and p.dataSources[key].expectedType == 'image'}
-            if otherImages - {choice.source.model_dump_json(exclude={'resultScopeId'})}:
-                raise ValueError('当前运行采集仅支持一个图像来源；两页可复用同一来源，第二张图尚未支持')
-        used = {key for page in p.pages.values() for component in walkComponents(page.components)
-                for key in component.bindings.values()}
-        scopes = {p.dataSources[key].resultScopeId for key in used if key in p.dataSources}
         key = next((k for k, v in p.resultScopes.items() if v == choice.scope), None)
-        if scopes and (key is None or scopes != {key}):
-            raise ValueError('当前 P2/P3 仅支持一个调用作用域，请清除其他作用域绑定后再选择')
         key = key or str(uuid4())
         source = choice.source.model_copy(deep=True)
         source.resultScopeId = key
@@ -161,4 +148,10 @@ class PageCommands:
             sourceId = next((k for k, value in p.dataSources.items() if value == source), None) or str(uuid4())
             p.dataSources[sourceId] = source
             target.bindings[prop] = sourceId
+            # Validate the complete proposed plan inside the same transaction.
+            # A rejected third image/scope budget must roll back scope/source IDs.
+            from emo_master.core.presentation.capture_limits import normalCaptureLimits
+            normalCaptureLimits(p)
         self.session.editPresentation(edit)
+        from emo_master.core.presentation.capture_limits import normalCaptureLimits
+        return normalCaptureLimits(self.session.presentation.snapshot())

@@ -29,7 +29,7 @@ def checkLocalDraft(document):
         for key in component.bindings.values() if key in document.presentation.dataSources
         and document.presentation.dataSources[key].expectedType == 'image'}
     if len(imageSources) > 1:
-        raise ValueError('P2 每 Job 单图像槽：请跨页复用同一图像来源')
+        raise ValueError('隔离草稿调试/测试入口仅支持单图来源，请跨页复用；正常运行可按 Runtime 广告能力使用有界双图配置')
     inputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
               for b in document.resources.parameterBindings}
     outputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
@@ -384,6 +384,7 @@ class PreviewController(QObject):
                 renderer.submit(SessionView(0, 0, self.coverage.runtimeInstanceId, self.coverage.jobId,
                     'NOT_CAPTURED', '任务未采集页面来源或资源已释放；下一次明确启动才生效', empty, empty, empty))
             self.coordinator.editor.tools.preview.setChecked(True)
+            self.coordinator.editor.tools.changeSimulation()
             renderer.banner.setText(self.observationLabel)
             self.refreshCoverage()
         self.message('已选择明确任务 ' + label)

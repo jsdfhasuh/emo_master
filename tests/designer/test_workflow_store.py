@@ -5,7 +5,6 @@ import pytest
 from emo_master.apps.designer.controllers.workflow_controller import WorkflowController
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
-from emo_master.apps.designer.ui.flow_scene import FlowScene
 
 
 def _payload() -> dict[str, object]:
@@ -78,10 +77,10 @@ def testWorkflowStoreAdvancesRevisionOnlyAfterCommittedSave() -> None:
     assert third["project"]["revision"] == 3
 
 
-def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete() -> None:
+def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete(ownedFlowScene) -> None:
     store = WorkflowStore(_payload())
     model = FlowGraphModel()
-    scene = FlowScene()
+    scene = ownedFlowScene()
     controller = WorkflowController(store, model, scene)
     controller.loadPayload(_payload())
     assert "subflow" in model.nodes
@@ -98,10 +97,10 @@ def testWorkflowControllerSwitchesGraphsAndRejectsReferencedDelete() -> None:
         raise AssertionError("referenced workflow deletion should fail")
 
 
-def testWorkflowControllerConfiguresSubflowPortsAndLoop() -> None:
+def testWorkflowControllerConfiguresSubflowPortsAndLoop(ownedFlowScene) -> None:
     store = WorkflowStore(_payload())
     model = FlowGraphModel()
-    scene = FlowScene()
+    scene = ownedFlowScene()
     controller = WorkflowController(store, model, scene)
     controller.loadPayload(_payload())
     nodeId = model.addNode("", "Loop", {}, {})
@@ -117,10 +116,10 @@ def testWorkflowControllerConfiguresSubflowPortsAndLoop() -> None:
     assert model.nodes[nodeId].loop["maxIterations"] == 2
 
 
-def testWorkflowControllerRejectsLoopConfigWithoutPartiallyMutatingNode() -> None:
+def testWorkflowControllerRejectsLoopConfigWithoutPartiallyMutatingNode(ownedFlowScene) -> None:
     store = WorkflowStore(_payload())
     model = FlowGraphModel()
-    controller = WorkflowController(store, model, FlowScene())
+    controller = WorkflowController(store, model, ownedFlowScene())
     controller.loadPayload(_payload())
     sourceId = model.addNode("vision.test.source", "Source", {}, {"value": "json"})
     nodeId = model.addNode(
@@ -153,7 +152,7 @@ def testWorkflowControllerRejectsLoopConfigWithoutPartiallyMutatingNode() -> Non
     assert model.edges == originalEdges
 
 
-def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None:
+def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges(ownedFlowScene) -> None:
     payload = _payload()
     payload["workflows"]["main"]["nodes"].append(
         {
@@ -174,7 +173,7 @@ def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None
     ]
     store = WorkflowStore(payload)
     model = FlowGraphModel()
-    scene = FlowScene()
+    scene = ownedFlowScene()
     controller = WorkflowController(store, model, scene)
     controller.loadPayload(payload)
 
@@ -191,7 +190,7 @@ def testWorkflowInterfaceRefreshesAllSubflowPortsAndPrunesInvalidEdges() -> None
     assert store.get("main").edges == []
 
 
-def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts() -> None:
+def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts(ownedFlowScene) -> None:
     payload = _payload()
     payload["schemaVersion"] = "2.1"
     payload["workflows"]["main"]["nodes"].extend(
@@ -228,7 +227,7 @@ def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts() -> None:
     )
     store = WorkflowStore(payload)
     model = FlowGraphModel()
-    controller = WorkflowController(store, model, FlowScene())
+    controller = WorkflowController(store, model, ownedFlowScene())
     controller.loadPayload(payload)
 
     report = controller.setWorkflowInterface(

@@ -91,3 +91,18 @@ regression 运行 core/runtime/e2e 及相关 Designer 回归；ci 尝试完整 s
 可加 `--baseline-ref <SHA> --suite ci` 从只读 git archive 副本核查基线。
 每次保存 HEAD、dirty、受测源码摘要、原始日志、前后代码一致性和退出码；不覆盖已有输出。
 外层 watchdog 默认 300 秒，Windows 使用 kill-on-close Job Object 收尾；不放宽 P0 单任务期限。
+
+## R3 §5.1 组件属性补充（2026-09-30）
+
+`Props` 兼容追加：`fontFamily=system`（system/sans/serif/monospace），
+`fontSize=0`（自动，或8—48像素），`fontWeight=normal`（normal/bold），
+`textColor=default`（default/neutral/green/red/amber），`cardStyle=plain`（plain/soft/outlined）。
+未知属性、任意字体名/QSS、超限字号继续拒绝；旧页面按明确默认值读取。
+
+`page_designer/property_adapters.py` 是无 Qt 的编辑适配，不引入第二套模型：
+- `encodeIndicatorKey/decodeIndicatorKey/indicatorStatesFromRows` 把布尔或原样文字规范编码；
+  用户输入 `OK` 得到内部字符串键，false/空字符串保留，同类型同值重复行拒绝，不静默覆盖。
+- `tableFieldChoices` 仅从可信 Blob/Detection 输出目录提供行字段；集合投影的列路径为空，
+  不二次投影、不隐式取第一项。未知结构明确不支持自动字段推断，已有列配置保留。
+- `actionFromFields` 生成已有 Action：实时导航、已显示详情、冻结、恢复实时或清除动作。
+  详情/冻结要求当前页支持明确作用域，详情还要求目标页支持；仅修改草稿，不获取结果或操作设备。

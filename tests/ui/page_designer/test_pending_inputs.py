@@ -2,7 +2,6 @@
 import json
 
 import pytest
-from PySide2.QtWidgets import QTableWidgetItem
 
 from test_workspace import designer  # noqa: F401
 from emo_master.apps.designer.state.presentation_store import _component
@@ -34,16 +33,14 @@ def testSaveCommitsVisibleUnappliedProperties(designer, tmp_path):  # noqa: F811
 
 def testInvalidPendingInputBlocksSaveWithoutDiscardingText(designer, tmp_path):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
-    editor.tools.extra.setRowCount(1)
-    for column, value in enumerate(('invalid json key', 'OK', 'green')):
-        editor.tools.extra.setItem(0, column, QTableWidgetItem(value))
+    editor.tools.addExtraRow(values=('boolean', 'invalid boolean', 'OK', 'green'))
     before = coordinator.session.payload()
     assert not designer.saveProjectToDirectory(str(tmp_path / 'invalid'))
     assert coordinator.session.payload() == before
-    assert editor.tools.extra.item(0, 0).text() == 'invalid json key'
+    assert editor.tools.extra.item(0, 1).text() == 'invalid boolean'
     assert not (tmp_path / 'invalid' / 'project.json').exists()
     # Correcting the visible field makes the same save succeed.
-    editor.tools.extra.item(0, 0).setText('true')
+    editor.tools.extra.item(0, 1).setText('true')
     assert designer.saveProjectToDirectory(str(tmp_path / 'fixed'))
     assert 'true' in _component(editor.store.snapshot(), editor.pageId, key).props.indicatorStates
 
@@ -62,8 +59,7 @@ def testSelectingAnotherComponentCommitsPendingInput(designer):  # noqa: F811
 def testInvalidInputBlocksComponentSelection(designer):  # noqa: F811
     _, editor, first = setupPage(designer, 'indicator')
     second = editor.tools.commands().add(editor.pageId, 'text', 1, 0)
-    editor.tools.extra.setRowCount(1)
-    editor.tools.extra.setItem(0, 0, QTableWidgetItem('not json'))
+    editor.tools.addExtraRow(values=('boolean', 'not boolean', 'OK', 'green'))
     with pytest.raises(ValueError):
         editor.tools.select(second)
     assert editor.tools.selected == first

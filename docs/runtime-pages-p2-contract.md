@@ -21,8 +21,8 @@
 `debug` 和 `release`。executionRevision 描述本次正常流程与已安装插件，capturePlanRevision
 仍由共享 captureDefinition 计算；它不承诺普通文件运行路径拥有 debug 的资源副本隔离。
 
-本批准入限制仍是同一调用作用域、一个不同图像来源、最多16个source ID；不支持来源逐项
-拒绝（跨 scope、global_counter/runtime_status 平台来源仍拒绝；计数算子的类型化输出可用）。
+最初同任务批次采用单作用域/单图准入；§5.2扩展后的显式软件profile见下节。每个来源仍须属于
+自身明确调用作用域；跨scope拼成同次结果、global_counter/runtime_status平台来源仍拒绝，计数节点输出可用。
 使用注册端口元数据，不复用测试交付四算子白名单。两页引用相同来源只编码一次；不同source ID
 指向完全相同图像地址时也共享一次冻结/编码与结果自有资产。单图8 MiB和既有额度/期限不变。
 
@@ -50,6 +50,45 @@ Runtime.close 在监督器真正结束后关闭PresentationService；失败不�
 DiscardPrepared 只在关联Job释放后删除准备副本及该debug快照自有SQLite/output树，保留release
 持久命名空间。沿用的旧中间图快照仍执行，没有宣称重复编码成本或历史性能失败已经解决。
 
+## §5.2 有界多来源软件profile（2026-09-30）
+
+`normalCaptureProfile()` / `normalCaptureLimits(presentation)` 是正常运行专用的纯元数据接点。
+profile名 `normal-two-lane-v1`：最多16个被引用source ID、16个显式scope、两种不同图像来源，
+仍最多8个同时OPEN结果/Job、两个展示Job/Runtime。未使用的历史来源不采集；完全相同来源
+跨页/别名复用同一lane、同一次冻结和编码。不同callPath/resultScopeId不会被合并成同一来源，
+不同工位的结果身份/序号/水位独立，不宣称产品追溯或属于同件产品。
+
+每Job仍独占一块8MiB共享内存和一个编码进程。单图profile使用一个8MiB lane；两种图像来源
+使用两个不重叠4MiB lane，来源到lane的映射随Start冻结。检测线程只尝试非阻塞获取自己的
+lane信用；同来源的另一迭代不能借另一个lane或排队复制。严格超过该来源raw字节限额、lane忙
+或整块内存隔离时，返回带具体理由的BUDGET_EXCEEDED，不改变算法原图、不隐式缩放。
+每个已受理小描述符都占有不同lane；每Job最多两个未完成描述符（含正在编码者），编码串行，
+500ms从提交时计时，排在前一个lane后面的时间也计入，没有扩大期限。未知worker退出状态
+隔离整块slab，包括另一lane；归还信用前必须证明encoder退出，Job释放还要求检测worker/IPC结束。
+两个编码进程、总原图共享容量16MiB、导出保守预留96MiB、每Job元数据64MiB和读线程16MiB
+原账本不变，仍至多128MiB/Job、256MiB/Runtime（不等同整个进程RSS）。staging按lane编码大小
+限制，两个lane单个编码文件各最多4MiB，仍总计不超过原16MiB双slab界限。
+
+这是独立于未知现场需求的软件支持profile，不是推断的相机规格。两张1920×1080 BGR原图
+各6,220,800字节，均超过双图4MiB限额，因此这个profile明确不支持它们；单图仍可在8MiB内采集。
+没有本次用户实际工程的来源数、通道、尺寸与节拍证据，不调整限额、不声称大图预览/缩放或现场
+性能达标。真实规格得到确认后才能设计另一个显式、重测过的有界profile。
+
+Capabilities新增 `normal_multi_scope`、`normal_two_image_lanes` 和 `normal_capture_limits_json`，
+后者只含静态profile常量。DisplayJob新增 `capture_limits_json`，包括sourceCount/scopeCount、
+rawBytesBySource、imageLaneBySource、rawBytesPerJob及implicitResize=false。Designer在运行前
+用同一纯helper解释具体来源限额，再与Runtime协商profile；旧Runtime单图单scope路径继续兼容，
+多图/多scope须支持新profile。P4隔离测试与P5交付白名单/单次启动不因普通profile而取消。
+
+ResultStore现在把每scope的authoritative latest与32条可重放history分别维护；快速scope刷过32条
+不会让安静scope在新观察者/重连中消失。latest/history/replay引用的唯一封闭结果合计仍受同一
+8MiB元数据上限约束，先淘汰可选重放，最多32个latest scope（两Job×16）。确需按字节压力淘汰
+latest时，新增 `DisplaySnapshot.expired_scope_ordinals` 明确携带失效水位；客户端清除该scope并
+阻止已排队/迟到解码复活旧值，其余scope保持自己的结果。旧1.0客户端即使忽略新增字段，也通过
+每Job明确的expiry reset cursor收到原有reset_required，清掉旧代际缓存；迟到的旧reset快照不能
+覆盖同Runtime的新游标。资产保留与latest/history/replay真实引用一致，引用/leases仍受原预算。
+正常客户端按资产ID/摘要复用同一封闭结果内的别名读图/解码/租约；live仍16MiB、pin仍原额度。
+
 ## 首批契约
 
 - `ClosedSource.reasonCode` 兼容新增；旧记录可只有 reason。新采集器始终输出稳定代码。
@@ -67,7 +106,7 @@ DiscardPrepared 只在关联Job释放后删除准备副本及该debug快照自�
   latest 表示最新已封闭结果；待执行/导出的下一件不抹去最新已确认结果。
   按 ordinal 取所有已封闭结果中的最大值，旧封闭不能覆盖新的 COMPLETE/INCOMPLETE/FAILED。
   客户端也按已收到封闭结果的水位栅栏迟到解码；开始水位单独用于表示进行中的检测。
-  消息游标另行递增。保留至多 32 结果及 8 MiB 元数据；并非完整历史。
+  消息游标另行递增。重放history至多32结果，latest/history/replay唯一元数据合计8MiB；并非完整历史。
 - 单 Runtime 至多 2 个展示 Job、8 个准备记录。每 Job 至多 8 个 OPEN；
   超额采集拒绝计入共享计数器；不会结束检测任务。终态 Job 需显式 release 释放保留状态。
 - debug SQLite/outputs 使用 P1 的隔离命名空间，不迁移生产 SQLite，不创建第二个 Runtime。
@@ -75,10 +114,11 @@ DiscardPrepared 只在关联Job释放后删除准备副本及该debug快照自�
 
 ## 图像与资源
 
-两个固定 spawn 编码单元，无待处理队列；每个展示 Job 独占一个槽，允许两个 Job 并发。
+两个固定spawn编码单元；debug/release仍每Job一个8MiB槽，无额外待处理项。普通双图profile
+在同一槽内分为两个4MiB来源lane，至多两个小描述符（含正在编码者），不增加进程或原图容量。
 这使 Worker 在复制中死亡且未发出描述符时仍能确定资源归属；同一 Job 忙时图像明确
 BUDGET_EXCEEDED，不等待展示，不增加线程。单来源原图 8 MiB、结果 16 MiB 上限仍保留，
-不承诺同一结果的多个图像同时可用。检测线程在槽位预留后 copyto 自有共享内存；仅小描述符
+旧debug/release不承诺多图；普通双图仅在上节明确profile边界内支持。检测线程在槽位预留后 copyto 自有共享内存；仅小描述符
 进入独立展示 IPC，标量在路由前序列化冻结。旧 PreviewSnapshotWriter 仍执行。
 
 正式 IPC 使用单写/单读共享内存邮箱：每 Job 16 个固定槽，每槽 1 MiB+64 KiB，

@@ -87,6 +87,64 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         runtime.close()
 
 
+@pytest.mark.parametrize('fixtureName', ['twoImages', 'twoCalls'])
+def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, fixtureName):
+    """Two real images or two call scopes through the original GUI Run path."""
+    import json
+    import numpy as np
+    from tests.runtime.presentation import test_multi_capture as fixtures
+    monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
+    root = tmp_path / 'project'
+    root.mkdir()
+    document = getattr(fixtures, fixtureName)(root)
+    saveProject(root, document.model_dump())
+    runtime = RuntimeService(dbPath=tmp_path / 'runtime.sqlite3', workspaceRoot=tmp_path / 'jobs')
+    window = MainWindow(RuntimeClient(runtime))
+    try:
+        assert window.loadProjectDirectory(str(root))
+        coordinator = window.pageCoordinator
+        coordinator.showPages()
+        window.show()
+        window.startJob()
+        waitFor(lambda: window.currentJobId is not None or window.runtimePanelState.jobStatus == 'FAILED')
+        job = window.currentJobId
+        assert job, window.runtimePanelState.jobMessage
+        waitFor(lambda: not window.isJobRunning)
+        assert runtime.jobRepository.get(job).status == 'COMPLETED'
+        coordinator.preview.watchCurrent()
+        waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
+        assert coordinator.preview.error is None
+        renderer = coordinator.editor.renderer
+        waitFor(lambda: bool(renderer.displayed))
+        first = next(iter(renderer.displayed.values()))
+        assert first.result.identity.jobId == job
+        assert first.result.status == 'COMPLETE'
+        metadata = window.runtimeClient.listDisplayJobs(document.project.projectId)[0]
+        limits = json.loads(metadata.capture_limits_json)
+        assert set(limits['rawBytesBySource'].values()) == {4 * 1024 * 1024}
+        renderer.navigate(document.presentation.pageOrder[1])
+        waitFor(lambda: bool(renderer.displayed))
+        second = next(iter(renderer.displayed.values()))
+        assert second.result.identity.jobId == job and second.result.status == 'COMPLETE'
+        if fixtureName == 'twoImages':
+            assert second.result.identity.resultKey == first.result.identity.resultKey
+            assert not np.array_equal(second.images['original'], second.images['image'])
+            assert second.images['image'] is second.images['overlay-alias']
+            assert coordinator.preview.hub.conversions == 2
+        else:
+            assert first.result.identity.resultScopeId == 'a'
+            assert second.result.identity.resultScopeId == 'b'
+            assert first.result.identity.resultKey != second.result.identity.resultKey
+            assert first.result.identity.invocationId != second.result.identity.invocationId
+        assert len(runtime.jobRepository.all()) == 1
+    finally:
+        if window.pageCoordinator.preview.active():
+            window.pageCoordinator.preview.closeAsync()
+            waitFor(lambda: not window.pageCoordinator.preview.active())
+        window.close()
+        runtime.close()
+
+
 @pytest.mark.parametrize('debugFirst', [False, True])
 def testNormalAndIsolatedDebugShareOwnerInEitherOrder(qtApp, tmp_path, debugFirst):
     from emo_master.apps.designer.page_designer.preview import LocalBackend

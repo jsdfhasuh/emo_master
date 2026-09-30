@@ -134,7 +134,7 @@ def testContainerMoveRejectsCycleAndOverlaps(tmp_path):
     assert session.payload() == before
 
 
-def testSecondImageRejectedAtBindingButSameSourceAcrossPagesAllowed(tmp_path):
+def testTwoImagesUseExplicitBoundedProfileAndThirdBindingRollsBack(tmp_path):
     session = ProjectEditSession(blank(tmp_path).model_dump())
     page = session.presentation.createPage('one')
     secondPage = session.presentation.createPage('two')
@@ -146,10 +146,45 @@ def testSecondImageRejectedAtBindingButSameSourceAcrossPagesAllowed(tmp_path):
     overlay = next(c for c in choices if c.source.nodeId == 'blob' and c.source.port == 'overlay')
     commands.bind(page, first, original)
     commands.bind(secondPage, second, original)
+    limits = commands.bind(secondPage, second, overlay)
+    assert set(limits['rawBytesBySource'].values()) == {4 * 1024 * 1024}
+    assert len(set(limits['imageLaneBySource'].values())) == 2
+    third = commands.add(page, 'image', 1, 0)
+    mask = next(c for c in choices if c.source.nodeId == 'blob' and c.source.port == 'mask')
     before = session.payload()
-    with pytest.raises(ValueError, match='第二张图尚未支持'):
-        commands.bind(secondPage, second, overlay)
+    with pytest.raises(ValueError, match='at most two'):
+        commands.bind(page, third, mask)
     assert session.payload() == before
-    # Replacing the only image is supported; stale unused sources aren't counted.
     commands.delete(page, first)
-    commands.bind(secondPage, second, overlay)
+    limits = commands.bind(secondPage, second, overlay)
+    assert set(limits['rawBytesBySource'].values()) == {8 * 1024 * 1024}
+
+
+def testTwoInvocationScopesBindIndependentlyAndUndoTogether(tmp_path):
+    from emo_master.core.project.models import WorkflowNode
+    document = blank(tmp_path)
+    document.workflows['child'] = document.workflows['main'].model_copy(deep=True)
+    document.workflowOrder.append('child')
+    document.workflows['main'].nodes.append(WorkflowNode(nodeId='call-child', kind='subflow',
+                                                       targetWorkflowId='child'))
+    session = ProjectEditSession(document.model_dump())
+    one = session.presentation.createPage('root scope')
+    two = session.presentation.createPage('child scope')
+    commands = PageCommands(session, metadata())
+    first = commands.add(one, 'number', 0, 0)
+    second = commands.add(two, 'number', 0, 0)
+    choices = outputChoices(session.document(), metadata())
+    root = next(c for c in choices if c.source.nodeId == 'count' and not c.source.callPath)
+    child = next(c for c in choices if c.source.nodeId == 'count' and c.source.callPath)
+    commands.bind(one, first, root)
+    before = session.payload()
+    limits = commands.bind(two, second, child)
+    assert limits['scopeCount'] == 2
+    presentation = session.presentation.snapshot()
+    sourceIds = [presentation.pages[p].components[0].bindings['value'] for p in (one, two)]
+    assert presentation.dataSources[sourceIds[0]].resultScopeId != presentation.dataSources[sourceIds[1]].resultScopeId
+    assert presentation.dataSources[sourceIds[1]].callPath[0].nodeId == 'call-child'
+    assert session.undo()
+    assert session.payload() == before
+    assert session.redo()
+    assert commands.session.presentation.snapshot().pages[two].components[0].bindings

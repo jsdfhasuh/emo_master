@@ -1347,7 +1347,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.pageCoordinator = PageCoordinator(self, rootWidget)
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
 
-    def _capturePresentationForRun(self) -> bool:
+    def _capturePresentationForRun(self) -> bool | dict:
         """Explicit Run only: request capture without changing normal run semantics."""
         coordinator = self.pageCoordinator
         if coordinator is None:
@@ -1357,8 +1357,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if presentation is None:
             return False
         from emo_master.core.presentation.models import walkComponents
-        return any(component.bindings for page in presentation.pages.values()
-                   for component in walkComponents(page.components))
+        if not any(component.bindings for page in presentation.pages.values()
+                   for component in walkComponents(page.components)):
+            return False
+        from emo_master.core.presentation.capture_limits import normalCaptureLimits
+        return normalCaptureLimits(presentation)
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:

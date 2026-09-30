@@ -29,6 +29,7 @@ class DisplayHub(QObject):
         assertGuiThread()
         if len(self.windows) >= 2:
             raise ValueError("最多两个共享窗口")
+        window.setSimulationState(None)
         self.windows.add(window)
         self.timer.start()
         window.submit(self.session.readSnapshot())
@@ -44,7 +45,12 @@ class DisplayHub(QObject):
         # Application owner closes the borrowed session off the GUI thread.
 
     def image(self, scope, sourceId, pixels):
-        key = (scope.result.identity.resultKey, sourceId)
+        # Aliases share the same validated immutable asset; charge/convert it
+        # once rather than once per binding. Distinct assets remain distinct.
+        resultKey = scope.result.identity.resultKey
+        source = next((item for item in scope.result.sources if item.sourceId == sourceId), None)
+        asset = source.image if source is not None else None
+        key = (resultKey, 'asset', asset.resourceId, asset.sha256, asset.byteSize) if asset is not None else (resultKey, 'source', sourceId)
         if key in self.cache:
             self.cache.move_to_end(key)
             return self.cache[key]
@@ -88,6 +94,7 @@ class DisplayHub(QObject):
         token = (view.generation, view.connection, view.detail,
                  tuple((s, r.result.identity.resultKey) for s, r in view.scopes.items()),
                  tuple((s, r.identity.resultKey) for s, r in view.loading.items()), tuple(view.started.items()),
+                 tuple(getattr(view, 'expiredScopes', {}).items()),
                  tuple((ticket, self.session.pins().read(ticket).state) for ticket in self.pins.values()))
         if token == self.lastToken:
             return
@@ -136,6 +143,7 @@ class DisplayHub(QObject):
                 "pin_decoded_bytes": pins,
                 "pin_limit": 16 * 1024 * 1024, "conversion_scratch_limit": 8 * 1024 * 1024,
                 "window_surface_reserved": len(self.windows) * 16 * 1024 * 1024,
+                "window_surface_estimated_bytes": sum(window.surfaceBytes() for window in self.windows),
                 "table_bytes": sum(w.model.bytesHeld for window in self.windows for rows in window.widgets.values()
                                    for _c, w in rows.values() if isinstance(w, CollectionView)),
                 "table_limit": len(self.windows) * 8 * 1024 * 1024}

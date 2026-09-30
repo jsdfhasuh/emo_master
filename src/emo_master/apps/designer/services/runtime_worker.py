@@ -36,6 +36,7 @@ try:
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
             self.capturePresentation = capturePresentation
+            self.captureRequirements: dict = {}
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
             self.expectedRuntimeInstanceId = ""
@@ -128,6 +129,7 @@ except Exception:  # pragma: no cover
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
             self.capturePresentation = capturePresentation
+            self.captureRequirements: dict = {}
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
             self.expectedRuntimeInstanceId = ""
@@ -259,7 +261,15 @@ def _runWorker(worker: RuntimeWorker) -> None:
         # All negotiation/cleanup happens off the GUI thread and before Start.
         prepare = getattr(worker.runtimeClient, "prepareStart", None)
         if callable(prepare):
-            worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation)
+            requirements = getattr(worker, "captureRequirements", {})
+            if requirements:
+                parameters = inspect.signature(prepare).parameters
+                if "captureRequirements" not in parameters:
+                    raise ValueError("当前 Runtime 客户端不支持页面采集额度协商")
+                worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation,
+                    captureRequirements=requirements)
+            else:
+                worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation)
         elif worker.capturePresentation:
             raise ValueError("当前 Runtime 客户端不支持正常运行时页面采集")
         _releasePreviousCapture(worker)

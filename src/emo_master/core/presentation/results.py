@@ -105,7 +105,13 @@ class ClosedResult(FrozenModel):
         for source in self.sources:
             if source.image and source.image.ownerResultKey != self.identity.resultKey:
                 raise ValueError("asset must be owned by this result before closure")
-        if sum(source.image.byteSize for source in self.sources if source.image) > 16 * 1024 * 1024:
+        images: dict[str, ImageRef] = {}
+        for source in self.sources:
+            if source.image is not None:
+                previous = images.setdefault(source.image.resourceId, source.image)
+                if previous != source.image:
+                    raise ValueError("aliased image resource has inconsistent metadata")
+        if sum(image.byteSize for image in images.values()) > 16 * 1024 * 1024:
             raise ValueError("result image byte budget exceeded")
         return self
 

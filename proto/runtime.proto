@@ -412,7 +412,10 @@ service DisplayService {
   rpc DiscardPrepared(DisplayStartRequest) returns (DisplayEmpty);
 }
 message DisplayEmpty { string project_id = 1; }
-message DisplayCapabilities { string runtime_instance_id = 1; string protocol_version = 2; repeated string capabilities = 3; }
+message DisplayCapabilities {
+  string runtime_instance_id = 1; string protocol_version = 2; repeated string capabilities = 3;
+  string normal_capture_limits_json = 4;
+}
 message DisplayPrepareRequest { string project_json = 1; string resource_root = 2; map<string,string> site_values = 3; }
 message DisplayPrepared { string prepared_id = 1; string execution_revision = 2; string capture_plan_revision = 3; }
 message DisplayStartRequest { string prepared_id = 1; }
@@ -424,6 +427,7 @@ message DisplayJob {
   string start_request_id = 10; string sources_json = 11;
   string runtime_instance_id = 12; int64 accepted_at_ms = 13;
   bool resources_released = 14; string capture_definition_json = 15;
+  string capture_limits_json = 16;
 }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
 message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; bool replay = 4; }
@@ -452,6 +456,7 @@ message DisplaySnapshot {
   string runtime_instance_id = 1; string job_id = 2; uint64 cursor = 3;
   bool reset_required = 4; repeated DisplayResult results = 5;
   map<string,uint64> latest_started_ordinals = 6;
+  map<string,uint64> expired_scope_ordinals = 7;
 }
 message DisplayAssetRequest { string runtime_instance_id = 1; string job_id = 2; string resource_id = 3; uint32 ttl_ms = 4; }
 message DisplayAsset { bytes content = 1; string sha256 = 2; }

@@ -112,16 +112,18 @@ class PresentationService:
             return self._attach(jobId, frozen.sourceJson,
                 executionRevision=frozen.executionRevision,
                 capturePlanRevision=frozen.capturePlanRevision, mode="runtime",
-                captureDefinitionJson=frozen.captureDefinitionJson)
+                captureDefinitionJson=frozen.captureDefinitionJson, limitsJson=frozen.limitsJson)
 
     def _attach(self, jobId, sourceJson, *, executionRevision, capturePlanRevision,
-                mode, captureDefinitionJson, preparedId="", capture=True, measure=False):
+                mode, captureDefinitionJson, preparedId="", capture=True, measure=False, limitsJson=""):
         plan = json.loads(sourceJson)
         needsImage = any(source["expectedType"] == "image" for source in plan["sources"].values())
         if needsImage and self.exporter is None:
             self.exporter = ExportPool(self.root / "staging", self._exported)
         config = {"plan": sourceJson, "preparedId": preparedId,
                   "captureDefinitionJson": captureDefinitionJson,
+                  "limitsJson": limitsJson,
+                  "imageLaneBySource": json.loads(limitsJson).get("imageLaneBySource", {}) if limitsJson else {},
                   "credits": self.context.BoundedSemaphore(8), "queue": SharedMailbox(self.context),
                   "capture": capture, "measure": measure,
                   "versions": {key: definition.manifest.version
@@ -134,7 +136,9 @@ class PresentationService:
                       "capturePlanRevision": capturePlanRevision, "mode": mode}}
         if needsImage and self.exporter:
             used = {slot["index"] for active in self.jobs.values() for slot in active["slots"]}
-            config["slots"] = [next(slot for slot in self.exporter.descriptors() if slot["index"] not in used)]
+            index = next(slot["index"] for slot in self.exporter.slots if slot["index"] not in used)
+            laneCount = len(set(config["imageLaneBySource"].values())) or 1
+            config["slots"] = self.exporter.configureLanes(index, laneCount)
         self.jobs[jobId] = config
         self.timings[jobId] = deque(maxlen=128)
         reader = threading.Thread(target=self._read, args=(jobId, config), name=f"display-ipc-{jobId}")
@@ -164,11 +168,20 @@ class PresentationService:
             if event["eventType"] == "display.timing":
                 self.timings[jobId].append(event)
             elif event["eventType"] == "display.open":
-                self.store.begin(event["item"])
-                self.pending[event["item"]["identity"]["resultKey"]] = {"job": jobId, "exports": {}}
+                if self.store.begin(event["item"]):
+                    self.pending[event["item"]["identity"]["resultKey"]] = {"job": jobId, "exports": {}}
             elif event["eventType"] == "display.image":
                 if self.exporter is not None:
-                    self.exporter.submit(event["descriptor"])
+                    descriptor = event["descriptor"]
+                    config = self.jobs[jobId]
+                    if (descriptor["jobId"] != jobId
+                            or not any(slot["index"] == descriptor["slot"]
+                                and slot.get("lane", 0) == descriptor.get("lane", 0)
+                                for slot in config["slots"])
+                            or (config["imageLaneBySource"]
+                                and config["imageLaneBySource"].get(descriptor["sourceId"]) != descriptor.get("lane", 0))):
+                        raise ValueError("image descriptor does not belong to this Job/source lane")
+                    self.exporter.submit(descriptor)
             elif event["eventType"] == "display.seal":
                 pending = self.pending.get(event["key"])
                 if pending is not None and "seal" not in pending:
@@ -215,7 +228,9 @@ class PresentationService:
         self._retain()
 
     def _retain(self):
-        self.assets.retain({r.identity.resultKey for r in self.store.history} | set(self.pending))
+        self.assets.retain({r.identity.resultKey for r in self.store.history}
+                           | {r.identity.resultKey for r in self.store.latest.values()}
+                           | {r.identity.resultKey for _, r in self.store.events if r is not None} | set(self.pending))
 
     def _monitor(self):
         while not self.stop.wait(.02):
@@ -274,13 +289,8 @@ class PresentationService:
                         # killed atomic write can leave a >260-character file.
                         shutil.rmtree(_ioPath(workspace))
                 if config and self.exporter:
-                    for descriptor in config["slots"]:
-                        slot = self.exporter.slots[descriptor["index"]]
-                        if slot["busy"]:
-                            raise ValueError("export slot still owned")
-                        while slot["free"].acquire(False):
-                            pass
-                        slot["free"].release()
+                    for index in {descriptor["index"] for descriptor in config["slots"]}:
+                        self.exporter.releaseSlot(index)
                 self.jobs.pop(jobId, None)
                 self.timings.pop(jobId, None)
                 self.readers.pop(jobId, None)
@@ -290,10 +300,11 @@ class PresentationService:
                 self.store.history = type(self.store.history)(r for r in self.store.history if r.identity.jobId != jobId)
                 self.store.events = deque(((offset, result) for offset, result in self.store.events
                                            if result is None or result.identity.jobId != jobId), maxlen=32)
-                for table in (self.store.latest, self.store.high, self.store.closedHigh):
+                for table in (self.store.latest, self.store.high, self.store.closedHigh, self.store.expired):
                     for key in list(table):
                         if key[0] == jobId:
                             del table[key]
+                self.store.expiryResets.pop(jobId, None)
                 self._retain()
 
     def close(self):
@@ -338,6 +349,8 @@ class PresentationService:
         return dict(self.assets.stats(), open_results=len(self.store.open),
                     history_results=len(self.store.history),
                     history_bytes=sum(len(r.model_dump_json().encode()) for r in self.store.history),
+                    retained_metadata_bytes=self.store.metadataBytes(),
+                    latest_results=len(self.store.latest),
                     rejected=sum(c["rejected"].value for c in self.jobs.values()),
                     shared_capacity=sharedCapacity, export_reserved=exportReservation,
                     metadata_reserved=metadataReservation, read_reserved=readReservation,

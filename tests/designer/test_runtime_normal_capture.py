@@ -92,3 +92,30 @@ def testNoPageEmbeddedRunDoesNotProvisionDisplayResources(tmp_path):
         assert client._presentationServer is None
     finally:
         client.close()
+
+
+def testExtendedCaptureNegotiatesBeforeStartWithoutProvisioningRuntime():
+    import json
+    from types import SimpleNamespace
+    import pytest
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    from emo_master.core.presentation.capture_limits import normalCaptureProfile
+    caps = pb.DisplayCapabilities(runtime_instance_id="instance",
+        capabilities=["normal_start_capture", "start_request_lookup"])
+    client = RuntimeClient(SimpleNamespace())
+    client._displayService = SimpleNamespace(Capabilities=lambda request, timeout: caps)
+    dual = {"scopeCount": 2, "imageLaneBySource": {"original": 0, "overlay": 1}}
+    try:
+        # Existing one-image clients/servers retain their established capability.
+        assert client.prepareStart(True, captureRequirements={"scopeCount": 1,
+            "imageLaneBySource": {"image": 0}}) == "instance"
+        with pytest.raises(RuntimeClientError, match="未声明"):
+            client.prepareStart(True, captureRequirements=dual)
+        caps.capabilities.extend(["normal_multi_scope", "normal_two_image_lanes"])
+        with pytest.raises(RuntimeClientError, match="未声明"):
+            client.prepareStart(True, captureRequirements=dual)
+        caps.normal_capture_limits_json = json.dumps(normalCaptureProfile())
+        assert client.prepareStart(True, captureRequirements=dual) == "instance"
+        assert client._presentationServer is None
+    finally:
+        client.close()

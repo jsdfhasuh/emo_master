@@ -630,7 +630,7 @@ class RuntimeClient:
         # Do not trust an older endpoint to honor the additive filter field.
         return [job for job in reply.jobs if getattr(job, "project_id", "") == projectId]
 
-    def prepareStart(self, capturePresentation: bool = False) -> str:
+    def prepareStart(self, capturePresentation: bool = False, *, captureRequirements: dict | None = None) -> str:
         """Negotiate only on explicit Run; return a generation for start lookup."""
         with self._startLock:
             if self._closed or self._closing:
@@ -665,6 +665,21 @@ class RuntimeClient:
             supported = set(capabilities.capabilities)
             if capturePresentation and "normal_start_capture" not in supported:
                 raise RuntimeClientError("E_CAPTURE_UNSUPPORTED", "当前 Runtime 不支持正常运行时的页面采集")
+            if capturePresentation and captureRequirements:
+                images = len(set(captureRequirements.get("imageLaneBySource", {}).values()))
+                scopes = captureRequirements.get("scopeCount", 1)
+                required = ({"normal_two_image_lanes"} if images > 1 else set())
+                if scopes > 1:
+                    required.add("normal_multi_scope")
+                if required:
+                    from emo_master.core.presentation.capture_limits import normalCaptureProfile
+                    try:
+                        profile = json.loads(getattr(capabilities, "normal_capture_limits_json", ""))
+                    except (TypeError, ValueError):
+                        profile = None
+                    if not required.issubset(supported) or profile != normalCaptureProfile():
+                        raise RuntimeClientError("E_CAPTURE_PROFILE_UNSUPPORTED",
+                            "当前 Runtime 未声明此多图/多作用域采集额度；未创建任务")
             if "start_request_lookup" not in supported:
                 if capturePresentation:
                     raise RuntimeClientError("E_START_LOOKUP_UNSUPPORTED", "当前 Runtime 不支持启动请求核实")

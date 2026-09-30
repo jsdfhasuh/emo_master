@@ -5,6 +5,8 @@ import os
 from pathlib import Path
 import queue
 import threading
+import time
+from collections import deque
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -373,14 +375,30 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
     )
     events = []
     terminal = threading.Event()
+    # Bounded, test-only evidence distinguishes cold startup from an event gap.
+    # This sink observes persisted append completion; it does not poll or wait.
+    persisted = deque(maxlen=64)
+    delivered = deque(maxlen=64)
+    readerErrors = []
+    startedAt = time.perf_counter()
+    phases = {}
+
+    def observePersisted(event) -> None:
+        persisted.append({"event": event.eventType, "sequence": event.sequence,
+                          "elapsed_ms": (time.perf_counter() - startedAt) * 1000,
+                          "code": event.code})
+
+    service.eventStore.addSink(observePersisted)
     try:
         loaded = service.LoadProject(
             runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
         )
         assert loaded.ok is True
+        phases["start_call_ms"] = (time.perf_counter() - startedAt) * 1000
         started = service.StartJob(
             runtime_pb2.StartJobRequest(project_id=projectId), None
         )
+        phases["start_reply_ms"] = (time.perf_counter() - startedAt) * 1000
         assert started.ok is True
 
         stream = service.StreamJobEvents(
@@ -388,15 +406,54 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
         )
 
         def collectUntilTerminal() -> None:
-            for event in stream:
-                events.append(event)
-                if event.event_type in {"job.completed", "job.failed", "job.aborted"}:
-                    terminal.set()
-                    return
+            try:
+                for event in stream:
+                    events.append(event)
+                    delivered.append({"event": event.event_type, "sequence": event.sequence,
+                                      "elapsed_ms": (time.perf_counter() - startedAt) * 1000})
+                    if event.event_type in {"job.completed", "job.failed", "job.aborted"}:
+                        terminal.set()
+                        return
+            except BaseException as error:
+                readerErrors.append(repr(error))
+
+        def timeoutEvidence() -> str:
+            evidence = {"wait_seconds": 5, "phases": phases,
+                        "timeout_observed_ms": (time.perf_counter() - startedAt) * 1000, "reader_alive": reader.is_alive(),
+                        "reader_errors": readerErrors, "persisted": list(persisted),
+                        "delivered": list(delivered)}
+            # Diagnostic collection must not hang on the same lock as a fault.
+            supervisor = service.jobSupervisor
+            if supervisor._lock.acquire(timeout=.1):
+                try:
+                    handle = supervisor._handles.get(started.job_id)
+                    if handle:
+                        try:
+                            evidence["process"] = {"pid": handle[0].pid,
+                                                   "exit_code": handle[0].exitcode}
+                        except ValueError as error:
+                            evidence["process"] = {"disposed": str(error)}
+                    evidence["heartbeat_seen"] = started.job_id in supervisor._heartbeatSeen
+                    evidence["heartbeat_timeout_ms"] = supervisor._heartbeatTimeouts.get(started.job_id)
+                finally:
+                    supervisor._lock.release()
+            else:
+                evidence["supervisor_lock"] = "BUSY"
+            repository = service.jobRepository
+            if repository._lock.acquire(timeout=.1):
+                try:
+                    record = repository._jobs.get(started.job_id)
+                    evidence["job"] = vars(record).copy() if record else None
+                finally:
+                    repository._lock.release()
+            else:
+                evidence["repository_lock"] = "BUSY"
+            return json.dumps(evidence, sort_keys=True)
 
         reader = threading.Thread(target=collectUntilTerminal, daemon=True)
         reader.start()
-        assert terminal.wait(5)
+        phases["wait_begin_ms"] = (time.perf_counter() - startedAt) * 1000
+        assert terminal.wait(5), timeoutEvidence()
         reader.join(timeout=5)
         assert events[-1].event_type == "job.completed"
         bodyRuns = [
@@ -407,6 +464,7 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
         assert len(bodyRuns) == 2
         assert [json.loads(event.iteration_path_json) for event in bodyRuns] == [[0], [1]]
     finally:
+        service.eventStore.removeSink(observePersisted)
         service.close()
         window.close()
     assert application is not None

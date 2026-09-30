@@ -39,7 +39,7 @@ def testCollectionPagingSortingEmptyAndNewIdentity(qtApp):
     widget.close()
 
 
-@pytest.mark.parametrize('value,expected',[('false','不合格'),('true','合格'),('null','未映射判定值: null'),('"other"','未映射判定值: "other"')])
+@pytest.mark.parametrize('value,expected',[('false','不合格'),('true','合格'),('null','—'),('"other"','未映射判定值: "other"')])
 def testIndicatorOnlyUsesExplicitValueNeverComplete(qtApp,tmp_path,value,expected):
     config=sampleProjectP3(tmp_path).presentation
     component=next(c for c in config.pages['overview'].components if c.type=='number')

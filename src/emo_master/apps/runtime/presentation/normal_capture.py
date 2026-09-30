@@ -7,6 +7,7 @@ owned by RuntimeService.StartJob. No device or operator is executed here.
 from dataclasses import dataclass
 
 from emo_master.core.presentation.models import walkComponents
+from emo_master.core.presentation.capture_limits import normalCaptureLimits
 from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.snapshots import canonicalJson, captureDefinition, revisionOf, verifyResources
 
@@ -17,6 +18,7 @@ class NormalCapture:
     captureDefinitionJson: str
     capturePlanRevision: str
     executionRevision: str
+    limitsJson: str
 
 
 def freezeNormalCapture(document, registry, resourceRoot, workflowId):
@@ -38,15 +40,7 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId):
             for sourceId in component.bindings.values()}
     sources = {key: presentation.dataSources[key].model_dump() for key in sorted(used)}
     scopes = capture["scopes"]
-    # R3 first integration preserves the actual one-scope/one-image capability.
-    # Multi-source expansion requires backend budgets and end-to-end evidence.
-    if len(scopes) > 1:
-        raise ValueError("normal capture currently supports one result scope")
-    if len(sources) > 16:
-        raise ValueError("source budget exceeded (16)")
-    images = {canonicalJson(source) for source in sources.values() if source["expectedType"] == "image"}
-    if len(images) > 1:
-        raise ValueError("normal capture currently supports one image source")
+    limits = normalCaptureLimits(presentation)
     for sourceId, source in sources.items():
         scope = scopes[source["resultScopeId"]]
         if (source["kind"] not in {"node_output", "workflow_output"}
@@ -60,4 +54,5 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId):
                              for workflow in document.workflows.values() for node in workflow.nodes
                              if node.kind == "operator"}}
     return NormalCapture(canonicalJson({"sources": sources, "scopes": scopes}),
-                         canonicalJson(capture), revisionOf(capture), revisionOf(execution))
+                         canonicalJson(capture), revisionOf(capture), revisionOf(execution),
+                         canonicalJson(limits))

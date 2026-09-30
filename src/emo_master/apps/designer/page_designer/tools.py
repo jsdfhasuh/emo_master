@@ -9,10 +9,13 @@ from PySide2.QtWidgets import (
     QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog,
 )
 
-from emo_master.core.presentation.models import Props, Placement, Action
-from emo_master.core.presentation.validation import validateBindings
+from emo_master.core.presentation.models import Props, Placement
+from emo_master.core.presentation.catalog import buildOutputCatalog
+from emo_master.core.presentation.validation import validateBindings, pageScopes
 from emo_master.apps.designer.state.presentation_store import _component
 from .editing import PageCommands, manifestsFromCatalog, outputChoices
+from .property_adapters import (decodeIndicatorKey, indicatorStatesFromRows,
+                                tableFieldChoices, actionFromFields)
 
 MIME = 'application/x-emo-page-edit'
 
@@ -86,6 +89,28 @@ class EditingTools(QObject):
             self.form.addRow(label, field)
         self.destination = QComboBox()
         self.form.addRow('导航目标（稳定 ID）', self.destination)
+        self.actionMode = QComboBox()
+        for label, value in [('未配置', 'none'), ('跳转页面（实时）', 'navigate'),
+                ('查看已显示结果详情', 'detail'), ('冻结已显示结果', 'freeze'), ('恢复实时', 'resume_live')]:
+            self.actionMode.addItem(label, value)
+        self.form.addRow('只读按钮动作', self.actionMode)
+        self.actionScope = QComboBox()
+        self.form.addRow('已显示结果作用域', self.actionScope)
+        self.appearance = {}
+        for name, label, choices in [
+            ('fontFamily', '字体', [('系统字体', 'system'), ('无衬线', 'sans'), ('衬线', 'serif'), ('等宽', 'monospace')]),
+            ('fontWeight', '字重', [('常规', 'normal'), ('粗体', 'bold')]),
+            ('textColor', '文字颜色', [('默认', 'default'), ('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber')]),
+            ('cardStyle', '卡片样式', [('白底', 'plain'), ('浅色', 'soft'), ('轮廓', 'outlined')])]:
+            combo = QComboBox()
+            for title, value in choices:
+                combo.addItem(title, value)
+            self.appearance[name] = combo
+            self.form.addRow(label, combo)
+        self.fields['fontSize'] = QSpinBox()
+        self.fields['fontSize'].setRange(0, 48)
+        self.fields['fontSize'].setSpecialValueText('自动')
+        self.form.addRow('字号（自动或8—48像素）', self.fields['fontSize'])
         self.binding = QComboBox()
         self.binding.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.binding.setMinimumContentsLength(10)
@@ -96,17 +121,32 @@ class EditingTools(QObject):
             button = QPushButton(label)
             button.clicked.connect(lambda _checked=False, command=fn: self.w.run(command))
             self.form.addRow(button)
-        self.extra = QTableWidget(0, 3)
-        self.extra.setHorizontalHeaderLabels(['值/列标题', '文字/字段路径', '颜色'])
+        self.extra = QTableWidget(0, 4)
+        self.extra.setHorizontalHeaderLabels(['类型/列标题', '值/字段', '显示文字', '颜色'])
         self.extra.setMaximumHeight(170)
         self.form.addRow('表格列 / 判定映射（最多16）', self.extra)
         add = QPushButton('增加列 / 映射')
-        add.clicked.connect(lambda: self.extra.insertRow(self.extra.rowCount()) if self.extra.rowCount() < 16 else None)
+        add.clicked.connect(self.addExtraRow)
         self.form.addRow(add)
+        remove = QPushButton('删除所选列 / 映射')
+        remove.clicked.connect(lambda: self.extra.removeRow(self.extra.currentRow()) if self.extra.currentRow() >= 0 else None)
+        self.form.addRow(remove)
+        self.fieldHint = QLabel('已知 Blob / Detection 字段可选择；未知结构不自动推断')
+        self.fieldHint.setWordWrap(True)
+        self.form.addRow(self.fieldHint)
         self.preview = QPushButton('切换为模拟预览')
         self.preview.setCheckable(True)
         self.preview.toggled.connect(self.previewMode)
         self.form.addRow(self.preview)
+        self.simulation = QComboBox()
+        for label, value in [('布局（无示例值）', None), ('模拟 OK', 'OK'), ('模拟 NG', 'NG'),
+                             ('模拟等待', 'WAITING'), ('模拟错误', 'ERROR')]:
+            self.simulation.addItem(label, value)
+        self.simulation.currentIndexChanged.connect(lambda _index: self.changeSimulation())
+        self.form.addRow('离线状态（不读写Runtime）', self.simulation)
+        self.captureNotice = QLabel()
+        self.captureNotice.setWordWrap(True)
+        self.form.addRow('正常运行采集预算', self.captureNotice)
         for text, command in [('登记本地输入图片', self.importInput),
                 ('明确开始隔离草稿调试', workspace.coordinator.preview.startDebug),
                 ('观看当前工程任务', workspace.coordinator.preview.watchCurrent),
@@ -133,20 +173,33 @@ class EditingTools(QObject):
         self.binding.clear()
         groups = {}
         nodes = {}
+        document = self.w.session.document()
+        def friendly(node):
+            manifest = manifests.get(node.operatorId)
+            fallback = manifest.displayName if manifest else {'subflow': '子流程调用', 'loop': '循环调用'}.get(node.kind, '节点')
+            return node.displayName or fallback + ' [' + node.nodeId[:8] + ']'
         for index, choice in enumerate(self.choices):
             address = (choice.source.workflowId, tuple((step.nodeId, step.relation) for step in choice.source.callPath))
             if address not in groups:
-                path = '/'.join(step.nodeId + ':' + step.relation for step in choice.source.callPath) or '入口'
-                group = QTreeWidgetItem([self.w.session.document().workflows[choice.source.workflowId].name + ' · ' + path])
+                names = []
+                current = document.entryWorkflowId
+                for step in choice.source.callPath:
+                    caller = next((node for node in document.workflows[current].nodes if node.nodeId == step.nodeId), None)
+                    names.append((friendly(caller) if caller else step.nodeId) + ' [' + step.nodeId[:8] + '] · ' + step.relation)
+                    if caller:
+                        current = caller.targetWorkflowId if step.relation == 'subflow' else caller.loop.get(
+                            'bodyWorkflowId' if step.relation == 'loop_body' else 'conditionWorkflowId')
+                path = ' / '.join(names) or '入口'
+                group = QTreeWidgetItem([document.workflows[choice.source.workflowId].name + ' · ' + path])
+                group.setToolTip(0, '/'.join(step.nodeId + ':' + step.relation for step in choice.source.callPath) or document.entryWorkflowId)
                 group.setFlags(group.flags() & ~Qt.ItemIsDragEnabled)
                 self.outputs.addTopLevelItem(group)
                 groups[address] = group
             nodeAddress = (address, choice.source.nodeId)
             if nodeAddress not in nodes:
-                document = self.w.session.document()
                 instance = next((node for node in document.workflows[choice.source.workflowId].nodes
                                  if node.nodeId == choice.source.nodeId), None)
-                name = (instance.displayName or instance.nodeId) if instance else '工作流出口'
+                name = friendly(instance) if instance else '工作流出口'
                 node = QTreeWidgetItem([name])
                 node.setToolTip(0, choice.source.nodeId or choice.source.workflowId)
                 node.setFlags(node.flags() & ~Qt.ItemIsDragEnabled)
@@ -157,9 +210,19 @@ class EditingTools(QObject):
             item.setData(0, Qt.UserRole, index)
             item.setToolTip(0, choice.title + '\n' + choice.hint)
             nodes[nodeAddress].addChild(item)
-            self.binding.addItem(choice.title, index)
+            readable = groups[address].text(0) + ' / ' + nodes[nodeAddress].text(0) + ' / ' + item.text(0)
+            self.binding.addItem(readable, index)
             self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
         self.outputs.expandAll()
+        from emo_master.core.presentation.capture_limits import normalCaptureLimits
+        try:
+            limits = normalCaptureLimits(self.w.store.snapshot())
+            lanes = len(set(limits['imageLaneBySource'].values()))
+            self.captureNotice.setText(('双图：两个来源各限4 MiB（原单图额度8 MiB将同时降为4 MiB）' if lanes == 2 else
+                '单图来源上限8 MiB' if lanes else '尚无图像来源') +
+                '；不隐式缩放，超额明确不可用。实际来源尺寸/现场屏幕尚待确认；新来源仅下一次明确运行生效。')
+        except (KeyError, ValueError) as error:
+            self.captureNotice.setText('采集配置不可用：' + str(error))
         problems = validateBindings(self.w.session.document(), manifests)
         if problems:
             self.w.message.setText('\n'.join(f'{p.path}: {p.message}' for p in problems[:8]))
@@ -194,15 +257,85 @@ class EditingTools(QObject):
     def previewMode(self, preview):
         self.w.renderer.editing = not preview
         self.preview.setText('返回编辑模式' if preview else '切换为模拟预览')
-        self.w.renderer.banner.setText('实时只读预览' if self.w.renderer.hub else '模拟布局预览 · 无模拟业务值 · 不运行设备')
+        self.changeSimulation()
         self.install()
+
+    def changeSimulation(self):
+        renderer = self.w.renderer
+        if renderer.hub or renderer.captureCoverage is not None:
+            if self.simulation.currentData() is not None:
+                self.w.message.setText('请先断开任务观察，再使用离线模拟')
+            self.simulation.blockSignals(True)
+            self.simulation.setCurrentIndex(0)
+            self.simulation.blockSignals(False)
+            return
+        renderer.setSimulationState(self.simulation.currentData() if self.preview.isChecked() else None)
+        if not self.preview.isChecked():
+            renderer.banner.setText('编辑模式 · 不运行设备；选择交互预览后可切换离线示例状态')
+
+    def _cellValue(self, row, column):
+        widget = self.extra.cellWidget(row, column)
+        if isinstance(widget, QComboBox):
+            return widget.currentData()
+        item = self.extra.item(row, column)
+        return item.text() if item else ''
+
+    def _tableChoices(self):
+        item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
+        source = self.w.store.snapshot().dataSources.get(item.bindings.get('rows'))
+        if source is None:
+            raise ValueError('先绑定已知集合输出，再选择表格字段')
+        return tableFieldChoices(source, buildOutputCatalog(self.w.session.document(), self.commands().manifests))
+
+    def addExtraRow(self, _checked=False, *, values=None):
+        if self.extra.rowCount() >= 16 or not self.selected:
+            return
+        item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
+        row = self.extra.rowCount()
+        if item.type == 'indicator':
+            kind, value, label, color = values or ('boolean', 'true', 'OK', 'green')
+            self.extra.insertRow(row)
+            types = QComboBox()
+            types.addItem('布尔', 'boolean')
+            types.addItem('文字', 'string')
+            types.setCurrentIndex(types.findData(kind))
+            self.extra.setCellWidget(row, 0, types)
+            self.extra.setItem(row, 1, QTableWidgetItem(str(value).lower() if type(value) is bool else value))
+            self.extra.setItem(row, 2, QTableWidgetItem(label))
+            colors = QComboBox()
+            for title, key in [('中性', 'neutral'), ('绿', 'green'), ('红', 'red'), ('琥珀', 'amber')]:
+                colors.addItem(title, key)
+            colors.setCurrentIndex(colors.findData(color))
+            self.extra.setCellWidget(row, 3, colors)
+        elif item.type == 'table':
+            try:
+                choices = self._tableChoices()
+                self.fieldHint.setText('字段来自受信任输出契约；集合投影不自动取第一项')
+            except ValueError as error:
+                self.fieldHint.setText(str(error))
+                if values is None:
+                    return
+                choices = []
+            title, path = values or (choices[0].title, tuple(choices[0].fieldPath))
+            self.extra.insertRow(row)
+            self.extra.setItem(row, 0, QTableWidgetItem(title))
+            fields = QComboBox()
+            for choice in choices:
+                fields.addItem(choice.title, tuple(choice.fieldPath))
+            # Qt's QVariant matching does not compare Python tuple payloads.
+            index = next((i for i in range(fields.count()) if fields.itemData(i) == tuple(path)), -1)
+            if index < 0:
+                fields.addItem('已有字段（保留）: ' + '.'.join(path), tuple(path))
+                index = fields.count() - 1
+            fields.setCurrentIndex(index)
+            self.extra.setCellWidget(row, 1, fields)
 
     def _fieldState(self):
         values = tuple((name, field.text() if isinstance(field, QLineEdit) else field.value())
                        for name, field in self.fields.items())
-        rows = tuple(tuple(self.extra.item(r, c).text() if self.extra.item(r, c) else ''
-                           for c in range(3)) for r in range(self.extra.rowCount()))
-        return values, self.destination.currentData(), rows
+        rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
+        return (values, self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
+                tuple((name, field.currentData()) for name, field in self.appearance.items()), rows)
 
     def commitPending(self):
         """Save the visible form first; invalid input stays visible and blocks leaving."""
@@ -239,21 +372,36 @@ class EditingTools(QObject):
             self.fields[name].setText(getattr(component.props, name))
         for name in ['row', 'column', 'rowSpan', 'columnSpan']:
             self.fields[name].setValue(getattr(component.layout, name))
-        for name in ['decimals', 'pageSize']:
+        for name in ['decimals', 'pageSize', 'fontSize']:
             self.fields[name].setValue(getattr(component.props, name))
+        for name, field in self.appearance.items():
+            field.setCurrentIndex(field.findData(getattr(component.props, name)))
         self.fields['columns'].setValue(component.grid.columns if component.type == 'container'
                                        else self.w.store.snapshot().pages[self.w.pageId].layout.columns)
         action = component.actions.get('clicked')
         self.destination.setCurrentIndex(max(0, self.destination.findData(action.pageId if action else None)))
-        self.destination.setEnabled(component.type == 'navigation_button' and (action is None or action.type == 'navigate'))
+        self.destination.setEnabled(component.type == 'navigation_button')
+        self.actionMode.setEnabled(component.type == 'navigation_button')
+        mode = 'none' if action is None else 'detail' if action.type == 'navigate' and action.context == 'displayed_result' else action.type
+        self.actionMode.setCurrentIndex(self.actionMode.findData(mode))
+        self.actionScope.clear()
+        self.actionScope.addItem('未选择', None)
+        p = self.w.store.snapshot()
+        for key in sorted(pageScopes(p, self.w.pageId)):
+            scope = p.resultScopes.get(key)
+            if scope is None:
+                self.actionScope.addItem('来源作用域缺失 · ' + key, key)
+                continue
+            workflow = self.w.session.document().workflows.get(scope.scopeWorkflowId)
+            self.actionScope.addItem((workflow.name if workflow else scope.scopeWorkflowId) + ' · ' + key, key)
+        self.actionScope.setCurrentIndex(max(0, self.actionScope.findData(action.resultScopeId if action else None)))
+        self.actionScope.setEnabled(component.type == 'navigation_button')
         self.extra.setRowCount(0)
-        data = [(c.title, '.'.join(c.fieldPath), '') for c in component.props.columns] if component.type == 'table' else [
-            (key, style.text, style.color) for key, style in component.props.indicatorStates.items()]
+        self.extra.setHorizontalHeaderLabels(['列标题', '选择字段', '', ''] if component.type == 'table' else ['类型', '值（布尔填true/false）', '显示文字', '颜色'])
+        data = [(c.title, tuple(c.fieldPath)) for c in component.props.columns] if component.type == 'table' else [
+            (*decodeIndicatorKey(key), style.text, style.color) for key, style in component.props.indicatorStates.items()]
         for row in data:
-            index = self.extra.rowCount()
-            self.extra.insertRow(index)
-            for col, value in enumerate(row):
-                self.extra.setItem(index, col, QTableWidgetItem(value))
+            self.addExtraRow(values=row)
         self._loadedPage = self.w.pageId
         self._loadedFields = self._fieldState()
 
@@ -268,34 +416,34 @@ class EditingTools(QObject):
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         props = item.props.model_dump()
         props.update({key: self.fields[key].text() for key in ['title', 'text', 'emptyText', 'unit']})
-        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize']})
-        rows = [[self.extra.item(r, c).text() if self.extra.item(r, c) else '' for c in range(3)]
+        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize', 'fontSize']})
+        props.update({key: field.currentData() for key, field in self.appearance.items()})
+        rows = [[self._cellValue(r, c) for c in range(4)]
                 for r in range(self.extra.rowCount())]
         if item.type == 'table':
-            props['columns'] = [{'title': title, 'fieldPath': path.split('.') if path else []}
-                                for title, path, _ in rows if title]
+            if any(not isinstance(path, (list, tuple)) for _, path, _, _ in rows):
+                raise ValueError('请选择已知表格字段；未知结构不能自动推断')
+            props['columns'] = [{'title': title, 'fieldPath': list(path)} for title, path, _, _ in rows]
         if item.type == 'indicator':
-            props['indicatorStates'] = {key: {'text': label, 'color': color or 'neutral'} for key, label, color in rows if key}
+            props['indicatorStates'] = indicatorStatesFromRows(rows)
         layout = Placement(**{key: self.fields[key].value() for key in ['row', 'column', 'rowSpan', 'columnSpan']})
         actions = item.actions
         if item.type == 'navigation_button':
-            target = self.destination.currentData()
-            previous = item.actions.get('clicked')
-            if previous is None or previous.type == 'navigate':
-                if target:
-                    action = previous.model_copy(deep=True) if previous else Action(type='navigate', pageId=target)
-                    action.pageId = target
-                    actions = {'clicked': action}
-                else:
-                    actions = {}
+            mode = self.actionMode.currentData()
+            action = actionFromFields(self.w.store.snapshot(), self.w.pageId, mode,
+                targetPageId=self.destination.currentData() if mode in ('navigate', 'detail') else None,
+                resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None)
+            actions = {'clicked': action} if action else {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
             actions=actions, columns=columns)
         self._loadedFields = self._fieldState()
 
     def bindChoice(self, index, key):
         choice = self.choices[index]
-        self.commands().bind(self.w.pageId, key, choice)
-        self.w.message.setText((choice.hint + '\n' if choice.hint else '') + '绑定已保存；新来源在下一次明确运行 / 隔离调试时生效')
+        limits = self.commands().bind(self.w.pageId, key, choice)
+        dual = len(set(limits['imageLaneBySource'].values())) == 2
+        notice = '双图来源各限4 MiB；原8 MiB单图额度将降为4 MiB，不缩放，超额不可用。' if dual else ''
+        self.w.message.setText((choice.hint + '\n' if choice.hint else '') + notice + '绑定已保存；新来源在下一次明确运行生效；隔离调试保留其专用限制')
 
     def bindSelected(self):
         if self.selected and self.binding.currentIndex() >= 0:

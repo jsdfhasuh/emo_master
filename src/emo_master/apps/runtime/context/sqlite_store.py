@@ -4,6 +4,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 import json
 import sqlite3
+import threading
 import time
 
 from emo_master.apps.runtime.context.global_counters import (
@@ -22,6 +23,52 @@ class SqliteStore:
     def __init__(self, dbPath: Path) -> None:
         self.dbPath = dbPath
         self.dbPath.parent.mkdir(parents=True, exist_ok=True)
+        self._idleConnection: sqlite3.Connection | None = None
+        self._idleConnectionReady = False
+        self._idleConnectionLock = threading.Lock()
+
+    def retainIdleConnection(self) -> None:
+        """Keep WAL open for one explicit Runtime owner, without a transaction.
+
+        Writers still use their own connections and durable per-event commits.
+        Standalone stores do not acquire this resource implicitly.
+        """
+        with self._idleConnectionLock:
+            if self._idleConnection is not None:
+                if self._idleConnectionReady:
+                    return
+                # A previous failed acquisition could not close its handle.
+                # Retire that owner before allocating another connection.
+                self._idleConnection.close()
+                self._idleConnection = None
+            connection = sqlite3.connect(self.dbPath, timeout=5.0, check_same_thread=False)
+            self._idleConnection = connection
+            try:
+                _configureConnection(connection)
+                cursor = connection.execute("SELECT count(*) FROM sqlite_master")
+                try:
+                    cursor.fetchone()
+                finally:
+                    cursor.close()
+            except BaseException as error:
+                try:
+                    connection.close()
+                except BaseException as closeError:
+                    raise RuntimeError(
+                        "Idle connection initialization failed and cleanup is incomplete "
+                        f"({type(closeError).__name__}); release or retry the retained owner"
+                    ) from error
+                self._idleConnection = None
+                raise
+            self._idleConnectionReady = True
+
+    def releaseIdleConnection(self) -> None:
+        """Release only after Runtime producers retire; failed closes can retry."""
+        with self._idleConnectionLock:
+            if self._idleConnection is not None:
+                self._idleConnection.close()
+                self._idleConnection = None
+                self._idleConnectionReady = False
 
     def initialize(self) -> None:
         connection = self._connect()
@@ -550,9 +597,13 @@ class SqliteStore:
 
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.dbPath, timeout=5.0)
-        connection.execute("PRAGMA busy_timeout=5000")
-        connection.execute("PRAGMA journal_mode=WAL")
+        _configureConnection(connection)
         return connection
+
+
+def _configureConnection(connection: sqlite3.Connection) -> None:
+    connection.execute("PRAGMA busy_timeout=5000")
+    connection.execute("PRAGMA journal_mode=WAL")
 
 
 def _utcNow() -> str:

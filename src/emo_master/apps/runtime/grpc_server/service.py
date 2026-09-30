@@ -165,6 +165,13 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         # Bounded admission is reset only by a new Runtime generation.
         self._startRequests: dict[str, tuple[str, object]] = {}
         self._jobStartRequestIds: dict[str, str] = {}
+        # Open only after the Runtime's owners are fully initialized, so a
+        # failed acquisition can use the normal, retryable shutdown path.
+        try:
+            self.sqliteStore.retainIdleConnection()
+        except BaseException:
+            self.close()
+            raise
 
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
@@ -1100,11 +1107,15 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             writerError = self.operationalLogWriter.close(timeoutSeconds=3.0)
             if writerError:
                 self._recordLogFileFailure(None, writerError)
+                raise RuntimeError(writerError)
             if self._maintenanceThread.is_alive():
                 self._maintenanceThread.join(timeout=1.0)
+                if self._maintenanceThread.is_alive():
+                    raise RuntimeError("Runtime maintenance still owns persistence; shutdown is incomplete")
             for jobId in list(self._workspacePaths):
                 self._removeWorkspace(jobId)
             self._cleanupStaleWorkspaces()
+            self.sqliteStore.releaseIdleConnection()
             self._closed = True
         finally:
             if self._closed:

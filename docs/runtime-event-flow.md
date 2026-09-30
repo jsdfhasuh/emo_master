@@ -116,3 +116,14 @@ SQLite 或 JSONL。Dock 状态、列宽和筛选条件保存在本机 QSettings�
 
 Runtime 的 `node.log` 来源标记为 `runtime`；Designer 自身和 `EditorContext.log()` 分别标记为
 `designer`、`editor`，只保留在当前 Designer 会话中。
+
+### Runtime 的空闲 SQLite 连接所有权
+
+Runtime 初始化完成后明确取得一个无事务的空闲连接，使正常每事件写连接关闭时，
+数据库仍有一个所属连接。每事件独立连接、事务、commit、WAL及busy timeout不变；
+不共享writer，也不把正式事件批量丢弃或提前标为终态。独立SqliteStore默认不取得它。
+
+空闲连接可以在实际关闭线程释放，取得/归还有单独锁，不参与写事务串行化。取得后
+先登记句柄，配置或读取失败时尝试关闭；失败清理保留未就绪所有权及原原因，下一次
+取得先处理旧句柄。Runtime只有在Job、日志writer及维护线程退出后才归还此连接，
+关闭失败保留所有权和数据目录锁以允许重试，不用终态标签替代资源实际退休。

@@ -146,11 +146,18 @@ def testIndependentHeadlessConsumerStillDecodesWithNoGuiInterest(tmp_path, monke
         gui = DisplaySession(backend.address, backend.jobId, imageDemand=True)
         headless = DisplaySession(backend.address, backend.jobId)
         try:
-            until(lambda: latest(gui) and latest(headless) and latest(headless).result.identity.resultOrdinal == 3)
+            def finalScopes():
+                scopes = latest(gui), latest(headless)
+                # Independent subscribers can commit the final metadata at
+                # different times even when the headless image is ready first.
+                return scopes if all(scope and scope.result.identity.resultOrdinal == 3 for scope in scopes) else None
+            guiScope, headlessScope = until(finalScopes)
             assert headless.stats['decoded'] == 3
-            assert gui.stats['decoded'] == 0 and not latest(gui).images
-            assert latest(headless).images['image'].shape == (120, 160, 3)
-            assert latest(gui).result == latest(headless).result
+            assert gui._wantedImages == frozenset()
+            assert gui.stats['decoded'] == 0 and not guiScope.images
+            assert backend.calls['ReadAsset'] == 3
+            assert headlessScope.images['image'].shape == (120, 160, 3)
+            assert guiScope.result == headlessScope.result
             assert len(backend.presentation.jobs) == 1
         finally:
             gui.close()

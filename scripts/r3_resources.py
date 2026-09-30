@@ -4,7 +4,8 @@ from pathlib import Path
 import threading
 
 
-def resources(pid=None):
+def resources(pid=None, *, includeThreadIds=False):
+    """Sample counters, optionally including the native thread ID inventory."""
     pid = pid or os.getpid()
     if os.name == "nt":
         from scripts.p2_resources import resources as windowsResources
@@ -31,10 +32,19 @@ def resources(pid=None):
             entry = ThreadEntry()
             entry.size = ctypes.sizeof(entry)
             count = 0
+            if includeThreadIds:
+                threadIds = []
             available = kernel.Thread32First(snapshot, ctypes.byref(entry))
             while available:
                 count += int(entry.owner == pid)
+                if includeThreadIds and entry.owner == pid:
+                    threadIds.append(entry.thread)
                 available = kernel.Thread32Next(snapshot, ctypes.byref(entry))
+            if includeThreadIds:
+                # Thread32First/Next report ERROR_NO_MORE_FILES at a normal end.
+                error = ctypes.get_last_error()
+                if error != 18:
+                    raise ctypes.WinError(error)
             result["native_threads"] = count
         finally:
             kernel.CloseHandle(snapshot)
@@ -48,9 +58,14 @@ def resources(pid=None):
                   "handle_kind": "file descriptors",
                   "native_threads": int(status["Threads"]),
                   "cpu_seconds": (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")}
+        if includeThreadIds:
+            threadIds = [int(task.name) for task in (root / "task").iterdir()]
     else:
         return {"status": "NOT_RUN", "reason": "native sampler supports Windows and Linux only", "pid": pid}
     result.update(pid=pid, status="OBSERVED")
+    if includeThreadIds:
+        result["native_thread_ids"] = sorted(threadIds)
+        result["native_threads"] = len(threadIds)
     if pid == os.getpid():
         result["python_threads"] = threading.active_count()
     return result

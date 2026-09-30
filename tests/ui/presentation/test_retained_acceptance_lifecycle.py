@@ -5,10 +5,12 @@ This is not the original 0/1/2-observer performance or long-soak acceptance.
 The fake session owns a real thread and file handle, but does no RPC/decode.
 """
 from dataclasses import replace
+import os
 import threading
 from types import MappingProxyType
 
 import numpy as np
+import pytest
 import shiboken2
 from PySide2.QtCore import QCoreApplication, QEvent, Qt
 from PySide2.QtTest import QTest
@@ -94,10 +96,84 @@ class OwnedReadOnlyFixture:
 
 
 def nativeCounts(app):
-    snapshot = resources()
+    snapshot = resources(includeThreadIds=True)
     assert snapshot["status"] == "OBSERVED", snapshot
-    return {key: snapshot[key] for key in ("handles", "native_threads", "python_threads")} | {
+    assert threading.get_native_id() in snapshot["native_thread_ids"], snapshot
+    pythonThreads = frozenset(threading.enumerate())
+    return {key: snapshot[key] for key in ("handles", "native_threads")} | {
+        "native_thread_ids": frozenset(snapshot["native_thread_ids"]),
+        "python_threads": len(pythonThreads), "python_thread_objects": pythonThreads,
         "widgets": len(app.allWidgets()), "windows": len(app.allWindows())}
+
+
+def assertNoNewThreads(before, after):
+    # Background threads may retire, but their exits must not hide a new owner.
+    for key in ("native_thread_ids", "python_thread_objects"):
+        assert after[key] <= before[key], (key, after[key] - before[key])
+    for key in ("native_threads", "python_threads"):
+        assert after[key] <= before[key], (key, before, after)
+
+
+def assertStableOwners(app, before, session, owners):
+    after = nativeCounts(app)
+    # Other tests' background owners may finish during these cycles. Their
+    # process-wide handle reclamation is allowed; our file is checked below.
+    assert after["handles"] <= before["handles"], ("handles", before, after)
+    for key in ("widgets", "windows"):
+        assert after[key] == before[key], (key, before, after)
+    assertNoNewThreads(before, after)
+    thread, threadId, handle, descriptor = owners
+    assert session.thread is thread and thread.is_alive()
+    assert thread.native_id == threadId and threadId in after["native_thread_ids"]
+    assert thread in after["python_thread_objects"]
+    assert session.handle is handle and not handle.closed
+    assert handle.fileno() == descriptor
+    os.fstat(descriptor)  # The owned OS handle must still be valid.
+    assert not session.closed and session.closeCalls == 0
+
+
+def testBackgroundHandleRetirementKeepsOwnedResourceChecks(tmp_path, monkeypatch):
+    from types import SimpleNamespace
+    thread = threading.current_thread()
+    before = {"handles": 10, "widgets": 5, "windows": 1, "native_threads": 1,
+              "python_threads": 1, "native_thread_ids": frozenset((thread.native_id,)),
+              "python_thread_objects": frozenset((thread,))}
+    after = dict(before, handles=9)
+    monkeypatch.setattr(__import__(__name__, fromlist=["nativeCounts"]), "nativeCounts", lambda _app: after)
+    with (tmp_path / "owned.bin").open("w+b") as handle:
+        session = SimpleNamespace(thread=thread, handle=handle, closed=False, closeCalls=0)
+        owners = (thread, thread.native_id, handle, handle.fileno())
+        assertStableOwners(None, before, session, owners)
+        after["widgets"] = 6
+        with pytest.raises(AssertionError, match="widgets"):
+            assertStableOwners(None, before, session, owners)
+        after.update(widgets=5, handles=11)
+        with pytest.raises(AssertionError, match="handles"):
+            assertStableOwners(None, before, session, owners)
+        after["handles"] = 9
+        session.closed = True
+        with pytest.raises(AssertionError):
+            assertStableOwners(None, before, session, owners)
+
+
+@pytest.mark.parametrize("replaced", ("native_thread_ids", "python_thread_objects"))
+def testThreadRetirementCannotMaskNewOwnerWithLowerCount(replaced):
+    main, retired, replacement = (threading.Thread() for _ in range(3))
+    before = {"native_thread_ids": frozenset((1, 2, 3)),
+              "python_thread_objects": frozenset((main, retired)),
+              "native_threads": 3, "python_threads": 2}
+    after = {"native_thread_ids": frozenset((1,)),
+             "python_thread_objects": frozenset((main,)),
+             "native_threads": 1, "python_threads": 1}
+    assertNoNewThreads(before, after)  # Retirement alone is allowed.
+    if replaced == "native_thread_ids":
+        after.update(native_thread_ids=frozenset((1, 4)), native_threads=2)
+    else:
+        after["python_thread_objects"] = frozenset((replacement,))
+    assert after["native_threads"] < before["native_threads"]
+    assert after["python_threads"] < before["python_threads"]
+    with pytest.raises(AssertionError, match=replaced):
+        assertNoNewThreads(before, after)
 
 
 def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_path):
@@ -141,6 +217,8 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
         before = nativeCounts(qtApp)
         sessionThread = session.thread.native_id
         handle = session.handle.fileno()
+        owners = (session.thread, sessionThread, session.handle, handle)
+        assertStableOwners(qtApp, before, session, owners)
         for index in range(1000):
             oldPages = dict(window.pages)
             target = config.pageOrder[index % 5]
@@ -166,7 +244,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
                         elif isinstance(widget, CollectionView):
                             assert widget.model.rowCount() == 0
             if index % 100 == 99:
-                assert nativeCounts(qtApp) == before
+                assertStableOwners(qtApp, before, session, owners)
         for _ in range(30):
             floating = RuntimePages(config, hub=hub)
             floating.show()
@@ -177,7 +255,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
             drainDeletes(qtApp)
             assert not shiboken2.isValid(floating)
             assert hub.windows == {window}
-            assert nativeCounts(qtApp) == before
+            assertStableOwners(qtApp, before, session, owners)
         # Hide all observers, advance the fake source, and prove no Qt conversion.
         window.hide()
         converted = hub.conversions
@@ -192,6 +270,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
         assert not window.displayed and hub.conversions == converted == 1
         assert session.thread.native_id == sessionThread and session.handle.fileno() == handle
         assert session.closeCalls == 0
+        assertStableOwners(qtApp, before, session, owners)
     finally:
         window.close()
         window.deleteLater()
@@ -203,6 +282,11 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     assert set(qtApp.allWindows()) == existingWindows
     assert session.closeCalls == 1 and session.handle.closed and not session.thread.is_alive()
     after = nativeCounts(qtApp)
+    assertNoNewThreads(baseline, after)
+    assert sessionThread not in after["native_thread_ids"]
+    assert session.thread not in after["python_thread_objects"]
+    with pytest.raises(OSError):
+        os.fstat(handle)
     # All owned thread/handle resources retired, not merely Python references.
     for key in ("handles", "native_threads", "python_threads"):
         # Baseline included the now-destroyed main window's platform resources.

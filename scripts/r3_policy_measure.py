@@ -8,6 +8,7 @@ additional evidence, never a replacement or denominator filter for that verdict.
 """
 import argparse
 from collections import Counter
+from contextlib import nullcontext
 import hashlib
 import json
 import os
@@ -444,6 +445,11 @@ def executeTrial(args):
     observed = {}
     overflow = [0]
     result = None
+    assetTrace = None
+    assetTraceSummary = None
+    if getattr(args, "asset_split_trace", False):
+        from scripts.r3_asset_split_trace import AssetSplitTrace, installed
+        assetTrace = AssetSplitTrace()
     try:
         with base.patches() as patch:
             patch(supervisor, "runJobProcess", measuredJob)
@@ -472,10 +478,18 @@ def executeTrial(args):
             base.wrap(base.OWNER_TRACE, patch, RuntimePages, "submit", "gui.apply", base.guiDetails)
             base.wrap(base.OWNER_TRACE, patch, PreviewAssetStore, "promote", "terminal.legacy_promotion")
             root = args.output / "work-trial"
-            result = normalTrial(root, args.arm, args.count, args.warmup, app)
+            with installed(assetTrace, patch, ROOT) if assetTrace is not None else nullcontext():
+                result = normalTrial(root, args.arm, args.count, args.warmup, app)
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
+        if assetTrace is not None:
+            try:
+                assetTraceSummary = assetTrace.save(args.output / "asset-split.json")
+            except Exception as error:
+                # Optional evidence must not replace a real trial/cleanup error.
+                assetTraceSummary = {"enabled": True, "complete": False,
+                    "save_error_type": type(error).__name__, "performance_verdict": "NOT_EVALUATED"}
         base.OWNER_TRACE.save()
         for pid, trace in base.ENCODER_TRACES.items():
             content = json.dumps(trace, separators=(",", ":"))
@@ -488,6 +502,15 @@ def executeTrial(args):
         result["observed_result_outcomes"] = observed
         result["outcome_overflow"] = overflow[0]
         result["instrumentation"] = "measurement-only inclusive wrappers, identical detect timing in every arm; native resource enumeration on bounded background owner"
+        if assetTraceSummary is not None:
+            # This harness freezes one image source per result. Keep its original
+            # counters/denominators and cross-check the optional trace against them.
+            expectedReads = sum(c["stats"]["decoded"] + c["stats"]["read_failed"] for c in result["consumers"])
+            assetTraceSummary["read_attempts_from_original_single_image_stats"] = expectedReads
+            assetTraceSummary["calls_match_original_stats"] = all(
+                assetTraceSummary.get(key) == expectedReads for key in ("client_calls_started", "client_calls_finished"))
+            assetTraceSummary["complete"] = assetTraceSummary["complete"] and assetTraceSummary["calls_match_original_stats"]
+            result["asset_split_trace"] = assetTraceSummary
         content = json.dumps(result, ensure_ascii=True)
         if len(content.encode()) > RAW_BYTES:
             raise RuntimeError("raw trial evidence exceeds 24 MiB")
@@ -575,6 +598,8 @@ def run(args):
             directory.mkdir()
             command = [sys.executable, str(Path(__file__).resolve()), "--child", "--output", str(directory),
                 "--arm", arm, "--count", str(args.count), "--warmup", str(args.warmup), "--qt-platform", args.qt_platform]
+            if getattr(args, "asset_split_trace", False):
+                command.append("--asset-split-trace")
             entry = {"group": group, "position": position, "arm": arm, "disk_preflight": base.diskPreflight(directory),
                 "watchdog": base.supervisedTrial(command, directory)}
             path = directory/"trial.json"
@@ -599,6 +624,8 @@ def run(args):
                         and not payload["sampler"]["errors"] and payload["sampler"]["retired"]
                         and set(payload["sampler"]["observed_roles"]) >= ({"owner", "job", "exporter-0", "exporter-1"} if ARM_SPECS[arm]["capture"] else {"owner", "job"}),
                     phases=payload["phases"])
+                if getattr(args, "asset_split_trace", False):
+                    entry["asset_split_trace"] = payload.get("asset_split_trace", {"enabled": True, "complete": False})
                 rows[arm] = payload
             manifest["trials"].append(entry)
             base.writeManifest(args.output, manifest)
@@ -609,12 +636,17 @@ def run(args):
     manifest["source_stable"] = before == manifest["source_after"]
     formal = args.count == 96 and args.warmup == 8 and args.groups == 3
     valid = manifest["source_stable"] and all(t["watchdog"]["status"] == "PASS" and t.get("trace_complete") for t in manifest["trials"])
+    if getattr(args, "asset_split_trace", False):
+        manifest["asset_split_status"] = "COMPLETE" if all(
+            t.get("asset_split_trace", {}).get("complete") for t in manifest["trials"]) else "INCOMPLETE"
+        valid = valid and manifest["asset_split_status"] == "COMPLETE"
     manifest["measurement_status"] = "VALID" if valid else "INVALID"
-    manifest["performance_status"] = ("PASS" if all(g["pass"] for g in manifest["groups"]) else "FAIL") if formal and valid else "NOT_ASSESSED"
+    manifest["performance_status"] = (("PASS" if all(g["pass"] for g in manifest["groups"]) else "FAIL")
+        if formal and valid and not getattr(args, "asset_split_trace", False) else "NOT_ASSESSED")
     manifest["finished_ns"] = time.perf_counter_ns()
     base.writeManifest(args.output, manifest)
     print(json.dumps({"measurement_status": manifest["measurement_status"], "performance_status": manifest["performance_status"], "groups": manifest["groups"]}), flush=True)
-    return int(not valid or (formal and manifest["performance_status"] != "PASS"))
+    return int(not valid or (formal and not getattr(args, "asset_split_trace", False) and manifest["performance_status"] != "PASS"))
 
 
 def main():
@@ -624,6 +656,8 @@ def main():
     parser.add_argument("--warmup", type=int, default=8)
     parser.add_argument("--groups", type=int, default=3)
     parser.add_argument("--qt-platform", default="windows" if os.name == "nt" else "offscreen")
+    parser.add_argument("--asset-split-trace", action="store_true",
+        help="opt-in loopback RPC attribution; preserves original arms/denominators and never reports performance PASS")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()

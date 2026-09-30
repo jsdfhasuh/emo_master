@@ -412,7 +412,8 @@ def testFreshCachedReadBypassesThrottleAndCannotReturnOldCounter():
 
 
 @pytest.mark.parametrize("missing", [None, "trial", "resource_coverage"])
-def testMockRunPreservesPayloadAndMarksMissingEvidenceInvalid(tmp_path, monkeypatch, missing):
+@pytest.mark.parametrize("asset_split_trace", [False, True])
+def testMockRunPreservesPayloadAndMarksMissingEvidenceInvalid(tmp_path, monkeypatch, missing, asset_split_trace):
     import json
     from argparse import Namespace
     import p2_validate
@@ -423,12 +424,15 @@ def testMockRunPreservesPayloadAndMarksMissingEvidenceInvalid(tmp_path, monkeypa
 
     def fakeTrial(command, directory):
         arm = command[command.index("--arm")+1]
+        assert ("--asset-split-trace" in command) == asset_split_trace
         calls.append(arm)
         if missing == "trial" and arm == "none_qt":
             return {"status": "FAIL"}
         payload = _completeResult(measure.ARM_SPECS[arm]["capture"], count=2, warmup=0)
         payload.update(outcome_overflow=0, sampler={"overflow": 0, "errors": [], "retired": True,
             "observed_roles": ["owner", "job", "exporter-0", "exporter-1"]})
+        if asset_split_trace:
+            payload["asset_split_trace"] = {"enabled": True, "complete": True}
         if missing == "resource_coverage" and arm == "none_qt":
             payload["sampler"]["observed_roles"] = ["owner"]
         (directory/"trial.json").write_text(json.dumps(payload), encoding="utf-8")
@@ -442,12 +446,16 @@ def testMockRunPreservesPayloadAndMarksMissingEvidenceInvalid(tmp_path, monkeypa
         return {"status": "PASS"}
 
     monkeypatch.setattr(measure.base, "supervisedTrial", fakeTrial)
-    args = Namespace(output=tmp_path, count=2, warmup=0, groups=1, qt_platform="offscreen")
+    args = Namespace(output=tmp_path, count=2, warmup=0, groups=1, qt_platform="offscreen", asset_split_trace=asset_split_trace)
     assert measure.run(args) == (0 if missing is None else 1)
     evidence = json.loads((tmp_path/"evidence.json").read_text(encoding="utf-8"))
     assert calls == ["all_off", "all_qt", "none_qt"]
     assert evidence["source_stable"] and evidence["performance_status"] == "NOT_ASSESSED"
     assert evidence["measurement_status"] == ("VALID" if missing is None else "INVALID")
+    if asset_split_trace:
+        assert evidence["asset_split_status"] == ("INCOMPLETE" if missing == "trial" else "COMPLETE")
+    else:
+        assert "asset_split_status" not in evidence
     assert len(evidence["trials"]) == 3
     assert all(row["phase"] == "measurement" for trial in evidence["trials"]
                for row in trial.get("stage_summary", []))

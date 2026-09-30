@@ -18,7 +18,7 @@ REFRESH_INTERVAL_MS = 1000
 
 
 try:
-    from PySide2.QtCore import Qt, QTimer
+    from PySide2.QtCore import QCoreApplication, QObject, Qt, QTimer, SIGNAL, SLOT, Slot
     from PySide2.QtWidgets import (
         QAbstractItemView,
         QDialog,
@@ -34,6 +34,43 @@ try:
     )
     from emo_master.apps.designer.ui.widgets import ElidedLabel, WrapLabel
     from emo_master.apps.designer.ui.icon_map import icon
+    from shiboken2 import isValid
+
+    def _connectCounterSlot(sender, signal: str, receiver, slot: str,
+                            connectionType=Qt.QueuedConnection) -> None:
+        # PySide2 accepts string signatures; its stubs incorrectly require bytes.
+        if not QObject.connect(sender, SIGNAL(signal), receiver, SLOT(slot), connectionType):  # type: ignore[call-overload,arg-type]
+            raise RuntimeError(f"could not connect counter signal {signal} to {slot}")
+
+    class _CounterWorkerOwner(QObject):
+        """Retain running requests across dialog deletion and join on app exit."""
+
+        def __init__(self, application) -> None:
+            super().__init__(application)
+            _connectCounterSlot(application, "aboutToQuit()", self, "shutdown()",
+                                Qt.AutoConnection)
+
+        @Slot()  # type: ignore[operator]
+        def shutdown(self) -> None:
+            workers = [child for child in self.children() if isinstance(child, GlobalCounterWorker)]
+            for worker in workers:
+                worker.requestStop()
+            for worker in workers:
+                if worker.isRunning():
+                    worker.wait(12000)
+                    if worker.isRunning():
+                        worker.wait(-1)
+                # The event loop may already be exiting. Native ownership will
+                # still destroy only stopped threads if this event is not run.
+                worker.deleteLater()
+
+    def _counterWorkerOwner():
+        application = QCoreApplication.instance()
+        owner = getattr(application, "_globalCounterWorkerOwner", None)
+        if owner is None:
+            owner = _CounterWorkerOwner(application)
+            application._globalCounterWorkerOwner = owner
+        return owner
 
     class GlobalCountersDialog(QDialog):
         def __init__(self, runtimeClient, parent=None) -> None:
@@ -165,6 +202,9 @@ try:
             worker = self._worker
             if worker is None:
                 return
+            if not isValid(worker):
+                self._worker = None
+                return
             worker.requestStop()
             wait = getattr(worker, "wait", None)
             isRunning = getattr(worker, "isRunning", None)
@@ -262,32 +302,30 @@ try:
                 name=name,
                 value=value,
             )
-            worker.resultReady.connect(
-                lambda result, currentWorker=worker: self._onWorkerResult(
-                    currentWorker, result
-                )
-            )
-            worker.failed.connect(
-                lambda failure, currentWorker=worker: self._onWorkerFailure(
-                    currentWorker, failure
-                )
-            )
-            worker.finished.connect(
-                lambda currentWorker=worker: self._onWorkerFinished(currentWorker)
-            )
+            # The application keeps an active thread alive even if the dialog
+            # is deleted. Retire it on its GUI affinity once finished, instead
+            # of leaving native objects in signal-lambda reference cycles.
+            worker.setParent(_counterWorkerOwner())
+            # Explicit native receiver context is important on PySide2: bound
+            # callable connections can use a proxy after dynamic slot setup.
+            _connectCounterSlot(worker, "resultReady(PyObject)", self,
+                                "_onWorkerResult(PyObject)")
+            _connectCounterSlot(worker, "failed(PyObject)", self,
+                                "_onWorkerFailure(PyObject)")
+            _connectCounterSlot(worker, "finished()", self, "_onWorkerFinished()")
+            _connectCounterSlot(worker, "finished()", worker, "deleteLater()")
             self._worker = worker
             self._statusLabel.setText("正在刷新…" if operation == "list" else "正在提交…")
             self._updateButtons()
             worker.start()
             return True
 
-        def _onWorkerResult(
-            self,
-            worker: GlobalCounterWorker,
-            result: GlobalCounterWorkerResult,
-        ) -> None:
+        @Slot(object)  # type: ignore[operator]
+        def _onWorkerResult(self, result: GlobalCounterWorkerResult) -> None:
+            worker = self.sender()
             if (
-                self._worker is not worker
+                worker is None
+                or self._worker is not worker
                 or result.generation != self._generation
                 or self._closing
             ):
@@ -301,13 +339,12 @@ try:
             self._renderRecords()
             self._statusLabel.setText("已更新")
 
-        def _onWorkerFailure(
-            self,
-            worker: GlobalCounterWorker,
-            failure: GlobalCounterWorkerFailure,
-        ) -> None:
+        @Slot(object)  # type: ignore[operator]
+        def _onWorkerFailure(self, failure: GlobalCounterWorkerFailure) -> None:
+            worker = self.sender()
             if (
-                self._worker is not worker
+                worker is None
+                or self._worker is not worker
                 or failure.generation != self._generation
                 or self._closing
             ):
@@ -318,8 +355,10 @@ try:
                 QMessageBox.warning(self, "全局计数器请求失败", message)
             self._lastRefreshError = message
 
-        def _onWorkerFinished(self, worker: GlobalCounterWorker) -> None:
-            if self._worker is not worker:
+        @Slot()  # type: ignore[operator]
+        def _onWorkerFinished(self) -> None:
+            worker = self.sender()
+            if worker is None or self._worker is not worker:
                 return
             self._worker = None
             self._updateButtons()

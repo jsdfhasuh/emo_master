@@ -94,3 +94,19 @@ protobuf、Ruff、mypy（281源文件）、pytest全部通过；**1394 PASS、1 
 这是继完整pytest成功后的另一次完整执行。前述native崩溃记录仍保留；候选可用于独立Windows验证，
 并不宣布间歇Qt、长期稳定性或性能/现场验收完成。本批Windows及正式测量结果需按实际运行追加证据，
 不能引用此前d5c7c2d的成功来替代新源码验证。
+
+## 计数器对话框的独立所有权修正
+
+后续精确探针证明：重复40次刷新后，原实现的40个已完成QThread仍为native-valid，
+正常shutdown、删除dialog及主线程/后台GC都不回收。原lambda接收器还会在直接删除dialog后
+进入已删除的控件。该缺陷可重复，但探针没有复现native SIGSEGV，不能把二者强行归因。
+
+修正为明确QObject接收上下文和sender身份校验、GUI亲和线程的finished/deleteLater退休，
+并为删除dialog后仍活跃的请求提供应用所属的停止/等待路径。保留原取消与等待语义；
+不能取消的RPC仍可能延长应用退出，不以Future.cancel伪报线程已停。
+修正后40个worker均在GUI线程native销毁，所有延迟投递/退出场景无回调异常或保留对象。
+新增回归及重点套件10 PASS，独立审查通过。
+
+此修正后的完整 `scripts/ci_check.py`：protobuf/Ruff/mypy PASS，pytest **1398 PASS、1 SKIP**，
+256.70秒，退出0。此前已发布4d1f149在GitHub Ubuntu仍出现DeferredDelete处native崩溃；
+该失败记录继续保留，后续提交的双平台CI/本机结果必须独立核对。

@@ -1,5 +1,4 @@
 from emo_master.apps.designer.page_designer.commands import draftCommand
-import os
 from datetime import datetime
 import json
 from pathlib import Path
@@ -979,6 +978,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setWorkflowTabsName("workflowTabs")
         leftPanel.addWidget(self.workflowTabs)
         self.flowScene = FlowScene()
+        # QGraphicsView borrows the scene; the window must own its GUI lifetime.
+        if _nativeQt:
+            self.flowScene.setParent(self)
         setSceneRect = getattr(self.flowScene, "setSceneRect", None)
         if callable(setSceneRect):
             setSceneRect(-2000.0, -2000.0, 4000.0, 4000.0)
@@ -1146,7 +1148,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if _nativeQt:
             nodeStatusLayout.addStretch(1)
             self.nodeDetailsScroll = scrollContent(self.nodeStatusSection, name="nodeDetailsScroll")
-            self.nodeDetailsScroll.setMinimumHeight(72)
+            # Let the scroll area's native minimum keep its controls usable on
+            # shorter screens; long node details remain vertically accessible.
             rightPanel.addWidget(self.nodeDetailsScroll, 1)
         else:
             rightPanel.addWidget(self.nodeStatusSection)
@@ -1339,9 +1342,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._operatorDisplayTimer.start()
         self.refreshOperators(explicit=False)
         self.pageCoordinator = None
-        if _nativeQt and os.environ.get("EMO_PAGE_DESIGNER") == "1":
+        if _nativeQt:
             from emo_master.apps.designer.page_designer.coordinator import PageCoordinator
             self.pageCoordinator = PageCoordinator(self, rootWidget)
+            self.runtimeController.getCapturePresentation = self._capturePresentationForRun
+
+    def _capturePresentationForRun(self) -> bool:
+        """Explicit Run only: request capture without changing normal run semantics."""
+        coordinator = self.pageCoordinator
+        if coordinator is None:
+            return False
+        coordinator.sync()
+        presentation = coordinator.session.document().presentation
+        if presentation is None:
+            return False
+        from emo_master.core.presentation.models import walkComponents
+        return any(component.bindings for page in presentation.pages.values()
+                   for component in walkComponents(page.components))
 
     def triggerStartupProjectEntry(self) -> None:
         if not self._showStartupEntry:
@@ -2484,16 +2501,28 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if not self.pageCoordinator.prepareClose():
                 event.ignore()
                 return
-            self.pageCoordinator.shutdown()
         self.shutdownOperatorDisplay()
-        self._saveRuntimeLogSettings()
         self.operatorEditorManager.closeAll()
         counterDialog = self._globalCountersDialog
         if counterDialog is not None:
             shutdown = getattr(counterDialog, "shutdown", None)
             if callable(shutdown):
                 shutdown()
-        self.runtimeController.close()
+        try:
+            self.runtimeController.close()
+        except Exception as error:
+            message = f'关闭未完成，保留窗口和运行时资源；请再次关闭重试：{error}'
+            self.appendRuntimeLog('ERROR', message)
+            if self.pageCoordinator is not None:
+                self.pageCoordinator.preview.message(message)
+                self.pageCoordinator.preview.timer.start(25)
+            if _nativeQt:
+                self.statusBar().showMessage(message)
+            event.ignore()
+            return
+        if self.pageCoordinator is not None:
+            self.pageCoordinator.shutdown()
+        self._saveRuntimeLogSettings()
         try:
             super().closeEvent(event)
         except Exception:

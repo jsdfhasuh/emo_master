@@ -1,4 +1,5 @@
 """Thin typed RPC adapter; execution ownership stays in PresentationService."""
+import json
 import time
 
 import grpc
@@ -42,8 +43,12 @@ class DisplayRpc(rpc.DisplayServiceServicer):
         self.service = service
 
     def Capabilities(self, request, context):
+        capabilities = ["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease",
+                        "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup"]
+        if self.service.supportsNormalCapture:
+            capabilities.append("normal_start_capture")
         return pb.DisplayCapabilities(runtime_instance_id=self.service.runtimeInstanceId,
-                                      protocol_version="1.0", capabilities=["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease", "bounded_replay"])
+                                      protocol_version="1.0", capabilities=capabilities)
 
     def Prepare(self, request, context):
         from pathlib import Path
@@ -63,8 +68,30 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def ListJobs(self, request, context):
         with self.service.lock:
-            return pb.DisplayJobs(jobs=[pb.DisplayJob(job_id=key, status=self.service.runtime.jobRepository.get(key).status)
-                                       for key in self.service.jobs])
+            projectId = getattr(request, "project_id", "")
+            jobs = self.service.runtime.jobRepository.all()
+            # Empty input keeps the legacy captured-jobs-only contract.
+            jobs = [job for job in jobs if (job.projectId == projectId if projectId
+                                            else job.jobId in self.service.jobs)]
+            result = []
+            for job in jobs:
+                config = self.service.jobs.get(job.jobId, {})
+                identity = config.get("identity", {})
+                plan = json.loads(config.get("plan", "{}"))
+                result.append(pb.DisplayJob(job_id=job.jobId, status=job.status,
+                    project_id=job.projectId, workflow_id=job.workflowId,
+                    mode=identity.get("mode", job.executionMode), capture_enabled=bool(config.get("capture")),
+                    source_ids=list(plan.get("sources", {})),
+                    sources_json=json.dumps(plan.get("sources", {})),
+                    capture_definition_json=config.get("captureDefinitionJson", ""),
+                    capture_plan_revision=identity.get("capturePlanRevision", ""),
+                    execution_revision=identity.get("executionRevision", ""),
+                    runtime_instance_id=self.service.runtimeInstanceId,
+                    start_request_id=getattr(self.service.runtime, "_jobStartRequestIds", {}).get(job.jobId, ""),
+                    accepted_at_ms=job.acceptedAtMs,
+                    resources_released=job.isTerminal and not config
+                    and not self.service.runtime.jobSupervisor.ownsJobResources(job.jobId)))
+            return pb.DisplayJobs(jobs=result)
 
     def Snapshot(self, request, context):
         return self._snapshot(request, context, incremental=request.replay)

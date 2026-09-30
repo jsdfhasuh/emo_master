@@ -65,6 +65,7 @@ class RuntimePages(QWidget):
         except KeyError:
             self.expectedCapture = None
         self.hub = hub
+        self.captureCoverage = None
         self.detached = False
         self.editing = False
         self.currentPageId = None
@@ -295,10 +296,17 @@ class RuntimePages(QWidget):
             return None, None, "来源不存在"
         if source.kind not in ("node_output", "workflow_output"):
             return None, None, "不支持此来源: " + source.kind
+        if self.captureCoverage is not None:
+            problem = self.captureCoverage.sourceProblem(self.config, sourceId)
+            if problem:
+                return None, None, problem
         scope = view.scopes.get(source.resultScopeId)
         if scope is None:
             return None, None, "当前结果准备中" if source.resultScopeId in view.loading else "等待触发 / 尚无结果"
-        if self.expectedCapture is None or scope.result.identity.capturePlanRevision != self.expectedCapture:
+        if self.captureCoverage is not None:
+            if not self.captureCoverage.matches(scope.result.identity):
+                return None, None, "CAPTURE_IDENTITY_MISMATCH · 任务代际已改变，请重新选择任务"
+        elif self.expectedCapture is None or scope.result.identity.capturePlanRevision != self.expectedCapture:
             return None, None, "CAPTURE_REVISION_MISMATCH · 绑定变更需明确启动新任务"
         value = next((item for item in scope.result.sources if item.sourceId == sourceId), None)
         if value is None:
@@ -312,6 +320,16 @@ class RuntimePages(QWidget):
         if value.valueJson is None:
             return scope, None, "绑定类型不支持"
         return scope, readValue(value.valueJson), ""
+
+    def setCaptureCoverage(self, coverage):
+        """Only validated frozen metadata permits partial source compatibility."""
+        from emo_master.core.presentation.coverage import CaptureCoverage
+        if coverage is not None and not isinstance(coverage, CaptureCoverage):
+            raise TypeError('validated capture coverage required')
+        self.captureCoverage = coverage
+        if self.hub:
+            self.hub.lastToken = None
+            self.submit(self.hub.session.readSnapshot())
 
     def submit(self, view):
         assertGuiThread()

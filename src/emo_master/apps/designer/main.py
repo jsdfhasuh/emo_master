@@ -80,6 +80,7 @@ def runDesigner() -> None:
             runtimeClient = RuntimeClient(
                 runtimeService=runtimeService,
                 ownedChannel=channel,
+                runtimeTarget=runtimeTarget,
             )
         else:
             embeddedService = RuntimeService()

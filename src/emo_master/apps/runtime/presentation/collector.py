@@ -73,6 +73,7 @@ class ResultCollector:
         for (runId, _scopeId), item in self.open.items():
             if runId != context.workflowRunId:
                 continue
+            frozenSources = {}
             for key, source in item["sources"].items():
                 if (source["kind"] == "workflow_output") != workflow:
                     continue
@@ -84,7 +85,14 @@ class ResultCollector:
                 try:
                     value = projectField(outputs[source["port"]], source["fieldPath"])
                     if source["expectedType"] == "image":
-                        item["values"][key] = self.image(key, value, item)
+                        signature = json.dumps(source, sort_keys=True)
+                        if signature in frozenSources:
+                            frozen = frozenSources[signature]
+                            item["values"][key] = dict(frozen, sourceId=key)
+                            if frozen.get("pendingImage"):
+                                item["values"][key]["imageSourceId"] = frozen["sourceId"]
+                        else:
+                            item["values"][key] = frozenSources[signature] = self.image(key, value, item)
                         continue
                     frozen = freezeValue(value)
                     if item["bytes"] + len(frozen.encode()) > 1024 * 1024:

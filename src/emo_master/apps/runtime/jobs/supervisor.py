@@ -3,6 +3,7 @@ from __future__ import annotations
 import multiprocessing
 from collections import deque
 import threading
+import time
 from dataclasses import replace
 from typing import Any, Callable, cast
 
@@ -22,6 +23,7 @@ class JobSupervisor:
         gracefulStopTimeoutMs: int = 5000,
         heartbeatTimeoutMs: int = 5000,
         terminalCallback: Callable[[str, str], None] | None = None,
+        retiredCallback: Callable[[str], None] | None = None,
     ) -> None:
         self.jobRepository = jobRepository
         self.eventStore = eventStore
@@ -29,6 +31,7 @@ class JobSupervisor:
         self.gracefulStopTimeoutMs = max(0, gracefulStopTimeoutMs)
         self.heartbeatTimeoutMs = max(100, heartbeatTimeoutMs)
         self.terminalCallback = terminalCallback
+        self.retiredCallback = retiredCallback
         self.presentationCallback: Callable | None = None
         self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
@@ -43,12 +46,7 @@ class JobSupervisor:
 
     def startJob(self, spec: JobProcessSpec) -> None:
         with self._lock:
-            active = sum(
-                1
-                for jobId in self._handles
-                if (record := self.jobRepository.get(jobId)) is not None
-                and not record.isTerminal
-            )
+            active = len(set(self._handles) | set(self._bridges))
             if active >= self.maxConcurrentJobs:
                 raise RuntimeError("E_MAX_CONCURRENT_JOBS: maximum concurrent jobs reached")
             if spec.jobId in self._handles:
@@ -375,6 +373,11 @@ class JobSupervisor:
             handle = self._handles.get(jobId)
             return handle[0] if handle else None
 
+    def ownsJobResources(self, jobId: str) -> bool:
+        """A terminal event alone does not retire the process/bridge/IPC owner."""
+        with self._lock:
+            return jobId in self._handles or jobId in self._bridges
+
     def activeCount(self) -> int:
         with self._lock:
             return sum(1 for record in self.jobRepository.all() if not record.isTerminal)
@@ -435,6 +438,15 @@ class JobSupervisor:
     def bridgeStopped(self, jobId: str) -> None:
         with self._lock:
             self._reap(jobId)
+
+    def waitForRetirement(self, timeoutSeconds: float = 2.0) -> None:
+        """Join outside the lock so bridge finalizers can finish their reap."""
+        with self._lock:
+            bridges = list(self._bridges.values())
+        deadline = time.monotonic() + timeoutSeconds
+        for bridge in bridges:
+            if bridge is not threading.current_thread() and getattr(bridge, "ident", None) is not None:
+                bridge.join(timeout=max(0, deadline - time.monotonic()))
 
     def bridgeError(self, jobId: str, error: BaseException) -> None:
         with self._lock:
@@ -573,12 +585,24 @@ class JobSupervisor:
                 self._terminateProcess(process)
             except BaseException:
                 pass
+            if process.is_alive():
+                # An unsuccessful kill is not resource retirement. Keep the
+                # actual owner visible to admission, release and later cleanup.
+                self._handles[jobId] = (process, cancelEvent, eventQueue)
+                if bridge is not None:
+                    self._bridges[jobId] = bridge
+                return
         if bridge is not None and bridge is not threading.current_thread():
             if getattr(bridge, "ident", None) is not None:
                 try:
                     bridge.join(timeout=1.0)
                 except BaseException:
                     pass
+            if getattr(bridge, "is_alive", lambda: False)():
+                if process is not None:
+                    self._handles[jobId] = (process, cancelEvent, eventQueue)
+                self._bridges[jobId] = bridge
+                return
         if process is not None:
             close = getattr(process, "close", None)
             if callable(close):
@@ -610,6 +634,13 @@ class JobSupervisor:
                     bridge.join(timeout=1.0)
             except BaseException:
                 pass
+            if getattr(bridge, "is_alive", lambda: False)():
+                # It may be waiting for this lock in its final callback. The
+                # bridge's finally/bridgeStopped hook retries after lock release.
+                # Keep the process, IPC, quota and workspace until then.
+                return
+        # Current EventBridge invokes processExited/bridgeStopped as its final
+        # actions; it performs no further queue or process I/O after this reap.
         if handle is not None:
             process, _cancelEvent, eventQueue = handle
             try:
@@ -619,6 +650,8 @@ class JobSupervisor:
                     self._terminateProcess(process)
             except BaseException:
                 pass
+            if process.is_alive():
+                return
             close = getattr(process, "close", None)
             if callable(close):
                 try:
@@ -640,3 +673,5 @@ class JobSupervisor:
         record = self.jobRepository.get(jobId)
         if record is None or record.isTerminal:
             self._terminalEvents.discard(jobId)
+        if (handle is not None or bridge is not None) and self.retiredCallback is not None:
+            self.retiredCallback(jobId)

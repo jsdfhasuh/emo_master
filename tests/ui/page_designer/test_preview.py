@@ -70,7 +70,9 @@ def testDraftOnSameRuntimeReloadObserveAndAsyncExit(qtApp, tmp_path, monkeypatch
         preview.closeAsync()
         waitFor(lambda: not preview.active())
         assert not runtime._closed
-        assert not backend.root.exists()
+        assert not prepared.projectPath.parent.exists()
+        assert not Path(prepared.snapshot.runtimeDbPath).parent.exists()
+        assert runtime._presentationOwner is not None
         import shiboken2
         assert not shiboken2.isValid(hub) or not hub.timer.isActive()
         assert c.editor.renderer.hub is None

@@ -18,6 +18,15 @@ class EventBridge(threading.Thread):
         self.stopEvent.set()
 
     def run(self) -> None:
+        try:
+            self._run()
+        finally:
+            # This is the final action: after it the bridge never touches the
+            # process or queue. Timed-out external joins retain ownership until
+            # this hook can reacquire the Supervisor lock and finish retirement.
+            self.supervisor.bridgeStopped(self.jobId)
+
+    def _run(self) -> None:
         while not self.stopEvent.is_set():
             try:
                 event = self.eventQueue.get(timeout=0.2)

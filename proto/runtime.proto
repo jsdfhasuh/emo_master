@@ -25,6 +25,9 @@ message StartJobRequest {
   string project_id = 1;
   string workflow_id = 2;
   string inputs_json = 3;
+  bool capture_presentation = 4;
+  string start_request_id = 5;
+  string expected_runtime_instance_id = 6;
 }
 
 message StartJobReply {
@@ -32,6 +35,13 @@ message StartJobReply {
   string job_id = 2;
   string message = 3;
   string status = 4;
+  string runtime_instance_id = 5;
+  string start_request_id = 6;
+}
+
+message StartRequestLookup {
+  string start_request_id = 1;
+  string runtime_instance_id = 2;
 }
 
 message StopJobRequest {
@@ -364,6 +374,7 @@ service RuntimeService {
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
   rpc StartJob(StartJobRequest) returns (StartJobReply);
+  rpc GetStartRequest(StartRequestLookup) returns (StartJobReply);
   rpc StopJob(StopJobRequest) returns (StopJobReply);
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
@@ -400,12 +411,20 @@ service DisplayService {
   rpc ReleaseJob(DisplayRequest) returns (DisplayEmpty);
   rpc DiscardPrepared(DisplayStartRequest) returns (DisplayEmpty);
 }
-message DisplayEmpty {}
+message DisplayEmpty { string project_id = 1; }
 message DisplayCapabilities { string runtime_instance_id = 1; string protocol_version = 2; repeated string capabilities = 3; }
 message DisplayPrepareRequest { string project_json = 1; string resource_root = 2; map<string,string> site_values = 3; }
 message DisplayPrepared { string prepared_id = 1; string execution_revision = 2; string capture_plan_revision = 3; }
 message DisplayStartRequest { string prepared_id = 1; }
-message DisplayJob { string job_id = 1; string status = 2; }
+message DisplayJob {
+  string job_id = 1; string status = 2;
+  string project_id = 3; string workflow_id = 4; string mode = 5;
+  bool capture_enabled = 6; repeated string source_ids = 7;
+  string capture_plan_revision = 8; string execution_revision = 9;
+  string start_request_id = 10; string sources_json = 11;
+  string runtime_instance_id = 12; int64 accepted_at_ms = 13;
+  bool resources_released = 14; string capture_definition_json = 15;
+}
 message DisplayJobs { repeated DisplayJob jobs = 1; }
 message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; bool replay = 4; }
 message DisplayIdentity {

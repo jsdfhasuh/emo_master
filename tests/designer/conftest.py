@@ -29,12 +29,23 @@ def designerApplication(tmp_path_factory):
 
 
 @pytest.fixture(autouse=True)
-def cleanupDesignerWidgets(designerApplication):
+def cleanupDesignerWidgets(designerApplication, monkeypatch):
     if designerApplication is None:
         yield
         return
     from PySide2.QtCore import QCoreApplication, QEvent
     import shiboken2
+    from PySide2.QtWidgets import QMessageBox
+
+    # PageCoordinator is now part of the normal Designer. Legacy flow tests
+    # deliberately discard their synthetic edits; dedicated page tests cover
+    # Save/Discard/Cancel and invalid pending inputs explicitly.
+    originalQuestion = QMessageBox.question
+    def question(parent, title, *args, **kwargs):
+        if title == '项目有未保存修改':
+            return QMessageBox.Discard
+        return originalQuestion(parent, title, *args, **kwargs)
+    monkeypatch.setattr(QMessageBox, 'question', question)
 
     existing = set(designerApplication.topLevelWidgets())
     yield

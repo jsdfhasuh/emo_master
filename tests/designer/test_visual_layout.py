@@ -8,7 +8,7 @@ import pytest
 import emo_master  # noqa: F401 - preload the Windows dependency DLLs before Qt
 
 pytest.importorskip("PySide2")
-from PySide2.QtCore import QRectF, QResource, QTimer, Qt
+from PySide2.QtCore import QPoint, QRectF, QResource, QTimer, Qt
 from PySide2.QtGui import QImage, QPainter, QPixmap
 from PySide2.QtWidgets import QGraphicsSimpleTextItem, QStackedWidget, QToolButton, QVBoxLayout, QWidget
 
@@ -137,6 +137,47 @@ def testLongDetailsDoNotForceWindowBeyondViewport(styledApp):
         assert window.minimumSizeHint().width() < 800
         assert window.nodeDetailsScroll.verticalScrollBar().maximum() > 0
         assert window.jobMessageCard.toolTip().endswith("project.json")
+    finally:
+        window.close()
+
+
+def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
+    from tests.designer.qt_wait import waitForCatalog
+
+    window = makeWindow()
+    try:
+        window.show()
+        waitForCatalog(window)
+        # Initial catalog completion refreshes node details. Populate the actual
+        # long-text case after that refresh, rather than testing reset placeholders.
+        details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
+        window.nodeDetailParamsCard.setText(details)
+        fontSize = window.nodeDetailParamsCard.font().pointSizeF()
+        window.resize(1000, 499)
+        styledApp.processEvents()
+
+        assert window.height() == 499
+        assert window.minimumSizeHint().height() < 500
+        assert window.nodeDetailParamsCard.text() == details
+        assert window.nodeDetailParamsCard.font().pointSizeF() == fontSize
+        assert window.rightPanelContainer.rect().contains(window.summarySection.geometry())
+        assert window.rightPanelContainer.rect().contains(window.previewSection.geometry())
+        assert window.jobStatusCard.height() >= window.jobStatusCard.minimumSizeHint().height()
+        assert window.jobMessageCard.height() >= window.jobMessageCard.minimumSizeHint().height()
+        assert window.previewImageLabel.height() >= 90
+
+        scroll = window.nodeDetailsScroll
+        bar = scroll.verticalScrollBar()
+        assert bar.maximum() > 0
+        assert scroll.height() >= scroll.minimumSizeHint().height()
+        bar.setValue(bar.maximum())
+        styledApp.processEvents()
+        card = window.nodeDetailParamsCard
+        lastLineBottom = card.mapTo(scroll.viewport(), QPoint(
+            card.contentsRect().left(), card.contentsRect().bottom())).y()
+        assert lastLineBottom < scroll.viewport().height()
+        assert lastLineBottom - card.fontMetrics().height() + 1 >= 0
+        assert card.text().splitlines()[-1].startswith('parameter_79:')
     finally:
         window.close()
 

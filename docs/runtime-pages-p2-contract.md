@@ -1,9 +1,54 @@
 # P2 显式结果通道
 
-本通道属于正式模块 `apps/runtime/presentation`，默认应用入口不创建它。
+本通道属于正式模块 `apps/runtime/presentation`。R3 同任务接入见下节；原 P2 debug/release 通道仍保留。
 `PresentationService` 复用已有 Runtime、JobManager、Supervisor 和 spawn Worker，
 `prepare` 只生成稳定副本和编译记录；只有 `start(preparedId)` 创建任务。
 所有客户端读取操作均不得调用 StartJob 或 StopJob。
+
+## R3：原 StartJob 可选绑定采集（2026-09-30）
+
+这是正常运行入口的增量接点，不是把 debug Prepare/Start 改名。原 RuntimeService.StartJob
+新增 `capture_presentation`（默认 false）、`start_request_id`、`expected_runtime_instance_id`；
+旧字段号不变。没有请求采集的旧请求保持原执行路径，2.0/2.1 项目不自动升级。
+默认服务器复用有分类额度的 AioRuntimeServer 同时提供原 RuntimeService 与 DisplayService；
+嵌入式 Designer 只在明确开始操作中建立所需通道，观看不创建 Runtime 或 Job。
+
+正常采集使用 `freezeNormalCapture` 校验当前已安装可信 registry 的实际端口与绑定，冻结只被
+控件引用的 source ID、完整来源/作用域定义和修订。节点参数、文件输出路径、原 Job 快照、
+`runtimeDbPath` 和生产计数保持原 StartJob 语义；不复制资源到 debug，不初始化隔离 DB，
+不重写资源/站点参数。已声明资源在启动时校验根目录、大小和摘要；设备执行仍属于用户明确
+启动原工程的原有权限/互斥，不因页面采集获得额外许可。执行身份 `mode=runtime` 明确区别
+`debug` 和 `release`。executionRevision 描述本次正常流程与已安装插件，capturePlanRevision
+仍由共享 captureDefinition 计算；它不承诺普通文件运行路径拥有 debug 的资源副本隔离。
+
+本批准入限制仍是同一调用作用域、一个不同图像来源、最多16个source ID；不支持来源逐项
+拒绝（跨 scope、global_counter/runtime_status 平台来源仍拒绝；计数算子的类型化输出可用）。
+使用注册端口元数据，不复用测试交付四算子白名单。两页引用相同来源只编码一次；不同source ID
+指向完全相同图像地址时也共享一次冻结/编码与结果自有资产。单图8 MiB和既有额度/期限不变。
+
+Capabilities 追加 `normal_start_capture`、`project_jobs`、`source_coverage`、`start_request_lookup`。
+`DisplayEmpty.project_id` 用于 ListJobs 的精确项目 UUID 过滤；带项目过滤返回当前 Runtime
+会话内该工程的普通和展示 Job（包括未采集任务），空过滤仍只返回已有展示 Job，兼容旧客户端。
+DisplayJob 追加 project/workflow/mode、capture_enabled、source_ids、sources_json、
+capture_definition_json、两类revision、runtime_instance_id、start_request_id、accepted_at_ms
+和resources_released。元数据只读、没有隐式采集或启动；未采集与已释放来源不能补数据。
+P5 TestReleaseChannel 不声明 normal_start_capture 并明确拒绝原StartJob附加采集，保留测试
+宿主经准备记录明确单次启动的边界；新增普通入口不借测试宿主绕过其保护。
+关闭观察者/重连继续只断开或恢复已有Job的会话。
+
+同次明确开始生成一个有界请求ID，并先协商Runtime代际。带请求ID的Start必须匹配代际；
+同ID同参数返回原Job，改参数复用ID拒绝。`GetStartRequest(StartRequestLookup)` 只查询原
+请求，返回原job_id及当前状态；已知未创建任务的拒绝为REJECTED，启动失败保留FAILED Job。
+缺失请求为UNKNOWN、代际变化为RESET_REQUIRED，均不能解释为“未执行”而自动重发Start。
+记录最多1024个请求摘要/答复，达到额度拒绝新ID，不淘汰旧ID以免延迟重试造成重复执行。
+重启会更换代际；旧代际请求不可在新Runtime重放。此机制不使跨重启未知结果自动变为已确认。
+
+再次运行由下一次明确开始驱动：先停止/确认旧Job终态，显式ReleaseJob且确认Worker、IPC、
+待封闭结果与导出槽真实结束，再创建新Job。终态标签不代替进程退出；无法kill的Worker仍
+保留占用、阻止释放与并发额度复用。普通ReleaseJob只清展示状态，保留原普通工作目录和输出。
+Runtime.close 在监督器真正结束后关闭PresentationService；失败不冒充资源已释放。
+DiscardPrepared 只在关联Job释放后删除准备副本及该debug快照自有SQLite/output树，保留release
+持久命名空间。沿用的旧中间图快照仍执行，没有宣称重复编码成本或历史性能失败已经解决。
 
 ## 首批契约
 
@@ -71,8 +116,8 @@ Blob 1.2.0 的 mask/overlay 可继承真实输入帧的坐标空间并记录父�
 显式 `grpc_server.aio_entry.AioRuntimeServer` 同时注册原 RuntimeService 与增量 typed
 DisplayService。公共接口：Capabilities、Prepare、Start、ListJobs、Snapshot（可重放）、
 Subscribe、ReadAsset、AcquireLease、ReleaseLease、ReleaseJob、DiscardPrepared。
-Start 是唯一创建 Job 的新 RPC；ReleaseJob 仅释放已终止且 IPC/导出已收尾的展示状态，
-不是 StopJob；DiscardPrepared 要求关联 Job 已释放。默认 Runtime 入口不切换为 aio。
+Display Start 创建隔离/交付准备任务，R3 原 Runtime StartJob 也可附带采集；ReleaseJob 仅释放已终止且 IPC/导出已收尾的展示状态，
+不是 StopJob；DiscardPrepared 要求关联 Job 已释放。默认 Runtime 入口在R3复用此有界适配；旧RPC签名保留。
 同一 Runtime 只能有一个展示所有者；关闭恢复原回调。显式 ReleaseJob 也清理该 Job
 拥有的旧预览工作目录和重放引用，有限租约所持资产继续存活；不删除正式输出或生产 DB。
 

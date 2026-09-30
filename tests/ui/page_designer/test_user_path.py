@@ -131,7 +131,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         click(editor, '切换为模拟预览')
         assert '模拟' in editor.renderer.banner.text()
         assert preview.session is None
-        click(editor, '明确开始本地草稿调试')
+        click(editor, '明确开始隔离草稿调试')
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None, preview.error
         waitFor(lambda: bool(editor.renderer.displayed))
@@ -172,7 +172,7 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert cv2.imwrite(str(changed), pixels)
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *a, **k: (str(changed), ''))
         click(editor, '登记本地输入图片')
-        click(editor, '明确开始本地草稿调试')
+        click(editor, '明确开始隔离草稿调试')
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None, preview.error
         waitFor(lambda: bool(editor.renderer.displayed))

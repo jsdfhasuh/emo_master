@@ -23,6 +23,8 @@ class RuntimeController:
         getActiveWorkflowId: Callable[[], str | None] | None = None,
         getEntryWorkflowId: Callable[[], str | None] | None = None,
         appendEvent: Callable[[dict[str, object]], None] | None = None,
+        getCapturePresentation: Callable[[], bool] | None = None,
+        onJobAccepted: Callable[[object], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -38,6 +40,11 @@ class RuntimeController:
         self.getActiveWorkflowId = getActiveWorkflowId or (lambda: None)
         self.getEntryWorkflowId = getEntryWorkflowId or self.getActiveWorkflowId
         self.appendEvent = appendEvent
+        self.getCapturePresentation = getCapturePresentation or (lambda: False)
+        self.onJobAccepted = onJobAccepted
+        self._captureCurrentRun = False
+        self._previousCaptureJob: tuple[str, str] | None = None
+        self._startUncertain = False
         self._worker: RuntimeWorker | None = None
         self._stopWorker: RuntimeStopWorker | None = None
         self._stopJobId = ""
@@ -50,6 +57,9 @@ class RuntimeController:
     def startJob(self) -> None:
         if self._closing or self._closed:
             return
+        if self._startUncertain:
+            self.appendLog("WARN", "上次启动尚未核实；不会重复启动，请等待同一次请求的查询结果")
+            return
         if self._jobActive or (
             self._worker is not None and self._worker.isRunning()
         ) or self._stopWorkerIsRunning():
@@ -61,6 +71,12 @@ class RuntimeController:
             return
         if not self.syncRuntimeProjectBeforeRun():
             return
+        try:
+            capturePresentation = bool(self.getCapturePresentation())
+        except Exception as error:
+            self.appendLog("ERROR", f"页面采集准备失败：{error}")
+            return
+        self._captureCurrentRun = capturePresentation
         # A new start attempt must not keep presenting the previous terminal job
         # if the worker fails before it receives a new job id.
         self.setCurrentJobId(None)
@@ -69,11 +85,16 @@ class RuntimeController:
             runtimeClient=self.runtimeClient,
             projectId=loadedProjectPath,
             workflowId=workflowId,
+            capturePresentation=capturePresentation,
+            previousCaptureJob=self._previousCaptureJob,
         )
         worker.jobAccepted.connect(self._onJobAccepted)
         worker.eventReceived.connect(self._onRuntimeEvent)
         worker.statusChanged.connect(self._onJobStatus)
         worker.failed.connect(self._onWorkerFailed)
+        uncertain = getattr(worker, "uncertain", None)
+        if uncertain is not None:
+            uncertain.connect(self._onStartUncertain)
         finished = getattr(worker, "finished", None)
         if finished is not None and hasattr(finished, "connect"):
             finished.connect(lambda: self._onWorkerFinished(worker))
@@ -86,9 +107,17 @@ class RuntimeController:
         worker.start()
 
     def _onJobAccepted(self, reply) -> None:
+        self._startUncertain = False
         self._jobActive = True
         currentJobId = str(getattr(reply, "job_id", ""))
         self.setCurrentJobId(currentJobId or None)
+        generation = str(getattr(reply, "runtime_instance_id", ""))
+        if self._captureCurrentRun and currentJobId and generation:
+            self._previousCaptureJob = (currentJobId, generation)
+        elif currentJobId:
+            self._previousCaptureJob = None
+        if self.onJobAccepted:
+            self.onJobAccepted(reply)
         self.runtimePanelState.updateJob(
             str(getattr(reply, "status", "ACCEPTED")),
             str(getattr(reply, "message", "作业已接受")),
@@ -154,7 +183,8 @@ class RuntimeController:
         runtimeMessage = str(getattr(statusReply, "message", ""))
         self.runtimePanelState.updateJob(runtimeStatus, runtimeMessage)
         self.appendLog("INFO", f"作业状态：{runtimeStatus} | {runtimeMessage}")
-        if runtimeStatus in ("COMPLETED", "FAILED", "ABORTED"):
+        if runtimeStatus in ("COMPLETED", "FAILED", "ABORTED", "REJECTED"):
+            self._startUncertain = False
             self._jobActive = False
             self.setIsJobRunning(False)
         elif runtimeStatus in ("ACCEPTED", "STARTING", "RUNNING", "STOPPING"):
@@ -163,7 +193,20 @@ class RuntimeController:
         self.refreshRuntimePanelView()
         self.updateToolbarState()
 
+    def _onStartUncertain(self, message: str) -> None:
+        self._startUncertain = True
+        self._jobActive = True
+        self.runtimePanelState.updateJob("START_UNCERTAIN", message)
+        self.appendLog("WARN", message)
+        self.setIsJobRunning(True)
+        self.refreshRuntimePanelView()
+        self.updateToolbarState()
+
     def _onWorkerFailed(self, message: str) -> None:
+        if self._startUncertain or (self._jobActive and self.getCurrentJobId()):
+            # A broken observer is not evidence that an accepted job has ended.
+            self._onStartUncertain(message)
+            return
         self._jobActive = False
         self.runtimePanelState.updateJob("FAILED", message)
         self.appendLog("ERROR", f"启动作业失败：{message}")
@@ -176,7 +219,11 @@ class RuntimeController:
             return
         currentJobId = self.getCurrentJobId()
         if currentJobId is None:
-            self.appendLog("WARN", "当前没有活动作业")
+            if self._jobActive and self._worker is not None:
+                self._worker.requestStopAfterStart()
+                self.appendLog("WARN", "已请求停止；核实本次启动并取得任务标识后停止，不会重复启动")
+                return
+            self.appendLog("WARN", "启动尚未核实；请核对原 Runtime 状态，勿重复启动" if self._startUncertain else "当前没有活动作业")
             return
         stopMode = mode or (
             "force"
@@ -239,6 +286,7 @@ class RuntimeController:
         self.appendLog("INFO", f"停止作业：{stopStatus} | {stopMessage}")
         self.refreshRuntimePanelView()
         if stopStatus in ("COMPLETED", "FAILED", "ABORTED"):
+            self._startUncertain = False
             self._jobActive = False
             self.setIsJobRunning(False)
         else:
@@ -340,11 +388,16 @@ class RuntimeController:
             worker.requestStop()
             self._waitForWorker(worker, 12000 if stopStarted else 2000)
             self._worker = None
-        self._jobActive = False
-        self._closed = True
         closeClient = getattr(self.runtimeClient, "close", None)
         if callable(closeClient):
-            closeClient()
+            try:
+                closeClient()
+            except Exception as error:
+                self.appendLog("ERROR", f"运行时资源尚未结束，关闭未完成；请稍候重试：{error}")
+                raise
+        self._jobActive = False
+        self._closed = True
+        self._closing = False
 
 
 def _nonNegativeInteger(value: object, fallback: int = 0) -> int:

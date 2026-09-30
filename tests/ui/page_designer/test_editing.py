@@ -132,3 +132,24 @@ def testContainerMoveRejectsCycleAndOverlaps(tmp_path):
     assert len(session.presentation.snapshot().pages[p].components) == 2
     session.undo()
     assert session.payload() == before
+
+
+def testSecondImageRejectedAtBindingButSameSourceAcrossPagesAllowed(tmp_path):
+    session = ProjectEditSession(blank(tmp_path).model_dump())
+    page = session.presentation.createPage('one')
+    secondPage = session.presentation.createPage('two')
+    commands = PageCommands(session, metadata())
+    first = commands.add(page, 'image', 0, 0)
+    second = commands.add(secondPage, 'image', 0, 0)
+    choices = outputChoices(session.document(), metadata())
+    original = next(c for c in choices if c.source.nodeId == 'load' and c.source.port == 'image')
+    overlay = next(c for c in choices if c.source.nodeId == 'blob' and c.source.port == 'overlay')
+    commands.bind(page, first, original)
+    commands.bind(secondPage, second, original)
+    before = session.payload()
+    with pytest.raises(ValueError, match='第二张图尚未支持'):
+        commands.bind(secondPage, second, overlay)
+    assert session.payload() == before
+    # Replacing the only image is supported; stale unused sources aren't counted.
+    commands.delete(page, first)
+    commands.bind(secondPage, second, overlay)

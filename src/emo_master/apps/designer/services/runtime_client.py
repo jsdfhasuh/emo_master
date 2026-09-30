@@ -122,6 +122,8 @@ class RuntimeServiceProtocol(Protocol):
 
     def StartJob(self, request, context): ...
 
+    def GetStartRequest(self, request, context): ...
+
     def StopJob(self, request, context): ...
 
     def GetJobStatus(self, request, context): ...
@@ -130,49 +132,80 @@ class RuntimeServiceProtocol(Protocol):
 
 
 class RuntimeEventStream:
-    """Lazy DTO iterator over a unary-stream RPC call.
+    """One consumer owns iteration/close; other threads only request cancellation."""
 
-    The gRPC call is intentionally kept alive so a consumer can cancel a
-    long-lived follow subscription without waiting for the server to finish.
-    """
-
-    def __init__(self, call: object, converter, onClose) -> None:
+    def __init__(self, call: object, converter, onClose, cancellation=None) -> None:
         self._call = call
         self._iterator = iter(call) if isinstance(call, IterableABC) else iter(())
         self._converter = converter
         self._onClose = onClose
+        self._cancellation = cancellation
+        self._iterationLock = threading.Lock()
+        self._cancelLock = threading.Lock()
+        self._cancelRequested = threading.Event()
+        self._retired = threading.Event()
         self._closed = False
+        self._cancelIssued = False
 
     def __iter__(self):
         return self
 
     def __next__(self) -> RuntimeEventDTO:
-        if self._closed:
-            raise StopIteration
-        try:
-            event = next(self._iterator)
-        except StopIteration:
-            self.close()
-            raise
-        except BaseException:
-            self.close()
-            raise
-        return self._converter(event)
+        with self._iterationLock:
+            if self._closed or self._cancelRequested.is_set():
+                self._closeOwned()
+                raise StopIteration
+            try:
+                event = next(self._iterator)
+            except BaseException:
+                self._closeOwned()
+                raise
+            if self._cancelRequested.is_set():
+                self._closeOwned()
+                raise StopIteration
+            return self._converter(event)
 
     def cancel(self) -> None:
-        cancel = getattr(self._call, "cancel", None)
-        if callable(cancel):
-            cancel()
-        self.close()
+        self._cancelRequested.set()
+        # Cancelling a gRPC call or an embedded context is thread-safe. Closing
+        # an executing Python generator is not: its consumer retires it below.
+        with self._cancelLock:
+            if not self._closed and not self._cancelIssued:
+                if self._cancellation is not None:
+                    self._cancellation.cancel()
+                cancel = getattr(self._call, "cancel", None)
+                if callable(cancel):
+                    cancel()
+                self._cancelIssued = True
+        self._closeIfIdle()
 
     def close(self) -> None:
+        if not self._closeIfIdle():
+            self.cancel()
+
+    def _closeIfIdle(self) -> bool:
+        if not self._iterationLock.acquire(blocking=False):
+            return False
+        try:
+            self._closeOwned()
+            return True
+        finally:
+            self._iterationLock.release()
+
+    def _closeOwned(self) -> None:
         if self._closed:
             return
-        self._closed = True
         close = getattr(self._call, "close", None)
         if callable(close):
             close()
+        # Failed cleanup remains tracked and retryable; never pretend a live
+        # iterator is closed just because cancellation was requested.
+        self._closed = True
         self._onClose(self)
+        self._retired.set()
+
+    def waitClosed(self, timeout: float) -> bool:
+        return self._retired.wait(timeout)
 
 
 class RuntimeClient:
@@ -182,6 +215,8 @@ class RuntimeClient:
         deadlineMs: int = 10000,
         ownedRuntimeService: object | None = None,
         ownedChannel: object | None = None,
+        runtimeTarget: str = "",
+        displayService: object | None = None,
     ) -> None:
         self.runtimeService = runtimeService
         self.deadlineMs = deadlineMs
@@ -189,7 +224,19 @@ class RuntimeClient:
         self._ownedChannel = ownedChannel
         self._streamLock = threading.RLock()
         self._activeStreams: dict[str, RuntimeEventStream] = {}
+        self._retiringStreams: set[RuntimeEventStream] = set()
         self._closed = False
+        self._closing = False
+        self._closeLock = threading.RLock()
+        self._runtimeTarget = runtimeTarget
+        self._displayService = displayService
+        self._displayChannel = None
+        self._presentationService: Any = None
+        self._presentationServer: Any = None
+        self._startLock = threading.RLock()
+        if self._displayService is None and runtimeTarget and ownedChannel is not None:
+            from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
+            self._displayService = DisplayServiceStub(ownedChannel)
 
         self._displayLock = threading.RLock()
         self._displayCalls: dict[str, set[DisplayCallContext]] = {}
@@ -204,7 +251,7 @@ class RuntimeClient:
         if grpc is None:
             return
         with self._displayLock:
-            if self._closed:
+            if self._closed or self._closing:
                 return
             if state == grpc.ChannelConnectivity.TRANSIENT_FAILURE:
                 self._displayDisconnected = True
@@ -298,7 +345,7 @@ class RuntimeClient:
                      token: DisplayCallContext | None, owner: str):
         context = token or DisplayCallContext()
         with self._displayLock:
-            if self._closed or owner in self._closedDisplayOwners:
+            if self._closed or self._closing or owner in self._closedDisplayOwners:
                 raise RuntimeClientError("E_DISPLAY_CANCELLED", "display owner is closed")
             self._displayCalls.setdefault(owner, set()).add(context)
         try:
@@ -560,18 +607,102 @@ class RuntimeClient:
             "ValidateProject", runtime_pb2.ValidateProjectRequest(project_id=projectId)
         )
 
+    def displayAddress(self) -> str:
+        """Return an existing endpoint; observing must never provision a Runtime."""
+        return self._runtimeTarget
+
+    def _callPresentation(self, methodName: str, request):
+        if self._displayService is None:
+            raise RuntimeClientError("UNIMPLEMENTED", "当前 Runtime 尚无页面服务；请先明确运行工程")
+        method = getattr(self._displayService, methodName)
+        try:
+            return method(request, timeout=self.deadlineMs / 1000.0)
+        except Exception as err:
+            if grpc is not None and isinstance(err, grpc.RpcError):
+                raise RuntimeClientError(str(err.code()), err.details() or "display RPC failed") from err
+            raise
+
+    def getDisplayCapabilities(self):
+        return self._callPresentation("Capabilities", runtime_pb2.DisplayEmpty())
+
+    def listDisplayJobs(self, projectId: str):
+        reply = self._callPresentation("ListJobs", runtime_pb2.DisplayEmpty(project_id=projectId))
+        # Do not trust an older endpoint to honor the additive filter field.
+        return [job for job in reply.jobs if getattr(job, "project_id", "") == projectId]
+
+    def prepareStart(self, capturePresentation: bool = False) -> str:
+        """Negotiate only on explicit Run; return a generation for start lookup."""
+        with self._startLock:
+            if self._closed or self._closing:
+                raise RuntimeClientError("E_RUNTIME_CLOSED", "Runtime client is closed")
+            from emo_master.apps.runtime.grpc_server.service import RuntimeService
+            if self._displayService is None and isinstance(self.runtimeService, RuntimeService):
+                if not capturePresentation:
+                    # Keep no-page embedded runs on their existing execution path,
+                    # including their resource cost. Lookup is already provided by
+                    # this owned in-process Runtime; no display host is needed.
+                    return self.runtimeService.runtimeInstanceId
+                from emo_master.apps.runtime.presentation.service import PresentationService
+                from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
+                from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
+                with self.runtimeService._previewJobLock:
+                    presentation = getattr(self.runtimeService, "_presentationOwner", None)
+                    if presentation is None:
+                        presentation = PresentationService(self.runtimeService,
+                            self.runtimeService.workspaceRoot.parent / "presentation")
+                        self._presentationService = presentation
+                # Reuse the only execution/device owner, never create another Runtime.
+                self._presentationServer = AioRuntimeServer(self.runtimeService, presentation)
+                self._runtimeTarget = f"127.0.0.1:{self._presentationServer.port}"
+                self._displayChannel = grpc.insecure_channel(self._runtimeTarget)
+                self._displayService = DisplayServiceStub(self._displayChannel)
+            try:
+                capabilities = self.getDisplayCapabilities()
+            except RuntimeClientError as error:
+                if not capturePresentation and "UNIMPLEMENTED" in error.code:
+                    return ""  # Older external Runtime retains its original no-page path.
+                raise
+            supported = set(capabilities.capabilities)
+            if capturePresentation and "normal_start_capture" not in supported:
+                raise RuntimeClientError("E_CAPTURE_UNSUPPORTED", "当前 Runtime 不支持正常运行时的页面采集")
+            if "start_request_lookup" not in supported:
+                if capturePresentation:
+                    raise RuntimeClientError("E_START_LOOKUP_UNSUPPORTED", "当前 Runtime 不支持启动请求核实")
+                return ""
+            generation = str(capabilities.runtime_instance_id)
+            if not generation:
+                raise RuntimeClientError("E_RUNTIME_IDENTITY", "Runtime 未提供实例标识")
+            return generation
+
+    def getStartRequest(self, startRequestId: str, runtimeInstanceId: str):
+        return self._call("GetStartRequest", runtime_pb2.StartRequestLookup(
+            start_request_id=startRequestId, runtime_instance_id=runtimeInstanceId))
+
+    def releaseDisplayJob(self, jobId: str, runtimeInstanceId: str):
+        status = self.getJobStatus(jobId)
+        if not getattr(status, "ok", False) or getattr(status, "status", "") not in {"COMPLETED", "FAILED", "ABORTED"}:
+            raise RuntimeClientError("E_JOB_NOT_TERMINAL", "上次任务尚未确认结束，不能释放或再次启动")
+        return self._callPresentation("ReleaseJob", runtime_pb2.DisplayRequest(
+            job_id=jobId, runtime_instance_id=runtimeInstanceId))
+
     def startJob(
         self,
         projectId: str,
         workflowId: str = "",
         inputs: dict[str, object] | str | None = None,
+        *,
+        capturePresentation: bool = False,
+        startRequestId: str = "",
+        expectedRuntimeInstanceId: str = "",
     ) -> object:
         if isinstance(inputs, str):
             inputsJson = inputs
         else:
             inputsJson = json.dumps(inputs or {}, ensure_ascii=True)
         request = runtime_pb2.StartJobRequest(
-            project_id=projectId, workflow_id=workflowId, inputs_json=inputsJson
+            project_id=projectId, workflow_id=workflowId, inputs_json=inputsJson,
+            capture_presentation=capturePresentation, start_request_id=startRequestId,
+            expected_runtime_instance_id=expectedRuntimeInstanceId,
         )
         return self._call("StartJob", request)
 
@@ -595,7 +726,15 @@ class RuntimeClient:
         request = runtime_pb2.StreamJobEventsRequest(
             job_id=jobId, after_sequence=afterSequence, follow=follow
         )
-        events = self._call("StreamJobEvents", request, useDeadline=False)
+        context = None
+        method = self.runtimeService.StreamJobEvents
+        if follow and "context" in _signatureParameters(method):
+            # Embedded RuntimeService follows the same cancellation contract as
+            # gRPC, but the generator must be closed by its consuming thread.
+            context = DisplayCallContext()
+            events = method(request, context)
+        else:
+            events = self._call("StreamJobEvents", request, useDeadline=False)
         if not isinstance(events, IterableABC):
             return iter(())
         if not follow:
@@ -603,53 +742,63 @@ class RuntimeClient:
         with self._streamLock:
             previous = self._activeStreams.pop(jobId, None)
             if previous is not None:
+                self._retiringStreams.add(previous)
                 previous.cancel()
             stream = RuntimeEventStream(
                 events,
                 self._toEventDTO,
                 lambda value: self._removeActiveStream(jobId, value),
+                context,
             )
             self._activeStreams[jobId] = stream
         return stream
 
     def cancelEventStream(self, jobId: str) -> bool:
         with self._streamLock:
-            stream = self._activeStreams.pop(jobId, None)
+            stream = self._activeStreams.get(jobId)
         if stream is None:
             return False
         stream.cancel()
         return True
 
     def close(self) -> None:
-        with self._streamLock:
+        # Keep failed owners reachable for an explicit cleanup retry. A timeout
+        # is not evidence that a thread/process relinquished its resources.
+        with self._closeLock:
             if self._closed:
                 return
+            self._closing = True
+            with self._streamLock:
+                streams = set(self._activeStreams.values()) | self._retiringStreams
+            for stream in streams:
+                stream.cancel()
+            for stream in streams:
+                if not stream.waitClosed(max(0.1, self.deadlineMs / 1000.0)):
+                    raise TimeoutError("runtime event consumer still owns its iterator")
+            with self._displayLock:
+                displayOwners = list(self._displayCalls)
+            for owner in displayOwners:
+                self.closeDisplayOwner(owner)
+            unsubscribe = getattr(self._ownedChannel, "unsubscribe", None)
+            if callable(unsubscribe):
+                unsubscribe(self._onChannelState)
+            for field in ("_presentationServer", "_displayChannel", "_ownedRuntimeService", "_ownedChannel"):
+                resource = getattr(self, field)
+                self._closeOwned(resource)
+                setattr(self, field, None)
+            # PresentationService is owned by RuntimeService, including when a
+            # debug viewer borrows it. This adapter never disposes a borrowed owner.
             self._closed = True
-            streams = list(self._activeStreams.values())
-            self._activeStreams.clear()
-        for stream in streams:
-            stream.cancel()
-        with self._displayLock:
-            displayOwners = list(self._displayCalls)
-        for owner in displayOwners:
-            self.closeDisplayOwner(owner)
-        unsubscribe = getattr(self._ownedChannel, "unsubscribe", None)
-        if callable(unsubscribe):
-            unsubscribe(self._onChannelState)
-        self._closeOwned(self._ownedRuntimeService)
-        self._closeOwned(self._ownedChannel)
+            self._closing = False
 
     def _closeOwned(self, resource: object | None) -> None:
         close = getattr(resource, "close", None)
-        if not callable(close):
-            return
-        try:
+        if callable(close):
             close()
-        except Exception:
-            return
 
     def _removeActiveStream(self, jobId: str, stream: RuntimeEventStream) -> None:
         with self._streamLock:
+            self._retiringStreams.discard(stream)
             if self._activeStreams.get(jobId) is stream:
                 self._activeStreams.pop(jobId, None)
 

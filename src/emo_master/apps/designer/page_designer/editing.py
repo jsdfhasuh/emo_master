@@ -136,6 +136,14 @@ class PageCommands:
         if actual not in ACCEPTED.get(item.type, set()):
             raise ValueError(f'类型不兼容：{actual} → {item.type}')
         p = document.presentation
+        if actual == 'image':
+            otherImages = {p.dataSources[key].model_dump_json(exclude={'resultScopeId'})
+                for currentPageId, page in p.pages.items() for component in walkComponents(page.components)
+                if not (currentPageId == pageId and component.componentId == componentId)
+                for key in component.bindings.values() if key in p.dataSources
+                and p.dataSources[key].expectedType == 'image'}
+            if otherImages - {choice.source.model_dump_json(exclude={'resultScopeId'})}:
+                raise ValueError('当前运行采集仅支持一个图像来源；两页可复用同一来源，第二张图尚未支持')
         used = {key for page in p.pages.values() for component in walkComponents(page.components)
                 for key in component.bindings.values()}
         scopes = {p.dataSources[key].resultScopeId for key in used if key in p.dataSources}

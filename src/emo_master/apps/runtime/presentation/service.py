@@ -18,12 +18,14 @@ from emo_master.apps.runtime.presentation.mailbox import SharedMailbox
 
 
 class PresentationService:
+    supportsNormalCapture = True
+
     def __init__(self, runtime, root: Path):
         if getattr(runtime, "_presentationOwner", None) is not None:
             raise ValueError("Runtime already has a presentation owner")
         self.runtime = runtime
         self.root = root
-        self.runtimeInstanceId = str(uuid4())
+        self.runtimeInstanceId = getattr(runtime, "runtimeInstanceId", str(uuid4()))
         self.prepared: dict = {}
         self.jobs: dict = {}
         self.store = ResultStore()
@@ -75,27 +77,12 @@ class PresentationService:
             from emo_master.core.project.models import ProjectDocument
             document = ProjectDocument.model_validate_json(prepared.projectPath.read_text(encoding="utf-8"))
             job = self.runtime.jobManager.createJob(snapshot.projectId, document.project.revision, document.entryWorkflowId)
-            config = {"plan": prepared.sourceJson, "preparedId": preparedId, "credits": self.context.BoundedSemaphore(8),
-                      "queue": SharedMailbox(self.context),
-                      "capture": capture, "measure": measure,
-                      "versions": {k: d.manifest.version for k, d in self.runtime.pluginScanResult.activeOperators.items()},
-                      "slots": [],
-                      "scopeIds": list(json.loads(prepared.sourceJson)["scopes"]),
-                      "ordinals": self.context.Array("Q", 16, lock=False),
-                      "rejected": self.context.Value("Q", 0), "identity": {
-                          "runtimeInstanceId": self.runtimeInstanceId, "jobId": job.jobId,
-                          "executionRevision": snapshot.executionRevision,
-                          "capturePlanRevision": snapshot.capturePlanRevision, "mode": snapshot.mode}}
-            if self.exporter:
-                used = {slot["index"] for active in self.jobs.values() for slot in active["slots"]}
-                # Static slot ownership makes a worker dying during the copy
-                # reclaimable even if it never manages to send a descriptor.
-                config["slots"] = [next(s for s in self.exporter.descriptors() if s["index"] not in used)]
-            self.jobs[job.jobId] = config
-            self.timings[job.jobId] = deque(maxlen=128)
-            reader = threading.Thread(target=self._read, args=(job.jobId, config), name=f"display-ipc-{job.jobId}")
-            self.readers[job.jobId] = reader
-            reader.start()
+            job.executionMode = snapshot.mode
+            config = self._attach(job.jobId, prepared.sourceJson,
+                executionRevision=snapshot.executionRevision,
+                capturePlanRevision=snapshot.capturePlanRevision, mode=snapshot.mode,
+                preparedId=preparedId, capture=capture, measure=measure,
+                captureDefinitionJson=snapshot.capturePlanJson)
             workspace = self.root / "jobs" / job.jobId
             workspace.mkdir(parents=True)
             try:
@@ -108,6 +95,52 @@ class PresentationService:
                 self.terminalStates[job.jobId] = ("FAILED", time.monotonic())
                 raise
             return job.jobId
+
+    def checkNormalAdmission(self):
+        with self.lock:
+            if not self.supportsNormalCapture:
+                raise ValueError("this test-release host does not accept normal StartJob capture")
+            if self.closed:
+                raise ValueError("presentation service is closed")
+            if len(self.jobs) >= 2:
+                raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
+
+    def attachNormal(self, jobId, frozen):
+        """Attach to an already-created normal Job; never create a second Job."""
+        with self.lock:
+            self.checkNormalAdmission()
+            return self._attach(jobId, frozen.sourceJson,
+                executionRevision=frozen.executionRevision,
+                capturePlanRevision=frozen.capturePlanRevision, mode="runtime",
+                captureDefinitionJson=frozen.captureDefinitionJson)
+
+    def _attach(self, jobId, sourceJson, *, executionRevision, capturePlanRevision,
+                mode, captureDefinitionJson, preparedId="", capture=True, measure=False):
+        plan = json.loads(sourceJson)
+        needsImage = any(source["expectedType"] == "image" for source in plan["sources"].values())
+        if needsImage and self.exporter is None:
+            self.exporter = ExportPool(self.root / "staging", self._exported)
+        config = {"plan": sourceJson, "preparedId": preparedId,
+                  "captureDefinitionJson": captureDefinitionJson,
+                  "credits": self.context.BoundedSemaphore(8), "queue": SharedMailbox(self.context),
+                  "capture": capture, "measure": measure,
+                  "versions": {key: definition.manifest.version
+                               for key, definition in self.runtime.pluginScanResult.activeOperators.items()},
+                  "slots": [], "scopeIds": list(plan["scopes"]),
+                  "ordinals": self.context.Array("Q", 16, lock=False),
+                  "rejected": self.context.Value("Q", 0), "identity": {
+                      "runtimeInstanceId": self.runtimeInstanceId, "jobId": jobId,
+                      "executionRevision": executionRevision,
+                      "capturePlanRevision": capturePlanRevision, "mode": mode}}
+        if needsImage and self.exporter:
+            used = {slot["index"] for active in self.jobs.values() for slot in active["slots"]}
+            config["slots"] = [next(slot for slot in self.exporter.descriptors() if slot["index"] not in used)]
+        self.jobs[jobId] = config
+        self.timings[jobId] = deque(maxlen=128)
+        reader = threading.Thread(target=self._read, args=(jobId, config), name=f"display-ipc-{jobId}")
+        self.readers[jobId] = reader
+        reader.start()
+        return config
 
     def _read(self, jobId, config):
         while True:
@@ -168,12 +201,12 @@ class PresentationService:
         sources = []
         for source in seal["sources"]:
             if source.get("pendingImage"):
-                exported = pending["exports"].get(source["sourceId"])
+                exported = pending["exports"].get(source.get("imageSourceId", source["sourceId"]))
                 if exported is None:
                     if time.monotonic() < pending["deadline"]:
                         return
                     exported = unavailable(source["sourceId"], "EXPORT_TIMEOUT")
-                sources.append(exported)
+                sources.append(dict(exported, sourceId=source["sourceId"]))
             else:
                 sources.append(source)
         if self.store.close(key, sources, seal["terminal"]):
@@ -223,15 +256,14 @@ class PresentationService:
                 raise ValueError("cannot release a running Job")
             if jobId in self.readers and self.readers[jobId].is_alive():
                 raise ValueError("display IPC still retiring")
-            handle = self.runtime.jobSupervisor._handles.get(jobId)
-            if handle is not None and handle[0].is_alive():
+            if self.runtime.jobSupervisor.ownsJobResources(jobId):
                 raise ValueError("Worker still owns its workspace")
             with self.store.lock:
                 for key, pending in list(self.pending.items()):
                     if pending["job"] == jobId:
                         raise ValueError("exports still own this Job; release after result closure")
                 config = self.jobs.get(jobId)
-                if config:
+                if config and config.get("preparedId"):
                     import shutil
                     from emo_master.apps.runtime.preview.store import _ioPath
                     workspace = (self.root / "jobs" / jobId).resolve()
@@ -270,6 +302,8 @@ class PresentationService:
             return
         if any(not self.runtime.jobRepository.get(job).isTerminal for job in self.jobs):
             raise ValueError("Runtime owner must stop Jobs before disposing presentation service")
+        if any(self.runtime.jobSupervisor.ownsJobResources(job) for job in self.jobs):
+            raise ValueError("Worker still owns presentation resources")
         for reader in self.readers.values():
             reader.join(2)
             if reader.is_alive():
@@ -316,5 +350,15 @@ class PresentationService:
             record = self.prepared[preparedId]
             if any(config.get("preparedId") == preparedId for config in self.jobs.values()):
                 raise ValueError("release Jobs before discarding their prepared snapshot")
-            shutil.rmtree(record.projectPath.parent)
+            stateRoot = None
+            if record.snapshot.mode == "debug":
+                stateRoot = Path(record.snapshot.runtimeDbPath).parent.resolve()
+                if not (stateRoot.is_relative_to(self.root.resolve())
+                        and stateRoot.name == record.snapshot.snapshotId
+                        and stateRoot.parent.name == "debug"):
+                    raise ValueError("debug state ownership mismatch")
+            if record.projectPath.parent.exists():
+                shutil.rmtree(record.projectPath.parent)
+            if stateRoot is not None and stateRoot.exists():
+                shutil.rmtree(stateRoot)
             del self.prepared[preparedId]

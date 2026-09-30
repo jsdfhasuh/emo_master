@@ -170,3 +170,35 @@ def testReleaseOutputSiteUsesOwnedChineseDirectory(tmp_path):
         assert not list(store.root.rglob('result.png'))
     finally:
         host.close()
+
+
+def testNormalCaptureCannotBypassTestHostSingleStartBoundary(tmp_path):
+    from uuid import uuid4
+    store, _ = installed(tmp_path)
+    host = ReleaseHost(store.root, tmp_path / 'data')
+    try:
+        with grpc.insecure_channel(host.address) as channel:
+            display = rpc.DisplayServiceStub(channel)
+            runtime = rpc.RuntimeServiceStub(channel)
+            capabilities = display.Capabilities(pb.DisplayEmpty(), timeout=3)
+            assert 'normal_start_capture' not in capabilities.capabilities
+            assert runtime.LoadProject(pb.LoadProjectRequest(
+                project_path=str(host.prepared.projectPath.parent)), timeout=3).ok
+            def refusedNormalStart():
+                reply = runtime.StartJob(pb.StartJobRequest(
+                    project_id=host.document.project.projectId, capture_presentation=True,
+                    start_request_id=uuid4().hex,
+                    expected_runtime_instance_id=capabilities.runtime_instance_id), timeout=3)
+                assert not reply.ok and reply.status == 'REJECTED'
+                assert 'test-release host' in reply.message
+            refusedNormalStart()
+            assert not host.runtime.jobRepository.all()
+            job = display.Start(pb.DisplayStartRequest(
+                prepared_id=host.prepared.snapshot.snapshotId), timeout=20).job_id
+            refusedNormalStart()
+            assert len(host.runtime.jobRepository.all()) == 1
+            assert host.runtime.jobRepository.get(job) is not None
+            with pytest.raises(grpc.RpcError):
+                display.Start(pb.DisplayStartRequest(prepared_id=host.prepared.snapshot.snapshotId), timeout=3)
+    finally:
+        host.close()

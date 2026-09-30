@@ -33,6 +33,7 @@ class JobRecord:
     errorCode: str = ""
     message: str = ""
     stopMode: str = ""
+    executionMode: str = "runtime"
 
     @property
     def isTerminal(self) -> bool:

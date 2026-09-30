@@ -1,5 +1,6 @@
 """One project boundary shared with the existing flow controller."""
 import hashlib
+from copy import deepcopy
 from pathlib import Path
 
 from PySide2.QtWidgets import QAction, QMessageBox, QStackedWidget
@@ -16,7 +17,11 @@ class PageCoordinator:
         self.closeApproved = None
         from .preview import PreviewController
         self.preview = PreviewController(self)
-        self.session = ProjectEditSession(window.workflowStore.toPayload(),
+        initialPayload = window.workflowStore.toPayload()
+        # toPayload is a save-oriented snapshot which increments revision. The
+        # normal workspace becoming discoverable must not edit project metadata.
+        initialPayload['project'] = deepcopy(window.workflowStore.project)
+        self.session = ProjectEditSession(initialPayload,
             workflows=window.workflowStore, enablePresentation=False)
         self.stack = QStackedWidget()
         window.takeCentralWidget()
@@ -36,17 +41,30 @@ class PageCoordinator:
             window.mainToolbar.addAction(action)
 
     def sync(self):
+        if self.editor:
+            self.editor.tools.commitPending()
         self.window.workflowController.captureActiveWorkflow()
         self.session.checkpoint()
+
+    def _canSync(self):
+        try:
+            self.sync()
+            return True
+        except ValueError as error:
+            self.preview.message('请先修正未提交的页面输入：' + str(error))
+            return False
 
     def pageActive(self):
         return self.editor is not None and self.stack.currentWidget() is self.editor
 
     def showFlow(self):
+        if not self._canSync():
+            return
         self.stack.setCurrentIndex(0)
 
     def showPages(self):
-        self.sync()
+        if not self._canSync():
+            return
         if self.session.document().presentation is None:
             answer = QMessageBox.question(self.window, '启用页面设计',
                 '此项目将采用 2.2 格式。保存时保留 project.json.bak；旧版本需使用备份。继续？',
@@ -62,7 +80,8 @@ class PageCoordinator:
         self.stack.setCurrentWidget(self.editor)
 
     def history(self, redo=False):
-        self.sync()
+        if not self._canSync():
+            return
         if (self.session.redo if redo else self.session.undo)():
             self.window.workflowController._renderActive()
             self.window.activeWorkflowId = self.session.workflows.activeWorkflowId
@@ -83,7 +102,8 @@ class PageCoordinator:
         return True
 
     def prepareClose(self):
-        self.sync()
+        if not self._canSync():
+            return False
         if self.closeApproved != self.session._signature():
             if not self.confirmDraft():
                 return False
@@ -96,7 +116,8 @@ class PageCoordinator:
         return True
 
     def confirmDraft(self):
-        self.sync()
+        if not self._canSync():
+            return False
         if not self.session.dirty:
             return True
         answer = QMessageBox.question(self.window, '项目有未保存修改',
@@ -201,6 +222,10 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
+        if not self.preview.active():
+            self.preview.coverage = None
+            self.preview.selectedJob = None
+            self.preview.observationLabel = ''
         if self.editor:
             self.editor.close()
             self.stack.removeWidget(self.editor)

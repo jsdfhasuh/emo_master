@@ -22,7 +22,7 @@ class ResultIdentity(FrozenModel):
     resultOrdinal: int = Field(ge=1)
     executionRevision: str = Field(pattern=r"^[0-9a-f]{64}$")
     capturePlanRevision: str = Field(pattern=r"^[0-9a-f]{64}$")
-    mode: Literal["debug", "release"]
+    mode: Literal["debug", "release", "runtime"]
 
 
 class FrameProvenance(FrozenModel):

@@ -65,9 +65,11 @@ def nextItem(iterator):
 
 
 class AioRuntimeServer:
-    def __init__(self, runtime, presentation, port=0):
+    def __init__(self, runtime, presentation, port=0, *, host="127.0.0.1", startImmediately=True):
         self.runtime, self.presentation = runtime, presentation
         self.port = port
+        self.host = host
+        self.started = startImmediately
         self.pools = {key: ThreadPoolExecutor(max_workers=value, thread_name_prefix=f"rpc-{key}") for key, value in LIMITS.items()}
         self.cleanupPool = ThreadPoolExecutor(max_workers=sum(LIMITS.values()), thread_name_prefix="rpc-cleanup")
         self.active = {key: 0 for key in LIMITS}
@@ -230,10 +232,16 @@ class AioRuntimeServer:
                                               ("grpc.max_send_message_length", 9 * 1024 * 1024)])
         rpc.add_RuntimeServiceServicer_to_server(self._adapter("RuntimeService", self.runtime, rpc.RuntimeServiceServicer()), self.server)
         rpc.add_DisplayServiceServicer_to_server(self._adapter("DisplayService", DisplayRpc(self.presentation), rpc.DisplayServiceServicer()), self.server)
-        self.port = self.server.add_insecure_port(f"127.0.0.1:{self.port}")
+        self.port = self.server.add_insecure_port(f"{self.host}:{self.port}")
         if not self.port:
-            raise RuntimeError("loopback port unavailable")
-        await self.server.start()
+            raise RuntimeError("runtime port unavailable")
+        if self.started:
+            await self.server.start()
+
+    def start(self):
+        if not self.started:
+            asyncio.run_coroutine_threadsafe(self.server.start(), self.loop).result(10)
+            self.started = True
 
     def _run(self):
         self.loop = asyncio.new_event_loop()
@@ -255,15 +263,15 @@ class AioRuntimeServer:
         for pool in (*self.pools.values(), self.cleanupPool):
             pool.shutdown(wait=True)
 
-    def close(self, timeout=4):
+    def close(self, timeout=4, *, grace=0):
         async def stop():
-            await self.server.stop(0)
+            await self.server.stop(grace)
             deadline = time.monotonic() + timeout
             while (any(self.active.values()) or self.cleanups) and time.monotonic() < deadline:
                 await asyncio.sleep(.01)
             if any(self.active.values()) or self.cleanups:
                 raise TimeoutError(f"RPC work still owns quota: {self.active}")
-        asyncio.run_coroutine_threadsafe(stop(), self.loop).result(timeout + 2)
+        asyncio.run_coroutine_threadsafe(stop(), self.loop).result(timeout + grace + 2)
         self.loop.call_soon_threadsafe(self.loop.stop)
         self.thread.join(2)
         if self.thread.is_alive():

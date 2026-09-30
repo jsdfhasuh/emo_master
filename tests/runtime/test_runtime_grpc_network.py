@@ -72,3 +72,27 @@ def testRuntimeClientUsesRandomPortGrpcContract(tmp_path: Path) -> None:
         channel.close()
         server.stop(0).wait()
         service.close()
+
+
+def testDefaultServerExposesReadonlyDisplayWithoutStartingJob(tmp_path: Path) -> None:
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
+
+    service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+    server.start()
+    channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+    try:
+        stub = runtime_pb2_grpc.DisplayServiceStub(channel)
+        capabilities = stub.Capabilities(runtime_pb2.DisplayEmpty(), timeout=5)
+        assert {'normal_start_capture', 'project_jobs', 'source_coverage'} <= set(capabilities.capabilities)
+        assert capabilities.runtime_instance_id == service.runtimeInstanceId
+        assert not stub.ListJobs(runtime_pb2.DisplayEmpty(project_id='unloaded'), timeout=5).jobs
+        assert not service.jobRepository.all()
+        assert service._presentationOwner.exporter is None
+    finally:
+        channel.close()
+        server.stop(0).wait()
+        server.stop(0).wait()  # Idempotent transport shutdown does not touch Jobs.
+        assert server.wait_for_termination(timeout=0) is False
+        service.close()
+        assert service._presentationOwner is None

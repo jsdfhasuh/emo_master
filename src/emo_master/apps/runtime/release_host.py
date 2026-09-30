@@ -4,7 +4,6 @@ from contextlib import ExitStack
 from pathlib import Path
 import re
 import threading
-import time
 
 import grpc
 
@@ -19,6 +18,8 @@ from emo_master.core.project.test_delivery import readJson
 
 class TestReleaseChannel(PresentationService):
     """Single validated release per host; new RPC Prepare cannot inject a draft."""
+    supportsNormalCapture = False
+
     def prepare(self, project, resourceRoot, **kwargs):
         if self.prepared or kwargs.get('mode') != 'release' or not kwargs.get('releaseRevision'):
             raise ValueError('test host accepts only its explicitly activated release')
@@ -82,22 +83,16 @@ class ReleaseHost:
         if self.server:
             self.server.close()
             self.server = None
+        # The Runtime owner reaps actual workers before disposing presentation
+        # resources. A terminal event alone can precede process/bridge retirement.
+        # On failure retain all owner references and directory locks for retry.
+        if self.runtime:
+            self.runtime.close()
         if self.presentation:
-            for jobId in list(self.presentation.jobs):
-                job = self.runtime.jobRepository.get(jobId)
-                if job and not job.isTerminal:
-                    self.runtime.StopJob(pb.StopJobRequest(job_id=jobId, mode='force'), None)
-            deadline = time.monotonic() + 5
-            while any(not self.runtime.jobRepository.get(j).isTerminal for j in self.presentation.jobs):
-                if time.monotonic() >= deadline:
-                    raise TimeoutError('owned release Jobs have not terminated; directory remains owned')
-                time.sleep(.02)
             self.presentation.close()
             for preparedId in list(self.presentation.prepared):
                 self.presentation.discardPrepared(preparedId)
             self.presentation = None
-        if self.runtime:
-            self.runtime.close()
         self.owners.close()
         self.closed = True
 

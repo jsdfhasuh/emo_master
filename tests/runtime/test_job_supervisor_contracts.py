@@ -346,3 +346,40 @@ def testEventBridgePersistenceFailureStillMarksJobTerminal() -> None:
     assert updated.status == JobStatus.FAILED.value
     assert updated.errorCode == "E_EVENT_PERSISTENCE"
     assert updated.endedAtMs > 0
+
+
+def testUnkillableTerminalWorkerRetainsOwnershipAndAdmission() -> None:
+    supervisor, repository, _, process = _supervisor()
+    process.terminate = lambda: None
+    process.kill = lambda: None
+    supervisor.maxConcurrentJobs = 1
+    repository.update("job-stop", status=JobStatus.FAILED.value)
+    supervisor._reap("job-stop")
+    assert supervisor.getProcess("job-stop") is process
+    assert not process.closed
+    with pytest.raises(RuntimeError, match="MAX_CONCURRENT"):
+        supervisor.startJob(JobProcessSpec("another-job", "project.json", "main"))
+    process.alive = False
+    supervisor._reap("job-stop")
+    assert supervisor.getProcess("job-stop") is None
+
+
+def testAliveBridgeRetainsTerminalWorkerOwnershipUntilFinalCallback() -> None:
+    supervisor, repository, _, process = _supervisor()
+    process.alive = False
+    repository.update("job-stop", status=JobStatus.ABORTED.value)
+    bridge = supervisor._bridges["job-stop"]
+    bridge.is_alive = lambda: True
+    retired = []
+    supervisor.retiredCallback = retired.append
+    supervisor.maxConcurrentJobs = 1
+    supervisor._reap("job-stop")
+    assert supervisor.ownsJobResources("job-stop")
+    assert supervisor.getProcess("job-stop") is process
+    assert not process.closed and not retired
+    with pytest.raises(RuntimeError, match="MAX_CONCURRENT"):
+        supervisor.startJob(JobProcessSpec("another-job", "project.json", "main"))
+    bridge.is_alive = lambda: False
+    supervisor.bridgeStopped("job-stop")
+    assert not supervisor.ownsJobResources("job-stop")
+    assert process.closed and retired == ["job-stop"]

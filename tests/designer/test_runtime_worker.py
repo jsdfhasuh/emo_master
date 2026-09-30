@@ -302,3 +302,201 @@ def testRuntimeWorkerPrefersIncrementalIteratorWhenAvailable() -> None:
     _runWorker(RuntimeWorker(Client(), "project", "main"))
 
     assert calls == ["iter"]
+
+
+def testCaptureRunUsesOriginalStartAndNegotiatedRequestIdentity() -> None:
+    from types import SimpleNamespace
+
+    class Client(_RuntimeStub):
+        def __init__(self):
+            super().__init__()
+            self.calls = []
+            self.release.set()
+
+        def prepareStart(self, capture):
+            assert capture is True
+            return "runtime-one"
+
+        def startJob(self, projectId, **kwargs):
+            self.calls.append((projectId, kwargs))
+            return SimpleNamespace(ok=True, job_id="job-worker", runtime_instance_id="runtime-one")
+
+    client = Client()
+    worker = RuntimeWorker(client, "original-project", "main", capturePresentation=True)
+    accepted = []
+    worker.jobAccepted.connect(accepted.append)
+    _runWorker(worker)
+    assert len(client.calls) == 1
+    project, fields = client.calls[0]
+    assert project == "original-project"
+    assert fields == {"workflowId": "main", "inputs": {}, "capturePresentation": True,
+                      "startRequestId": worker.startRequestId, "expectedRuntimeInstanceId": "runtime-one"}
+    assert accepted[0].job_id == "job-worker"
+
+
+def testUncertainStartQueriesSameTokenWithoutStartingAgain() -> None:
+    from types import SimpleNamespace
+
+    class Client(_RuntimeStub):
+        def __init__(self):
+            super().__init__()
+            self.release.set()
+            self.starts = []
+            self.queries = []
+
+        def prepareStart(self, capture):
+            return "runtime-one"
+
+        def startJob(self, projectId, **kwargs):
+            self.starts.append(kwargs)
+            raise TimeoutError("response lost after acceptance")
+
+        def getStartRequest(self, requestId, generation):
+            self.queries.append((requestId, generation))
+            if len(self.queries) == 1:
+                raise ConnectionError("reconnecting")
+            if len(self.queries) == 2:
+                return SimpleNamespace(ok=False, status="UNKNOWN", start_request_id=requestId,
+                                       runtime_instance_id=generation)
+            return SimpleNamespace(ok=True, job_id="job-worker", status="RUNNING",
+                                   start_request_id=requestId, runtime_instance_id=generation)
+
+    client = Client()
+    worker = RuntimeWorker(client, "project", capturePresentation=True)
+    accepted, uncertain, failed = [], [], []
+    worker.jobAccepted.connect(accepted.append)
+    worker.uncertain.connect(uncertain.append)
+    worker.failed.connect(failed.append)
+    _runWorker(worker)
+    assert len(client.starts) == 1
+    assert client.queries == [(worker.startRequestId, "runtime-one")] * 3
+    assert accepted[0].job_id == "job-worker"
+    assert len(uncertain) == 1 and not failed and not worker.startUncertain
+
+
+def testRuntimeGenerationChangeDoesNotRetryUnknownStart() -> None:
+    from types import SimpleNamespace
+
+    class Client:
+        starts = 0
+
+        def prepareStart(self, capture):
+            return "old-runtime"
+
+        def startJob(self, projectId, **kwargs):
+            self.starts += 1
+            raise TimeoutError("lost reply")
+
+        def getStartRequest(self, requestId, generation):
+            assert generation == "old-runtime"
+            return SimpleNamespace(ok=False, status="RESET_REQUIRED", start_request_id=requestId,
+                                   runtime_instance_id="replacement-runtime")
+
+    client = Client()
+    worker = RuntimeWorker(client, "project")
+    failed = []
+    worker.failed.connect(failed.append)
+    _runWorker(worker)
+    assert client.starts == 1
+    assert worker.startUncertain and not failed
+    assert worker._jobId == ""
+
+
+def testUnknownLegacyStartDoesNotReportConclusiveFailure() -> None:
+    class Client:
+        def startJob(self, projectId):
+            raise TimeoutError("legacy runtime response lost")
+
+    worker = RuntimeWorker(Client(), "project")
+    uncertain, failed = [], []
+    worker.uncertain.connect(uncertain.append)
+    worker.failed.connect(failed.append)
+    _runWorker(worker)
+    assert worker.startUncertain and len(uncertain) == 1 and not failed
+
+
+def testNextExplicitStartWaitsForPreviousCaptureCleanup() -> None:
+    from types import SimpleNamespace
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+
+    class Client(_RuntimeStub):
+        def __init__(self):
+            super().__init__()
+            self.release.set()
+            self.calls = []
+
+        def prepareStart(self, capture):
+            return "runtime-one"
+
+        def releaseDisplayJob(self, jobId, generation):
+            self.calls.append(("release", jobId, generation))
+            if len(self.calls) == 1:
+                raise RuntimeClientError("StatusCode.FAILED_PRECONDITION", "display IPC still retiring")
+
+        def startJob(self, projectId, **kwargs):
+            self.calls.append(("start", projectId))
+            return SimpleNamespace(ok=True, job_id="job-worker")
+
+    client = Client()
+    worker = RuntimeWorker(client, "project", previousCaptureJob=("old-job", "runtime-one"))
+    _runWorker(worker)
+    assert client.calls == [("release", "old-job", "runtime-one"),
+                            ("release", "old-job", "runtime-one"), ("start", "project")]
+
+
+def testNextStartNeverRunsIfPreviousCaptureCleanupCannotBeVerified() -> None:
+    class Client:
+        def prepareStart(self, capture):
+            return "runtime-one"
+
+        def releaseDisplayJob(self, jobId, generation):
+            raise ConnectionError("cannot confirm cleanup")
+
+        def startJob(self, projectId, **kwargs):
+            raise AssertionError("must not create a new job")
+
+    worker = RuntimeWorker(Client(), "project", previousCaptureJob=("old-job", "runtime-one"))
+    failures = []
+    worker.failed.connect(failures.append)
+    _runWorker(worker)
+    assert failures == ["cannot confirm cleanup"]
+    assert not worker.startUncertain
+
+
+def testPendingStopWaitsForReconciledIdentityThenStopsOnlyThatJob() -> None:
+    from types import SimpleNamespace
+
+    class Client:
+        starts = 0
+        stopped = []
+
+        def prepareStart(self, capture):
+            return "runtime-one"
+
+        def startJob(self, projectId, **kwargs):
+            self.starts += 1
+            raise TimeoutError("lost acknowledgement")
+
+        def getStartRequest(self, requestId, generation):
+            worker.requestStopAfterStart()
+            return SimpleNamespace(ok=True, job_id="accepted-once", status="RUNNING",
+                                   start_request_id=requestId, runtime_instance_id=generation)
+
+        def stopJob(self, jobId):
+            self.stopped.append(jobId)
+
+        def getJobStatus(self, jobId):
+            return SimpleNamespace(status="ABORTED")
+
+        def iterJobEvents(self, *args, **kwargs):
+            raise AssertionError("should stop accepted job without following events")
+
+    client = Client()
+    worker = RuntimeWorker(client, "project")
+    statuses = []
+    worker.statusChanged.connect(statuses.append)
+    _runWorker(worker)
+    assert client.starts == 1
+    assert client.stopped == ["accepted-once"]
+    assert statuses[-1].status == "ABORTED"
+    assert not worker.startUncertain

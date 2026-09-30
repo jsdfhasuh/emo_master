@@ -4,6 +4,7 @@ import threading
 import inspect
 import json
 import time
+from uuid import uuid4
 from typing import Any, Callable
 
 
@@ -17,6 +18,7 @@ try:
         eventReceived: Any = Signal(object)
         statusChanged: Any = Signal(object)
         failed: Any = Signal(str)
+        uncertain: Any = Signal(str)
 
         def __init__(
             self,
@@ -24,12 +26,21 @@ try:
             projectId: str,
             workflowId: str = "",
             inputs: dict[str, object] | None = None,
+            *,
+            capturePresentation: bool = False,
+            previousCaptureJob: tuple[str, str] | None = None,
         ) -> None:
             super().__init__()
             self.runtimeClient = runtimeClient
             self.projectId = projectId
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
+            self.capturePresentation = capturePresentation
+            self.previousCaptureJob = previousCaptureJob
+            self.startRequestId = uuid4().hex
+            self.expectedRuntimeInstanceId = ""
+            self.startUncertain = False
+            self.cancelAfterStart = False
             self._stopEvent = threading.Event()
             self._streamLock = threading.RLock()
             self._stream = None
@@ -41,6 +52,9 @@ try:
         def requestStop(self) -> None:
             self._stopEvent.set()
             self.cancelSubscription()
+
+        def requestStopAfterStart(self) -> None:
+            self.cancelAfterStart = True
 
         def requestInterruption(self) -> None:
             self.requestStop()
@@ -105,11 +119,21 @@ except Exception:  # pragma: no cover
             projectId: str,
             workflowId: str = "",
             inputs: dict[str, object] | None = None,
+            *,
+            capturePresentation: bool = False,
+            previousCaptureJob: tuple[str, str] | None = None,
         ) -> None:
             self.runtimeClient = runtimeClient
             self.projectId = projectId
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
+            self.capturePresentation = capturePresentation
+            self.previousCaptureJob = previousCaptureJob
+            self.startRequestId = uuid4().hex
+            self.expectedRuntimeInstanceId = ""
+            self.startUncertain = False
+            self.cancelAfterStart = False
+            self.uncertain = _Signal()
             self.jobAccepted = _Signal()
             self.eventReceived = _Signal()
             self.statusChanged = _Signal()
@@ -143,6 +167,9 @@ except Exception:  # pragma: no cover
         def requestStop(self) -> None:
             self._stopEvent.set()
             self.cancelSubscription()
+
+        def requestStopAfterStart(self) -> None:
+            self.cancelAfterStart = True
 
         def requestInterruption(self) -> None:
             self.requestStop()
@@ -229,18 +256,41 @@ def _runWorker(worker: RuntimeWorker) -> None:
     try:
         if worker.stopRequested():
             return
-        reply = _startJobCompat(worker)
-        if not bool(getattr(reply, "ok", False)):
-            worker.failed.emit(str(getattr(reply, "message", "runtime job failed")))
-            worker.statusChanged.emit(reply)
-            return
-        worker.jobAccepted.emit(reply)
-        jobId = str(getattr(reply, "job_id", ""))
-        worker.setJobId(jobId)
-        if jobId == "":
-            worker.failed.emit("runtime returned an empty job id")
-            return
+        # All negotiation/cleanup happens off the GUI thread and before Start.
+        prepare = getattr(worker.runtimeClient, "prepareStart", None)
+        if callable(prepare):
+            worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation)
+        elif worker.capturePresentation:
+            raise ValueError("当前 Runtime 客户端不支持正常运行时页面采集")
+        _releasePreviousCapture(worker)
         if worker.stopRequested():
+            return
+        try:
+            reply = _startJobCompat(worker)
+        except Exception as error:
+            reply = _reconcileStart(worker, error)
+            if reply is None:
+                return
+        if str(getattr(reply, "status", "")) in {"UNKNOWN", "RESET_REQUIRED"}:
+            reply = _reconcileStart(worker, RuntimeError(str(getattr(reply, "message", "启动结果未知"))))
+            if reply is None:
+                return
+        jobId = str(getattr(reply, "job_id", ""))
+        if not bool(getattr(reply, "ok", False)):
+            # A rejected start can still own a failed job's capture resources.
+            if jobId:
+                worker.setJobId(jobId)
+                worker.jobAccepted.emit(reply)
+            worker.statusChanged.emit(reply)
+            worker.failed.emit(str(getattr(reply, "message", "runtime job failed")))
+            return
+        if not jobId:
+            _markUncertain(worker, "Runtime 返回了空任务标识；须核实此次启动，不能重新启动")
+            return
+        worker.setJobId(jobId)
+        worker.startUncertain = False
+        worker.jobAccepted.emit(reply)
+        if worker.stopRequested() or worker.cancelAfterStart:
             stopJob = getattr(worker.runtimeClient, "stopJob", None)
             if callable(stopJob):
                 try:
@@ -257,6 +307,63 @@ def _runWorker(worker: RuntimeWorker) -> None:
             _emitStatusAfterStop(worker, worker._jobId)
         else:
             worker.failed.emit(str(err))
+
+
+def _markUncertain(worker: RuntimeWorker, message: str) -> None:
+    worker.startUncertain = True
+    worker.uncertain.emit(message)
+
+
+def _reconcileStart(worker: RuntimeWorker, error: Exception):
+    _markUncertain(worker, f"启动结果尚未确认，正在核实同一次请求；不会重复启动：{error}")
+    query = getattr(worker.runtimeClient, "getStartRequest", None)
+    if not worker.expectedRuntimeInstanceId or not callable(query):
+        return None
+    delay = .1
+    while not worker.stopRequested():
+        try:
+            reply = query(worker.startRequestId, worker.expectedRuntimeInstanceId)
+            generation = str(getattr(reply, "runtime_instance_id", ""))
+            requestId = str(getattr(reply, "start_request_id", ""))
+            if generation == worker.expectedRuntimeInstanceId and requestId == worker.startRequestId:
+                if getattr(reply, "ok", False) and getattr(reply, "job_id", ""):
+                    worker.startUncertain = False
+                    return reply
+                if str(getattr(reply, "status", "")) in {"REJECTED", "FAILED"}:
+                    worker.startUncertain = False
+                    return reply
+            if str(getattr(reply, "status", "")) == "RESET_REQUIRED":
+                _markUncertain(worker, "Runtime 实例已变化，旧启动尚未核实；不会在新实例自动重启")
+                return None
+        except Exception:
+            pass  # Reconnect/query this request only; NEVER issue a second Start.
+        if worker._stopEvent.wait(delay):
+            break
+        delay = min(2.0, delay * 2)
+    return None
+
+
+def _releasePreviousCapture(worker: RuntimeWorker) -> None:
+    previous = worker.previousCaptureJob
+    if not previous:
+        return
+    release = getattr(worker.runtimeClient, "releaseDisplayJob", None)
+    if not callable(release):
+        raise ValueError("无法核实并释放上次页面采集任务；未启动新任务")
+    if worker.expectedRuntimeInstanceId != previous[1]:
+        raise ValueError("Runtime 实例已变化，无法确认上次任务资源已结束；未启动新任务")
+    deadline = time.monotonic() + 10
+    while not worker.stopRequested():
+        try:
+            release(*previous)
+            return
+        except Exception as error:
+            code = str(getattr(error, "code", ""))
+            if "FAILED_PRECONDITION" not in code or "RESET_REQUIRED" in str(error):
+                raise
+            if time.monotonic() >= deadline:
+                raise TimeoutError("上次任务仍在释放资源；请稍候再明确启动") from error
+            worker._stopEvent.wait(.1)
 
 
 def _followJobEvents(worker: RuntimeWorker, jobId: str) -> None:
@@ -408,6 +515,15 @@ def _startJobCompat(worker: RuntimeWorker):
         keywordArguments["inputs"] = worker.inputs
     elif "inputs_json" in parameters:
         keywordArguments["inputs_json"] = json.dumps(worker.inputs, ensure_ascii=True)
+    if worker.capturePresentation:
+        if not acceptsVarKeywords and "capturePresentation" not in parameters:
+            raise ValueError("当前 Runtime 客户端不支持正常运行时页面采集")
+        keywordArguments["capturePresentation"] = True
+    if worker.expectedRuntimeInstanceId:
+        if not acceptsVarKeywords and not {"startRequestId", "expectedRuntimeInstanceId"}.issubset(parameters):
+            raise ValueError("当前 Runtime 客户端不支持启动请求身份")
+        keywordArguments["startRequestId"] = worker.startRequestId
+        keywordArguments["expectedRuntimeInstanceId"] = worker.expectedRuntimeInstanceId
     if keywordArguments:
         return method(worker.projectId, **keywordArguments)
     return method(worker.projectId)

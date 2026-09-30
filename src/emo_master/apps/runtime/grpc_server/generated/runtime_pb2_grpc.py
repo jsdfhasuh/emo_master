@@ -49,6 +49,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.StartJobRequest.SerializeToString,
                 response_deserializer=runtime__pb2.StartJobReply.FromString,
                 _registered_method=True)
+        self.GetStartRequest = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetStartRequest',
+                request_serializer=runtime__pb2.StartRequestLookup.SerializeToString,
+                response_deserializer=runtime__pb2.StartJobReply.FromString,
+                _registered_method=True)
         self.StopJob = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/StopJob',
                 request_serializer=runtime__pb2.StopJobRequest.SerializeToString,
@@ -167,6 +172,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def StartJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetStartRequest(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -308,6 +319,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
             'StartJob': grpc.unary_unary_rpc_method_handler(
                     servicer.StartJob,
                     request_deserializer=runtime__pb2.StartJobRequest.FromString,
+                    response_serializer=runtime__pb2.StartJobReply.SerializeToString,
+            ),
+            'GetStartRequest': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStartRequest,
+                    request_deserializer=runtime__pb2.StartRequestLookup.FromString,
                     response_serializer=runtime__pb2.StartJobReply.SerializeToString,
             ),
             'StopJob': grpc.unary_unary_rpc_method_handler(
@@ -491,6 +507,33 @@ class RuntimeService(object):
             target,
             '/emo_master.runtime.RuntimeService/StartJob',
             runtime__pb2.StartJobRequest.SerializeToString,
+            runtime__pb2.StartJobReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetStartRequest(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetStartRequest',
+            runtime__pb2.StartRequestLookup.SerializeToString,
             runtime__pb2.StartJobReply.FromString,
             options,
             channel_credentials,

@@ -38,6 +38,9 @@ class PageWorkspace(QWidget):
         self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
         self.message.setWordWrap(True)
         sidebar.addWidget(self.message)
+        self.observation = QLabel('页面只观察明确选择的任务；打开、切页和关闭不会启动检测')
+        self.observation.setWordWrap(True)
+        sidebar.addWidget(self.observation)
         from .tools import EditingTools
         self.tools = EditingTools(self, sidebar)
         self.refresh()
@@ -68,12 +71,23 @@ class PageWorkspace(QWidget):
             self.renderer.navigate(self.pageId)
         if hasattr(self, 'tools'):
             self.tools.refresh()
+        self.coordinator.preview.refreshCoverage()
 
     def choosePage(self, row):
         item = self.pageList.item(row)
         if item:
+            try:
+                self.tools.commitPending()
+            except ValueError as error:
+                self.message.setText(str(error))
+                self.pageList.blockSignals(True)
+                order = self.store.snapshot().pageOrder
+                self.pageList.setCurrentRow(order.index(self.pageId) if self.pageId in order else -1)
+                self.pageList.blockSignals(False)
+                return
             self.pageId = item.data(Qt.UserRole)
             self.renderer.navigate(self.pageId)
+            self.tools.select(None)
             self.tools.install()
 
     def newPage(self):

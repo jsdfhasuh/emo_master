@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -144,6 +145,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             maxConcurrentJobs=maxConcurrentJobs,
             heartbeatTimeoutMs=5000,
             terminalCallback=self._onJobTerminal,
+            retiredCallback=self._onJobRetired,
         )
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
@@ -151,6 +153,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.loadedDocument: ProjectDocument | None = None
         self.loadedPayload: dict[str, object] | None = None
         self.jobMessages: dict[str, str] = {}
+        self.runtimeInstanceId = str(uuid4())
+        # Never evict a request and then treat a delayed retry as a fresh run.
+        # Bounded admission is reset only by a new Runtime generation.
+        self._startRequests: dict[str, tuple[str, object]] = {}
+        self._jobStartRequestIds: dict[str, str] = {}
 
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
@@ -228,6 +235,71 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
 
     @_withProjectStateLock
     def StartJob(self, request, context):  # type: ignore[override]
+        requestId = str(getattr(request, "start_request_id", ""))
+        expectedInstance = str(getattr(request, "expected_runtime_instance_id", ""))
+        if requestId:
+            if expectedInstance != self.runtimeInstanceId:
+                return runtime_pb2.StartJobReply(ok=False, status="RESET_REQUIRED",
+                    message="Runtime generation changed; reconcile the earlier run before starting again",
+                    runtime_instance_id=self.runtimeInstanceId, start_request_id=requestId)
+            if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", requestId):
+                return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message="invalid start request ID")
+            fingerprint = hashlib.sha256(json.dumps({key: getattr(request, key, default) for key, default in (
+                ("project_id", ""), ("workflow_id", ""), ("inputs_json", ""),
+                ("capture_presentation", False))}, sort_keys=True).encode()).hexdigest()
+            previous = self._startRequests.get(requestId)
+            if previous:
+                if previous[0] != fingerprint:
+                    return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                        message="start request ID was already used with different arguments",
+                        runtime_instance_id=self.runtimeInstanceId, start_request_id=requestId)
+                return self._startReply(requestId)
+            if len(self._startRequests) >= 1024:
+                return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                    message="start request ledger quota exceeded; no request IDs were forgotten",
+                    runtime_instance_id=self.runtimeInstanceId, start_request_id=requestId)
+            # Reserve before any consequential work, including if it raises.
+            self._startRequests[requestId] = (fingerprint, runtime_pb2.StartJobReply(
+                ok=False, status="UNKNOWN", message="start outcome requires reconciliation"))
+        reply = self._startJob(request, context)
+        reply.runtime_instance_id = self.runtimeInstanceId
+        reply.start_request_id = requestId
+        if requestId:
+            if not reply.ok and not reply.job_id:
+                reply.status = "REJECTED"
+            savedReply = runtime_pb2.StartJobReply()
+            savedReply.CopyFrom(reply)
+            self._startRequests[requestId] = (fingerprint, savedReply)
+            if reply.job_id:
+                self._jobStartRequestIds[reply.job_id] = requestId
+        return reply
+
+    def _startReply(self, requestId):
+        previous = self._startRequests.get(requestId)
+        if previous is None:
+            return runtime_pb2.StartJobReply(ok=False, status="UNKNOWN",
+                message="request not recorded; an in-flight start must not be retried with a new ID",
+                runtime_instance_id=self.runtimeInstanceId, start_request_id=requestId)
+        reply = runtime_pb2.StartJobReply()
+        reply.CopyFrom(previous[1])
+        reply.runtime_instance_id = self.runtimeInstanceId
+        reply.start_request_id = requestId
+        if reply.job_id:
+            job = self.jobRepository.get(reply.job_id)
+            if job is not None:
+                reply.status = job.status
+        return reply
+
+    @_withProjectStateLock
+    def GetStartRequest(self, request, context):  # type: ignore[override]
+        if str(getattr(request, "runtime_instance_id", "")) != self.runtimeInstanceId:
+            return runtime_pb2.StartJobReply(ok=False, status="RESET_REQUIRED",
+                message="Runtime generation changed; earlier start outcome is unknown",
+                runtime_instance_id=self.runtimeInstanceId,
+                start_request_id=str(getattr(request, "start_request_id", "")))
+        return self._startReply(str(getattr(request, "start_request_id", "")))
+
+    def _startJob(self, request, context):
         _ = context
         document = self.loadedDocument
         if document is None or not self._projectMatches(str(getattr(request, "project_id", ""))):
@@ -248,6 +320,19 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             return runtime_pb2.StartJobReply(
                 ok=False, job_id="", status="FAILED", message=f"invalid inputs_json: {err}"
             )
+
+        capture = None
+        presentation = getattr(self, "_presentationOwner", None)
+        if bool(getattr(request, "capture_presentation", False)):
+            try:
+                if presentation is None:
+                    raise ValueError("Runtime does not expose normal presentation capture")
+                presentation.checkNormalAdmission()
+                from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapture
+                capture = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
+                    Path(self.loadedProjectPath), workflowId)
+            except (ValueError, OSError) as error:
+                return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error))
 
         with self._previewJobLock:
             previewCleanupErrors = self.livePreviewManager.closeProject(
@@ -270,6 +355,12 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 projectRevision=document.project.revision,
                 workflowId=workflowId,
             )
+            requestId = str(getattr(request, "start_request_id", ""))
+            if requestId:
+                fingerprint, _ = self._startRequests[requestId]
+                self._startRequests[requestId] = (fingerprint, runtime_pb2.StartJobReply(
+                    ok=True, job_id=record.jobId, status=record.status, message="job accepted"))
+                self._jobStartRequestIds[record.jobId] = requestId
             self.jobMessages[record.jobId] = "job accepted"
             logFailure = self.operationalLogWriter.failureMessage
             if logFailure:
@@ -284,21 +375,24 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     payload={"status": "FAILED", "message": logFailure},
                     notifySinks=False,
                 )
-            snapshotPath, workspacePath = self._createSnapshot(record.jobId, document)
-            self._workspacePaths[record.jobId] = workspacePath
-            self._jobPreviewKeys[record.jobId] = self._loadedProjectPreviewKey
-            spec = JobProcessSpec(
-                jobId=record.jobId,
-                projectSnapshotPath=str(snapshotPath),
-                workflowId=workflowId,
-                projectId=document.project.projectId,
-                inputsJson=json.dumps(inputs, ensure_ascii=True),
-                pluginRootPaths=tuple(self.pluginRootPaths),
-                jobWorkspacePath=str(workspacePath),
-                heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
-                runtimeDbPath=str(self.sqliteStore.dbPath),
-            )
             try:
+                snapshotPath, workspacePath = self._createSnapshot(record.jobId, document)
+                self._workspacePaths[record.jobId] = workspacePath
+                self._jobPreviewKeys[record.jobId] = self._loadedProjectPreviewKey
+                spec = JobProcessSpec(
+                    jobId=record.jobId,
+                    projectSnapshotPath=str(snapshotPath),
+                    workflowId=workflowId,
+                    projectId=document.project.projectId,
+                    inputsJson=json.dumps(inputs, ensure_ascii=True),
+                    pluginRootPaths=tuple(self.pluginRootPaths),
+                    jobWorkspacePath=str(workspacePath),
+                    heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
+                    runtimeDbPath=str(self.sqliteStore.dbPath),
+                )
+                if capture is not None:
+                    from dataclasses import replace
+                    spec = replace(spec, presentation=presentation.attachNormal(record.jobId, capture))
                 self.jobManager.start(record, spec)
             except Exception as err:
                 self.eventStore.append(
@@ -329,6 +423,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 self.jobMessages.pop(record.jobId, None)
                 self._jobPreviewKeys.pop(record.jobId, None)
                 self._removeWorkspace(record.jobId)
+                if capture is not None:
+                    presentation.terminal(record.jobId, "FAILED")
                 return runtime_pb2.StartJobReply(
                     ok=False,
                     job_id=record.jobId,
@@ -954,13 +1050,18 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def close(self) -> None:
         if self._closed:
             return
-        self._closed = True
         self._maintenanceStop.set()
         try:
             self.livePreviewManager.closeAll()
             self.previewExecutor.close()
             self.previewAssetStore.close()
             self.jobSupervisor.shutdown()
+            self.jobSupervisor.waitForRetirement()
+            if any(self.jobSupervisor.ownsJobResources(job.jobId) for job in self.jobRepository.all()):
+                raise RuntimeError("Worker still owns Runtime resources; shutdown is incomplete")
+            presentation = getattr(self, "_presentationOwner", None)
+            if presentation is not None:
+                presentation.close()
             self.eventStore.removeSink(self._operationalLogSink)
             writerError = self.operationalLogWriter.close(timeoutSeconds=3.0)
             if writerError:
@@ -970,8 +1071,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             for jobId in list(self._workspacePaths):
                 self._removeWorkspace(jobId)
             self._cleanupStaleWorkspaces()
+            self._closed = True
         finally:
-            self._runtimeDataLock.release()
+            if self._closed:
+                self._runtimeDataLock.release()
 
     def _eventMaintenanceLoop(self) -> None:
         while not self._maintenanceStop.wait(6 * 60 * 60):
@@ -1088,6 +1191,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self._removeWorkspace(jobId)
 
     def _removeWorkspace(self, jobId: str) -> None:
+        process = self.jobSupervisor.getProcess(jobId)
+        if process is not None and process.is_alive():
+            return
+
         workspace = self._workspacePaths.pop(jobId, self.workspaceRoot / jobId)
         try:
             if workspace.exists():
@@ -1096,6 +1203,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             # A running third-party operator may still hold a file briefly;
             # the next Runtime start will retry stale workspace cleanup.
             return
+
+    def _onJobRetired(self, jobId: str) -> None:
+        record = self.jobRepository.get(jobId)
+        if record is not None and record.status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
+            self._removeWorkspace(jobId)
 
     def _cleanupStaleWorkspaces(self) -> None:
         if not self.workspaceRoot.exists():

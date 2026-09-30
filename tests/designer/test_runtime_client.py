@@ -309,3 +309,222 @@ def testRuntimeClientDoesNotCloseUnownedRuntimeService() -> None:
 
     assert service.closed == 0
     assert channel.closed == 1
+
+
+def testReadOnlyDisplayLookupNeverProvisionsEmbeddedService(monkeypatch) -> None:
+    import pytest
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+
+    client = RuntimeClient(object())
+    assert client.displayAddress() == ""
+    with pytest.raises(RuntimeClientError, match="页面服务"):
+        client.getDisplayCapabilities()
+    assert client._presentationServer is None
+    assert client._presentationService is None
+
+
+def testDisplayJobLookupFiltersExactProjectEvenIfServerIgnoresFilter() -> None:
+    from types import SimpleNamespace
+
+    class Display:
+        def ListJobs(self, request, timeout):
+            assert request.project_id == "current-project"
+            return SimpleNamespace(jobs=[SimpleNamespace(job_id="current", project_id="current-project"),
+                                        SimpleNamespace(job_id="other", project_id="other-project"),
+                                        SimpleNamespace(job_id="old-server")])
+
+    client = RuntimeClient(object(), displayService=Display())
+    assert [job.job_id for job in client.listDisplayJobs("current-project")] == ["current"]
+    assert client._presentationServer is None
+
+
+def testClientAddsOptionalCaptureFieldsAndQueriesSameStartRequest() -> None:
+    class Service:
+        def StartJob(self, request, context):
+            assert request.project_id == "production-project"
+            assert request.workflow_id == "main"
+            assert request.inputs_json == '{"value": 2}'
+            assert request.capture_presentation
+            assert request.start_request_id == "request-one"
+            assert request.expected_runtime_instance_id == "runtime-one"
+            return runtime_pb2.StartJobReply(ok=True, job_id="same-job", runtime_instance_id="runtime-one",
+                                            start_request_id="request-one")
+
+        def GetStartRequest(self, request, context):
+            assert request.start_request_id == "request-one"
+            assert request.runtime_instance_id == "runtime-one"
+            return runtime_pb2.StartJobReply(ok=True, job_id="same-job", runtime_instance_id="runtime-one",
+                                            start_request_id="request-one")
+
+    client = RuntimeClient(Service())
+    start = client.startJob("production-project", "main", {"value": 2}, capturePresentation=True,
+                            startRequestId="request-one", expectedRuntimeInstanceId="runtime-one")
+    assert client.getStartRequest("request-one", "runtime-one").job_id == start.job_id
+
+
+def testPrepareCaptureRequiresNegotiatedCapabilityAndKeepsLegacyNoPagePath() -> None:
+    import pytest
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+
+    class Display:
+        def Capabilities(self, request, timeout):
+            return runtime_pb2.DisplayCapabilities(runtime_instance_id="legacy", capabilities=["snapshot"])
+
+    client = RuntimeClient(object(), displayService=Display())
+    assert client.prepareStart(False) == ""
+    with pytest.raises(RuntimeClientError, match="正常运行"):
+        client.prepareStart(True)
+
+
+def testReleaseJobRequiresVerifiedTerminalAndPreservesGeneration() -> None:
+    import pytest
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+
+    class Service:
+        terminal = False
+
+        def GetJobStatus(self, request, context):
+            return runtime_pb2.GetJobStatusReply(ok=True, status="COMPLETED" if self.terminal else "RUNNING")
+
+    class Display:
+        calls = []
+
+        def ReleaseJob(self, request, timeout):
+            self.calls.append((request.job_id, request.runtime_instance_id))
+            return runtime_pb2.DisplayEmpty()
+
+    service, display = Service(), Display()
+    client = RuntimeClient(service, displayService=display)
+    with pytest.raises(RuntimeClientError, match="尚未确认结束"):
+        client.releaseDisplayJob("job-one", "runtime-one")
+    assert not display.calls
+    service.terminal = True
+    client.releaseDisplayJob("job-one", "runtime-one")
+    assert display.calls == [("job-one", "runtime-one")]
+
+
+def testClientCloseFailureRetainsOwnerAndCanRetryWithoutReclosingFinishedResources() -> None:
+    import pytest
+
+    class Resource:
+        def __init__(self, fail=False):
+            self.calls, self.fail = 0, fail
+
+        def close(self):
+            self.calls += 1
+            if self.fail:
+                self.fail = False
+                raise TimeoutError("worker still owns resources")
+
+    runtime, endpoint, displayChannel, channel = Resource(True), Resource(), Resource(), Resource()
+    client = RuntimeClient(object(), ownedRuntimeService=runtime, ownedChannel=channel)
+    client._presentationServer, client._displayChannel = endpoint, displayChannel
+    with pytest.raises(TimeoutError, match="still owns"):
+        client.close()
+    assert not client._closed and client._closing
+    assert client._ownedRuntimeService is runtime
+    assert client._presentationServer is None and client._displayChannel is None
+    assert channel.calls == 0
+    client.close()
+    assert client._closed and not client._closing
+    assert runtime.calls == 2 and endpoint.calls == displayChannel.calls == channel.calls == 1
+    client.close()
+    assert runtime.calls == 2
+
+
+def testEmbeddedEventCancellationRetiresGeneratorOnConsumerThread() -> None:
+    import threading
+    import time
+
+    entered = threading.Event()
+    retired = []
+    received = []
+
+    class Service:
+        def StreamJobEvents(self, request, context):
+            assert context is not None
+            try:
+                entered.set()
+                while context.is_active():
+                    time.sleep(.005)
+                # Even a concurrently available item cannot escape after cancel.
+                yield _streamEvent("node.completed")
+            finally:
+                retired.append(threading.get_ident())
+
+    client = RuntimeClient(Service())
+    stream = client.streamJobEvents("active", follow=True)
+    consumer = threading.Thread(target=lambda: received.extend(stream))
+    consumer.start()
+    assert entered.wait(1)
+    assert client.cancelEventStream("active")
+    consumer.join(1)
+    assert not consumer.is_alive()
+    assert not received
+    assert retired == [consumer.ident]
+    assert client.cancelEventStream("active") is False
+    client.close()
+
+
+def testEventStreamCloseFailureRemainsTrackedForRetry() -> None:
+    import pytest
+
+    class Call(_FakeStreamCall):
+        def close(self):
+            super().close()
+            if self.closeCalls == 1:
+                raise OSError("real iterator cleanup failure")
+
+    call = Call([])
+
+    class Service:
+        def StreamJobEvents(self, request, context):
+            return call
+
+    client = RuntimeClient(Service())
+    stream = client.streamJobEvents("failed-cleanup", follow=True)
+    with pytest.raises(OSError, match="real iterator"):
+        client.cancelEventStream("failed-cleanup")
+    assert not stream._closed
+    assert client._activeStreams["failed-cleanup"] is stream
+    assert client.cancelEventStream("failed-cleanup")
+    assert stream._closed and not client._activeStreams
+    assert call.closeCalls == 2
+    assert call.cancelCalls == 1
+
+
+def testClientCloseWaitsForInFlightEventConsumerBeforeClosingOwnedRuntime() -> None:
+    import pytest
+    import threading
+
+    entered, release = threading.Event(), threading.Event()
+
+    class Service:
+        closed = 0
+
+        def StreamJobEvents(self, request, context):
+            entered.set()
+            release.wait(2)
+            yield _streamEvent("node.completed")
+
+        def close(self):
+            self.closed += 1
+
+    service = Service()
+    client = RuntimeClient(service, ownedRuntimeService=service, deadlineMs=10)
+    stream = client.streamJobEvents("retiring", follow=True)
+    consumer = threading.Thread(target=lambda: list(stream))
+    consumer.start()
+    try:
+        assert entered.wait(1)
+        with pytest.raises(TimeoutError, match="consumer still owns"):
+            client.close()
+        assert not client._closed and client._closing
+        assert client._activeStreams["retiring"] is stream
+        assert service.closed == 0
+    finally:
+        release.set()
+        consumer.join(1)
+    assert not consumer.is_alive()
+    client.close()
+    assert client._closed and service.closed == 1

@@ -49,6 +49,8 @@ class EditingTools(QObject):
         self.choices = []
         self.dragStart = None
         self.pendingRefresh = False
+        self._loadedFields = None
+        self._loadedPage = None
         self.palette = Palette()
         self.palette.setDragEnabled(True)
         self.palette.setMaximumHeight(145)
@@ -106,7 +108,8 @@ class EditingTools(QObject):
         self.preview.toggled.connect(self.previewMode)
         self.form.addRow(self.preview)
         for text, command in [('登记本地输入图片', self.importInput),
-                ('明确开始本地草稿调试', workspace.coordinator.preview.startDebug),
+                ('明确开始隔离草稿调试', workspace.coordinator.preview.startDebug),
+                ('观看当前工程任务', workspace.coordinator.preview.watchCurrent),
                 ('只读连接已有 Job', self.connectJob),
                 ('停止自有调试 / 断开观察', workspace.coordinator.preview.closeAsync)]:
             button = QPushButton(text)
@@ -140,7 +143,12 @@ class EditingTools(QObject):
                 groups[address] = group
             nodeAddress = (address, choice.source.nodeId)
             if nodeAddress not in nodes:
-                node = QTreeWidgetItem([choice.source.nodeId or '工作流出口'])
+                document = self.w.session.document()
+                instance = next((node for node in document.workflows[choice.source.workflowId].nodes
+                                 if node.nodeId == choice.source.nodeId), None)
+                name = (instance.displayName or instance.nodeId) if instance else '工作流出口'
+                node = QTreeWidgetItem([name])
+                node.setToolTip(0, choice.source.nodeId or choice.source.workflowId)
                 node.setFlags(node.flags() & ~Qt.ItemIsDragEnabled)
                 groups[address].addChild(node)
                 nodes[nodeAddress] = node
@@ -189,7 +197,24 @@ class EditingTools(QObject):
         self.w.renderer.banner.setText('实时只读预览' if self.w.renderer.hub else '模拟布局预览 · 无模拟业务值 · 不运行设备')
         self.install()
 
+    def _fieldState(self):
+        values = tuple((name, field.text() if isinstance(field, QLineEdit) else field.value())
+                       for name, field in self.fields.items())
+        rows = tuple(tuple(self.extra.item(r, c).text() if self.extra.item(r, c) else ''
+                           for c in range(3)) for r in range(self.extra.rowCount()))
+        return values, self.destination.currentData(), rows
+
+    def commitPending(self):
+        """Save the visible form first; invalid input stays visible and blocks leaving."""
+        if self._loadedFields is None or self._fieldState() == self._loadedFields:
+            return
+        if self._loadedPage != self.w.pageId:
+            raise ValueError('属性输入仍属于上一页面，请先应用或修正后再切页')
+        self.apply()
+
     def select(self, key):
+        if key != self.selected:
+            self.commitPending()
         self.selected = key
         try:
             component = _component(self.w.store.snapshot(), self.w.pageId, key)
@@ -198,6 +223,8 @@ class EditingTools(QObject):
             if self.w.pageId:
                 self.fields['columns'].setValue(self.w.store.snapshot().pages[self.w.pageId].layout.columns)
             self.title.setText('未选择控件 · 可调整页面列数')
+            self._loadedPage = self.w.pageId
+            self._loadedFields = self._fieldState()
             return
         self.title.setText(f'{component.type} · {component.componentId[:8]}')
         source = self.w.store.snapshot().dataSources.get(next(iter(component.bindings.values()), ''))
@@ -227,6 +254,8 @@ class EditingTools(QObject):
             self.extra.insertRow(index)
             for col, value in enumerate(row):
                 self.extra.setItem(index, col, QTableWidgetItem(value))
+        self._loadedPage = self.w.pageId
+        self._loadedFields = self._fieldState()
 
     def apply(self):
         if not self.w.pageId:
@@ -234,6 +263,7 @@ class EditingTools(QObject):
         columns = self.fields['columns'].value()
         if not self.selected:
             self.w.session.editPresentation(lambda p: setattr(p.pages[self.w.pageId].layout, 'columns', columns))
+            self._loadedFields = self._fieldState()
             return
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         props = item.props.model_dump()
@@ -260,11 +290,12 @@ class EditingTools(QObject):
                     actions = {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
             actions=actions, columns=columns)
+        self._loadedFields = self._fieldState()
 
     def bindChoice(self, index, key):
         choice = self.choices[index]
         self.commands().bind(self.w.pageId, key, choice)
-        self.w.message.setText((choice.hint + '\n' if choice.hint else '') + '绑定已保存；新来源在下一次明确启动调试生效')
+        self.w.message.setText((choice.hint + '\n' if choice.hint else '') + '绑定已保存；新来源在下一次明确运行 / 隔离调试时生效')
 
     def bindSelected(self):
         if self.selected and self.binding.currentIndex() >= 0:
@@ -403,9 +434,17 @@ class EditingTools(QObject):
             return True
         key, _card = self.componentAt(obj)
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and not key:
-            self.select(None)
+            try:
+                self.select(None)
+            except ValueError as error:
+                self.w.message.setText(str(error))
+                return True
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and key:
-            self.select(key)
+            try:
+                self.select(key)
+            except ValueError as error:
+                self.w.message.setText(str(error))
+                return True
             self.dragStart = (key, event.globalPos())
             return True
         if kind == QEvent.MouseMove and self.dragStart and event.buttons() & Qt.LeftButton:

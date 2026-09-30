@@ -507,3 +507,117 @@ def testRuntimeControllerHandlesRejectedStopReply() -> None:
     assert worker.resultHandled is True
     assert panel.jobStatus == "RUNNING"
     assert logs == [("ERROR", "停止作业失败：busy")]
+
+
+def _captureController(client=None):
+    from types import SimpleNamespace
+    state = SimpleNamespace(current=None, running=False, logs=[], captures=False, accepted=[])
+
+    class Panel(_Panel):
+        jobStatus = "IDLE"
+
+        def updateJob(self, status, message=""):
+            self.jobStatus, self.message = status, message
+
+    controller = RuntimeController(
+        runtimeClient=client, runtimePanelState=Panel(),
+        appendLog=lambda level, message: state.logs.append((level, message)),
+        refreshRuntimePanelView=lambda: None, updateToolbarState=lambda: None,
+        syncRuntimeProjectBeforeRun=lambda: True, applyRuntimeEventToNode=lambda event: None,
+        setCurrentJobId=lambda job: setattr(state, "current", job),
+        setIsJobRunning=lambda running: setattr(state, "running", running),
+        getLoadedProjectPath=lambda: "project", getCurrentJobId=lambda: state.current,
+        getCapturePresentation=lambda: state.captures, onJobAccepted=state.accepted.append)
+    return controller, state
+
+
+def testControllerUnknownStartCannotBeRetriedOrMistakenForFailure() -> None:
+    controller, state = _captureController()
+    controller._onStartUncertain("lost reply")
+    controller._onWorkerFailed("disconnected")
+    controller.startJob()
+    assert state.running
+    assert controller._startUncertain
+    assert controller.runtimePanelState.jobStatus == "START_UNCERTAIN"
+    assert "不会重复启动" in state.logs[-1][1]
+    assert controller._worker is None
+
+
+def testControllerObserverErrorDoesNotAllowDuplicateAcceptedJob() -> None:
+    from types import SimpleNamespace
+    controller, state = _captureController()
+    controller._onJobAccepted(SimpleNamespace(job_id="accepted-job", status="RUNNING"))
+    controller._onWorkerFailed("event connection lost")
+    assert state.current == "accepted-job" and state.running
+    controller.startJob()
+    assert controller._worker is None
+    controller._onJobStatus(SimpleNamespace(status="COMPLETED", message="done"))
+    assert not state.running and not controller._startUncertain
+
+
+def testControllerRemembersCaptureOwnershipUntilNextExplicitRun(monkeypatch) -> None:
+    from types import SimpleNamespace
+    captured = []
+
+    class Signal:
+        def connect(self, callback):
+            pass
+
+    class Worker:
+        def __init__(self, **kwargs):
+            captured.append(kwargs)
+            self.jobAccepted = self.eventReceived = self.statusChanged = self.failed = self.uncertain = Signal()
+
+        def start(self):
+            pass
+
+    monkeypatch.setattr(runtimeControllerModule, "RuntimeWorker", Worker)
+    controller, state = _captureController()
+    state.captures = True
+    controller._captureCurrentRun = True
+    reply = SimpleNamespace(job_id="same-job", status="RUNNING", runtime_instance_id="runtime-one")
+    controller._onJobAccepted(reply)
+    assert state.accepted == [reply]
+    controller._onJobStatus(SimpleNamespace(status="COMPLETED", message="done"))
+    assert controller._previousCaptureJob == ("same-job", "runtime-one")
+    controller.startJob()
+    assert len(captured) == 1
+    assert captured[0]["capturePresentation"] is True
+    assert captured[0]["previousCaptureJob"] == ("same-job", "runtime-one")
+
+
+def testStopDuringUnknownStartKeepsQueryAliveUntilJobIdentityKnown() -> None:
+    class Worker:
+        requested = False
+
+        def requestStopAfterStart(self):
+            self.requested = True
+
+    controller, state = _captureController()
+    controller._worker = Worker()
+    controller._onStartUncertain("start timed out")
+    controller.stopJob()
+    assert controller._worker.requested
+    assert state.running and controller._startUncertain
+
+
+def testControllerCloseFailureRemainsRetryableAndIsReported() -> None:
+    import pytest
+
+    class Client:
+        calls = 0
+
+        def close(self):
+            self.calls += 1
+            if self.calls == 1:
+                raise TimeoutError("capture reader not retired")
+
+    client = Client()
+    controller, state = _captureController(client)
+    with pytest.raises(TimeoutError, match="not retired"):
+        controller.close()
+    assert not controller._closed and controller._closing
+    assert state.logs[-1][0] == "ERROR"
+    controller.close()
+    assert controller._closed and not controller._closing
+    assert client.calls == 2

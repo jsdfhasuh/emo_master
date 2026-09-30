@@ -412,3 +412,21 @@ result key匹配后才验收，不再以metadata到达推断像素已展示；�
 即使新结果到达仍保留原显示结果身份/像素。最终导航/草稿/属性/工作区/真实正常运行及
 renderer兼容检查56项通过（11.86秒），Ruff/diff检查通过，独立复核通过。完整最终CI为1681 PASS、1 SKIP（423.35秒），proto drift/Ruff/mypy通过、退出0，
 Python来源前后摘要相同。该版本仍需Windows精确复测；A18全进程资源来源仍待归因。
+
+
+A18后续Windows原生入口归因发现一个退休后仍在WINMM.dll中的非Python线程；仅入口
+模块不能说明所有句柄来源。随后两个不导入产品代码的新进程进行QApplication对照：
+共同初始化216句柄/23线程，1秒无timer为217/23，16ms QTimer为223/24（61次回调）；
+停止并原生删除timer、销毁QApplication后差异仍在。所有查询句柄均成功关闭。
+[Qt5.15.2实现](https://github.com/qt/qtbase/blob/v5.15.2/src/corelib/kernel/qeventdispatcher_win.cpp)
+确认小于20ms使用timeSetEvent、注销timeKillEvent。这证明相同16ms平台timer的首次
+使用成本，不证明所有历史A18残留来源或允许排除未知线程。
+
+A18因此只在测量基线前显式启动同样16ms QTimer，等一次真实timeout（原生2秒看门狗），
+再停止/删除两个timer及事件循环并逐个验证native失效。原1000切页、30浮窗、Qt对象、
+自有线程/文件、全进程句柄无增长和线程身份子集断言均未改变，没有数值容差/线程豁免。
+独立复核通过，Linux相关4项通过（23.92秒），Ruff通过。此修正必须以Windows精确版本
+A18与完整CI实际结果判断，不能凭Linux通过标记Windows资源问题已解决。
+
+该平台预热修正后的完整cloud CI：1681 PASS、1 SKIP（424.60秒），proto drift/Ruff/mypy
+通过、退出0，Python来源前后摘要相同。Windows精确验证仍待执行，不以此清除旧FAIL。

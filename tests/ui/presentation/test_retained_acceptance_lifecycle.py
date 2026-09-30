@@ -12,7 +12,7 @@ from types import MappingProxyType
 import numpy as np
 import pytest
 import shiboken2
-from PySide2.QtCore import QCoreApplication, QEvent, Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QEventLoop, QTimer, Qt
 from PySide2.QtTest import QTest
 
 from emo_master.core.presentation.models import Presentation, walkComponents
@@ -28,6 +28,41 @@ def drainDeletes(app):
     app.processEvents()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
     app.processEvents()
+
+
+def warmTimerBackend(app):
+    # Qt 5.15 on Windows uses WINMM for intervals below 20 ms. A real 16 ms
+    # timer control retains a process-level thread/handles even after deleting
+    # the timer and QApplication. Initialize that exact backend before the
+    # baseline, without exempting any later resource growth or thread identity.
+    loop = QEventLoop()
+    timer = QTimer()
+    deadline = QTimer()
+    observed = []
+
+    def timeout():
+        observed.append(True)
+        loop.quit()
+
+    timer.setInterval(16)  # Same interval as DisplayHub.
+    timer.timeout.connect(timeout)
+    deadline.setSingleShot(True)
+    deadline.timeout.connect(loop.quit)
+    try:
+        deadline.start(2000)
+        timer.start()
+        loop.exec_()
+        assert observed, 'Qt timer backend did not produce a timeout within 2 seconds'
+    finally:
+        timer.stop()
+        deadline.stop()
+        timer.deleteLater()
+        deadline.deleteLater()
+        loop.deleteLater()
+        drainDeletes(app)
+        assert not shiboken2.isValid(timer)
+        assert not shiboken2.isValid(deadline)
+        assert not shiboken2.isValid(loop)
 
 
 def fivePageConfiguration():
@@ -198,6 +233,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     # Qt's platform resources are initialized before measuring repeat ownership.
     window.show()
     drainDeletes(qtApp)
+    warmTimerBackend(qtApp)
     baseline = nativeCounts(qtApp)
     session = OwnedReadOnlyFixture(view, tmp_path / "owned-session.bin")
     hub = DisplayHub(session)

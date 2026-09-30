@@ -13,7 +13,7 @@ from PySide2.QtWidgets import (
     QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication,
 )
 
-from emo_master.core.presentation.models import Presentation
+from emo_master.core.presentation.models import Presentation, walkComponents
 from emo_master.core.presentation.values import readValue
 from emo_master.core.project.snapshots import captureDefinition, revisionOf
 from emo_master.core.presentation.validation import pageScopes
@@ -272,6 +272,7 @@ class RuntimePages(QWidget):
         else:
             self.stack.addWidget(QLabel('此项目尚无运行页面'))
         if self.hub:
+            self.hub.updateImageDemand()
             self.hub.lastToken = None
             self.submit(self.hub.session.readSnapshot())
         elif self.simulationState:
@@ -344,6 +345,15 @@ class RuntimePages(QWidget):
             p = component.layout
             layout.addWidget(card, p.row, p.column, p.rowSpan, p.columnSpan)
 
+    def imageSources(self, pageId=None):
+        page = self.config.pages.get(pageId or self.currentPageId)
+        if page is None:
+            return set()
+        return {sourceId for component in walkComponents(page.components) if component.type == 'image'
+                for sourceId in component.bindings.values() if sourceId in self.config.dataSources
+                and self.config.dataSources[sourceId].expectedType == 'image'
+                and (self.captureCoverage is None or not self.captureCoverage.sourceProblem(self.config, sourceId))}
+
     def navigate(self, pageId, keepFrozen=False):
         assertGuiThread()
         if pageId not in self.config.pages:
@@ -363,7 +373,11 @@ class RuntimePages(QWidget):
         self.stack.setCurrentWidget(self.pages[pageId])
         for key, button in self.buttons.items():
             button.setChecked(key == pageId)
-        if self.lastView is not None:
+        if self.hub:
+            self.hub.updateImageDemand()
+            if self.lastView is not None:
+                self.submit(self.hub.session.readSnapshot())
+        elif self.lastView is not None:
             self.submit(self.lastView)
 
     def act(self, action):
@@ -383,7 +397,8 @@ class RuntimePages(QWidget):
                 return
             try:
                 # This is the committed GUI value, deliberately not session.latest.
-                self.frozen = self.hub.freeze(self, self.displayed[scopeId], self.lastView.generation)
+                self.frozen = self.hub.freeze(self, self.displayed[scopeId], self.lastView.generation,
+                                              sourceIds=self.imageSources(target))
                 self.frozenGeneration = self.lastView.generation
                 self.navigate(target, keepFrozen=True)
             except ValueError as error:
@@ -432,7 +447,9 @@ class RuntimePages(QWidget):
         if sourceId in scope.failures:
             return scope, None, scope.failures[sourceId]
         if component.type == "image":
-            return scope, scope.images.get(sourceId), "" if sourceId in scope.images else "IMAGE_UNAVAILABLE"
+            state = scope.imageStates.get(sourceId)
+            message = "当前结果图像准备中" if state == "LOADING" else "图像按页面需要读取" if state == "NOT_REQUESTED" else "IMAGE_UNAVAILABLE"
+            return scope, scope.images.get(sourceId), "" if sourceId in scope.images else message
         if value.valueJson is None:
             return scope, None, "绑定类型不支持"
         return scope, readValue(value.valueJson), ""
@@ -446,6 +463,7 @@ class RuntimePages(QWidget):
         if coverage is not None:
             self.simulationState = None
         if self.hub:
+            self.hub.updateImageDemand()
             self.hub.lastToken = None
             self.submit(self.hub.session.readSnapshot())
 
@@ -548,6 +566,7 @@ class RuntimePages(QWidget):
             handle.screenChanged.connect(self._screenChanged)
         self._screenChanged()
         if self.hub and not self.detached:
+            self.hub.updateImageDemand()
             self.submit(self.hub.session.readSnapshot())
 
     def hideEvent(self, event):
@@ -560,6 +579,8 @@ class RuntimePages(QWidget):
                 elif isinstance(widget, CollectionView):
                     widget.clear('隐藏页面')
         super().hideEvent(event)
+        if self.hub:
+            self.hub.updateImageDemand()
 
     def closeEvent(self, event):
         self.detached = True
@@ -577,7 +598,8 @@ class RuntimePages(QWidget):
                     pass
             self._screenSource = None
         if self.hub:
-            self.hub.detach(self)
+            hub, self.hub = self.hub, None
+            hub.detach(self)
         self.displayed.clear()
         self.lastView = self.frozen = None
         for rows in self.widgets.values():

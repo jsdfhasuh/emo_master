@@ -68,9 +68,17 @@ class Client:
 class Session:
     instances = []
 
-    def __init__(self, address, job):
+    def __init__(self, address, job, *, imageDemand=False):
         self.address, self.jobId, self.closed = address, job, False
+        self.imageDemand = imageDemand
+        self.imageConsumers = {}
         self.instances.append(self)
+
+    def setImageDemand(self, owner, sources):
+        self.imageConsumers[owner] = sources
+
+    def removeImageDemand(self, owner):
+        self.imageConsumers.pop(owner, None)
 
     def readSnapshot(self):
         empty = MappingProxyType({})

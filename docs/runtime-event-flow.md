@@ -40,6 +40,30 @@ Subflow；`iterationPath` 表示嵌套 Loop 的索引路径。Designer 使用
 跨进程只传 JSON-safe 事件和 `ArtifactRef`，不传 Qt 对象、gRPC channel、
 算子实例或 NumPy 图像。
 
+## Worker 心跳与事件积压
+
+Supervisor 为每个新 Job 创建固定大小的共享心跳时间戳；现有心跳线程在
+发送 `process.heartbeat` 前更新它。看门狗使用同机跨进程的 monotonic 时钟，
+从进程启动起保持原 `heartbeatTimeoutMs`，不把 SQLite 持久化、Supervisor
+锁等待或旧事件排队时间当作 worker 停止发心跳。正式心跳事件仍按原队列顺序
+持久化，不跳过事件，也不提前公布尚未持久化的终态。
+
+共享时间戳的读写只尝试非阻塞锁；锁不可读时使用最后一次有效时间戳或启动
+基线，不重新计时。过期、负值和未来时间戳不能延长存活期限；即使事件队列
+持续非空，真正停止心跳的 worker 仍按原期限失败。共享资源随实际进程和
+EventBridge 一起退役，强杀失败或桥接线程未退出时不提前回收。
+
+`runJobProcess` 保留三个参数，`JobProcessSpec.heartbeatCell` 为可选内部字段；
+未提供该字段的旧调用保留原路径。带共享心跳的 worker 在所有终态事件入队时，
+通过本地锁停止后续正式心跳入队；已有队列 `close()/join_thread()` 收尾期间，
+同一心跳线程继续更新共享时间戳，排空结束或失败后才停止。这样计算完成但
+仍持有 feeder 的进程不会被误判失联；这只是显式等待原有队列收尾，不提前
+公布终态，也不增加故障期限。无共享心跳的旧直接调用不主动 join 队列，
+允许调用者在函数返回后自行消费。
+
+此机制不加快持久化、不缩短积压后的终态等待，也不使被阻塞的桥接线程成为
+独立实时看门狗。
+
 ## 算子结构化日志
 
 Runner 在普通执行的 `runtimeContext["logger"]` 以及生命周期初始化的

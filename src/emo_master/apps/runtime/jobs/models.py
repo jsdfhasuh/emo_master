@@ -4,6 +4,8 @@ from dataclasses import dataclass, field
 from enum import Enum
 import time
 
+from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
+
 
 class JobStatus(str, Enum):
     ACCEPTED = "ACCEPTED"
@@ -56,6 +58,7 @@ class JobProcessSpec:
     runtimeDbPath: str = ""
     presentation: dict | None = None
     legacySnapshotPolicy: str = "ALL"
+    heartbeatCell: HeartbeatCell | None = field(default=None, repr=False, compare=False)
 
     @property
     def inputs_json(self) -> str:

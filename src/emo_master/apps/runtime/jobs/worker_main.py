@@ -17,13 +17,26 @@ from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 from emo_master.apps.runtime.jobs.models import JobProcessSpec
+from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
 
 
 def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
     heartbeatStop = threading.Event()
+    heartbeatEventsStopped = threading.Event()
+    heartbeatEmissionLock = threading.Lock()
+
+    def publishTerminal(event):
+        # Once terminal is enqueued, no heartbeat can follow it or race queue
+        # close. Cell pulses continue until the existing feeder flush finishes.
+        with heartbeatEmissionLock:
+            heartbeatEventsStopped.set()
+            _put(eventQueue, event)
+
     heartbeatThread = threading.Thread(
         target=heartbeatLoop,
-        args=(spec.jobId, spec.projectId, spec.workflowId, eventQueue, heartbeatStop, spec.heartbeatIntervalMs),
+        args=(spec.jobId, spec.projectId, spec.workflowId, eventQueue, heartbeatStop,
+              spec.heartbeatIntervalMs, spec.heartbeatCell, heartbeatEventsStopped,
+              heartbeatEmissionLock),
         name=f"runtime-heartbeat-{spec.jobId}",
         daemon=True,
     )
@@ -69,12 +82,11 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             projectId=spec.projectId,
         )
         runner.run(spec.workflowId, inputs, context, token)
-        _put(eventQueue, {"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
+        publishTerminal({"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
     except CancellationRequested as err:
-        _put(eventQueue, {"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
+        publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
     except BaseException as err:
-        _put(
-            eventQueue,
+        publishTerminal(
             {
                 "eventType": "job.failed",
                 "jobId": spec.jobId,
@@ -87,16 +99,38 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
         )
         raise
     finally:
-        heartbeatStop.set()
-        if heartbeatThread.is_alive():
-            heartbeatThread.join(timeout=1.0)
+        try:
+            with heartbeatEmissionLock:
+                heartbeatEventsStopped.set()
+            close = getattr(eventQueue, "close", None)
+            join = getattr(eventQueue, "join_thread", None)
+            if spec.heartbeatCell is not None and callable(close) and callable(join):
+                # multiprocessing otherwise waits here implicitly after this
+                # target returns. Keep liveness through that same ownership.
+                # Legacy direct callers without a cell may consume only after
+                # runJobProcess returns, so must not acquire this join behavior.
+                close()
+                join()
+        finally:
+            heartbeatStop.set()
+            if heartbeatThread.is_alive():
+                heartbeatThread.join(timeout=1.0)
 
 
-def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopEvent: threading.Event, intervalMs: int) -> None:
+def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopEvent: threading.Event, intervalMs: int, heartbeatCell: HeartbeatCell | None = None, eventsStopped: threading.Event | None = None, emissionLock=None) -> None:
     interval = max(0.05, intervalMs / 1000.0)
-    _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
-    while not stopEvent.wait(interval):
-        _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
+    if eventsStopped is None:
+        eventsStopped = threading.Event()
+    if emissionLock is None:
+        emissionLock = threading.Lock()
+    while True:
+        if heartbeatCell is not None:
+            heartbeatCell.publish()
+        with emissionLock:
+            if not eventsStopped.is_set():
+                _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
+        if stopEvent.wait(interval):
+            return
 
 
 def _collector(spec, eventQueue):

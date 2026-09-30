@@ -84,10 +84,11 @@ def testDetailActionLocksActualGuiIdentityNotLatest(qtApp, tmp_path):
     pinned = []
     pinStore = SimpleNamespace(read=lambda ticket: SimpleNamespace(state='PINNED', scope=pinned[0], error=''))
     session = SimpleNamespace(readSnapshot=lambda: latest, pins=lambda: pinStore)
-    def freeze(owner, scope, generation):
+    def freeze(owner, scope, generation, *, sourceIds=None):
         pinned.append(scope)
         return 'pin'
-    hub = SimpleNamespace(freeze=freeze, session=session, resume=lambda owner: None, detach=lambda owner: None)
+    hub = SimpleNamespace(freeze=freeze, session=session, resume=lambda owner: None, detach=lambda owner: None,
+                          updateImageDemand=lambda: None)
     window.submit(displayed)
     window.hub = hub
     window.act(Action(type='navigate', pageId='detail', context='displayed_result', resultScopeId='root'))

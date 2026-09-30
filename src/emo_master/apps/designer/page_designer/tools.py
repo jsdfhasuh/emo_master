@@ -573,6 +573,9 @@ class EditingTools(QObject):
             return True
         if kind == QEvent.Drop and event.mimeData().hasFormat(MIME):
             try:
+                # Match button commands: validate/commit the form before a drop
+                # mutates the draft and its deferred refresh reloads the inputs.
+                self.w.coordinator.sync()
                 self.drop(json.loads(bytes(event.mimeData().data(MIME))), obj, event.pos())
                 event.acceptProposedAction()
                 self.laterRefresh()
@@ -589,7 +592,10 @@ class EditingTools(QObject):
                 return True
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and key:
             try:
-                self.select(key)
+                # Starting a move of the selected component must retain its
+                # pending form until the drop synchronizes it.
+                if key != self.selected:
+                    self.select(key)
             except ValueError as error:
                 self.w.message.setText(str(error))
                 return True

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import queue
+import multiprocessing
 from threading import Event, Thread
 
 import pytest
@@ -278,6 +279,9 @@ class _FakeProcessContext:
 
     def Queue(self):
         return queue.Queue()
+
+    def Value(self, *args, **kwargs):
+        return multiprocessing.get_context("spawn").Value(*args, **kwargs)
 
     def Process(self, **kwargs):
         _ = kwargs

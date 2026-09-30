@@ -301,9 +301,48 @@ def testRealClientSnapshotReplayRecoversLostFinalUpdate(network, channel, sample
         assert lostPush.wait(2)
         assert client.latest["root"][0].sources[0].valueJson == "2"
         assert client.latest["root"][1]["image"].shape == (120, 160, 3)
-        # Deliberately old/out-of-range cursor forces a complete reset snapshot.
-        client.cursor = 10**6
-        until(lambda: client.stats["resets"] >= 2)
+        # Inject the fault in one outgoing real RPC. Mutating client.cursor races
+        # an in-flight normal reply, which can overwrite it before it is sent.
+        baselineResets = client.stats["resets"]
+        snapshotRpc = client.stub.Snapshot
+        acceptSnapshot = client._accept
+        injectionLock = threading.Lock()
+        injected = []
+        acceptedInjection = threading.Event()
+
+        def outOfRange(request, *args, **kwargs):
+            with injectionLock:
+                inject = not injected
+                if inject:
+                    injected.append({"reset_required": None})
+            if inject:
+                fault = pb.DisplayRequest()
+                fault.CopyFrom(request)
+                fault.after_cursor = 10**6
+                reply = snapshotRpc(fault, *args, **kwargs)
+                injected[0]["reset_required"] = reply.reset_required
+                injected[0]["reply"] = reply
+                return reply
+            return snapshotRpc(request, *args, **kwargs)
+
+        def acceptInjected(snapshot):
+            with client.lock:
+                before = client.stats["resets"]
+                result = acceptSnapshot(snapshot)
+                if injected and injected[0].get("reply") is snapshot:
+                    injected[0]["accepted_reset_delta"] = client.stats["resets"] - before
+                    acceptedInjection.set()
+                return result
+
+        monkeypatch.setattr(client, "_accept", acceptInjected)
+        monkeypatch.setattr(client.stub, "Snapshot", outOfRange)
+        until(acceptedInjection.is_set)
+        assert len(injected) == 1 and injected[0]["reset_required"] is True
+        assert injected[0]["accepted_reset_delta"] == 1
+        assert client.stats["resets"] > baselineResets
+        until(lambda: client.latest.get("root") and "image" in client.latest["root"][1])
+        assert client.latest["root"][0].sources[0].valueJson == "2"
+        assert client.latest["root"][1]["image"].shape == (120, 160, 3)
         assert len(channel.jobs) == 1
     finally:
         client.close()

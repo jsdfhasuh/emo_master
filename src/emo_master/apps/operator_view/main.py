@@ -78,7 +78,7 @@ class OperatorView(QWidget):
                 raise ValueError('explicit Job is not available on this Runtime')
         self.info, self.document = info, document
         if self.jobId:
-            self.session = DisplaySession(info['address'], self.jobId)
+            self.session = DisplaySession(info['address'], self.jobId, imageDemand=True)
 
     def startDetection(self):
         if self.busy or self.closing or self.session is not None or self.info is None:
@@ -92,7 +92,7 @@ class OperatorView(QWidget):
                 if caps.runtime_instance_id != self.info['runtimeInstanceId']:
                     raise ValueError('Runtime changed; reopen using its new ready descriptor')
                 self.jobId = stub.Start(pb.DisplayStartRequest(prepared_id=self.info['preparedId']), timeout=20).job_id
-            self.session = DisplaySession(self.info['address'], self.jobId)
+            self.session = DisplaySession(self.info['address'], self.jobId, imageDemand=True)
         self.launch('started', start)
 
     def openPage(self):

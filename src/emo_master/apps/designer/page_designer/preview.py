@@ -189,7 +189,7 @@ class PreviewController(QObject):
         def start():
             self.backend = LocalBackend(runtime)
             job = self.backend.start(document, root)
-            self.session = DisplaySession(self.backend.address, job)
+            self.session = DisplaySession(self.backend.address, job, imageDemand=True)
             return job
         self.message('正在冻结草稿、物化临时输入/数据库/输出；不会热修改当前采集计划')
         self.launch(start)
@@ -295,7 +295,7 @@ class PreviewController(QObject):
 
     def _attach(self, address, metadata, coverage):
         if coverage is None or (coverage.enabled and not getattr(metadata, 'resources_released', False)):
-            self.session = DisplaySession(address, metadata.job_id)
+            self.session = DisplaySession(address, metadata.job_id, imageDemand=True)
         return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage}
 
     def refreshCoverage(self):

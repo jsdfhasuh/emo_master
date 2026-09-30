@@ -257,3 +257,27 @@ These are compatibility and ownership semantics, not a performance acceptance.
 The initial four-arm synthetic smoke only verified measurement wiring and encode
 counts; a policy comparison requires adjacent arms on the same exact source and
 hardware. Original benchmark thresholds and historical failures remain intact.
+
+## R3 本地可选图像需求（不改 wire / capture）
+
+`DisplaySession(address, jobId, imageDemand=True)` 只供拥有 GUI 的客户端显式选择。
+默认省略该参数时仍持续读取/解码正式结果，原无窗口/隐藏窗口的 headless 测试与测量口径保持。
+Designer 的 PreviewController 与独立 operator_view 选择按需模式；P2/P3 演示和测量默认不变。
+
+`setImageDemand(consumerId, sourceIds)` / `removeImageDemand(consumerId)` 是无 RPC 的本地兴趣接口；
+多个消费者取并集，`None` 表示该消费者明确需要所有已采集来源，空集表示无图像兴趣。
+8 个本地拥有者、每个最多 128 个长度不超过 160 的来源 ID 只限制兴趣簿记；不是采集授权，
+不提高正式 ClosedResult 的 16 来源、正常采集的 16 作用域或原图像预算。GUI 不暂停独立 headless 会话。
+
+零兴趣时 metadata/正式标量/连接/开始水位继续更新，但新结果不发起 ReadAsset / PNG 解码。
+每个来源开始读取前复查兴趣及 generation/ordinal/expiry；隐藏时最多有一个已经进行中的资产操作完成。
+已解码的同一 resultKey 图片保留在既有 live 16 MiB 内，重复隐藏/显示不重新读取；新封闭结果仍使旧图退出。
+恢复或切页只将已捕获的当前 ClosedResult 补读放入同一个 8 项队列和同一个解码线程，结果身份不改变。
+同结果资产别名复用解码对象；没有 Start/Stop、重订阅、重新采集或伪造没有采集的来源。
+
+`ScopeView.imageStates` 是只读本地状态：NOT_REQUESTED / LOADING 与来源失败、ReadAsset 失败分别表示。
+同结果图片准备完成也更新 readyNs；不会把旧图片配上新数值。过期资产显示 RESOURCE_EXPIRED，不回退到上一件。
+活跃/排队结果身份合计最多 9；元数据健康快照可重试队列拒绝的最终结果；取消和代际切换不保留无限补读任务。
+有限 pin 的缺图补读也使用此队列/线程；租约就绪时给 pin 留出下一空闲队列位置，避免持续 live 流量饿死它。
+没有新增图片队列、图片线程或解码 scratch。每图先用 PNG 头及透明度信息检查 OpenCV 输出字节上界，
+包含灰度+alpha 扩成 BGRA 的四通道情况，超 8 MiB 在解码分配前拒绝。

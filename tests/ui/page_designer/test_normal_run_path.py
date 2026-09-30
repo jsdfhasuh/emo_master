@@ -13,6 +13,7 @@ from emo_master.core.project.models import ProjectDocument
 from emo_master.clients.runtime.display_session import DisplaySession
 from examples.runtime_pages_p2 import sampleProject
 from test_preview import waitFor
+from tests.ui.page_designer.test_normal_run_viewing import displayedImagesReady
 
 
 def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, monkeypatch):
@@ -57,7 +58,7 @@ def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, mon
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error is not None)
         assert coordinator.preview.error is None
-        waitFor(lambda: bool(editor.renderer.displayed))
+        waitFor(lambda: displayedImagesReady(editor.renderer))
         first = next(iter(editor.renderer.displayed.values()))
         assert first.result.identity.jobId == firstJob
         assert first.result.identity.mode == 'runtime'

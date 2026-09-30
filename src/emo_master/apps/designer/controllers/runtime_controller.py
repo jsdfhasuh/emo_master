@@ -28,6 +28,7 @@ class RuntimeController:
         onJobAccepted: Callable[[object], None] | None = None,
         getLegacySnapshotPolicy: Callable[[], str] | None = None,
         invalidatePreviewSources: Callable[[], None] | None = None,
+        deliveryContext=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -47,6 +48,7 @@ class RuntimeController:
         self.onJobAccepted = onJobAccepted
         self.getLegacySnapshotPolicy = getLegacySnapshotPolicy or (lambda: "ALL")
         self.invalidatePreviewSources = invalidatePreviewSources or (lambda: None)
+        self.deliveryContext = deliveryContext
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -98,16 +100,17 @@ class RuntimeController:
             previousCaptureJob=self._previousCaptureJob,
         )
         worker.captureRequirements = dict(captureRequest) if isinstance(captureRequest, dict) else {}
-        worker.jobAccepted.connect(self._onJobAccepted)
-        worker.eventReceived.connect(self._onRuntimeEvent)
-        worker.statusChanged.connect(self._onJobStatus)
-        worker.failed.connect(self._onWorkerFailed)
-        uncertain = getattr(worker, "uncertain", None)
-        if uncertain is not None:
-            uncertain.connect(self._onStartUncertain)
-        finished = getattr(worker, "finished", None)
-        if finished is not None and hasattr(finished, "connect"):
-            finished.connect(lambda: self._onWorkerFinished(worker))
+        if not self._bindQtWorker(worker):
+            worker.jobAccepted.connect(self._onJobAccepted)
+            worker.eventReceived.connect(self._onRuntimeEvent)
+            worker.statusChanged.connect(self._onJobStatus)
+            worker.failed.connect(self._onWorkerFailed)
+            uncertain = getattr(worker, "uncertain", None)
+            if uncertain is not None:
+                uncertain.connect(self._onStartUncertain)
+            finished = getattr(worker, "finished", None)
+            if finished is not None and hasattr(finished, "connect"):
+                finished.connect(lambda: self._onWorkerFinished(worker))
         self._worker = worker
         self._jobActive = True
         self.setIsJobRunning(True)
@@ -136,10 +139,32 @@ class RuntimeController:
         self.appendLog("INFO", f"作业已接受：{currentJobId}")
         self.refreshRuntimePanelView()
 
+    def _bindQtWorker(self, worker, *, stopWorker=False) -> bool:
+        try:
+            from emo_master.apps.designer.services.runtime_qt_owner import bindRuntimeWorker
+        except ImportError:
+            return False
+        return bindRuntimeWorker(worker, self, stopWorker=stopWorker, context=self.deliveryContext)
+
+    def _detachWorkerDelivery(self, worker) -> None:
+        delivery = getattr(worker, "_qtDelivery", None)
+        if delivery is not None:
+            delivery.detach()
+
     def _onWorkerFinished(self, worker: RuntimeWorker) -> None:
-        if self._worker is worker:
-            self._worker = None
+        self._retireWorkerReference(worker)
         self.updateToolbarState()
+
+    def _retireWorkerReference(self, worker, *, stopWorker=False) -> None:
+        """Forget a stopped Qt worker without delivering to a closing UI."""
+        if not stopWorker:
+            if self._worker is worker:
+                self._worker = None
+        elif self._stopWorker is worker:
+            self._stopWorker = None
+            self._stopJobId = ""
+            self._stopMode = ""
+            self._stopEscalateToForce = False
 
     def _onRuntimeEvent(self, jobEvent) -> None:
         eventType = str(getattr(jobEvent, "event_type", getattr(jobEvent, "eventType", "")))
@@ -265,19 +290,20 @@ class RuntimeController:
             self.refreshRuntimePanelView()
             self.updateToolbarState()
         worker = RuntimeStopWorker(self.runtimeClient, jobId, mode)
-        worker.replyReceived.connect(
-            lambda reply, currentWorker=worker: self._onStopReply(currentWorker, reply)
-        )
-        worker.failed.connect(
-            lambda message, currentWorker=worker: self._onStopFailed(
-                currentWorker, message
+        if not self._bindQtWorker(worker, stopWorker=True):
+            worker.replyReceived.connect(
+                lambda reply, currentWorker=worker: self._onStopReply(currentWorker, reply)
             )
-        )
-        finished = getattr(worker, "finished", None)
-        if finished is not None and hasattr(finished, "connect"):
-            finished.connect(
-                lambda currentWorker=worker: self._onStopWorkerFinished(currentWorker)
+            worker.failed.connect(
+                lambda message, currentWorker=worker: self._onStopFailed(
+                    currentWorker, message
+                )
             )
+            finished = getattr(worker, "finished", None)
+            if finished is not None and hasattr(finished, "connect"):
+                finished.connect(
+                    lambda currentWorker=worker: self._onStopWorkerFinished(currentWorker)
+                )
         self._stopWorker = worker
         worker.start()
 
@@ -328,10 +354,7 @@ class RuntimeController:
             and self._stopJobId != ""
         )
         jobId = self._stopJobId
-        self._stopWorker = None
-        self._stopJobId = ""
-        self._stopMode = ""
-        self._stopEscalateToForce = False
+        self._retireWorkerReference(worker, stopWorker=True)
         if shouldEscalate and not self._closing and not self._closed:
             self._beginStop(jobId, "force")
 
@@ -365,6 +388,8 @@ class RuntimeController:
         if self._closed:
             return
         self._closing = True
+        self._detachWorkerDelivery(self._worker)
+        self._detachWorkerDelivery(self._stopWorker)
         stopStarted = False
         currentJobId = self.getCurrentJobId()
         currentStatus = str(getattr(self.runtimePanelState, "jobStatus", ""))

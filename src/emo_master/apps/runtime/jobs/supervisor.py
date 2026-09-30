@@ -9,6 +9,7 @@ from typing import Any, Callable, cast
 
 from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.jobs.event_bridge import EventBridge
+from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
 from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobStatus, nowMs
 from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.worker_main import runJobProcess
@@ -38,6 +39,8 @@ class JobSupervisor:
         self._handles: dict[str, tuple[Any, Any, Any]] = {}
         self._bridges: dict[str, EventBridge] = {}
         self._heartbeat: dict[str, int] = {}
+        self._heartbeatCells: dict[str, HeartbeatCell] = {}
+        self._heartbeatMonotonic: dict[str, int] = {}
         self._heartbeatIntervals: dict[str, int] = {}
         self._heartbeatTimeouts: dict[str, int] = {}
         self._heartbeatSeen: set[str] = set()
@@ -61,16 +64,24 @@ class JobSupervisor:
             )
             if heartbeatIntervalMs != spec.heartbeatIntervalMs:
                 spec = replace(spec, heartbeatIntervalMs=heartbeatIntervalMs)
-            process = self._context.Process(
-                target=runJobProcess,
-                args=(spec, cancelEvent, eventQueue),
-                name=f"emo-master-job-{spec.jobId}",
-            )
+            process = None
             bridge: EventBridge | None = None
             try:
+                cell = HeartbeatCell(self._context)
+                spec = replace(spec, heartbeatCell=cell)
+                process = self._context.Process(
+                    target=runJobProcess,
+                    args=(spec, cancelEvent, eventQueue),
+                    name=f"emo-master-job-{spec.jobId}",
+                )
+                self._heartbeatCells[spec.jobId] = cell
+                self._heartbeatMonotonic[spec.jobId] = monotonicMs()
                 process.start()
                 self._handles[spec.jobId] = (process, cancelEvent, eventQueue)
                 self._heartbeat[spec.jobId] = nowMs()
+                # Match the legacy startup grace: process.start() itself is
+                # outside the initial heartbeat observation window.
+                self._heartbeatMonotonic[spec.jobId] = monotonicMs()
                 self._heartbeatIntervals[spec.jobId] = heartbeatIntervalMs
                 self._heartbeatTimeouts[spec.jobId] = heartbeatTimeoutMs
                 self._heartbeatSeen.discard(spec.jobId)
@@ -206,14 +217,31 @@ class JobSupervisor:
     def checkHeartbeat(self, jobId: str) -> None:
         with self._lock:
             record = self.jobRepository.get(jobId)
-            lastHeartbeat = self._heartbeat.get(jobId)
-            if record is None or record.isTerminal or lastHeartbeat is None:
+            if record is None or record.isTerminal:
                 return
+            cell = self._heartbeatCells.get(jobId)
+            if cell is not None:
+                # The producer clock is authoritative from process start. A
+                # queued heartbeat, unavailable cell or corrupt future sample
+                # must never renew this deadline.
+                sample = cell.read()
+                current = monotonicMs()
+                lastHeartbeat = self._heartbeatMonotonic[jobId]
+                if sample is not None and lastHeartbeat < sample <= current:
+                    lastHeartbeat = sample
+                    self._heartbeatMonotonic[jobId] = sample
+            else:
+                # Compatibility for supervisors/worker callers without a cell.
+                legacyHeartbeat = self._heartbeat.get(jobId)
+                if legacyHeartbeat is None:
+                    return
+                lastHeartbeat = legacyHeartbeat
+                current = nowMs()
             timeoutMs = self._heartbeatTimeouts.get(jobId, self.heartbeatTimeoutMs)
             if jobId not in self._heartbeatSeen:
                 intervalMs = self._heartbeatIntervals.get(jobId, 500)
                 timeoutMs = max(timeoutMs, intervalMs * 2)
-            if nowMs() - lastHeartbeat <= timeoutMs:
+            if current - lastHeartbeat <= timeoutMs:
                 return
             handle = self._handles.get(jobId)
             if handle is None:
@@ -619,6 +647,8 @@ class JobSupervisor:
         self._handles.pop(jobId, None)
         self._bridges.pop(jobId, None)
         self._heartbeat.pop(jobId, None)
+        self._heartbeatCells.pop(jobId, None)
+        self._heartbeatMonotonic.pop(jobId, None)
         self._heartbeatIntervals.pop(jobId, None)
         self._heartbeatTimeouts.pop(jobId, None)
         self._heartbeatSeen.discard(jobId)
@@ -667,6 +697,8 @@ class JobSupervisor:
             self._handles.pop(jobId, None)
         self._bridges.pop(jobId, None)
         self._heartbeat.pop(jobId, None)
+        self._heartbeatCells.pop(jobId, None)
+        self._heartbeatMonotonic.pop(jobId, None)
         self._heartbeatIntervals.pop(jobId, None)
         self._heartbeatTimeouts.pop(jobId, None)
         self._heartbeatSeen.discard(jobId)

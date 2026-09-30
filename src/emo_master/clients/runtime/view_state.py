@@ -16,6 +16,7 @@ class ScopeView:
     images: Mapping[str, Any]
     failures: Mapping[str, str]
     readyNs: int
+    imageStates: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
 
 
 @dataclass(frozen=True)

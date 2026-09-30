@@ -1276,6 +1276,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             appendEvent=self.appendRuntimeEvent,
             getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
+            deliveryContext=self if _nativeQt else None,
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,

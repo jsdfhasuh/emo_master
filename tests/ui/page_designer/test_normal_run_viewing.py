@@ -25,6 +25,22 @@ def waitFor(predicate, seconds=20):
     raise AssertionError('normal run observation deadline')
 
 
+def displayedImagesReady(renderer):
+    """Metadata may commit first; wait for the actual current-page GUI images."""
+    bound = [(component, widget) for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values()
+             if component.type == 'image' and component.bindings]
+    if not bound:
+        return False
+    for component, widget in bound:
+        sourceId = next(iter(component.bindings.values()))
+        source = renderer.config.dataSources.get(sourceId)
+        scope = renderer.displayed.get(source.resultScopeId) if source else None
+        if (scope is None or sourceId not in scope.images or widget.image.isNull()
+                or widget.key != scope.result.identity.resultKey):
+            return False
+    return True
+
+
 def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypatch):
     monkeypatch.delenv('EMO_PAGE_DESIGNER', raising=False)
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
@@ -53,7 +69,7 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
-        waitFor(lambda: bool(coordinator.editor.renderer.displayed))
+        waitFor(lambda: displayedImagesReady(coordinator.editor.renderer))
         renderer = coordinator.editor.renderer
         scope = next(iter(renderer.displayed.values()))
         assert scope.result.identity.jobId == first
@@ -67,7 +83,7 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         session = coordinator.preview.session
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.session is not None and coordinator.preview.session is not session)
-        waitFor(lambda: bool(renderer.displayed))
+        waitFor(lambda: displayedImagesReady(renderer))
         assert next(iter(renderer.displayed.values())).result.identity.resultKey == key
         assert len(runtime.jobRepository.all()) == 1
         coordinator.preview.closeAsync()
@@ -116,7 +132,7 @@ def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, f
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
         renderer = coordinator.editor.renderer
-        waitFor(lambda: bool(renderer.displayed))
+        waitFor(lambda: displayedImagesReady(renderer))
         first = next(iter(renderer.displayed.values()))
         assert first.result.identity.jobId == job
         assert first.result.status == 'COMPLETE', jobFailureDetails(runtime, job, result=first.result)
@@ -124,7 +140,7 @@ def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, f
         limits = json.loads(metadata.capture_limits_json)
         assert set(limits['rawBytesBySource'].values()) == {4 * 1024 * 1024}
         renderer.navigate(document.presentation.pageOrder[1])
-        waitFor(lambda: bool(renderer.displayed))
+        waitFor(lambda: displayedImagesReady(renderer))
         second = next(iter(renderer.displayed.values()))
         assert second.result.identity.jobId == job and second.result.status == 'COMPLETE'
         if fixtureName == 'twoImages':

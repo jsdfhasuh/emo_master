@@ -443,32 +443,32 @@ def testClientScopeExpiryFencesPreviouslyQueuedDecode(channel, tmp_path):
 
 
 def testLegacyReaderIgnoringExpiryUsesResetToFenceDelayedDecode(channel, tmp_path, monkeypatch):
-    import emo_master.clients.runtime.display_session as sessionModule
+    entered, resume = threading.Event(), threading.Event()
     class LegacyReader(DisplaySession):
         def _accept(self, snapshot):
             legacy = pb.DisplaySnapshot()
             legacy.CopyFrom(snapshot)
             legacy.ClearField("expired_scope_ordinals")
             super()._accept(legacy)
-    project = twoCalls(tmp_path)
-    job = loadAndStart(channel, tmp_path, project)
-    results(channel, job, 2)
-    server = AioRuntimeServer(channel.runtime, channel)
-    observer = LegacyReader(f"127.0.0.1:{server.port}", job)
-    entered, resume = threading.Event(), threading.Event()
-    try:
-        waitFor(lambda: len(observer.readSnapshot().scopes) == 2)
-        view = observer.readSnapshot()
-        quiet = view.scopes["a"].result
-        originalDecode = sessionModule.decodePng
-        def delayed(content):
-            if not entered.is_set():
+
+        def _readImage(self, result, image, **kwargs):
+            pixels = super()._readImage(result, image, **kwargs)
+            if result.identity.resultScopeId == "a" and not entered.is_set():
+                # Gate an actual first asset decode before model publication.
+                # Requeueing an already cached result no longer implies decoding.
                 entered.set()
                 assert resume.wait(5)
-            return originalDecode(content)
-        monkeypatch.setattr(sessionModule, "decodePng", delayed)
-        observer.pending.put_nowait((view.generation, quiet, 0, 0))
+            return pixels
+    project = twoCalls(tmp_path)
+    job = loadAndStart(channel, tmp_path, project)
+    values = results(channel, job, 2)
+    quiet = next(result for result in values if result.identity.resultScopeId == "a")
+    server = AioRuntimeServer(channel.runtime, channel)
+    observer = LegacyReader(f"127.0.0.1:{server.port}", job)
+    try:
         assert entered.wait(3)
+        view = observer.readSnapshot()
+        assert observer.stats["decoded"] >= 1
         with channel.store.lock:
             channel.store.metadataLimit = max(len(value.model_dump_json().encode())
                 for value in channel.store.latest.values()) + 16
@@ -484,6 +484,9 @@ def testLegacyReaderIgnoringExpiryUsesResetToFenceDelayedDecode(channel, tmp_pat
         resume.set()
         waitFor(lambda: any(record["key"] == quiet.identity.resultKey and not record["applied_to_live"]
                            for record in observer.records))
+        record = next(record for record in observer.records if record["key"] == quiet.identity.resultKey)
+        assert record["decoded"] == ["a-image"] and not record["failures"]
+        assert record["applied_to_live"] is False
         assert "a" not in observer.readSnapshot().scopes
     finally:
         resume.set()

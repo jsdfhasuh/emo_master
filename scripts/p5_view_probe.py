@@ -15,6 +15,22 @@ from PySide2.QtWidgets import QApplication  # noqa: E402
 from emo_master.apps.operator_view.main import OperatorView, main as viewMain  # noqa: E402
 
 
+def renderedImagesReady(renderer):
+    """Metadata/loading state is not a committed current-page image."""
+    images = [(component, widget) for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values()
+              if component.type == 'image' and component.bindings]
+    if not images:
+        return False
+    for component, widget in images:
+        sourceId = component.bindings.get('image')
+        source = renderer.config.dataSources.get(sourceId)
+        scope = renderer.displayed.get(source.resultScopeId) if source else None
+        if (scope is None or sourceId not in scope.images or widget.image.isNull()
+                or widget.key != scope.result.identity.resultKey):
+            return False
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--ready-file', required=True)
@@ -58,7 +74,10 @@ def main():
                 if not renderer.displayed:
                     return
                 scope = next(iter(renderer.displayed.values()))
-                assert scope.result.status == 'COMPLETE' and len(scope.images) == 1
+                assert scope.result.status == 'COMPLETE'
+                if not renderedImagesReady(renderer):
+                    return
+                assert len(scope.images) == 1
                 assert scope.result.identity.mode == 'release'
                 value = next(s.valueJson for s in scope.result.sources if s.valueJson is not None)
                 assert value == '2'
@@ -71,7 +90,7 @@ def main():
                 state['step'] = 2
             elif step == 2:
                 renderer = state['renderer']
-                if not renderer.displayed:
+                if not renderedImagesReady(renderer):
                     return
                 assert next(iter(renderer.displayed.values())).result.identity.resultKey == record['result_key']
                 assert renderer.grab().save(str(args.output/'03-real-detail.png'))
@@ -80,7 +99,7 @@ def main():
                 assert len(view.hub.windows) == 2
                 state['step'] = 3
             elif step == 3:
-                if not all(w.displayed for w in view.hub.windows):
+                if not all(renderedImagesReady(w) for w in view.hub.windows):
                     return
                 record['hub'] = view.hub.stats()
                 record['session'] = dict(view.session.stats)

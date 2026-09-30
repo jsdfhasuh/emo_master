@@ -115,7 +115,15 @@ def testDesignerExportRelocatedStandalonePath(qtApp, tmp_path, monkeypatch):
                     result = subprocess.run([*command, '--output', str(destination), *jobArgs], cwd=tmp_path,
                         env=env, capture_output=True, timeout=60)
                     (out/f'viewer-{index}.log').write_bytes(result.stdout + result.stderr)
-                    assert result.returncode == 0, (result.stdout + result.stderr).decode(errors='replace')
+                    if result.returncode != 0:
+                        evidence = destination / 'view.json'
+                        tail = b''
+                        if evidence.is_file():
+                            with evidence.open('rb') as stream:
+                                stream.seek(max(0, evidence.stat().st_size - 8192))
+                                tail = stream.read(8192)
+                        raise AssertionError((result.stdout + result.stderr)[-8192:].decode(errors='replace')
+                            + '\nview.json tail:\n' + tail.decode('utf-8', errors='replace'))
                     view = json.loads((destination/'view.json').read_text())
                     if index == 1:
                         record.update(job=view['job'], result_key=view['result_key'])

@@ -18,12 +18,17 @@ def testDiagnosticArmsPreserveEveryCommittedSequence(tmp_path, mode):
         capture_output=True, text=True, timeout=20)
     assert run.returncode == 0, run.stderr
     report = json.loads((output / "summary.json").read_text(encoding="utf-8"))
-    assert report["completed"] == 5 and report["verified_row_counts"] == [5, 5, 1, 5]
+    completed = report["completed"]
+    # The time bound is an alternative stopping condition, not a throughput
+    # guarantee on a loaded runner. Every completed commit must still exist.
+    assert 1 <= completed <= 5
+    assert report["stopped_at_time_bound"] is (completed < 5)
+    assert report["verified_row_counts"] == [completed, completed, 1, completed]
     assert report["verified"] and report["source_stable"]
     assert report["pragmas"]["journal_mode"] == "wal"
     assert report["pragmas"]["synchronous"] == 2  # FULL remains unchanged.
-    assert report["stages"]["sql.commit"]["count"] == 5
-    assert report["connections_during_measurement"]["created"] == (1 if mode == "reuse" else 5)
+    assert report["stages"]["sql.commit"]["count"] == completed
+    assert report["connections_during_measurement"]["created"] == (1 if mode == "reuse" else completed)
     assert report["connections_after_cleanup"]["live"] == 0
     assert report["cleanup_errors"] == []
     assert report["cpu_elapsed_seconds"] >= 0

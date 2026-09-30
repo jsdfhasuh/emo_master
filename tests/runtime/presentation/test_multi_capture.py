@@ -100,7 +100,7 @@ def testTwoDistinctImagesUseOneSlabAndOneEncodingPerSource(channel, tmp_path):
     project = twoImages(tmp_path)
     job = loadAndStart(channel, tmp_path, project)
     result = results(channel, job)[0]
-    assert result.status == "COMPLETE"
+    assert result.status == "COMPLETE", jobFailureDetails(channel.runtime, job, result=result)
     sources = {source.sourceId: source for source in result.sources}
     assert sources["count"].valueJson == "2"
     original, overlay = sources["original"].image, sources["image"].image

@@ -21,6 +21,27 @@ from .continuous import NetworkConsumer
 from .network import IsolatedServer
 from .pipeline import Pipeline
 from .runner_probe import Source, Mutator, image_project
+from .contracts import BUDGET
+
+
+def assert_read_expired(reader, *, clock=time.monotonic, pause=time.sleep):
+    """Observe the existing strict deadline using its clock, then retire the reader.
+
+    Windows Python 3.10's monotonic tick can still equal the 500ms boundary
+    after a 510ms sleep. Do not infer expiry from a different wait primitive.
+    """
+    try:
+        next(reader)
+        boundary = clock() + BUDGET.read_seconds
+        while clock() <= boundary:
+            pause(.01)
+        try:
+            next(reader)
+        except TimeoutError:
+            return
+        raise AssertionError("read deadline")
+    finally:
+        reader.close()
 
 
 def run(root):
@@ -119,14 +140,7 @@ def run(root):
         # An expired read has an explicit error and releases its reservation.
         from .network import CancelContext
         reader = original_read({"asset_id": assets[1]["asset_id"], "job": "two"}, CancelContext())
-        next(reader)
-        time.sleep(.51)
-        try:
-            next(reader)
-        except TimeoutError:
-            pass
-        else:
-            raise AssertionError("read deadline")
+        assert_read_expired(reader)
         # close while export is running: callbacks finalize INCOMPLETE, workers
         # are killed/joined before shared memory/staging reservations disappear.
         pipeline.modes["one"] = "hang"

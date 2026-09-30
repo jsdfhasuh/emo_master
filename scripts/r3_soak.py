@@ -34,6 +34,7 @@ from emo_master.ui.presentation.hub import DisplayHub  # noqa: E402
 from emo_master.ui.presentation.renderer import RuntimePages  # noqa: E402
 from PySide2.QtCore import QCoreApplication, QEvent  # noqa: E402
 from PySide2.QtWidgets import QApplication  # noqa: E402
+from shiboken2 import isValid  # noqa: E402
 from scripts.r3_resources import resources  # noqa: E402
 
 
@@ -123,7 +124,20 @@ def pumpUntil(predicate, seconds):
     raise TimeoutError("bounded observation deadline")
 
 
-def retireOwned(windows, clients, runtime, server, job):
+def disposeGuiHub(hub):
+    """Retire the script-owned QObject and timer, not just their Python refs."""
+    if hub is None or not isValid(hub):
+        return
+    from emo_master.ui.presentation.images import assertGuiThread
+    assertGuiThread()
+    assert not hub.windows and not hub.timer.isActive(), "observer windows must detach first"
+    timer = hub.timer
+    hub.deleteLater()
+    QCoreApplication.sendPostedEvents(hub, QEvent.DeferredDelete)
+    assert not isValid(hub) and not isValid(timer), "native observer owner did not retire"
+
+
+def retireOwned(windows, clients, runtime, server, job, hub=None):
     """Try every independent owner, without pretending any failed close worked."""
     errors = []
 
@@ -137,6 +151,8 @@ def retireOwned(windows, clients, runtime, server, job):
         attempt(f"window-{index}", window.close)
     for index, client in enumerate(clients):
         attempt(f"client-{index}", client.close)
+    if hub is not None:
+        attempt("gui-hub", lambda: disposeGuiHub(hub))
     if runtime and job:
         attempt("job-stop", lambda: runtime.StopJob(pb.StopJobRequest(job_id=job, mode="force"), None))
     if server:
@@ -243,6 +259,8 @@ def run(args, evidence):
         for client in clients:
             client.close()
         clients.clear()
+        disposeGuiHub(hub)
+        hub = None
         pumpUntil(lambda: not runtime.jobSupervisor.ownsJobResources(job), 10)
         # Resource retirement, not a terminal label alone, permits release.
         deadline = time.monotonic() + 5
@@ -264,7 +282,7 @@ def run(args, evidence):
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
         evidence.write("cleanup", {"owner": resources(), "all_job_display_owners_retired": True})
     finally:
-        errors = retireOwned(windows, clients, runtime, server, job)
+        errors = retireOwned(windows, clients, runtime, server, job, hub)
         if errors:
             evidence.write("cleanup_failure", {"errors": errors, "preserved_temporary_root": str(root)})
             raise RuntimeError(f"measurement owners did not all close: {errors}")

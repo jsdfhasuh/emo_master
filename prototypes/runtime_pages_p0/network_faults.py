@@ -57,8 +57,12 @@ def run(root):
             yield pb.PreviewUploadChunk(content=content[:1024], project_id="p0-project")
             gate.wait(10)
             yield pb.PreviewUploadChunk(content=content[1024:])
+        # Earlier size-limit responses can arrive before their spools retire.
+        # Do not mistake a retiring upload for one of the two gated requests.
+        wait_until(lambda: server.active["bulk"] == 0)
         uploads = [stub.UploadPreviewImage.future(partial(), timeout=10) for _ in range(2)]
         wait_until(lambda: server.active["bulk"] == 2)
+        assert all(not upload.done() for upload in uploads), "controlled upload ended before quota probe"
         try:
             stub.UploadPreviewImage(chunks(), timeout=1)
         except grpc.RpcError as error:

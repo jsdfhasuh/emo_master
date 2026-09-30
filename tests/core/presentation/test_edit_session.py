@@ -1,3 +1,4 @@
+from pathlib import Path
 from copy import deepcopy
 import json
 import subprocess
@@ -165,7 +166,8 @@ from emo_master.apps.designer.state.project_edit_session import ProjectEditSessi
 assert not any(name.startswith(('PySide', 'PyQt', 'emo_master.apps.runtime',
                                'emo_master.plugins.builtins')) for name in sys.modules)
 """
-    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=15)
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True, timeout=15,
+                            cwd=Path(__file__).resolve().parents[3] / "src")
     assert result.returncode == 0, result.stderr
 
 

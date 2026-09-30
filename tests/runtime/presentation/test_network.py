@@ -1,3 +1,4 @@
+from pathlib import Path
 import threading
 import time
 
@@ -160,8 +161,13 @@ def testLegacyUploadReadCancelAndLimit(network, channel, sample, tmp_path):
     uploads = []
     before = set(channel.runtime.previewAssetStore._assets)
     try:
+        # A response can precede asynchronous spool retirement. Start the
+        # controlled saturation phase only after the earlier uploads release
+        # their quota, so active == 2 refers to these two gated requests.
+        until(lambda: server.active["bulk"] == 0)
         uploads = [stub.UploadPreviewImage.future(partial()) for _ in range(2)]
         until(lambda: server.active["bulk"] == 2)
+        assert all(not upload.done() for upload in uploads), "controlled upload ended before quota probe"
         with pytest.raises(grpc.RpcError) as error:
             stub.UploadPreviewImage(chunks(), timeout=.5)
         assert error.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
@@ -245,7 +251,8 @@ def testC1ThroughC4RealSpawnAndClassifiedLoopback(tmp_path):
 def testReadOnlyClientImportsNoQtOrRuntimeImplementation():
     import subprocess
     import sys
-    result = subprocess.run([sys.executable, "-c", "from emo_master.clients.runtime.display_session import DisplaySession; import sys; assert not any(k.startswith(('PySide2', 'emo_master.apps.designer', 'emo_master.apps.runtime.workflow', 'emo_master.apps.runtime.presentation')) for k in sys.modules)"], capture_output=True, text=True)
+    result = subprocess.run([sys.executable, "-c", "from emo_master.clients.runtime.display_session import DisplaySession; import sys; assert not any(k.startswith(('PySide2', 'emo_master.apps.designer', 'emo_master.apps.runtime.workflow', 'emo_master.apps.runtime.presentation')) for k in sys.modules)"], capture_output=True, text=True, timeout=15,
+                            cwd=Path(__file__).resolve().parents[3] / "src")
     assert result.returncode == 0, result.stderr
 
 

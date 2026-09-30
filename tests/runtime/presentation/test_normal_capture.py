@@ -18,7 +18,7 @@ from tests.runtime.runtime_test_utils import waitForTerminal
 
 def normalProject(root):
     directory = _writeCounterProject(root, "normal-capture-project")
-    raw = json.loads((directory / "project.json").read_text())
+    raw = json.loads((directory / "project.json").read_text(encoding="utf-8"))
     raw["schemaVersion"] = "2.2"
     raw["resources"] = {}
     raw["workflows"]["main"]["nodes"].append({"nodeId": "judge", "operatorId": "vision.compare.number",
@@ -32,8 +32,36 @@ def normalProject(root):
         "pages": {"one": {"name": "Counts", "components": [{"componentId": "count", "type": "number", "bindings": {"value": "count"}}]},
                   "two": {"name": "Decision", "components": [{"componentId": "judge", "type": "indicator", "bindings": {"value": "judge"}}]}}}
     document = ProjectDocument.model_validate(raw)
-    (directory / "project.json").write_text(document.model_dump_json())
+    (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
     return directory, document
+
+
+def testNormalProjectUsesUtf8WithCp1252Default(tmp_path, monkeypatch):
+    from pathlib import Path
+    originalOpen = Path.open
+    originalCounterProject = _writeCounterProject
+    projectName = "计数 — café"
+
+    def cp1252Open(path, mode="r", buffering=-1, encoding=None, errors=None, newline=None):
+        if path.is_relative_to(tmp_path) and "b" not in mode and encoding in (None, "locale"):
+            encoding = "cp1252"
+        return originalOpen(path, mode, buffering, encoding, errors, newline)
+
+    def unicodeCounterProject(root, projectId):
+        directory = originalCounterProject(root, projectId)
+        path = directory / "project.json"
+        payload = json.loads(path.read_bytes())
+        payload["project"]["name"] = projectName
+        path.write_bytes(json.dumps(payload, ensure_ascii=False).encode("utf-8"))
+        return directory
+
+    monkeypatch.setattr(Path, "open", cp1252Open)
+    monkeypatch.setattr(f"{__name__}._writeCounterProject", unicodeCounterProject)
+    directory, document = normalProject(tmp_path)
+    assert document.project.name == projectName
+    saved = (directory / "project.json").read_bytes().decode("utf-8")
+    assert ProjectDocument.model_validate_json(saved).project.name == projectName
+    assert projectName in saved
 
 
 def load(runtime, root):
@@ -203,7 +231,7 @@ def testImageCountDecisionShareOneNormalResultAndPreserveOutput(channel, tmp_pat
         Component(componentId="decision", type="indicator", bindings={"value": "judge"}),
         Component(componentId="image-again", type="image", bindings={"image": "image-alias"}, layout={"row": 1})])
     project.presentation.pageOrder.append("second")
-    (tmp_path / "project.json").write_text(project.model_dump_json())
+    (tmp_path / "project.json").write_text(project.model_dump_json(), encoding="utf-8")
     runtime = channel.runtime
     assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(tmp_path)), None).ok
     start = runtime.StartJob(pb.StartJobRequest(project_id=project.project.projectId,
@@ -259,7 +287,7 @@ def testExplicitStopReleaseAndRestartNormalJob(tmp_path, mode):
     from emo_master.apps.runtime.presentation.service import PresentationService
     project = pacedProject(tmp_path, count=30)
     project.workflows["detect"].nodes[1].params["imagePath"] = str(tmp_path / "input.png")
-    (tmp_path / "project.json").write_text(project.model_dump_json())
+    (tmp_path / "project.json").write_text(project.model_dump_json(), encoding="utf-8")
     runtime = RuntimeService(dbPath=tmp_path / "runtime.sqlite3",
         workspaceRoot=tmp_path / "jobs", pluginRootPaths=pluginRoots(tmp_path))
     display = PresentationService(runtime, tmp_path / "display")

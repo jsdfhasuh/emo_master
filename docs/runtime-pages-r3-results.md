@@ -135,7 +135,7 @@ v2另移除可滚动详情区多余的固定高度约束，保留内容和原断
 
 - 不能答“计划全部完成”。§5及其依赖的后续交付范围没有执行。
 - 不能答“§4已验收完成”。当前只是主要接点的实现和离线回归，仍有真实工程证据缺口，Windows与长期稳定性尚未验收。
-- 没有发布、合并、部署，也没有用“测试通过数”代替逐条操作验收。
+- v2离线交付时没有推送；后续经用户授权的Git同步见下节。没有合并、部署，也没有用“测试通过数”代替逐条操作验收。
 
 
 ## v2最新验证结论
@@ -147,3 +147,30 @@ protobuf生成一致性PASS、Ruff PASS、mypy PASS（279源文件）、pytest *
 这是当前Linux软件验证结果，不是“整个计划完成”：实际用户工程副本、Windows、长期资源稳态、
 真实设备、冻结环境及现场性能SLA仍NOT_RUN，§5的易用性、多图/多作用域、交付扩展仍未实施。
 旧FAIL日志保留；新结论来自修正后的执行证据，未删断言、降阈值或用分组次数拼成完整通过。
+
+
+## Git同步后的跨平台验证（2026-09-30）
+
+用户授权远端开发、Git同步和本地测试后，已将同一v2源码树发布到
+`agent/runtime-workflow-architecture-v1`，提交`b4a679d9826a9fa87f58bf19628b918b8d07609f`。
+[GitHub CI第78次执行](https://github.com/jsdfhasuh/emo_master/actions/runs/36716401059)实际跑完整套测试：
+
+- Ubuntu/Python3.10：1221 PASS、2 FAIL、1 SKIP
+- Windows/Python3.10：1209 PASS、14 FAIL、1 SKIP
+- 两个平台均无本次已观察到的Qt原生崩溃；protobuf、Ruff、mypy通过
+- 两项跨平台FAIL是导入隔离测试的子进程未继承pytest的src路径；此前云端显式`PYTHONPATH`掩盖了测试配置缺陷
+- Windows另12项FAIL来自新增合成工程夹具使用系统默认编码写JSON，而运行时按UTF-8读入
+
+后续修正保持产品代码与所有断言不变：两项导入测试显式从repo/src启动独立Python进程；
+夹具的四处文本I/O显式UTF-8。新增模拟CP1252默认编码的Unicode读写回归，
+原行为负对照FAIL，修正后捕获测试文件15 PASS；导入测试在完全取消PYTHONPATH后2 PASS。
+此处仍不能替代实际工程、长期稳定性及现场验收。
+
+取消PYTHONPATH后的首次完整复测另出现两项上传配额测试时序FAIL（1222 PASS、2 FAIL、1 SKIP）：
+前一笔超限上传虽已回复，其清理仍占bulk配额；测试随后把`active == 2`误当成两笔新建挂起上传。
+独立两项复测PASS，代码检查确认计数可混入旧请求。修正是在配额饱和阶段前等待旧请求退出，
+并新增两笔受控上传future仍未完成的断言；原配额、超时和错误码断言不变，生产服务不改动。
+
+同步修正后，同一Linux环境以`env -u PYTHONPATH QT_QPA_PLATFORM=offscreen python scripts/ci_check.py`
+完整执行通过：protobuf、Ruff、mypy PASS；pytest **1224 PASS、1 SKIP**，223.68秒，脚本退出0。
+新增提交的GitHub双平台和用户Windows本地复测在提交时仍待执行，不能提前记PASS。

@@ -37,6 +37,7 @@ from PySide2.QtWidgets import QApplication  # noqa: E402
 from shiboken2 import isValid  # noqa: E402
 from scripts.r3_resources import resources  # noqa: E402
 from scripts.r3_sampling import BoundedSampler  # noqa: E402
+from scripts.r3_job_diagnostics import JobDiagnostics, SqliteKeeper  # noqa: E402
 
 
 class Observations:
@@ -213,7 +214,7 @@ def disposeGuiHub(hub):
     assert not isValid(hub) and not isValid(timer), "native observer owner did not retire"
 
 
-def retireOwned(windows, clients, runtime, server, job, hub=None, sampler=None):
+def retireOwned(windows, clients, runtime, server, job, hub=None, sampler=None, diagnostics=None, keeper=None):
     """Try every independent owner, without pretending any failed close worked."""
     errors = []
 
@@ -235,6 +236,11 @@ def retireOwned(windows, clients, runtime, server, job, hub=None, sampler=None):
         attempt("server", server.close)
     if runtime:
         attempt("runtime", runtime.close)
+    if keeper is not None:
+        attempt("sqlite-keeper", keeper.close)
+    if diagnostics is not None:
+        diagnostics.capture("after_cleanup")
+        attempt("job-diagnostics", diagnostics.close)
     if sampler is not None:
         attempt("resource-sampler", sampler.close)
     return errors
@@ -243,6 +249,8 @@ def retireOwned(windows, clients, runtime, server, job, hub=None, sampler=None):
 def run(args, evidence):
     before = sourceIdentity()
     expected = math.ceil(args.seconds * 5)
+    diagnosticEnabled = bool(getattr(args, "job_diagnostics", False))
+    keeperEnabled = bool(getattr(args, "sqlite_keeper", False))
     evidence.write("configuration", {"source": before, "seconds": args.seconds,
         "expected_inputs": expected, "scheduled_hz": 5, "sample_seconds": args.sample_seconds,
         "synthetic": True, "input_shape": [120, 160, 3], "legacy_snapshots": "all (compatibility default)",
@@ -252,12 +260,21 @@ def run(args, evidence):
         "sampler_mode": "background", "resource_sample_capacity": SoakSampler.MAX_SAMPLES,
         "sampling_clock": "perf_counter_ns; per-process native start/end and cache age",
         "sampler_note": "Separate observer-effect run; prior synchronous evidence remains unchanged",
+        "job_diagnostics": diagnosticEnabled,
+        "sqlite_connection_arm": "diagnostic_idle_keeper" if keeperEnabled else "unchanged",
         "not_proven": ["actual project", "field SLA", "unlimited steady state", "real devices", "frozen package"]})
     clients, windows = [], []
     runtime = display = server = hub = sampler = None
+    diagnostics = keeper = None
     job = ""
     root = Path(tempfile.mkdtemp(prefix="emo-r3-soak-"))
     try:
+        if diagnosticEnabled:
+            diagnosticPath = args.output.with_name(args.output.name + ".job-diagnostics.json")
+            diagnostics = JobDiagnostics(diagnosticPath, source=before, plannedSeconds=args.seconds)
+            evidence.write("diagnostic_configuration", {"path": str(diagnosticPath),
+                "maximum_bytes": diagnostics.MAX_BYTES, "maximum_snapshots": diagnostics.MAX_SNAPSHOTS,
+                "observer_effect": "Explicit instrumented run; default workflow, thresholds and deadlines unchanged"})
         sampler = SoakSampler()
         document = pacedProject(root, count=expected)
         document.workflows["detect"].nodes[1].params["imagePath"] = str(root / "input.png")
@@ -271,6 +288,11 @@ def run(args, evidence):
         runtime = RuntimeService(dbPath=root / "runtime.sqlite3", workspaceRoot=root / "jobs",
                                  pluginRootPaths=pluginRoots(root))
         display = PresentationService(runtime, root / "display")
+        if diagnostics is not None:
+            diagnostics.install(runtime)
+        if keeperEnabled:
+            keeper = SqliteKeeper(runtime.sqliteStore)
+            evidence.write("sqlite_keeper", keeper.report())
         server = AioRuntimeServer(runtime, display)
         assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None).ok
         reply = runtime.StartJob(pb.StartJobRequest(project_id=document.project.projectId,
@@ -297,6 +319,8 @@ def run(args, evidence):
             QApplication.processEvents()
             now = time.monotonic()
             if now - start > args.seconds + 45:
+                if diagnostics is not None:
+                    diagnostics.capture("observation_timeout")
                 raise TimeoutError("Job exceeded planned duration plus bounded startup/drain allowance")
             if now >= nextSample:
                 nextSample = now + args.sample_seconds
@@ -358,6 +382,12 @@ def run(args, evidence):
         runtime.close()
         runtime = None
         display = None
+        if keeper is not None:
+            keeper.close()
+            evidence.write("sqlite_keeper", keeper.report())
+        if diagnostics is not None:
+            diagnostics.capture("owners_closed")
+            diagnostics.close()
         QApplication.processEvents()
         QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
         sampler.close()
@@ -367,8 +397,14 @@ def run(args, evidence):
             "all_job_display_owners_retired": True, "resource_sampler": sampling})
         assert sampling["resource_coverage_complete"], sampling
         assert sampling["retired"] and not sampling["overflow"] and not sampling["errors"], sampling
+    except BaseException as error:
+        if diagnostics is not None:
+            diagnostics.capture("before_cleanup:" + type(error).__name__)
+        raise
     finally:
-        errors = retireOwned(windows, clients, runtime, server, job, hub, sampler)
+        errors = retireOwned(windows, clients, runtime, server, job, hub, sampler, diagnostics, keeper)
+        if keeper is not None:
+            evidence.write("sqlite_keeper_final", keeper.report())
         if errors:
             evidence.write("cleanup_failure", {"errors": errors, "preserved_temporary_root": str(root)})
             raise RuntimeError(f"measurement owners did not all close: {errors}")
@@ -389,9 +425,13 @@ def main():
     parser.add_argument("--seconds", type=int, default=900)
     parser.add_argument("--sample-seconds", type=float, default=5)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--job-diagnostics", action="store_true", help="opt-in bounded Job stages/frontiers/stacks")
+    parser.add_argument("--sqlite-keeper", action="store_true", help="diagnostic idle SQLite connection; requires --job-diagnostics")
     args = parser.parse_args()
     if not 5 <= args.seconds <= 1800 or not 1 <= args.sample_seconds <= 30:
         parser.error("seconds must be 5..1800; sampling interval 1..30")
+    if args.sqlite_keeper and not args.job_diagnostics:
+        parser.error("--sqlite-keeper requires --job-diagnostics; this is an explicit diagnostic arm")
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
     app = QApplication.instance() or QApplication([])
     app.setQuitOnLastWindowClosed(False)

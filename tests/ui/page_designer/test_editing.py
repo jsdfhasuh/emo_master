@@ -188,3 +188,71 @@ def testTwoInvocationScopesBindIndependentlyAndUndoTogether(tmp_path):
     assert session.payload() == before
     assert session.redo()
     assert commands.session.presentation.snapshot().pages[two].components[0].bindings
+
+
+def testUnsupportedOutputKeepsSupportedChoicesAndReportsReason(tmp_path):
+    document = blank(tmp_path)
+    document.workflows['main'].outputs['custom'] = {'type': 'vendorTensor'}
+    unsupported = []
+    choices = outputChoices(document, metadata(),
+        onUnsupported=lambda title, reason: unsupported.append((title, reason)))
+    assert any(choice.source.nodeId == 'count' for choice in choices)
+    assert not any(choice.source.port == 'custom' for choice in choices)
+    assert len(unsupported) == 1
+    assert 'custom' in unsupported[0][0] and 'vendortensor' in unsupported[0][1]
+    assert 'unsupported' in unsupported[0][1]
+
+
+def testUnsupportedOutputEditorRemainsUsable(designer, tmp_path):  # noqa: F811
+    from dataclasses import asdict
+    from test_preview import waitFor
+    document = blank(tmp_path)
+    document.workflows['main'].outputs['custom'] = {'type': 'vendorTensor'}
+    coordinator = designer.pageCoordinator
+    designer.workflowController.loadPayload(document.model_dump())
+    coordinator.session.acceptLoaded()
+    waitFor(lambda: designer.operatorCatalogController.state == 'ready')
+    designer.operatorCatalog = [asdict(value) for value in metadata().values()]
+    coordinator.showPages()
+    editor = coordinator.editor
+    tools = editor.tools
+    groups = [tools.outputs.topLevelItem(index) for index in range(tools.outputs.topLevelItemCount())]
+    group = next(item for item in groups if item.text(0) == '暂不支持的输出')
+    item = group.child(0)
+    assert 'custom' in item.text(0) and 'vendortensor' in item.toolTip(0)
+    assert not item.flags() & Qt.ItemIsDragEnabled
+    assert not item.flags() & Qt.ItemIsEnabled
+    assert item.data(0, Qt.UserRole) is None
+    assert tools.binding.count() == len(tools.choices)
+    assert any(choice.source.nodeId == 'count' for choice in tools.choices)
+    assert w_no_extra_job(designer)
+
+
+def testTrustedUnsupportedPortDoesNotHideSupportedNodeOutputs(tmp_path):
+    document = blank(tmp_path)
+    manifests = metadata()
+    manifests['vision.analysis.blob'].outputPorts['custom'] = 'vendorTensor'
+    reasons = []
+    choices = outputChoices(document, manifests,
+        onUnsupported=lambda title, reason: reasons.append((title, reason)))
+    assert any(choice.source.nodeId == 'blob' and choice.source.port == 'overlay' for choice in choices)
+    assert not any(choice.source.port == 'custom' for choice in choices)
+    assert len(reasons) == 1 and '[blob]' in reasons[0][0]
+    assert 'vendortensor' in reasons[0][1]
+
+
+def testCatalogIncludesSupportedCallPathDepth32AndStopsAtSchemaBound(tmp_path):
+    from emo_master.core.project.models import WorkflowDefinition, WorkflowNode
+    document = blank(tmp_path)
+    for depth in range(34):
+        key = 'main' if depth == 0 else f'depth-{depth}'
+        nextKey = f'depth-{depth + 1}'
+        document.workflows[key] = WorkflowDefinition(name=key, outputs={'count': 'integer'},
+            nodes=[WorkflowNode(nodeId=f'call-{depth}', kind='subflow', targetWorkflowId=nextKey)]
+                if depth < 33 else [])
+    document.workflowOrder = list(document.workflows)
+    choices = outputChoices(document, {})
+    assert {len(choice.source.callPath) for choice in choices} == set(range(33))
+    deepest = next(choice for choice in choices if len(choice.source.callPath) == 32)
+    assert deepest.source.workflowId == 'depth-32'
+    assert deepest.scope.scopeWorkflowId == 'depth-32'

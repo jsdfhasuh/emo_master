@@ -29,17 +29,26 @@ class Choice:
     hint: str
 
 
-def outputChoices(document, manifests):
+def outputChoices(document, manifests, *, onUnsupported=None):
     entries = buildOutputCatalog(document, manifests)
     choices = []
 
     def visit(workflowId, path, ancestors):
-        if workflowId in ancestors or len(path) > 16:
+        if workflowId in ancestors or len(path) > 32:
             return
         for entry in entries:
             if entry.workflowId != workflowId:
                 continue
-            for field, kind in [((), presentationType(entry.spec)), *entry.fields.items()]:
+            try:
+                outputType = presentationType(entry.spec)
+            except ValueError as error:
+                if onUnsupported is not None:
+                    location = '/'.join(step.nodeId + ':' + step.relation for step in path) or '入口'
+                    title = (f'{document.workflows[workflowId].name} / {entry.displayName} '
+                             f'[{entry.nodeId or "出口"}] / {entry.port} · {location}')
+                    onUnsupported(title, str(error))
+                continue
+            for field, kind in [((), outputType), *entry.fields.items()]:
                 source = DataSource(kind='node_output' if entry.nodeId else 'workflow_output',
                     resultScopeId='scope', workflowId=workflowId, nodeId=entry.nodeId, port=entry.port,
                     callPath=path, fieldPath=list(field), expectedType=kind)

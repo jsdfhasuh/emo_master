@@ -3,6 +3,7 @@ from dataclasses import asdict
 from pathlib import Path
 from tests.runtime.runtime_test_utils import jobFailureDetails
 
+from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -69,6 +70,14 @@ def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, mon
         editor.renderer.navigate(secondPage)
         assert editor.renderer.currentPageId == secondPage
         assert next(iter(editor.renderer.displayed.values())).result.identity.resultKey == first.result.identity.resultKey
+        assert editor.tools.preview.isChecked()
+        editor.tools.preview.setChecked(False)
+        assert editor.renderer.editing
+        assert editor.pageId == editor.renderer.currentPageId == secondPage
+        assert editor.pageList.currentItem().data(Qt.UserRole) == secondPage
+        assert editor.tools._loadedPage == secondPage and editor.tools.selected is None
+        assert next(iter(editor.renderer.displayed.values())).result.identity.resultKey == first.result.identity.resultKey
+        assert not coordinator.session.dirty
         # A second observer and disconnect cannot create or stop a job.
         observer = DisplaySession(client.displayAddress(), firstJob)
         waitFor(lambda: bool(observer.latest))

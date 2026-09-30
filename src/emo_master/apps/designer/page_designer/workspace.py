@@ -8,6 +8,38 @@ from PySide2.QtCore import Qt
 from emo_master.ui.presentation.renderer import RuntimePages
 
 
+class EditorPages(RuntimePages):
+    """Keep every renderer navigation inside the editor's page boundary."""
+    def __init__(self, workspace, *args, **kwargs):
+        self.workspace = workspace
+        self.reloading = False
+        super().__init__(*args, **kwargs)
+
+    def navigate(self, pageId, keepFrozen=False):
+        if self.reloading or not hasattr(self.workspace, 'tools'):
+            return super().navigate(pageId, keepFrozen=keepFrozen)
+        return self.workspace.navigatePage(pageId, keepFrozen=keepFrozen)
+
+    def act(self, action):
+        if not self.editing and action is not None and action.type == 'navigate' and action.context == 'displayed_result':
+            # Detail actions acquire a pin before navigate(), so reject the
+            # form here, before they can change the current live/frozen view.
+            try:
+                self.workspace.tools.commitPending()
+            except ValueError as error:
+                self.workspace.message.setText(str(error))
+                return
+        return super().act(action)
+
+    def reload(self, presentation):
+        # Rebuilding the canvas is not a request to leave the current form.
+        self.reloading = True
+        try:
+            super().reload(presentation)
+        finally:
+            self.reloading = False
+
+
 class PageWorkspace(QWidget):
     def __init__(self, coordinator):
         super().__init__()
@@ -32,7 +64,7 @@ class PageWorkspace(QWidget):
             button = QPushButton(title)
             button.clicked.connect(lambda _checked=False, fn=command: self.run(fn))
             sidebar.addWidget(button)
-        self.renderer = RuntimePages(self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
+        self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
         self.root.addWidget(self.renderer, 1)
         self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
@@ -76,19 +108,38 @@ class PageWorkspace(QWidget):
     def choosePage(self, row):
         item = self.pageList.item(row)
         if item:
-            try:
-                self.tools.commitPending()
-            except ValueError as error:
-                self.message.setText(str(error))
-                self.pageList.blockSignals(True)
-                order = self.store.snapshot().pageOrder
-                self.pageList.setCurrentRow(order.index(self.pageId) if self.pageId in order else -1)
-                self.pageList.blockSignals(False)
-                return
-            self.pageId = item.data(Qt.UserRole)
-            self.renderer.navigate(self.pageId)
-            self.tools.select(None)
-            self.tools.install()
+            self.renderer.navigate(item.data(Qt.UserRole))
+
+    def _selectCurrentPage(self):
+        self.pageList.blockSignals(True)
+        row = next((row for row in range(self.pageList.count())
+                    if self.pageList.item(row).data(Qt.UserRole) == self.pageId), -1)
+        self.pageList.setCurrentRow(row)
+        self.pageList.blockSignals(False)
+        for key, button in self.renderer.buttons.items():
+            button.setChecked(key == self.pageId)
+
+    def navigatePage(self, pageId, keepFrozen=False):
+        if pageId == self.pageId or pageId not in self.renderer.config.pages:
+            return RuntimePages.navigate(self.renderer, pageId, keepFrozen=keepFrozen)
+        try:
+            # The form still belongs to the old page until this succeeds.
+            self.tools.commitPending()
+        except ValueError as error:
+            self.message.setText(str(error))
+            self._selectCurrentPage()
+            return
+        # A detail action has just pinned the displayed result. Rebuilding
+        # would release that pin and replace it with the session's latest.
+        # Pending form changes render when editing resumes instead.
+        if not keepFrozen and self.renderer.config != self.store.snapshot():
+            self.refresh()
+        self.pageId = pageId
+        RuntimePages.navigate(self.renderer, pageId, keepFrozen=keepFrozen)
+        self._selectCurrentPage()
+        self.tools.select(None)
+        self.tools.dragStart = None
+        self.tools.install()
 
     def newPage(self):
         name, ok = QInputDialog.getText(self, '新建页面', '页面名称')

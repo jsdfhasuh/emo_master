@@ -168,7 +168,9 @@ class EditingTools(QObject):
 
     def refreshCatalog(self):
         manifests = self.commands().manifests
-        self.choices = outputChoices(self.w.session.document(), manifests)
+        unsupported = []
+        self.choices = outputChoices(self.w.session.document(), manifests,
+            onUnsupported=lambda title, reason: unsupported.append((title, reason)))
         self.outputs.clear()
         self.binding.clear()
         groups = {}
@@ -213,6 +215,15 @@ class EditingTools(QObject):
             readable = groups[address].text(0) + ' / ' + nodes[nodeAddress].text(0) + ' / ' + item.text(0)
             self.binding.addItem(readable, index)
             self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
+        if unsupported:
+            group = QTreeWidgetItem(['暂不支持的输出'])
+            group.setFlags(group.flags() & ~Qt.ItemIsDragEnabled)
+            self.outputs.addTopLevelItem(group)
+            for title, reason in unsupported:
+                item = QTreeWidgetItem([title + ' · ' + reason])
+                item.setToolTip(0, reason)
+                item.setFlags(item.flags() & ~Qt.ItemIsDragEnabled & ~Qt.ItemIsEnabled)
+                group.addChild(item)
         self.outputs.expandAll()
         from emo_master.core.presentation.capture_limits import normalCaptureLimits
         try:
@@ -255,8 +266,18 @@ class EditingTools(QObject):
                 widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
 
     def previewMode(self, preview):
+        try:
+            self.commitPending()
+        except ValueError as error:
+            self.w.message.setText(str(error))
+            self.preview.blockSignals(True)
+            self.preview.setChecked(not preview)
+            self.preview.blockSignals(False)
+            return
         self.w.renderer.editing = not preview
         self.preview.setText('返回编辑模式' if preview else '切换为模拟预览')
+        if self.w.renderer.config != self.w.store.snapshot():
+            self.w.refresh()
         self.changeSimulation()
         self.install()
 

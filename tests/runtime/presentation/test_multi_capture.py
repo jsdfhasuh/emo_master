@@ -24,7 +24,7 @@ from emo_master.core.presentation.capture_limits import normalCaptureLimits, nor
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.presentation.test_images import waitFor, blockedEncoder
 from tests.runtime.presentation.test_normal_capture import release
-from tests.runtime.runtime_test_utils import waitForTerminal
+from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
 
 MIB = 1024 * 1024
@@ -91,7 +91,8 @@ def start(channel, project):
 
 
 def results(channel, job, count=1):
-    assert waitForTerminal(channel.runtime, job).status == "COMPLETED"
+    status = waitForTerminal(channel.runtime, job)
+    assert status.status == "COMPLETED", jobFailureDetails(channel.runtime, job, status)
     return waitFor(lambda: value if len(value := channel.store.snapshot(job)["results"]) == count else None)
 
 

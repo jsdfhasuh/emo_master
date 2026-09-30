@@ -3,6 +3,7 @@
 This regression is not a user-project, device, performance or field acceptance.
 """
 import time
+from tests.runtime.runtime_test_utils import jobFailureDetails
 import pytest
 
 from PySide2.QtWidgets import QApplication, QMessageBox
@@ -57,7 +58,7 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         scope = next(iter(renderer.displayed.values()))
         assert scope.result.identity.jobId == first
         assert scope.result.identity.mode == 'runtime'
-        assert scope.result.status == 'COMPLETE'
+        assert scope.result.status == 'COMPLETE', jobFailureDetails(runtime, first, result=scope.result)
         assert next(source.valueJson for source in scope.result.sources if source.sourceId == 'count') == '2'
         assert len(scope.images) == 1
         key = scope.result.identity.resultKey
@@ -72,13 +73,13 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         coordinator.preview.closeAsync()
         waitFor(lambda: not coordinator.preview.active())
         assert not runtime._closed
-        assert runtime.jobRepository.get(first).status == 'COMPLETED'
+        assert runtime.jobRepository.get(first).status == 'COMPLETED', jobFailureDetails(runtime, first)
         window.startJob()
         waitFor(lambda: window.currentJobId not in (None, first) or window.runtimePanelState.jobStatus == 'FAILED')
         assert window.currentJobId not in (None, first), window.runtimePanelState.jobMessage
         waitFor(lambda: not window.isJobRunning)
         assert len(runtime.jobRepository.all()) == 2
-        assert runtime.jobRepository.get(window.currentJobId).status == 'COMPLETED'
+        assert runtime.jobRepository.get(window.currentJobId).status == 'COMPLETED', jobFailureDetails(runtime, window.currentJobId)
     finally:
         if window.pageCoordinator.preview.active():
             window.pageCoordinator.preview.closeAsync()
@@ -110,7 +111,7 @@ def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, f
         job = window.currentJobId
         assert job, window.runtimePanelState.jobMessage
         waitFor(lambda: not window.isJobRunning)
-        assert runtime.jobRepository.get(job).status == 'COMPLETED'
+        assert runtime.jobRepository.get(job).status == 'COMPLETED', jobFailureDetails(runtime, job)
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
@@ -118,7 +119,7 @@ def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, f
         waitFor(lambda: bool(renderer.displayed))
         first = next(iter(renderer.displayed.values()))
         assert first.result.identity.jobId == job
-        assert first.result.status == 'COMPLETE'
+        assert first.result.status == 'COMPLETE', jobFailureDetails(runtime, job, result=first.result)
         metadata = window.runtimeClient.listDisplayJobs(document.project.projectId)[0]
         limits = json.loads(metadata.capture_limits_json)
         assert set(limits['rawBytesBySource'].values()) == {4 * 1024 * 1024}
@@ -180,7 +181,7 @@ def testNormalAndIsolatedDebugShareOwnerInEitherOrder(qtApp, tmp_path, debugFirs
         assert normal in owner.jobs
         assert debug not in owner.jobs
         assert client.listDisplayJobs(document.project.projectId)
-        assert runtime.jobRepository.get(normal).status == 'COMPLETED'
+        assert runtime.jobRepository.get(normal).status == 'COMPLETED', jobFailureDetails(runtime, normal)
         assert len(runtime.jobRepository.all()) == 2
     finally:
         if backend:

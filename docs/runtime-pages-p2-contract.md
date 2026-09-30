@@ -186,3 +186,74 @@ framing 暂存；旧 RPC/客户端路径不变。所有同步构造、next、clo
 模型提交从 scope 终态计时，丢失/未应用不删除分母。数据年龄保留直到 Job 终态的尾部。
 原 P0 是不同原型算子图；这些是正式图的配对结果，不冒充同一二进制的历史直接对比。
 短窗口的 RSS/句柄/CPU 原始曲线不等于长时间稳态或工控机/Qt/冻结包验收。
+
+## R3 explicit legacy node-snapshot policy
+
+Normal `StartJob` additionally accepts `legacy_snapshot_policy`: absent/empty and
+`ALL` both select the compatibility default; `NONE` is an explicit choice for that
+Run only. Other values are rejected before Job creation. This is independent of
+`capture_presentation`: disabling node-debug snapshots does not disable bound
+page results, change operator routing, production counters, output paths, or the
+Runtime database. No project-schema field or implicit project upgrade is added.
+
+- The normalized policy is frozen in `JobProcessSpec` and included in the start
+  request fingerprint. A token may reconcile empty versus explicit `ALL`, but
+  cannot be reused to switch between `ALL` and `NONE`. Lookup/status replies echo
+  the accepted policy; viewing/reconnecting cannot change it.
+- `NONE` requires `legacy_snapshot_policy_v1` and `preview_snapshot_origin_v1`
+  from an external Runtime (plus existing start-request reconciliation support).
+  Unsupported choices fail before Start; there is no fallback that silently
+  substitutes `ALL`. Direct Designer-client `NONE` calls require a caller-retained
+  start-request ID and expected Runtime generation; the client does not invent an
+  unrecoverable token after a lost reply. An owned embedded Runtime checks its capability directly,
+  without creating a page server/exporter for a no-page Run.
+- `ALL` retains `PreviewSnapshotWriter`; `NONE` does not create it or its staging
+  directory. Isolated Prepare/Start and existing P2/P3 benchmark defaults remain
+  `ALL`. Existing ALL regression evidence is not relabelled using policy-off cost.
+- The accepted event persists the policy and project-copy preview key without a
+  database-schema migration. Restricted test-release hosts reject the new `NONE`
+  policy even through raw normal-Start RPCs; their existing prepared `ALL` and
+  single-start lifecycle are unchanged. A retained pre-policy accepted event represents the
+  old `ALL` path. If accepted-event evidence has been pruned or is malformed,
+  restored policy is `UNKNOWN`, never inferred `ALL`/`NONE`. A missing project-copy
+  key cannot prove that a selected Job belongs to the currently loaded copy.
+
+Each newly written legacy snapshot records originating Job, project revision,
+unique capture ID and creation time. Capture ID identifies one node invocation's
+image/companion ports, and participates in staging and published asset IDs/paths.
+A node capture publishes its staging index only after all of its output files are
+written; companion/index failures preserve the prior committed capture and remove
+unpublished copies. Successful repeated captures retain only the latest file per
+port, rather than accumulating an image history. Replacing an output expires its previous ID rather than retargeting that ID to new bytes.
+Companion geometry is returned only for the same capture ID and originating Job;
+matching node IDs or dimensions alone are insufficient. Old indexes still load,
+but absent origin is `UNKNOWN`. Failed index publication keeps preceding bytes
+and removes newly copied, unpublished assets. Failed deletion retains bounded
+cleanup ownership and blocks further capture/promotion allocation until cleanup
+actually succeeds; unindexed owned published files are rediscovered after reopen.
+The preceding committed snapshot stays readable during that fault. Existing
+storage quotas remain.
+
+`ListNodePreviewSources` accepts an explicit optional `job_id`. It does not choose
+a global last Job. `source_kind=current/upstream` still describes node location,
+not freshness. Added per-source state is `CURRENT`, `PREVIOUS` or `UNKNOWN`, with
+origin metadata. The reply envelope includes selected Job, policy, capture state
+and explanation even when there are no assets:
+
+- `CURRENT_AVAILABLE`: verified selected Job/project copy and matching origin
+- `DISABLED_THIS_RUN`: selected Run explicitly chose `NONE`; historical assets
+  may still be offered under their original identities
+- `NO_CURRENT_SNAPSHOT`: `ALL`, but this node has no matching published result
+- `NO_JOB_SELECTED`, `UNKNOWN`, or `INVALID_JOB`: no current-data claim
+
+Skipped/failed nodes and `NONE` never relabel an earlier snapshot as current.
+The built-in inspector auto-selects only verified current data; historical or
+unknown data require deliberate selection and retain a provenance badge. Starting
+a new Run, accepting its identity, or replacing the project invalidates open
+inspector selections and queued pure-preview results. The old list-returning
+client helper remains available alongside a metadata-returning helper.
+
+These are compatibility and ownership semantics, not a performance acceptance.
+The initial four-arm synthetic smoke only verified measurement wiring and encode
+counts; a policy comparison requires adjacent arms on the same exact source and
+hardware. Original benchmark thresholds and historical failures remain intact.

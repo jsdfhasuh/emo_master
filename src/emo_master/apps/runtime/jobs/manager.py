@@ -6,6 +6,7 @@ from emo_master.apps.runtime.events.event_store import EventStore
 from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobRecord
 from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 
 
 class JobManager:
@@ -25,12 +26,18 @@ class JobManager:
         projectRevision: int,
         workflowId: str,
         jobId: str | None = None,
+        *,
+        legacySnapshotPolicy: str = "ALL",
+        previewProjectKey: str = "",
     ) -> JobRecord:
+        policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
         record = JobRecord(
             jobId=jobId or str(uuid4()),
             projectId=projectId,
             projectRevision=projectRevision,
             workflowId=workflowId,
+            legacySnapshotPolicy=policy,
+            previewProjectKey=previewProjectKey,
         )
         self.jobRepository.create(record)
         self.eventStore.append(
@@ -39,6 +46,7 @@ class JobManager:
             "job accepted",
             projectId=projectId,
             workflowId=workflowId,
+            payload={"legacySnapshotPolicy": policy, "previewProjectKey": previewProjectKey},
         )
         return record
 

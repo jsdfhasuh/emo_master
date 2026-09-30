@@ -66,12 +66,24 @@ class PurePreviewControllerBase:
     def bindPreviewBase(self, root: object, context: Any) -> None:
         self.root = root
         self.context = context
+        bindInvalidation = getattr(context, "bindPreviewInvalidation", None)
+        if callable(bindInvalidation):
+            bindInvalidation(self.invalidatePreviewSources)
         self.sourceCombo = requiredChild(root, QComboBox, "sourceCombo")
         self.localImageButton = requiredChild(
             root, QPushButton, "localImageButton"
         )
         self.sourceCombo.currentIndexChanged.connect(self._sourceChanged)
         self.localImageButton.clicked.connect(self._chooseLocalImage)
+        from PySide2.QtWidgets import QHBoxLayout
+        for localLayout in self.root.findChildren(QHBoxLayout):
+            localIndex = localLayout.indexOf(self.localImageButton)
+            if localIndex >= 0:
+                refreshButton = QPushButton("刷新来源", self.localImageButton.parentWidget())
+                refreshButton.setObjectName("refreshPreviewSourcesButton")
+                refreshButton.clicked.connect(self.refreshSources)
+                localLayout.insertWidget(localIndex, refreshButton)
+                break
         self._debounceTimer = QTimer(cast(QObject, root))
         self._debounceTimer.setSingleShot(True)
         self._debounceTimer.setInterval(250)
@@ -87,32 +99,93 @@ class PurePreviewControllerBase:
     def onClose(self) -> None:
         return
 
+    def invalidatePreviewSources(self) -> None:
+        """A Run/project change invalidates selection and every in-flight result."""
+        if self._disposed:
+            return
+        self._generation += 1
+        self.currentAssetId = ""
+        if self._debounceTimer is not None:
+            self._debounceTimer.stop()
+        if self._future is not None:
+            self._future.cancel()
+        self._cancelCurrentPreview()
+        if self.sourceCombo is not None:
+            self.sourceCombo.blockSignals(True)
+            self.sourceCombo.clear()
+            self.sourceCombo.addItem("快照已失效，请刷新来源或选择本地图片", "")
+            self.sourceCombo.blockSignals(False)
+        self._sourceMimeTypes.clear()
+        self._clearPreviewVisuals("快照已失效")
+        if self.context is not None:
+            self.context.setStatus("运行上下文已变更，请刷新来源或选择本地图片")
+
+    def _clearPreviewVisuals(self, message: str = "未加载快照") -> None:
+        """Clear only rendered source/results; retain all selectable sources."""
+        self.onSourceImage(b"", "image/png")
+        self.handlePreviewResult({}, {})
+        if self.root is not None:
+            # Includes ROI companion images, while the hooks above clear the
+            # source canvas and structured outputs such as the histogram.
+            for label in self.root.findChildren(QLabel):
+                pixmap = label.pixmap()
+                if pixmap is not None and not pixmap.isNull():
+                    label.clear()
+                    label.setText(message)
+
     def refreshSources(self) -> None:
         if self.sourceCombo is None or self.context is None:
             return
+        self.invalidatePreviewSources()
         combo = self.sourceCombo
         combo.blockSignals(True)
         combo.clear()
-        self._sourceMimeTypes.clear()
+        combo.addItem("请选择快照或本地图片", "")
+        listing = None
         try:
-            sources = self.context.listPreviewSources()
+            metadata = getattr(self.context, "listPreviewSourcesWithMetadata", None)
+            if callable(metadata):
+                listing = metadata()
+                sources = listing.sources
+            else:
+                sources = self.context.listPreviewSources()
         except Exception as err:
             sources = []
             self.context.setError(str(err))
+        currentJob = getattr(self.context, "currentJobId", lambda: "")()
+        selectedIndex = 0
+        listingMatches = bool(currentJob and listing is not None
+                              and getattr(listing, "jobId", "") == currentJob)
+        policy = getattr(listing, "legacySnapshotPolicy", "") if listingMatches else ""
         for source in sources:
             assetId = str(getattr(source, "sourceId", ""))
-            if assetId:
-                combo.addItem(str(getattr(source, "label", assetId)), assetId)
-                self._sourceMimeTypes[assetId] = str(
-                    getattr(source, "mimeType", "")
-                )
+            if not assetId:
+                continue
+            state = str(getattr(source, "snapshotState", "UNKNOWN"))
+            if not listingMatches or state not in {"CURRENT", "PREVIOUS", "UNKNOWN"}:
+                state = "UNKNOWN"
+            if state == "CURRENT" and (policy != "ALL" or
+                    getattr(listing, "captureState", "") != "CURRENT_AVAILABLE" or
+                    not getattr(source, "captureId", "") or
+                    getattr(source, "originJobId", "") != currentJob):
+                state = "UNKNOWN"
+            badge = {"CURRENT": "本次运行", "PREVIOUS": "历史快照", "UNKNOWN": "来源未知"}[state]
+            originJobId = str(getattr(source, "originJobId", ""))
+            detail = f" · {originJobId}" if originJobId else ""
+            combo.addItem(f"[{badge}{detail}] {getattr(source, 'label', assetId)}", assetId)
+            self._sourceMimeTypes[assetId] = str(getattr(source, "mimeType", ""))
+            if state == "CURRENT" and not selectedIndex:
+                selectedIndex = combo.count() - 1
+        combo.setCurrentIndex(selectedIndex)
         combo.blockSignals(False)
-        if combo.count() > 0:
-            combo.setCurrentIndex(0)
-            self._sourceChanged(0)
+        if selectedIndex:
+            self._sourceChanged(selectedIndex)
+        elif policy == "NONE":
+            self.context.setStatus("本次运行未采集节点调试快照")
+        elif combo.count() > 1:
+            self.context.setStatus("没有可自动选择的本次快照；可手动选择历史/来源未知快照或本地图片")
         else:
-            self.currentAssetId = ""
-            self.context.setStatus("暂无作业快照，请选择本地图片")
+            self.context.setStatus(str(getattr(listing, "message", "")) or "暂无本次作业快照，请选择本地图片")
 
     def schedulePreview(self, *, markDirty: bool = True) -> None:
         if self._disposed or self._debounceTimer is None:
@@ -144,21 +217,37 @@ class PurePreviewControllerBase:
         self.sourceCombo.setCurrentIndex(self.sourceCombo.count() - 1)
 
     def _sourceChanged(self, _index: int) -> None:
-        if self.sourceCombo is None or self.context is None:
+        if self._disposed or self.sourceCombo is None or self.context is None:
             return
-        assetId = self.sourceCombo.currentData()
-        self.currentAssetId = str(assetId) if assetId is not None else ""
-        if not self.currentAssetId:
+        self._cancelCurrentPreview()
+        self._generation += 1
+        if self._debounceTimer is not None:
+            self._debounceTimer.stop()
+        if self._future is not None:
+            self._future.cancel()
+        self.currentAssetId = ""
+        # Clear historical pixels/results before selecting even a placeholder
+        # or an asset whose download may fail. Do not repopulate the combo.
+        self._clearPreviewVisuals()
+        selected = self.sourceCombo.currentData()
+        assetId = str(selected) if selected is not None else ""
+        if not assetId:
+            self.context.setStatus("请选择快照或本地图片")
             return
         try:
-            content, mimeType = self.context.downloadPreviewAsset(self.currentAssetId)
+            content, mimeType = self.context.downloadPreviewAsset(assetId)
+            if not content or not mimeType:
+                raise ValueError("快照已失效或内容不可用，请刷新来源")
             if mimeType.startswith("image/"):
                 self.onSourceImage(content, mimeType)
             else:
                 self.onStructuredSource(content, mimeType)
         except Exception as err:
+            self._clearPreviewVisuals("快照不可用")
             self.context.setError(str(err))
             return
+        self.currentAssetId = assetId
+        self.context.setStatus(f"已选择：{self.sourceCombo.currentText()}")
         if mimeType.startswith("image/"):
             self.schedulePreview(markDirty=False)
 
@@ -189,6 +278,8 @@ class PurePreviewControllerBase:
         future.add_done_callback(completed)
 
     def _pollResults(self) -> None:
+        if self._disposed:
+            return
         latest: tuple[int, object | None, BaseException | None] | None = None
         while True:
             try:
@@ -224,6 +315,11 @@ class PurePreviewControllerBase:
         if self._disposed:
             return
         self._disposed = True
+        bindInvalidation = getattr(self.context, "bindPreviewInvalidation", None)
+        if callable(bindInvalidation):
+            bindInvalidation(lambda: None)
+        self._generation += 1
+        self.currentAssetId = ""
         if self._debounceTimer is not None:
             self._debounceTimer.stop()
         if self._pollTimer is not None:

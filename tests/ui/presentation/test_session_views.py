@@ -147,9 +147,11 @@ def testHiddenAndClosedViewsDoNotConvertOrAccessDeletedWidgets(qtApp,live):
     assert not backend.runtime._closed
 
 
-def testLateDecodeCannotRestorePreviousJob(qtApp,live,monkeypatch):
+@pytest.mark.parametrize('switchJob', [False, True])
+def testLateDecodeCannotRestorePreviousJob(qtApp,monkeypatch,switchJob):
     from emo_master.clients.runtime import display_session as module
-    backend,session=live
+    backend=LocalDemo(count=1)
+    session=window=None
     entered=threading.Event()
     release=threading.Event()
     decode=module.decodePng
@@ -158,25 +160,47 @@ def testLateDecodeCannotRestorePreviousJob(qtApp,live,monkeypatch):
         if not release.wait(3):
             raise ValueError('test decode gate expired')
         return decode(content)
-    monkeypatch.setattr(module,'decodePng',delayed)
-    hub=DisplayHub(session)
-    window=RuntimePages(backend.project.presentation,hub=hub)
-    window.show()
     try:
+        # Install the gate before any consumer thread exists. A finite job may
+        # finish before the test starts; its retained result remains observable.
+        until(qtApp,lambda:bool(backend.presentation.store.snapshot(backend.jobId)['results']))
+        result=backend.presentation.store.snapshot(backend.jobId)['results'][0]
+        assert result.status=='COMPLETE'
+        key=result.identity.resultKey
+        monkeypatch.setattr(module,'decodePng',delayed)
+        session=DisplaySession(backend.address,backend.jobId)
         until(qtApp,entered.is_set)
         generation=session.readSnapshot().generation
-        session.selectJob('missing-job')
+        if switchJob:
+            session.selectJob('missing-job')
         release.set()
-        until(qtApp,lambda:session.readSnapshot().connection=='NOT_FOUND')
-        hub.tick()
-        assert session.readSnapshot().generation>generation
-        assert not window.displayed and not session.readSnapshot().scopes
-        assert any(not row['applied_to_live'] for row in session.records)
-        session.selectJob(backend.jobId)
+        until(qtApp,lambda:any(row['key']==key for row in session.records))
+        row=next(row for row in session.records if row['key']==key)
+        # A timeout/read error must never count as a successful generation fence.
+        assert row['decoded']==['image'] and not row['failures']
+        assert row['applied_to_live'] is (not switchJob)
+        hub=DisplayHub(session)
+        window=RuntimePages(backend.project.presentation,hub=hub)
+        window.show()
+        if switchJob:
+            until(qtApp,lambda:session.readSnapshot().connection=='NOT_FOUND')
+            hub.tick()
+            assert session.readSnapshot().generation>generation
+            assert not window.displayed and not session.readSnapshot().scopes
+            assert window.widgets['overview']['overview-image'][1].image.isNull()
+            session.selectJob(backend.jobId)
+        # Same-generation release is the positive control for the exact result.
         until(qtApp,lambda:bool(window.displayed))
+        assert window.displayed['root'].result.identity.resultKey==key
     finally:
         release.set()
-        window.close()
+        if window is not None:
+            window.close()
+        try:
+            if session is not None:
+                session.close()
+        finally:
+            backend.close()
 
 
 def testExpiredViewClearsImageWithoutFallingBackToLive(qtApp,live):

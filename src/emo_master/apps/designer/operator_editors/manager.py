@@ -29,10 +29,12 @@ class OperatorEditorManager:
         applyParams: Callable[[EditorKey, dict[str, object]], bool],
         appendLog: Callable[[str, str], None],
         cacheRoot: Path | None = None,
+        getCurrentJobId: Callable[[], str | None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.applyParams = applyParams
         self.appendLog = appendLog
+        self.getCurrentJobId = getCurrentJobId or (lambda: None)
         self._trustStore = EditorTrustStore(settingsStore)
         self._assetCache = EditorAssetCache(cacheRoot)
         self._windows: dict[EditorKey, OperatorWorkspaceWindow] = {}
@@ -75,6 +77,7 @@ class OperatorEditorManager:
             applyParams=self.applyParams,
             appendLog=self.appendLog,
             workflowOptions=workflowOptions,
+            getCurrentJobId=self.getCurrentJobId,
         )
 
         customRoot = None
@@ -183,7 +186,12 @@ class OperatorEditorManager:
     def closeProject(self, projectId: str) -> None:
         self._closeKeys(key for key in self._windows if key.projectId == projectId)
 
+    def invalidatePreviewSources(self) -> None:
+        for window in tuple(self._windows.values()):
+            window.context.invalidatePreviewSources()
+
     def closeAll(self) -> None:
+        self.invalidatePreviewSources()
         self._closeKeys(tuple(self._windows))
 
     def _closeKeys(self, keys) -> None:

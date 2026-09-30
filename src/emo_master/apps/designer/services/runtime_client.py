@@ -13,6 +13,7 @@ from emo_master.apps.designer.services.display_calls import DisplayCallContext, 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.context.global_counters import MAX_GLOBAL_COUNTER_VALUE
 from emo_master.core.contracts.execution import RuntimeEventDTO
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 from emo_master.core.contracts.port_types import (
     PortSpecValidationError,
     validatePortSpec,
@@ -57,6 +58,20 @@ class PreviewSource:
     height: int
     mimeType: str
     iterationPath: tuple[int, ...] = ()
+    originJobId: str = ""
+    originProjectRevision: int = 0
+    captureId: str = ""
+    createdAtMs: int = 0
+    snapshotState: str = "UNKNOWN"
+
+
+@dataclass(frozen=True)
+class PreviewSourceListing:
+    sources: tuple[PreviewSource, ...] = ()
+    jobId: str = ""
+    legacySnapshotPolicy: str = ""
+    captureState: str = "UNKNOWN"
+    message: str = ""
 
 
 @dataclass(frozen=True)
@@ -393,17 +408,44 @@ class RuntimeClient:
         projectId: str,
         workflowId: str,
         nodeId: str,
+        jobId: str = "",
     ) -> list[PreviewSource]:
+        """Compatibility wrapper; sourceKind remains a spatial relationship."""
+        return list(self.listNodePreviewSourcesWithMetadata(
+            projectId, workflowId, nodeId, jobId=jobId).sources)
+
+    def listNodePreviewSourcesWithMetadata(
+        self,
+        projectId: str,
+        workflowId: str,
+        nodeId: str,
+        jobId: str = "",
+    ) -> PreviewSourceListing:
         reply = self._call(
             "ListNodePreviewSources",
             runtime_pb2.ListNodePreviewSourcesRequest(
                 project_id=projectId,
                 workflow_id=workflowId,
                 node_id=nodeId,
+                job_id=jobId,
             ),
         )
-        return [
-            PreviewSource(
+        replyJobId = str(getattr(reply, "job_id", ""))
+        policy = str(getattr(reply, "legacy_snapshot_policy", ""))
+        captureState = str(getattr(reply, "capture_state", "")) or "UNKNOWN"
+        sources = []
+        for source in getattr(reply, "sources", []):
+            originJobId = str(getattr(source, "origin_job_id", ""))
+            captureId = str(getattr(source, "capture_id", ""))
+            state = str(getattr(source, "snapshot_state", "")) or "UNKNOWN"
+            # Older endpoints may ignore the job filter. Missing provenance must
+            # never promote the spatial `current` source to the current Run.
+            if state not in {"CURRENT", "PREVIOUS", "UNKNOWN"}:
+                state = "UNKNOWN"
+            if state == "CURRENT" and (not jobId or not captureId or replyJobId != jobId or originJobId != jobId
+                                       or policy != "ALL" or captureState != "CURRENT_AVAILABLE"):
+                state = "UNKNOWN"
+            sources.append(PreviewSource(
                 sourceId=str(getattr(source, "source_id", "")),
                 label=str(getattr(source, "label", "")),
                 sourceKind=str(getattr(source, "source_kind", "")),
@@ -414,11 +456,19 @@ class RuntimeClient:
                 height=int(getattr(source, "height", 0)),
                 mimeType=str(getattr(source, "mime_type", "")),
                 iterationPath=self._parseIterationPath(
-                    getattr(source, "iteration_path_json", "[]")
-                ),
-            )
-            for source in getattr(reply, "sources", [])
-        ]
+                    getattr(source, "iteration_path_json", "[]")),
+                originJobId=originJobId,
+                originProjectRevision=int(getattr(source, "origin_project_revision", 0)),
+                captureId=captureId,
+                createdAtMs=int(getattr(source, "created_at_ms", 0)),
+                snapshotState=state,
+            ))
+        return PreviewSourceListing(
+            sources=tuple(sources), jobId=replyJobId,
+            legacySnapshotPolicy=policy,
+            captureState=captureState,
+            message=str(getattr(reply, "message", "")),
+        )
 
     def uploadPreviewImage(
         self,
@@ -630,14 +680,18 @@ class RuntimeClient:
         # Do not trust an older endpoint to honor the additive filter field.
         return [job for job in reply.jobs if getattr(job, "project_id", "") == projectId]
 
-    def prepareStart(self, capturePresentation: bool = False, *, captureRequirements: dict | None = None) -> str:
+    def prepareStart(self, capturePresentation: bool = False, *, captureRequirements: dict | None = None,
+                     legacySnapshotPolicy: str = "ALL") -> str:
         """Negotiate only on explicit Run; return a generation for start lookup."""
+        policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
         with self._startLock:
             if self._closed or self._closing:
                 raise RuntimeClientError("E_RUNTIME_CLOSED", "Runtime client is closed")
             from emo_master.apps.runtime.grpc_server.service import RuntimeService
             if self._displayService is None and isinstance(self.runtimeService, RuntimeService):
                 if not capturePresentation:
+                    if policy == "NONE" and not getattr(self.runtimeService, "supportsLegacySnapshotPolicy", False):
+                        raise RuntimeClientError("E_SNAPSHOT_POLICY_UNSUPPORTED", "当前 Runtime 不支持 NONE 节点快照策略；未创建任务")
                     # Keep no-page embedded runs on their existing execution path,
                     # including their resource cost. Lookup is already provided by
                     # this owned in-process Runtime; no display host is needed.
@@ -659,10 +713,14 @@ class RuntimeClient:
             try:
                 capabilities = self.getDisplayCapabilities()
             except RuntimeClientError as error:
-                if not capturePresentation and "UNIMPLEMENTED" in error.code:
+                if not capturePresentation and policy == "ALL" and "UNIMPLEMENTED" in error.code:
                     return ""  # Older external Runtime retains its original no-page path.
+                if policy == "NONE" and "UNIMPLEMENTED" in error.code:
+                    raise RuntimeClientError("E_SNAPSHOT_POLICY_UNSUPPORTED", "当前 Runtime 不支持 NONE 节点快照策略；未创建任务") from error
                 raise
             supported = set(capabilities.capabilities)
+            if policy == "NONE" and not {"legacy_snapshot_policy_v1", "preview_snapshot_origin_v1"}.issubset(supported):
+                raise RuntimeClientError("E_SNAPSHOT_POLICY_UNSUPPORTED", "当前 Runtime 不支持 NONE 节点快照策略及快照来源标识；未创建任务")
             if capturePresentation and "normal_start_capture" not in supported:
                 raise RuntimeClientError("E_CAPTURE_UNSUPPORTED", "当前 Runtime 不支持正常运行时的页面采集")
             if capturePresentation and captureRequirements:
@@ -681,7 +739,7 @@ class RuntimeClient:
                         raise RuntimeClientError("E_CAPTURE_PROFILE_UNSUPPORTED",
                             "当前 Runtime 未声明此多图/多作用域采集额度；未创建任务")
             if "start_request_lookup" not in supported:
-                if capturePresentation:
+                if capturePresentation or policy == "NONE":
                     raise RuntimeClientError("E_START_LOOKUP_UNSUPPORTED", "当前 Runtime 不支持启动请求核实")
                 return ""
             generation = str(capabilities.runtime_instance_id)
@@ -707,9 +765,23 @@ class RuntimeClient:
         inputs: dict[str, object] | str | None = None,
         *,
         capturePresentation: bool = False,
+        legacySnapshotPolicy: str = "ALL",
         startRequestId: str = "",
         expectedRuntimeInstanceId: str = "",
     ) -> object:
+        policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
+        if policy == "NONE":
+            # The caller must retain the identity before a lost reply. Never
+            # manufacture a hidden token that it cannot later reconcile.
+            if not startRequestId or not expectedRuntimeInstanceId:
+                raise RuntimeClientError("E_START_IDENTITY_REQUIRED",
+                    "NONE 启动需要明确的启动请求与 Runtime 实例标识；未创建任务")
+            # Unsupported peers must fail before StartJob can silently ignore
+            # this additive protobuf field. A changed instance is not a retry.
+            generation = self.prepareStart(capturePresentation, legacySnapshotPolicy=policy)
+            if generation != expectedRuntimeInstanceId:
+                raise RuntimeClientError("E_RUNTIME_IDENTITY",
+                    "Runtime 实例已变化，请核实原启动请求；未创建任务")
         if isinstance(inputs, str):
             inputsJson = inputs
         else:
@@ -718,6 +790,7 @@ class RuntimeClient:
             project_id=projectId, workflow_id=workflowId, inputs_json=inputsJson,
             capture_presentation=capturePresentation, start_request_id=startRequestId,
             expected_runtime_instance_id=expectedRuntimeInstanceId,
+            legacy_snapshot_policy=policy,
         )
         return self._call("StartJob", request)
 

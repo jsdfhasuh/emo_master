@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from pathlib import Path
+import json
 import sqlite3
 import time
 
@@ -260,6 +261,30 @@ class SqliteStore:
             "errorMessage", "stopMode",
         ]
         return dict(zip(fields, row))
+
+    def getJobSnapshotOptions(self, jobId: str) -> dict[str, str]:
+        """Read one immutable accepted event, without materializing event history.
+
+        Events can be pruned independently of jobs. Missing evidence is UNKNOWN,
+        while an existing pre-policy accepted event represents the old ALL path.
+        """
+        with self._connect() as connection:
+            row = connection.execute(
+                "SELECT payloadJson FROM jobEvents WHERE jobId = ? AND eventType = 'job.accepted' ORDER BY sequence LIMIT 1",
+                (jobId,),
+            ).fetchone()
+        unknown = {"legacySnapshotPolicy": "UNKNOWN", "previewProjectKey": ""}
+        if row is None:
+            return unknown
+        try:
+            payload = json.loads(row[0])
+        except (TypeError, ValueError):
+            return unknown
+        if not isinstance(payload, dict):
+            return unknown
+        policy = payload.get("legacySnapshotPolicy", "ALL")
+        return {"legacySnapshotPolicy": policy if isinstance(policy, str) and policy in {"ALL", "NONE"} else "UNKNOWN",
+                "previewProjectKey": str(payload.get("previewProjectKey", ""))}
 
     def listJobEventsAfter(self, jobId: str, afterSequence: int = 0) -> list[RuntimeEvent]:
         with self._connect() as connection:

@@ -7,6 +7,8 @@ import time
 from uuid import uuid4
 from typing import Any, Callable
 
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
+
 
 try:
     from PySide2.QtCore import QThread, Signal
@@ -28,6 +30,7 @@ try:
             inputs: dict[str, object] | None = None,
             *,
             capturePresentation: bool = False,
+            legacySnapshotPolicy: str = "ALL",
             previousCaptureJob: tuple[str, str] | None = None,
         ) -> None:
             super().__init__()
@@ -36,6 +39,7 @@ try:
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
             self.capturePresentation = capturePresentation
+            self.legacySnapshotPolicy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
             self.captureRequirements: dict = {}
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
@@ -122,6 +126,7 @@ except Exception:  # pragma: no cover
             inputs: dict[str, object] | None = None,
             *,
             capturePresentation: bool = False,
+            legacySnapshotPolicy: str = "ALL",
             previousCaptureJob: tuple[str, str] | None = None,
         ) -> None:
             self.runtimeClient = runtimeClient
@@ -129,6 +134,7 @@ except Exception:  # pragma: no cover
             self.workflowId = workflowId
             self.inputs = dict(inputs or {})
             self.capturePresentation = capturePresentation
+            self.legacySnapshotPolicy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
             self.captureRequirements: dict = {}
             self.previousCaptureJob = previousCaptureJob
             self.startRequestId = uuid4().hex
@@ -262,16 +268,28 @@ def _runWorker(worker: RuntimeWorker) -> None:
         prepare = getattr(worker.runtimeClient, "prepareStart", None)
         if callable(prepare):
             requirements = getattr(worker, "captureRequirements", {})
+            parameters = _parameters(prepare)
+            acceptsKeywords = any(parameter.kind is inspect.Parameter.VAR_KEYWORD
+                                  for parameter in parameters.values())
+            kwargs: dict[str, object] = {}
             if requirements:
-                parameters = inspect.signature(prepare).parameters
-                if "captureRequirements" not in parameters:
+                if not acceptsKeywords and "captureRequirements" not in parameters:
                     raise ValueError("当前 Runtime 客户端不支持页面采集额度协商")
-                worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation,
-                    captureRequirements=requirements)
-            else:
-                worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation)
-        elif worker.capturePresentation:
-            raise ValueError("当前 Runtime 客户端不支持正常运行时页面采集")
+                kwargs["captureRequirements"] = requirements
+            if acceptsKeywords or "legacySnapshotPolicy" in parameters:
+                kwargs["legacySnapshotPolicy"] = worker.legacySnapshotPolicy
+            elif worker.legacySnapshotPolicy != "ALL":
+                raise ValueError("当前 Runtime 客户端不支持 NONE 节点快照策略；未创建任务")
+            worker.expectedRuntimeInstanceId = prepare(worker.capturePresentation, **kwargs)
+        elif worker.capturePresentation or worker.legacySnapshotPolicy != "ALL":
+            raise ValueError("当前 Runtime 客户端不支持所选运行采集策略；未创建任务")
+        if worker.legacySnapshotPolicy != "ALL":
+            parameters = _parameters(worker.runtimeClient.startJob)
+            acceptsKeywords = any(parameter.kind is inspect.Parameter.VAR_KEYWORD
+                                  for parameter in parameters.values())
+            required = {"legacySnapshotPolicy", "startRequestId", "expectedRuntimeInstanceId"}
+            if not worker.expectedRuntimeInstanceId or (not acceptsKeywords and not required.issubset(parameters)):
+                raise ValueError("当前 Runtime 客户端不支持 NONE 启动请求身份；未创建任务")
         _releasePreviousCapture(worker)
         if worker.stopRequested():
             return
@@ -525,6 +543,10 @@ def _startJobCompat(worker: RuntimeWorker):
         keywordArguments["inputs"] = worker.inputs
     elif "inputs_json" in parameters:
         keywordArguments["inputs_json"] = json.dumps(worker.inputs, ensure_ascii=True)
+    if acceptsVarKeywords or "legacySnapshotPolicy" in parameters:
+        keywordArguments["legacySnapshotPolicy"] = worker.legacySnapshotPolicy
+    elif worker.legacySnapshotPolicy != "ALL":
+        raise ValueError("当前 Runtime 客户端不支持 NONE 节点快照策略；未创建任务")
     if worker.capturePresentation:
         if not acceptsVarKeywords and "capturePresentation" not in parameters:
             raise ValueError("当前 Runtime 客户端不支持正常运行时页面采集")

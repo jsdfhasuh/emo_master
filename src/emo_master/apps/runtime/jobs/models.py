@@ -34,6 +34,8 @@ class JobRecord:
     message: str = ""
     stopMode: str = ""
     executionMode: str = "runtime"
+    legacySnapshotPolicy: str = "ALL"
+    previewProjectKey: str = ""
 
     @property
     def isTerminal(self) -> bool:
@@ -53,6 +55,7 @@ class JobProcessSpec:
     projectId: str = ""
     runtimeDbPath: str = ""
     presentation: dict | None = None
+    legacySnapshotPolicy: str = "ALL"
 
     @property
     def inputs_json(self) -> str:

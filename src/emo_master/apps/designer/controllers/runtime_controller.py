@@ -4,6 +4,7 @@ import time
 from typing import Callable
 
 from emo_master.apps.designer.services.runtime_worker import RuntimeStopWorker, RuntimeWorker
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 
 
 class RuntimeController:
@@ -25,6 +26,8 @@ class RuntimeController:
         appendEvent: Callable[[dict[str, object]], None] | None = None,
         getCapturePresentation: Callable[[], bool | dict] | None = None,
         onJobAccepted: Callable[[object], None] | None = None,
+        getLegacySnapshotPolicy: Callable[[], str] | None = None,
+        invalidatePreviewSources: Callable[[], None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -42,6 +45,8 @@ class RuntimeController:
         self.appendEvent = appendEvent
         self.getCapturePresentation = getCapturePresentation or (lambda: False)
         self.onJobAccepted = onJobAccepted
+        self.getLegacySnapshotPolicy = getLegacySnapshotPolicy or (lambda: "ALL")
+        self.invalidatePreviewSources = invalidatePreviewSources or (lambda: None)
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -72,6 +77,7 @@ class RuntimeController:
         if not self.syncRuntimeProjectBeforeRun():
             return
         try:
+            legacySnapshotPolicy = normalizeLegacySnapshotPolicy(self.getLegacySnapshotPolicy())
             captureRequest = self.getCapturePresentation()
             capturePresentation = bool(captureRequest)
         except Exception as error:
@@ -81,12 +87,14 @@ class RuntimeController:
         # A new start attempt must not keep presenting the previous terminal job
         # if the worker fails before it receives a new job id.
         self.setCurrentJobId(None)
+        self.invalidatePreviewSources()
         workflowId = self.getEntryWorkflowId() or ""
         worker = RuntimeWorker(
             runtimeClient=self.runtimeClient,
             projectId=loadedProjectPath,
             workflowId=workflowId,
             capturePresentation=capturePresentation,
+            legacySnapshotPolicy=legacySnapshotPolicy,
             previousCaptureJob=self._previousCaptureJob,
         )
         worker.captureRequirements = dict(captureRequest) if isinstance(captureRequest, dict) else {}
@@ -113,6 +121,7 @@ class RuntimeController:
         self._jobActive = True
         currentJobId = str(getattr(reply, "job_id", ""))
         self.setCurrentJobId(currentJobId or None)
+        self.invalidatePreviewSources()
         generation = str(getattr(reply, "runtime_instance_id", ""))
         if self._captureCurrentRun and currentJobId and generation:
             self._previousCaptureJob = (currentJobId, generation)

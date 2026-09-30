@@ -4,6 +4,8 @@ import os
 
 import pytest
 
+from tests.qt_widget_owner import createdWidgetRoots
+
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -53,7 +55,10 @@ def cleanupDesignerWidgets(designerApplication, monkeypatch):
                if widget not in existing and shiboken2.isValid(widget)]
     # Tool windows can also be children of a main window. Close all owners
     # before scheduling destruction; worker shutdown can pump Qt events.
-    roots = [widget for widget in created if widget.parentWidget() not in created]
+    # Qt combo/menu popups are top-level windows whose immediate parent is
+    # usually a nested control. Never close/delete one independently when a
+    # created owner appears anywhere in its QWidget ancestry.
+    roots = createdWidgetRoots(created)
     for widget in roots:
         if shiboken2.isValid(widget):
             widget.close()

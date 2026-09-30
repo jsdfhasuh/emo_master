@@ -35,6 +35,7 @@ from emo_master.apps.runtime.preview.store import PreviewAssetStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 from emo_master.core.plugin.models import RegistryScanResult
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.migration import migrateProjectPayload
@@ -55,6 +56,12 @@ def _withProjectStateLock(method: Any) -> Any:
 
 
 class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
+    @property
+    def supportsLegacySnapshotPolicy(self) -> bool:
+        # The opt-in normal-Run policy must not widen restricted test hosts.
+        owner = getattr(self, "_presentationOwner", None)
+        return bool(getattr(owner, "supportsNormalCapture", True))
+
     def __init__(
         self,
         dbPath: Path | None = None,
@@ -237,6 +244,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def StartJob(self, request, context):  # type: ignore[override]
         requestId = str(getattr(request, "start_request_id", ""))
         expectedInstance = str(getattr(request, "expected_runtime_instance_id", ""))
+        # Invalid policy is still fingerprinted/recorded as a conclusive rejection.
+        # Empty and explicit ALL are the same immutable request semantics.
+        policy = str(getattr(request, "legacy_snapshot_policy", "") or "ALL")
         if requestId:
             if expectedInstance != self.runtimeInstanceId:
                 return runtime_pb2.StartJobReply(ok=False, status="RESET_REQUIRED",
@@ -244,9 +254,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     runtime_instance_id=self.runtimeInstanceId, start_request_id=requestId)
             if not re.fullmatch(r"[A-Za-z0-9_-]{1,128}", requestId):
                 return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message="invalid start request ID")
-            fingerprint = hashlib.sha256(json.dumps({key: getattr(request, key, default) for key, default in (
+            arguments = {key: getattr(request, key, default) for key, default in (
                 ("project_id", ""), ("workflow_id", ""), ("inputs_json", ""),
-                ("capture_presentation", False))}, sort_keys=True).encode()).hexdigest()
+                ("capture_presentation", False))}
+            arguments["legacy_snapshot_policy"] = policy
+            fingerprint = hashlib.sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest()
             previous = self._startRequests.get(requestId)
             if previous:
                 if previous[0] != fingerprint:
@@ -264,6 +276,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         reply = self._startJob(request, context)
         reply.runtime_instance_id = self.runtimeInstanceId
         reply.start_request_id = requestId
+        reply.legacy_snapshot_policy = policy if policy in {"ALL", "NONE"} else ""
         if requestId:
             if not reply.ok and not reply.job_id:
                 reply.status = "REJECTED"
@@ -288,6 +301,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             job = self.jobRepository.get(reply.job_id)
             if job is not None:
                 reply.status = job.status
+                reply.legacy_snapshot_policy = job.legacySnapshotPolicy
         return reply
 
     @_withProjectStateLock
@@ -301,6 +315,13 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
 
     def _startJob(self, request, context):
         _ = context
+        try:
+            legacyPolicy = normalizeLegacySnapshotPolicy(getattr(request, "legacy_snapshot_policy", ""))
+        except ValueError as error:
+            return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
+        if legacyPolicy == "NONE" and not self.supportsLegacySnapshotPolicy:
+            return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                message="test-release host does not accept normal legacy snapshot policy changes")
         document = self.loadedDocument
         if document is None or not self._projectMatches(str(getattr(request, "project_id", ""))):
             return runtime_pb2.StartJobReply(
@@ -354,12 +375,15 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 projectId=document.project.projectId,
                 projectRevision=document.project.revision,
                 workflowId=workflowId,
+                legacySnapshotPolicy=legacyPolicy,
+                previewProjectKey=self._loadedProjectPreviewKey,
             )
             requestId = str(getattr(request, "start_request_id", ""))
             if requestId:
                 fingerprint, _ = self._startRequests[requestId]
                 self._startRequests[requestId] = (fingerprint, runtime_pb2.StartJobReply(
-                    ok=True, job_id=record.jobId, status=record.status, message="job accepted"))
+                    ok=True, job_id=record.jobId, status=record.status, message="job accepted",
+                    legacy_snapshot_policy=legacyPolicy))
                 self._jobStartRequestIds[record.jobId] = requestId
             self.jobMessages[record.jobId] = "job accepted"
             logFailure = self.operationalLogWriter.failureMessage
@@ -389,6 +413,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     jobWorkspacePath=str(workspacePath),
                     heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
                     runtimeDbPath=str(self.sqliteStore.dbPath),
+                    legacySnapshotPolicy=legacyPolicy,
                 )
                 if capture is not None:
                     from dataclasses import replace
@@ -477,6 +502,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             accepted_at_ms=record.acceptedAtMs,
             started_at_ms=record.startedAtMs,
             ended_at_ms=record.endedAtMs,
+            legacy_snapshot_policy=record.legacySnapshotPolicy,
         )
 
     def StreamJobEvents(self, request, context):  # type: ignore[override]
@@ -640,47 +666,55 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         projectId = str(getattr(request, "project_id", ""))
         workflowId = str(getattr(request, "workflow_id", ""))
         nodeId = str(getattr(request, "node_id", ""))
-        if (
-            self.loadedDocument is None
-            or not self._projectMatches(projectId)
-            or workflowId not in self.loadedDocument.workflows
-        ):
-            return runtime_pb2.ListNodePreviewSourcesReply(sources=[])
+        jobId = str(getattr(request, "job_id", ""))
+        if (self.loadedDocument is None or not self._projectMatches(projectId)
+                or workflowId not in self.loadedDocument.workflows):
+            return runtime_pb2.ListNodePreviewSourcesReply(capture_state="INVALID_JOB",
+                message="工程或流程不可用，未选择当前任务")
         workflow = self.loadedDocument.workflows[workflowId]
         if not any(node.nodeId == nodeId for node in workflow.nodes):
-            return runtime_pb2.ListNodePreviewSourcesReply(sources=[])
-        incoming = [
-            (edge.fromNode, edge.fromPort)
-            for edge in workflow.edges
-            if edge.toNode == nodeId and edge.toPort == "image"
-        ]
-        assets = self.previewAssetStore.listSources(
-            self._loadedProjectPreviewKey,
-            workflowId,
-            nodeId,
-            incoming,
-        )
-        return runtime_pb2.ListNodePreviewSourcesReply(
-            sources=[
-                runtime_pb2.PreviewSourceInfo(
-                    source_id=asset.assetId,
-                    label=(
-                        f"当前节点 {asset.port}"
-                        if asset.nodeId == nodeId
-                        else f"上游 {asset.nodeId}.{asset.port}"
-                    ),
-                    source_kind="current" if asset.nodeId == nodeId else "upstream",
-                    workflow_id=asset.workflowId,
-                    node_id=asset.nodeId,
-                    port=asset.port,
-                    width=asset.width,
-                    height=asset.height,
-                    mime_type=asset.mimeType,
-                    iteration_path_json=json.dumps(list(asset.iterationPath)),
-                )
-                for asset in assets
-            ]
-        )
+            return runtime_pb2.ListNodePreviewSourcesReply(capture_state="INVALID_JOB",
+                message="节点不属于当前工程")
+        job = self.jobRepository.get(jobId) if jobId else None
+        if jobId and (job is None or job.projectId != self.loadedDocument.project.projectId
+                      or (job.previewProjectKey and job.previewProjectKey != self._loadedProjectPreviewKey)):
+            return runtime_pb2.ListNodePreviewSourcesReply(job_id=jobId, capture_state="INVALID_JOB",
+                message="所选任务不存在或不属于当前工程副本")
+        verified = job is not None and job.previewProjectKey == self._loadedProjectPreviewKey
+        policy = job.legacySnapshotPolicy if job is not None else "UNKNOWN"
+        incoming = [(edge.fromNode, edge.fromPort) for edge in workflow.edges
+                    if edge.toNode == nodeId and edge.toPort == "image"]
+        assets = self.previewAssetStore.listSources(self._loadedProjectPreviewKey, workflowId, nodeId, incoming)
+        sources = []
+        for asset in assets:
+            state = "UNKNOWN" if not asset.originJobId or not asset.captureId else "PREVIOUS"
+            if (verified and policy == "ALL" and asset.originJobId == jobId
+                    and asset.originProjectRevision == job.projectRevision and asset.captureId):
+                state = "CURRENT"
+            location = f"当前节点 {asset.port}" if asset.nodeId == nodeId else f"上游 {asset.nodeId}.{asset.port}"
+            origin = (f"本次任务 {jobId[:8]}" if state == "CURRENT" else
+                      f"历史快照 · 任务 {asset.originJobId[:8]} · 工程修订 {asset.originProjectRevision}"
+                      if state == "PREVIOUS" else "历史快照 · 来源未知")
+            sources.append(runtime_pb2.PreviewSourceInfo(
+                source_id=asset.assetId, label=f"{location} · {origin}",
+                source_kind="current" if asset.nodeId == nodeId else "upstream",
+                workflow_id=asset.workflowId, node_id=asset.nodeId, port=asset.port,
+                width=asset.width, height=asset.height, mime_type=asset.mimeType,
+                iteration_path_json=json.dumps(list(asset.iterationPath)),
+                origin_job_id=asset.originJobId, origin_project_revision=asset.originProjectRevision,
+                capture_id=asset.captureId, created_at_ms=asset.createdAtMs, snapshot_state=state))
+        if not jobId:
+            state, message = "NO_JOB_SELECTED", "尚未选择任务；历史快照需明确选择"
+        elif not verified or policy not in {"ALL", "NONE"}:
+            state, message = "UNKNOWN", "任务快照策略或工程副本身份无法核实；仅提供历史快照"
+        elif policy == "NONE":
+            state, message = "DISABLED_THIS_RUN", "本次运行未采集节点调试快照；运行页面的绑定采集不受影响"
+        elif any(source.snapshot_state == "CURRENT" for source in sources):
+            state, message = "CURRENT_AVAILABLE", "已提供所选任务的节点调试快照"
+        else:
+            state, message = "NO_CURRENT_SNAPSHOT", "本次尚无可用快照；可能未执行、尚未发布或执行失败"
+        return runtime_pb2.ListNodePreviewSourcesReply(sources=sources, job_id=jobId,
+            legacy_snapshot_policy=policy, capture_state=state, message=message)
 
     @_withProjectStateLock
     def UploadPreviewImage(self, request_iterator, context):  # type: ignore[override]

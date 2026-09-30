@@ -330,6 +330,7 @@ def testCaptureRunUsesOriginalStartAndNegotiatedRequestIdentity() -> None:
     project, fields = client.calls[0]
     assert project == "original-project"
     assert fields == {"workflowId": "main", "inputs": {}, "capturePresentation": True,
+                      "legacySnapshotPolicy": "ALL",
                       "startRequestId": worker.startRequestId, "expectedRuntimeInstanceId": "runtime-one"}
     assert accepted[0].job_id == "job-worker"
 

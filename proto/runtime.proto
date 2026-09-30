@@ -28,6 +28,7 @@ message StartJobRequest {
   bool capture_presentation = 4;
   string start_request_id = 5;
   string expected_runtime_instance_id = 6;
+  string legacy_snapshot_policy = 7; // Empty means ALL, preserving old clients.
 }
 
 message StartJobReply {
@@ -37,6 +38,7 @@ message StartJobReply {
   string status = 4;
   string runtime_instance_id = 5;
   string start_request_id = 6;
+  string legacy_snapshot_policy = 7;
 }
 
 message StartRequestLookup {
@@ -70,6 +72,7 @@ message GetJobStatusReply {
   int64 accepted_at_ms = 8;
   int64 started_at_ms = 9;
   int64 ended_at_ms = 10;
+  string legacy_snapshot_policy = 11;
 }
 
 message StreamJobEventsRequest {
@@ -165,6 +168,7 @@ message ListNodePreviewSourcesRequest {
   string project_id = 1;
   string workflow_id = 2;
   string node_id = 3;
+  string job_id = 4; // Explicit selected run; empty never chooses a global last Job.
 }
 
 message PreviewSourceInfo {
@@ -178,10 +182,19 @@ message PreviewSourceInfo {
   int32 height = 8;
   string mime_type = 9;
   string iteration_path_json = 10;
+  string origin_job_id = 11;
+  int64 origin_project_revision = 12;
+  string capture_id = 13;
+  int64 created_at_ms = 14;
+  string snapshot_state = 15;
 }
 
 message ListNodePreviewSourcesReply {
   repeated PreviewSourceInfo sources = 1;
+  string job_id = 2;
+  string legacy_snapshot_policy = 3;
+  string capture_state = 4;
+  string message = 5;
 }
 
 message PreviewUploadChunk {
@@ -428,6 +441,7 @@ message DisplayJob {
   string runtime_instance_id = 12; int64 accepted_at_ms = 13;
   bool resources_released = 14; string capture_definition_json = 15;
   string capture_limits_json = 16;
+  string legacy_snapshot_policy = 17;
 }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
 message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; bool replay = 4; }

@@ -55,6 +55,7 @@ class EditorContext:
         applyParams: Callable[[EditorKey, dict[str, object]], bool],
         appendLog: Callable[[str, str], None],
         workflowOptions: list[str] | None = None,
+        getCurrentJobId: Callable[[], str | None] | None = None,
     ) -> None:
         self.key = key
         self.operatorId = operatorId
@@ -63,6 +64,8 @@ class EditorContext:
         self.paramSchema = dict(paramSchema)
         self.workflowOptions = list(workflowOptions or [])
         self._runtimeClient = runtimeClient
+        self._getCurrentJobId = getCurrentJobId or (lambda: None)
+        self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self._appendLog = appendLog
         self._markDirty: Callable[[], None] = lambda: None
@@ -94,10 +97,30 @@ class EditorContext:
     def log(self, level: str, message: str) -> None:
         self._appendLog(str(level), str(message))
 
-    def listPreviewSources(self) -> list[object]:
+    def currentJobId(self) -> str:
+        return str(self._getCurrentJobId() or "")
+
+    def bindPreviewInvalidation(self, callback: Callable[[], None]) -> None:
+        self._invalidatePreviewSources = callback
+
+    def invalidatePreviewSources(self) -> None:
+        self._invalidatePreviewSources()
+
+    def listPreviewSourcesWithMetadata(self):
+        from emo_master.apps.designer.services.runtime_client import PreviewSourceListing
+        method = getattr(self._runtimeClient, "listNodePreviewSourcesWithMetadata", None)
+        if callable(method):
+            return method(self.key.projectId, self.key.workflowId, self.key.nodeId,
+                          jobId=self.currentJobId())
+        # The legacy path has no trusted Run identity, even if sourceKind says
+        # `current` (which only means this node rather than an upstream node).
         method = self._runtimeMethod("listNodePreviewSources")
         result = method(self.key.projectId, self.key.workflowId, self.key.nodeId)
-        return list(result) if isinstance(result, Iterable) else []
+        sources = tuple(result) if isinstance(result, Iterable) else ()
+        return PreviewSourceListing(sources=sources)
+
+    def listPreviewSources(self) -> list[object]:
+        return list(self.listPreviewSourcesWithMetadata().sources)
 
     def uploadPreviewImage(self, data: bytes, filename: str = "") -> str:
         reply = self._runtimeMethod("uploadPreviewImage")(

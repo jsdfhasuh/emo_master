@@ -40,6 +40,9 @@ class JobRepository:
         loaded = getattr(self.persistence, "getJob", lambda _jobId: None)(jobId)
         if not isinstance(loaded, dict):
             return None
+        options: dict[str, object] = getattr(self.persistence, "getJobSnapshotOptions", lambda _jobId: {})(jobId)
+        if not isinstance(options, dict):
+            options = {}
         return JobRecord(
             jobId=str(loaded.get("jobId", jobId)),
             projectId=str(loaded.get("projectId", "")),
@@ -53,6 +56,8 @@ class JobRepository:
             errorCode=str(loaded.get("errorCode", "") or ""),
             message=str(loaded.get("errorMessage", "") or ""),
             stopMode=str(loaded.get("stopMode", "") or ""),
+            legacySnapshotPolicy=str(options.get("legacySnapshotPolicy", "UNKNOWN")),
+            previewProjectKey=str(options.get("previewProjectKey", "")),
         )
 
     def update(self, jobId: str, **changes: object) -> JobRecord | None:

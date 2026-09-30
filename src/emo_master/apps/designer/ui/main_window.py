@@ -50,6 +50,7 @@ try:
     from PySide2.QtGui import QKeySequence, QPixmap
     from PySide2.QtWidgets import (
         QAction,
+        QComboBox,
         QFileDialog,
         QGraphicsView,
         QHBoxLayout,
@@ -776,6 +777,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.loadedProjectPath: str | None = None
         self.currentProjectDir: Path | None = None
         self.currentJobId: str | None = None
+        # Session-only choice for the next explicit Run; never part of project JSON.
+        self.nextRunLegacySnapshotPolicy = "ALL"
+        self.legacySnapshotPolicyCombo: QComboBox | None = None
         self._allowRuntimeEventsWithoutActiveJob = True
         self.isJobRunning = False
         self._lastRunBlockedReason = ""
@@ -1056,6 +1060,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         self.mainToolbar.addSeparator()
         self._addToolbarGroup("运行", [self.startButton, self.stopButton])
+        if _nativeQt:
+            self.mainToolbar.addWidget(QLabel(" 下次节点快照："))
+            combo = QComboBox(self)
+            self.legacySnapshotPolicyCombo = combo
+            combo.setObjectName("legacySnapshotPolicyCombo")
+            combo.addItem("ALL · 全部采集", "ALL")
+            combo.addItem("NONE · 不采集", "NONE")
+            combo.setToolTip("仅影响下一次明确开始运行；不改变当前作业，不保存到项目")
+            combo.currentIndexChanged.connect(
+                lambda _index: self.setNextRunLegacySnapshotPolicy(str(combo.currentData())))
+            self.mainToolbar.addWidget(combo)
         self.mainToolbar.addSeparator()
         self._addToolbarGroup("编辑", [self.autoLayoutButton, self.validateGraphButton])
         self.mainToolbar.addSeparator()
@@ -1259,6 +1274,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
             appendEvent=self.appendRuntimeEvent,
+            getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
+            invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
@@ -1269,6 +1286,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             settingsStore=self.settingsStore,
             applyParams=self._applyEditorParams,
             appendLog=self.appendEditorLog,
+            getCurrentJobId=lambda: self.currentJobId,
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,
@@ -1750,6 +1768,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if callable(show):
                 show()
         return dialog
+
+    def setNextRunLegacySnapshotPolicy(self, policy: str) -> None:
+        from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
+        self.nextRunLegacySnapshotPolicy = normalizeLegacySnapshotPolicy(policy)
+        combo = self.legacySnapshotPolicyCombo
+        if combo is not None:
+            combo.blockSignals(True)
+            combo.setCurrentIndex(combo.findData(self.nextRunLegacySnapshotPolicy))
+            combo.blockSignals(False)
 
     def _setCurrentJobId(self, jobId: str | None) -> None:
         if self.currentJobId == jobId:

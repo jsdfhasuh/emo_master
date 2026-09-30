@@ -1,6 +1,7 @@
 """Offline synthetic normal-run integration; does not claim field acceptance."""
 from dataclasses import asdict
 from pathlib import Path
+from tests.runtime.runtime_test_utils import jobFailureDetails
 
 from PySide2.QtWidgets import QMessageBox
 
@@ -60,7 +61,7 @@ def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, mon
         first = next(iter(editor.renderer.displayed.values()))
         assert first.result.identity.jobId == firstJob
         assert first.result.identity.mode == 'runtime'
-        assert first.result.status == 'COMPLETE'
+        assert first.result.status == 'COMPLETE', jobFailureDetails(runtime, firstJob, result=first.result)
         assert len(first.images) == 1
         values = {source.sourceId: source.valueJson for source in first.result.sources if source.valueJson is not None}
         assert values == {'count': '2', 'judge': 'true'}
@@ -73,7 +74,7 @@ def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, mon
         assert len(runtime.jobRepository.all()) == 1
         coordinator.preview.closeAsync()
         waitFor(lambda: not coordinator.preview.active())
-        assert runtime.jobRepository.get(firstJob).status == 'COMPLETED'
+        assert runtime.jobRepository.get(firstJob).status == 'COMPLETED', jobFailureDetails(runtime, firstJob)
         observer.close()
         observer = None
         # Original controller starts another job only on this explicit operation.

@@ -15,6 +15,7 @@ from emo_master.apps.runtime.preview.store import PreviewSnapshotWriter
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
 from emo_master.apps.runtime.jobs.models import JobProcessSpec
 
 
@@ -54,7 +55,9 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             operatorRegistry=registry,
             eventPublisher=publisher,
             artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)),
-            previewSnapshotStore=PreviewSnapshotWriter(Path(spec.jobWorkspacePath)),
+            previewSnapshotStore=(PreviewSnapshotWriter(Path(spec.jobWorkspacePath),
+                jobId=spec.jobId, projectRevision=document.project.revision)
+                if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
             globalCounters=globalCounters,
             resultCollector=_collector(spec, eventQueue),
         )

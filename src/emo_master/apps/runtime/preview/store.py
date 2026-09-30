@@ -58,15 +58,37 @@ class PreviewAsset:
     portType: str = ""
     iterationPath: tuple[int, ...] = ()
     createdAtMs: int = 0
+    originJobId: str = ""
+    originProjectRevision: int = 0
+    captureId: str = ""
 
 
 class PreviewSnapshotWriter:
-    def __init__(self, jobWorkspace: Path) -> None:
+    def __init__(self, jobWorkspace: Path, *, jobId: str = "", projectRevision: int = 0) -> None:
+        self.jobId = jobId
+        self.projectRevision = projectRevision
         self.root = _ioPath(jobWorkspace / "preview_staging")
         self.root.mkdir(parents=True, exist_ok=True)
         self._entries: dict[tuple[str, str, str], dict[str, object]] = {}
+        self._pendingCleanup: set[Path] = set()
+        self._cleanupScanRequired = False
+
+    def _retirePending(self) -> bool:
+        if self._cleanupScanRequired:
+            try:
+                self._pendingCleanup.update(self.root.glob(".index.json.*.tmp"))
+                self._pendingCleanup.update((self.root / "assets").glob(".*.tmp"))
+            except OSError:
+                return False
+            self._cleanupScanRequired = False
+        return _retirePaths(self._pendingCleanup)
 
     def capture(self, node: object, outputs: Mapping[str, object], context: object) -> None:
+        # A failed unlink cannot become an unbounded UUID-file history. Keep
+        # the last committed capture readable, and refuse new allocations until
+        # the bounded previous invocation's cleanup actually retires.
+        if not self._retirePending():
+            raise OSError("legacy snapshot cleanup pending; new capture skipped")
         outputPorts = getattr(node, "outputPorts", {})
         if not isinstance(outputPorts, Mapping):
             return
@@ -74,55 +96,81 @@ class PreviewSnapshotWriter:
         nodeId = str(getattr(node, "nodeId", ""))
         rawIteration = getattr(context, "iterationPath", ())
         iterationPath = [int(item) for item in rawIteration]
-        for port, value in outputs.items():
-            if port not in outputPorts:
-                continue
-            portType = normalizePortType(outputPorts[port])
-            if portType not in _SNAPSHOT_TYPES:
-                continue
-            key = (workflowId, nodeId, port)
-            identity = hashlib.sha256("\0".join(key).encode("utf-8")).hexdigest()
-            createdAtMs = int(time.time() * 1000)
-            if portType == "image":
-                if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
+        # One capture invocation owns all its image/companion ports. Node IDs
+        # alone cannot distinguish repeated calls, iterations or later Jobs.
+        captureId = str(uuid4())
+        originJobId = self.jobId or str(getattr(context, "jobId", ""))
+        nextEntries = dict(self._entries)
+        created: list[Path] = []
+        obsolete: list[Path] = []
+        try:
+            for port, value in outputs.items():
+                if port not in outputPorts:
                     continue
-                ok, encoded = cv2.imencode(".png", value)
-                if not ok:
+                portType = normalizePortType(outputPorts[port])
+                if portType not in _SNAPSHOT_TYPES:
                     continue
-                relativePath = f"assets/{identity}.png"
-                _atomicBytes(self.root / relativePath, encoded.tobytes())
-                height, width = value.shape[:2]
-                entry: dict[str, object] = {
-                    "workflowId": workflowId,
-                    "nodeId": nodeId,
-                    "port": port,
-                    "portType": portType,
-                    "relativePath": relativePath,
-                    "mimeType": "image/png",
-                    "width": int(width),
-                    "height": int(height),
-                    "iterationPath": iterationPath,
-                    "createdAtMs": createdAtMs,
-                }
-            else:
-                if not _isJsonValue(value):
-                    continue
-                relativePath = f"assets/{identity}.json"
-                _atomicJson(self.root / relativePath, value)
-                entry = {
-                    "workflowId": workflowId,
-                    "nodeId": nodeId,
-                    "port": port,
-                    "portType": portType,
-                    "relativePath": relativePath,
-                    "mimeType": "application/json",
-                    "width": 0,
-                    "height": 0,
-                    "iterationPath": iterationPath,
-                    "createdAtMs": createdAtMs,
-                }
-            self._entries[key] = entry
-        _atomicJson(self.root / "index.json", {"entries": list(self._entries.values())})
+                key = (workflowId, nodeId, port)
+                identity = hashlib.sha256(("\0".join(key) + "\0" + captureId).encode("utf-8")).hexdigest()
+                createdAtMs = int(time.time() * 1000)
+                if portType == "image":
+                    if not isinstance(value, np.ndarray) or value.dtype != np.uint8:
+                        continue
+                    ok, encoded = cv2.imencode(".png", value)
+                    if not ok:
+                        continue
+                    relativePath = f"assets/{identity}.png"
+                    created.append(self.root / relativePath)
+                    _atomicBytes(self.root / relativePath, encoded.tobytes())
+                    height, width = value.shape[:2]
+                    entry: dict[str, object] = {
+                        "workflowId": workflowId,
+                        "nodeId": nodeId,
+                        "port": port,
+                        "portType": portType,
+                        "relativePath": relativePath,
+                        "mimeType": "image/png",
+                        "width": int(width),
+                        "height": int(height),
+                        "iterationPath": iterationPath,
+                        "createdAtMs": createdAtMs,
+                    }
+                else:
+                    if not _isJsonValue(value):
+                        continue
+                    relativePath = f"assets/{identity}.json"
+                    created.append(self.root / relativePath)
+                    _atomicJson(self.root / relativePath, value)
+                    entry = {
+                        "workflowId": workflowId,
+                        "nodeId": nodeId,
+                        "port": port,
+                        "portType": portType,
+                        "relativePath": relativePath,
+                        "mimeType": "application/json",
+                        "width": 0,
+                        "height": 0,
+                        "iterationPath": iterationPath,
+                        "createdAtMs": createdAtMs,
+                    }
+                entry.update(originJobId=originJobId, originProjectRevision=self.projectRevision,
+                             captureId=captureId)
+                previous = nextEntries.get(key)
+                if previous is not None:
+                    obsolete.append(self.root / str(previous["relativePath"]))
+                nextEntries[key] = entry
+            _atomicJson(self.root / "index.json", {"entries": list(nextEntries.values())})
+        except BaseException as error:
+            self._pendingCleanup.update(created)
+            self._cleanupScanRequired = True
+            if not self._retirePending() and isinstance(error, Exception):
+                raise OSError("capture failed; unpublished snapshot cleanup pending") from error
+            raise
+        self._entries = nextEntries
+        self._pendingCleanup.update(obsolete)
+        if not self._retirePending():
+            raise OSError("snapshot committed; preceding capture cleanup pending")
+
 
 
 class PreviewAssetStore:
@@ -133,7 +181,29 @@ class PreviewAssetStore:
         self.transientRoot.mkdir(parents=True, exist_ok=True)
         self._assets: dict[str, PreviewAsset] = {}
         self._lock = threading.RLock()
+        self._pendingCleanup: set[Path] = set()
+        self._cleanupScanRequired = True
         self._loadPersistentAssets()
+
+    def _retirePending(self) -> bool:
+        if self._cleanupScanRequired:
+            try:
+                # Reconstruct ownership after reopening: only private files no
+                # longer named by a committed project index may be discarded.
+                for projectRoot in self.root.iterdir():
+                    if not projectRoot.is_dir() or projectRoot.name.startswith("_"):
+                        continue
+                    referenced = {projectRoot / str(entry["relativePath"])
+                                  for entry in _readIndex(projectRoot / "index.json") if _validEntry(entry)}
+                    assetsRoot = projectRoot / "assets"
+                    if assetsRoot.is_dir():
+                        self._pendingCleanup.update(path for path in assetsRoot.iterdir()
+                                                    if path.is_file() and path not in referenced)
+                    self._pendingCleanup.update(projectRoot.glob(".index.json.*.tmp"))
+            except OSError:
+                return False
+            self._cleanupScanRequired = False
+        return _retirePaths(self._pendingCleanup)
 
     @staticmethod
     def projectKey(projectPath: str, projectId: str) -> str:
@@ -148,6 +218,8 @@ class PreviewAssetStore:
             self._promoteLocked(_ioPath(stagingRoot), projectKey)
 
     def _promoteLocked(self, stagingRoot: Path, projectKey: str) -> None:
+        if not self._retirePending():
+            raise OSError("preview asset cleanup pending; new promotion skipped")
         index = _readIndex(stagingRoot / "index.json")
         if not index:
             return
@@ -160,30 +232,52 @@ class PreviewAssetStore:
             for entry in existing
             if _validEntry(entry)
         }
-        for rawEntry in index:
-            if not _validEntry(rawEntry):
-                continue
-            entry = dict(rawEntry)
-            source = stagingRoot / str(entry["relativePath"])
-            if not source.exists() or not source.is_file():
-                continue
-            suffix = source.suffix.lower()
-            identity = hashlib.sha256(
-                (projectKey + "\0" + "\0".join(_entryKey(entry))).encode("utf-8")
-            ).hexdigest()
-            relativePath = f"assets/{identity}{suffix}"
-            destination = projectRoot / relativePath
-            _atomicCopy(source, destination)
-            old = merged.get(_entryKey(entry))
-            if old is not None:
-                oldPath = projectRoot / str(old.get("relativePath", ""))
-                if oldPath != destination:
-                    _unlink(oldPath)
-            entry["relativePath"] = relativePath
-            merged[_entryKey(entry)] = entry
-        _atomicJson(projectRoot / "index.json", {"entries": list(merged.values())})
-        self._enforceLimits()
-        self._loadPersistentAssets()
+        obsolete: list[Path] = []
+        created: list[Path] = []
+        try:
+            for rawEntry in index:
+                if not _validEntry(rawEntry):
+                    continue
+                entry = dict(rawEntry)
+                source = stagingRoot / str(entry["relativePath"])
+                if not source.exists() or not source.is_file():
+                    continue
+                suffix = source.suffix.lower()
+                identity = _assetIdentity(projectKey, entry)
+                relativePath = f"assets/{identity}{suffix}"
+                destination = projectRoot / relativePath
+                if not destination.exists():
+                    created.append(destination)
+                _atomicCopy(source, destination)
+                old = merged.get(_entryKey(entry))
+                if old is not None:
+                    oldPath = projectRoot / str(old.get("relativePath", ""))
+                    if oldPath != destination:
+                        obsolete.append(oldPath)
+                entry["relativePath"] = relativePath
+                merged[_entryKey(entry)] = entry
+            _atomicJson(projectRoot / "index.json", {"entries": list(merged.values())})
+        except BaseException as error:
+            # New capture identities are unpublished until the index commits.
+            self._pendingCleanup.update(created)
+            self._cleanupScanRequired = True
+            if not self._retirePending() and isinstance(error, Exception):
+                raise OSError("promotion failed; unpublished asset cleanup pending") from error
+            raise
+        try:
+            self._enforceLimits()
+        finally:
+            # The committed index is authoritative even if quota maintenance
+            # reports an error. Old IDs must not keep stale, retargetable maps.
+            try:
+                self._loadPersistentAssets()
+            finally:
+                self._pendingCleanup.update(obsolete)
+                # Quota eviction may also have failed to remove an unindexed
+                # file; account for it before admitting another promotion.
+                self._cleanupScanRequired = True
+                if not self._retirePending():
+                    raise OSError("snapshot promoted; preceding asset cleanup pending")
 
     def addUploadedImage(
         self,
@@ -295,7 +389,7 @@ class PreviewAssetStore:
     def companionPayload(self, assetId: str) -> dict[str, object] | None:
         with self._lock:
             asset = self._assets.get(assetId)
-            if asset is None or not asset.path.exists() or not asset.projectKey:
+            if asset is None or not asset.path.exists() or not asset.projectKey or not asset.captureId:
                 return None
             candidates = {
                 "image": ("frame",),
@@ -309,6 +403,8 @@ class PreviewAssetStore:
                         other.projectKey == asset.projectKey
                         and other.workflowId == asset.workflowId
                         and other.nodeId == asset.nodeId
+                        and other.captureId == asset.captureId
+                        and other.originJobId == asset.originJobId
                         and other.port == candidate
                         and other.mimeType == "application/json"
                         and other.path.exists()
@@ -334,6 +430,7 @@ class PreviewAssetStore:
                 asset
                 for asset in self._assets.values()
                 if asset.projectKey == projectKey
+                and asset.path.is_file()
                 and asset.workflowId == workflowId
                 and asset.portType in {"image", "histogram"}
                 and (
@@ -378,9 +475,7 @@ class PreviewAssetStore:
                     if not _validEntry(entry):
                         continue
                     key = _entryKey(entry)
-                    identity = hashlib.sha256(
-                        (projectRoot.name + "\0" + "\0".join(key)).encode("utf-8")
-                    ).hexdigest()
+                    identity = _assetIdentity(projectRoot.name, entry)
                     assetId = f"snapshot-{identity}"
                     relativePath = str(entry["relativePath"])
                     rawIteration = entry.get("iterationPath", [])
@@ -402,6 +497,9 @@ class PreviewAssetStore:
                         portType=str(entry.get("portType", "")),
                         iterationPath=iteration,
                         createdAtMs=_intValue(entry.get("createdAtMs", 0)),
+                        originJobId=str(entry.get("originJobId", "")),
+                        originProjectRevision=_intValue(entry.get("originProjectRevision", 0)),
+                        captureId=str(entry.get("captureId", "")),
                     )
             self._assets = {**loaded, **transient}
 
@@ -463,6 +561,16 @@ def _entryKey(entry: Mapping[str, object]) -> tuple[str, str, str]:
         str(entry.get("nodeId", "")),
         str(entry.get("port", "")),
     )
+
+
+def _assetIdentity(projectKey: str, entry: Mapping[str, object]) -> str:
+    identity = projectKey + "\0" + "\0".join(_entryKey(entry))
+    captureId = entry.get("captureId")
+    if isinstance(captureId, str) and captureId:
+        identity += "\0" + captureId
+    # No capture ID means a persisted pre-policy snapshot: retain its legacy ID
+    # until replaced, but never present it as a verified current-run source.
+    return hashlib.sha256(identity.encode("utf-8")).hexdigest()
 
 
 def _validEntry(entry: object) -> bool:
@@ -530,6 +638,16 @@ def _atomicCopy(source: Path, destination: Path) -> None:
         temp.replace(destination)
     finally:
         _unlink(temp)
+
+
+def _retirePaths(pending: set[Path]) -> bool:
+    for path in tuple(pending):
+        try:
+            path.unlink(missing_ok=True)
+        except OSError:
+            continue
+        pending.remove(path)
+    return not pending
 
 
 def _unlink(path: Path) -> None:

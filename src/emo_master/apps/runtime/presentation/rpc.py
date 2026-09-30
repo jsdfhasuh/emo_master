@@ -48,6 +48,8 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                         "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup", "scope_retention"]
         if self.service.supportsNormalCapture:
             capabilities.extend(["normal_start_capture", "normal_multi_scope", "normal_two_image_lanes"])
+            if getattr(self.service.runtime, "supportsLegacySnapshotPolicy", False):
+                capabilities.extend(["legacy_snapshot_policy_v1", "preview_snapshot_origin_v1"])
         return pb.DisplayCapabilities(runtime_instance_id=self.service.runtimeInstanceId,
                                       protocol_version="1.0", capabilities=capabilities,
             normal_capture_limits_json=json.dumps(normalCaptureProfile()) if self.service.supportsNormalCapture else "")
@@ -92,6 +94,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                     runtime_instance_id=self.service.runtimeInstanceId,
                     start_request_id=getattr(self.service.runtime, "_jobStartRequestIds", {}).get(job.jobId, ""),
                     accepted_at_ms=job.acceptedAtMs,
+                    legacy_snapshot_policy=job.legacySnapshotPolicy,
                     resources_released=job.isTerminal and not config
                     and not self.service.runtime.jobSupervisor.ownsJobResources(job.jobId)))
             return pb.DisplayJobs(jobs=result)

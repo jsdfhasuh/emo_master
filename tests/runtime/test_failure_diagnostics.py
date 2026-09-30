@@ -1,5 +1,7 @@
 from types import SimpleNamespace
 import json
+import threading
+import pytest
 
 from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
@@ -34,3 +36,47 @@ def testUnicodeDiagnosticBudgetKeepsValidJsonAndEventDenominator():
     value = jobFailureDetails(SimpleNamespace(eventStore=SimpleNamespace(_events={"job": events})), "job")
     assert len(value) <= 16384
     assert len(json.loads(value)["event_tail"]) == 32
+
+
+def testFailureCapturesOwnerCallSitesWithoutLocalsOrFullPaths():
+    ready, stop = threading.Event(), threading.Event()
+
+    def blockedOwner():
+        privatePayload = "PRIVATE_LOCAL_MUST_NOT_BE_READ"
+        ready.set()
+        stop.wait()
+        assert privatePayload
+
+    thread = threading.Thread(target=blockedOwner, name="diagnostic-owned-bridge")
+    thread.start()
+    try:
+        assert ready.wait(2)
+        runtime = SimpleNamespace(jobSupervisor=SimpleNamespace(_bridges={"job": thread}))
+        text = jobFailureDetails(runtime, "job")
+        assert len(text) <= 16384 and "PRIVATE_LOCAL" not in text
+        frames = json.loads(text)["owner_stacks"]["bridge"]["frames"]
+        assert 0 < len(frames) <= 12
+        assert any(row["function"] == "blockedOwner" for row in frames)
+        assert all(set(row) == {"file", "function", "line"} for row in frames)
+        assert all("/" not in row["file"] and "\\" not in row["file"] for row in frames)
+    finally:
+        stop.set()
+        thread.join(2)
+        assert not thread.is_alive()
+
+
+@pytest.mark.parametrize("staleRegistry", (False, True))
+def testDeadOwnerCannotClaimReusedLiveThreadIdentity(monkeypatch, staleRegistry):
+    old = threading.Thread(target=lambda: None)
+    old.start()
+    old.join(2)
+    assert not old.is_alive()
+    # Simulate the OS/Python reusing the old ID for this unrelated live thread.
+    monkeypatch.setattr(old, "_ident", threading.get_ident())
+    if staleRegistry:
+        # Also exercise an owner exiting after the registry snapshot was taken.
+        monkeypatch.setattr(threading, "enumerate", lambda: [old])
+    runtime = SimpleNamespace(jobSupervisor=SimpleNamespace(_bridges={"job": old}),
+                              _maintenanceThread=old, operationalLogWriter=SimpleNamespace(_thread=old))
+    details = json.loads(jobFailureDetails(runtime, "job"))
+    assert not details["owner_stacks"]

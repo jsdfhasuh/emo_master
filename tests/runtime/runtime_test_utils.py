@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 from threading import Event
+from pathlib import Path
 import json
+import sys
+import threading
 import time
 
 
@@ -9,7 +12,7 @@ TERMINAL_STATUSES = {"COMPLETED", "FAILED", "ABORTED"}
 
 
 def jobFailureDetails(runtimeService, jobId: str, status=None, result=None) -> str:
-    """Bounded, best-effort in-memory diagnostics; no new RPC, disk read or lock."""
+    """Bounded in-memory diagnostics; no new RPC, disk read or Runtime lock."""
     def small(value):
         return value if value is None or isinstance(value, (bool, int, float)) else str(value)[:256]
 
@@ -28,9 +31,41 @@ def jobFailureDetails(runtimeService, jobId: str, status=None, result=None) -> s
         supervisor = getattr(runtimeService, "jobSupervisor", None)
         details["heartbeat_seen"] = jobId in getattr(supervisor, "_heartbeatSeen", ())
         details["last_heartbeat_ms"] = getattr(supervisor, "_heartbeat", {}).get(jobId)
+        persistence = getattr(runtimeService, "sqliteStore", None)
+        details["sqlite_idle_owned"] = getattr(persistence, "_idleConnection", None) is not None
+        details["sqlite_idle_ready"] = bool(getattr(persistence, "_idleConnectionReady", False))
         handles = getattr(supervisor, "_handles", {}).get(jobId)
         bridge = getattr(supervisor, "_bridges", {}).get(jobId)
         details["bridge_alive"] = bridge.is_alive() if bridge is not None else False
+        # Capture the blocked Python call sites before cleanup changes them.
+        # Never inspect locals, source contents, or acquire a Runtime lock.
+        # Capture registered object identities before frame IDs: IDs can be
+        # reused after an old owner exits. The subsequent liveness check must
+        # still refer to that exact registered Thread object.
+        registered = {thread.ident: thread for thread in threading.enumerate()}
+        frames = sys._current_frames()
+        try:
+            owners = {
+                "bridge": bridge,
+                "maintenance": getattr(runtimeService, "_maintenanceThread", None),
+                "writer": getattr(getattr(runtimeService, "operationalLogWriter", None), "_thread", None),
+            }
+            stacks = {}
+            for name, thread in owners.items():
+                if (thread is None or registered.get(thread.ident) is not thread
+                        or not thread.is_alive()):
+                    continue
+                frame = frames.get(getattr(thread, "ident", None))
+                stack = []
+                while frame is not None and len(stack) < 12:
+                    stack.append({"file": Path(frame.f_code.co_filename).name[:80],
+                                  "function": frame.f_code.co_name[:80], "line": frame.f_lineno})
+                    frame = frame.f_back
+                if stack:
+                    stacks[name] = {"frames": stack, "truncated": frame is not None}
+            details["owner_stacks"] = stacks
+        finally:
+            del frames
         if handles:
             try:
                 details["process"] = {"alive": handles[0].is_alive(), "exitcode": handles[0].exitcode}

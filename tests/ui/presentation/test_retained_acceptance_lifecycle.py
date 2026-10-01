@@ -146,7 +146,7 @@ class OwnedReadOnlyFixture:
         self.closed = True
 
 
-def nativeCounts(app):
+def nativeCounts(app, *, phase=None, index=None):
     snapshot = resources(includeThreadIds=True)
     assert snapshot["status"] == "OBSERVED", snapshot
     assert threading.get_native_id() in snapshot["native_thread_ids"], snapshot
@@ -165,8 +165,8 @@ def assertNoNewThreads(before, after):
         assert after[key] <= before[key], (key, before, after)
 
 
-def assertStableOwners(app, before, session, owners):
-    after = nativeCounts(app)
+def assertStableOwners(app, before, session, owners, *, phase=None, index=None):
+    after = nativeCounts(app, phase=phase, index=index)
     # Other tests' background owners may finish during these cycles. Their
     # process-wide handle reclamation is allowed; our file is checked below.
     assert after["handles"] <= before["handles"], ("handles", before, after)
@@ -190,7 +190,7 @@ def testBackgroundHandleRetirementKeepsOwnedResourceChecks(tmp_path, monkeypatch
               "python_threads": 1, "native_thread_ids": frozenset((thread.native_id,)),
               "python_thread_objects": frozenset((thread,))}
     after = dict(before, handles=9)
-    monkeypatch.setattr(__import__(__name__, fromlist=["nativeCounts"]), "nativeCounts", lambda _app: after)
+    monkeypatch.setattr(__import__(__name__, fromlist=["nativeCounts"]), "nativeCounts", lambda _app, **_ignored: after)
     with (tmp_path / "owned.bin").open("w+b") as handle:
         session = SimpleNamespace(thread=thread, handle=handle, closed=False, closeCalls=0)
         owners = (thread, thread.native_id, handle, handle.fileno())
@@ -251,7 +251,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     drainDeletes(qtApp)
     warmTimerBackend(qtApp)
     warmMutexBackend()
-    baseline = nativeCounts(qtApp)
+    baseline = nativeCounts(qtApp, phase="pre_fixture_baseline")
     session = OwnedReadOnlyFixture(view, tmp_path / "owned-session.bin")
     hub = DisplayHub(session)
     window.hub = hub
@@ -267,11 +267,11 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
         floating.deleteLater()
         drainDeletes(qtApp)
         assert not shiboken2.isValid(floating)
-        before = nativeCounts(qtApp)
+        before = nativeCounts(qtApp, phase="warmed_fixture_baseline")
         sessionThread = session.thread.native_id
         handle = session.handle.fileno()
         owners = (session.thread, sessionThread, session.handle, handle)
-        assertStableOwners(qtApp, before, session, owners)
+        assertStableOwners(qtApp, before, session, owners, phase="stable_initial")
         for index in range(1000):
             oldPages = dict(window.pages)
             target = config.pageOrder[index % 5]
@@ -297,8 +297,8 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
                         elif isinstance(widget, CollectionView):
                             assert widget.model.rowCount() == 0
             if index % 100 == 99:
-                assertStableOwners(qtApp, before, session, owners)
-        for _ in range(30):
+                assertStableOwners(qtApp, before, session, owners, phase="navigation", index=index)
+        for index in range(30):
             floating = RuntimePages(config, hub=hub)
             floating.show()
             drainDeletes(qtApp)
@@ -308,7 +308,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
             drainDeletes(qtApp)
             assert not shiboken2.isValid(floating)
             assert hub.windows == {window}
-            assertStableOwners(qtApp, before, session, owners)
+            assertStableOwners(qtApp, before, session, owners, phase="floating", index=index)
         # Hide all observers, advance the fake source, and prove no Qt conversion.
         window.hide()
         converted = hub.conversions
@@ -323,7 +323,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
         assert not window.displayed and hub.conversions == converted == 1
         assert session.thread.native_id == sessionThread and session.handle.fileno() == handle
         assert session.closeCalls == 0
-        assertStableOwners(qtApp, before, session, owners)
+        assertStableOwners(qtApp, before, session, owners, phase="hidden_observers")
     finally:
         window.close()
         window.deleteLater()
@@ -334,7 +334,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     assert set(qtApp.allWidgets()) == existingWidgets
     assert set(qtApp.allWindows()) == existingWindows
     assert session.closeCalls == 1 and session.handle.closed and not session.thread.is_alive()
-    after = nativeCounts(qtApp)
+    after = nativeCounts(qtApp, phase="owners_closed")
     assertNoNewThreads(baseline, after)
     assert sessionThread not in after["native_thread_ids"]
     assert session.thread not in after["python_thread_objects"]
@@ -347,7 +347,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     fixtureRefs = tuple(weakref.ref(owner) for owner in (session, session.thread, session.handle))
     del session, owners, before, hub, window
     assert all(reference() is None for reference in fixtureRefs), 'Test fixture is still retained'
-    after = nativeCounts(qtApp)
+    after = nativeCounts(qtApp, phase="fixture_released")
     assertNoNewThreads(baseline, after)
     assert sessionThread not in after["native_thread_ids"]
     # All owned thread/handle resources retired, not merely Python references.

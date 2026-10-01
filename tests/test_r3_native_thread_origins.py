@@ -13,9 +13,9 @@ from scripts import r3_native_thread_origins as native
 
 def hookFixture(tmp_path, original, *, nodeid=plugin.TARGET, enabled=True):
     output = tmp_path / "origins.json"
-    module = SimpleNamespace(assertNoNewThreads=original)
+    module = SimpleNamespace(assertNoNewThreads=original, nativeCounts=lambda _app, **_ignored: None)
     item = SimpleNamespace(nodeid=nodeid, module=module,
-        config=SimpleNamespace(getoption=lambda _name: str(output) if enabled else None))
+        config=SimpleNamespace(getoption=lambda _name: str(output) if enabled else None, stash=pytest.Stash()))
     return item, output, plugin.pytest_runtest_call(item)
 
 
@@ -40,7 +40,7 @@ def testPassingAssertionsNeverCollectOrWrite(monkeypatch, tmp_path):
 
 @pytest.mark.parametrize("diagnosticFailure", (False, True))
 def testOriginalAssertionObjectSurvivesAndOnlyFailedDifferenceIsCaptured(monkeypatch, tmp_path, diagnosticFailure):
-    failure = AssertionError("original exact predicate")
+    failure = AssertionError(("native_thread_ids", frozenset((4,))))
     events = []
     before = {"native_thread_ids": frozenset((1, 2, 3))}
     after = {"native_thread_ids": frozenset((1, 4))}
@@ -69,6 +69,8 @@ def testOriginalAssertionObjectSurvivesAndOnlyFailedDifferenceIsCaptured(monkeyp
         assert not output.exists()
     else:
         record = json.loads(output.read_text())
+        assert record["schema_version"] == 2 and record["observer_retired"] is True
+        assert record["snapshot_match"] == "unknown"
         assert record["selected_native_thread_ids"] == [4]
         assert record["new_native_thread_count"] == 1
         assert record["evidence"]["threads"][0]["module"] == "test.dll"
@@ -76,7 +78,7 @@ def testOriginalAssertionObjectSurvivesAndOnlyFailedDifferenceIsCaptured(monkeyp
 
 
 def testNewOutputIsNeverOverwrittenAndOriginalFailureSurvives(monkeypatch, tmp_path):
-    failure = AssertionError("original")
+    failure = AssertionError(("native_thread_ids", frozenset((7,))))
     def original(*_args):
         raise failure
     monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "helper_timeout", "threads": []})
@@ -243,3 +245,319 @@ def testEmptyModuleSnapshotClosesHandle(monkeypatch):
     query, closed, _ = windowsApi(monkeypatch, modulesAvailable=False)
     assert query.modules(100) == ([], "complete")
     assert closed == [88]
+
+
+def countSnapshot(ids, **changes):
+    return {"handles": 3, "native_threads": len(ids), "python_threads": 1,
+            "widgets": 2, "windows": 1, "native_thread_ids": frozenset(ids),
+            "python_thread_objects": frozenset(), **changes}
+
+
+def nativeAssertion(before, after):
+    assert after["native_thread_ids"] <= before["native_thread_ids"], (
+        "native_thread_ids", after["native_thread_ids"] - before["native_thread_ids"])
+    assert after["python_thread_objects"] <= before["python_thread_objects"], (
+        "python_thread_objects", after["python_thread_objects"] - before["python_thread_objects"])
+
+
+def checkpointSchedule():
+    return [("pre_fixture_baseline", None), ("warmed_fixture_baseline", None),
+        ("stable_initial", None)] + [("navigation", value) for value in range(99, 1000, 100)] + [
+        ("floating", value) for value in range(30)] + [("hidden_observers", None),
+        ("owners_closed", None), ("fixture_released", None)]
+
+
+def testExistingCheckpointScheduleAndFailureSamplesAreExact(monkeypatch, tmp_path):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    calls = []
+    snapshots = []
+    def counts(app, **keywords):
+        calls.append((app, keywords))
+        snapshot = countSnapshot((1,) if len(calls) in (1, 45) else (1, 2))
+        if len(calls) == 46:
+            snapshot = countSnapshot((1, 7))
+        snapshots.append(snapshot)
+        return snapshot
+    item.module.nativeCounts = counts
+    ticks = iter(range(1000, 2000))
+    monkeypatch.setattr(plugin, "reading", lambda: (next(ticks), next(ticks)))
+    collection = []
+    monkeypatch.setattr(plugin, "collect", lambda ids: collection.append(ids) or {
+        "status": "queried", "threads": [{"native_thread_id": 7,
+        "creation_unix_ns": 123, "query_unix_ns": 456, "module": "observed.dll"}]})
+    next(hook)
+    schedule = checkpointSchedule()
+    for number, (phase, index) in enumerate(schedule):
+        result = item.module.nativeCounts("app", phase=phase, index=index)
+        assert result is snapshots[-1]
+        if number < 2:
+            continue
+        before = snapshots[0 if number >= 44 else 1]
+        if number == 45:
+            with pytest.raises(AssertionError) as raised:
+                item.module.assertNoNewThreads(before, result)
+            failure = raised.value
+        else:
+            item.module.assertNoNewThreads(before, result)
+    with pytest.raises(AssertionError) as raised:
+        hook.throw(failure)
+    assert raised.value is failure and item.module.nativeCounts is counts
+    record = json.loads(output.read_text())
+    assert collection == [[7]] and len(calls) == 46
+    assert [(row["phase"], row["index"]) for row in record["checkpoints"]] == schedule
+    assert record["before_sample"] == 0 and record["after_sample"] == 45
+    assert record["snapshot_match"] == "live_argument_dict_id"
+    assert record["checkpoint_calls"] == 46 and record["omitted_checkpoint_count"] == 0
+    assert record["first_observations"] == [{"native_thread_id": 7, "first_observed_sample": 45,
+        "earlier_checkpoint_absence": "observed", "checkpoint_identity": "unverified"}]
+    assert record["evidence"]["threads"][0]["creation_unix_ns"] == 123
+    assert record["evidence"]["threads"][0]["query_unix_ns"] == 456
+    assert record["observer_retired"] is True and record["errors"] == []
+    assert record["checkpoints"][0]["entry_monotonic_ns"] == 1000
+    assert record["checkpoints"][0]["exit_unix_ns"] == 1003
+
+
+def testSuccessfulCountsDoNotRetainThreadOrOtherSnapshotObjects(monkeypatch, tmp_path):
+    import threading
+    import weakref
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    thread = threading.Thread()
+    reference = weakref.ref(thread)
+    snapshot = countSnapshot((1,), python_thread_objects=frozenset((thread,)))
+    def counts(_app, **_ignored):
+        return snapshot
+    item.module.nativeCounts = counts
+    monkeypatch.setattr(plugin, "collect", lambda _ids: pytest.fail("successful capture"))
+    next(hook)
+    result = item.module.nativeCounts(None, phase="pre_fixture_baseline")
+    assert result is snapshot
+    snapshot = None
+    del thread, result
+    assert reference() is None  # No GC rescue and no retained original snapshot.
+    finish(hook)
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("detail", (("python_thread_objects", frozenset()),
+    ("native_threads", 1, 2), "arbitrary original failure"))
+def testNonNativeIdentityFailureDoesNotCapture(monkeypatch, tmp_path, detail):
+    failure = AssertionError(detail)
+    def original(*_args):
+        raise failure
+    monkeypatch.setattr(plugin, "collect", lambda _ids: pytest.fail("wrong failure kind"))
+    item, output, hook = hookFixture(tmp_path, original)
+    next(hook)
+    with pytest.raises(AssertionError) as raised:
+        item.module.assertNoNewThreads(countSnapshot((1,)), countSnapshot((1,)))
+    assert raised.value is failure
+    finish(hook)
+    assert not output.exists()
+
+
+def testOnlyLatestTemporarySnapshotMayMatchFailure(monkeypatch, tmp_path):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    snapshots = iter((countSnapshot((1,)), countSnapshot((1, 7)), countSnapshot((1, 8))))
+    item.module.nativeCounts = lambda _app, **_ignored: next(snapshots)
+    monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "queried", "threads": []})
+    next(hook)
+    baseline = item.module.nativeCounts(None, phase="pre_fixture_baseline")
+    old = item.module.nativeCounts(None, phase="stable_initial")
+    item.module.nativeCounts(None, phase="navigation", index=99)
+    with pytest.raises(AssertionError):
+        item.module.assertNoNewThreads(baseline, old)
+    finish(hook)
+    record = json.loads(output.read_text())
+    assert record["before_sample"] == 0 and record["after_sample"] is None
+    assert record["snapshot_match"] == "unknown"
+
+
+def testCheckpointAndIdentityBudgetsKeepBaselinesAndMarkUnknown(monkeypatch, tmp_path):
+    module = SimpleNamespace()
+    owner = plugin.PhaseOwner(module, str(tmp_path / "bounded.json"))
+    baseline = countSnapshot(range(1, 140))
+    owner.sample(baseline, "pre_fixture_baseline", None, (1, 2), (3, 4))
+    for index in range(1, 65):
+        last = countSnapshot((1, 500))
+        owner.sample(last, "floating", index, (5, 6), (7, 8))
+    monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "queried", "threads": []})
+    owner.capture(baseline, last)
+    owner.retire()
+    owner.save()
+    record = json.loads(Path(owner.output).read_text())
+    assert len(record["checkpoints"]) == 64 and record["checkpoint_calls"] == 65
+    assert record["omitted_checkpoint_count"] == 1 and record["before_sample"] == 0
+    assert record["after_sample"] is None and record["snapshot_match"] == "unknown"
+    first = record["checkpoints"][0]
+    assert first["phase"] == "pre_fixture_baseline"
+    assert len(first["native_thread_ids"]) == 128 and first["omitted_native_thread_count"] == 11
+    assert first["native_ids_status"] == "truncated"
+    assert record["first_observations"][0]["earlier_checkpoint_absence"] == "unknown"
+    assert "checkpoint_limit" in record["errors"]
+
+
+def testByteBudgetMakesIdentityTruncationExplicitWithoutEvictingBaselines(monkeypatch, tmp_path):
+    owner = plugin.PhaseOwner(SimpleNamespace(), str(tmp_path / "bounded.json"))
+    baseline = countSnapshot(range(1000000000, 1000000128))
+    owner.sample(baseline, "pre_fixture_baseline", None, (10**18, 10**18), (10**18, 10**18))
+    for index in range(1, 64):
+        after = countSnapshot(range(1000000001, 1000000129))
+        owner.sample(after, "floating", index, (10**18, 10**18), (10**18, 10**18))
+    monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "queried", "threads": []})
+    owner.capture(baseline, after)
+    owner.retire()
+    owner.save()
+    path = Path(owner.output)
+    assert 0 < path.stat().st_size <= plugin.MAX_BYTES
+    record = json.loads(path.read_text())
+    assert record["output_truncated"] is True and len(record["checkpoints"]) == 64
+    assert record["checkpoints"][0]["phase"] == "pre_fixture_baseline"
+    assert all(row["native_ids_status"] == "unknown_output_byte_limit"
+        and row["native_thread_ids"] == [] and row["omitted_native_thread_count"] == 128
+        for row in record["checkpoints"])
+
+
+def testNativeCountsExceptionObjectAndInheritedAttributeProvenanceSurvive(tmp_path):
+    failure = RuntimeError("original native census failed")
+    class Module:
+        @staticmethod
+        def nativeCounts(_app, **_ignored):
+            raise failure
+        assertNoNewThreads = staticmethod(nativeAssertion)
+    module = Module()
+    owner = plugin.PhaseOwner(module, str(tmp_path / "unused.json"))
+    owner.install()
+    with pytest.raises(RuntimeError) as raised:
+        module.nativeCounts(None, phase="stable_initial")
+    assert raised.value is failure
+    assert owner.retire() is True and vars(module) == {}
+    assert module.nativeCounts is Module.nativeCounts
+
+
+def testPartialInstallationRestoresBothRawAttributes(tmp_path):
+    class Module:
+        nativeCounts = staticmethod(lambda _app, **_ignored: countSnapshot((1,)))
+        assertNoNewThreads = staticmethod(nativeAssertion)
+        def __setattr__(self, name, value):
+            object.__setattr__(self, name, value)
+            if name == "assertNoNewThreads":
+                raise RuntimeError("setter mutated before failing")
+    module = Module()
+    owner = plugin.PhaseOwner(module, str(tmp_path / "unused.json"))
+    with pytest.raises(RuntimeError):
+        owner.install()
+    assert owner.retire() is True and vars(module) == {}
+
+
+def testFailedRestorationKeepsOwnerForSessionRetryAndNeverClaimsRetired(monkeypatch, tmp_path):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    original = item.module.assertNoNewThreads
+    class Module:
+        failRestore = False
+        def __setattr__(self, name, value):
+            if self.failRestore and name == "assertNoNewThreads" and value is original:
+                raise RuntimeError("restore temporarily unavailable")
+            object.__setattr__(self, name, value)
+    module = Module()
+    module.nativeCounts = item.module.nativeCounts
+    module.assertNoNewThreads = original
+    item.module = module
+    monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "queried", "threads": []})
+    next(hook)
+    with pytest.raises(AssertionError) as raised:
+        module.assertNoNewThreads(countSnapshot((1,)), countSnapshot((1, 7)))
+    failure = raised.value
+    module.failRestore = True
+    with pytest.raises(AssertionError) as raised:
+        hook.throw(failure)
+    assert raised.value is failure
+    pending = item.config.stash[plugin._PENDING]
+    assert pending.patches and json.loads(output.read_text())["observer_retired"] is False
+    module.failRestore = False
+    session = SimpleNamespace(config=item.config, exitstatus=0)
+    plugin.pytest_sessionfinish(session)
+    assert item.config.stash.get(plugin._PENDING, None) is None
+    assert module.assertNoNewThreads is original
+    assert session.exitstatus == pytest.ExitCode.TESTS_FAILED
+    assert json.loads(output.read_text())["observer_retired"] is False
+
+
+def testClockFailurePreservesSuccessButMarksSessionInvalidWithoutFile(monkeypatch, tmp_path, capsys):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    expected = countSnapshot((1,))
+    item.module.nativeCounts = lambda _app, **_ignored: expected
+    monkeypatch.setattr(plugin, "reading", lambda: (_ for _ in ()).throw(RuntimeError("clock")))
+    monkeypatch.setattr(plugin, "collect", lambda _ids: pytest.fail("successful collection"))
+    next(hook)
+    assert item.module.nativeCounts(None, phase="pre_fixture_baseline") is expected
+    assert item.module.assertNoNewThreads(expected, expected) is None
+    finish(hook)
+    assert not output.exists()
+    assert all(type(error) is str for error in item.config.stash[plugin._INVALID])
+    session = SimpleNamespace(config=item.config, exitstatus=0)
+    plugin.pytest_sessionfinish(session)
+    assert session.exitstatus == pytest.ExitCode.TESTS_FAILED
+    assert "A18_DIAGNOSTIC_INVALID" in capsys.readouterr().out
+
+
+def testSessionRestorationRetryOccursOnlyOnceAndFailedOwnerRemains(tmp_path):
+    item, _output, hook = hookFixture(tmp_path, nativeAssertion)
+    next(hook)
+    finish(hook)
+    class Pending:
+        retryAttempted = False
+        attempts = 0
+        def retire(self):
+            self.attempts += 1
+            return False
+    pending = Pending()
+    item.config.stash[plugin._PENDING] = pending
+    session = SimpleNamespace(config=item.config, exitstatus=1)
+    plugin.pytest_sessionfinish(session)
+    plugin.pytest_sessionfinish(session)
+    assert pending.attempts == 1 and item.config.stash[plugin._PENDING] is pending
+    assert session.exitstatus == 1
+
+
+def testClosingInterruptedHookRestoresOriginalFunctions(tmp_path):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    originalCounts = item.module.nativeCounts
+    next(hook)
+    hook.close()
+    assert item.module.nativeCounts is originalCounts
+    assert item.module.assertNoNewThreads is nativeAssertion
+    assert not output.exists()
+
+
+def testUnknownPhaseAndFirstSampleDoNotClaimKnownEarlierAbsence(monkeypatch, tmp_path):
+    owner = plugin.PhaseOwner(SimpleNamespace(), str(tmp_path / "unknown.json"))
+    snapshot = countSnapshot((1, 7))
+    owner.sample(snapshot, "unrecognized", None, (1, 4), (2, 3))
+    monkeypatch.setattr(plugin, "collect", lambda _ids: {"status": "queried", "threads": []})
+    owner.capture(countSnapshot((1,)), snapshot)
+    owner.retire()
+    owner.save()
+    record = json.loads(Path(owner.output).read_text())
+    assert record["checkpoints"][0]["phase"] is None
+    assert "checkpoint_sequence_unknown" in record["errors"]
+    assert record["first_observations"][0]["earlier_checkpoint_absence"] == "unknown"
+    assert record["checkpoints"][0]["exit_unix_ns"] < record["checkpoints"][0]["entry_unix_ns"]
+
+
+def testInstallFailureDoesNotReplaceOriginalTestOutcome(tmp_path):
+    item, output, hook = hookFixture(tmp_path, nativeAssertion)
+    class Module:
+        nativeCounts = staticmethod(lambda _app, **_ignored: countSnapshot((1,)))
+        assertNoNewThreads = staticmethod(nativeAssertion)
+        def __setattr__(self, name, value):
+            object.__setattr__(self, name, value)
+            if name == "assertNoNewThreads":
+                raise RuntimeError("mutated before raising")
+    item.module = Module()
+    next(hook)
+    assert vars(item.module) == {}
+    assert item.module.assertNoNewThreads(countSnapshot((1,)), countSnapshot((1,))) is None
+    finish(hook)
+    assert not output.exists()
+    session = SimpleNamespace(config=item.config, exitstatus=0)
+    plugin.pytest_sessionfinish(session)
+    assert session.exitstatus == pytest.ExitCode.TESTS_FAILED

@@ -20,6 +20,19 @@ class ScopeView:
 
 
 @dataclass(frozen=True)
+class JobView:
+    runtimeInstanceId: str
+    projectId: str
+    jobId: str
+    status: str = ""
+    availability: str = "UNAVAILABLE"
+    detail: str = ""
+    mode: str = ""
+    captureEnabled: bool | None = None
+    resourcesReleased: bool | None = None
+
+
+@dataclass(frozen=True)
 class SessionView:
     revision: int
     generation: int
@@ -31,3 +44,4 @@ class SessionView:
     loading: Mapping[str, ClosedResult]
     started: Mapping[str, int]
     expiredScopes: Mapping[str, int] = field(default_factory=lambda: MappingProxyType({}))
+    job: JobView | None = None

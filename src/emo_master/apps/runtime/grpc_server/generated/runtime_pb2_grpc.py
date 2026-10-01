@@ -1116,6 +1116,11 @@ class DisplayServiceStub(object):
                 request_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
                 response_deserializer=runtime__pb2.DisplayJobs.FromString,
                 _registered_method=True)
+        self.GetJob = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/GetJob',
+                request_serializer=runtime__pb2.DisplayJobRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJob.FromString,
+                _registered_method=True)
         self.Snapshot = channel.unary_unary(
                 '/emo_master.runtime.DisplayService/Snapshot',
                 request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
@@ -1176,6 +1181,12 @@ class DisplayServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def ListJobs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetJob(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -1245,6 +1256,11 @@ def add_DisplayServiceServicer_to_server(servicer, server):
                     servicer.ListJobs,
                     request_deserializer=runtime__pb2.DisplayEmpty.FromString,
                     response_serializer=runtime__pb2.DisplayJobs.SerializeToString,
+            ),
+            'GetJob': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetJob,
+                    request_deserializer=runtime__pb2.DisplayJobRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayJob.SerializeToString,
             ),
             'Snapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.Snapshot,
@@ -1391,6 +1407,33 @@ class DisplayService(object):
             '/emo_master.runtime.DisplayService/ListJobs',
             runtime__pb2.DisplayEmpty.SerializeToString,
             runtime__pb2.DisplayJobs.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetJob(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/GetJob',
+            runtime__pb2.DisplayJobRequest.SerializeToString,
+            runtime__pb2.DisplayJob.FromString,
             options,
             channel_credentials,
             insecure,

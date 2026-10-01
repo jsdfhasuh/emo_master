@@ -416,6 +416,7 @@ service DisplayService {
   rpc Prepare(DisplayPrepareRequest) returns (DisplayPrepared);
   rpc Start(DisplayStartRequest) returns (DisplayJob);
   rpc ListJobs(DisplayEmpty) returns (DisplayJobs);
+  rpc GetJob(DisplayJobRequest) returns (DisplayJob);
   rpc Snapshot(DisplayRequest) returns (DisplaySnapshot);
   rpc Subscribe(DisplayRequest) returns (stream DisplaySnapshot);
   rpc ReadAsset(DisplayAssetRequest) returns (DisplayAsset);
@@ -444,6 +445,8 @@ message DisplayJob {
   string legacy_snapshot_policy = 17;
 }
 message DisplayJobs { repeated DisplayJob jobs = 1; }
+// Exact, read-only current-runtime lookup; does not read historical persisted Jobs.
+message DisplayJobRequest { string runtime_instance_id = 1; string project_id = 2; string job_id = 3; }
 message DisplayRequest { string runtime_instance_id = 1; string job_id = 2; uint64 after_cursor = 3; bool replay = 4; }
 message DisplayIdentity {
   string runtime_instance_id = 1; string job_id = 2; string result_scope_id = 3;

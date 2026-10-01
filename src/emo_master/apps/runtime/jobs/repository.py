@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from datetime import datetime
+from dataclasses import replace
 import threading
 
 from emo_master.apps.runtime.jobs.models import JobRecord, JobStatus
@@ -59,6 +60,12 @@ class JobRepository:
             legacySnapshotPolicy=str(options.get("legacySnapshotPolicy", "UNKNOWN")),
             previewProjectKey=str(options.get("previewProjectKey", "")),
         )
+
+    def getCurrentSnapshot(self, jobId: str) -> JobRecord | None:
+        """Copy one Job registered by this process, without persistence fallback."""
+        with self._lock:
+            record = self._jobs.get(jobId)
+            return replace(record) if record is not None else None
 
     def update(self, jobId: str, **changes: object) -> JobRecord | None:
         with self._lock:

@@ -36,6 +36,15 @@ P5 TestReleaseChannel 不声明 normal_start_capture 并明确拒绝原StartJob�
 宿主经准备记录明确单次启动的边界；新增普通入口不借测试宿主绕过其保护。
 关闭观察者/重连继续只断开或恢复已有Job的会话。
 
+`job_status_v1` 是可选的实时任务状态能力。`GetJob(DisplayJobRequest)` 必须同时提供
+runtime_instance_id、project_id、job_id；缺身份拒绝，实例变化返回 RESET_REQUIRED，
+工程不匹配拒绝，当前进程未登记的任务返回 NOT_FOUND。查询在仓库锁内复制单个当前
+Job，不走持久历史回退，也不遍历 ListJobs 目录。响应仅含身份、执行状态、模式、
+capture_enabled 和 resources_released 等轻量元数据，无捕获计划/来源JSON轮询。
+终态但 Supervisor 仍持有进程或 IPC 时，resources_released 仍为 false。
+该查询不启动、停止、释放任务或修改采集。旧服务端无此能力时状态明确不可用，
+已有结果观察继续兼容；只观察未采集/已释放任务时不调用 Snapshot/Subscribe/ReadAsset。
+
 同次明确开始生成一个有界请求ID，并先协商Runtime代际。带请求ID的Start必须匹配代际；
 同ID同参数返回原Job，改参数复用ID拒绝。`GetStartRequest(StartRequestLookup)` 只查询原
 请求，返回原job_id及当前状态；已知未创建任务的拒绝为REJECTED，启动失败保留FAILED Job。
@@ -154,7 +163,7 @@ Blob 1.2.0 的 mask/overlay 可继承真实输入帧的坐标空间并记录父�
 ## 网络与只读客户端
 
 显式 `grpc_server.aio_entry.AioRuntimeServer` 同时注册原 RuntimeService 与增量 typed
-DisplayService。公共接口：Capabilities、Prepare、Start、ListJobs、Snapshot（可重放）、
+DisplayService。公共接口：Capabilities、Prepare、Start、ListJobs、GetJob、Snapshot（可重放）、
 Subscribe、ReadAsset、AcquireLease、ReleaseLease、ReleaseJob、DiscardPrepared。
 Display Start 创建隔离/交付准备任务，R3 原 Runtime StartJob 也可附带采集；ReleaseJob 仅释放已终止且 IPC/导出已收尾的展示状态，
 不是 StopJob；DiscardPrepared 要求关联 Job 已释放。默认 Runtime 入口在R3复用此有界适配；旧RPC签名保留。

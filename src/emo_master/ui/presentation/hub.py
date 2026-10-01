@@ -160,7 +160,7 @@ class DisplayHub(QObject):
             return
         self.updateImageDemand()
         view = self.session.readSnapshot()
-        token = (view.generation, view.connection, view.detail,
+        token = (view.generation, view.connection, view.detail, getattr(view, 'job', None),
                  tuple((s, r.result.identity.resultKey, r.readyNs, tuple(r.imageStates.items())) for s, r in view.scopes.items()),
                  tuple((s, r.identity.resultKey) for s, r in view.loading.items()), tuple(view.started.items()),
                  tuple(getattr(view, 'expiredScopes', {}).items()),

@@ -155,6 +155,11 @@ class EditingTools(QObject):
             button = QPushButton(text)
             button.clicked.connect(lambda _checked=False, fn=command: self.w.run(fn))
             self.form.addRow(button)
+            if text == '观看当前工程任务':
+                self.observer = QPushButton('弹出只读观察窗口')
+                self.observer.setToolTip('复用已选择任务；包括内嵌页面最多两个共享窗口，关闭弹窗不会断开观察')
+                self.observer.clicked.connect(lambda _checked=False: self.w.openObserver())
+                self.form.addRow(self.observer)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)

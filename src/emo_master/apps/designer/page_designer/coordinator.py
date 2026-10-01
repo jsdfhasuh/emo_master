@@ -222,6 +222,7 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
+        self.preview.retireObserver()
         if not self.preview.active():
             self.preview.coverage = None
             self.preview.selectedJob = None

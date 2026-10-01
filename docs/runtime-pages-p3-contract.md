@@ -20,6 +20,14 @@ Runtime和一个真实Job。`--address HOST:PORT --job JOB_ID --project PATH/pro
 - `DisplaySession.readSnapshot() -> SessionView` 同锁取得revision/generation/runtime/job、
   connection/detail、scopes、loading、started。ScopeView含ClosedResult、images、failures、readyNs。
   映射只读；图像基于不可写bytes。客户端保持无Qt依赖。
+- `SessionView.job` 是可选的不可变执行状态观察。新服务端通过
+  `job_status_v1` / `DisplayService.GetJob` 对 runtime instance、project、job
+  三重身份做当前进程内的只读查询，不扫描持久历史任务。
+  只有 `availability=AVAILABLE` 的七种已知执行状态可作为实时事实；读取失败、
+  不支持该能力或身份失效均明确显示不可用，不沿用选择时的 RUNNING。
+  执行终态与 `resourcesReleased` 分开显示，两者都不代表业务 OK/NG。
+  未采集或已释放页面资源的任务可仅观察状态，不读取快照、订阅或图像。
+  旧会话调用保持兼容，并明确没有已核验的实时执行状态。
 - 原`observe(callback(result))`兼容，回调仍在后台；不得连到QWidget。
   `DisplayHub(session)`由GUI主线程创建，16ms有界拉取，零逐消息排队信号。
 - `RuntimePages(presentation, hub=...)`配置驱动稳定pageId，按需最多实例化两页。
@@ -29,6 +37,10 @@ Runtime和一个真实Job。`--address HOST:PORT --job JOB_ID --project PATH/pro
   COMPLETE仅表示执行/数据完整，绝非产品OK。
 - `selectJob`提高generation并清状态；迟到decode丢弃。健康快照重建可恢复遗漏的最终结果。
   Qt提交所有控件之后才更新窗口displayed。详情/freeze取displayed，不读取后台latest。
+- 窗口顶部的执行状态与客户端连接状态独立；冻结详情只冻结业务结果，
+  执行状态仍随同一会话更新。状态变化纳入 Hub 拉取标记，无新图也可显示。
+  普通 Designer 会话固定所选实例/工程/任务；运行实例变化需重新明确选择，
+  不自动迁移到相同 jobId 的另一个实例。
 - `session.pins().acquire(scope, generation, ttlMs)`在单worker异步AcquireLease；
   read返回PENDING/PINNED/FAILED/EXPIRED，release异步释放；最多30秒，不自动续租。
   到期清空冻结内容，不自动显示另一件。恢复实时明确放弃pin。

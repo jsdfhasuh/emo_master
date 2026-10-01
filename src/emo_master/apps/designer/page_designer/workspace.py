@@ -4,8 +4,24 @@ from PySide2.QtWidgets import (
     QLabel, QMessageBox,
 )
 from PySide2.QtCore import Qt
+from shiboken2 import isValid
 
 from emo_master.ui.presentation.renderer import RuntimePages
+
+
+class ObserverPages(RuntimePages):
+    """Designer-owned read-only window, including partial-construction cleanup."""
+    def __init__(self, *args, **kwargs):
+        try:
+            super().__init__(*args, **kwargs)
+            self.setWindowFlag(Qt.Window, True)
+            self.setAttribute(Qt.WA_DeleteOnClose, True)
+        except BaseException:
+            # Construction is always hub-free and hidden. closeEvent requires
+            # a complete renderer, so retire the native object directly.
+            if isValid(self):
+                self.deleteLater()
+            raise
 
 
 class EditorPages(RuntimePages):
@@ -85,6 +101,14 @@ class PageWorkspace(QWidget):
         except (ValueError, KeyError) as error:
             self.message.setText(str(error))
 
+    def openObserver(self):
+        # Unlike an edit command this must not refresh the source canvas:
+        # refreshing releases a displayed-result pin and changes its context.
+        try:
+            return self.coordinator.preview.openObserver()
+        except (ValueError, KeyError) as error:
+            self.message.setText(str(error))
+
     def refresh(self):
         p = self.store.snapshot()
         self.coordinator.window.setWindowTitle('视觉流程设计器' + (' *' if self.session.dirty else ''))
@@ -99,6 +123,7 @@ class PageWorkspace(QWidget):
             self.pageList.setCurrentRow(p.pageOrder.index(self.pageId))
         self.pageList.blockSignals(False)
         self.renderer.reload(p)
+        self.coordinator.preview.refreshObserver(p)
         if self.pageId:
             self.renderer.navigate(self.pageId)
         if hasattr(self, 'tools'):

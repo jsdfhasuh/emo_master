@@ -6,6 +6,7 @@ import time
 import grpc
 from PySide2.QtCore import QObject, QTimer
 from PySide2.QtWidgets import QInputDialog
+from shiboken2 import isValid
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
@@ -153,6 +154,9 @@ class PreviewController(QObject):
         self.coverage = None
         self.selectedJob = None
         self.observationLabel = ''
+        self.coverageDetails = ''
+        self.observer = None
+        self.observerToken = None
         self.timer = QTimer(self)
         self.timer.timeout.connect(self.poll)
         self.timer.start(25)
@@ -210,11 +214,11 @@ class PreviewController(QObject):
                 stub = rpc.DisplayServiceStub(channel)
                 capabilities = stub.Capabilities(pb.DisplayEmpty(), timeout=5)
                 self._checkCapabilities(capabilities)
-                jobs = stub.ListJobs(pb.DisplayEmpty(), timeout=5).jobs
+                modern = {'project_jobs', 'source_coverage'} <= set(capabilities.capabilities)
+                jobs = stub.ListJobs(pb.DisplayEmpty(project_id=projectId if modern else ''), timeout=5).jobs
                 metadata = next((item for item in jobs if item.job_id == job), None)
                 if metadata is None:
                     raise ValueError('指定任务不存在或展示结果已释放')
-                modern = {'project_jobs', 'source_coverage'} <= set(capabilities.capabilities)
                 if modern and metadata.project_id != projectId:
                     raise ValueError('指定任务不属于当前工程')
                 coverage = self._coverage(metadata, capabilities) if modern else None
@@ -287,24 +291,124 @@ class PreviewController(QObject):
         self.launch(lambda: self._attach(value['address'], metadata, coverage))
 
     @staticmethod
-    def _jobLabel(metadata):
+    def _jobLabel(metadata, *, includeStatus=True):
         mode = {'runtime': '正常运行', 'debug': '隔离调试', 'release': '测试发布'}.get(
             getattr(metadata, 'mode', ''), '旧任务（语义未声明）')
         capture = '已采集页面来源' if getattr(metadata, 'capture_enabled', False) else '未采集页面来源'
-        return f'{metadata.job_id} · {metadata.status} · {mode} · {capture}'
+        status = f' · {metadata.status}' if includeStatus else ''
+        return f'{metadata.job_id}{status} · {mode} · {capture}'
 
     def _attach(self, address, metadata, coverage):
-        if coverage is None or (coverage.enabled and not getattr(metadata, 'resources_released', False)):
+        if coverage is None:
             self.session = DisplaySession(address, metadata.job_id, imageDemand=True)
+        else:
+            self.session = DisplaySession(address, metadata.job_id, imageDemand=True,
+                expectedRuntimeInstanceId=metadata.runtime_instance_id, projectId=metadata.project_id,
+                readResults=bool(metadata.capture_enabled and not metadata.resources_released))
         return {'kind': 'attached', 'metadata': metadata, 'coverage': coverage}
+
+    def _observerDestroyed(self, token):
+        # No native Qt calls here: destruction can follow the Designer owner.
+        if self.observerToken is token:
+            self.observer = self.observerToken = None
+
+    def retireObserver(self):
+        observer = self.observer
+        if observer is not None and isValid(observer):
+            observer.close()
+            observer.deleteLater()
+
+    def openObserver(self):
+        """Open one read-only view of the already selected, shared Job session."""
+        if self.busy or self.closing:
+            raise ValueError('上一操作正在收尾，请稍候')
+        editor = self.coordinator.editor
+        metadata = self.selectedJob
+        if (editor is None or self.hub is None or self.session is None or metadata is None
+                or self.coverage is None):
+            raise ValueError('请先观看当前工程任务，再弹出只读观察窗口')
+        projectId = self.coordinator.session.document().project.projectId
+        if (metadata.project_id != projectId or self.coverage.jobId != metadata.job_id
+                or self.coverage.runtimeInstanceId != metadata.runtime_instance_id
+                or self.hub.session is not self.session or self.session.jobId != metadata.job_id
+                or editor.renderer.hub is not self.hub or editor.renderer not in self.hub.windows):
+            self.retireObserver()
+            raise ValueError('当前观察任务或工程已变化，请重新观看当前工程任务')
+        self.coordinator.sync()
+        observer = self.observer
+        if observer is not None and isValid(observer):
+            if observer.detached:
+                raise ValueError('只读观察窗口正在关闭，请稍候')
+            if observer.hub is not self.hub:
+                self.retireObserver()
+                raise ValueError('旧观察窗口正在收尾，请稍后重试')
+            observer.showNormal() if observer.isMinimized() else observer.show()
+            observer.raise_()
+            observer.activateWindow()
+            return observer
+        if len(self.hub.windows) >= 2:
+            raise ValueError('最多两个共享窗口（包括隐藏的内嵌页面）')
+        from .workspace import ObserverPages
+        # A frozen detail may intentionally defer committed form edits. Clone
+        # what the editor displays; never reload it or copy its frozen ticket.
+        observer = ObserverPages(editor.renderer.config, parent=self.coordinator.window,
+            label='只读观察窗口 · ' + metadata.job_id)
+        token = object()
+        self.observer, self.observerToken = observer, token
+        observer.destroyed.connect(lambda _object=None: self._observerDestroyed(token))
+        try:
+            observer.setCaptureCoverage(self.coverage)
+            observer.banner.setText(self.observationLabel)
+            if editor.renderer.currentPageId:
+                observer.navigate(editor.renderer.currentPageId)
+            observer.hub = self.hub
+            self.hub.attach(observer)
+            observer.show()
+        except BaseException:
+            observer.close()
+            observer.deleteLater()
+            raise
+        return observer
+
+    def refreshObserver(self, presentation):
+        observer = self.observer
+        if observer is None or not isValid(observer) or observer.detached:
+            return
+        if observer.hub is not self.hub:
+            self.retireObserver()
+        elif observer.config != presentation:
+            # A real configuration replacement releases its old frozen view,
+            # as in the embedded renderer. A no-op refresh keeps the pin.
+            observer.reload(presentation)
+
+    def refreshJobStatus(self):
+        editor = self.coordinator.editor
+        if editor is None:
+            return
+        from emo_master.ui.presentation.job_status import jobStatusText
+        text = self.observationLabel
+        session = self.session
+        if (session is not None and self.hub is not None and self.hub.session is session
+                and editor.renderer.hub is self.hub and not self.closing
+                and (self.selectedJob is not None or self.backend is not None)):
+            text += '\n' + jobStatusText(session.readSnapshot().job)
+        if self.coverageDetails:
+            text += '\n' + self.coverageDetails
+        if editor.observation.text() != text:
+            editor.observation.setText(text)
 
     def refreshCoverage(self):
         editor = self.coordinator.editor
         if editor is None:
             return
         editor.renderer.setCaptureCoverage(self.coverage)
+        observer = self.observer
+        if (observer is not None and isValid(observer) and not observer.detached
+                and observer.hub is self.hub):
+            observer.setCaptureCoverage(self.coverage)
+        self.coverageDetails = ''
         if self.selectedJob is None:
-            editor.observation.setText(self.observationLabel)
+            self.refreshJobStatus()
             return
         document = self.coordinator.session.document()
         presentation = document.presentation
@@ -320,12 +424,11 @@ class PreviewController(QObject):
                     node = next((node for node in workflow.nodes if node.nodeId == source.nodeId), None) if workflow else None
                     label = f'{workflow.name if workflow else ""}/{node.displayName or node.nodeId if node else key}.{source.port if source else ""}'
                     missing.append(label + '：' + reason)
-        text = self.observationLabel
-        if missing:
-            text += '\n' + '\n'.join(missing)
-        editor.observation.setText(text)
+        self.coverageDetails = '\n'.join(missing)
+        self.refreshJobStatus()
 
     def poll(self):
+        self.refreshJobStatus()
         try:
             kind, value = self.events.get_nowait()
         except queue.Empty:
@@ -359,11 +462,12 @@ class PreviewController(QObject):
         if isinstance(value, dict):
             self.selectedJob = value['metadata']
             self.coverage = value['coverage']
-            label = self._jobLabel(self.selectedJob)
-            self.observationLabel = '只读观看 · 选择时状态：' + label + ' · 执行状态不等于产品 OK/NG'
+            label = self._jobLabel(self.selectedJob, includeStatus=self.coverage is None)
+            prefix = '只读观看 · 选择时状态：' if self.coverage is None else '只读观看 · 已选择任务：'
+            self.observationLabel = prefix + label + ' · 执行状态不等于产品 OK/NG'
             if self.coverage is None:
                 self.observationLabel += '\n旧 Runtime 未提供来源清单；仅允许完整采集摘要匹配的结果'
-            elif getattr(self.selectedJob, 'resources_released', False):
+            elif not self.coverage.enabled or getattr(self.selectedJob, 'resources_released', False):
                 self.observationLabel += '\n任务未保留页面资源（未采集或已释放）；不会重跑任务补取数据'
         else:
             self.selectedJob = None
@@ -394,13 +498,17 @@ class PreviewController(QObject):
         self.onClosed = callback
         if self.busy:
             return
+        self.retireObserver()
+        editor = self.coordinator.editor
+        embedded = editor.renderer if editor else None
         if self.hub:
             for renderer in tuple(self.hub.windows):
+                if renderer is not embedded:
+                    renderer.close()
+                    renderer.deleteLater()
+                    continue
                 self.hub.detach(renderer)
                 renderer.hub = None
-                renderer.setCaptureCoverage(None)
-                renderer.reload(renderer.config)
-                renderer.banner.setText('模拟布局预览 · 已断开实时结果')
             self.hub.deleteLater()
             self.hub = None
         self.coverage = None
@@ -410,6 +518,7 @@ class PreviewController(QObject):
         if self.coordinator.editor:
             renderer = self.coordinator.editor.renderer
             renderer.reload(renderer.config)
+            renderer.setSimulationState(None)
             renderer.banner.setText('模拟布局预览 · 已断开实时结果')
         def close():
             if self.session:

@@ -20,8 +20,8 @@ from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from emo_master.core.presentation.models import Action
 from emo_master.core.project.models import ProjectDocument
-from emo_master.ui.presentation.renderer import RuntimePages
 from examples.p3_selector import Selector
 from examples.runtime_pages_p2 import sampleProject
 from examples.runtime_pages_p3 import sampleProjectP3
@@ -179,8 +179,9 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
             assert displayed[scope].result.status == "COMPLETE", jobFailureDetails(runtime, job, result=displayed[scope].result)
             assertScopeWidgets(renderer, "overview", scope, displayed[scope])
             assert renderer.widgets["overview"][f"overview-{scope}-judge"][1].text() == "NG"
-        floating = RuntimePages(document.presentation, hub=hub)
-        floating.show()
+        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
+        floating = coordinator.preview.observer
+        assert floating is not None and floating.hub is hub
         assert floating.displayed == displayed
         hub.timer.stop()  # Deliberately hold both GUI commits while the real backend advances.
         gate.touch()
@@ -193,6 +194,12 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
             assert next(source.valueJson for source in newer[scope].result.sources if source.sourceId == f"{scope}-judge") == "true"
             assertScopeWidgets(renderer, "overview", scope, displayed[scope])
         clickDetail(renderer, "a")
+        frozen = renderer.frozen
+        # Reopening the existing popup must not refresh the source canvas or
+        # replace its committed NG detail with the background's newer OK.
+        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
+        assert coordinator.preview.observer is floating and renderer.frozen == frozen
+        assertScopeWidgets(renderer, "detail", "a", displayed["a"])
         clickDetail(floating, "b")
         pins = observedSession.pins()
         waitFor(lambda: all(pins.read(view.frozen).state == "PINNED" for view in (renderer, floating)))
@@ -212,6 +219,19 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
         assertScopeWidgets(floating, "detail", "b", newer["b"])
         assert floating.widgets["detail-b"]["detail-b-judge"][1].text() == "OK"
         waitFor(lambda: runtime._presentationOwner.assets.stats()["lease_handles"] == 0 and not pins.entries)
+        renderer.act(Action(type='freeze', resultScopeId='a'))
+        frozen = renderer.frozen
+        waitFor(lambda: pins.read(frozen).state == 'PINNED')
+        retire(floating)
+        floating = None
+        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
+        floating = coordinator.preview.observer
+        assert renderer.frozen == frozen and hub.pins == {renderer: frozen}
+        assert floating.frozen is None and floating.currentPageId == renderer.currentPageId
+        assert floating.config == renderer.config
+        assertScopeWidgets(renderer, 'detail', 'a', newer['a'])
+        QTest.mouseClick(renderer.resumeButton, Qt.LeftButton)
+        waitFor(lambda: runtime._presentationOwner.assets.stats()['lease_handles'] == 0 and not pins.entries)
         waitFor(lambda: runtime.jobRepository.get(job).isTerminal)
         assert runtime.jobRepository.get(job).status == "COMPLETED", jobFailureDetails(runtime, job)
         assert len(runtime.jobRepository.all()) == 1
@@ -284,8 +304,9 @@ def testSimulationAndNormalObserverWindowsHaveNoExecutionDeviceOrCounterEffects(
         threadOwners = tuple(observedSession.threads)
         assert decoded == 1
         for _ in range(10):
-            floating = RuntimePages(document.presentation, hub=coordinator.preview.hub)
-            floating.show()
+            QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
+            floating = coordinator.preview.observer
+            assert floating is not None and floating.hub is coordinator.preview.hub
             assert floating.displayed
             retire(floating)
             assert len(coordinator.preview.hub.windows) == 1

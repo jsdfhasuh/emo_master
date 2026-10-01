@@ -126,6 +126,10 @@ class RuntimePages(QWidget):
         self.status.setTextFormat(Qt.PlainText)
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        self.jobStatus = QLabel('任务执行状态不可用 · 尚无已核验的任务身份')
+        self.jobStatus.setTextFormat(Qt.PlainText)
+        self.jobStatus.setWordWrap(True)
+        layout.addWidget(self.jobStatus)
         controls = QHBoxLayout()
         self.resumeButton = QPushButton("恢复实时")
         self.resumeButton.clicked.connect(self.resumeLive)
@@ -473,9 +477,13 @@ class RuntimePages(QWidget):
             return
         self.lastView = view
         self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
+        from emo_master.ui.presentation.job_status import jobStatusText
+        # Execution remains live even when business values below use a pin.
+        self.jobStatus.setText(jobStatusText(getattr(view, 'job', None)))
         if self.simulationState:
             self.banner.setText('离线模拟 · ' + self.simulationState + ' · 示例状态，不代表真实检测')
             self.status.setText('模拟 · 不读取或写入 Runtime / 计数')
+            self.jobStatus.setText('离线模拟 · 无真实任务执行状态')
         if self.frozen and view.generation != self.frozenGeneration:
             self.resumeLive(submit=False)
         if self.frozen:

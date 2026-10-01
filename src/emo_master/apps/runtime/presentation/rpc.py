@@ -45,7 +45,8 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def Capabilities(self, request, context):
         capabilities = ["snapshot", "subscribe", "explicit_start", "asset_id", "finite_lease",
-                        "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup", "scope_retention"]
+                        "bounded_replay", "project_jobs", "source_coverage", "start_request_lookup", "scope_retention",
+                        "job_status_v1"]
         if self.service.supportsNormalCapture:
             capabilities.extend(["normal_start_capture", "normal_multi_scope", "normal_two_image_lanes"])
             if getattr(self.service.runtime, "supportsLegacySnapshotPolicy", False):
@@ -101,6 +102,26 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def Snapshot(self, request, context):
         return self._snapshot(request, context, incremental=request.replay)
+
+    def GetJob(self, request, context):
+        """Bounded status lookup; observation never acquires execution ownership."""
+        if not all((request.runtime_instance_id, request.project_id, request.job_id)):
+            context.abort(grpc.StatusCode.INVALID_ARGUMENT, "JOB_IDENTITY_REQUIRED")
+        if request.runtime_instance_id != self.service.runtimeInstanceId:
+            context.abort(grpc.StatusCode.FAILED_PRECONDITION, "RESET_REQUIRED")
+        with self.service.lock:
+            job = self.service.runtime.jobRepository.getCurrentSnapshot(request.job_id)
+            if job is None:
+                context.abort(grpc.StatusCode.NOT_FOUND, "JOB_NOT_FOUND")
+            if job.projectId != request.project_id:
+                context.abort(grpc.StatusCode.FAILED_PRECONDITION, "PROJECT_MISMATCH")
+            config = self.service.jobs.get(job.jobId, {})
+            return pb.DisplayJob(runtime_instance_id=self.service.runtimeInstanceId,
+                project_id=job.projectId, job_id=job.jobId, status=job.status,
+                workflow_id=job.workflowId, mode=config.get("identity", {}).get("mode", job.executionMode),
+                capture_enabled=bool(config.get("capture")),
+                resources_released=job.isTerminal and not config
+                and not self.service.runtime.jobSupervisor.ownsJobResources(job.jobId))
 
     def _snapshot(self, request, context, incremental=False):
         if request.job_id not in self.service.jobs:

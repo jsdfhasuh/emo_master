@@ -16,7 +16,7 @@ import grpc
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
 from emo_master.core.presentation.results import ClosedResult
-from emo_master.clients.runtime.view_state import ScopeView, SessionView
+from emo_master.clients.runtime.view_state import JobView, ScopeView, SessionView
 
 
 def decodeResult(wire):
@@ -82,13 +82,27 @@ def decodePng(content):
 
 
 class DisplaySession:
-    def __init__(self, address, jobId, *, imageDemand=False):
+    def __init__(self, address, jobId, *, imageDemand=False, expectedRuntimeInstanceId="", projectId="",
+                 readResults=True):
         if not jobId:
             raise ValueError("an explicitly selected Job is required")
+        if bool(expectedRuntimeInstanceId) != bool(projectId):
+            raise ValueError("Runtime and project identity must be supplied together")
         self.channel = grpc.insecure_channel(address, options=[("grpc.max_receive_message_length", 9 * 1024 * 1024)])
         self.stub = rpc.DisplayServiceStub(self.channel)
         self.jobId = jobId
-        self.instanceId = ""
+        self.instanceId = expectedRuntimeInstanceId
+        self.expectedRuntimeInstanceId = expectedRuntimeInstanceId
+        self.projectId = projectId
+        self.readResults = bool(readResults)
+        self._selectionEpoch = 0
+        self._connectionEpoch = 0
+        self._runtimeMismatch = False
+        self._statusSupported = False
+        self._statusUnimplemented = False
+        self._resultsAvailable = None
+        self.job = (JobView(expectedRuntimeInstanceId, projectId, jobId,
+                           availability="CONNECTING", detail="正在读取任务执行状态") if projectId else None)
         self.cursor = 0
         self._acceptedCursor = 0
         self.lock = threading.RLock()
@@ -150,7 +164,7 @@ class DisplaySession:
                 self.connection, self.connectionDetail, MappingProxyType(scopes),
                 MappingProxyType(dict(self.loading)), MappingProxyType(dict(self.started)),
                 MappingProxyType({scope: ordinal for scope, ordinal in self.expired.items()
-                                  if self.high.get(scope, 0) <= ordinal}))
+                                  if self.high.get(scope, 0) <= ordinal}), self.job)
 
     def setImageDemand(self, consumerId, sourceIds):
         """Replace one local consumer's interest; None explicitly requests all.
@@ -235,9 +249,89 @@ class DisplaySession:
                 self.connection, self.connectionDetail = state, detail
                 self.revision += 1
 
+    def _token(self):
+        return self._selectionEpoch, self._connectionEpoch, self.jobId
+
+    def _current(self, token):
+        return not self.stop.is_set() and not self._runtimeMismatch and token == self._token()
+
+    def _jobUnavailable(self, availability, detail):
+        if not self.projectId:
+            return
+        value = JobView(self.expectedRuntimeInstanceId, self.projectId, self.jobId,
+                        availability=availability, detail=detail)
+        if value != self.job:
+            self.job = value
+            self.revision += 1
+
+    def _clearLive(self):
+        self.generation += 1
+        self.latest.clear()
+        self.high.clear()
+        self.started.clear()
+        self.expired.clear()
+        self.seen.clear()
+        self.loading.clear()
+        self.readyAt.clear()
+        self.imageStates.clear()
+        self._receivedAt.clear()
+        self.cursor = self._acceptedCursor = 0
+        self.revision += 1
+
+    def _resetRequired(self):
+        self._runtimeMismatch = True
+        self._connectionEpoch += 1
+        self.compatible = False
+        self._clearLive()
+        self._jobUnavailable("RESET_REQUIRED", "Runtime 代际已变化，请重新选择任务")
+        self._connection("RESET_REQUIRED", "Runtime 代际已变化，请重新选择任务")
+        if self.stream is not None:
+            self.stream.cancel()
+
+    def _canReadResults(self):
+        return (self.readResults and not self._runtimeMismatch and self._resultsAvailable is not False
+                and (not self._statusSupported or self._resultsAvailable is True))
+
+    def _acceptJob(self, reply, token):
+        with self.lock:
+            if not self._current(token):
+                return
+            if reply.runtime_instance_id != self.expectedRuntimeInstanceId:
+                self._resetRequired()
+                return
+            if reply.project_id != self.projectId or reply.job_id != self.jobId:
+                self._jobUnavailable("INVALID_STATUS", "任务状态身份不匹配")
+                self._clearLive()
+                self._resultsAvailable = False
+                if self.stream is not None:
+                    self.stream.cancel()
+                return
+            if reply.status not in {"ACCEPTED", "STARTING", "RUNNING", "STOPPING", "COMPLETED", "FAILED", "ABORTED"}:
+                self._jobUnavailable("INVALID_STATUS", "Runtime 返回未知执行状态")
+                return
+            value = JobView(reply.runtime_instance_id, reply.project_id, reply.job_id,
+                status=reply.status, availability="AVAILABLE", mode=reply.mode,
+                captureEnabled=reply.capture_enabled, resourcesReleased=reply.resources_released)
+            if value != self.job:
+                self.job = value
+                self.revision += 1
+            available = reply.capture_enabled and not reply.resources_released
+            if not available and self._resultsAvailable is not False:
+                self._clearLive()
+                if self.stream is not None:
+                    self.stream.cancel()
+            self._resultsAvailable = available
+            if not self._canReadResults():
+                self._connection("CONNECTED", "任务执行状态可读；页面来源未采集或资源已释放" if not available
+                                 else "任务执行状态可读；此观察者不读取页面结果")
+
     def _accept(self, snapshot):
         with self.lock:
-            if snapshot.job_id != self.jobId:
+            if (self.stop.is_set() or self._runtimeMismatch or not self.readResults
+                    or self._resultsAvailable is False or snapshot.job_id != self.jobId):
+                return
+            if self.expectedRuntimeInstanceId and snapshot.runtime_instance_id != self.expectedRuntimeInstanceId:
+                self._resetRequired()
                 return
             self._connection("CONNECTED")
             self.revision += 1
@@ -297,81 +391,204 @@ class DisplaySession:
 
     def _receive(self):
         while not self.stop.is_set():
+            with self.lock:
+                if self._runtimeMismatch:
+                    token = None
+                else:
+                    self._connectionEpoch += 1
+                    token = self._token()
+                    self.compatible = False
+                    self._jobUnavailable("CONNECTING", "正在核验任务连接")
+            if token is None:
+                self.stop.wait(.5)
+                continue
+            stream = None
             try:
                 capabilities = self.stub.Capabilities(pb.DisplayEmpty(), timeout=.5)
-                if capabilities.protocol_version != "1.0" or not {"snapshot", "subscribe", "asset_id"}.issubset(capabilities.capabilities):
-                    self.compatible = False
-                    self._connection("INCOMPATIBLE", "服务端不支持正式展示协议")
+                with self.lock:
+                    if not self._current(token):
+                        continue
+                    if (capabilities.protocol_version != "1.0"
+                            or not {"snapshot", "subscribe", "asset_id"}.issubset(capabilities.capabilities)):
+                        self._jobUnavailable("UNAVAILABLE", "服务端不支持正式展示协议")
+                        self._connection("INCOMPATIBLE", "服务端不支持正式展示协议")
+                        compatible = False
+                    elif not capabilities.runtime_instance_id or (self.expectedRuntimeInstanceId
+                            and capabilities.runtime_instance_id != self.expectedRuntimeInstanceId):
+                        self._resetRequired()
+                        compatible = False
+                    else:
+                        if self.instanceId and capabilities.runtime_instance_id != self.instanceId:
+                            self._clearLive()
+                            self.stats["resets"] += 1
+                        self.instanceId = capabilities.runtime_instance_id
+                        self.compatible = compatible = True
+                        self._statusSupported = (bool(self.projectId) and not self._statusUnimplemented
+                                                 and "job_status_v1" in capabilities.capabilities)
+                        if not self._statusSupported:
+                            self._jobUnavailable("UNAVAILABLE", "服务端未提供可核验的实时任务状态")
+                        if not self.readResults:
+                            self._connection("CONNECTED", "只读任务连接；不读取页面结果")
+                if not compatible:
                     self.stop.wait(.5)
                     continue
-                self.compatible = True
-                with self.lock:
-                    if self.instanceId and capabilities.runtime_instance_id != self.instanceId:
-                        self.generation += 1
-                        self.latest.clear()
-                        self.high.clear()
-                        self.started.clear()
-                        self.expired.clear()
-                        self.seen.clear()
-                        self.loading.clear()
-                        self.readyAt.clear()
-                        self.imageStates.clear()
-                        self._receivedAt.clear()
-                        self.cursor = 0
-                        self._acceptedCursor = 0
-                        self.instanceId = capabilities.runtime_instance_id
-                        self.stats["resets"] += 1
-                request = pb.DisplayRequest(runtime_instance_id=self.instanceId, job_id=self.jobId, after_cursor=self.cursor, replay=True)
-                # Periodic snapshot also recovers a lost final notification.
-                self._accept(self.stub.Snapshot(request, timeout=.5))
-                request.runtime_instance_id, request.after_cursor = self.instanceId, self.cursor
-                request.replay = False
-                self.stream = self.stub.Subscribe(request)
-                for snapshot in self.stream:
-                    self._accept(snapshot)
-                    if self.stop.is_set():
+                # Status-only observers keep this existing worker idle. The
+                # health worker owns the only status call and can enable reads
+                # only within the observer's original readResults permission.
+                while not self.stop.is_set():
+                    with self.lock:
+                        current, read = self._current(token), self._canReadResults()
+                    if not current or read:
                         break
-            except grpc.RpcError as error:
-                if not self.stop.is_set():
-                    self._connection(error.code().name, error.details() or "连接失效")
-                if error.code() not in (grpc.StatusCode.DEADLINE_EXCEEDED, grpc.StatusCode.CANCELLED):
-                    self.errors.append((error.code().name, error.details()))
                     self.stop.wait(.05)
+                with self.lock:
+                    if not self._current(token):
+                        continue
+                    generation = self.generation
+                    request = pb.DisplayRequest(runtime_instance_id=self.instanceId, job_id=self.jobId,
+                                                after_cursor=self.cursor, replay=True)
+                snapshot = self.stub.Snapshot(request, timeout=.5)
+                with self.lock:
+                    if not self._current(token) or not self._canReadResults() or generation != self.generation:
+                        continue
+                    self._accept(snapshot)
+                    if not self._current(token):
+                        continue
+                    request.runtime_instance_id, request.after_cursor = self.instanceId, self.cursor
+                    request.replay = False
+                    stream = self.stub.Subscribe(request)
+                    self.stream = stream
+                for snapshot in stream:
+                    with self.lock:
+                        if not self._current(token) or not self._canReadResults():
+                            break
+                        self._accept(snapshot)
+            except grpc.RpcError as error:
+                with self.lock:
+                    if self._current(token):
+                        # Resource release cancels our metadata stream locally.
+                        if error.code() != grpc.StatusCode.CANCELLED or self._canReadResults():
+                            self._connection(error.code().name, error.details() or "连接失效")
+                            self._jobUnavailable("UNAVAILABLE", "连接失效，任务执行状态不可用")
+                        if error.code() not in (grpc.StatusCode.DEADLINE_EXCEEDED, grpc.StatusCode.CANCELLED):
+                            self.errors.append((error.code().name, error.details()))
+                        if error.code() == grpc.StatusCode.NOT_FOUND and self._statusSupported:
+                            self._clearLive()
+                            self._resultsAvailable = False
+                        self.compatible = False
+                        self._connectionEpoch += 1
+                self.stop.wait(.05)
             except (ValueError, TypeError) as error:
-                self._connection("INVALID_RESULT", str(error))
-                self.errors.append(("INVALID_RESULT", str(error)))
+                with self.lock:
+                    if self._current(token):
+                        self._connection("INVALID_RESULT", str(error))
+                        self.errors.append(("INVALID_RESULT", str(error)))
                 self.stop.wait(.05)
             finally:
-                if self.stream is not None:
-                    self.stream.cancel()
+                if stream is not None:
+                    stream.cancel()
+                    with self.lock:
+                        if self.stream is stream:
+                            self.stream = None
+
+    def _healthJob(self, token):
+        with self.lock:
+            if not self._current(token) or not self._statusSupported:
+                return
+            request = pb.DisplayJobRequest(runtime_instance_id=self.expectedRuntimeInstanceId,
+                                           project_id=self.projectId, job_id=self.jobId)
+        try:
+            self._acceptJob(self.stub.GetJob(request, timeout=.5), token)
+        except grpc.RpcError as error:
+            with self.lock:
+                if not self._current(token):
+                    return
+                detail = error.details() or "任务执行状态不可用"
+                if error.code() == grpc.StatusCode.UNIMPLEMENTED:
+                    self._statusUnimplemented = True
+                    self._statusSupported = False
+                    self._jobUnavailable("UNAVAILABLE", "服务端未实现实时任务状态读取")
+                elif error.code() == grpc.StatusCode.FAILED_PRECONDITION and detail == "RESET_REQUIRED":
+                    self._resetRequired()
+                elif error.code() in (grpc.StatusCode.NOT_FOUND, grpc.StatusCode.FAILED_PRECONDITION):
+                    state = "NOT_FOUND" if error.code() == grpc.StatusCode.NOT_FOUND else "INVALID_STATUS"
+                    self._jobUnavailable(state, detail)
+                    if self._resultsAvailable is not False:
+                        self._clearLive()
+                    self._resultsAvailable = False
+                    if self.stream is not None:
+                        self.stream.cancel()
+                else:
+                    self._jobUnavailable("UNAVAILABLE", error.code().name + ": " + detail)
+                    if not self._canReadResults():
+                        self._connection(error.code().name, detail)
+        except (ValueError, TypeError, AttributeError) as error:
+            with self.lock:
+                if self._current(token):
+                    self._jobUnavailable("INVALID_STATUS", str(error))
 
     def _health(self):
         while not self.stop.wait(.5):
-            if not self.compatible:
-                continue
             with self.lock:
+                if not self.compatible or self._runtimeMismatch:
+                    continue
+                token = self._token()
+                checkConnection = not self._statusSupported and not self._canReadResults()
+            if checkConnection:
+                self._healthCapabilities(token)
+            self._healthJob(token)
+            with self.lock:
+                if not self._current(token) or not self._canReadResults():
+                    continue
                 generation = self.generation
                 request = pb.DisplayRequest(runtime_instance_id=self.instanceId,
                     job_id=self.jobId, after_cursor=self.cursor, replay=True)
             try:
                 snapshot = self.stub.Snapshot(request, timeout=.5)
                 with self.lock:
-                    if generation == self.generation:
+                    if self._current(token) and generation == self.generation and self._canReadResults():
                         self._accept(snapshot)
             except grpc.RpcError as error:
-                if generation != self.generation:
-                    continue
-                if not self.stop.is_set():
+                with self.lock:
+                    if not self._current(token) or generation != self.generation:
+                        continue
                     self._connection(error.code().name, error.details() or "连接失效")
-                if error.code() == grpc.StatusCode.NOT_FOUND:
-                    with self.lock:
-                        self.latest.clear()
-                if not self.stop.is_set():
+                    if error.code() == grpc.StatusCode.NOT_FOUND:
+                        self._clearLive()
+                        if self._statusSupported:
+                            self._resultsAvailable = False
+                            if self.stream is not None:
+                                self.stream.cancel()
                     self.errors.append((error.code().name, error.details()))
-
             except (ValueError, TypeError) as error:
-                if generation == self.generation:
-                    self._connection("INVALID_RESULT", str(error))
+                with self.lock:
+                    if self._current(token) and generation == self.generation:
+                        self._connection("INVALID_RESULT", str(error))
+
+    def _healthCapabilities(self, token):
+        """Old status-only peers still need bounded transport/identity health."""
+        try:
+            reply = self.stub.Capabilities(pb.DisplayEmpty(), timeout=.5)
+            with self.lock:
+                if not self._current(token):
+                    return
+                if self.expectedRuntimeInstanceId and reply.runtime_instance_id != self.expectedRuntimeInstanceId:
+                    self._resetRequired()
+                elif (reply.protocol_version != "1.0"
+                        or not {"snapshot", "subscribe", "asset_id"}.issubset(reply.capabilities)):
+                    self._connection("INCOMPATIBLE", "服务端不支持正式展示协议")
+                    self._jobUnavailable("UNAVAILABLE", "服务端不支持正式展示协议")
+                else:
+                    if self.instanceId != reply.runtime_instance_id:
+                        self._clearLive()
+                        self.instanceId = reply.runtime_instance_id
+                        self.stats["resets"] += 1
+                    self._connection("CONNECTED", "只读连接健康；不读取页面结果")
+        except grpc.RpcError as error:
+            with self.lock:
+                if self._current(token):
+                    self._connection(error.code().name, error.details() or "连接失效")
+                    self._jobUnavailable("UNAVAILABLE", "连接失效，任务执行状态不可用")
 
     def _readImage(self, result, image, *, beforeDecode=None):
         reply = self.stub.ReadAsset(pb.DisplayAssetRequest(runtime_instance_id=result.identity.runtimeInstanceId,
@@ -469,29 +686,38 @@ class DisplaySession:
             except Exception as error:
                 self.errors.append(("OBSERVER_FAILED", str(error)))
 
-    def selectJob(self, jobId):
+    def selectJob(self, jobId, *, expectedRuntimeInstanceId=None, projectId=None, readResults=True):
         if not jobId:
             raise ValueError("an explicitly selected Job is required")
         with self.lock:
+            if self.stop.is_set():
+                raise ValueError("display session is closed")
+            instance = self.expectedRuntimeInstanceId if expectedRuntimeInstanceId is None else expectedRuntimeInstanceId
+            project = self.projectId if projectId is None else projectId
+            if bool(instance) != bool(project) or (self.projectId and not project):
+                raise ValueError("Runtime and project identity must be supplied together")
+            if instance != self.expectedRuntimeInstanceId:
+                self._statusUnimplemented = False
+            self.expectedRuntimeInstanceId, self.projectId = instance, project
+            self.instanceId = instance or self.instanceId
+            self.readResults = bool(readResults)
+            self._selectionEpoch += 1
+            self._runtimeMismatch = False
+            self.compatible = False
+            self._statusSupported = False
+            self._resultsAvailable = None
             self.jobId = jobId
-            self.cursor = 0
-            self._acceptedCursor = 0
-            self.generation += 1
-            self.latest.clear()
-            self.high.clear()
-            self.started.clear()
-            self.expired.clear()
-            self.seen.clear()
-            self.loading.clear()
-            self.readyAt.clear()
-            self.imageStates.clear()
-            self._receivedAt.clear()
+            self._clearLive()
+            self._jobUnavailable("CONNECTING", "正在读取所选任务执行状态")
             self._connection("CONNECTING", "切换指定任务")
         if self.stream is not None:
             self.stream.cancel()
 
     def close(self):
-        self.stop.set()
+        with self.lock:
+            self.stop.set()
+            self._selectionEpoch += 1
+            self._jobUnavailable("UNAVAILABLE", "会话已关闭")
         if self.stream is not None:
             self.stream.cancel()
         pinError = None

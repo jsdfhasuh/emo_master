@@ -1,7 +1,8 @@
 """Opt-in image demand over real normal/presentation loopback RPCs."""
 from collections import Counter
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from copy import deepcopy
+import json
 from pathlib import Path
 import threading
 from types import SimpleNamespace
@@ -21,6 +22,7 @@ from emo_master.apps.runtime.presentation.service import PresentationService
 from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.presentation.test_network import until
+from tests.runtime.presentation.first_result_diagnostics import firstResultFailureEvidence
 from tests.runtime.runtime_test_utils import waitForTerminal
 
 
@@ -93,6 +95,40 @@ def latest(session):
 def idle(session):
     with session.lock:
         return not session._scheduled and session.pending.empty()
+
+
+def testFirstResultFailureEvidenceReadsRealBackend(tmp_path, monkeypatch, capsys):
+    from tests.runtime.presentation.first_result_diagnostics import PREFIX, MAX_OUTPUT_BYTES
+    with demandBackend(tmp_path, monkeypatch) as backend:
+        session = DisplaySession(backend.address, backend.jobId, imageDemand=True)
+        try:
+            scope = until(lambda: latest(session))
+            key = scope.result.identity.resultKey
+            original = AssertionError('synthetic first-result failure evidence')
+            # This checks real field shapes, not an actual timeout. Hold each
+            # existing RLock with a bounded test-only acquisition so legitimate
+            # lock contention cannot make this schema check intermittently unknown.
+            # The diagnostic only reenters these locks; no RPC/wait/view read here.
+            with ExitStack() as held:
+                for lock in (backend.presentation.lock, backend.presentation.store.lock, session.lock):
+                    assert lock.acquire(timeout=1)
+                    held.callback(lock.release)
+                with pytest.raises(AssertionError) as caught:
+                    with firstResultFailureEvidence(backend, session):
+                        raise original
+            assert caught.value is original
+            lines = [line for line in capsys.readouterr().out.splitlines() if line.startswith(PREFIX)]
+            assert len(lines) == 1 and len((lines[0] + '\n').encode('utf-8')) <= MAX_OUTPUT_BYTES
+            value = json.loads(lines[0][len(PREFIX):])
+            assert value['identity'] == {'runtime': backend.runtime.runtimeInstanceId,
+                'project': backend.project.project.projectId, 'job': backend.jobId, 'scope': 'root'}
+            assert all('unknown' not in value[part] for part in ('producer', 'server', 'session'))
+            assert value['producer']['root_ordinal'] == 1
+            assert value['server']['latest']['resultKey'] == value['session']['latest']['resultKey'] == key
+            assert value['session']['stats']['received'] >= 1
+            assert value['job_details']['job'] == backend.jobId
+        finally:
+            session.close()
 
 
 @pytest.mark.parametrize('mode', ['normal', 'presentation'])
@@ -366,7 +402,8 @@ def testQueuedPinAndThousandDemandChangesReleaseEveryAdmission(tmp_path, monkeyp
             assert release.wait(5)
             return original(content)
         try:
-            until(lambda: latest(session))
+            with firstResultFailureEvidence(backend, session):
+                until(lambda: latest(session))
             scope = latest(session)
             monkeypatch.setattr(module, 'decodePng', gated)
             session.setImageDemand('gui', {'image'})
@@ -421,7 +458,8 @@ def testAggregatePinReservationRejectsBeforeSecondDecode(tmp_path, monkeypatch):
             assert release.wait(5)
             return decode(content)
         try:
-            until(lambda: latest(session))
+            with firstResultFailureEvidence(backend, session):
+                until(lambda: latest(session))
             scope = latest(session)
             pins = session.pins()
             # Scale down only the test's aggregate capacity; the real decoder's
@@ -459,7 +497,8 @@ def testLeaseReadyPinGetsNextFreeSlotBeforeMoreLiveAdmission(tmp_path, monkeypat
             assert release.wait(5)
             return decode(content)
         try:
-            until(lambda: latest(session))
+            with firstResultFailureEvidence(backend, session):
+                until(lambda: latest(session))
             scope = latest(session)
             monkeypatch.setattr(module, 'decodePng', gated)
             session.setImageDemand('gui', {'image'})

@@ -72,8 +72,9 @@ jobs:
         env:
           ORIGINAL_TEST_STEP: ${{ steps.observed_tests.outcome }}
         run: |
-          import json, os
+          import json, os, sys
           from pathlib import Path
+          sys.path.insert(0, os.environ["GITHUB_WORKSPACE"])
           from scripts.r3_sqlite_failure_diagnostics import validDetailScope
           evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-sqlite-failure-diagnostics.json"
           if not evidence.exists():

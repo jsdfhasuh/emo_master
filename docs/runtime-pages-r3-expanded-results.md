@@ -643,3 +643,59 @@ Job内存限制和当前进程BelowNormal优先级；设置失败即INVALID，�
 最终整合完整云端CI为1929 PASS、1 SKIP、27个subtest通过（419.94秒），全部静态
 检查通过、退出0；Python检查来源和workflow前后摘要一致。Windows原生资源readback
 及细分对照仍待该提交的GitHub诊断执行，不能以此覆盖历史性能FAIL。
+
+## 62b715e：远端Windows证据与有界IPC恢复缺口
+
+该头普通CI已经终态：push/PR Ubuntu均1929 PASS、1 SKIP、27 subtest通过；
+push Windows为1928 PASS、1 FAIL、1 SKIP，PR Windows为1927 PASS、2 FAIL、
+1 SKIP，均27 subtest通过。两Windows都在A18原严格检查新增2个native线程；PR还
+出现正常Job终态超时，失败快照bridge位于SQLite commit，但event sequence继续到17、
+heartbeat仍在，不能解释为某一次commit全程停滞。原断言和持久化保证没有放宽。
+见[push CI](https://github.com/jsdfhasuh/emo_master/actions/runs/36820841252)及
+[PR CI](https://github.com/jsdfhasuh/emo_master/actions/runs/36820844973)。
+
+[独立Windows credit诊断](https://github.com/jsdfhasuh/emo_master/actions/runs/36820843603)
+保留INVALID/NOT_ASSESSED，报告观察也为INVALID。原生聚合4GiB/BelowNormal设置、
+读回和关闭通过，峰值Job commit为924282880字节；四Job完成并退休。完整886086字节
+报告按内容SHA与分块终标记重组。两个on臂各96次真实acquire成功、96个export，adopt
+全96样本（含预热）的p95约9.1/10.5ms、max11.3/13.0ms；没有复现本机129–172ms
+慢段，不能据此归因磁盘、GIL，或覆盖本机失败。
+
+首off臂实际执行96个detect、正式88个全成功，但消费者只观察81个ClosedResult，
+为ordinal7、8、18–96；8在终态附近以双源IPC_ERROR出现，detail确为该常量。
+其他三个臂都观察96个result，但有GUI漏帧。首臂StartJob reply到观察循环5.525秒，
+其他臂约0.26秒；脚本在Job启动后才构造客户端和窗口，此处属于需要区分的冷启动因素，
+不能直接认定某个Qt调用或GIL是阻塞源。晚完成图像有的只在下一metadata前保留约
+1–2ms，16ms轮询没有取到；另一些在下一metadata到达后才解码，原防陈旧逻辑拒绝应用。
+
+不改生产的云端门控复现已经得到相同关键签名：原16槽mailbox的第16包为8.open，
+8.seal遇Full，9–17无scope credit，因此96个成功workflow只调用87次image capture。
+排空后返回7个credit，后续恢复，8保留到原terminal fence并得到双源IPC_ERROR。
+该复现导出80个PNG，不能冒充解释了远端全部77个export或81个观察结果。公开admission
+接受的8scope测量/准备路径还证明全部8个credit可在丢seal后失去后续恢复；正常StartJob
+不启用measure，不能把这一全耗尽结论套到正常单scope。即时预算拒绝是原契约允许的；
+需要修复的是已接受scope的有限封口/恢复所有权及可选timing在失败后的有界性。
+
+修复将已结束scope移入有限pending seal，保留原sources、terminal、sealedAt和
+scopeEndedNs；仅Full允许在后续begin/end非阻塞重试。成功发出后删除，其他异常
+按有歧义的发送处理、不重发且沿原诊断传播。parent仍唯一归还credit，无后续边界
+时仍由原terminal/force-kill fence兜底。可选timing先全部移除，seal优先，真实timing
+丢失沿原有界错误路径计一次，纯seal重试不伪造新拒绝。提前UNKNOWN fence归还共享
+credit时，显式本地open+pending<=8上限仍生效；旧实现的8增长到16反例已先验证。
+原16槽、图像预算、.5秒期限及晚旧结果保护不变。18个新恢复场景连同相邻回归73项
+通过31.10秒，不能据此宣称无损采集；原门控场景仍有9次立即拒绝。
+
+另补4处测试RuntimeService finally close（image_pipeline一处、MVP smoke三处）。
+修前4项测试虽通过，pytest返回即仍有4个open/ready idle连接和8条writer/maintenance
+线程；修后同4项通过且立即仅MainThread。12条失败路径验证正文/原断言/close异常
+继续失败，AST确认15个原断言与66个原调用不变。此为确证测试owner遗漏，仍不等于
+A18 native+2的根因证明。
+
+一次新增“pytest返回后owner清点”启动器因缺少spawn主入口保护而递归执行，已强制
+停止并标INVALID，不能将其失败标记归产品或称正常owner退休通过。补标准主入口保护
+后的单个真实spawn用例通过，返回即仅MainThread；后续完整检查同时记录产品来源与
+外部启动器的前后hash，清点只在全部pytest返回后执行，不在用例期间插入探针。
+修正后最终完整云端pytest为1947 PASS、1 SKIP、27 subtest通过（424.53秒），
+原proto/Ruff/mypy命令全通过、退出0、产品和两个启动器hash前后一致。pytest返回的
+即时清点仅MainThread、0个活RuntimeService；没有GC、sleep或诊断补close。该结果
+只闭合Python测试owner验证，Windows native线程及性能仍待精确提交的远端检查。

@@ -1,6 +1,7 @@
 """Worker-side bounded capture, after output validation and before routing."""
 import json
 from multiprocessing.shared_memory import SharedMemory
+import queue
 import time
 from uuid import uuid4
 
@@ -29,6 +30,10 @@ class ResultCollector:
         self.plan = json.loads(config["plan"])
         self.emit = emit
         self.open = {}
+        # These retain their original scope credits until the parent closes them.
+        # Admission also bounds local ownership if an IPC-error fence returns
+        # parent credits before this producer has retired its local items.
+        self.pendingSeals = {}
         self.ordinals = {}
         self.frames = FrameTracker(config.get("versions", {}))
         self.telemetry = {}
@@ -38,6 +43,7 @@ class ResultCollector:
             self.frames.observe(node, inputs, outputs)
 
     def begin(self, context):
+        self._flushSeals()
         path = [{"nodeId": n, "relation": r} for n, r in context.callPath]
         for scopeId, scope in self.plan["scopes"].items():
             if scope["scopeWorkflowId"] != context.workflowId or scope["callPath"] != path:
@@ -49,7 +55,8 @@ class ResultCollector:
             ordinal = self.ordinals.get(scopeId, 0) + 1
             self.ordinals[scopeId] = ordinal
             self.config["ordinals"][self.config["scopeIds"].index(scopeId)] = ordinal
-            if not self.config["credits"].acquire(False):
+            if (len(self.open) + len(self.pendingSeals) >= 8
+                    or not self.config["credits"].acquire(False)):
                 # Shared counter is bounded state; no unbounded rejected-event queue.
                 with self.config["rejected"].get_lock():
                     self.config["rejected"].value += 1
@@ -158,17 +165,43 @@ class ResultCollector:
                     if source["nodeId"] == context.callerNodeId:
                         item["values"][key] = unavailable(key, "BRANCH_SKIPPED" if eventType == "node.skipped" else "NODE_FAILED")
 
+    def _flushSeals(self):
+        for key in list(self.pendingSeals):
+            try:
+                self.emit(self.pendingSeals[key])
+            except queue.Full:
+                # Full occurs before mailbox publication. Retry at a later
+                # capture boundary without waiting or counting a new rejection.
+                return False
+            except Exception:
+                # Other IPC failures may have partially published the packet;
+                # never retry ambiguous delivery. The original parent fence owns it.
+                del self.pendingSeals[key]
+                raise
+            del self.pendingSeals[key]
+        return True
+
     def end(self, context, terminal):
-        for address in list(self.telemetry):
-            if address[0] == context.workflowRunId:
-                self.emit({"eventType": "display.timing", "startNs": self.telemetry.pop(address),
-                           "endNs": time.perf_counter_ns(), "scope": address[1], "invocation": address[0]})
+        sealedAt, scopeEndedNs = time.monotonic(), time.perf_counter_ns()
+        # Remove every completed-invocation timing before an optional send can
+        # fail. Timing is created even for rejected captures and cannot backlog.
+        timings = [{"eventType": "display.timing", "startNs": self.telemetry.pop(address),
+                    "endNs": scopeEndedNs, "scope": address[1], "invocation": address[0]}
+                   for address in list(self.telemetry) if address[0] == context.workflowRunId]
         for address in list(self.open):
             if address[0] != context.workflowRunId:
                 continue
             item = self.open.pop(address)
             code = {"COMPLETED": "SOURCE_MISSING", "FAILED": "NODE_FAILED", "CANCELLED": "EXECUTION_CANCELLED"}[terminal]
-            values = [item["values"].get(key, unavailable(key, code)) for key in item["expected"]]
-            self.emit({"eventType": "display.seal", "key": item["identity"]["resultKey"],
-                       "sources": values, "terminal": terminal, "sealedAt": time.monotonic(),
-                       "scopeEndedNs": time.perf_counter_ns()})
+            values = [dict(item["values"].get(key, unavailable(key, code))) for key in item["expected"]]
+            key = item["identity"]["resultKey"]
+            self.pendingSeals[key] = {"eventType": "display.seal", "key": key,
+                "sources": values, "terminal": terminal, "sealedAt": sealedAt, "scopeEndedNs": scopeEndedNs}
+        if not self._flushSeals():
+            if timings:
+                # Seals retain ownership; optional timings are actually lost.
+                # Preserve the existing bounded capture-error diagnostic path.
+                raise queue.Full
+            return
+        for timing in timings:
+            self.emit(timing)

@@ -387,3 +387,178 @@ def testAliveBridgeRetainsTerminalWorkerOwnershipUntilFinalCallback() -> None:
     supervisor.bridgeStopped("job-stop")
     assert not supervisor.ownsJobResources("job-stop")
     assert process.closed and retired == ["job-stop"]
+
+
+class _ClosableQueue(queue.Queue):
+    def __init__(self) -> None:
+        super().__init__()
+        self.closeCount = 0
+
+    def close(self) -> None:
+        self.closeCount += 1
+
+
+@pytest.mark.parametrize("action", ["force-stop", "shutdown", "process-exited"])
+def testExternalReapDoesNotJoinBridgeWaitingForSupervisorLock(monkeypatch, action) -> None:
+    supervisor, repository, _, process = _supervisor()
+    eventQueue = _ClosableQueue()
+    supervisor._handles["job-stop"] = (process, Event(), eventQueue)
+    bridge = EventBridge(supervisor, "job-stop", process, eventQueue, Event())
+    supervisor._bridges["job-stop"] = bridge
+    supervisor.maxConcurrentJobs = 1
+    retired = []
+    supervisor.retiredCallback = retired.append
+    finalizerEntered = Event()
+    bridgeStopped = supervisor.bridgeStopped
+
+    def observeFinalizer(jobId):
+        finalizerEntered.set()
+        bridgeStopped(jobId)
+
+    monkeypatch.setattr(supervisor, "bridgeStopped", observeFinalizer)
+    join = bridge.join
+    joins = []
+
+    def observeJoin(timeout=None):
+        joins.append(timeout)
+        join(timeout)
+
+    monkeypatch.setattr(bridge, "join", observeJoin)
+    # The real bridge reaches its final hook while the caller owns the lock.
+    # Join observations, rather than elapsed-time limits, detect the old wait.
+    bridge.requestStop()
+    try:
+        with supervisor._lock:
+            bridge.start()
+            assert finalizerEntered.wait(2)
+            if action == "force-stop":
+                assert supervisor.stopJob("job-stop", "force") == "ABORTED"
+            elif action == "shutdown":
+                supervisor.shutdown()
+            else:
+                process.alive = False
+                repository.update("job-stop", status="COMPLETED")
+                supervisor.processExited("job-stop", 0)
+            assert repository.get("job-stop").isTerminal
+            assert bridge.is_alive()
+            assert supervisor.ownsJobResources("job-stop")
+            assert supervisor.getProcess("job-stop") is process
+            assert not process.closed and eventQueue.closeCount == 0 and retired == []
+            with pytest.raises(RuntimeError, match="MAX_CONCURRENT"):
+                supervisor.startJob(JobProcessSpec("another-job", "project.json", "main"))
+            assert joins == [], "external reap joined a finalizer blocked on its own lock"
+    finally:
+        join(2)
+    assert not bridge.is_alive()
+    assert not supervisor.ownsJobResources("job-stop")
+    assert process.closed and eventQueue.closeCount == 1 and retired == ["job-stop"]
+    supervisor.bridgeStopped("job-stop")
+    assert eventQueue.closeCount == 1 and retired == ["job-stop"]
+
+
+def testExternalReapRetainsOwnersWhileRealBridgeStillReadsQueue(monkeypatch) -> None:
+    supervisor, repository, _, process = _supervisor()
+    reading, release = Event(), Event()
+
+    class GatedQueue(_ClosableQueue):
+        def get(self, timeout=None):
+            reading.set()
+            assert release.wait(5)
+            assert self.closeCount == 0 and not process.closed
+            raise queue.Empty
+
+    eventQueue = GatedQueue()
+    supervisor._handles["job-stop"] = (process, Event(), eventQueue)
+    bridge = EventBridge(supervisor, "job-stop", process, eventQueue, Event())
+    supervisor._bridges["job-stop"] = bridge
+    retired = []
+    supervisor.retiredCallback = retired.append
+    join = bridge.join
+    joins = []
+
+    def observeJoin(timeout=None):
+        joins.append(timeout)
+        join(timeout)
+
+    monkeypatch.setattr(bridge, "join", observeJoin)
+    try:
+        bridge.start()
+        assert reading.wait(2)
+        assert supervisor.stopJob("job-stop", "force") == "ABORTED"
+        assert repository.get("job-stop").isTerminal
+        assert bridge.stopEvent.is_set() and bridge.is_alive()
+        assert supervisor.ownsJobResources("job-stop")
+        assert not process.closed and eventQueue.closeCount == 0 and retired == []
+        assert joins == [], "external reap joined a bridge that still owns queue I/O"
+        # The explicit outside-lock wait remains bounded without retiring live I/O.
+        supervisor.waitForRetirement(timeoutSeconds=0)
+        assert joins == [0]
+        assert supervisor.ownsJobResources("job-stop")
+        assert not process.closed and eventQueue.closeCount == 0 and retired == []
+    finally:
+        release.set()
+        supervisor.waitForRetirement()
+        join(2)
+    assert not bridge.is_alive()
+    assert not supervisor.ownsJobResources("job-stop")
+    assert process.closed and eventQueue.closeCount == 1 and retired == ["job-stop"]
+
+
+def testFailedStartDoesNotJoinLiveBridgeOrReleaseItsOwners(monkeypatch) -> None:
+    supervisor, _, _, process = _supervisor()
+    supervisor._handles.clear()
+    supervisor._bridges.clear()
+    supervisor.maxConcurrentJobs = 1
+    eventQueue = _ClosableQueue()
+    context = _FakeProcessContext(process)
+    monkeypatch.setattr(context, "Queue", lambda: eventQueue)
+    supervisor._context = context
+    finalizerEntered = Event()
+    bridgeStopped = supervisor.bridgeStopped
+    retired = []
+    supervisor.retiredCallback = retired.append
+
+    def observeFinalizer(jobId):
+        finalizerEntered.set()
+        bridgeStopped(jobId)
+
+    monkeypatch.setattr(supervisor, "bridgeStopped", observeFinalizer)
+    bridges = []
+    joins = []
+
+    class StartedFailingBridge(EventBridge):
+        def start(self):
+            bridges.append(self)
+            self.requestStop()
+            super().start()
+            assert finalizerEntered.wait(2)
+            raise RuntimeError("bridge failed after thread started")
+
+        def join(self, timeout=None):
+            joins.append(timeout)
+            super().join(timeout)
+
+    monkeypatch.setattr(supervisorModule, "EventBridge", StartedFailingBridge)
+    try:
+        with supervisor._lock:
+            with pytest.raises(RuntimeError, match="failed after thread started"):
+                supervisor.startJob(JobProcessSpec("job-stop", "project.json", "main"))
+            assert bridges[0].is_alive()
+            assert supervisor._bridges["job-stop"] is bridges[0]
+            assert supervisor.getProcess("job-stop") is process
+            assert process.terminated and not process.closed
+            assert eventQueue.closeCount == 0 and retired == []
+            assert "job-stop" in supervisor._heartbeatCells
+            assert "job-stop" in supervisor._heartbeatMonotonic
+            with pytest.raises(RuntimeError, match="MAX_CONCURRENT"):
+                supervisor.startJob(JobProcessSpec("another-job", "project.json", "main"))
+            assert joins == [], "failed-start cleanup joined a finalizer blocked on its own lock"
+    finally:
+        for bridge in bridges:
+            Thread.join(bridge, 2)
+    assert not bridges[0].is_alive()
+    assert not supervisor.ownsJobResources("job-stop")
+    assert not supervisor._heartbeatCells and not supervisor._heartbeatMonotonic
+    assert process.closed and eventQueue.closeCount == 1 and retired == ["job-stop"]
+    supervisor.bridgeStopped("job-stop")
+    assert eventQueue.closeCount == 1 and retired == ["job-stop"]

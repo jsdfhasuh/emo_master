@@ -621,12 +621,9 @@ class JobSupervisor:
                     self._bridges[jobId] = bridge
                 return
         if bridge is not None and bridge is not threading.current_thread():
-            if getattr(bridge, "ident", None) is not None:
-                try:
-                    bridge.join(timeout=1.0)
-                except BaseException:
-                    pass
             if getattr(bridge, "is_alive", lambda: False)():
+                # startJob holds the lock needed by bridgeStopped. Let that
+                # final hook retire the owners after startup failure unwinds.
                 if process is not None:
                     self._handles[jobId] = (process, cancelEvent, eventQueue)
                 self._bridges[jobId] = bridge
@@ -660,13 +657,11 @@ class JobSupervisor:
         if bridge is not None and bridge is not threading.current_thread():
             try:
                 bridge.requestStop()
-                if getattr(bridge, "ident", None) is not None:
-                    bridge.join(timeout=1.0)
             except BaseException:
                 pass
             if getattr(bridge, "is_alive", lambda: False)():
-                # It may be waiting for this lock in its final callback. The
-                # bridge's finally/bridgeStopped hook retries after lock release.
+                # Never join under this lock: bridgeStopped needs it to finish.
+                # Its final hook retries retirement after lock release.
                 # Keep the process, IPC, quota and workspace until then.
                 return
         # Current EventBridge invokes processExited/bridgeStopped as its final

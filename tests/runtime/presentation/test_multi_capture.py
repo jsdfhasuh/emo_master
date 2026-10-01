@@ -145,7 +145,9 @@ def testTwoExplicitDualImageJobsStayWithinRuntimeBudget(channel, tmp_path):
     first = loadAndStart(channel, tmp_path, project)
     second = start(channel, project)
     assert first != second
-    assert all(results(channel, job)[0].status == "COMPLETE" for job in (first, second))
+    for job in (first, second):
+        result = results(channel, job)[0]
+        assert result.status == "COMPLETE", jobFailureDetails(channel.runtime, job, result=result)
     assert len(channel.exporter.slots) == 2
     assert channel.resourceStats()["shared_capacity"] == 16 * MIB
     assert channel.resourceStats()["total_reserved"] == 256 * MIB

@@ -9,9 +9,12 @@ def testRuntimeRejectsDirectImagePathLoad(tmp_path: Path) -> None:
     imagePath.write_bytes(b"fake")
 
     runtimeService = RuntimeService()
-    loadReply = runtimeService.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(imagePath)),
-        None,
-    )
-    assert loadReply.ok is False
-    assert "project.json" in str(loadReply.message)
+    try:
+        loadReply = runtimeService.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(imagePath)),
+            None,
+        )
+        assert loadReply.ok is False
+        assert "project.json" in str(loadReply.message)
+    finally:
+        runtimeService.close()

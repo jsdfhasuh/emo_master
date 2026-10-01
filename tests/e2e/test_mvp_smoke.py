@@ -66,18 +66,21 @@ def testMvpPipelineSmoke(tmp_path: Path) -> None:
     )
 
     runtimeService = createRuntimeService()
-    loadReply = runtimeService.LoadProject(
-        type("Req", (), {"project_path": str(projectDir)})(), None
-    )
-    assert loadReply.ok is True
+    try:
+        loadReply = runtimeService.LoadProject(
+            type("Req", (), {"project_path": str(projectDir)})(), None
+        )
+        assert loadReply.ok is True
 
-    startReply = runtimeService.StartJob(
-        type("Req", (), {"project_id": str(projectDir)})(), None
-    )
-    assert startReply.ok is True
-    assert startReply.job_id != ""
-    waitForTerminal(runtimeService, startReply.job_id)
-    assert outputPath.exists()
+        startReply = runtimeService.StartJob(
+            type("Req", (), {"project_id": str(projectDir)})(), None
+        )
+        assert startReply.ok is True
+        assert startReply.job_id != ""
+        waitForTerminal(runtimeService, startReply.job_id)
+        assert outputPath.exists()
+    finally:
+        runtimeService.close()
 
 
 def testMvpPipelineSmokeWithImage(tmp_path: Path) -> None:
@@ -87,29 +90,32 @@ def testMvpPipelineSmokeWithImage(tmp_path: Path) -> None:
     )
 
     runtimeService = createRuntimeService()
-    loadReply = runtimeService.LoadProject(
-        type("Req", (), {"project_path": str(projectDir)})(), None
-    )
-    assert loadReply.ok is True
-
-    startReply = runtimeService.StartJob(
-        type("Req", (), {"project_id": str(projectDir)})(), None
-    )
-    assert startReply.ok is True
-    waitForTerminal(runtimeService, startReply.job_id)
-
-    statusReply = runtimeService.GetJobStatus(
-        type("Req", (), {"job_id": startReply.job_id})(), None
-    )
-    assert statusReply.ok is True
-    assert statusReply.status == "COMPLETED"
-    events = list(
-        runtimeService.StreamJobEvents(
-            type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
+    try:
+        loadReply = runtimeService.LoadProject(
+            type("Req", (), {"project_path": str(projectDir)})(), None
         )
-    )
-    assert any(getattr(event, "event_type", "") == "job.completed" for event in events)
-    assert outputPath.exists()
+        assert loadReply.ok is True
+
+        startReply = runtimeService.StartJob(
+            type("Req", (), {"project_id": str(projectDir)})(), None
+        )
+        assert startReply.ok is True
+        waitForTerminal(runtimeService, startReply.job_id)
+
+        statusReply = runtimeService.GetJobStatus(
+            type("Req", (), {"job_id": startReply.job_id})(), None
+        )
+        assert statusReply.ok is True
+        assert statusReply.status == "COMPLETED"
+        events = list(
+            runtimeService.StreamJobEvents(
+                type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
+            )
+        )
+        assert any(getattr(event, "event_type", "") == "job.completed" for event in events)
+        assert outputPath.exists()
+    finally:
+        runtimeService.close()
 
 
 def testEndToEndDagWithEventStreamAndPreviewArtifacts(tmp_path: Path) -> None:
@@ -119,19 +125,22 @@ def testEndToEndDagWithEventStreamAndPreviewArtifacts(tmp_path: Path) -> None:
     )
 
     runtimeService = createRuntimeService()
-    _ = runtimeService.LoadProject(
-        type("Req", (), {"project_path": str(projectDir)})(), None
-    )
-    startReply = runtimeService.StartJob(
-        type("Req", (), {"project_id": str(projectDir)})(), None
-    )
-    assert startReply.ok is True
-    waitForTerminal(runtimeService, startReply.job_id)
-
-    events = list(
-        runtimeService.StreamJobEvents(
-            type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
+    try:
+        _ = runtimeService.LoadProject(
+            type("Req", (), {"project_path": str(projectDir)})(), None
         )
-    )
-    assert any(getattr(event, "event_type", "") == "job.completed" for event in events)
-    assert outputPath.exists()
+        startReply = runtimeService.StartJob(
+            type("Req", (), {"project_id": str(projectDir)})(), None
+        )
+        assert startReply.ok is True
+        waitForTerminal(runtimeService, startReply.job_id)
+
+        events = list(
+            runtimeService.StreamJobEvents(
+                type("Req", (), {"job_id": startReply.job_id, "follow": True})(), None
+            )
+        )
+        assert any(getattr(event, "event_type", "") == "job.completed" for event in events)
+        assert outputPath.exists()
+    finally:
+        runtimeService.close()

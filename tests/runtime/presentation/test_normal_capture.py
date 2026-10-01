@@ -13,7 +13,7 @@ from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapt
 from emo_master.apps.runtime.presentation.rpc import DisplayRpc
 from emo_master.core.project.models import ProjectDocument
 from tests.runtime.test_global_counter_grpc import _writeCounterProject
-from tests.runtime.runtime_test_utils import waitForTerminal
+from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
 
 def normalProject(root):
@@ -305,7 +305,7 @@ def testExplicitStopReleaseAndRestartNormalJob(tmp_path, mode):
             end = time.monotonic() + 10
             while not display.store.snapshot(reply.job_id)["results"] and time.monotonic() < end:
                 time.sleep(.02)
-            assert display.store.snapshot(reply.job_id)["results"]
+            assert display.store.snapshot(reply.job_id)["results"], jobFailureDetails(runtime, reply.job_id)
             assert runtime.StopJob(pb.StopJobRequest(job_id=reply.job_id, mode=mode), None).ok
             assert waitForTerminal(runtime, reply.job_id).status == "ABORTED"
             release(display, reply.job_id)

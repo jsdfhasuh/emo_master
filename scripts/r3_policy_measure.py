@@ -447,9 +447,14 @@ def executeTrial(args):
     result = None
     assetTrace = None
     assetTraceSummary = None
+    creditTrace = None
+    creditTraceSummary = None
     if getattr(args, "asset_split_trace", False):
         from scripts.r3_asset_split_trace import AssetSplitTrace, installed
         assetTrace = AssetSplitTrace(passive_markers=getattr(args, "passive_rpc_markers", False))
+    if getattr(args, "export_credit_trace", False):
+        from scripts.r3_export_credit_trace import ExportCreditTrace, installed as creditInstalled
+        creditTrace = ExportCreditTrace()
     try:
         with base.patches() as patch:
             patch(supervisor, "runJobProcess", measuredJob)
@@ -461,7 +466,8 @@ def executeTrial(args):
                 if key in observed or len(observed) < 128:
                     observed[key] = {"ordinal": item.identity.resultOrdinal, "status": item.status,
                         "mode": item.identity.mode, "source_outcomes": {s.sourceId: {"state": s.state,
-                            "reason": s.reasonCode} for s in item.sources}}
+                            "reason": s.reasonCode, "detail": (s.reason or "")[:256],
+                            "image_present": s.image is not None} for s in item.sources}}
                 else:
                     overflow[0] += 1
                 for source in item.sources:
@@ -479,10 +485,17 @@ def executeTrial(args):
             base.wrap(base.OWNER_TRACE, patch, PreviewAssetStore, "promote", "terminal.legacy_promotion")
             root = args.output / "work-trial"
             with installed(assetTrace, patch, ROOT) if assetTrace is not None else nullcontext():
-                result = normalTrial(root, args.arm, args.count, args.warmup, app)
+                with creditInstalled(creditTrace, patch, ROOT) if creditTrace is not None else nullcontext():
+                    result = normalTrial(root, args.arm, args.count, args.warmup, app)
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
+        if creditTrace is not None:
+            try:
+                creditTraceSummary = creditTrace.save(args.output / "export-credit.json")
+            except Exception as error:
+                creditTraceSummary = {"enabled": True, "complete": False,
+                    "save_error_type": type(error).__name__, "performance_verdict": "NOT_EVALUATED"}
         if assetTrace is not None:
             try:
                 assetTraceSummary = assetTrace.save(args.output / "asset-split.json")
@@ -502,6 +515,8 @@ def executeTrial(args):
         result["observed_result_outcomes"] = observed
         result["outcome_overflow"] = overflow[0]
         result["instrumentation"] = "measurement-only inclusive wrappers, identical detect timing in every arm; native resource enumeration on bounded background owner"
+        if creditTraceSummary is not None:
+            result["export_credit_trace"] = creditTraceSummary
         if assetTraceSummary is not None:
             # This harness freezes one image source per result. Keep its original
             # counters/denominators and cross-check the optional trace against them.
@@ -630,6 +645,8 @@ def run(args):
                 command.append("--asset-split-trace")
             if getattr(args, "passive_rpc_markers", False):
                 command.append("--passive-rpc-markers")
+            if getattr(args, "export_credit_trace", False):
+                command.append("--export-credit-trace")
             entry = {"group": group, "position": position, "arm": arm, "disk_preflight": base.diskPreflight(directory),
                 "watchdog": base.supervisedTrial(command, directory)}
             payload, fields = trialEvidence(directory, args.output, args.warmup, arm)
@@ -637,6 +654,8 @@ def run(args):
                 entry.update(fields)
                 if getattr(args, "asset_split_trace", False):
                     entry["asset_split_trace"] = payload.get("asset_split_trace", {"enabled": True, "complete": False})
+                if getattr(args, "export_credit_trace", False):
+                    entry["export_credit_trace"] = payload.get("export_credit_trace", {"enabled": True, "complete": False})
                 rows[arm] = payload
             manifest["trials"].append(entry)
             base.writeManifest(args.output, manifest)
@@ -651,13 +670,18 @@ def run(args):
         manifest["asset_split_status"] = "COMPLETE" if all(
             t.get("asset_split_trace", {}).get("complete") for t in manifest["trials"]) else "INCOMPLETE"
         valid = valid and manifest["asset_split_status"] == "COMPLETE"
+    if getattr(args, "export_credit_trace", False):
+        manifest["export_credit_status"] = "COMPLETE" if all(
+            t.get("export_credit_trace", {}).get("complete") for t in manifest["trials"]) else "INCOMPLETE"
+        valid = valid and manifest["export_credit_status"] == "COMPLETE"
+    instrumented = getattr(args, "asset_split_trace", False) or getattr(args, "export_credit_trace", False)
     manifest["measurement_status"] = "VALID" if valid else "INVALID"
     manifest["performance_status"] = (("PASS" if all(g["pass"] for g in manifest["groups"]) else "FAIL")
-        if formal and valid and not getattr(args, "asset_split_trace", False) else "NOT_ASSESSED")
+        if formal and valid and not instrumented else "NOT_ASSESSED")
     manifest["finished_ns"] = time.perf_counter_ns()
     base.writeManifest(args.output, manifest)
     print(json.dumps({"measurement_status": manifest["measurement_status"], "performance_status": manifest["performance_status"], "groups": manifest["groups"]}), flush=True)
-    return int(not valid or (formal and not getattr(args, "asset_split_trace", False) and manifest["performance_status"] != "PASS"))
+    return int(not valid or (formal and not instrumented and manifest["performance_status"] != "PASS"))
 
 
 def main():
@@ -671,6 +695,8 @@ def main():
         help="opt-in loopback RPC attribution; preserves original arms/denominators and never reports performance PASS")
     parser.add_argument("--passive-rpc-markers", action="store_true",
         help="optional peer/next-loop-turn/RPC-task-done observations; requires --asset-split-trace")
+    parser.add_argument("--export-credit-trace", action="store_true",
+        help="opt-in existing exporter reply/callback/credit boundaries; never changes ownership or reports performance PASS")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()

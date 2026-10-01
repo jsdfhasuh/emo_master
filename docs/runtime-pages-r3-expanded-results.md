@@ -545,3 +545,49 @@ proto drift/Ruff/mypy通过、退出0。最终marker真实RPC烟测6输入/2预�
 原进程树看门狗及owner退休通过、源码稳定、12调用关联完整、4结果成对完整；性能
 标记NOT_ASSESSED。首次临时分析调用参数拼写错误未生成汇总，原文件保留；修正调用
 后在新目录重做此小烟测，未改被测源码。完整Windows ABBA及诊断workflow仍待执行。
+
+## 1c8d9c：Windows 缺图与下一段诊断
+
+本机无探针完整CI为1810 PASS、2 SKIP（623.85秒），静态通过、源码干净。GitHub PR
+两平台均1811/1通过；push Ubuntu通过，但Windows为1810 PASS、1 FAIL、1 SKIP，
+独立诊断同样失败，均为A18导航循环中的新native thread身份。失败后只读查询成功：
+两个新线程起始于ntdll.dll+0x75bc0，创建约在失败前248ms，查询在失败后约62ms；这
+不是创建者或泄漏根因证明。停止目标本轮通过，STOPPING到ABORTED/E_CANCELLED为
+641ms，seq5到13；68次commit共2.781秒、最大219ms，未复现原10秒超时。
+这里SQL/outer观察器使用monotonic_ns；官方CPython3.10.11 Windows实现为
+[GetTickCount64](https://github.com/python/cpython/blob/v3.10.11/Python/pytime.c)，记录存在
+粗粒度量化，不能将0ms理解为零成本，也不做精细等待/CPU归因。新credit阶段采用
+perf_counter_ns，不改变原产品时钟或期限。
+
+本机RPC marker ABBA四臂全部完成并退休，但仅两臂图像覆盖完整；另两臂190/192读取、
+174/176正式读取，明确INVALID/INCOMPLETE/NOT_ASSESSED，不计算探针成本扣除。
+缺口同时发生在on和off臂。离线核对：ordinal39/69的图像源为UNAVAILABLE/
+BUDGET_EXCEEDED，计数可用、无客户端read_failed；前一图38/68解码完成时已收到更高
+序号，因此未应用旧帧，后来的无图状态被正确展示。前帧PNG已写完约140ms后，新图仍
+遭采集预算拒绝，不能解释成PNG尚未完成。原始Windows文件保留本机，未上传。
+
+新增默认关闭的export-credit探针只包装现有父进程操作，记录Pipe reply、原callback、
+assets.adopt、result finish/retain及成功返回的semaphore.release边界。原self、store、
+RLock和semaphore对象不换，不多acquire/release，不改变child消息、SQL、quota或deadline。
+真实spawn回归确认child仍取得原生SemLock方法。恢复失败保留重试记录，不依赖循环GC。
+callback到adopt包含锁等待和Python前置工作；探针本身也会扰动持锁时间，不能称纯锁
+等待或把observer_cost从延迟中相减。新控制入口：
+
+`python scripts/r3_export_credit_control.py --qt-platform windows --output NEW_DIRECTORY`
+
+固定off/on/on/off、96/8、原1080p/5Hz、两消费者与两窗口，RPC passive markers全关。
+它保留严格全帧覆盖门槛，少图仍INVALID；已准入export的生命周期记录完整，不等于
+输入全覆盖。每臂额外写credit-boundaries.json供原样核对，失败/重复边界为null，负值
+不截断；源拒绝单列，不伪造export记录。6输入/2预热真实烟测通过4.31秒，68记录、
+6/6准入与AVAILABLE export、无丢记录/错误，source稳定、owner退休；不作为性能验收。
+
+另修正两个原测试文件中7个RuntimeService fixture遗漏close：仅加finally，原断言不变、
+关闭异常继续失败。修正前单独两测试通过却留下4条writer/maintenance线程；修正后两
+文件8项通过7.65秒，pytest.main返回即无新增活线程，不等待或GC。注入原断言失败的
+7条路径均关闭一次、所属线程退休、原异常保留；关闭本身失败也不吞。此已证测试资源
+缺陷独立成立，不能据此宣称ntdll线程增长已解决。生产src与A18断言均未修改。
+
+该批最终完整cloud CI为1834 PASS、1 SKIP（411.42秒），proto drift/Ruff/mypy通过、
+退出0，全部Python来源前后摘要相同。此前一次执行会话在94%后失联，没有终态或退出码，
+保留为INCOMPLETE；确认原session不可用后才恢复这次完整验证，没有把截断日志当通过。
+新credit Windows对照仍待执行，原1c8d9c混合CI和ABBA缺图失败保留。

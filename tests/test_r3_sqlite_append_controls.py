@@ -538,7 +538,7 @@ def test_seven_cases_are_sequential_and_use_same_unmodified_default_temp_root(so
     assert report["planned_foreground_transactions"] == 112
     assert len({call["data_root"] for call in calls}) == 7
     assert len({call["directory"] for call in calls}) == 7
-    assert all(call["data_root"].parent == Path(tempfile.gettempdir()) for call in calls)
+    assert all(call["data_root"].parent == Path(tempfile.gettempdir()).resolve(strict=True) for call in calls)
     assert all(call["directory"].parent == output for call in calls)
     assert all(call["command"][0] == sys.executable for call in calls)
     assert all(call["timeout"] == 30 and call["output_cap"] == controls.LOG_CAP for call in calls)

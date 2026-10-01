@@ -122,6 +122,17 @@ def read_json_bounded(path, cap):
     return json.loads(encoded)
 
 
+def canonical_temp_paths(data_root):
+    """Resolve existing directory aliases without changing the default temp root."""
+    temp_root_raw = tempfile.gettempdir()
+    temp_root = Path(temp_root_raw).resolve(strict=True)
+    owned_root = Path(data_root).resolve(strict=True)
+    if not owned_root.is_dir() or str(owned_root.parent) != str(temp_root):
+        raise ValueError("owned data directory is outside the canonical default temp root")
+    return {"data_root": str(owned_root), "temp_root": str(temp_root),
+            "temp_root_raw": temp_root_raw}
+
+
 class ConnectCohort:
     """Count successful returns; optionally retain exactly the created native handles."""
     def __init__(self, store, *, hooked, retained):
@@ -315,6 +326,8 @@ def timed(action, phases, name):
 
 
 def run_worker(repo, data_root, case):
+    paths = canonical_temp_paths(data_root)
+    data_root = Path(paths["data_root"])
     sys.path.insert(0, str(repo / "src"))
     import _sqlite3
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
@@ -332,7 +345,7 @@ def run_worker(repo, data_root, case):
               "settings_scope": "setup connection before/after and existing keeper; never measured append connections",
               "synthetic_job_scope": "event persistence only; no process, bridge, or supervisor terminal callback",
               "controlled_jsonl_enabled": background, "retained": retained,
-              "data_root": str(data_root), "temp_root": tempfile.gettempdir(),
+              **paths,
               "db_path": str(data_root / "runtime.sqlite3"),
               "log_path": str(data_root / "logs"), "workspace_path": str(data_root / "jobs"),
               "path_anchor": data_root.anchor, "st_dev": data_root.stat().st_dev,
@@ -561,22 +574,33 @@ def run_controls(repo, output, *, runner=None):
             continue
         directory = output / case
         directory.mkdir()
-        data_root = Path(tempfile.mkdtemp(prefix="runtime-append-control-"))
-        record = {"case": case, "data_root": str(data_root), "status": "INVALID", "eligible": False}
+        data_root_raw = Path(tempfile.mkdtemp(prefix="runtime-append-control-"))
+        data_root = data_root_raw
+        runner_called = False
+        record = {"case": case, "data_root_raw": str(data_root_raw),
+                  "data_root": str(data_root_raw), "status": "INVALID", "eligible": False}
         try:
+            paths = canonical_temp_paths(data_root_raw)
+            data_root = Path(paths["data_root"])
+            record.update(data_root=str(data_root), temp_root=paths["temp_root"],
+                          parent_temp_root_raw=paths["temp_root_raw"])
             command = [sys.executable, str(Path(__file__).resolve()), "--repo", str(repo),
                 "--output", str(directory), "--worker-case", case, "--data-root", str(data_root)]
+            # Once the runner is called, a failure may leave a child whose state is unknown.
+            runner_called = True
             execution = runner(command, directory, timeout=CHILD_SECONDS, output_cap=LOG_CAP)
             record["execution"] = execution
             if execution["status"] == "EXITED" and execution["returncode"] == 0:
                 result_path = directory / "result.json"
                 result = read_json_bounded(result_path, RESULT_CAP)
-                if result["case"] != case or result["data_root"] != str(data_root):
+                if (result["case"] != case or result["data_root"] != str(data_root)
+                        or result["temp_root"] != paths["temp_root"]):
                     raise ValueError("child identity mismatch")
                 record.update(status=result["status"], eligible=result["eligible"],
                     cohort=result["cohort"], background=result["background"],
                     manifest_sha256=result["manifest_sha256"], build=result["build"],
-                    temp_root=result["temp_root"], source_stable=result["source_stable"],
+                    temp_root=result["temp_root"], temp_root_raw=result["temp_root_raw"],
+                    source_stable=result["source_stable"],
                     result_path=f"{case}/result.json")
                 if result["source_before"] != before or result["source_after"] != before:
                     record.update(status="INVALID", eligible=False, source_stable=False)
@@ -586,8 +610,9 @@ def run_controls(repo, output, *, runner=None):
             execution = record.get("execution", {})
             cleanup = execution.get("cleanup", {})
             retired = cleanup.get("process_reaped") and cleanup.get("output_reader_joined")
+            record["child_not_started"] = not runner_called
             record["child_retirement_confirmed"] = bool(retired)
-            if retired:
+            if retired or not runner_called:
                 try:
                     shutil.rmtree(data_root)
                     record["temp_data_removed"] = True
@@ -648,6 +673,9 @@ def validate_output(output, expected_source=None):
     temp_root = None
     for case, entry in zip(CASES, summary["results"]):
         require(entry["case"] == case, "cohort order mismatch")
+        require(entry.get("status") == "COMPLETED" and entry.get("eligible")
+                and "execution" in entry and "result_path" in entry,
+                f"incomplete cohort evidence: {case}")
         execution = entry["execution"]
         require(execution["status"] == "EXITED" and execution["returncode"] == 0, "child execution failed")
         require(execution["hard_work_deadline_seconds"] == CHILD_SECONDS, "child bound changed")
@@ -662,6 +690,9 @@ def validate_output(output, expected_source=None):
         require(result["data_root"] == entry["data_root"]
                 and result["db_path"] == str(Path(result["data_root"]) / "runtime.sqlite3"), "data path mismatch")
         require(str(Path(result["data_root"]).parent) == result["temp_root"], "default temp root mismatch")
+        require(isinstance(entry.get("data_root_raw"), str)
+                and isinstance(entry.get("parent_temp_root_raw"), str)
+                and isinstance(result.get("temp_root_raw"), str), "raw temp path evidence missing")
         require(result["source_before"] == source == result["source_after"], "cohort source mismatch")
         require(result["manifest_sha256"] == expected_manifest and result["fixed_foreground_append_calls"] == 16,
                 "input mismatch")
@@ -670,7 +701,7 @@ def validate_output(output, expected_source=None):
         require(comparison_eligible(result) and result["eligible"] and result["status"] == "COMPLETED",
                 f"invalid cohort: {case}")
         require(entry["eligible"] and entry["status"] == "COMPLETED", "summary hides invalid execution")
-        for field in ("cohort", "background", "manifest_sha256", "build", "temp_root", "source_stable"):
+        for field in ("cohort", "background", "manifest_sha256", "build", "temp_root", "temp_root_raw", "source_stable"):
             require(entry[field] == result[field], f"summary/result mismatch: {field}")
         interval = result["cohort"]
         require(set(interval) == {"wall_start_ns", "cpu_start_ns", "cpu_end_ns", "wall_end_ns"}
@@ -718,7 +749,8 @@ def main():
     if arguments.worker_case:
         if arguments.data_root is None:
             parser.error("worker requires owned data-root")
-        result = run_worker(arguments.repo.resolve(), arguments.data_root.resolve(), arguments.worker_case)
+        paths = canonical_temp_paths(arguments.data_root)
+        result = run_worker(arguments.repo.resolve(), Path(paths["data_root"]), arguments.worker_case)
         child_tools.write_json_bounded(arguments.output / "result.json", result, RESULT_CAP)
     else:
         result = run_controls(arguments.repo, arguments.output)

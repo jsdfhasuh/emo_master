@@ -423,7 +423,8 @@ def worker_result(repo, case, data_root):
         "inactive_owners_before": inactive.copy(), "inactive_owners_after": inactive.copy(),
         "fixed_foreground_append_calls": 16, "manifest_sha256": controls.manifest_hash(manifest),
         "build": {"fresh_native_autocheckpoint_default": 1000, "sqlite_version": "fake"},
-        "temp_root": tempfile.gettempdir(), "source_stable": True,
+        "temp_root": str(Path(tempfile.gettempdir()).resolve(strict=True)),
+        "temp_root_raw": tempfile.gettempdir(), "source_stable": True,
         "source_before": controls.source_identity(repo), "source_after": controls.source_identity(repo),
         "cohort": {"wall_start_ns": 100, "wall_end_ns": 200, "cpu_start_ns": 20, "cpu_end_ns": 50},
         "background": {
@@ -735,3 +736,140 @@ def test_parse_failure_after_green_result_update_stops_next_child(source_repo, t
     assert report["results"][0]["status"] == "INVALID"
     assert not report["results"][0]["eligible"]
     assert all(item["status"] == "SKIPPED" for item in report["results"][1:])
+
+
+@pytest.fixture
+def simulated_temp_alias(tmp_path, monkeypatch):
+    """Model two directory spellings; this does not exercise Windows 8.3 APIs."""
+    canonical = tmp_path / "canonical-temp"
+    canonical.mkdir()
+    raw = tmp_path / "RUNNER~1"
+    mappings = {str(raw): canonical}
+    original_resolve = Path.resolve
+    original_mkdtemp = tempfile.mkdtemp
+
+    def resolve(path, strict=False):
+        if str(path) in mappings:
+            assert strict
+            return mappings[str(path)]
+        return original_resolve(path, strict=strict)
+
+    def create(*args, **kwargs):
+        assert args == () and kwargs == {"prefix": "runtime-append-control-"}
+        real = Path(original_mkdtemp(dir=canonical, **kwargs))
+        alias = raw / real.name
+        mappings[str(alias)] = real
+        return str(alias)
+
+    monkeypatch.setattr(Path, "resolve", resolve)
+    monkeypatch.setattr(controls.tempfile, "gettempdir", lambda: str(raw))
+    monkeypatch.setattr(controls.tempfile, "mkdtemp", create)
+    return raw, canonical, mappings
+
+
+def test_equivalent_alias_is_canonicalized_before_parent_passes_child_argument(
+    source_repo, tmp_path, simulated_temp_alias,
+):
+    raw, canonical, _ = simulated_temp_alias
+    calls = []
+    output = tmp_path / "alias-reports"
+    report = controls.run_controls(source_repo, output, runner=successful_runner(source_repo, calls))
+    assert report["eligible"] and len(calls) == 7
+    for call, entry in zip(calls, report["results"]):
+        assert call["data_root"].parent == canonical
+        assert entry["data_root"] == str(call["data_root"])
+        assert entry["data_root_raw"] == str(raw / call["data_root"].name)
+        assert entry["data_root"] != entry["data_root_raw"]
+        assert entry["temp_root"] == str(canonical)
+        assert entry["temp_root_raw"] == entry["parent_temp_root_raw"] == str(raw)
+        assert entry["temp_data_removed"] and not call["data_root"].exists()
+    assert canonical.is_dir()
+    assert controls.validate_output(output) == report
+
+
+def test_child_main_receives_canonical_owned_directory_without_running_workload(
+    source_repo, tmp_path, simulated_temp_alias, monkeypatch,
+):
+    raw, canonical, _ = simulated_temp_alias
+    alias = Path(controls.tempfile.mkdtemp(prefix="runtime-append-control-"))
+    expected = canonical / alias.name
+    output = tmp_path / "child-evidence"
+    output.mkdir()
+    calls = []
+
+    def fake_worker(repo, data_root, case):
+        calls.append((repo, data_root, case))
+        assert data_root == expected
+        paths = controls.canonical_temp_paths(data_root)
+        assert paths == {"data_root": str(expected), "temp_root": str(canonical), "temp_root_raw": str(raw)}
+        return {"eligible": True, **paths}
+
+    monkeypatch.setattr(controls, "run_worker", fake_worker)
+    monkeypatch.setattr(sys, "argv", ["r3_sqlite_append_controls.py", "--repo", str(source_repo),
+        "--output", str(output), "--worker-case", "N0-raw-1", "--data-root", str(alias)])
+    assert controls.main() == 0
+    assert calls == [(source_repo.resolve(), expected, "N0-raw-1")]
+    assert json.loads((output / "result.json").read_text())["data_root"] == str(expected)
+    assert expected.is_dir()  # Only the parent owns experiment data cleanup.
+
+
+def test_actual_different_child_directory_is_rejected_even_under_same_temp_root(
+    source_repo, tmp_path, temp_roots,
+):
+    calls = []
+    other_directories = []
+    runner = successful_runner(source_repo, calls)
+
+    def different_directory(*args, **kwargs):
+        result = runner(*args, **kwargs)
+        path = args[1] / "result.json"
+        worker = json.loads(path.read_text())
+        other = Path(controls.tempfile.mkdtemp(prefix="runtime-append-control-")).resolve(strict=True)
+        other_directories.append(other)
+        assert other.parent == Path(worker["data_root"]).parent
+        assert other != Path(worker["data_root"])
+        worker["data_root"] = str(other)
+        path.write_text(json.dumps(worker))
+        return result
+
+    report = controls.run_controls(source_repo, tmp_path / "different", runner=different_directory)
+    assert len(calls) == 1
+    assert not report["eligible"]
+    assert report["results"][0]["error"]["message"] == "child identity mismatch"
+    assert report["results"][0]["temp_data_removed"]
+    assert other_directories[0].is_dir()  # Rejecting identity must not remove another directory.
+    assert all(entry["status"] == "SKIPPED" for entry in report["results"][1:])
+    with pytest.raises(ValueError, match="incomplete cohort evidence"):
+        controls.validate_output(tmp_path / "different")
+
+
+def test_canonical_default_root_must_match_exact_directory(tmp_path, monkeypatch):
+    default = tmp_path / "temp"
+    different = tmp_path / "temp-other"
+    default.mkdir()
+    different.mkdir()
+    owned = different / "runtime-append-control-owned"
+    owned.mkdir()
+    monkeypatch.setattr(controls.tempfile, "gettempdir", lambda: str(default))
+    with pytest.raises(ValueError, match="outside the canonical default temp root"):
+        controls.canonical_temp_paths(owned)
+    assert owned.is_dir() and default.is_dir() and different.is_dir()
+
+
+def test_resolve_failure_before_runner_cleans_only_created_raw_owner(
+    source_repo, tmp_path, temp_roots, monkeypatch,
+):
+    def fail(_):
+        raise OSError("directory resolve failed")
+
+    monkeypatch.setattr(controls, "canonical_temp_paths", fail)
+    report = controls.run_controls(source_repo, tmp_path / "resolve-failed",
+        runner=lambda *args, **kwargs: pytest.fail("child must not start"))
+    first = report["results"][0]
+    assert len(temp_roots[0]) == 1
+    assert first["child_not_started"] and not first["child_retirement_confirmed"]
+    assert first["temp_data_removed"] and not temp_roots[0][0].exists()
+    assert temp_roots[0][0].parent.is_dir()
+    assert first["data_root_raw"] == str(temp_roots[0][0])
+    assert first["error"]["type"] == "OSError"
+    assert not report["eligible"]

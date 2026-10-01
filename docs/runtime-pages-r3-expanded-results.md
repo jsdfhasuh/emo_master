@@ -628,3 +628,18 @@ PR两平台和push Windows均1834/1通过；push Ubuntu为1833 PASS、1 FAIL、1
 此版探针最终云端完整检查为1897 PASS、1 SKIP（416.52秒），proto drift、Ruff、
 mypy通过，退出0、全部检查来源前后稳定。后续Windows细分改用独立GitHub标准runner，
 先在云端实现与排查，收敛后再集中本机最终验收；现有本机失败证据继续保留。
+
+独立`runtime-credit-diagnostics.yml`在标准Windows runner执行一次上述四臂，原普通CI
+不变。入口`r3_hosted_credit_guard.py`先核验当前controller及继承子进程的4GiB聚合
+Job内存限制和当前进程BelowNormal优先级；设置失败即INVALID，不启动负载。外层
+不设自包含进程的kill-on-close，原各臂90秒/kill-on-close仍负责退休，workflow上限
+20分钟。PeakJobMemory不等于“从未触及内存限制”。
+
+`r3_export_credit_report.py`只读取该次受控合成证据，将consumer/UI原始覆盖与计数、
+实际采样角色、四臂输入/资产hash、原生credit尝试和adopt阶段交叉核验。完整报告最多
+1MiB，分块输出至同一job日志，以字节数/SHA和终标记验证完整性，不上传artifact。
+原控制非零或INVALID保持，观察完整不等于性能通过；缺失/伪造原始数据另标INVALID。
+新增32项纯数据/假WinAPI用例通过（云端整合3.10秒），尚不等于Windows原生guard验证。
+最终整合完整云端CI为1929 PASS、1 SKIP、27个subtest通过（419.94秒），全部静态
+检查通过、退出0；Python检查来源和workflow前后摘要一致。Windows原生资源readback
+及细分对照仍待该提交的GitHub诊断执行，不能以此覆盖历史性能FAIL。

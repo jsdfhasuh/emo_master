@@ -485,3 +485,21 @@ finally unlock并原生销毁、验证失效；不增数值容差、不排除任
 
 QMutex基线修正经独立复核；完整cloud CI为1736 PASS、1 SKIP（403.90秒），
 proto drift/Ruff/mypy通过、退出0，Python来源前后摘要相同，最终Windows严格检查仍待验证。
+
+
+后续纯Python Windows夹具对照确认：创建时File+1/Semaphore+6，join/close但仍保留
+引用后留下4个Semaphore，删除所有夹具引用后回到原基线。两个Event、Thread._started
+Event及已关闭BufferedRandom的锁由Python对象寿命持有；before快照中的Thread强引用
+解释了仅清session/owners/hub/window后剩余的最后一个。单独gc不能释放强引用。
+
+A18现先完成全部原native关闭/Qt销毁、线程身份和fstat失败断言，再删除所有测试夹具
+引用（包括before，不改变原baseline），weakref额外确认fixture、Thread和buffer即时
+销毁；不调用gc.collect，不等待、不重试、不加容差，然后执行原最终严格计数及身份
+检查。该11行修正独立复核通过，focused4项通过21.55秒；在独立e5e9ea0 worktree中只含
+该修正的完整CI为1736 PASS、1 SKIP（412.12秒），proto drift/Ruff/mypy通过、退出0，
+源码摘要前后相同。后续workflow/性能markers未混入这次验证。
+
+另一个PSS未识别句柄经类型查询确定为EtwRegistration；纯Qt可见主窗口下第二窗口
+首次勾选也出现一次，随后30次及窗口退休稳定。无产品PSS对照排除采样本身残留。
+其provider/注册所有者尚未识别；不按类型豁免、不宣称ETW已销毁。严格总数通过仅是
+原有有界验收结果，不能等同逐个全进程资源已归零。Windows正式版本复测仍待执行。

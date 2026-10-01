@@ -7,6 +7,7 @@ The fake session owns a real thread and file handle, but does no RPC/decode.
 from dataclasses import replace
 import os
 import threading
+import weakref
 from types import MappingProxyType
 
 import numpy as np
@@ -339,6 +340,16 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     assert session.thread not in after["python_thread_objects"]
     with pytest.raises(OSError):
         os.fstat(handle)
+    # close/join retires the native file/thread, but this test's still-live
+    # Event, Thread and BufferedRandom objects retain four CPython Windows
+    # semaphore locks. Verify native retirement first, then release every
+    # fixture reference, including the warm snapshot's strong Thread set.
+    fixtureRefs = tuple(weakref.ref(owner) for owner in (session, session.thread, session.handle))
+    del session, owners, before, hub, window
+    assert all(reference() is None for reference in fixtureRefs), 'Test fixture is still retained'
+    after = nativeCounts(qtApp)
+    assertNoNewThreads(baseline, after)
+    assert sessionThread not in after["native_thread_ids"]
     # All owned thread/handle resources retired, not merely Python references.
     for key in ("handles", "native_threads", "python_threads"):
         # Baseline included the now-destroyed main window's platform resources.

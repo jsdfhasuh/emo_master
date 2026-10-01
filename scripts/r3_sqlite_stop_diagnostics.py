@@ -96,7 +96,9 @@ def pytest_runtest_call(item):
                 finally:
                     probe.capture("after_runtime_close")
 
-            patch.setattr(runtime, "close", close)
+            # Instance monkeypatch undo would write a resolved bound method
+            # back as an own attribute, adding a self-cycle after the test.
+            probe._patch(runtime, "close", close)
         except BaseException as error:
             probe._error(error)
         return runtime

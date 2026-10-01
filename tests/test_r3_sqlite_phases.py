@@ -4,12 +4,109 @@ import json
 import sqlite3
 import threading
 import time
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
 import weakref
 
 import pytest
 
 from scripts.r3_sqlite_phases import SqlitePhases, _Connection
+
+
+def testRetirementRestoresInheritedConnectWithoutGCOrSelfCycle(tmp_path):
+    from emo_master.apps.runtime.context.sqlite_store import SqliteStore
+    wasEnabled = gc.isenabled()
+    gc.disable()
+    try:
+        plain = SqliteStore(tmp_path / "plain.db")
+        plainRef = weakref.ref(plain)
+        del plain
+        assert plainRef() is None
+        observed = SqliteStore(tmp_path / "observed.db")
+        observedRef = weakref.ref(observed)
+        probe = SqlitePhases()
+        assert "_connect" not in vars(observed)
+        probe.install(observed)
+        probe.close()
+        assert "_connect" not in vars(observed)
+        assert observed._connect.__func__ is SqliteStore._connect
+        del observed
+        assert observedRef() is None  # No gc.collect() may rescue this check.
+        assert probe.patch is None
+    finally:
+        if wasEnabled:
+            gc.enable()
+
+
+def testRetirementPreservesOwnOverrideClassDescriptorAndModuleValue():
+    def original():
+        return "original"
+
+    class Store:
+        @classmethod
+        def _connect(cls):
+            return cls
+
+    module = ModuleType("diagnostic_test_store")
+    module._connect = original
+    instance = Store()
+    instance._connect = original
+    for owner in (instance, Store, module):
+        raw = vars(owner)["_connect"]
+        probe = SqlitePhases()
+        probe.install(owner)
+        probe.close()
+        assert vars(owner)["_connect"] is raw
+    assert Store._connect() is Store
+    assert instance._connect() == module._connect() == "original"
+
+
+@pytest.mark.parametrize("remove", (False, True))
+def testRetirementDoesNotOverwriteConcurrentConnectReplacementOrRemoval(remove):
+    class Store:
+        def _connect(self):
+            return "inherited"
+    store = Store()
+    probe = SqlitePhases()
+    probe.install(store)
+    if remove:
+        del store._connect
+    else:
+        store._connect = lambda: "new owner"
+    probe.close()
+    assert store._connect() == ("inherited" if remove else "new owner")
+    assert ("_connect" in vars(store)) is not remove
+
+
+@pytest.mark.parametrize("mutateBeforeFailure", (False, True))
+def testFailedInstallationRetainsRestorationForCloseRetry(mutateBeforeFailure):
+    class Store:
+        failDelete = True
+        def _connect(self):
+            return "original"
+        def __setattr__(self, name, value):
+            if name == "_connect":
+                if mutateBeforeFailure:
+                    object.__setattr__(self, name, value)
+                raise RuntimeError("installation unavailable")
+            object.__setattr__(self, name, value)
+        def __delattr__(self, name):
+            if name == "_connect" and self.failDelete:
+                self.failDelete = False
+                raise RuntimeError("restoration unavailable")
+            object.__delattr__(self, name)
+
+    store = Store()
+    probe = SqlitePhases()
+    with pytest.raises(RuntimeError, match="installation unavailable"):
+        probe.install(store)
+    if mutateBeforeFailure:
+        with pytest.raises(RuntimeError, match="restoration unavailable"):
+            probe.close()
+        assert probe.patch is not None and "_connect" in vars(store)
+    probe.close()
+    probe.close()
+    assert probe.patch is None and "_connect" not in vars(store)
+    assert store._connect() == "original"
 
 
 def testSnapshotTimestampCannotPrecedeNewlyEnteredCall(monkeypatch):

@@ -1,8 +1,10 @@
 """Diagnostic observers preserve delivery, failures, ownership and bounded output."""
 import json
+import gc
 import multiprocessing
 import threading
-from types import SimpleNamespace
+from types import ModuleType, SimpleNamespace
+import weakref
 
 import pytest
 
@@ -253,6 +255,108 @@ def testDiagnosticRetirementDoesNotRestoreAnAlreadyRetiredCallback(tmp_path):
     owner.callback = retired
     probe.close()
     assert owner.callback is retired
+
+
+def testRetirementRestoresInheritedMethodWithoutGCOrSelfCycle(tmp_path):
+    class Owner:
+        def operation(self):
+            return "original"
+
+    wasEnabled = gc.isenabled()
+    gc.disable()
+    try:
+        plain = Owner()
+        plainRef = weakref.ref(plain)
+        del plain
+        assert plainRef() is None
+        observed = Owner()
+        observedRef = weakref.ref(observed)
+        probe = JobDiagnostics(tmp_path / "diagnostic.json", source={}, plannedSeconds=1)
+        probe.wrap(observed, "operation", "test.operation")
+        assert observed.operation() == "original"
+        probe.close()
+        assert "operation" not in vars(observed)
+        assert observed.operation.__func__ is Owner.operation
+        del observed
+        assert observedRef() is None  # No gc.collect() may rescue this check.
+        assert probe.patches == []
+    finally:
+        if wasEnabled:
+            gc.enable()
+
+
+def testRetirementRestoresOwnValuesAndClassDescriptorProvenance(tmp_path):
+    class Base:
+        @classmethod
+        def operation(cls):
+            return cls
+
+    class Inherited(Base):
+        pass
+
+    def override():
+        return "override"
+
+    instance = Base()
+    instance.operation = override
+    module = ModuleType("diagnostic_test_owner")
+    module.operation = override
+    for index, owner in enumerate((instance, Base, Inherited, module)):
+        hadOwn = "operation" in vars(owner)
+        raw = vars(owner).get("operation")
+        probe = JobDiagnostics(tmp_path / f"diagnostic-{index}.json", source={}, plannedSeconds=1)
+        probe.wrap(owner, "operation", "test.operation")
+        probe.close()
+        assert ("operation" in vars(owner)) is hadOwn
+        if hadOwn:
+            assert vars(owner)["operation"] is raw
+    assert Base.operation() is Base and Inherited.operation() is Inherited
+    assert instance.operation() == module.operation() == "override"
+
+
+def testRetirementDoesNotResurrectConcurrentlyRemovedOverride(tmp_path):
+    class Owner:
+        def operation(self):
+            return "inherited"
+    owner = Owner()
+    owner.operation = lambda: "original override"
+    probe = JobDiagnostics(tmp_path / "diagnostic.json", source={}, plannedSeconds=1)
+    probe.wrap(owner, "operation", "test.operation")
+    del owner.operation
+    probe.close()
+    assert "operation" not in vars(owner) and owner.operation() == "inherited"
+
+
+@pytest.mark.parametrize("mutateBeforeFailure", (False, True))
+def testFailedPatchInstallationRetainsCloseRetryOwnership(tmp_path, mutateBeforeFailure):
+    class Owner:
+        failDelete = True
+        def operation(self):
+            return "original"
+        def __setattr__(self, name, value):
+            if name == "operation":
+                if mutateBeforeFailure:
+                    object.__setattr__(self, name, value)
+                raise RuntimeError("installation unavailable")
+            object.__setattr__(self, name, value)
+        def __delattr__(self, name):
+            if name == "operation" and self.failDelete:
+                self.failDelete = False
+                raise RuntimeError("restoration unavailable")
+            object.__delattr__(self, name)
+
+    owner = Owner()
+    probe = JobDiagnostics(tmp_path / "diagnostic.json", source={}, plannedSeconds=1)
+    with pytest.raises(RuntimeError, match="installation unavailable"):
+        probe.wrap(owner, "operation", "test.operation")
+    if mutateBeforeFailure:
+        with pytest.raises(RuntimeError, match="restoration unavailable"):
+            probe.close()
+        assert not probe.closed and probe.patches and "operation" in vars(owner)
+    probe.close()
+    probe.close()
+    assert probe.closed and not probe.patches and "operation" not in vars(owner)
+    assert owner.operation() == "original"
 
 
 def testSnapshotFailureCannotReplaceTheOriginalRuntimeFailure(tmp_path):

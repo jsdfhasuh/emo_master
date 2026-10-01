@@ -23,6 +23,7 @@ WORKER_FIELDS = (
     "diagnostic_errors",
 )
 FIELD = {name: index for index, name in enumerate(WORKER_FIELDS)}
+_MISSING_ATTRIBUTE = object()
 
 
 def workerRecord(shared, field, value=None, *, increment=False):
@@ -203,8 +204,12 @@ class JobDiagnostics:
         self.closed = False
 
     def _patch(self, owner, name, replacement):
-        original = getattr(owner, name)
-        self.patches.append((owner, name, original, replacement))
+        getattr(owner, name)  # Preserve the existing missing-attribute failure.
+        ownOriginal = vars(owner).get(name, _MISSING_ATTRIBUTE)
+        # Raw own values preserve module/class descriptors and instance
+        # overrides. An inherited method must regain descriptor lookup on
+        # retirement, rather than acquire a bound-method self-cycle.
+        self.patches.append((owner, name, ownOriginal, replacement))
         setattr(owner, name, replacement)
 
     def wrap(self, owner, name, stage, *, details=None, returned=None):
@@ -446,11 +451,14 @@ class JobDiagnostics:
             if measured in sinks:
                 sinks[sinks.index(measured)] = original
             self.sinkPatch = None
-        for owner, name, original, replacement in reversed(self.patches):
+        for owner, name, ownOriginal, replacement in reversed(self.patches):
             # A real owner may already have retired/replaced a callback. Do
             # not resurrect it just because the diagnostic wrapper is closing.
-            if getattr(owner, name) is replacement:
-                setattr(owner, name, original)
+            if vars(owner).get(name, _MISSING_ATTRIBUTE) is replacement:
+                if ownOriginal is _MISSING_ATTRIBUTE:
+                    delattr(owner, name)
+                else:
+                    setattr(owner, name, ownOriginal)
         self.patches.clear()
         if self.sqlitePhases is not None:
             self.sqlitePhases.close()

@@ -11,6 +11,7 @@ import time
 
 
 BUCKETS_NS = (1_000_000, 10_000_000, 100_000_000, 1_000_000_000, 5_000_000_000)
+_MISSING_ATTRIBUTE = object()
 
 
 def sqlPhase(sql):
@@ -122,6 +123,7 @@ class SqlitePhases:
         if self.patch is not None:
             raise RuntimeError("diagnostic already installed")
         original = store._connect
+        ownOriginal = vars(store).get("_connect", _MISSING_ATTRIBUTE)
 
         def connect(*args, **kwargs):
             connection = self.call("connect_configure", original, *args, **kwargs)
@@ -131,7 +133,11 @@ class SqlitePhases:
                 self._disable(error)
                 return connection
 
-        self.patch = store, original, connect
+        # Keep provenance, not a resolved bound method. Restoring the latter
+        # onto an instance would leave a new self -> bound-method -> self cycle.
+        # Register before assignment so a setter that mutates then raises can
+        # still be retired by close().
+        self.patch = store, ownOriginal, connect
         store._connect = connect
 
     def snapshot(self):
@@ -152,9 +158,12 @@ class SqlitePhases:
 
     def close(self):
         if self.patch is not None:
-            store, original, replacement = self.patch
-            if store._connect is replacement:
-                store._connect = original
+            store, ownOriginal, replacement = self.patch
+            if vars(store).get("_connect", _MISSING_ATTRIBUTE) is replacement:
+                if ownOriginal is _MISSING_ATTRIBUTE:
+                    delattr(store, "_connect")
+                else:
+                    store._connect = ownOriginal
             self.patch = None
 
 

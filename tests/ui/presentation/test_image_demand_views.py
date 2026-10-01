@@ -166,7 +166,15 @@ def testThousandHideShowCyclesReuseSameImageAndReleaseDemandOwner(qtApp, tmp_pat
             for _ in range(1000):
                 window.hide()
                 window.show()
-            assert imageReady(window) and window.displayed['root'].result.identity.resultKey == key
+            try:
+                assert imageReady(window) and window.displayed['root'].result.identity.resultKey == key
+            except AssertionError:
+                try:
+                    from tests.ui.presentation.image_demand_diagnostics import emitImageDemandFailure
+                    emitImageDemandFailure(window, session, key)
+                except Exception:
+                    pass  # Even a diagnostic import failure must preserve the assertion.
+                raise
             assert (backend.calls['ReadAsset'], session.stats['decoded'], hub.conversions) == (reads, decodes, conversions)
             assert len(session._imageConsumers) == 1 and not session._scheduled and session.pending.empty()
             assert len(window.records) <= 256 and len(hub.cache) == 1

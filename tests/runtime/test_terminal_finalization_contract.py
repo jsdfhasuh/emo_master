@@ -545,9 +545,16 @@ def test_fault_formatting_cannot_strand_claim_or_replace_primary(monkeypatch):
     assert supervisor._recoveries['b'].done.is_set()
 
 
-def test_duplicate_terminal_heartbeat_and_exit_cannot_compete_with_pending_claim():
+def test_duplicate_terminal_heartbeat_and_exit_cannot_compete_with_pending_claim(monkeypatch):
     runtime, supervisor, _ = setup_jobs('a', 'b')
     entered, release = threading.Event(), threading.Event()
+    waiting = threading.Event()
+    original_wait = supervisor._waitFirstAttempt
+    def wait(ticket, *args, **kwargs):
+        if ticket.jobId == 'a':
+            waiting.set()
+        return original_wait(ticket, *args, **kwargs)
+    monkeypatch.setattr(supervisor, '_waitFirstAttempt', wait)
     callbacks = []
     def callback(job, status):
         callbacks.append((job, status))
@@ -557,13 +564,16 @@ def test_duplicate_terminal_heartbeat_and_exit_cannot_compete_with_pending_claim
     supervisor.terminalCallback = callback
     owner, errors = threaded(lambda: consume(supervisor))
     process, cancel, channel = supervisor._handles['a']
+    b = graceful = None
+    b_errors, graceful_errors = [], []
     try:
         assert entered.wait(1)
         for terminal in ['job.completed', 'job.failed', 'job.aborted']:
             supervisor.consumeWorkerEvent('a', {'eventType': terminal})
         supervisor._heartbeat['a'] = 0
         supervisor.checkHeartbeat('a')
-        supervisor._enforceGracefulStop('a', process)
+        graceful, graceful_errors = threaded(lambda: supervisor._enforceGracefulStop('a', process))
+        assert waiting.wait(1) and graceful.is_alive()
         supervisor.processExited('a', 0)
         supervisor.bridgeStopped('a')
         assert not cancel.is_set() and process.terminations == process.closes == channel.closes == 0
@@ -580,8 +590,12 @@ def test_duplicate_terminal_heartbeat_and_exit_cannot_compete_with_pending_claim
     finally:
         release.set()
         owner.join(2)
-        b.join(2)
-    assert not errors and not b_errors
+        if b is not None:
+            b.join(2)
+        if graceful is not None:
+            graceful.join(2)
+    assert not errors and not b_errors and not graceful_errors
+    assert not owner.is_alive() and not b.is_alive() and not graceful.is_alive()
     assert callbacks == [('a', 'COMPLETED'), ('b', 'FAILED')]
     assert_retired(supervisor)
 

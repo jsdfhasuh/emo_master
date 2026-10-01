@@ -317,6 +317,7 @@ class JobSupervisor:
     def stopJobOutcome(self, jobId: str, mode: str = "graceful", context=None) -> StopOutcome:
         claim: list[TerminalTicket] = []
         pending = None
+        accepted = None
         missing = False
         try:
             if mode not in {"graceful", "force"}:
@@ -362,6 +363,9 @@ class JobSupervisor:
                             watcher = threading.Thread(target=self._enforceGracefulStop, args=(jobId, process),
                                                        name=f"runtime-stop-watch-{jobId}", daemon=True)
                             watcher.start()
+                            accepted = StopOutcome(True, JobStatus.STOPPING.value, f"job stopping ({mode})")
+            if accepted is not None:
+                return accepted
             if pending is not None:
                 if not self._waitFirstAttempt(pending, context):
                     return StopOutcome(False, record.status, "E_JOB_FINALIZATION_PENDING")
@@ -403,47 +407,63 @@ class JobSupervisor:
     def _enforceGracefulStop(self, jobId: str, process) -> None:
         self.assertMutationAllowed()
         process.join(timeout=max(0.0, self.gracefulStopTimeoutMs / 1000.0))
+        pending = None
         with self._terminalAttempt(jobId) as claim:
             with self._lock:
-                record = self.jobRepository.get(jobId)
-                handle = self._handles.get(jobId)
-                if record is None or record.isTerminal or jobId in self._terminalEvents or handle is None:
-                    return
-                if not process.is_alive():
-                    return
-                _process, cancelEvent, _queue = handle
-                cancelEvent.set()
-                bridge = self._bridges.get(jobId)
-                if bridge is not None:
-                    bridge.requestStop()
-                self._terminateProcess(process)
-                message = "graceful stop timed out; worker terminated"
-                self.eventStore.append(
-                    jobId,
-                    "process.terminated",
-                    "worker process terminated after graceful stop timeout",
-                    level="WARN",
-                    code="E_STOP_TIMEOUT",
-                    projectId=record.projectId,
-                    workflowId=record.workflowId,
-                )
-                stored = self.eventStore.append(
-                    jobId,
-                    "job.aborted",
-                    message,
-                    level="WARN",
-                    code="E_STOP_TIMEOUT",
-                    projectId=record.projectId,
-                    workflowId=record.workflowId,
-                )
-                self._claimTerminal(claim,
-                    jobId,
-                    JobStatus.ABORTED.value,
-                    stored.timestampMs,
-                    errorCode="E_STOP_TIMEOUT",
-                    message=message,
-                    stopMode="graceful",
-                )
+                pending = self._finalizations.get(jobId)
+                if pending is None:
+                    record = self.jobRepository.get(jobId)
+                    handle = self._handles.get(jobId)
+                    if record is None:
+                        return
+                    if record.isTerminal or jobId in self._terminalEvents:
+                        self._reap(jobId)
+                        return
+                    if handle is None:
+                        return
+                    if not process.is_alive():
+                        return
+                    _process, cancelEvent, _queue = handle
+                    cancelEvent.set()
+                    bridge = self._bridges.get(jobId)
+                    if bridge is not None:
+                        bridge.requestStop()
+                    self._terminateProcess(process)
+                    message = "graceful stop timed out; worker terminated"
+                    self.eventStore.append(
+                        jobId,
+                        "process.terminated",
+                        "worker process terminated after graceful stop timeout",
+                        level="WARN",
+                        code="E_STOP_TIMEOUT",
+                        projectId=record.projectId,
+                        workflowId=record.workflowId,
+                    )
+                    stored = self.eventStore.append(
+                        jobId,
+                        "job.aborted",
+                        message,
+                        level="WARN",
+                        code="E_STOP_TIMEOUT",
+                        projectId=record.projectId,
+                        workflowId=record.workflowId,
+                    )
+                    self._claimTerminal(claim,
+                        jobId,
+                        JobStatus.ABORTED.value,
+                        stored.timestampMs,
+                        errorCode="E_STOP_TIMEOUT",
+                        message=message,
+                        stopMode="graceful",
+                    )
+
+        if pending is not None:
+            # A competing watcher already accepted this terminal outcome. Its
+            # first attempt completes outside Supervisor; retirement still uses
+            # the normal recovery, live-bridge and native-close ownership gates.
+            self._waitFirstAttempt(pending)
+            with self._lock:
+                self._reap(jobId)
 
     def getProcess(self, jobId: str):
         with self._lock:

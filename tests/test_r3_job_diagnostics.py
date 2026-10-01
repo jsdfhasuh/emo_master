@@ -210,12 +210,70 @@ def testStageCountersExposeInFlightWaitAndPreserveFailureAndReturn(tmp_path):
         current = json.loads(probe.path.read_text())["snapshots"][-1]
         row = current["stages"]["terminal.callback"]
         assert row["entered"] == row["returned"] == 1 and row["failed"] == 0
-        assert row["wall_ns"] >= row["thread_cpu_ns"] >= 0
+        # Independent clocks can quantize differently, including zero wall
+        # time alongside a positive thread CPU tick.
+        assert row["wall_ns"] >= 0
+        assert row["thread_cpu_ns"] >= 0
         assert current["stages"]["formal.sqlite_append"]["failed"] == 1
         assert not current["active"]
     finally:
         release.set()
         thread.join(timeout=3)
+        probe.close()
+    assert owner.operation is operation
+    assert json.loads(probe.path.read_text())["observer_retired"]
+
+
+@pytest.mark.parametrize("fail_original", (False, True), ids=("returned", "failed"))
+@pytest.mark.parametrize("wall_ns,cpu_ns,wall_minus_cpu_ns", (
+    (0, 15_625_000, -15_625_000),
+    (250, 80, 170),
+), ids=("quantized_cpu_tick", "distinct_clock_deltas"))
+def testStageCountersPreserveExactIndependentClockDeltas(
+        monkeypatch, tmp_path, fail_original, wall_ns, cpu_ns, wall_minus_cpu_ns):
+    from scripts import r3_job_diagnostics as module
+
+    probe = JobDiagnostics(tmp_path / "diagnostic.json", source={}, plannedSeconds=5)
+    clock = SimpleNamespace(wall=1_000_000_000, cpu=2_000_000_000)
+    argument, result, failure = object(), object(), RuntimeError("same failure")
+    calls = []
+
+    def operation(value):
+        calls.append(value)
+        clock.wall += wall_ns
+        clock.cpu += cpu_ns
+        if fail_original:
+            raise failure
+        return result
+
+    owner = SimpleNamespace(operation=operation)
+    probe.wrap(owner, "operation", "terminal.callback")
+    try:
+        with monkeypatch.context() as patch:
+            # Replace only this observer's time namespace; other threads keep
+            # their real clocks, and the original operation is still invoked.
+            patch.setattr(module, "time", SimpleNamespace(
+                monotonic_ns=lambda: clock.wall,
+                thread_time_ns=lambda: clock.cpu,
+            ))
+            if fail_original:
+                with pytest.raises(RuntimeError) as raised:
+                    owner.operation(argument)
+                assert raised.value is failure
+            else:
+                assert owner.operation(argument) is result
+        assert calls == [argument]
+        probe.capture("after_operation", stacks=False)
+        current = json.loads(probe.path.read_text())["snapshots"][-1]
+        row = current["stages"]["terminal.callback"]
+        assert row == {
+            "entered": 1, "returned": int(not fail_original), "failed": int(fail_original),
+            "wall_ns": wall_ns, "thread_cpu_ns": cpu_ns, "max_wall_ns": wall_ns,
+        }
+        assert row["wall_ns"] - row["thread_cpu_ns"] == wall_minus_cpu_ns
+        assert not current["active"]
+        assert not probe.errors
+    finally:
         probe.close()
     assert owner.operation is operation
     assert json.loads(probe.path.read_text())["observer_retired"]

@@ -449,7 +449,7 @@ def executeTrial(args):
     assetTraceSummary = None
     if getattr(args, "asset_split_trace", False):
         from scripts.r3_asset_split_trace import AssetSplitTrace, installed
-        assetTrace = AssetSplitTrace()
+        assetTrace = AssetSplitTrace(passive_markers=getattr(args, "passive_rpc_markers", False))
     try:
         with base.patches() as patch:
             patch(supervisor, "runJobProcess", measuredJob)
@@ -570,6 +570,34 @@ def groupAssessment(rows):
         "interpretation": "ALL+Qt vs ALL-off is incremental page cost; NONE+Qt vs ALL+Qt isolates explicit snapshot policy; NONE+Qt vs ALL-off is combined configuration. Raw all-window age gates apply to every comparison."}
 
 
+def trialEvidence(directory, output, warmup, arm):
+    """The unchanged per-trial accounting shared by both supervised runners."""
+    path = directory / "trial.json"
+    if not path.exists():
+        return None, {}
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    traces = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("trace-*.json"))]
+    ordinals = {event["result_key"]: event["ordinal"] for trace in traces for event in trace["rows"]
+        if event.get("result_key") and event.get("ordinal") is not None}
+    for trace in traces:
+        for event in trace["rows"]:
+            if event.get("ordinal") is None and event.get("result_key") in ordinals:
+                event["ordinal"] = ordinals[event["result_key"]]
+    roles = dict(Counter(t["role"] for t in traces))
+    requiredRoles = {"execution": 1, "job": 1, "owner": 1}
+    if ARM_SPECS[arm]["capture"]:
+        requiredRoles["exporter"] = 2
+    dropped = sum(t["dropped_rows"] for t in traces)
+    fields = dict(stage_summary=base.summaryStages(traces, warmup), trace_roles=roles,
+        trace_dropped_rows=dropped, raw_evidence=str(path.relative_to(output)),
+        trace_complete=roles == requiredRoles and not dropped and not payload["outcome_overflow"]
+            and not payload["record_retention"]["capacity_reached"] and not payload["sampler"]["overflow"]
+            and not payload["sampler"]["errors"] and payload["sampler"]["retired"]
+            and set(payload["sampler"]["observed_roles"]) >= ({"owner", "job", "exporter-0", "exporter-1"} if ARM_SPECS[arm]["capture"] else {"owner", "job"}),
+        phases=payload["phases"])
+    return payload, fields
+
+
 def run(args):
     from p2_validate import identity, git
     before = identity()
@@ -600,30 +628,13 @@ def run(args):
                 "--arm", arm, "--count", str(args.count), "--warmup", str(args.warmup), "--qt-platform", args.qt_platform]
             if getattr(args, "asset_split_trace", False):
                 command.append("--asset-split-trace")
+            if getattr(args, "passive_rpc_markers", False):
+                command.append("--passive-rpc-markers")
             entry = {"group": group, "position": position, "arm": arm, "disk_preflight": base.diskPreflight(directory),
                 "watchdog": base.supervisedTrial(command, directory)}
-            path = directory/"trial.json"
-            if path.exists():
-                payload = json.loads(path.read_text(encoding="utf-8"))
-                traces = [json.loads(p.read_text(encoding="utf-8")) for p in sorted(directory.glob("trace-*.json"))]
-                ordinals = {event["result_key"]: event["ordinal"] for trace in traces for event in trace["rows"]
-                    if event.get("result_key") and event.get("ordinal") is not None}
-                for trace in traces:
-                    for event in trace["rows"]:
-                        if event.get("ordinal") is None and event.get("result_key") in ordinals:
-                            event["ordinal"] = ordinals[event["result_key"]]
-                roles = dict(Counter(t["role"] for t in traces))
-                requiredRoles = {"execution": 1, "job": 1, "owner": 1}
-                if ARM_SPECS[arm]["capture"]:
-                    requiredRoles["exporter"] = 2
-                dropped = sum(t["dropped_rows"] for t in traces)
-                entry.update(stage_summary=base.summaryStages(traces, args.warmup), trace_roles=roles,
-                    trace_dropped_rows=dropped, raw_evidence=str(path.relative_to(args.output)),
-                    trace_complete=roles == requiredRoles and not dropped and not payload["outcome_overflow"]
-                        and not payload["record_retention"]["capacity_reached"] and not payload["sampler"]["overflow"]
-                        and not payload["sampler"]["errors"] and payload["sampler"]["retired"]
-                        and set(payload["sampler"]["observed_roles"]) >= ({"owner", "job", "exporter-0", "exporter-1"} if ARM_SPECS[arm]["capture"] else {"owner", "job"}),
-                    phases=payload["phases"])
+            payload, fields = trialEvidence(directory, args.output, args.warmup, arm)
+            if payload is not None:
+                entry.update(fields)
                 if getattr(args, "asset_split_trace", False):
                     entry["asset_split_trace"] = payload.get("asset_split_trace", {"enabled": True, "complete": False})
                 rows[arm] = payload
@@ -658,9 +669,13 @@ def main():
     parser.add_argument("--qt-platform", default="windows" if os.name == "nt" else "offscreen")
     parser.add_argument("--asset-split-trace", action="store_true",
         help="opt-in loopback RPC attribution; preserves original arms/denominators and never reports performance PASS")
+    parser.add_argument("--passive-rpc-markers", action="store_true",
+        help="optional peer/next-loop-turn/RPC-task-done observations; requires --asset-split-trace")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()
+    if args.passive_rpc_markers and not args.asset_split_trace:
+        parser.error("--passive-rpc-markers requires --asset-split-trace")
     if not 2 <= args.count <= 96 or not 0 <= args.warmup < args.count or not 1 <= args.groups <= 3:
         parser.error("count 2..96, warmup 0..count-1, groups 1..3; reduced runs are diagnostic only")
     args.output = args.output.resolve()

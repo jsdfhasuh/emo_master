@@ -8,16 +8,16 @@ import pytest
 from scripts import r3_asset_split_analyze as analyze
 
 
-def trace(capture=True):
+def trace(capture=True, count=2, passive=False):
     rows = []
-    for ordinal in (1, 2):
+    for ordinal in range(1, count+1):
         for channel in (3, 7):
             # Both consumers request the SAME resource; only call_id separates them.
             identity = {"call_id": f"opaque:{ordinal}:{channel}", "channel_id": channel,
                 "result_key": f"result-{ordinal}", "ordinal": ordinal, "runtime_instance_id": "runtime",
                 "job_id": "job", "resource_id": f"asset-{ordinal}", "asset_bytes": 100,
                 "decoder_request": True, "resource_match": True, "runtime_matches_local_server": True}
-            origin = (ordinal*1000+channel*100)*1_000_000
+            origin = (ordinal*1000+channel)*1_000_000
             stamps = {"rpc": (0, 90), "handler": (5, 25), "dispatch": (5, 6), "worker": (7, 22),
                 "asset": (8, 21), "file": (10, 15), "server_sha": (16, 20), "serialize": (30, 33),
                 "deserialize": (77, 79), "client_sha": (92, 98), "png": (99, 116), "opencv": (100, 115)}
@@ -29,13 +29,24 @@ def trace(capture=True):
                 rows.append({**identity, "stage": analyze.STAGES["lock"], "lock_phase": phase,
                     "start_ns": origin+start*1_000_000, "end_ns": origin+start*1_000_000+100,
                     "outcome": "OK", "thread_cpu_ns": 101})
-    return {"rows": rows if capture else [], "clock": "same-process perf_counter_ns; synchronous CPU",
+            if passive:
+                for name, start, end in (("peer", 6, 6), ("loop", 33, 40), ("done", 85, 85)):
+                    rows.append({**identity, "stage": analyze.PASSIVE_STAGES[name],
+                        "start_ns": origin+start*1_000_000, "end_ns": origin+end*1_000_000,
+                        "outcome": "OK", "thread_cpu_ns": None if name != "loop" else 0,
+                        **({"peer_token": 1} if name == "peer" else {})})
+    payload = {"rows": rows if capture else [], "clock": "same-process perf_counter_ns; synchronous CPU",
         "pid": 456, "source_complete": True, "source_unchanged": True,
         "source_before": {"source": "a"*64}, "source_after": {"source": "a"*64},
         "instrumentation_disabled": False, "diagnostic_errors": 0, "dropped_rows": 0,
         "outstanding_associations": {"requests": 0, "replies": 0, "tokens": 0},
         "stage_coverage": {"missing_success_stages": {}},
-        "counters": {"client_calls_started": 4 if capture else 0, "client_calls_finished": 4 if capture else 0}}
+        "counters": {"client_calls_started": count*2 if capture else 0, "client_calls_finished": count*2 if capture else 0}}
+    if passive:
+        payload["features"] = {"passive_rpc_markers": True}
+        payload["passive_markers"] = {"enabled": True, "grpc_version": "1.78.0", "peer_count": 1 if capture else 0,
+            "pending_done": 0, "pending_turns": 0, "retirement_verified": True}
+    return payload
 
 
 def result(payload):
@@ -238,3 +249,125 @@ def testMalformedMetadataHasBoundedCliFailure(tmp_path, monkeypatch, capsys):
     message = json.loads(captured.out)
     assert message["analysis_status"] == "INVALID"
     assert len(captured.out) < 500
+
+
+def testOptionalMarkersPreserveSignedOrderAndOnlyLabelObservedClientOverlap():
+    report = result(trace(passive=True))
+    assert report["status"] == "COMPLETE"
+    assert report["intervals_ms"]["serialize_end_to_next_loop_turn"]["p95_ms"] == 7
+    assert report["intervals_ms"]["rpc_done_to_deserialize_start"]["p95_ms"] == -8
+    assert report["passive_markers"]["overlapping_observed_client_rpc_same_peer_pairs"] == 1
+    assert "do not prove simultaneous server RPC" in report["passive_markers"]["interpretation"]
+    assert report["passive_markers"]["matched_pairs"] == report["passive_markers"]["expected_pairs"] == 1
+    assert all(not key.startswith("_") for row in report["slowest_rpc_calls"] for key in row)
+
+
+@pytest.mark.parametrize("defect", ["missing", "duplicate", "undeclared", "pending", "boolean_pending", "retirement", "peer", "loop_origin", "done_before_handler"])
+def testOptionalMarkerAccountingCannotManufactureCompleteness(defect):
+    payload = trace(passive=True)
+    row = next(item for item in payload["rows"] if item["ordinal"] == 2 and item["stage"] == analyze.PASSIVE_STAGES["loop"])
+    if defect == "missing":
+        payload["rows"].remove(row)
+    elif defect == "duplicate":
+        payload["rows"].append(dict(row))
+    elif defect == "undeclared":
+        del payload["features"]
+    elif defect == "pending":
+        payload["passive_markers"]["pending_turns"] = 1
+    elif defect == "boolean_pending":
+        payload["passive_markers"]["pending_turns"] = False
+    elif defect == "retirement":
+        payload["passive_markers"]["retirement_verified"] = False
+    elif defect == "peer":
+        next(item for item in payload["rows"] if item["stage"] == analyze.PASSIVE_STAGES["peer"])["peer_token"] = "endpoint"
+    elif defect == "loop_origin":
+        row["start_ns"] += 100
+    else:
+        item = next(item for item in payload["rows"] if item["stage"] == analyze.PASSIVE_STAGES["done"])
+        item["start_ns"] -= 100_000_000
+        item["end_ns"] = item["start_ns"]
+    assert result(payload)["status"] == "INCOMPLETE"
+
+
+def testDistinctPeersAndNonoverlapAreNotReportedAsSharedTransport():
+    payload = trace(passive=True)
+    payload["passive_markers"]["peer_count"] = 2
+    for row in payload["rows"]:
+        if row["channel_id"] == 7:
+            row["start_ns"] += 200_000_000
+            row["end_ns"] += 200_000_000
+            if row["stage"] == analyze.PASSIVE_STAGES["peer"]:
+                row["peer_token"] = 2
+    report = result(payload)
+    assert report["status"] == "COMPLETE"
+    assert report["passive_markers"]["different_peer_pairs"] == 1
+    assert report["passive_markers"]["overlapping_observed_client_rpc_same_peer_pairs"] == report["passive_markers"]["overlapping_observed_client_rpc_different_peer_pairs"] == 0
+
+
+def testUnknownClockSuppressesPeerOverlapAttributionToo():
+    payload = trace(passive=True)
+    payload["clock"] = "unknown"
+    report = result(payload)
+    assert report["status"] == "INCOMPLETE"
+    assert not report["passive_markers"]["clock_usable"]
+    assert "overlapping_observed_client_rpc_same_peer_pairs" not in report["passive_markers"]
+
+
+def testPeerPairingNeverJoinsDifferentJobsWithMatchingResultAndAssetKeys():
+    payload = trace(passive=True)
+    for row in payload["rows"]:
+        if row["channel_id"] == 7:
+            row["job_id"] = "other-job"
+    report = result(payload)
+    assert report["status"] == "INCOMPLETE"
+    assert report["passive_markers"]["matched_pairs"] == 0
+    assert report["issues"]["passive_pair_coverage"] == 1
+
+
+def marker_evidence(root):
+    root.mkdir()
+    manifest = {"experiment": analyze.MARKER_EXPERIMENT,
+        "configuration": {"count": 96, "warmup": 8, "marker_order": ["off", "on", "on", "off"]},
+        "source_stable": True, "clock": "same-host perf_counter_ns", "trials": []}
+    for position, mode in enumerate(("off", "on", "on", "off")):
+        directory = root / f"trial-{position}"
+        directory.mkdir()
+        split = trace(count=96, passive=mode == "on")
+        for row in split["rows"]:
+            row["asset_sha256"] = "a"*64
+        rows = [{"ordinal": ordinal, "scope_ended_ns": ordinal*1_000_000_000,
+            "received_ns": ordinal*1_000_000_000+30_000_000,
+            "model_ns": ordinal*1_000_000_000+100_000_000, "owner_age_at_send_ms": 20,
+            "applied_to_live": True, "failures": {}, "decoded": ["image"]} for ordinal in range(9, 97)]
+        trial = {"arm": "none_qt", "capture_enabled": True, "asset_split_trace": {"complete": True},
+            "input_sha256": "b"*64, "consumers": [{"rows": rows}, {"rows": rows}]}
+        (directory / "trial.json").write_text(json.dumps(trial))
+        (directory / "asset-split.json").write_text(json.dumps(split))
+        manifest["trials"].append({"group": 0, "position": position, "arm": "none_qt", "marker_mode": mode,
+            "raw_evidence": f"trial-{position}/trial.json", "asset_split_trace": {"complete": True},
+            "trace_complete": True, "watchdog": {"status": "PASS"}})
+    (root / "evidence.json").write_text(json.dumps(manifest))
+    return manifest
+
+
+@pytest.mark.parametrize("defect", [None, "marker_order", "declared_mode", "payload", "denominator"])
+def testExplicitFourArmControlPreservesExactOrderPayloadAndDenominators(tmp_path, defect):
+    root = tmp_path / "raw"
+    manifest = marker_evidence(root)
+    if defect == "marker_order":
+        manifest["configuration"]["marker_order"] = ["on", "off", "on", "off"]
+    elif defect == "declared_mode":
+        manifest["trials"][0]["marker_mode"] = "on"
+    elif defect == "denominator":
+        manifest["configuration"]["count"] = 95
+    elif defect == "payload":
+        path = root / "trial-0" / "asset-split.json"
+        split = json.loads(path.read_text())
+        for row in split["rows"]:
+            row["asset_sha256"] = "c"*64
+        path.write_text(json.dumps(split))
+    (root / "evidence.json").write_text(json.dumps(manifest))
+    report = analyze.analyze(root, tmp_path / "analysis")
+    assert report["analysis_status"] == ("COMPLETE" if defect is None else "INCOMPLETE")
+    assert report["performance_verdict"] == "NOT_EVALUATED"
+    assert [row["calls"]["passive_markers"]["enabled"] for row in report["trials"]] == [False, True, True, False]

@@ -155,7 +155,8 @@ class FakeRuntime:
 
 
 @pytest.mark.parametrize("consumers,fault", [(1, None), (2, None), (1, "record"), (1, "take"), (1, "associate")])
-def testRealGeneratedLoopbackPairsSameResourceAndRestoresHooks(tmp_path, consumers, fault):
+@pytest.mark.parametrize("passive", [False, True])
+def testRealGeneratedLoopbackPairsSameResourceAndRestoresHooks(tmp_path, consumers, fault, passive):
     import cv2
     import numpy as np
     from emo_master.apps.runtime.grpc_server.aio_entry import AioRuntimeServer
@@ -165,7 +166,7 @@ def testRealGeneratedLoopbackPairsSameResourceAndRestoresHooks(tmp_path, consume
     from emo_master.clients.runtime import display_session
 
     originals = grpc.insecure_channel, grpc.unary_unary_rpc_method_handler, hashlib.sha256, Path.read_bytes
-    trace = split.AssetSplitTrace()
+    trace = split.AssetSplitTrace(passive_markers=passive)
     pixels = np.full((4, 5, 3), 17, np.uint8)
     ok, encoded = cv2.imencode(".png", pixels)
     assert ok
@@ -225,20 +226,30 @@ def testRealGeneratedLoopbackPairsSameResourceAndRestoresHooks(tmp_path, consume
         assert row["resource_id"] == asset["resourceId"] and row["ordinal"] == 9
         assert row["runtime_instance_id"] == "runtime" and row["job_id"] == "job"
         assert row["resource_match"] and row["runtime_matches_local_server"]
-        if row["stage"] in ("server.handler", "server.dispatch_to_worker"):
+        if row["stage"] in ("server.handler", "server.dispatch_to_worker", "server.peer_observed", "server.rpc_done_observed"):
             assert row["thread_cpu_ns"] is None
         elif hasattr(split.time, "thread_time_ns"):
             assert row["thread_cpu_ns"] is not None and row["thread_cpu_ns"] >= 0
     assert not any("path" in row or "content" in row for row in trace.rows)
+    if passive:
+        assert payload["passive_markers"]["retirement_verified"]
+        assert payload["passive_markers"]["pending_done"] == payload["passive_markers"]["pending_turns"] == 0
+        assert "127.0.0.1" not in json.dumps(payload)
+        for token in {row["call_id"] for row in trace.rows}:
+            stages = {row["stage"]: row for row in trace.rows if row["call_id"] == token}
+            assert set(split.PASSIVE_STAGES).issubset(stages)
+            assert stages["server.serializer_next_loop_turn"]["start_ns"] == stages["server.protobuf_serialize"]["end_ns"]
+            assert stages["server.rpc_done_observed"]["start_ns"] >= stages["server.handler"]["end_ns"]
     assert all(not value for name, value in payload["counters"].items()
                if "unmatched" in name or "overflow" in name or "conflict" in name)
     trace.save(tmp_path / "split.json")
     assert json.loads((tmp_path / "split.json").read_text())["role"] == "asset_split"
 
 
-def testExceptionRestoresScopedWrappers(tmp_path):
+@pytest.mark.parametrize("passive", [False, True])
+def testExceptionRestoresScopedWrappers(tmp_path, passive):
     before = grpc.insecure_channel, hashlib.sha256, Path.read_bytes
-    trace = split.AssetSplitTrace()
+    trace = split.AssetSplitTrace(passive_markers=passive)
     with pytest.raises(RuntimeError, match="deliberate"):
         with patches() as patch, split.installed(trace, patch, tmp_path):
             raise RuntimeError("deliberate")

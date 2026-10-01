@@ -14,6 +14,7 @@ from pathlib import Path
 import threading
 import time
 from uuid import uuid4
+import weakref
 
 
 METHOD = "/emo_master.runtime.DisplayService/ReadAsset"
@@ -22,6 +23,7 @@ ROW_LIMIT = 6000
 IDENTITY_LIMIT = 256
 ASSOCIATION_LIMIT = 16
 TRACE_BYTES = 24 * 1024 * 1024
+PASSIVE_STAGES = ("server.peer_observed", "server.serializer_next_loop_turn", "server.rpc_done_observed")
 REQUIRED_STAGES = (
     "client.asset_rpc_split", "server.dispatch_to_worker", "server.handler",
     "server.worker", "server.asset_read", "server.asset_lock_wait",
@@ -53,10 +55,167 @@ def _cpu():
     return clock() if clock is not None else None
 
 
+class PassiveRpcMarkers:
+    """Optional finite callbacks on existing owners; never owns a runtime task."""
+    def __init__(self, trace):
+        # Queued callbacks may outlive the observer. Keep its finite maps and
+        # lock available for cleanup without retaining the trace itself.
+        self._trace = weakref.ref(trace)
+        self.lock = trace.lock
+        self.association_limit = trace.association_limit
+        self.loops = {}
+        self.loop_threads = {}
+        self.peers = {}
+        self.peer_count = 0
+        self.done = {}
+        self.turns = {}
+        self.retirement_verified = False
+        self.grpc_version = None
+
+    def register_loop(self, runtime, loop):
+        trace = self._trace()
+        if trace is None:
+            return
+        if runtime not in self.loops and len(self.loops) >= 2:
+            trace.count("passive_loop_overflow")
+            return
+        self.loops[runtime] = loop
+        self.loop_threads[runtime] = threading.get_ident()
+
+    def _put(self, target, token, value, kind):
+        trace = self._trace()
+        if trace is None:
+            return False
+        with self.lock:
+            if token in target:
+                trace.count("passive_" + kind + "_replaced")
+                return False
+            if len(target) >= self.association_limit:
+                trace.count("passive_" + kind + "_overflow")
+                return False
+            target[token] = value
+            trace.counters["passive_" + kind + "_peak"] = max(
+                trace.counters["passive_" + kind + "_peak"], len(target))
+            return True
+
+    def handler(self, metadata, context):
+        trace = self._trace()
+        if trace is None:
+            return
+        peer = context.peer()
+        if not isinstance(peer, str) or not 0 < len(peer) <= 256:
+            trace.count("passive_peer_invalid")
+            return
+        key = (metadata["runtime_instance_id"], peer)
+        with self.lock:
+            if key not in self.peers:
+                if len(self.peers) >= self.association_limit:
+                    trace.count("passive_peer_overflow")
+                    return
+                self.peers[key] = len(self.peers) + 1
+            peer_token = self.peers[key]
+            self.peer_count = len(self.peers)
+        stamp = time.perf_counter_ns()
+        trace.record("server.peer_observed", stamp, stamp, None, None, metadata,
+                     peer_token=peer_token)
+        token = metadata["call_id"]
+        if self._put(self.done, token, metadata, "done"):
+            context.add_done_callback(lambda _context: self.completed(token))
+
+    def completed(self, token):
+        trace = self._trace()
+        stamp = trace.observe(time.perf_counter_ns) if trace is not None else None
+        with self.lock:
+            metadata = self.done.pop(token, None)
+        if trace is not None and stamp is not None:
+            trace.observe(self._record_completed, trace, metadata, stamp)
+
+    @staticmethod
+    def _record_completed(trace, metadata, stamp):
+        if metadata is None:
+            trace.count("passive_done_unmatched")
+            return
+        trace.record("server.rpc_done_observed", stamp, stamp, None, None, metadata)
+
+    def serialized(self, metadata, stamp, cpu):
+        trace = self._trace()
+        if trace is None:
+            return
+        runtime = metadata["runtime_instance_id"]
+        loop = self.loops.get(runtime)
+        if loop is None or self.loop_threads.get(runtime) != threading.get_ident():
+            trace.count("passive_serializer_thread_invalid")
+            return
+        token = metadata["call_id"]
+        entry = {"metadata": metadata, "start": stamp, "cpu": cpu, "handle": None}
+        if self._put(self.turns, token, entry, "turn"):
+            # Exactly one existing-loop callback per serialized response. No
+            # timer, sleep, extra RPC, payload, polling thread, or yield.
+            entry["handle"] = loop.call_soon(self.turned, token)
+
+    def turned(self, token):
+        trace = self._trace()
+        clocks = trace.observe(self._callback_clocks) if trace is not None else None
+        with self.lock:
+            entry = self.turns.pop(token, None)
+        if trace is not None and clocks is not None:
+            trace.observe(self._record_turned, trace, entry, clocks)
+
+    @staticmethod
+    def _callback_clocks():
+        # Observe before the diagnostic lock/pop, without retaining the owner
+        # through queued callbacks. Sampling failures still drain finite entries.
+        return time.perf_counter_ns(), _cpu()
+
+    @staticmethod
+    def _record_turned(trace, entry, clocks):
+        if entry is None:
+            trace.count("passive_turn_unmatched")
+            return
+        stamp, cpu = clocks
+        trace.record("server.serializer_next_loop_turn", entry["start"], stamp,
+                     entry["cpu"], cpu, entry["metadata"])
+
+    def retire(self):
+        # Called only as the original trial leaves its ownership scope. Never
+        # wait for an owner or extend its lifetime to complete optional evidence.
+        stopped = all(loop.is_closed() and not loop.is_running() for loop in self.loops.values())
+        trace = self._trace()
+        with self.lock:
+            self.retirement_verified = stopped and not self.done and not self.turns
+            if not stopped:
+                if trace is not None:
+                    trace.count("passive_owner_retirement_unverified")
+                return
+            if trace is not None and (self.done or self.turns):
+                trace.count("passive_callbacks_unmatched", len(self.done) + len(self.turns))
+            # Only instrumentation handles are cancelled, and only after every
+            # registered loop is closed. Never touch the runtime done callback.
+            for entry in self.turns.values():
+                if entry["handle"] is not None:
+                    entry["handle"].cancel()
+            self.done.clear()
+            self.turns.clear()
+            self.loops.clear()
+            self.loop_threads.clear()
+            self.peers.clear()  # Raw peer strings never enter the artifact.
+
+    def report(self):
+        with self.lock:
+            return {"enabled": True, "grpc_version": self.grpc_version,
+                    "peer_limit": self.association_limit, "peer_count": self.peer_count,
+                    "pending_done": len(self.done), "pending_turns": len(self.turns),
+                    "retirement_verified": self.retirement_verified,
+                    "interpretation": "Next-loop-turn includes synchronous send preparation and intervening loop work. "
+                        "RPC done is task completion observed, not client receipt. Signed callback/client ordering is valid. "
+                        "Peer tokens express endpoint equality only. Overlapping observed client RPC spans do not prove concurrent server RPCs or HTTP/2 streams. "
+                        "Thread CPU may be coarsely quantized (15.625 ms observed on Windows); no fine wait/GIL attribution."}
+
+
 class AssetSplitTrace:
     """Identity-only associations and finite rows; no threads, queues or profiler."""
     def __init__(self, row_limit=ROW_LIMIT, association_limit=ASSOCIATION_LIMIT,
-                 identity_limit=IDENTITY_LIMIT):
+                 identity_limit=IDENTITY_LIMIT, *, passive_markers=False):
         self.row_limit = row_limit
         self.association_limit = association_limit
         self.identity_limit = identity_limit
@@ -77,6 +236,7 @@ class AssetSplitTrace:
         self.disabled = False
         self.diagnostic_errors = 0
         self.last_diagnostic_error = None
+        self.markers = PassiveRpcMarkers(self) if passive_markers else None
 
     def observe(self, operation, /, *args, default=None, **kwargs):
         """Only instrumentation callbacks go here, never the observed operation."""
@@ -118,6 +278,10 @@ class AssetSplitTrace:
             key = (identity.runtimeInstanceId, identity.jobId, source.image.resourceId)
             value = {"result_key": identity.resultKey, "ordinal": identity.resultOrdinal,
                      "asset_bytes": source.image.byteSize}
+            if getattr(source.image, "sha256", None) is not None:
+                # Reuse the already validated descriptor digest; never hash an
+                # extra payload for this observer or retain image bytes.
+                value["asset_sha256"] = source.image.sha256
             with self.lock:
                 previous = self.identities.get(key)
                 if previous is not None and previous != value:
@@ -187,6 +351,8 @@ class AssetSplitTrace:
             end, cpu_end = self.observe(time.perf_counter_ns, default=start), self.observe(_cpu)
             self.local.metadata, self.local.stage = previous, previous_stage
             self.observe(self.record, stage, start, end, cpu_start, cpu_end, metadata, outcome)
+            if self.markers is not None and stage == "server.protobuf_serialize" and outcome == "OK":
+                self.observe(self.markers.serialized, metadata, end, cpu_end)
 
     def call(self, stage, metadata, operation, /, *args, **kwargs):
         if self.disabled:
@@ -221,9 +387,13 @@ class AssetSplitTrace:
                         missing[stage] += 1
                 if item["stages"]["server.asset_lock_wait"] != 2:
                     missing["server.asset_lock_wait_expected_two"] += 1
+                if self.markers is not None:
+                    for stage in PASSIVE_STAGES:
+                        if item["stages"][stage] != 1:
+                            missing[stage + "_expected_one"] += 1
             elif item["rpc_outcome"] is not None:
                 failed += 1
-        return {"role": "asset_split", "pid": os.getpid(), "row_limit": self.row_limit,
+        payload = {"role": "asset_split", "pid": os.getpid(), "row_limit": self.row_limit,
                 "identity_limit": self.identity_limit, "association_limit": self.association_limit,
                 "dropped_rows": counters.get("dropped_rows", 0), "counters": counters,
                 "instrumentation_disabled": self.disabled, "diagnostic_errors": self.diagnostic_errors,
@@ -243,6 +413,10 @@ class AssetSplitTrace:
                     "Hash spans cover SHA-256 construction from bytes, excluding hexdigest. "
                     "No GIL ownership is observed. Missing/ambiguous associations are not imputed.",
                 "performance_verdict": "NOT_EVALUATED"}
+        if self.markers is not None:
+            payload["features"] = {"passive_rpc_markers": True}
+            payload["passive_markers"] = self.markers.report()
+        return payload
 
     def save(self, destination):
         payload = self.payload()
@@ -255,13 +429,15 @@ class AssetSplitTrace:
         complete = (not self.disabled and not self.diagnostic_errors and not counter_failures
                     and payload["source_complete"] and payload["source_unchanged"]
                     and not any(payload["outstanding_associations"].values())
-                    and not payload["stage_coverage"]["missing_success_stages"])
+                    and not payload["stage_coverage"]["missing_success_stages"]
+                    and (self.markers is None or payload["passive_markers"]["retirement_verified"]))
         return {"enabled": True, "file": destination.name, "complete": bool(complete),
                 "source_complete": payload["source_complete"], "source_unchanged": payload["source_unchanged"],
                 "diagnostic_errors": self.diagnostic_errors, "counter_failures": counter_failures,
                 "client_calls_started": self.counters["client_calls_started"],
                 "client_calls_finished": self.counters["client_calls_finished"],
                 "stage_coverage": payload["stage_coverage"],
+                "passive_rpc_markers": self.markers is not None,
                 "performance_verdict": "NOT_EVALUATED"}
 
 
@@ -401,6 +577,10 @@ def installed(trace, patch, root):
     from emo_master.clients.runtime import display_session
 
     trace.source_before = trace.observe(fingerprints, root, default={})
+    if trace.markers is not None:
+        trace.markers.grpc_version = grpc.__version__
+        if grpc.__version__ != "1.78.0":
+            raise ValueError("passive RPC marker semantics require grpcio 1.78.0")
     original_channel = grpc.insecure_channel
 
     def channel(*args, **kwargs):
@@ -491,6 +671,8 @@ def installed(trace, patch, root):
                 trace.runtimes.add(runtime)
             else:
                 trace.count("runtime_registry_overflow")
+        if trace.markers is not None:
+            trace.observe(trace.markers.register_loop, runtime, server.loop)
 
         def worker(request, context):
             entry = trace.observe(trace.take, "requests", id(request))
@@ -524,6 +706,8 @@ def installed(trace, patch, root):
             if metadata is None:
                 return await inner(request, context)
             started, outcome = time.perf_counter_ns(), "OK"
+            if trace.markers is not None:
+                trace.observe(trace.markers.handler, metadata, context)
             trace.observe(trace.associate, "requests", id(request), (metadata, started))
             try:
                 return await inner(request, context)
@@ -563,4 +747,13 @@ def installed(trace, patch, root):
     try:
         yield trace
     finally:
+        if trace.markers is not None:
+            try:
+                trace.markers.retire()
+            except Exception as error:
+                # Cleanup of observers must still run after observe disabled
+                # itself, and must never replace the actual trial exception.
+                trace.disabled = True
+                trace.diagnostic_errors += 1
+                trace.last_diagnostic_error = type(error).__name__[:80]
         trace.source_after = trace.observe(fingerprints, root, default={})

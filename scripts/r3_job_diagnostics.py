@@ -105,12 +105,16 @@ def eventDetails(event):
 
 
 def stackSnapshot():
-    frames = sys._current_frames()
     threads = sorted(threading.enumerate(), key=lambda thread: (
         not (thread.name == "MainThread" or thread.name.startswith("runtime-event-bridge-")), thread.name))
+    # Keep actual owners before obtaining frame IDs; an exited Thread's ID can
+    # already belong to an unrelated new thread by the time frames are read.
+    frames = sys._current_frames()
     rows = []
     try:
         for thread in threads[:16]:
+            if not thread.is_alive():
+                continue
             frame = frames.get(thread.ident)
             stack = []
             while frame is not None and len(stack) < 16:
@@ -169,11 +173,17 @@ class JobDiagnostics:
     MAX_BYTES = 1024 * 1024
     MAX_ACTIVE_THREADS = 32
 
-    def __init__(self, path, *, source, plannedSeconds):
+    def __init__(self, path, *, source, plannedSeconds, sampleSeconds=None, persistPeriodic=True):
         self.path = Path(path)
         self.path.open("x", encoding="utf-8").close()
         self.source = source
         self.plannedSeconds = plannedSeconds
+        self.sampleSeconds = sampleSeconds
+        self.persistPeriodic = persistPeriodic
+        self.sqlitePhases = None
+        self.workerInstrumented = False
+        self.captureCost = {"calls": 0, "failed": 0, "wall_ns": 0, "thread_cpu_ns": 0,
+                            "max_wall_ns": 0, "disk_save_requests": 0}
         self.runtime = None
         self.jobId = ""
         self.started = time.monotonic()
@@ -217,7 +227,7 @@ class JobDiagnostics:
                     self.stages[stage]["entered"] += 1
                     previous = self.active.get(ident)
                     if previous is not None or len(self.active) < self.MAX_ACTIVE_THREADS:
-                        self.active[ident] = {"stage": stage, "start_ns": start,
+                        self.active[ident] = {"stage": stage, "start_ns": start, "thread_id": ident,
                                               "thread": threading.current_thread().name[:100], **context}
             except BaseException as error:
                 self._error(error)
@@ -259,10 +269,14 @@ class JobDiagnostics:
         with self.lock:
             self.frontiers[name] = {"observed_ns": time.monotonic_ns(), **value}
 
-    def install(self, runtime):
+    def install(self, runtime, *, sqlitePhases=False, workerCounters=True):
         from emo_master.apps.runtime.jobs import supervisor as supervisorModule
         self.runtime = runtime
         supervisor = runtime.jobSupervisor
+        if sqlitePhases:
+            from scripts.r3_sqlite_phases import SqlitePhases
+            self.sqlitePhases = SqlitePhases()
+            self.sqlitePhases.install(runtime.sqliteStore)
 
         def startDetails(spec):
             self.jobId = spec.jobId
@@ -306,8 +320,10 @@ class JobDiagnostics:
         self.wrap(runtime.sqliteStore, "updateJobStatus", "job.sqlite_status")
         self.wrap(supervisor, "processExited", "supervisor.process_exited")
         self.wrap(supervisor, "bridgeStopped", "supervisor.bridge_stopped")
-        self._patch(supervisorModule, "runJobProcess", partial(diagnosticWorker,
-                    target=supervisorModule.runJobProcess, shared=self.shared))
+        if workerCounters:
+            self._patch(supervisorModule, "runJobProcess", partial(diagnosticWorker,
+                        target=supervisorModule.runJobProcess, shared=self.shared))
+            self.workerInstrumented = True
         self.thread = threading.Thread(target=self._observe, name="r3-job-diagnostics", daemon=True)
         self.thread.start()
 
@@ -332,6 +348,9 @@ class JobDiagnostics:
                  "last_observed_cell_ms": supervisor._heartbeatMonotonic.get(self.jobId)}
         cell = supervisor._heartbeatCells.get(self.jobId)
         state["heartbeat_cell_ms"] = cell.read() if cell is not None else None
+        persistence = getattr(runtime, "sqliteStore", None)
+        state["sqlite_idle_owned"] = getattr(persistence, "_idleConnection", None) is not None
+        state["sqlite_idle_ready"] = bool(getattr(persistence, "_idleConnectionReady", False))
         if handle is not None:
             try:
                 state.update(worker_pid=handle[0].pid, worker_exitcode=handle[0].exitcode,
@@ -340,26 +359,47 @@ class JobDiagnostics:
                 state["worker_state"] = "RETIRED_OR_UNAVAILABLE"
         return state
 
-    def capture(self, reason, *, stacks=True):
+    def capture(self, reason, *, stacks=True, save=True):
         """Best effort and payload-free; must never hide the original failure."""
         if self.closed:
             return
+        started = cpu = None
+        failed = True
         try:
-            stamp = time.monotonic_ns()
+            started, cpu = time.monotonic_ns(), time.thread_time_ns()
             state = self._state()
             worker = {name: int(self.shared[index]) for index, name in enumerate(WORKER_FIELDS)}
             stack = stackSnapshot() if stacks else None
+            sqlite = self.sqlitePhases.snapshot() if self.sqlitePhases is not None else None
             with self.lock:
+                stamp = time.monotonic_ns()
                 row = {"reason": reason[:40], "monotonic_ns": stamp,
+                       "observation_started_ns": started,
                        "owner_process_cpu_ns": time.process_time_ns(), "state": state,
-                       "worker": worker, "frontiers": dict(self.frontiers),
+                       "worker": worker, "sqlite": sqlite, "frontiers": dict(self.frontiers),
                        "active": [dict(value, elapsed_ns=stamp-value["start_ns"]) for value in self.active.values()],
                        "stages": {name: dict(value) for name, value in self.stages.items()}, "stacks": stack}
                 self.evicted += int(len(self.rows) == self.MAX_SNAPSHOTS)
                 self.rows.append(row)
-            self._save()
+            if save:
+                self._save()
+            failed = False
         except BaseException as error:
             self._error(error)
+        finally:
+            try:
+                if started is not None and cpu is not None:
+                    wall, used = time.monotonic_ns() - started, time.thread_time_ns() - cpu
+                    with self.lock:
+                        row = self.captureCost
+                        row["calls"] += 1
+                        row["failed"] += int(failed)
+                        row["wall_ns"] += wall
+                        row["thread_cpu_ns"] += used
+                        row["max_wall_ns"] = max(row["max_wall_ns"], wall)
+                        row["disk_save_requests"] += int(save)
+            except BaseException as error:
+                self._error(error)
 
     def _save(self):
         with self.writeLock:
@@ -369,7 +409,9 @@ class JobDiagnostics:
                          "errors": list(self.errors), "maximum_snapshots": self.MAX_SNAPSHOTS,
                          "maximum_bytes": self.MAX_BYTES,
                          "observer_retired": self.closed,
-                         "semantics": "Opt-in observer. Inclusive stage wall/thread CPU totals; do not sum nested stages. Active CPU is not sampled. Worker fields are non-atomic observations; put return is not feeder flush. Cached state uses no production locks or database queries. No event payloads or source lines."}
+                         "worker_instrumented": self.workerInstrumented,
+                         "capture_cost": dict(self.captureCost),
+                         "semantics": "Opt-in observer. State/job_id describe the latest started Job; phase and stage totals span all observed Jobs. SQL and outer active/context snapshots are sampled separately and are not joined; thread_id alone cannot establish Job attribution. Entire snapshot is non-atomic. Inclusive stage wall/thread CPU totals; do not sum nested stages. Capture cost includes synchronous saves and completed captures only. Active CPU is not sampled. Worker fields are non-atomic observations; put return is not feeder flush. Cached state uses no production locks or database queries. No event payloads or source lines."}
             encoded = json.dumps(value, ensure_ascii=True, separators=(",", ":"))
             while len(encoded.encode("utf-8")) > self.MAX_BYTES and len(value["snapshots"]) > 1:
                 value["snapshots"].pop(0)
@@ -383,10 +425,12 @@ class JobDiagnostics:
 
     def _observe(self):
         while not self.stop.is_set():
-            self.capture("periodic")
+            self.capture("periodic", save=self.persistPeriodic)
             elapsed = time.monotonic() - self.started
             # Eight input-period opportunities, then a two-second terminal tail.
             interval = max(2.0, self.plannedSeconds / 8) if elapsed < self.plannedSeconds else 2.0
+            if self.sampleSeconds is not None:
+                interval = max(0.25, float(self.sampleSeconds))
             self.stop.wait(interval)
 
     def close(self):
@@ -408,6 +452,8 @@ class JobDiagnostics:
             if getattr(owner, name) is replacement:
                 setattr(owner, name, original)
         self.patches.clear()
+        if self.sqlitePhases is not None:
+            self.sqlitePhases.close()
         self.closed = True
         self._save()
         self.runtime = None

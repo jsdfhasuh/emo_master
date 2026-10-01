@@ -306,6 +306,79 @@ def testBoundedSnapshotsExcludePayloadsAndFileContents(tmp_path):
         probe.close()
 
 
+@pytest.mark.parametrize("exitDuringFrameRead", (False, True))
+def testStackSnapshotCannotAttributeReusedIdToRetiredOwner(monkeypatch, exitDuringFrameRead):
+    import sys
+    release = threading.Event()
+    owner = threading.Thread(target=release.wait, name="runtime-event-bridge-retired")
+    owner.start()
+    originalFrames = sys._current_frames
+    if not exitDuringFrameRead:
+        release.set()
+        owner.join(2)
+        monkeypatch.setattr(owner, "_ident", threading.get_ident())
+
+    def frames():
+        if exitDuringFrameRead:
+            release.set()
+            owner.join(2)
+            monkeypatch.setattr(owner, "_ident", threading.get_ident())
+        return originalFrames()
+
+    monkeypatch.setattr(threading, "enumerate", lambda: [owner])
+    monkeypatch.setattr(sys, "_current_frames", frames)
+    try:
+        assert stackSnapshot()["threads"] == []
+    finally:
+        release.set()
+        owner.join(2)
+        assert not owner.is_alive()
+
+
+def testMemoryOnlyCaptureTimesActiveRowsUnderItsOwnLock(monkeypatch, tmp_path):
+    from scripts import r3_job_diagnostics as module
+    probe = JobDiagnostics(tmp_path / "diagnostic.json", source={}, plannedSeconds=1, persistPeriodic=False)
+    clock = [100]
+
+    class InterleavingLock:
+        def __enter__(self):
+            probe.active[1] = {"stage": "formal.sqlite_append", "start_ns": 150, "thread_id": 1}
+            clock[0] = 200
+        def __exit__(self, *_args):
+            return False
+
+    def forbiddenSave():
+        raise AssertionError("memory-only capture must not wait for disk I/O")
+
+    try:
+        with monkeypatch.context() as patch:
+            patch.setattr(module.time, "monotonic_ns", lambda: clock[0])
+            patch.setattr(probe, "lock", InterleavingLock())
+            patch.setattr(probe, "_save", forbiddenSave)
+            probe.capture("terminal_wait_enter", stacks=False, save=False)
+            row = probe.rows[-1]
+            assert row["observation_started_ns"] == 100 and row["monotonic_ns"] == 200
+            assert row["active"][0]["elapsed_ns"] == 50
+            assert probe.captureCost["calls"] == 1 and probe.captureCost["disk_save_requests"] == 0
+            assert not probe.errors
+    finally:
+        probe.close()
+
+
+def testExplicitMemoryOnlyPeriodicPolicyDoesNotChangeDefault(tmp_path):
+    for persist in (True, False):
+        probe = JobDiagnostics(tmp_path / (str(persist) + ".json"), source={}, plannedSeconds=1,
+                               persistPeriodic=persist)
+        calls = []
+        def capture(reason, **kwargs):
+            calls.append((reason, kwargs))
+            probe.stop.set()
+        probe.capture = capture
+        probe._observe()
+        assert calls == [("periodic", {"save": persist})]
+        probe.close()
+
+
 def testKeeperPreservesConfiguredDurabilityAndClosesExplicitly(tmp_path):
     from emo_master.apps.runtime.context.sqlite_store import SqliteStore
     store = SqliteStore(tmp_path / "runtime.db")

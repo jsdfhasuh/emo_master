@@ -430,3 +430,39 @@ A18与完整CI实际结果判断，不能凭Linux通过标记Windows资源问题
 
 该平台预热修正后的完整cloud CI：1681 PASS、1 SKIP（424.60秒），proto drift/Ruff/mypy
 通过、退出0，Python来源前后摘要相同。Windows精确验证仍待执行，不以此清除旧FAIL。
+
+
+## 2026-10-01：继续定位残留问题的有界诊断
+
+41cfa4a最终GitHub Ubuntu双组1681/1通过；Windows PR仅A18新原生线程失败，push还包含
+真实停止用例终态期限失败。Windows本机A18为周期检查句柄483>467，线程数25不变，
+最终版本本机完整CI未跑。仅Qt16ms首次使用已被独立对照归因，余下句柄/线程不能豁免。
+
+重新读取停止失败原日志：停止后约7秒内seq6至15继续推进，最后栈在commit，不能据此
+声称一次commit卡住10秒。事件时间来自监督器append入口，不是worker产生时间；
+日志缺最终失败观察时钟。新增显式pytest插件仅观察该原用例，保留原10秒期限和所有
+SQL、连接、事务、commit/rollback/close调用；没有改变生产持久化或队列策略：
+
+`python -m pytest -q -p scripts.r3_sqlite_stop_diagnostics --sqlite-stop-diagnostics NEW.json tests/runtime/test_runtime_job_lifecycle_integration.py::testRealSpawnConcurrencyStopsAndCleanup`
+
+输出目录须已存在、文件须不存在。记录有界SQL阶段计数、wall/当前线程CPU、活动调用、
+慢尾部及淘汰数、排空前沿和所属线程栈；各子快照非原子，不按thread_id单独推断Job。
+周期及等待入口/正常返回只存内存，实际失败或清理/最终阶段才落盘，避免给原等待起点
+增加额外磁盘排空时间。硬杀可能丢最后内存尾部，明确作为限制。原用例失败不会被探针
+改成通过；观测错误或来源变动将诊断标无效。未新增原生VFS/锁/flush追踪，所以commit
+耗时仍不能独自证明具体存储原因。Linux无探针原用例通过3.23秒，带最终探针通过2.87秒，
+71次commit共1.558ms/max0.039ms，仍未复现Windows延迟；探针capture共8.137ms wall，
+最大1.973ms，3次capture落盘均在清理/最终阶段。44项定向检查通过（0.66秒）。
+
+性能先复用Windows已有aa3分段原始文件，而非先增加一轮负载。新离线分析器：
+
+`python scripts/r3_asset_split_analyze.py --input EXISTING_AA3_ROOT --output NEW_DIRECTORY`
+
+纯标准库，不导入Runtime/Qt、不运行检测，不改原始文件；检查输入SHA256、同次call ID、
+身份、时钟、阶段数量/包含关系和完整分母后才分解相邻时间边界。缺失/冲突/负间隔均
+保留，不相减P95，不把RPC差值称纯网络或GIL耗时。消费者与channel不猜测关联。
+未观测的导出完成至结果封闭/订阅轮询阶段仍列缺口。25项纯JSON回归通过（0.09秒）。
+上述工具只增加定位证据，不把原性能、A18或停止FAIL改判；Windows下一轮原路径结果待测。
+
+该诊断工具批次最终完整CI：1736 PASS、1 SKIP（405.93秒），proto drift/Ruff/mypy通过、
+退出0，Python来源前后摘要完全相同。生产src没有变更；Windows诊断及原问题修复仍待证据。

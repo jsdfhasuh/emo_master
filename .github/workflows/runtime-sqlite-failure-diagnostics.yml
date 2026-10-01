@@ -74,6 +74,7 @@ jobs:
         run: |
           import json, os
           from pathlib import Path
+          from scripts.r3_sqlite_failure_diagnostics import validDetailScope
           evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-sqlite-failure-diagnostics.json"
           if not evidence.exists():
               if os.environ.get("ORIGINAL_TEST_STEP") != "success":
@@ -87,8 +88,7 @@ jobs:
               print(content)
               print("SQLITE_FAILURE_DIAGNOSTIC_JSON_END")
               record = json.loads(content)
-              valid = (record.get("schema") == 2 and record.get("role") == "diagnostic_only"
-                  and record.get("call_details") is True
+              valid = (validDetailScope(record) and record.get("role") == "diagnostic_only"
                   and record.get("status") == "FAILURE_OBSERVED"
                   and record.get("session_finished") is True and record.get("source_stable") is True
                   and record.get("observer_retired") is True and record.get("errors") == []

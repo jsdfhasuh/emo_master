@@ -14,8 +14,11 @@ from scripts import r3_sqlite_failure_diagnostics as plugin
 from scripts.r3_sqlite_phases import _Connection
 
 
+FORCE_TEST = "tests/runtime/presentation/test_normal_capture.py::testExplicitStopReleaseAndRestartNormalJob[force]"
+
+
 def fixtureRun(monkeypatch, tmp_path, *, connect=None, details=None, metaclass=type,
-               callDetails=False, snapshotType=None):
+               callDetails=False, snapshotType=None, detailTargets=None):
     class Store(metaclass=metaclass):
         def _connect(self):
             return connect(self) if connect is not None else sqlite3.connect(":memory:")
@@ -35,7 +38,8 @@ def fixtureRun(monkeypatch, tmp_path, *, connect=None, details=None, metaclass=t
     monkeypatch.setattr(plugin, "sourceHashes", lambda: {"test": "unchanged"})
     monkeypatch.setattr(plugin, "detailSourceHashes", lambda: {"detail": "unchanged"})
     run = plugin.FailureRun(tmp_path / "failure.json", Store, Runtime, helper,
-                            callDetails=callDetails, snapshotType=snapshotType)
+                            callDetails=callDetails, snapshotType=snapshotType,
+                            detailTargets=plugin.DETAIL_TESTS if detailTargets is None else detailTargets)
     run.selected = 1
     return run, module, Runtime, Store
 
@@ -50,14 +54,14 @@ def testDetailedPollsForwardOnceBoundedAndKeepNoOwners(monkeypatch, tmp_path):
             return Result()
     run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
     original = Snapshots.snapshot
-    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner = plugin.FailureOwner(run, module, FORCE_TEST)
     owner.install()
     snapshots = Snapshots()
     runtime = Runtime(Store())
     try:
         runtime.sqliteStore._connect().close()
         assert owner.registry[runtime.sqliteStore][1].details
-        item = SimpleNamespace(config=configFor(run), nodeid=plugin.DETAIL_TEST,
+        item = SimpleNamespace(config=configFor(run), nodeid=FORCE_TEST,
                                funcargs={"tmp_path": tmp_path})
         run.active = owner
         plugin.pytest_runtest_call(item)
@@ -109,6 +113,166 @@ def testDetailsAreExactTargetOnlyAndDoNotRequestTmpFixture(monkeypatch, tmp_path
         owner.retire()
 
 
+@pytest.mark.parametrize("nodeid", plugin.DETAIL_TESTS)
+def testFiniteDetailedTargetsUseExactFailureStoreAndOnlyReviewedPolls(monkeypatch, tmp_path, nodeid):
+    class Snapshots:
+        def snapshot(self, jobId):
+            return jobId
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True,
+        snapshotType=Snapshots, detailTargets=(nodeid,))
+    original = Snapshots.snapshot
+    owner = plugin.FailureOwner(run, module, nodeid)
+    owner.install()
+    run.active = owner
+    from scripts import r3_sqlite_wal_metadata as wal
+    metadataCalls = []
+    monkeypatch.setattr(wal, "captureWalMetadata", lambda path, root:
+                        metadataCalls.append((path, root)) or {
+                            "status": "UNAVAILABLE", "cleanup": {"retirement_confirmed": True}})
+    try:
+        plugin.pytest_runtest_call(SimpleNamespace(config=configFor(run), nodeid=nodeid,
+                                                  funcargs={"tmp_path": tmp_path}))
+        runtime = Runtime(Store())
+        runtime.sqliteStore.dbPath = tmp_path / "parent.db"
+        runtime.sqliteStore._connect().close()
+        # A prepared/second store does not become the helper runtime's store.
+        other = Store()
+        other.dbPath = tmp_path / "prepared.db"
+        other._connect().close()
+        assert owner.registry[runtime.sqliteStore][1].details
+        assert owner.pollSnapshot()["status"] == "UNAVAILABLE"
+        if nodeid in plugin.SNAPSHOT_TESTS:
+            assert Snapshots.snapshot is not original
+            assert owner.pollSnapshot()["reason"] == "no_observed_calls"
+        else:
+            assert Snapshots.snapshot is original
+            assert owner.pollSnapshot()["reason"] == "no_reviewed_main_thread_resultstore_polling_for_target"
+        assert Snapshots().snapshot("same-job") == "same-job"
+        assert owner.pollCount == int(nodeid in plugin.SNAPSHOT_TESTS)
+        assert not metadataCalls and not run.path.exists()
+        module.jobFailureDetails(runtime, "same-job")
+        row = run.records[-1]
+        assert row["call_details"] is True
+        assert row["store_token"] == owner.registry[runtime.sqliteStore][0] != owner.registry[other][0]
+        assert metadataCalls == [(tmp_path / "parent.db", str(tmp_path))]
+        assert plugin.validDetailScope(json.loads(json.dumps(run.payload())))
+        # Reopening replaces the lifetime token, even under the same path/Job id.
+        previous = row["store_token"]
+        ref = weakref.ref(runtime.sqliteStore)
+        runtime.sqliteStore = Store()
+        assert ref() is None
+        runtime.sqliteStore.dbPath = tmp_path / "parent.db"
+        runtime.sqliteStore._connect().close()
+        module.jobFailureDetails(runtime, "same-job")
+        assert run.records[-1]["store_token"] > previous
+    finally:
+        owner.retire()
+    assert Snapshots.snapshot is original
+
+
+@pytest.mark.parametrize("nodeid", [FORCE_TEST + "extra", FORCE_TEST.replace("[force]", "[other]"),
+    "tests/runtime/presentation/test_normal_capture.py::testLostStartReplyReconcilesWithoutAnotherExecution",
+    "tests/runtime/presentation/test_multi_capture.py::testTwoExplicitDualImageJobsStayWithinRuntimeBudget"])
+def testUnreviewedNeighborsKeepBaseOnlyDetails(monkeypatch, tmp_path, nodeid):
+    from scripts import r3_sqlite_phases as phases
+    from scripts import r3_sqlite_wal_metadata as wal
+    def unexpected(*_args):
+        pytest.fail("unreviewed detail operation")
+    monkeypatch.setattr(phases, "_transactionReading", unexpected)
+    monkeypatch.setattr(phases, "_perfReading", unexpected)
+    monkeypatch.setattr(wal, "captureWalMetadata", unexpected)
+    monkeypatch.setattr(plugin, "_pollClock", unexpected)
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True)
+    owner = plugin.FailureOwner(run, module, nodeid)
+    owner.install()
+    try:
+        runtime = Runtime(Store())
+        runtime.sqliteStore._connect().close()
+        module.jobFailureDetails(runtime, "job")
+        row = run.records[0]
+        assert row["call_details"] is False
+        assert "connection_detail_limitations" not in row["sql"]
+        assert "wal_metadata" not in row and "existing_snapshot_polls" not in row
+        assert plugin.validDetailScope(json.loads(json.dumps(run.payload())))
+    finally:
+        owner.retire()
+
+
+def testLoadedPluginWithoutOptionsHasNoDiagnosticSetup(monkeypatch):
+    def unexpected(*_args):
+        pytest.fail("default-off diagnostic setup")
+    for name in ("FailureRun", "sourceHashes", "detailSourceHashes", "clocks", "reading", "_pollClock"):
+        monkeypatch.setattr(plugin, name, unexpected)
+    # No stash, plugin manager, filesystem or module/fixture access is needed.
+    config = SimpleNamespace(getoption=lambda _name, default=None: default)
+    plugin.pytest_collection_modifyitems(config, [object()])
+    with pytest.raises(pytest.UsageError, match="require --sqlite-failure-diagnostics"):
+        plugin.pytest_collection_modifyitems(SimpleNamespace(getoption=lambda name, default=None:
+            True if name == "sqlite_failure_call_details" else None), [object()])
+
+
+def testDetailedCollectionRecordsExactSubsetWithoutReordering(tmp_path):
+    from tests.runtime import runtime_test_utils as helper
+    root = Path(plugin.__file__).resolve().parents[1]
+    def item(node):
+        path = root / node.split("::", 1)[0]
+        return SimpleNamespace(nodeid=node, path=path,
+            module=SimpleNamespace(__file__=str(path), waitForTerminal=helper.waitForTerminal))
+    def config():
+        options = {"sqlite_failure_diagnostics": str(tmp_path / "new.json"), "sqlite_failure_call_details": True}
+        return SimpleNamespace(stash={}, getoption=lambda name, default=None: options.get(name, default),
+            pluginmanager=SimpleNamespace(hasplugin=lambda _name: False, get_plugins=lambda: ()))
+    for node in plugin.DETAIL_TESTS:
+        configured, items = config(), [item(node)]
+        plugin.pytest_collection_modifyitems(configured, items)
+        assert configured.stash[plugin._RUN].detailTargets == (node,)
+        assert configured.stash[plugin._RUN].report["schema"] == 3
+    configured = config()
+    unrelated = item("tests/runtime/presentation/test_normal_capture.py::testLegacyStartAndProjectScopedReadonlyMetadata")
+    selected = [item(plugin.DETAIL_TESTS[-1]), unrelated, item(FORCE_TEST)]
+    before = list(selected)
+    plugin.pytest_collection_modifyitems(configured, selected)
+    assert selected == before and configured.stash[plugin._RUN].detailTargets == (plugin.DETAIL_TESTS[-1], FORCE_TEST)
+    with pytest.raises(pytest.UsageError, match="exact reviewed runtime wait"):
+        plugin.pytest_collection_modifyitems(config(), [unrelated])
+    assert not (tmp_path / "new.json").exists()
+
+
+@pytest.mark.parametrize("change", ["schema", "declared", "empty", "unknown", "duplicate", "uncollected",
+                                   "row_flag", "missing_wal", "missing_sql", "poll_claim"])
+def testDetailedReportScopeRejectsInconsistentClaims(change):
+    node = plugin.DETAIL_TESTS[-1]
+    row = {"test": node, "call_details": True, "wal_metadata": {"status": "UNAVAILABLE"},
+           "sql": {"connection_detail_limitations": "unjoined parent-store observations"},
+           "existing_snapshot_polls": {"status": "UNAVAILABLE",
+               "reason": "no_reviewed_main_thread_resultstore_polling_for_target"}}
+    record = {"schema": 3, "call_details": True, "declared_detail_targets": list(plugin.DETAIL_TESTS),
+              "collected_detail_targets": [node], "failures": [row]}
+    assert plugin.validDetailScope(record)
+    if change == "schema":
+        record["schema"] = 2
+    elif change == "declared":
+        record["declared_detail_targets"] = [node]
+    elif change == "empty":
+        record["collected_detail_targets"] = []
+    elif change == "unknown":
+        record["collected_detail_targets"] = ["unknown"]
+    elif change == "duplicate":
+        record["collected_detail_targets"] = [node, node]
+    elif change == "uncollected":
+        record["collected_detail_targets"] = [FORCE_TEST]
+        row["call_details"] = False
+    elif change == "row_flag":
+        row["call_details"] = False
+    elif change == "missing_wal":
+        del row["wal_metadata"]
+    elif change == "missing_sql":
+        row["sql"] = {}
+    else:
+        row["existing_snapshot_polls"] = {"status": "OBSERVED", "count": 1}
+    assert not plugin.validDetailScope(record)
+
+
 def testDetailedPollAndWalErrorsPreserveOriginalFailures(monkeypatch, tmp_path):
     error = AssertionError("original snapshot")
     helperError = ValueError("original helper")
@@ -121,7 +285,7 @@ def testDetailedPollAndWalErrorsPreserveOriginalFailures(monkeypatch, tmp_path):
         raise helperError
     run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, details=details,
                                             callDetails=True, snapshotType=Snapshots)
-    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner = plugin.FailureOwner(run, module, FORCE_TEST)
     owner.install()
     runtime = Runtime(Store())
     try:
@@ -157,7 +321,7 @@ def testDetailedDormantSnapshotOnlyForwardsAfterRetirement(monkeypatch, tmp_path
             calls.append(jobId)
             return jobId
     run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
-    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner = plugin.FailureOwner(run, module, FORCE_TEST)
     owner.install()
     wrapper = Snapshots.snapshot
     owner.retire()
@@ -174,7 +338,7 @@ def testDetailedSnapshotReturningAfterRetirementAddsNoEndClock(monkeypatch, tmp_
             assert release.wait(2)
             return marker
     run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
-    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner = plugin.FailureOwner(run, module, FORCE_TEST)
     owner.install()
     monkeypatch.setattr(plugin, "_pollClock", lambda: clocks.append(1) or 1)
     def retire():
@@ -194,7 +358,7 @@ def testDetailedSnapshotReturningAfterRetirementAddsNoEndClock(monkeypatch, tmp_
 
 def testUnconfirmedWalCleanupInvalidatesRetirementWithoutRetry(monkeypatch, tmp_path):
     run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True)
-    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner = plugin.FailureOwner(run, module, FORCE_TEST)
     owner.install()
     run.active = owner
     run.started = 1

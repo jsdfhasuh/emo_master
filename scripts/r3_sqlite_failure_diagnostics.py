@@ -59,6 +59,7 @@ LIMITATIONS = (
     "Only reviewed common-helper timeouts and lazy failed assertions in the allowlist are covered. "
     "Failure helpers must run on the pytest main Thread; off-thread helpers pass through and invalidate evidence. "
     "SQL totals span all Jobs on one store. SQL and cached job details are independent, non-atomic readings. "
+    "SQL/WAL describe the exact parent Runtime passed to the helper, not a spawned worker's separate database. "
     "One active call_id snapshot does not prove continuous blocking for any preceding wait. "
     "Process-run token, test epoch and store token identify observation lifetimes; PID/TID/object id do not. "
     "Idle keeper direct sqlite3.connect, spawned workers, subclasses/proxies and instance overrides are unobserved. "
@@ -70,8 +71,53 @@ LIMITATIONS = (
 )
 _RUN = pytest.StashKey()
 _MISSING = object()
-DETAIL_TEST = "tests/runtime/presentation/test_normal_capture.py::testExplicitStopReleaseAndRestartNormalJob[force]"
-DETAIL_SOURCES = ("scripts/r3_sqlite_wal_metadata.py", "src/emo_master/apps/runtime/presentation/store.py")
+# Exact evidenced helper-wait failures, with sources and exclusions recorded in
+# docs/testing/2026-10-01-runtime-sql-failure-scope.md. No module-wide detail gate.
+DETAIL_TESTS = (
+    "tests/runtime/presentation/test_normal_capture.py::testOriginalStartCapturesInstalledOperatorsAndProductionCounter",
+    "tests/runtime/presentation/test_normal_capture.py::testExplicitStopReleaseAndRestartNormalJob[graceful]",
+    "tests/runtime/presentation/test_normal_capture.py::testExplicitStopReleaseAndRestartNormalJob[force]",
+    "tests/runtime/test_legacy_snapshot_policy.py::testAllRunMissingImageCannotRelabelEarlierNodeSnapshot",
+    "tests/runtime/test_legacy_snapshot_policy.py::testAllThenNoneKeepsHistoryWithoutNewSnapshotsAndRestoresPolicy",
+    "tests/runtime/presentation/test_image_demand_client.py::testZeroDemandKeepsFormalResultsAndResumesFinalCapturedResult[normal]",
+    "tests/runtime/presentation/test_image_demand_client.py::testZeroDemandKeepsFormalResultsAndResumesFinalCapturedResult[presentation]",
+    "tests/runtime/test_runtime_job_lifecycle_integration.py::testRealSpawnConcurrencyStopsAndCleanup",
+    "tests/runtime/presentation/test_multi_capture.py::testLateResetFromSameRuntimeCannotReplaceNewerScopeState",
+)
+SNAPSHOT_TESTS = DETAIL_TESTS[:3]
+DETAIL_SOURCES = ("scripts/r3_sqlite_wal_metadata.py", "src/emo_master/apps/runtime/presentation/store.py",
+                  "tests/conftest.py", "tests/runtime/presentation/conftest.py")
+
+
+def validDetailScope(report):
+    """Validate the schema-3 scope contract, not SQL/WAL causes or lifecycle."""
+    targets = report.get("collected_detail_targets")
+    if (report.get("schema") != 3 or report.get("call_details") is not True
+            or report.get("declared_detail_targets") != list(DETAIL_TESTS)
+            or not isinstance(targets, list) or not targets
+            or any(not isinstance(node, str) or node not in DETAIL_TESTS for node in targets)
+            or len(set(targets)) != len(targets)):
+        return False
+    for row in report.get("failures", []):
+        node = row.get("test")
+        detailed = node in targets
+        if row.get("call_details") is not detailed or (node in DETAIL_TESTS and not detailed):
+            return False
+        polls, wal = row.get("existing_snapshot_polls"), row.get("wal_metadata")
+        sqlDetails = row.get("sql", {}).get("connection_detail_limitations")
+        if detailed:
+            if not isinstance(polls, dict) or not isinstance(wal, dict) or not isinstance(sqlDetails, str):
+                return False
+            if node not in SNAPSHOT_TESTS:
+                if polls != {"status": "UNAVAILABLE", "reason": "no_reviewed_main_thread_resultstore_polling_for_target"}:
+                    return False
+            elif (polls.get("status") == "OBSERVED" and type(polls.get("count")) is int and polls["count"] > 0):
+                continue
+            elif polls.get("status") != "UNAVAILABLE" or polls.get("reason") != "no_observed_calls" or polls.get("count") != 0:
+                return False
+        elif polls is not None or wal is not None or sqlDetails is not None:
+            return False
+    return True
 
 
 def sourceHashes():
@@ -100,12 +146,14 @@ class FailureRun:
     MAX_RECORDS = 16
     MAX_BYTES = 1024 * 1024
 
-    def __init__(self, path, storeType, runtimeType, helper, *, callDetails=False, snapshotType=None):
+    def __init__(self, path, storeType, runtimeType, helper, *, callDetails=False, snapshotType=None,
+                 detailTargets=()):
         self.path = Path(path)
         self.storeType, self.runtimeType, self.helper = storeType, runtimeType, helper
         self.rawConnect = vars(storeType)["_connect"]
         self.originalDetails, self.originalWait = helper.jobFailureDetails, helper.waitForTerminal
         self.callDetails, self.snapshotType = callDetails, snapshotType
+        self.detailTargets = tuple(detailTargets)
         self.metadataRetired = True
         self.rawSnapshot = vars(snapshotType).get("snapshot") if snapshotType is not None else None
         self.active = self.pending = None
@@ -122,7 +170,8 @@ class FailureRun:
             "source_sha256_before": sourceHashes(), "session_finished": False,
             "observer_retired": False, "original_pytest_exit": None}
         if callDetails:
-            self.report.update(schema=2, call_details=True, detailed_test=DETAIL_TEST,
+            self.report.update(schema=3, call_details=True, declared_detail_targets=DETAIL_TESTS,
+                               collected_detail_targets=self.detailTargets,
                                detail_source_sha256_before=detailSourceHashes())
 
     def invalidate(self, reason):
@@ -201,7 +250,8 @@ class FailureOwner:
         self.active = True
         self.helperCalls = 0
         self.outcomes = {name: "pending" for name in ("setup", "call", "teardown")}
-        self.callDetails = run.callDetails and self.nodeid == DETAIL_TEST
+        self.callDetails = run.callDetails and self.nodeid in DETAIL_TESTS and self.nodeid in run.detailTargets
+        self.observePolls = self.callDetails and self.nodeid in SNAPSHOT_TESTS and run.snapshotType is not None
         self.allowedRoot = None
         self.walCleanupConfirmed = True
         self.pollRows = deque(maxlen=128)
@@ -345,7 +395,7 @@ class FailureOwner:
             alias = vars(self.module).get("jobFailureDetails", _MISSING)
             if alias is not _MISSING:
                 self.patch(self.module, "jobFailureDetails", run.originalDetails, details)
-            if self.callDetails and run.snapshotType is not None:
+            if self.observePolls:
                 self.patch(run.snapshotType, "snapshot", run.rawSnapshot, snapshot)
             self.checkIdentities()
         except BaseException as error:
@@ -378,7 +428,11 @@ class FailureOwner:
             "start_perf_ns": start, "end_perf_ns": end, "failed": failed})
 
     def pollSnapshot(self):
-        return {"count": self.pollCount, "failed": self.pollFailed, "omitted": self.pollDropped,
+        if not self.observePolls:
+            return {"status": "UNAVAILABLE", "reason": "no_reviewed_main_thread_resultstore_polling_for_target"}
+        return {"status": "OBSERVED" if self.pollCount else "UNAVAILABLE",
+            **({} if self.pollCount else {"reason": "no_observed_calls"}),
+            "count": self.pollCount, "failed": self.pollFailed, "omitted": self.pollDropped,
             "first_start_perf_ns": self.pollFirst, "last_start_perf_ns": self.pollLast,
             "max_intercall_start_gap_ns": self.pollMaxGap, "tail": list(self.pollRows),
             "limitations": "Only existing main-thread snapshot calls in the exact selected test. "
@@ -397,6 +451,7 @@ class FailureOwner:
             return None
         self.checkIdentities()
         row = {"test": self.nodeid, "test_epoch": self.epoch,
+               "call_details": self.callDetails,
                "process_run_token": self.run.report["process_run_token"],
                "job_id": job[:128] if isinstance(job, str) else None,
                "status": "UNOBSERVED", "before_sql_snapshot": reading(),
@@ -495,7 +550,7 @@ def pytest_addoption(parser):
     parser.addoption("--sqlite-failure-diagnostics", metavar="NEW.json",
                      help="failure-only SQL evidence for verified common runtime failure helpers")
     parser.addoption("--sqlite-failure-call-details", action="store_true", default=False,
-                     help="opt-in QPC/operation/poll details and failure-only WAL header for the reviewed force-stop test")
+                     help="opt-in QPC/operation details and failure-only WAL header for exact reviewed runtime waits")
 
 
 def pytest_collection_modifyitems(config, items):
@@ -550,9 +605,11 @@ def pytest_collection_modifyitems(config, items):
     if not selected:
         raise pytest.UsageError("SQLite failure diagnostics require a reviewed allowlisted test")
     snapshotType = None
+    detailTargets = ()
     if detailed:
-        if not any(item.nodeid == DETAIL_TEST for item in items):
-            raise pytest.UsageError("SQLite call details require the exact reviewed force-stop test")
+        detailTargets = tuple(dict.fromkeys(item.nodeid for item in items if item.nodeid in DETAIL_TESTS))
+        if not detailTargets:
+            raise pytest.UsageError("SQLite call details require an exact reviewed runtime wait test")
         from emo_master.apps.runtime.presentation.store import ResultStore
         snapshotType = ResultStore
         snapshot = vars(ResultStore).get("snapshot")
@@ -560,7 +617,7 @@ def pytest_collection_modifyitems(config, items):
                 or Path(snapshot.__code__.co_filename).resolve() != root / DETAIL_SOURCES[1]):
             raise pytest.UsageError("SQLite snapshot diagnostic source identity is overridden")
     run = FailureRun(output, SqliteStore, RuntimeService, helper,
-                     callDetails=detailed, snapshotType=snapshotType)
+                     callDetails=detailed, snapshotType=snapshotType, detailTargets=detailTargets)
     run.selected = selected
     config.stash[_RUN] = run
 
@@ -568,7 +625,7 @@ def pytest_collection_modifyitems(config, items):
 @pytest.hookimpl(tryfirst=True)
 def pytest_runtest_call(item):
     run = item.config.stash.get(_RUN, None)
-    if run is not None and run.active is not None and run.active.callDetails and item.nodeid == DETAIL_TEST:
+    if run is not None and run.active is not None and run.active.callDetails and item.nodeid == run.active.nodeid:
         root = getattr(item, "funcargs", {}).get("tmp_path")
         # Only the already-created, exact test fixture root is allowed. Do not
         # request a fixture or fall back to a production/default database root.

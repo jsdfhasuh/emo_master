@@ -12,6 +12,187 @@ import pytest
 from scripts.r3_sqlite_phases import SqlitePhases, _Connection
 
 
+def testConnectionDetailsAreOffByDefaultAndDoNotReadGetters(monkeypatch):
+    from scripts import r3_sqlite_phases as module
+    monkeypatch.setattr(module, "_transactionReading", lambda *_: pytest.fail("default getter"))
+    monkeypatch.setattr(module, "_perfReading", lambda: pytest.fail("default QPC"))
+    probe = SqlitePhases()
+    probe.SLOW_NS = 0
+    native = sqlite3.connect(":memory:")
+    try:
+        _Connection(native, probe).commit()
+        row = probe.snapshot()
+        assert "connection_detail_limitations" not in row
+        assert "connection_operation_token" not in row["slow_calls"][0]
+        assert "call_perf_ns" not in row["stages"]["commit"]
+    finally:
+        native.close()
+
+
+def testDetailedConnectionAnchorsRawAutocommitAndIndependentClocks(monkeypatch):
+    from scripts import r3_sqlite_phases as module
+    native = sqlite3.connect(":memory:")
+    probe = SqlitePhases(details=True)
+    probe.SLOW_NS = 0
+    proxy = _Connection(native, probe)
+    statements = []
+    native.set_trace_callback(statements.append)
+    try:
+        proxy.execute("BEGIN IMMEDIATE")
+        anchor = probe.snapshot()["slow_calls"][-1]["call_id"]
+        mono, cpu, perf = iter((100, 130)), iter((2, 9)), iter((1000, 1020))
+        with monkeypatch.context() as patch:
+            patch.setattr(module.time, "monotonic_ns", lambda: next(mono))
+            patch.setattr(module.time, "thread_time_ns", lambda: next(cpu))
+            patch.setattr(module.time, "perf_counter_ns", lambda: next(perf))
+            proxy.commit()
+        row = probe.snapshot()["slow_calls"][-1]
+        assert row["successful_begin_call_id_at_entry"] == anchor
+        assert row["in_transaction_before"] == {"status": "OBSERVED", "value": True}
+        assert row["in_transaction_after"] == {"status": "OBSERVED", "value": False}
+        assert (row["wall_ns"], row["thread_cpu_ns"], row["call_perf_wall_ns"]) == (30, 7, 20)
+        assert (row["call_perf_start_ns"], row["call_perf_end_ns"]) == (1000, 1020)
+        assert proxy.beginAnchor is None
+        proxy.executescript("BEGIN; SELECT 1;")
+        assert proxy.beginAnchor is None and native.in_transaction
+        proxy.rollback()
+        assert statements == ["BEGIN IMMEDIATE", "COMMIT", "BEGIN;", " SELECT 1;", "ROLLBACK"]
+        other = sqlite3.connect(":memory:")
+        try:
+            assert _Connection(other, probe).operationToken > proxy.operationToken
+        finally:
+            other.close()
+    finally:
+        native.close()
+
+
+def testDetailedGetterFailuresPreserveOriginalReturnAndException(monkeypatch):
+    from scripts import r3_sqlite_phases as module
+    probe = SqlitePhases(details=True)
+    probe.SLOW_NS = 0
+    native = sqlite3.connect(":memory:")
+    proxy = _Connection(native, probe)
+    error = ValueError("original operation")
+    calls = []
+    def unavailable(*_args):
+        raise RuntimeError("getter only")
+    def operation():
+        calls.append(1)
+        raise error
+    monkeypatch.setattr(module, "_transactionReading", unavailable)
+    try:
+        assert proxy.commit() is None
+        with pytest.raises(ValueError) as caught:
+            proxy._call("commit", operation)
+        assert caught.value is error and calls == [1]
+        rows = probe.snapshot()["slow_calls"]
+        assert len(rows) == 2 and probe.enabled
+        assert all(row["in_transaction_before"]["status"] == "UNAVAILABLE"
+                   and row["in_transaction_after"]["status"] == "UNAVAILABLE" for row in rows)
+        assert rows[-1]["failed"] and rows[-1]["error_type"] == "ValueError"
+    finally:
+        native.close()
+
+
+def testDetailedCloseAndCrossThreadGetterAreUnavailable():
+    from concurrent.futures import ThreadPoolExecutor
+    probe = SqlitePhases(details=True)
+    probe.SLOW_NS = 0
+    native = sqlite3.connect(":memory:", check_same_thread=False)
+    proxy = _Connection(native, probe)
+    try:
+        with ThreadPoolExecutor(1) as executor:
+            def differentThreadWithReusedNumericIdentity():
+                proxy.operationThreadId = threading.get_ident()
+                return proxy.commit()
+            assert executor.submit(differentThreadWithReusedNumericIdentity).result(2) is None
+        row = probe.snapshot()["slow_calls"][-1]
+        assert row["connection_operation_thread_id"] == row["thread_id"]
+        assert row["creating_thread_matches"] is False
+        assert row["in_transaction_before"]["reason"] == "different_operation_thread"
+        assert row["in_transaction_after"]["reason"] == "different_operation_thread"
+        proxy.close()
+        assert probe.snapshot()["slow_calls"][-1]["in_transaction_after"]["reason"] == "close_operation"
+        with pytest.raises(sqlite3.ProgrammingError):
+            proxy.commit()
+        assert probe.snapshot()["slow_calls"][-1]["in_transaction_before"]["status"] == "UNAVAILABLE"
+    finally:
+        native.close()
+
+
+def testDetailedFalseAutocommitValueDoesNotWrapOrConsumeActiveReader():
+    probe = SqlitePhases(details=True)
+    probe.SLOW_NS = 0
+    native = sqlite3.connect(":memory:")
+    try:
+        cursor = _Connection(native, probe).execute("SELECT 1 UNION ALL SELECT 2")
+        assert type(cursor) is sqlite3.Cursor and cursor.connection is native
+        row = probe.snapshot()["slow_calls"][-1]
+        assert row["in_transaction_after"] == {"status": "OBSERVED", "value": False}
+        assert cursor.fetchone() == (1,)  # Observation did not drain the reader.
+        assert cursor.fetchone() == (2,)
+        cursor.close()
+    finally:
+        native.close()
+
+
+def testDetailedObserverKeepsNoNativeProxyOrThreadOwnerAfterReturn():
+    class Native:
+        def commit(self):
+            return None
+    probe = SqlitePhases(details=True)
+    probe.SLOW_NS = 0
+    native = Native()
+    proxy = _Connection(native, probe)
+    refs = weakref.ref(native), weakref.ref(proxy)
+    wasEnabled = gc.isenabled()
+    gc.disable()
+    try:
+        proxy.commit()
+        del native, proxy
+        assert [ref() for ref in refs] == [None, None]
+        assert not probe.active
+        json.dumps(probe.snapshot())
+    finally:
+        if wasEnabled:
+            gc.enable()
+
+
+def testDetailedNativeReturnAfterRetirementAddsNoGetterOrClockObservation(monkeypatch):
+    from concurrent.futures import ThreadPoolExecutor
+    from scripts import r3_sqlite_phases as module
+    probe = SqlitePhases(details=True)
+    entered, release = threading.Event(), threading.Event()
+    getterCalls, clockCalls = [], []
+    result = object()
+    def getter(*_args):
+        getterCalls.append(1)
+        return {"status": "UNAVAILABLE"}
+    def perf():
+        clockCalls.append(1)
+        return 100
+    def operation():
+        entered.set()
+        assert release.wait(2)
+        return result
+    monkeypatch.setattr(module, "_transactionReading", getter)
+    monkeypatch.setattr(module, "_perfReading", perf)
+    proxy = _Connection(SimpleNamespace(), probe)
+    with ThreadPoolExecutor(1) as executor:
+        future = executor.submit(proxy._call, "commit", operation)
+        try:
+            assert entered.wait(2)
+            probe.enabled = False
+            release.set()
+            assert future.result(2) is result
+        finally:
+            release.set()
+    assert getterCalls == clockCalls == [1]
+    assert not probe.slow
+    active = next(iter(probe.active.values()))
+    assert "call_perf_end_ns" not in active and "in_transaction_after" not in active
+
+
 def testRetirementRestoresInheritedConnectWithoutGCOrSelfCycle(tmp_path):
     from emo_master.apps.runtime.context.sqlite_store import SqliteStore
     wasEnabled = gc.isenabled()

@@ -7,7 +7,13 @@ on:
     paths:
       - .github/workflows/runtime-sqlite-failure-diagnostics.yml
       - scripts/r3_sqlite_failure_diagnostics.py
+      - scripts/r3_sqlite_phases.py
+      - scripts/r3_sqlite_wal_metadata.py
+      - scripts/r3_sqlite_controls.py
       - tests/test_r3_sqlite_failure_diagnostics.py
+      - tests/test_r3_sqlite_phases.py
+      - tests/test_r3_sqlite_wal_metadata.py
+      - tests/test_r3_sqlite_controls.py
 
 permissions:
   contents: read
@@ -58,7 +64,7 @@ jobs:
         shell: pwsh
         run: |
           $evidence = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-failure-diagnostics.json'
-          python -m pytest -q -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence
+          python -m pytest -q -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence --sqlite-failure-call-details
           exit $LASTEXITCODE
       - name: Print and validate bounded failure evidence in this job log
         if: always()
@@ -81,7 +87,8 @@ jobs:
               print(content)
               print("SQLITE_FAILURE_DIAGNOSTIC_JSON_END")
               record = json.loads(content)
-              valid = (record.get("schema") == 1 and record.get("role") == "diagnostic_only"
+              valid = (record.get("schema") == 2 and record.get("role") == "diagnostic_only"
+                  and record.get("call_details") is True
                   and record.get("status") == "FAILURE_OBSERVED"
                   and record.get("session_finished") is True and record.get("source_stable") is True
                   and record.get("observer_retired") is True and record.get("errors") == []
@@ -99,3 +106,35 @@ jobs:
                       and row.get("sql", {}).get("errors") == [] for row in record["failures"])
               if not valid:
                   raise RuntimeError("SQLITE_FAILURE_DIAGNOSTIC_INVALID: missing, unobserved, changed or unfinished evidence")
+      - name: Run isolated durable SQLite controls after original pytest exits
+        id: durable_controls
+        if: ${{ always() && !cancelled() && (steps.observed_tests.outcome == 'success' || steps.observed_tests.outcome == 'failure') }}
+        shell: pwsh
+        run: |
+          $controls = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-control-evidence'
+          python scripts/r3_sqlite_controls.py --repo $env:GITHUB_WORKSPACE --output $controls --case-timeout 30
+          exit $LASTEXITCODE
+      - name: Print bounded independent control evidence
+        if: ${{ always() && !cancelled() && (steps.durable_controls.outcome == 'success' || steps.durable_controls.outcome == 'failure') }}
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "runtime-sqlite-control-evidence"
+          summary = root / "summary.json"
+          if not summary.is_file():
+              raise RuntimeError("SQLITE_CONTROLS_UNAVAILABLE: standalone controls did not produce a summary")
+          limit = 1024 * 1024
+          if not 0 < summary.stat().st_size <= limit:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: summary size outside bound")
+          record = json.loads(summary.read_text(encoding="utf-8"))
+          if record.get("schema_version") != 1 or len(record.get("cases", [])) != 5:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: missing five-case summary")
+          # Summary already embeds each bounded case result; do not duplicate it.
+          text = json.dumps(record, ensure_ascii=True)
+          if len(text.encode("utf-8")) > limit:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: combined log quota")
+          print("SQLITE_CONTROLS_JSON_BEGIN")
+          print(text)
+          print("SQLITE_CONTROLS_JSON_END")
+          print("Standalone controls ran after pytest on the same VM; they do not describe failure-time conditions or prove a hosted fsync cause. Original pytest outcome is unchanged.")

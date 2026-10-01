@@ -8,6 +8,7 @@ close, wait, GC, observer thread or pre-failure output is introduced.
 """
 from pathlib import Path
 from types import FunctionType
+from collections import deque
 import ast
 import hashlib
 import json
@@ -69,11 +70,18 @@ LIMITATIONS = (
 )
 _RUN = pytest.StashKey()
 _MISSING = object()
+DETAIL_TEST = "tests/runtime/presentation/test_normal_capture.py::testExplicitStopReleaseAndRestartNormalJob[force]"
+DETAIL_SOURCES = ("scripts/r3_sqlite_wal_metadata.py", "src/emo_master/apps/runtime/presentation/store.py")
 
 
 def sourceHashes():
     root = Path(__file__).resolve().parents[1]
     return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in SOURCE_FILES}
+
+
+def detailSourceHashes():
+    root = Path(__file__).resolve().parents[1]
+    return {name: hashlib.sha256((root / name).read_bytes()).hexdigest() for name in DETAIL_SOURCES}
 
 
 def clocks():
@@ -92,11 +100,14 @@ class FailureRun:
     MAX_RECORDS = 16
     MAX_BYTES = 1024 * 1024
 
-    def __init__(self, path, storeType, runtimeType, helper):
+    def __init__(self, path, storeType, runtimeType, helper, *, callDetails=False, snapshotType=None):
         self.path = Path(path)
         self.storeType, self.runtimeType, self.helper = storeType, runtimeType, helper
         self.rawConnect = vars(storeType)["_connect"]
         self.originalDetails, self.originalWait = helper.jobFailureDetails, helper.waitForTerminal
+        self.callDetails, self.snapshotType = callDetails, snapshotType
+        self.metadataRetired = True
+        self.rawSnapshot = vars(snapshotType).get("snapshot") if snapshotType is not None else None
         self.active = self.pending = None
         self.errorLock = threading.Lock()
         self.retryAttempted = False
@@ -110,6 +121,9 @@ class FailureRun:
             "clocks": clocks(), "allowlist": MODULES, "limitations": LIMITATIONS,
             "source_sha256_before": sourceHashes(), "session_finished": False,
             "observer_retired": False, "original_pytest_exit": None}
+        if callDetails:
+            self.report.update(schema=2, call_details=True, detailed_test=DETAIL_TEST,
+                               detail_source_sha256_before=detailSourceHashes())
 
     def invalidate(self, reason):
         with self.errorLock:
@@ -121,6 +135,10 @@ class FailureRun:
             after = sourceHashes()
             self.report["source_sha256_after"] = after
             stable = after == self.report["source_sha256_before"]
+            if self.callDetails:
+                extra = detailSourceHashes()
+                self.report["detail_source_sha256_after"] = extra
+                stable = stable and extra == self.report["detail_source_sha256_before"]
         except BaseException as error:
             stable = False
             self.invalidate("source_read:" + type(error).__name__)
@@ -150,6 +168,8 @@ class FailureRun:
                 for row in self.records:
                     row.pop("sql", None)
                     row.pop("cached_job_details", None)
+                    row.pop("existing_snapshot_polls", None)
+                    row.pop("wal_metadata", None)
                     row["status"] = "INVALID"
                 content = json.dumps(self.payload(), ensure_ascii=True, indent=2)
             if len(content.encode("utf-8")) > self.MAX_BYTES:
@@ -181,6 +201,13 @@ class FailureOwner:
         self.active = True
         self.helperCalls = 0
         self.outcomes = {name: "pending" for name in ("setup", "call", "teardown")}
+        self.callDetails = run.callDetails and self.nodeid == DETAIL_TEST
+        self.allowedRoot = None
+        self.walCleanupConfirmed = True
+        self.pollRows = deque(maxlen=128)
+        self.pollStores = WeakKeyDictionary()
+        self.pollSerial = self.pollCount = self.pollFailed = self.pollDropped = 0
+        self.pollFirst = self.pollLast = self.pollMaxGap = None
 
     def invalidate(self, reason):
         with self.run.errorLock:
@@ -218,7 +245,7 @@ class FailureOwner:
                 self.gaps[0] = "store_registry_quota"
                 return None
             self.lifetimes += 1
-            value = (self.lifetimes, SqlitePhases())
+            value = (self.lifetimes, SqlitePhases(details=self.callDetails))
             self.registry[store] = value
             return value
 
@@ -293,16 +320,71 @@ class FailureOwner:
                 except BaseException as error:
                     self.invalidate("failure_save:" + type(error).__name__)
 
+        def snapshot(store, *args, **kwargs):
+            # Observe only calls the original selected test already makes.
+            # Never retain the return object or manufacture another poll.
+            observed = self.active and threading.current_thread() is threading.main_thread()
+            start = _pollClock() if observed else None
+            failed = False
+            try:
+                return run.rawSnapshot(store, *args, **kwargs)
+            except BaseException:
+                failed = True
+                raise
+            finally:
+                end = _pollClock() if observed and self.active else None
+                if observed and self.active:
+                    try:
+                        self.recordPoll(store, args, kwargs, start, end, failed)
+                    except BaseException as error:
+                        self.invalidate("existing_poll:" + type(error).__name__)
+
         try:
             self.patch(run.storeType, "_connect", original, connect)
             self.patch(run.helper, "jobFailureDetails", run.originalDetails, details)
             alias = vars(self.module).get("jobFailureDetails", _MISSING)
             if alias is not _MISSING:
                 self.patch(self.module, "jobFailureDetails", run.originalDetails, details)
+            if self.callDetails and run.snapshotType is not None:
+                self.patch(run.snapshotType, "snapshot", run.rawSnapshot, snapshot)
             self.checkIdentities()
         except BaseException as error:
             self.invalidate("installation:" + type(error).__name__)
             self.active = False
+
+    def recordPoll(self, store, args, kwargs, start, end, failed):
+        if type(store) is not self.run.snapshotType:
+            return
+        token = self.pollStores.get(store)
+        if token is None:
+            if self.pollSerial >= self.MAX_LIFETIMES or len(self.pollStores) >= self.MAX_LIVE:
+                self.pollDropped += 1
+                return
+            self.pollSerial += 1
+            token = self.pollSerial
+            self.pollStores[store] = token
+        job = kwargs.get("jobId", args[0] if args else None)
+        self.pollCount += 1
+        self.pollFailed += int(failed)
+        if self.pollFirst is None:
+            self.pollFirst = start
+        if isinstance(start, int) and isinstance(self.pollLast, int):
+            gap = start - self.pollLast
+            self.pollMaxGap = gap if self.pollMaxGap is None else max(self.pollMaxGap, gap)
+        self.pollLast = start
+        self.pollDropped += int(len(self.pollRows) == self.pollRows.maxlen)
+        self.pollRows.append({"serial": self.pollCount, "store_operation_token": token,
+            "job_id": job[:128] if isinstance(job, str) else None,
+            "start_perf_ns": start, "end_perf_ns": end, "failed": failed})
+
+    def pollSnapshot(self):
+        return {"count": self.pollCount, "failed": self.pollFailed, "omitted": self.pollDropped,
+            "first_start_perf_ns": self.pollFirst, "last_start_perf_ns": self.pollLast,
+            "max_intercall_start_gap_ns": self.pollMaxGap, "tail": list(self.pollRows),
+            "limitations": "Only existing main-thread snapshot calls in the exact selected test. "
+                "First wrapper observation is not the original wait start or deadline. "
+                "Intervals may span different Jobs and include test actions. No extra polls. "
+                "Progress cannot distinguish commit-thread descheduling from I/O waits."}
 
     def capture(self, runtime, job):
         with self.lock:
@@ -347,6 +429,24 @@ class FailureOwner:
                     row["gaps"].append(gaps[0])
                     row["status"] = "UNOBSERVED"
         row["after_sql_snapshot"] = reading()
+        if self.callDetails:
+            row["existing_snapshot_polls"] = self.pollSnapshot()
+            # This boundary is reached only after the original predicate has
+            # failed. No successful-path filesystem observation is added.
+            if type(runtime) is self.run.runtimeType and type(vars(runtime).get("sqliteStore")) is self.run.storeType:
+                try:
+                    from scripts.r3_sqlite_wal_metadata import captureWalMetadata
+                    row["wal_metadata"] = captureWalMetadata(
+                        vars(runtime.sqliteStore).get("dbPath"), self.allowedRoot)
+                except BaseException as error:
+                    row["wal_metadata"] = {"status": "UNAVAILABLE", "error_type": type(error).__name__,
+                                           "cleanup": {"retirement_confirmed": False}}
+                metadata = row["wal_metadata"]
+                if not isinstance(metadata, dict) or metadata.get("cleanup", {}).get("retirement_confirmed") is not True:
+                    self.walCleanupConfirmed = self.run.metadataRetired = False
+                    self.invalidate("wal_metadata_cleanup_unconfirmed")
+            else:
+                row["wal_metadata"] = {"status": "UNAVAILABLE", "reason": "not_exact_owned_store"}
         self.run.stableSource()
         row["errors"] = list(self.errors)
         if self.errors or self.run.invalid:
@@ -380,10 +480,11 @@ class FailureOwner:
             for _token, phases in self.registry.values():
                 phases.enabled = False
             self.registry.clear()
+        self.pollStores.clear()
         for row in self.run.records:
             if row["test_epoch"] == self.epoch:
                 row["outcomes"] = dict(self.outcomes)
-                row["observer_retired"] = not self.patches
+                row["observer_retired"] = not self.patches and self.walCleanupConfirmed
                 row["errors"] = list(self.errors)
                 if self.errors:
                     row["status"] = "INVALID"
@@ -393,11 +494,16 @@ class FailureOwner:
 def pytest_addoption(parser):
     parser.addoption("--sqlite-failure-diagnostics", metavar="NEW.json",
                      help="failure-only SQL evidence for verified common runtime failure helpers")
+    parser.addoption("--sqlite-failure-call-details", action="store_true", default=False,
+                     help="opt-in QPC/operation/poll details and failure-only WAL header for the reviewed force-stop test")
 
 
 def pytest_collection_modifyitems(config, items):
     output = config.getoption("sqlite_failure_diagnostics")
+    detailed = config.getoption("sqlite_failure_call_details", default=False)
     if not output:
+        if detailed:
+            raise pytest.UsageError("SQLite call details require --sqlite-failure-diagnostics")
         return
     if (any(config.pluginmanager.hasplugin(name) for name in OTHER_PLUGINS)
             or any(getattr(loaded, "__name__", None) in OTHER_PLUGINS
@@ -443,9 +549,38 @@ def pytest_collection_modifyitems(config, items):
                 raise pytest.UsageError("SQLite failure diagnostic module helper alias is overridden")
     if not selected:
         raise pytest.UsageError("SQLite failure diagnostics require a reviewed allowlisted test")
-    run = FailureRun(output, SqliteStore, RuntimeService, helper)
+    snapshotType = None
+    if detailed:
+        if not any(item.nodeid == DETAIL_TEST for item in items):
+            raise pytest.UsageError("SQLite call details require the exact reviewed force-stop test")
+        from emo_master.apps.runtime.presentation.store import ResultStore
+        snapshotType = ResultStore
+        snapshot = vars(ResultStore).get("snapshot")
+        if (type(snapshot) is not FunctionType or snapshot.__code__.co_name != "snapshot"
+                or Path(snapshot.__code__.co_filename).resolve() != root / DETAIL_SOURCES[1]):
+            raise pytest.UsageError("SQLite snapshot diagnostic source identity is overridden")
+    run = FailureRun(output, SqliteStore, RuntimeService, helper,
+                     callDetails=detailed, snapshotType=snapshotType)
     run.selected = selected
     config.stash[_RUN] = run
+
+
+@pytest.hookimpl(tryfirst=True)
+def pytest_runtest_call(item):
+    run = item.config.stash.get(_RUN, None)
+    if run is not None and run.active is not None and run.active.callDetails and item.nodeid == DETAIL_TEST:
+        root = getattr(item, "funcargs", {}).get("tmp_path")
+        # Only the already-created, exact test fixture root is allowed. Do not
+        # request a fixture or fall back to a production/default database root.
+        if isinstance(root, Path) and root.is_absolute():
+            run.active.allowedRoot = str(root)
+
+
+def _pollClock():
+    try:
+        return time.perf_counter_ns()
+    except BaseException:
+        return None
 
 
 @pytest.hookimpl(wrapper=True, tryfirst=True)
@@ -496,7 +631,7 @@ def pytest_sessionfinish(session, exitstatus):
         if not run.pending.patches:
             run.pending = None
     run.stableSource()
-    run.report["observer_retired"] = run.active is None and run.pending is None
+    run.report["observer_retired"] = run.active is None and run.pending is None and run.metadataRetired
     if not run.report["observer_retired"]:
         run.invalidate("observer_not_retired")
     if run.started != run.selected:

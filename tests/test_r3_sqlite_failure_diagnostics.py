@@ -14,7 +14,8 @@ from scripts import r3_sqlite_failure_diagnostics as plugin
 from scripts.r3_sqlite_phases import _Connection
 
 
-def fixtureRun(monkeypatch, tmp_path, *, connect=None, details=None, metaclass=type):
+def fixtureRun(monkeypatch, tmp_path, *, connect=None, details=None, metaclass=type,
+               callDetails=False, snapshotType=None):
     class Store(metaclass=metaclass):
         def _connect(self):
             return connect(self) if connect is not None else sqlite3.connect(":memory:")
@@ -32,9 +33,191 @@ def fixtureRun(monkeypatch, tmp_path, *, connect=None, details=None, metaclass=t
     helper = SimpleNamespace(jobFailureDetails=originalDetails, waitForTerminal=wait)
     module = SimpleNamespace(jobFailureDetails=originalDetails, waitForTerminal=wait)
     monkeypatch.setattr(plugin, "sourceHashes", lambda: {"test": "unchanged"})
-    run = plugin.FailureRun(tmp_path / "failure.json", Store, Runtime, helper)
+    monkeypatch.setattr(plugin, "detailSourceHashes", lambda: {"detail": "unchanged"})
+    run = plugin.FailureRun(tmp_path / "failure.json", Store, Runtime, helper,
+                            callDetails=callDetails, snapshotType=snapshotType)
     run.selected = 1
     return run, module, Runtime, Store
+
+
+def testDetailedPollsForwardOnceBoundedAndKeepNoOwners(monkeypatch, tmp_path):
+    class Result:
+        pass
+    calls = []
+    class Snapshots:
+        def snapshot(self, jobId):
+            calls.append(jobId)
+            return Result()
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
+    original = Snapshots.snapshot
+    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner.install()
+    snapshots = Snapshots()
+    runtime = Runtime(Store())
+    try:
+        runtime.sqliteStore._connect().close()
+        assert owner.registry[runtime.sqliteStore][1].details
+        item = SimpleNamespace(config=configFor(run), nodeid=plugin.DETAIL_TEST,
+                               funcargs={"tmp_path": tmp_path})
+        run.active = owner
+        plugin.pytest_runtest_call(item)
+        assert owner.allowedRoot == str(tmp_path)
+        from scripts import r3_sqlite_wal_metadata as wal
+        metadataCalls = []
+        monkeypatch.setattr(wal, "captureWalMetadata", lambda path, root:
+                            metadataCalls.append((path, root)) or {
+                                "status": "UNAVAILABLE", "cleanup": {"retirement_confirmed": True}})
+        result = snapshots.snapshot("job")
+        resultRef, storeRef = weakref.ref(result), weakref.ref(snapshots)
+        del result
+        assert resultRef() is None and not metadataCalls and not run.path.exists()
+        for _ in range(140):
+            snapshots.snapshot("job")
+        assert len(calls) == 141 and owner.pollCount == 141
+        assert len(owner.pollRows) == 128 and owner.pollDropped == 13
+        del snapshots
+        assert storeRef() is None and not owner.pollStores
+        module.jobFailureDetails(runtime, "job")
+        assert metadataCalls == [(None, str(tmp_path))]
+        row = run.records[0]
+        assert row["existing_snapshot_polls"]["count"] == 141
+        assert "not the original wait start" in row["existing_snapshot_polls"]["limitations"]
+        assert row["wal_metadata"]["status"] == "UNAVAILABLE"
+        assert row["status"] == "OBSERVED"
+        json.dumps(row)
+    finally:
+        owner.retire()
+    assert Snapshots.snapshot is original
+
+
+def testDetailsAreExactTargetOnlyAndDoNotRequestTmpFixture(monkeypatch, tmp_path):
+    class Snapshots:
+        def snapshot(self, jobId):
+            return jobId
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
+    original = Snapshots.snapshot
+    owner = install(run, module)
+    run.active = owner
+    try:
+        store = Store()
+        store._connect().close()
+        assert not owner.registry[store][1].details
+        assert Snapshots.snapshot is original
+        plugin.pytest_runtest_call(SimpleNamespace(config=configFor(run), nodeid=owner.nodeid))
+        assert owner.allowedRoot is None
+    finally:
+        owner.retire()
+
+
+def testDetailedPollAndWalErrorsPreserveOriginalFailures(monkeypatch, tmp_path):
+    error = AssertionError("original snapshot")
+    helperError = ValueError("original helper")
+    calls = []
+    class Snapshots:
+        def snapshot(self, jobId):
+            calls.append(jobId)
+            raise error
+    def details(*_args):
+        raise helperError
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, details=details,
+                                            callDetails=True, snapshotType=Snapshots)
+    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner.install()
+    runtime = Runtime(Store())
+    try:
+        runtime.sqliteStore._connect().close()
+        with pytest.raises(AssertionError) as raised:
+            Snapshots().snapshot("job")
+        assert raised.value is error and calls == ["job"] and owner.pollFailed == 1
+        from scripts import r3_sqlite_wal_metadata as wal
+        def fail(*_args):
+            raise OSError("metadata unavailable")
+        monkeypatch.setattr(wal, "captureWalMetadata", fail)
+        with pytest.raises(ValueError) as raised:
+            module.jobFailureDetails(runtime, "job")
+        assert raised.value is helperError
+        assert run.records[0]["wal_metadata"] == {"status": "UNAVAILABLE", "error_type": "OSError",
+                                                    "cleanup": {"retirement_confirmed": False}}
+        assert run.records[0]["helper_exception_type"] == "ValueError"
+        monkeypatch.setattr(owner, "recordPoll", fail)
+        with pytest.raises(AssertionError) as raised:
+            Snapshots().snapshot("again")
+        assert raised.value is error and calls == ["job", "again"]
+        assert "existing_poll:OSError" in owner.errors
+    finally:
+        owner.retire()
+    assert not run.records[0]["observer_retired"] and not run.metadataRetired
+    assert "wal_metadata_cleanup_unconfirmed" in run.invalid
+
+
+def testDetailedDormantSnapshotOnlyForwardsAfterRetirement(monkeypatch, tmp_path):
+    calls = []
+    class Snapshots:
+        def snapshot(self, jobId):
+            calls.append(jobId)
+            return jobId
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
+    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner.install()
+    wrapper = Snapshots.snapshot
+    owner.retire()
+    assert wrapper(Snapshots(), "later") == "later"
+    assert calls == ["later"] and not owner.pollCount and not owner.pollStores
+
+
+def testDetailedSnapshotReturningAfterRetirementAddsNoEndClock(monkeypatch, tmp_path):
+    entered, release = threading.Event(), threading.Event()
+    marker, clocks = object(), []
+    class Snapshots:
+        def snapshot(self, jobId):
+            entered.set()
+            assert release.wait(2)
+            return marker
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True, snapshotType=Snapshots)
+    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner.install()
+    monkeypatch.setattr(plugin, "_pollClock", lambda: clocks.append(1) or 1)
+    def retire():
+        assert entered.wait(2)
+        owner.retire()
+        release.set()
+    with ThreadPoolExecutor(1) as executor:
+        pending = executor.submit(retire)
+        try:
+            assert Snapshots().snapshot("job") is marker
+            pending.result(2)
+        finally:
+            release.set()
+            owner.retire()
+    assert clocks == [1] and not owner.pollCount and not owner.pollRows
+
+
+def testUnconfirmedWalCleanupInvalidatesRetirementWithoutRetry(monkeypatch, tmp_path):
+    run, module, Runtime, Store = fixtureRun(monkeypatch, tmp_path, callDetails=True)
+    owner = plugin.FailureOwner(run, module, plugin.DETAIL_TEST)
+    owner.install()
+    run.active = owner
+    run.started = 1
+    runtime = Runtime(Store())
+    runtime.sqliteStore._connect().close()
+    from scripts import r3_sqlite_wal_metadata as wal
+    calls = []
+    def failedCleanup(*_args):
+        calls.append(1)
+        return {"status": "UNAVAILABLE", "cleanup": {
+            "opened": 2, "close_attempted": 2, "close_failures": 1, "retirement_confirmed": False}}
+    monkeypatch.setattr(wal, "captureWalMetadata", failedCleanup)
+    try:
+        assert module.jobFailureDetails(runtime, "job") == "cached-only details"
+    finally:
+        assert owner.retire()  # Python patches retired; ambiguous native close is not retried.
+        run.active = None
+    session = SimpleNamespace(config=configFor(run), exitstatus=1)
+    plugin.pytest_sessionfinish(session, 1)
+    payload = json.loads(run.path.read_text())
+    assert calls == [1] and session.exitstatus == 1
+    assert payload["status"] == "INVALID" and not payload["observer_retired"]
+    assert not payload["failures"][0]["observer_retired"] and run.pending is None
 
 
 def install(run, module):

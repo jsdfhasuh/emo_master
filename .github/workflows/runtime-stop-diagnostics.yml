@@ -2,19 +2,6 @@ name: Windows stop diagnostics (not acceptance)
 
 on:
   workflow_dispatch:
-  push:
-    branches: [agent/runtime-workflow-architecture-v1]
-    paths:
-      - .github/workflows/runtime-stop-diagnostics.yml
-      - scripts/r3_job_diagnostics.py
-      - scripts/r3_sqlite_phases.py
-      - scripts/r3_sqlite_stop_diagnostics.py
-      - scripts/r3_native_thread_origins.py
-      - scripts/r3_a18_thread_diagnostics.py
-      - tests/ui/presentation/test_retained_acceptance_lifecycle.py
-      - tests/runtime/test_runtime_job_lifecycle_integration.py
-      - src/emo_master/apps/runtime/context/sqlite_store.py
-      - src/emo_master/apps/runtime/jobs/**
 
 permissions:
   contents: read

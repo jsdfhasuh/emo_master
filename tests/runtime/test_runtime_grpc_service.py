@@ -27,31 +27,37 @@ def testLoadProjectReturnsReadyStatus(tmp_path: Path) -> None:
     )
 
     service = RuntimeService()
-    reply = service.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
-    )
-    assert reply.ok is True
-    assert reply.status == "READY"
+    try:
+        reply = service.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
+        )
+        assert reply.ok is True
+        assert reply.status == "READY"
+    finally:
+        service.close()
 
 
 def testListOperatorsReturnsRegisteredEntries() -> None:
     service = RuntimeService()
-    reply = service.ListOperators(runtime_pb2.ListOperatorsRequest(), None)
-    assert len(reply.operators) >= 1
-    operatorIds = {operator.operator_id for operator in reply.operators}
-    operatorsById = {operator.operator_id: operator for operator in reply.operators}
-    assert "vision.io.image_loader" in operatorIds
-    assert "vision.io.image_saver" in operatorIds
-    assert "vision.flow.if" in operatorIds
-    assert "vision.flow.switch" in operatorIds
-    assert operatorsById["vision.flow.if"].category == "控制流"
-    assert operatorsById["vision.flow.switch"].category == "控制流"
-    operatorInfo = reply.operators[0]
-    assert isinstance(dict(operatorInfo.input_ports), dict)
-    assert isinstance(dict(operatorInfo.output_ports), dict)
-    assert operatorInfo.param_schema_json.startswith("{")
-    assert operatorInfo.category != ""
-    assert operatorInfo.icon_key != ""
+    try:
+        reply = service.ListOperators(runtime_pb2.ListOperatorsRequest(), None)
+        assert len(reply.operators) >= 1
+        operatorIds = {operator.operator_id for operator in reply.operators}
+        operatorsById = {operator.operator_id: operator for operator in reply.operators}
+        assert "vision.io.image_loader" in operatorIds
+        assert "vision.io.image_saver" in operatorIds
+        assert "vision.flow.if" in operatorIds
+        assert "vision.flow.switch" in operatorIds
+        assert operatorsById["vision.flow.if"].category == "控制流"
+        assert operatorsById["vision.flow.switch"].category == "控制流"
+        operatorInfo = reply.operators[0]
+        assert isinstance(dict(operatorInfo.input_ports), dict)
+        assert isinstance(dict(operatorInfo.output_ports), dict)
+        assert operatorInfo.param_schema_json.startswith("{")
+        assert operatorInfo.category != ""
+        assert operatorInfo.icon_key != ""
+    finally:
+        service.close()
 
 
 def testRuntimeServiceCleansTerminalWorkspacesAndJobMessages(tmp_path: Path) -> None:
@@ -134,23 +140,26 @@ def testStreamJobEventsReturnsLifecycleEvents(tmp_path: Path) -> None:
     )
 
     service = RuntimeService()
-    _ = service.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
-    )
-    startReply = service.StartJob(
-        runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
-    )
-    assert startReply.job_id != ""
-    waitForTerminal(service, startReply.job_id)
-
-    events = list(
-        service.StreamJobEvents(
-            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
+    try:
+        _ = service.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
         )
-    )
-    assert len(events) >= 2
-    eventTypes = [event.event_type for event in events]
-    assert "job.started" in eventTypes
+        startReply = service.StartJob(
+            runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
+        )
+        assert startReply.job_id != ""
+        waitForTerminal(service, startReply.job_id)
+
+        events = list(
+            service.StreamJobEvents(
+                runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
+            )
+        )
+        assert len(events) >= 2
+        eventTypes = [event.event_type for event in events]
+        assert "job.started" in eventTypes
+    finally:
+        service.close()
 
 
 def testStreamJobEventsIncludeSwitchBranchPayload(tmp_path: Path) -> None:
@@ -219,24 +228,27 @@ def testStreamJobEventsIncludeSwitchBranchPayload(tmp_path: Path) -> None:
     )
 
     service = RuntimeService()
-    _ = service.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
-    )
-    startReply = service.StartJob(
-        runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
-    )
-    waitForTerminal(service, startReply.job_id)
-    events = list(
-        service.StreamJobEvents(
-            runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
+    try:
+        _ = service.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)), None
         )
-    )
-    switchEvents = [
-        event
-        for event in events
-        if event.node_id == "switch1" and event.event_type == "node.completed"
-    ]
-    assert len(switchEvents) == 1
-    payload = json.loads(switchEvents[0].payload_json)
-    assert payload["status"] == "COMPLETED"
-    assert payload["branch"] == "case1"
+        startReply = service.StartJob(
+            runtime_pb2.StartJobRequest(project_id=str(projectDir)), None
+        )
+        waitForTerminal(service, startReply.job_id)
+        events = list(
+            service.StreamJobEvents(
+                runtime_pb2.StreamJobEventsRequest(job_id=startReply.job_id, follow=True), None
+            )
+        )
+        switchEvents = [
+            event
+            for event in events
+            if event.node_id == "switch1" and event.event_type == "node.completed"
+        ]
+        assert len(switchEvents) == 1
+        payload = json.loads(switchEvents[0].payload_json)
+        assert payload["status"] == "COMPLETED"
+        assert payload["branch"] == "case1"
+    finally:
+        service.close()

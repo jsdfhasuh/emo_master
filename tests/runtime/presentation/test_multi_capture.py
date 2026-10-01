@@ -315,6 +315,67 @@ def testMissingImageInSecondScopeDoesNotUseFirstScopeImage(channel, tmp_path):
     assert len({value.identity.resultKey for value in values.values()}) == 2
 
 
+def quarantineFinished(slot):
+    # The flag is published before credits are drained under this same lock.
+    # Keep polling bounded; never block the test while the owner is inside it.
+    if not slot["lock"].acquire(False):
+        return False
+    try:
+        return slot["quarantined"].value
+    finally:
+        slot["lock"].release()
+
+
+def testQuarantineWaitCannotObserveFlagBeforeBothLaneCreditsAreDrained():
+    entered, resume = threading.Event(), threading.Event()
+    credits = [threading.BoundedSemaphore(1) for _ in range(2)]
+    errors = []
+
+    def gatedAcquire(blocking):
+        acquired = credits[0].acquire(blocking)
+        if not acquired:
+            entered.set()
+            assert resume.wait(5), "test did not release the quarantine drain"
+        return acquired
+
+    slot = {"lock": threading.RLock(), "quarantined": SimpleNamespace(value=False), "busy": False,
+            "laneFree": [SimpleNamespace(acquire=gatedAcquire), credits[1]]}
+    pool = ExportPool.__new__(ExportPool)
+
+    def quarantine():
+        try:
+            pool._quarantine(slot)
+        except BaseException as error:
+            errors.append(error)
+
+    owner = threading.Thread(target=quarantine)
+    owner.start()
+    try:
+        assert entered.wait(5)
+        assert slot["quarantined"].value and slot["busy"]
+        assert not quarantineFinished(slot)
+        emissions = []
+        collector = ResultCollector({"plan": '{"sources":{},"scopes":{}}',
+            "slots": [{"lane": 1, "free": credits[1], "quarantined": slot["quarantined"]}],
+            "imageLaneBySource": {"image": 1}}, emissions.append)
+        rejected = collector.image("image", np.zeros((1, 1), np.uint8), {"rawBytes": 0})
+        assert rejected["reasonCode"] == "BUDGET_EXCEEDED" and "quarantined" in rejected["reason"]
+        assert not emissions
+        # The old flag-only wait would return while this lane still had credit.
+        assert not credits[0].acquire(False)
+        assert credits[1].acquire(False)
+        credits[1].release()
+        resume.set()
+        waitFor(lambda: quarantineFinished(slot))
+        assert slot["busy"] and slot["quarantined"].value
+        assert all(not credit.acquire(False) for credit in credits)
+    finally:
+        resume.set()
+        owner.join(5)
+    assert not owner.is_alive()
+    assert not errors
+
+
 def testFailedEncoderReapQuarantinesBothLanesUntilActualDisposal(tmp_path, monkeypatch):
     outcomes = []
     pool = ExportPool(tmp_path, lambda task, path, outcome: outcomes.append(outcome), worker=blockedEncoder)
@@ -328,7 +389,7 @@ def testFailedEncoderReapQuarantinesBothLanesUntilActualDisposal(tmp_path, monke
         monkeypatch.setattr(pool, "_reap", cannotReap)
         assert descriptors[0]["free"].acquire(False)
         pool.submit({"slot": 0, "lane": 0, "shape": [1, 1], "key": "quarantine"})
-        waitFor(lambda: pool.slots[0]["quarantined"].value)
+        waitFor(lambda: quarantineFinished(pool.slots[0]))
         assert pool.slots[0]["busy"] and pool.slots[0]["process"].is_alive()
         assert all(not descriptor["free"].acquire(False) for descriptor in descriptors)
         with pytest.raises(ValueError, match="quarantined"):

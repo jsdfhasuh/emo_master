@@ -194,7 +194,7 @@ class ScriptedBackend:
         self.opened.append((path, metadataOnly))
         return len(self.opened)
 
-    def metadata(self, handle, path):
+    def metadata(self, handle, path, *, previouslyValidatedHeldWal=False):
         if handle == 4 and self.metadataError:
             raise self.metadataError
         identity = [1, 2 if str(path).endswith("-wal") else 1]
@@ -238,7 +238,8 @@ def testConcurrentChangesAreExplicitAndAllHandlesClose(tmp_path, monkeypatch, ac
     assert "secret/path" not in json.dumps(result)
 
 
-@pytest.mark.parametrize("error", [OSError("secret/path"), RuntimeError("secret/path"), KeyboardInterrupt("secret/path")])
+@pytest.mark.parametrize("error", [OSError("secret/path"), PermissionError("secret/path"),
+                                  RuntimeError("secret/path"), KeyboardInterrupt("secret/path")])
 @pytest.mark.parametrize("closeError", [False, True])
 def testReadAndCleanupErrorsCannotEscapeOrLeakPaths(tmp_path, monkeypatch, error, closeError):
     database, _ = files(tmp_path)
@@ -261,10 +262,11 @@ class NativeFunction:
 
 class FakeKernel:
     def __init__(self, *, fail=None, attributes=0, finalPath=None, identity=23, header=None,
-                 fileSize=32, closeFailures=()):
+                 fileSize=32, closeFailures=(), links=1):
         self.calls, self.closed, self.paths = [], [], {}
         self.fail, self.attributes, self.finalPath, self.identity = fail, attributes, finalPath, identity
         self.header, self.fileSize, self.closeFailures = walHeader() if header is None else header, fileSize, closeFailures
+        self.links = links
         for name in ("CreateFileW", "GetFileType", "GetFileInformationByHandle", "GetFileInformationByHandleEx",
                      "GetFinalPathNameByHandleW", "SetFilePointerEx", "ReadFile", "CloseHandle"):
             setattr(self, name, NativeFunction(lambda *args, name=name: self.call(name, *args)))
@@ -281,7 +283,7 @@ class FakeKernel:
             return 1
         if name == "GetFileInformationByHandle":
             info = ctypes.cast(args[1], ctypes.POINTER(probe._FileInformation)).contents
-            info.attributes, info.links, info.sizeLow = self.attributes, 1, self.fileSize
+            info.attributes, info.links, info.sizeLow = self.attributes, self.links, self.fileSize
             return 1
         if name == "GetFileInformationByHandleEx":
             info = ctypes.cast(args[2], ctypes.POINTER(probe._FileIdInformation)).contents
@@ -301,6 +303,110 @@ class FakeKernel:
             if args[0] in self.closeFailures:
                 return 0
         return 1
+
+
+class ChangingKernel(FakeKernel):
+    """Change only the held WAL after two reads or its metadata-only reopen."""
+    def __init__(self, *, initialWal=None, heldAfter=None, reopened=None, standardInfo=None, **settings):
+        super().__init__(**settings)
+        self.reads = 0
+        self.initialWal = initialWal or {}
+        self.heldAfter, self.reopened = heldAfter or {}, reopened or {}
+        self.standardInfo = standardInfo
+
+    def call(self, name, *args):
+        if name == "GetFileInformationByHandleEx" and args[1] == 1:
+            self.calls.append((name, args))
+            if self.standardInfo is None:
+                return 0
+            info = ctypes.cast(args[2], ctypes.POINTER(probe._FileStandardInformation)).contents
+            info.deletePending, info.links, info.directory = self.standardInfo
+            return 1
+        result = super().call(name, *args)
+        if name == "ReadFile":
+            self.reads += 1
+        if args[0] == 2:
+            settings = self.heldAfter if self.reads == 2 else self.initialWal
+        else:
+            settings = self.reopened if args[0] == 3 else {}
+        if name == "GetFileInformationByHandle":
+            info = ctypes.cast(args[1], ctypes.POINTER(probe._FileInformation)).contents
+            info.attributes = settings.get("attributes", info.attributes)
+            info.links = settings.get("links", info.links)
+        elif name == "GetFileInformationByHandleEx":
+            info = ctypes.cast(args[2], ctypes.POINTER(probe._FileIdInformation)).contents
+            info.identifier[0] = settings.get("identity", info.identifier[0])
+        elif name == "GetFinalPathNameByHandleW" and "finalPath" in settings:
+            args[1].value = settings["finalPath"]
+            return len(settings["finalPath"])
+        return result
+
+
+@pytest.mark.parametrize("links", [0, 2])
+@pytest.mark.parametrize("target", ["database", "wal"])
+def testInitialUnsafeLinksCannotBecomeDeleted(tmp_path, monkeypatch, links, target):
+    database, _ = files(tmp_path)
+    settings = {"links": links} if target == "database" else {"initialWal": {"links": links}}
+    kernel = ChangingKernel(standardInfo=(1, 0, 0), **settings)
+    monkeypatch.setattr(probe, "_backend", lambda: probe._WindowsBackend(kernel))
+    result = probe.captureWalMetadata(database, tmp_path)
+    assert (result["status"], result["reason"]) == ("UNAVAILABLE", "unsafe_open_file")
+    assert result["header_reads"] == 0
+    assert not any(name == "GetFileInformationByHandleEx" and args[1] == 1 for name, args in kernel.calls)
+    assert kernel.closed == ([1] if target == "database" else [2, 1])
+
+
+@pytest.mark.parametrize(("heldAfter", "standardInfo", "status", "reason"), [
+    ({"links": 0}, (1, 0, 0), "DELETED", "wal_delete_pending"),
+    ({"links": 0}, (0, 0, 0), "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 0}, None, "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 0}, (1, 1, 0), "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 0}, (1, 0, 1), "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 2}, (1, 0, 0), "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 0, "attributes": 0x400}, (1, 0, 0), "UNAVAILABLE", "unsafe_open_file"),
+    ({"links": 0, "attributes": 0x10}, (1, 0, 0), "UNAVAILABLE", "unsafe_open_file"),
+])
+@pytest.mark.parametrize("closeFailures", [(), (1, 2)])
+def testOnlyAffirmativeHeldWalDeletionIsClassified(tmp_path, monkeypatch, heldAfter, standardInfo,
+                                                 status, reason, closeFailures):
+    database, _ = files(tmp_path)
+    kernel = ChangingKernel(heldAfter=heldAfter, standardInfo=standardInfo, closeFailures=closeFailures)
+    monkeypatch.setattr(probe, "_backend", lambda: probe._WindowsBackend(kernel))
+    result = probe.captureWalMetadata(database, tmp_path)
+    assert (result["status"], result["reason"]) == (status, reason)
+    assert result["header_reads"] == 2 and result["header_bytes"] == 64
+    assert [args[0] for name, args in kernel.calls if name == "ReadFile"] == [2, 2]
+    queries = [args for name, args in kernel.calls if name == "GetFileInformationByHandleEx" and args[1] == 1]
+    assert len(queries) == (1 if heldAfter == {"links": 0} else 0)
+    if queries:
+        assert queries[0][0] == 2 and queries[0][3] == 24
+    assert kernel.closed == [2, 1]
+    assert result["cleanup"]["opened"] == result["cleanup"]["close_attempted"] == 2
+    assert result["cleanup"]["close_failures"] == len(closeFailures)
+    assert result["cleanup"]["retirement_confirmed"] is (not closeFailures)
+    assert "physical_frame_slot_capacity" not in result
+
+
+@pytest.mark.parametrize(("reopened", "status", "reason"), [
+    ({"identity": 24}, "REPLACED", "wal_identity_changed"),
+    ({"identity": 24, "links": 2}, "UNAVAILABLE", "unsafe_open_file"),
+    ({"identity": 24, "links": 0}, "UNAVAILABLE", "unsafe_open_file"),
+    ({"identity": 24, "attributes": 0x400}, "UNAVAILABLE", "unsafe_open_file"),
+    ({"identity": 0}, "UNSUPPORTED", "unknown_file_identity"),
+    ({"identity": 24, "finalPath": r"\\?\C:\outside\owned.sqlite-wal"}, "REPLACED", "path_identity_changed"),
+])
+def testReopenedWalIsValidatedWithoutContentReads(tmp_path, monkeypatch, reopened, status, reason):
+    database, _ = files(tmp_path)
+    kernel = ChangingKernel(reopened=reopened, standardInfo=(1, 0, 0))
+    monkeypatch.setattr(probe, "_backend", lambda: probe._WindowsBackend(kernel))
+    result = probe.captureWalMetadata(database, tmp_path)
+    assert (result["status"], result["reason"]) == (status, reason)
+    assert result["header_reads"] == 2 and result["header_bytes"] == 64
+    assert [args[0] for name, args in kernel.calls if name == "ReadFile"] == [2, 2]
+    assert not any(name == "GetFileInformationByHandleEx" and args[1] == 1 for name, args in kernel.calls)
+    assert len(kernel.closed) == len(kernel.paths) == len(set(kernel.closed))
+    assert result["cleanup"]["retirement_confirmed"] is True
+    assert "physical_frame_slot_capacity" not in result
 
 
 def testWindowsUsesReadOnlyExistingSharedHandlesAndHeaderSizedReads():
@@ -392,6 +498,8 @@ def testNativeWalChangesAreDetected(tmp_path, monkeypatch, action, status):
     backend = probe._backend()
     original = backend.readHeader
     reads = []
+    replacementIdentities = []
+    retired = tmp_path / "retired-wal"
 
     def read(handle):
         header = original(handle)
@@ -400,9 +508,15 @@ def testNativeWalChangesAreDetected(tmp_path, monkeypatch, action, status):
             if action == "delete":
                 wal.unlink()
             elif action == "replace":
-                replacement = tmp_path / "replacement"
-                replacement.write_bytes(walHeader())
-                replacement.replace(wal)
+                # Overwriting an open destination can itself fail on Windows.
+                # Rename the held file aside, then exclusively create its new
+                # pathname target; retain the original until capture returns.
+                wal.rename(retired)
+                with wal.open("xb") as stream:
+                    stream.write(walHeader())
+                oldInfo, newInfo = retired.stat(), wal.stat()
+                replacementIdentities.append(((oldInfo.st_dev, oldInfo.st_ino),
+                                              (newInfo.st_dev, newInfo.st_ino)))
             else:
                 with wal.open("ab") as stream:
                     stream.write(b"growth")
@@ -411,6 +525,10 @@ def testNativeWalChangesAreDetected(tmp_path, monkeypatch, action, status):
     monkeypatch.setattr(backend, "readHeader", read)
     monkeypatch.setattr(probe, "_backend", lambda: backend)
     result = probe.captureWalMetadata(database, tmp_path)
+    if action == "replace":
+        assert len(replacementIdentities) == 1, result
+        assert replacementIdentities[0][0] != replacementIdentities[0][1]
+        assert retired.exists() and wal.exists()
     assert result["status"] == status, result
     assert "physical_frame_slot_capacity" not in result
 

@@ -158,6 +158,13 @@ class _FileIdInformation(ctypes.Structure):
     _fields_ = [("volume", ctypes.c_uint64), ("identifier", ctypes.c_ubyte * 16)]
 
 
+class _FileStandardInformation(ctypes.Structure):
+    # FILE_STANDARD_INFO uses one-byte BOOLEAN fields, not Win32 BOOLs.
+    _fields_ = [("allocationSize", ctypes.c_int64), ("endOfFile", ctypes.c_int64),
+                ("links", ctypes.c_uint32), ("deletePending", ctypes.c_ubyte),
+                ("directory", ctypes.c_ubyte)]
+
+
 class _WindowsBackend:
     """Native calls are injectable; ordinary Python open() is never used on Windows."""
     name = "windows_read_only_shared"
@@ -203,13 +210,24 @@ class _WindowsBackend:
             self._failed()
         return handle
 
-    def metadata(self, handle, path):
+    def metadata(self, handle, path, *, previouslyValidatedHeldWal=False):
         if self.kernel.GetFileType(handle) != 1:  # FILE_TYPE_DISK
             raise _Unavailable("unsupported_file_type", "UNSUPPORTED")
         info, identity = _FileInformation(), _FileIdInformation()
         if not self.kernel.GetFileInformationByHandle(handle, ctypes.byref(info)):
             self._failed()
-        if info.attributes & (0x400 | 0x10) or info.links != 1:
+        if info.attributes & (0x400 | 0x10):
+            raise _Unavailable("unsafe_open_file")
+        if info.links != 1:
+            # Only the same live WAL handle that passed all initial checks may
+            # report retirement. Zero links alone cannot establish deletion.
+            # This does not establish that its previous pathname is absent.
+            if previouslyValidatedHeldWal and info.links == 0:
+                standard = _FileStandardInformation()
+                if (self.kernel.GetFileInformationByHandleEx(
+                        handle, 1, ctypes.byref(standard), ctypes.sizeof(standard))
+                        and standard.deletePending == 1 and not standard.directory and standard.links == 0):
+                    raise _Unavailable("wal_delete_pending", "DELETED")
             raise _Unavailable("unsafe_open_file")
         if not self.kernel.GetFileInformationByHandleEx(handle, 18, ctypes.byref(identity), ctypes.sizeof(identity)):
             raise _Unavailable("unknown_file_identity", "UNSUPPORTED")
@@ -290,7 +308,7 @@ def captureWalMetadata(dbPath, allowedRoot):
                 result["header_bytes"] += len(raw)
                 headers.append(raw)
                 result["header_before" if index == 0 else "header_after"] = _header(raw)
-            result["after"] = backend.metadata(walHandle, wal)
+            result["after"] = backend.metadata(walHandle, wal, previouslyValidatedHeldWal=True)
             # Keep the first handle live while resolving the name again; do not
             # read the reopened file. Identity is still only an observation.
             reopened = opened(wal, True)

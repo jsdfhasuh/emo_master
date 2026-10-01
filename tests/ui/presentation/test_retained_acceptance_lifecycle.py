@@ -165,6 +165,18 @@ def assertNoNewThreads(before, after):
         assert after[key] <= before[key], (key, before, after)
 
 
+def assertNoNewThreadsAtPhase(before, after, *, phase, index=None):
+    try:
+        return assertNoNewThreads(before, after)
+    except AssertionError:
+        try:
+            print(f"A18_THREAD_CHECKPOINT phase={phase} index={index}")
+        except BaseException:
+            # Failure context must never replace the original assertion.
+            pass
+        raise
+
+
 def assertStableOwners(app, before, session, owners, *, phase=None, index=None):
     after = nativeCounts(app, phase=phase, index=index)
     # Other tests' background owners may finish during these cycles. Their
@@ -172,7 +184,7 @@ def assertStableOwners(app, before, session, owners, *, phase=None, index=None):
     assert after["handles"] <= before["handles"], ("handles", before, after)
     for key in ("widgets", "windows"):
         assert after[key] == before[key], (key, before, after)
-    assertNoNewThreads(before, after)
+    assertNoNewThreadsAtPhase(before, after, phase=phase, index=index)
     thread, threadId, handle, descriptor = owners
     assert session.thread is thread and thread.is_alive()
     assert thread.native_id == threadId and threadId in after["native_thread_ids"]
@@ -335,7 +347,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     assert set(qtApp.allWindows()) == existingWindows
     assert session.closeCalls == 1 and session.handle.closed and not session.thread.is_alive()
     after = nativeCounts(qtApp, phase="owners_closed")
-    assertNoNewThreads(baseline, after)
+    assertNoNewThreadsAtPhase(baseline, after, phase="owners_closed")
     assert sessionThread not in after["native_thread_ids"]
     assert session.thread not in after["python_thread_objects"]
     with pytest.raises(OSError):
@@ -348,9 +360,128 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     del session, owners, before, hub, window
     assert all(reference() is None for reference in fixtureRefs), 'Test fixture is still retained'
     after = nativeCounts(qtApp, phase="fixture_released")
-    assertNoNewThreads(baseline, after)
+    assertNoNewThreadsAtPhase(baseline, after, phase="fixture_released")
     assert sessionThread not in after["native_thread_ids"]
     # All owned thread/handle resources retired, not merely Python references.
     for key in ("handles", "native_threads", "python_threads"):
         # Baseline included the now-destroyed main window's platform resources.
         assert after[key] <= baseline[key], (key, baseline, after)
+
+
+def testThreadCheckpointSuccessPreservesReturnAndEmitsNothing(monkeypatch, capsys):
+    before, after, expected = object(), object(), object()
+    calls = []
+    def original(left, right):
+        assert left is before and right is after
+        calls.append(True)
+        return expected
+    monkeypatch.setattr(__import__(__name__, fromlist=["assertNoNewThreads"]),
+                        "assertNoNewThreads", original)
+    assert assertNoNewThreadsAtPhase(before, after, phase="navigation", index=99) is expected
+    assert calls == [True]
+    assert capsys.readouterr().out == ""
+
+
+@pytest.mark.parametrize("phase,index", (("stable_initial", None), ("navigation", 99),
+    ("floating", 29), ("hidden_observers", None), ("owners_closed", None),
+    ("fixture_released", None)))
+def testThreadCheckpointFailureKeepsExactExceptionAndContext(monkeypatch, capsys, phase, index):
+    before, after = object(), object()
+    failure = AssertionError("original predicate failure")
+    calls = []
+    def original(left, right):
+        assert left is before and right is after
+        calls.append(True)
+        raise failure
+    monkeypatch.setattr(__import__(__name__, fromlist=["assertNoNewThreads"]),
+                        "assertNoNewThreads", original)
+    with pytest.raises(AssertionError) as raised:
+        assertNoNewThreadsAtPhase(before, after, phase=phase, index=index)
+    assert raised.value is failure and calls == [True]
+    assert capsys.readouterr().out == f"A18_THREAD_CHECKPOINT phase={phase} index={index}\n"
+
+
+@pytest.mark.parametrize("printFailure", (RuntimeError, KeyboardInterrupt))
+def testThreadCheckpointPrintFailureCannotReplaceAssertion(monkeypatch, printFailure):
+    failure = AssertionError("original predicate failure")
+    def original(_before, _after):
+        raise failure
+    def brokenPrint(*_args, **_kwargs):
+        raise printFailure("unavailable output")
+    monkeypatch.setattr(__import__(__name__, fromlist=["assertNoNewThreads"]),
+                        "assertNoNewThreads", original)
+    monkeypatch.setattr("builtins.print", brokenPrint)
+    with pytest.raises(AssertionError) as raised:
+        assertNoNewThreadsAtPhase(None, None, phase="owners_closed")
+    assert raised.value is failure
+
+
+def testThreadCheckpointPreservesRealPytestRewrittenAssertion(monkeypatch, capsys):
+    original = assertNoNewThreads
+    observed = []
+    def rewritten(left, right):
+        try:
+            return original(left, right)
+        except AssertionError as failure:
+            observed.append(failure)
+            raise
+    monkeypatch.setattr(__import__(__name__, fromlist=["assertNoNewThreads"]),
+                        "assertNoNewThreads", rewritten)
+    before = {"native_thread_ids": frozenset((1,))}
+    after = {"native_thread_ids": frozenset((1, 7))}
+    with pytest.raises(AssertionError) as raised:
+        assertNoNewThreadsAtPhase(before, after, phase="fixture_released")
+    assert raised.value is observed[0]
+    assert type(raised.value.args[0]) is str and "assert " in str(raised.value)
+    assert "native_thread_ids" in str(raised.value)
+    assert capsys.readouterr().out == "A18_THREAD_CHECKPOINT phase=fixture_released index=None\n"
+
+
+def testStableOwnersForwardsPhaseWithoutAnotherCensus(monkeypatch, capsys):
+    before = {"handles": 3, "widgets": 2, "windows": 1,
+              "native_thread_ids": frozenset((1,))}
+    after = dict(before, native_thread_ids=frozenset((1, 7)))
+    calls = []
+    def census(app, **keywords):
+        calls.append((app, keywords))
+        return after
+    monkeypatch.setattr(__import__(__name__, fromlist=["nativeCounts"]), "nativeCounts", census)
+    with pytest.raises(AssertionError, match="native_thread_ids"):
+        assertStableOwners("app", before, None, None, phase="navigation", index=299)
+    assert calls == [("app", {"phase": "navigation", "index": 299})]
+    assert capsys.readouterr().out == "A18_THREAD_CHECKPOINT phase=navigation index=299\n"
+
+
+def testThreadCheckpointKeepsDiagnosticPluginSnapshotMatching(monkeypatch, tmp_path, capsys):
+    from scripts import r3_a18_thread_diagnostics as diagnostics
+    module = __import__(__name__, fromlist=["nativeCounts"])
+    def snapshot(ids):
+        return {"handles": 3, "widgets": 2, "windows": 1,
+                "native_threads": len(ids), "python_threads": 1,
+                "native_thread_ids": frozenset(ids), "python_thread_objects": frozenset()}
+    samples = iter((snapshot((1,)), snapshot((1, 2)), snapshot((1, 2, 7))))
+    calls = []
+    def census(_app, **_ignored):
+        calls.append(True)
+        return next(samples)
+    collected = []
+    monkeypatch.setattr(module, "nativeCounts", census)
+    monkeypatch.setattr(diagnostics, "collect", lambda ids: collected.append(ids) or {
+        "status": "queried", "threads": []})
+    original = module.assertNoNewThreads
+    owner = diagnostics.PhaseOwner(module, str(tmp_path / "unused.json"))
+    try:
+        owner.install()
+        module.nativeCounts(None, phase="pre_fixture_baseline")
+        before = module.nativeCounts(None, phase="warmed_fixture_baseline")
+        after = module.nativeCounts(None, phase="stable_initial")
+        with pytest.raises(AssertionError, match="native_thread_ids"):
+            assertNoNewThreadsAtPhase(before, after, phase="stable_initial")
+        assert owner.record["before_sample"] == 1 and owner.record["after_sample"] == 2
+        assert owner.record["snapshot_match"] == "live_argument_dict_id"
+        assert owner.record["checkpoints"][-1]["phase"] == "stable_initial"
+        assert collected == [[7]] and calls == [True, True, True]
+    finally:
+        assert owner.retire()
+    assert module.assertNoNewThreads is original and module.nativeCounts is census
+    assert capsys.readouterr().out == "A18_THREAD_CHECKPOINT phase=stable_initial index=None\n"

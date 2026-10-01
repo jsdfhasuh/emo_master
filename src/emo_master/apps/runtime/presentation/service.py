@@ -1,6 +1,7 @@
 """Explicit facade over the existing Runtime, JobManager and spawn Supervisor."""
 import multiprocessing
 from collections import deque
+from functools import wraps
 import json
 import queue
 from pathlib import Path
@@ -9,6 +10,7 @@ import time
 from uuid import uuid4
 
 from emo_master.apps.runtime.jobs.models import JobProcessSpec
+from emo_master.apps.runtime.jobs.finalization import faultSummary
 from emo_master.apps.runtime.presentation.preparation import prepare
 from emo_master.apps.runtime.presentation.store import ResultStore
 from emo_master.apps.runtime.presentation.assets import AssetStore
@@ -17,38 +19,66 @@ from emo_master.apps.runtime.presentation.collector import unavailable
 from emo_master.apps.runtime.presentation.mailbox import SharedMailbox
 
 
+def _guardMutation(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        self.runtime.jobSupervisor.assertMutationAllowed()
+        return method(self, *args, **kwargs)
+    return guarded
+
+
 class PresentationService:
     supportsNormalCapture = True
 
     def __init__(self, runtime, root: Path):
-        if getattr(runtime, "_presentationOwner", None) is not None:
-            raise ValueError("Runtime already has a presentation owner")
-        self.runtime = runtime
-        self.root = root
-        self.runtimeInstanceId = getattr(runtime, "runtimeInstanceId", str(uuid4()))
-        self.prepared: dict = {}
-        self.jobs: dict = {}
-        self.store = ResultStore()
-        self.lock = threading.RLock()
-        self.context = multiprocessing.get_context("spawn")
-        self.assets = AssetStore(root / "assets")
-        self.exporter: ExportPool | None = None
-        self.pending: dict = {}
-        self.timings: dict = {}
-        self.readers: dict = {}
-        self.terminalStates: dict = {}
-        self.stop = threading.Event()
-        self.monitor = threading.Thread(target=self._monitor, name="display-seal-monitor")
-        self.monitor.start()
-        self.previousTerminal = runtime.jobSupervisor.terminalCallback
-        self.previousPresentation = runtime.jobSupervisor.presentationCallback
-        runtime.jobSupervisor.presentationCallback = self.consume
-        runtime.jobSupervisor.terminalCallback = self.terminal
-        runtime._presentationOwner = self
-        self.closed = False
+        runtime.jobSupervisor.assertMutationAllowed()
+        with runtime.jobSupervisor._lock:
+            if runtime.jobSupervisor._closing or getattr(runtime, "_closing", False):
+                raise RuntimeError("E_RUNTIME_CLOSING")
+            if getattr(runtime, "_presentationOwner", None) is not None:
+                raise ValueError("Runtime already has a presentation owner")
+            self.runtime = runtime
+            self.root = root
+            self.runtimeInstanceId = getattr(runtime, "runtimeInstanceId", str(uuid4()))
+            self.prepared: dict = {}
+            self.jobs: dict = {}
+            self.store = ResultStore()
+            self.lock = threading.RLock()
+            self.context = multiprocessing.get_context("spawn")
+            self.assets = AssetStore(root / "assets")
+            self.exporter: ExportPool | None = None
+            self.pending: dict = {}
+            self.timings: dict = {}
+            self.readers: dict = {}
+            self.terminalStates: dict = {}
+            self.stop = threading.Event()
+            self.monitor = threading.Thread(target=self._monitor, name="display-seal-monitor")
+            self.previousTerminal = runtime.jobSupervisor._terminalCallback
+            self.previousPresentation = runtime.jobSupervisor.presentationCallback
+            self._previousTerminal = self.previousTerminal
+            self._previousPresentation = self.previousPresentation
+            previous = self._previousTerminal
+            def installedTerminal(jobId, status):
+                self._terminalFence(jobId, status)
+                if previous is not None:
+                    previous(jobId, status)
+            self._installedTerminal = installedTerminal
+            runtime.jobSupervisor._terminalCallback = installedTerminal
+            runtime.jobSupervisor._callbackEpoch += 1
+            self.callbackEpoch = runtime.jobSupervisor._callbackEpoch
+            runtime.jobSupervisor._presentationEpoch = self.callbackEpoch
+            runtime.jobSupervisor.presentationCallback = self.consume
+            runtime._presentationOwner = self
+            self.closed = False
+            self.closing = False
+            self._closeStages: dict[str, str] = {}
+            self.monitor.start()
 
+    @_guardMutation
     def prepare(self, project, resourceRoot, **kwargs):
         with self.lock:
+            if self.closing or self.closed or getattr(self.runtime, "_closing", False):
+                raise RuntimeError("E_RUNTIME_CLOSING")
             if len(self.prepared) >= 8:
                 raise ValueError("prepared record quota exceeded")
             record = prepare(project, self.runtime.pluginScanResult.activeOperators, self.root, resourceRoot, **kwargs)
@@ -67,8 +97,11 @@ class PresentationService:
             self.prepared[record.snapshot.snapshotId] = record
             return record
 
+    @_guardMutation
     def start(self, preparedId, *, capture=True, measure=False):
         with self.lock:
+            if self.closing or self.closed or getattr(self.runtime, "_closing", False):
+                raise RuntimeError("E_RUNTIME_CLOSING")
             if len(self.jobs) >= 2:
                 raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
             prepared = self.prepared[preparedId]
@@ -96,8 +129,11 @@ class PresentationService:
                 raise
             return job.jobId
 
+    @_guardMutation
     def checkNormalAdmission(self):
         with self.lock:
+            if self.closing or self.closed or getattr(self.runtime, "_closing", False):
+                raise RuntimeError("E_RUNTIME_CLOSING")
             if not self.supportsNormalCapture:
                 raise ValueError("this test-release host does not accept normal StartJob capture")
             if self.closed:
@@ -105,9 +141,12 @@ class PresentationService:
             if len(self.jobs) >= 2:
                 raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
 
+    @_guardMutation
     def attachNormal(self, jobId, frozen):
         """Attach to an already-created normal Job; never create a second Job."""
         with self.lock:
+            if self.closing or self.closed or getattr(self.runtime, "_closing", False):
+                raise RuntimeError("E_RUNTIME_CLOSING")
             self.checkNormalAdmission()
             return self._attach(jobId, frozen.sourceJson,
                 executionRevision=frozen.executionRevision,
@@ -150,7 +189,9 @@ class PresentationService:
         while True:
             try:
                 event = config["queue"].get(timeout=.02)
-                self.consume(jobId, event)
+                # This already-admitted reader must drain while close owns the
+                # callback-registration lock and waits for it to retire.
+                self._consume(jobId, event)
             except queue.Empty:
                 terminal = self.terminalStates.get(jobId)
                 if terminal and time.monotonic() >= terminal[1]:
@@ -164,6 +205,14 @@ class PresentationService:
                 self.runtime.jobSupervisor.presentationErrors.append(repr(error))
 
     def consume(self, jobId, event):
+        # The result assembler can also be used without a Runtime owner.
+        # Runtime-bound public calls still reject callback-owner reentry.
+        runtime = getattr(self, "runtime", None)
+        if runtime is not None:
+            runtime.jobSupervisor.assertMutationAllowed()
+        self._consume(jobId, event)
+
+    def _consume(self, jobId, event):
         with self.store.lock:
             if event["eventType"] == "display.timing":
                 self.timings[jobId].append(event)
@@ -246,12 +295,14 @@ class PresentationService:
                     self._finish(key)
                 self.assets.stats()  # expire abandoned finite leases without another request
 
+    @_guardMutation
     def terminal(self, jobId, status):
+        self._installedTerminal(jobId, status)
+
+    def _terminalFence(self, jobId, status):
         terminal = {"COMPLETED": "COMPLETED", "ABORTED": "CANCELLED"}.get(status, "FAILED")
         if jobId in self.jobs:
             self.terminalStates[jobId] = (terminal, time.monotonic() + .5)
-        if self.previousTerminal:
-            self.previousTerminal(jobId, status)
 
     def _fence(self, jobId, terminal):
         with self.store.lock:
@@ -264,6 +315,7 @@ class PresentationService:
                     del self.pending[key]
             self._retain()
 
+    @_guardMutation
     def release(self, jobId):
         with self.lock:
             job = self.runtime.jobRepository.get(jobId)
@@ -307,33 +359,74 @@ class PresentationService:
                 self.store.expiryResets.pop(jobId, None)
                 self._retain()
 
+    def beginClosing(self):
+        self.runtime.jobSupervisor.assertMutationAllowed()
+        with self.lock:
+            self.closing = True
+
+    @_guardMutation
     def close(self):
-        # Does not stop the externally owned Runtime or any Job.
-        if self.closed:
+        with self.lock:
+            self.closing = True
+            supervisor = self.runtime.jobSupervisor
+            # Claim and restoration use this same lock. No uncaptured Job can
+            # acquire our callback epoch between the check and disposal.
+            with supervisor._lock:
+                if self.closed:
+                    return
+                if supervisor.ownsCallbackEpoch(self.callbackEpoch):
+                    raise RuntimeError("terminal callback epoch still owns presentation resources")
+                if (supervisor._terminalCallback is not self._installedTerminal
+                        and not (supervisor._closing and not supervisor._ownedJobs())):
+                    raise RuntimeError("presentation callback registration was replaced")
+                if any(not self.runtime.jobRepository.get(job).isTerminal for job in self.jobs):
+                    raise ValueError("Runtime owner must stop Jobs before disposing presentation service")
+                if any(supervisor.ownsJobResources(job) for job in self.jobs):
+                    raise ValueError("Worker still owns presentation resources")
+                for reader in self.readers.values():
+                    reader.join(2)
+                    if reader.is_alive():
+                        raise RuntimeError("display IPC owner has not retired")
+                if self.exporter is not None:
+                    self._closeStep("exporter", self.exporter.close)
+                self.stop.set()
+                self.monitor.join(2)
+                if self.monitor.is_alive():
+                    raise RuntimeError("display monitor still owns resources")
+                with self.store.lock:
+                    for key, pending in list(self.pending.items()):
+                        pending["deadline"] = 0
+                        self._finish(key)
+                for job in list(self.jobs):
+                    self._closeStep("release:" + job, lambda job=job: self.release(job))
+                # AssetStore.close explicitly rejects live readers before mutations.
+                with self.assets.lock:
+                    if self.assets.readers:
+                        raise RuntimeError("cannot close while reads still own resources")
+                    self._closeStep("assets", self.assets.close)
+                # Runtime shutdown may have an outer wrapper registered. The
+                # closing fence and empty owner set above prove that complete
+                # chain is quiescent before restoring the frozen registration.
+                supervisor._terminalCallback = self._previousTerminal
+                supervisor._callbackEpoch += 1
+                supervisor.presentationCallback = self._previousPresentation
+                supervisor._presentationEpoch = None
+                self.runtime._presentationOwner = None
+                self.closed = True
+
+    def _closeStep(self, name, action):
+        state = self._closeStages.get(name)
+        if state == "DONE":
             return
-        if any(not self.runtime.jobRepository.get(job).isTerminal for job in self.jobs):
-            raise ValueError("Runtime owner must stop Jobs before disposing presentation service")
-        if any(self.runtime.jobSupervisor.ownsJobResources(job) for job in self.jobs):
-            raise ValueError("Worker still owns presentation resources")
-        for reader in self.readers.values():
-            reader.join(2)
-            if reader.is_alive():
-                raise RuntimeError("display IPC owner has not retired")
-        if self.exporter is not None:
-            self.exporter.close()
-        self.stop.set()
-        self.monitor.join(2)
-        with self.store.lock:
-            for key, pending in list(self.pending.items()):
-                pending["deadline"] = 0
-                self._finish(key)
-        for job in list(self.jobs):
-            self.release(job)
-        self.assets.close()
-        self.runtime.jobSupervisor.terminalCallback = self.previousTerminal
-        self.runtime.jobSupervisor.presentationCallback = self.previousPresentation
-        self.runtime._presentationOwner = None
-        self.closed = True
+        if state is not None:
+            raise RuntimeError("incomplete presentation close step: " + name + ": " + state)
+        self._closeStages[name] = "STARTED"
+        try:
+            action()
+        except BaseException as error:
+            self._closeStages[name] = faultSummary(error)
+            raise
+        self._closeStages[name] = "DONE"
 
     def resourceStats(self):
         with self.store.lock:
@@ -357,6 +450,7 @@ class PresentationService:
                     total_reserved=sharedCapacity + exportReservation + metadataReservation + readReservation,
                     limit=256 * 1024 * 1024)
 
+    @_guardMutation
     def discardPrepared(self, preparedId):
         import shutil
         with self.lock:

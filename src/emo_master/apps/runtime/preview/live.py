@@ -253,10 +253,10 @@ class LivePreviewManager:
             session.start()
         except Exception as err:
             cleanupError = session.close()
-            with self._lock:
-                self._sessions.pop(sessionId, None)
             if cleanupError:
                 return None, f"{err}; cleanup failed: {cleanupError}"
+            with self._lock:
+                self._sessions.pop(sessionId, None)
             return None, str(err)
         return sessionId, None
 
@@ -290,8 +290,6 @@ class LivePreviewManager:
                 self._failures[session.sessionId] = (session.projectId, session.error)
                 while len(self._failures) > 128:
                     self._failures.pop(next(iter(self._failures)))
-            if self._sessions.get(session.sessionId) is session:
-                self._sessions.pop(session.sessionId, None)
         if session.error and self.eventPublisher is not None:
             try:
                 self.eventPublisher(
@@ -310,6 +308,14 @@ class LivePreviewManager:
             except Exception:
                 # A failed log sink must not prevent resource cleanup or delivery.
                 pass
+        # Retain the real thread owner until its final persistence action is
+        # over, so Runtime.close cannot dispose stores while it is publishing.
+        # An unknown native-disposal outcome retains this session and operator;
+        # later close reports the same fault without replaying native disposal.
+        with self._lock:
+            if (self._sessions.get(session.sessionId) is session
+                    and session._disposeError is None):
+                self._sessions.pop(session.sessionId, None)
 
     def closeProject(self, projectId: str, timeoutSeconds: float = 3.0) -> list[str]:
         with self._lock:

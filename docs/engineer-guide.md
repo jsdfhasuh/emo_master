@@ -50,9 +50,30 @@ Designer 是设计和调试界面；Runtime 是执行服务，不是第二套图
 
 默认 SQLite 路径是 `~/.emo_master/runtime/emo_master.db`，也可以通过 `EMO_RUNTIME_DB_PATH` 指定完整文件路径，或通过 `EMO_RUNTIME_DATA_DIR` 指定数据目录。显式构造参数优先于环境变量，数据库路径变量优先于目录变量。
 
-Job workspace 位于数据目录的 `jobs/<jobId>/`：失败和中止的 Job 在终态回调中清理，成功 Job 为了保留 `ArtifactRef` 在 Runtime 关闭前保留，关闭时统一回收；启动时还会清理未知、已终态和上次 Runtime 遗留的 workspace。进程和 Queue 在 Supervisor reap 路径中关闭并移除句柄。
+Job workspace 位于数据目录的 `jobs/<jobId>/`：失败和中止的 Job 在终态后等实际所有者
+退役再清理；成功 Job 为保留 `ArtifactRef` 在 Runtime 关闭前保留，关闭时统一回收。
+启动时还会清理未知、已终态和上次 Runtime 遗留的 workspace。Supervisor reap 只在安全
+进程/桥接退役边界关闭 Process 和 Queue；终态尝试、发布恢复或失败退役仍保留所有权。
+终态受理、Stop 答复与回调错误顺序见 [Runtime 事件流](runtime-event-flow.md#终态受理回调与-stopjob)。
 
 同一数据目录同一时刻只允许一个跨进程 Runtime 实例；第二个实例会在启动时快速失败，避免把仍由第一个实例管理的 Job 误判为孤儿。同一进程内的嵌入式测试实例共享锁，但只有第一个实例执行孤儿 Job 恢复。开发时按开发指南使用独立目录，不要占用或清理现场数据目录。
+
+### 关闭与有限恢复
+
+Runtime.close 先封住新工作；失败后仍保持 closing。终态尝试、恢复、实际进程/桥接和预览
+生产者未结束前，不关闭 Presentation/PreviewAssetStore 或持久化资源，不释放数据目录锁，
+也不设置 closed。live preview 会话保留到最后一次事件发布结束；native dispose 结果未知
+时继续持有会话和算子，后续 close 报原错误，不再执行该 dispose。
+
+每次显式 close 的恢复阶段，对每个缺失且已证明幂等的步骤至多重试一次：冻结的终态
+UPDATE、成功发布后的 markTerminal，以及已识别的内置 workspace 清理等。同次 close
+可以先在 shutdown 首次发布失败，再恢复一次 UPDATE；已完成步骤不重做。任意回调、未知
+部分 native close/unlink 结果不会因重试变成安全操作，仍明确保留未完成状态。内置目录
+删除原有 OSError 延后到下次启动清理的语义保留。有限尝试次数不承诺可中断 OS fsync 或
+第三方 native 调用，也不扩大原等待期限。
+
+该契约不覆盖所有启动失败清理：既有 `_cleanupFailedStart` 的立即关闭分支仍可能抑制
+Process/Queue.close 异常；不能据此宣称所有启动/native 清理故障均已修复。
 
 ## 修改边界
 

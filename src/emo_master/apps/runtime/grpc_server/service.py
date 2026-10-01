@@ -9,6 +9,7 @@ from functools import wraps
 from pathlib import Path
 import shutil
 import threading
+import time
 from typing import Any
 from uuid import uuid4
 
@@ -26,6 +27,7 @@ from emo_master.apps.runtime.context.global_counters import (
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.context.runtime_lock import RuntimeDataLock
 from emo_master.apps.runtime.jobs.manager import JobManager
+from emo_master.apps.runtime.jobs.finalization import faultSummary
 from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobStatus, nowMs
 from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
@@ -49,7 +51,12 @@ runtime_pb2: Any = _runtime_pb2
 def _withProjectStateLock(method: Any) -> Any:
     @wraps(method)
     def locked(self: Any, *args: Any, **kwargs: Any) -> Any:
+        self.jobSupervisor.assertMutationAllowed()
         with self._projectStateLock:
+            if self._closing and method.__name__ in {
+                "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession"
+            }:
+                raise RuntimeError("E_RUNTIME_CLOSING")
             return method(self, *args, **kwargs)
 
     return locked
@@ -87,6 +94,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
         self._runtimeDataLockIsPrimary = self._runtimeDataLock.acquire()
         self._closed = False
+        self._closing = False
+        self._closeStages: dict[str, str] = {}
         try:
             self.sqliteStore = SqliteStore(dbPath)
             self.sqliteStore.initialize()
@@ -154,6 +163,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             terminalCallback=self._onJobTerminal,
             retiredCallback=self._onJobRetired,
         )
+        self.jobSupervisor.retirementRepairFactory = self._retirementRepair
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
         self.loadedProjectId: str = ""
@@ -471,21 +481,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
 
     def StopJob(self, request, context):  # type: ignore[override]
-        _ = context
         jobId = str(getattr(request, "job_id", ""))
         mode = str(getattr(request, "mode", "graceful")) or "graceful"
-        if mode not in {"graceful", "force"}:
-            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="invalid stop mode")
-        record = self.jobRepository.get(jobId)
-        if record is None:
-            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="job not found")
-        if record.isTerminal:
-            return runtime_pb2.StopJobReply(ok=True, status=record.status, message="job already terminal")
-        try:
-            status = self.jobManager.stop(jobId, mode)
-        except KeyError:
-            return runtime_pb2.StopJobReply(ok=False, status="FAILED", message="job not found")
-        return runtime_pb2.StopJobReply(ok=True, status=status, message=f"job stopping ({mode})")
+        outcome = self.jobManager.stopOutcome(jobId, mode, context)
+        return runtime_pb2.StopJobReply(ok=outcome.ok, status=outcome.status, message=outcome.message)
 
     def GetJobStatus(self, request, context):  # type: ignore[override]
         _ = context
@@ -1091,35 +1090,68 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def close(self) -> None:
         if self._closed:
             return
+        self._closing = True
+        self.jobSupervisor.beginClosing()
+        presentation = getattr(self, "_presentationOwner", None)
+        if presentation is not None:
+            presentation.beginClosing()
         self._maintenanceStop.set()
+        errors = list(self.livePreviewManager.closeAll())
+        self._closeStep("preview-producers", self.previewExecutor.close)
+        deadline = time.monotonic() + 2.0
+        primary = None
         try:
-            self.livePreviewManager.closeAll()
-            self.previewExecutor.close()
-            self.previewAssetStore.close()
-            self.jobSupervisor.shutdown()
-            self.jobSupervisor.waitForRetirement()
-            if any(self.jobSupervisor.ownsJobResources(job.jobId) for job in self.jobRepository.all()):
-                raise RuntimeError("Worker still owns Runtime resources; shutdown is incomplete")
-            presentation = getattr(self, "_presentationOwner", None)
-            if presentation is not None:
-                presentation.close()
-            self.eventStore.removeSink(self._operationalLogSink)
+            self.jobSupervisor.shutdown(deadline=deadline)
+        except BaseException as error:
+            primary = error
+        errors.extend(self.jobSupervisor.recoverFinalizations())
+        self.jobSupervisor.waitForRetirement(deadline=deadline)
+        errors.extend(self.jobSupervisor.finishRetirements())
+        with self.previewExecutor._stateLock:
+            if self.previewExecutor._cancellations:
+                errors.append("Preview work still owns Runtime assets")
+        with self.jobSupervisor._lock:
+            if self.jobSupervisor._ownedJobs():
+                errors.append("Worker still owns Runtime resources; shutdown is incomplete")
+        if primary is not None:
+            raise primary
+        if errors:
+            raise RuntimeError("; ".join(errors))
+        # No callback, producer, process or IPC owner can write these stores now.
+        if presentation is not None:
+            presentation.close()
+        self._closeStep("preview-assets", self.previewAssetStore.close)
+        self._closeStep("event-sink", lambda: self.eventStore.removeSink(self._operationalLogSink))
+        def closeWriter():
             writerError = self.operationalLogWriter.close(timeoutSeconds=3.0)
             if writerError:
                 self._recordLogFileFailure(None, writerError)
                 raise RuntimeError(writerError)
+        self._closeStep("log-writer", closeWriter, retryable=True)
+        if self._maintenanceThread.is_alive():
+            self._maintenanceThread.join(timeout=1.0)
             if self._maintenanceThread.is_alive():
-                self._maintenanceThread.join(timeout=1.0)
-                if self._maintenanceThread.is_alive():
-                    raise RuntimeError("Runtime maintenance still owns persistence; shutdown is incomplete")
-            for jobId in list(self._workspacePaths):
-                self._removeWorkspace(jobId)
-            self._cleanupStaleWorkspaces()
-            self.sqliteStore.releaseIdleConnection()
-            self._closed = True
-        finally:
-            if self._closed:
-                self._runtimeDataLock.release()
+                raise RuntimeError("Runtime maintenance still owns persistence; shutdown is incomplete")
+        for jobId in list(self._workspacePaths):
+            self._removeWorkspace(jobId)
+        self._cleanupStaleWorkspaces()
+        self._closeStep("sqlite", self.sqliteStore.releaseIdleConnection, retryable=True)
+        self._closeStep("data-lock", self._runtimeDataLock.release)
+        self._closed = True
+
+    def _closeStep(self, name, action, *, retryable=False):
+        state = self._closeStages.get(name)
+        if state == "DONE":
+            return
+        if state is not None and not retryable:
+            raise RuntimeError("incomplete close step with unknown outcome: " + name + ": " + state)
+        self._closeStages[name] = "STARTED"
+        try:
+            action()
+        except BaseException as error:
+            self._closeStages[name] = faultSummary(error)
+            raise
+        self._closeStages[name] = "DONE"
 
     def _eventMaintenanceLoop(self) -> None:
         while not self._maintenanceStop.wait(6 * 60 * 60):
@@ -1236,23 +1268,35 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self._removeWorkspace(jobId)
 
     def _removeWorkspace(self, jobId: str) -> None:
-        process = self.jobSupervisor.getProcess(jobId)
-        if process is not None and process.is_alive():
+        if self.jobSupervisor.ownsJobResources(jobId):
             return
+        workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
+        self._removeOwnedWorkspace(jobId, workspace)
 
-        workspace = self._workspacePaths.pop(jobId, self.workspaceRoot / jobId)
+    def _removeOwnedWorkspace(self, jobId: str, workspace: Path) -> None:
+        if self._workspacePaths.get(jobId) == workspace:
+            self._workspacePaths.pop(jobId, None)
         try:
             if workspace.exists():
                 shutil.rmtree(workspace)
         except OSError:
-            # A running third-party operator may still hold a file briefly;
-            # the next Runtime start will retry stale workspace cleanup.
+            # Preserve existing deferred stale-workspace cleanup semantics.
             return
 
     def _onJobRetired(self, jobId: str) -> None:
         record = self.jobRepository.get(jobId)
         if record is not None and record.status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
-            self._removeWorkspace(jobId)
+            workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
+            self._removeOwnedWorkspace(jobId, workspace)
+
+    def _retirementRepair(self, jobId, callback):
+        if callback != self._onJobRetired:
+            return None
+        record = self.jobRepository.get(jobId)
+        if record is None or record.status not in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
+            return None
+        workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
+        return lambda: self._removeOwnedWorkspace(jobId, workspace)
 
     def _cleanupStaleWorkspaces(self) -> None:
         if not self.workspaceRoot.exists():

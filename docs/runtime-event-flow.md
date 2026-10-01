@@ -64,6 +64,47 @@ EventBridge 一起退役，强杀失败或桥接线程未退出时不提前回�
 此机制不加快持久化、不缩短积压后的终态等待，也不使被阻塞的桥接线程成为
 独立实时看门狗。
 
+## 终态受理、回调与 StopJob
+
+正常终态在 Supervisor 锁内写入原终态事件、冻结状态及 endedAt、安装唯一受理栅栏并登记
+终态所有者。该 Job 的后续普通事件与竞争终态不再覆盖已受理结果。原调用线程退出全部
+Supervisor 锁作用域后，按受理 FIFO 执行冻结的终态回调链；不增加后台 finalizer。
+回调至多执行一次，结束（含抛错）后才尝试发布 JobRepository 终态；发布成功后才调用
+`EventStore.markTerminal`。A 的资产提升不再占用 Supervisor 锁，B 的普通事件及资源查询
+可继续；B 的终态回调仍受 FIFO 约束，公共资产读取仍可能等待原资产锁。
+
+发布失败优先于通知失败，通知失败优先于回调失败。每次首次尝试结束都会推进 FIFO、唤醒
+等待者；发布/通知失败继续保留恢复所有权，不阻塞后续 Job 的首次回调。恢复只重试缺失的
+幂等步骤，不重放回调、资产提升或终态事件，也不重新计算冻结的 endedAt。回调失败但发布
+和通知都成功时，原调用者仍得到回调错误，但不永久保留终态恢复所有者。调用者在回调开始
+前异常退出会保留 `CALLBACK_NOT_RUN/OWNER_ABANDONED`，让出 FIFO，但不补跑回调或虚报完成。
+共享故障记录只保存有界文本，不保存异常/traceback；调用者可收到原主异常。
+
+`GetJobStatus` 与 Display GetJob/ListJobs 的终态 status 字段及终态事件本身只报告执行状态，
+不是持久终态或资源释放确认：事件可在回调结束前可见，仓库持久化失败也可能已经修改内存
+终态。Display 的独立 `resources_released` 字段另做展示配置和 Supervisor 所有权检查。
+真正的 `StopJob` RPC 与内部 stop 共用 Supervisor 决策，先检查待完成/恢复/退役所有权，
+再判断内存终态；没有进程句柄也不能跳过该检查：
+
+- 无既有终态受理时，正常 graceful Stop 的 `ok=true, status=STOPPING` 只表示停止请求
+  已受理，不是终态或资源释放确认。
+- 已有首次尝试时，在生产锁外等它结束并复查结果，不再发停止事件或取消原 Job。
+  RPC 取消/期限只结束该等待者，不取消获胜回调、不完成共享票据、不归还所有权；仍可返回
+  答复时为 `ok=false, message=E_JOB_FINALIZATION_PENDING`。无期限的内部 stop 保持同步等待。
+- 发布/通知尚未确认时，返回 `ok=false`、当前执行状态及
+  `E_JOB_FINALIZATION_FAILED: publication` / `notification`。Stop 本身不做恢复写入。
+  已知退役清理失败返回 `E_JOB_RETIREMENT_INCOMPLETE`。
+- 自己拥有的回调失败返回 `E_JOB_FINALIZATION_FAILED: callback`；若发布、通知已成功，
+  另一个等待者或后续 Stop 可确认已终止。普通进程/桥接退役尚在进行时，Stop 成功也不代表释放。
+- 终态尝试/恢复的当前线程同步重入同一或其他 Job 的可变入口，返回或抛出
+  `E_FINALIZATION_REENTRANT`，在任何目标副作用或外层锁之前拒绝；不隐式延后执行。
+  `getProcess`、`ownsJobResources` 等只读查询仍允许重入且不等待终态票据。
+
+保留原 `E_EVENT_PERSISTENCE` 降级路径：先设置内存终态并尝试通知，再执行最佳努力回调，抑制
+其回调异常。该路径结束后的 Stop 是执行停止确认，答复保留 `E_EVENT_PERSISTENCE` 上下文，
+**不是终态事件/状态已经持久化的确认**。待完成回调或失败簿记仍受所有权栅栏约束；正常
+终态发布失败不能改走此路径来清除占用。既有持久化、SQLite 策略及故障期限均不改变。
+
 ## 算子结构化日志
 
 Runner 在普通执行的 `runtimeContext["logger"]` 以及生命周期初始化的

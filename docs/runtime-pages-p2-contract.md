@@ -41,7 +41,9 @@ runtime_instance_id、project_id、job_id；缺身份拒绝，实例变化返回
 工程不匹配拒绝，当前进程未登记的任务返回 NOT_FOUND。查询在仓库锁内复制单个当前
 Job，不走持久历史回退，也不遍历 ListJobs 目录。响应仅含身份、执行状态、模式、
 capture_enabled 和 resources_released 等轻量元数据，无捕获计划/来源JSON轮询。
-终态但 Supervisor 仍持有进程或 IPC 时，resources_released 仍为 false。
+终态但仍有展示配置，或 Supervisor 仍持有进程、桥接 IPC、排队/执行中的终态尝试、
+发布/通知恢复或未完成退役时，resources_released 仍为 false；内存终态不清除这些占用。
+Stop 的待完成/失败语义见 [终态契约](runtime-event-flow.md#终态受理回调与-stopjob)。
 该查询不启动、停止、释放任务或修改采集。旧服务端无此能力时状态明确不可用，
 已有结果观察继续兼容；只观察未采集/已释放任务时不调用 Snapshot/Subscribe/ReadAsset。
 
@@ -55,7 +57,12 @@ capture_enabled 和 resources_released 等轻量元数据，无捕获计划/来�
 再次运行由下一次明确开始驱动：先停止/确认旧Job终态，显式ReleaseJob且确认Worker、IPC、
 待封闭结果与导出槽真实结束，再创建新Job。终态标签不代替进程退出；无法kill的Worker仍
 保留占用、阻止释放与并发额度复用。普通ReleaseJob只清展示状态，保留原普通工作目录和输出。
-Runtime.close 在监督器真正结束后关闭PresentationService；失败不冒充资源已释放。
+ReleaseJob 不等待终态尝试；只要上述 Supervisor 所有权或原 reader/待封闭结果/导出占用
+仍在就拒绝释放，包括内存先终态的降级路径。Runtime.close 在监督器真正结束后才关闭
+PresentationService；失败不冒充资源已释放。回调安装、受理时冻结链与关闭时恢复注册使用
+同一 Supervisor 锁和 registration epoch；任何排队/执行票据引用该代际都阻止展示资源处置，
+包括未采集 Job。读线程、exporter、monitor 也须真实退出；部分处置失败保留步骤状态，
+不盲目重跑未知结果的 native close/unlink 或重放终态回调。
 DiscardPrepared 只在关联Job释放后删除准备副本及该debug快照自有SQLite/output树，保留release
 持久命名空间。沿用的旧中间图快照仍执行，没有宣称重复编码成本或历史性能失败已经解决。
 

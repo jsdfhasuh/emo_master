@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from uuid import uuid4
 
 from emo_master.apps.runtime.events.event_store import EventStore
@@ -30,25 +31,32 @@ class JobManager:
         legacySnapshotPolicy: str = "ALL",
         previewProjectKey: str = "",
     ) -> JobRecord:
-        policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
-        record = JobRecord(
-            jobId=jobId or str(uuid4()),
-            projectId=projectId,
-            projectRevision=projectRevision,
-            workflowId=workflowId,
-            legacySnapshotPolicy=policy,
-            previewProjectKey=previewProjectKey,
-        )
-        self.jobRepository.create(record)
-        self.eventStore.append(
-            record.jobId,
-            "job.accepted",
-            "job accepted",
-            projectId=projectId,
-            workflowId=workflowId,
-            payload={"legacySnapshotPolicy": policy, "previewProjectKey": previewProjectKey},
-        )
-        return record
+        if self.supervisor is not None:
+            self.supervisor.assertMutationAllowed()
+        # Serialize admission through its accepted event with shutdown's fence.
+        # Persistence-only managers have no process admission owner.
+        with self.supervisor._lock if self.supervisor is not None else nullcontext():
+            if self.supervisor is not None and self.supervisor._closing:
+                raise RuntimeError("E_RUNTIME_CLOSING")
+            policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
+            record = JobRecord(
+                jobId=jobId or str(uuid4()),
+                projectId=projectId,
+                projectRevision=projectRevision,
+                workflowId=workflowId,
+                legacySnapshotPolicy=policy,
+                previewProjectKey=previewProjectKey,
+            )
+            self.jobRepository.create(record)
+            self.eventStore.append(
+                record.jobId,
+                "job.accepted",
+                "job accepted",
+                projectId=projectId,
+                workflowId=workflowId,
+                payload={"legacySnapshotPolicy": policy, "previewProjectKey": previewProjectKey},
+            )
+            return record
 
     def start(self, record: JobRecord, spec: JobProcessSpec) -> JobRecord:
         self.supervisor.startJob(spec)
@@ -59,6 +67,9 @@ class JobManager:
 
     def stop(self, jobId: str, mode: str = "graceful") -> str:
         return self.supervisor.stopJob(jobId, mode)
+
+    def stopOutcome(self, jobId: str, mode: str = "graceful", context=None):
+        return self.supervisor.stopJobOutcome(jobId, mode, context)
 
     def getJob(self, jobId: str) -> JobRecord | None:
         return self.jobRepository.get(jobId)

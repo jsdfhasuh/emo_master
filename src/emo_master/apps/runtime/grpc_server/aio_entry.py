@@ -98,10 +98,15 @@ class AioRuntimeServer:
 
     def _retire(self, category, token, pending, resource=None, constructing=False, completed=None):
         token.cancelled.set()
+        # Wait for any registration already holding the lock. Later ones see
+        # cancellation, so an empty list needs no executor scheduling roundtrip.
+        with token.lock:
+            hasCallbacks = bool(token.callbacks)
 
         async def finish():
             nonlocal resource
-            callbacks = self.loop.run_in_executor(self.cleanupPool, token.finishCallbacks)
+            callbacks = (self.loop.run_in_executor(self.cleanupPool, token.finishCallbacks)
+                         if hasCallbacks else None)
             try:
                 if pending is not None:
                     try:
@@ -111,7 +116,8 @@ class AioRuntimeServer:
                     except Exception as error:
                         self.errors.append(repr(error))
                 try:
-                    await callbacks
+                    if callbacks is not None:
+                        await callbacks
                 except Exception as error:
                     self.errors.append(repr(error))
                 if resource is not None and hasattr(resource, "close"):

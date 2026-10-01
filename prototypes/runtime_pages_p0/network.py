@@ -99,9 +99,14 @@ class IsolatedServer:
     def _cleanup(self, category, cancel, pending, iterator=None, constructing=False, resource=None):
         # Only the Event is set on the loop. Arbitrary old callbacks run off-loop.
         cancel.cancelled.set()
+        # A registration already inside add_callback may still append after the
+        # Event is set. Its lock makes an empty callback list final.
+        with cancel.lock:
+            has_callbacks = bool(cancel.callbacks)
         async def finish():
             nonlocal iterator
-            callbacks = self.loop.run_in_executor(self.cleanup_pool, cancel.cancel)
+            callbacks = (self.loop.run_in_executor(self.cleanup_pool, cancel.cancel)
+                         if has_callbacks else None)
             try:
                 if pending is not None:
                     try:
@@ -111,7 +116,8 @@ class IsolatedServer:
                     except Exception as error:
                         self.errors.append(repr(error))
                 try:
-                    await callbacks
+                    if callbacks is not None:
+                        await callbacks
                 except Exception as error:
                     self.errors.append(repr(error))
                 if iterator is not None and hasattr(iterator, "close"):

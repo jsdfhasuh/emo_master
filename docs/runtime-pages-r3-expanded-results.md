@@ -466,3 +466,22 @@ SQL、连接、事务、commit/rollback/close调用；没有改变生产持久�
 
 该诊断工具批次最终完整CI：1736 PASS、1 SKIP（405.93秒），proto drift/Ruff/mypy通过、
 退出0，Python来源前后摘要完全相同。生产src没有变更；Windows诊断及原问题修复仍待证据。
+
+
+Windows后续A18类型归因将一次性16句柄定位为Event，发生在页面构建附近且后续循环
+不继续增长。官方Qt5.15.2的QMutexPrivate在首次竞争时从静态freelist整批创建16对象，
+Windows每对象创建一个Event，归还池不关闭该Event。实际PySide5.15.2.1/Qt5.15.2纯Qt
+新进程对照验证：非递归QMutex已锁定后tryLock(0)保持205句柄/21Event；tryLock(1)
+首次变为221/37，精确+16Event，随后20次及对象销毁均稳定。此对照不导入产品代码。
+
+因此A18基线前增加且只增加同一有界竞争路径：非递归QMutex.lock→tryLock(1)返回false，
+finally unlock并原生销毁、验证失效；不增数值容差、不排除任何线程/句柄，不增加页面
+循环次数来预热到通过。原1000/30和最终全部严格断言保留。Linux相关4项通过20.36秒。
+这解释一次性+16Event，不等于A18已经通过：本机预触发对照中间循环不再增长，但最终
+仍有约+3净句柄（Semaphore+4、Section−2及一个类型未取得），继续保留FAIL并独立归因。
+官方源码：[QMutex池](https://github.com/qt/qtbase/blob/v5.15.2/src/corelib/thread/qmutex.cpp#L705)、
+[整批分配](https://github.com/qt/qtbase/blob/v5.15.2/src/corelib/tools/qfreelist_p.h#L168)、
+[Windows Event](https://github.com/qt/qtbase/blob/v5.15.2/src/corelib/thread/qmutex_win.cpp)。
+
+QMutex基线修正经独立复核；完整cloud CI为1736 PASS、1 SKIP（403.90秒），
+proto drift/Ruff/mypy通过、退出0，Python来源前后摘要相同，最终Windows严格检查仍待验证。

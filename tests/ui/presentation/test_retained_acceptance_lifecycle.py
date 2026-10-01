@@ -12,7 +12,7 @@ from types import MappingProxyType
 import numpy as np
 import pytest
 import shiboken2
-from PySide2.QtCore import QCoreApplication, QEvent, QEventLoop, QTimer, Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QEventLoop, QMutex, QTimer, Qt
 from PySide2.QtTest import QTest
 
 from emo_master.core.presentation.models import Presentation, walkComponents
@@ -63,6 +63,21 @@ def warmTimerBackend(app):
         assert not shiboken2.isValid(timer)
         assert not shiboken2.isValid(deadline)
         assert not shiboken2.isValid(loop)
+
+
+def warmMutexBackend():
+    # Qt 5.15's Windows QMutexPrivate freelist allocates 16 Event handles on
+    # first contention. A fresh-process tryLock(0)/tryLock(1) control verified
+    # that exact retained pool, including stable subsequent calls/destruction.
+    # Trigger only that bounded backend path before measuring our own owners.
+    mutex = QMutex(QMutex.NonRecursive)
+    mutex.lock()
+    try:
+        assert not mutex.tryLock(1), 'Non-recursive mutex unexpectedly relocked'
+    finally:
+        mutex.unlock()
+        shiboken2.delete(mutex)
+        assert not shiboken2.isValid(mutex)
 
 
 def fivePageConfiguration():
@@ -234,6 +249,7 @@ def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_
     window.show()
     drainDeletes(qtApp)
     warmTimerBackend(qtApp)
+    warmMutexBackend()
     baseline = nativeCounts(qtApp)
     session = OwnedReadOnlyFixture(view, tmp_path / "owned-session.bin")
     hub = DisplayHub(session)

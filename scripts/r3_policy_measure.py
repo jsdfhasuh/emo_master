@@ -57,6 +57,10 @@ def measuredJob(spec, cancelEvent, eventQueue):
     """Uniform inclusive detect-workflow timing, including capture-off."""
     from emo_master.apps.runtime.workflow.runner import WorkflowRunner
     trace = base.Trace("execution")
+    captureTrace = None
+    if os.environ.get("EMO_R3_CAPTURE_CREDIT_TRACE") == "1":
+        from scripts.r3_capture_credit_trace import CaptureCreditTrace, installed as captureInstalled
+        captureTrace = CaptureCreditTrace()
     try:
         with base.patches() as patch:
             base.wrap(trace, patch, WorkflowRunner, "run", "workflow.detect",
@@ -64,9 +68,24 @@ def measuredJob(spec, cancelEvent, eventQueue):
                 lambda _self, workflowId, *_args, **_kwargs: workflowId == "detect")
             # Retain identical old attribution wrappers, but never change spec,
             # collector measure flags, snapshot policy, or capture configuration.
-            base.measuredJob(spec, cancelEvent, eventQueue)
+            with captureInstalled(captureTrace, ROOT) if captureTrace is not None else nullcontext():
+                base.measuredJob(spec, cancelEvent, eventQueue)
     finally:
-        trace.save()
+        try:
+            trace.save()
+        finally:
+            if captureTrace is not None:
+                destination = Path(os.environ["EMO_R3_TRACE_DIR"]) / f"capture-credit-{os.getpid()}.json"
+                try:
+                    captureTrace.save(destination)
+                except Exception as error:
+                    # Probe persistence must not replace the original Job error.
+                    # A missing/invalid file invalidates the parent observation.
+                    try:
+                        destination.write_text(json.dumps({"role": "capture_credit", "summary": {
+                            "enabled": True, "complete": False, "save_error_type": type(error).__name__}}), encoding="utf-8")
+                    except Exception:
+                        pass
 
 
 def executionRows(traces):
@@ -433,6 +452,7 @@ def normalTrial(root, arm, count, warmup, app):
 def executeTrial(args):
     os.environ["QT_QPA_PLATFORM"] = args.qt_platform
     os.environ["EMO_R3_TRACE_DIR"] = str(args.output)
+    os.environ["EMO_R3_CAPTURE_CREDIT_TRACE"] = "1" if getattr(args, "capture_credit_trace", False) else "0"
     from PySide2.QtWidgets import QApplication
     from emo_master.apps.runtime.jobs import supervisor
     from emo_master.apps.runtime.presentation import service
@@ -517,6 +537,18 @@ def executeTrial(args):
         result["instrumentation"] = "measurement-only inclusive wrappers, identical detect timing in every arm; native resource enumeration on bounded background owner"
         if creditTraceSummary is not None:
             result["export_credit_trace"] = creditTraceSummary
+        if getattr(args, "capture_credit_trace", False):
+            paths = sorted(args.output.glob("capture-credit-*.json"))
+            records = []
+            if len(paths) > 2:
+                raise ValueError("capture-credit file count exceeds observed Job budget")
+            for path in paths:
+                if not 0 < path.stat().st_size <= 1024*1024:
+                    raise ValueError("capture-credit evidence missing or oversized")
+                evidence = json.loads(path.read_text(encoding="utf-8"))
+                records.append({"file": path.name, **evidence.get("summary", {"complete": False})})
+            result["capture_credit_trace"] = {"enabled": True, "files": records,
+                "complete": len(records) == 1 and records[0].get("complete") is True}
         if assetTraceSummary is not None:
             # This harness freezes one image source per result. Keep its original
             # counters/denominators and cross-check the optional trace against them.
@@ -647,6 +679,8 @@ def run(args):
                 command.append("--passive-rpc-markers")
             if getattr(args, "export_credit_trace", False):
                 command.append("--export-credit-trace")
+            if getattr(args, "capture_credit_trace", False):
+                command.append("--capture-credit-trace")
             entry = {"group": group, "position": position, "arm": arm, "disk_preflight": base.diskPreflight(directory),
                 "watchdog": base.supervisedTrial(command, directory)}
             payload, fields = trialEvidence(directory, args.output, args.warmup, arm)
@@ -656,6 +690,8 @@ def run(args):
                     entry["asset_split_trace"] = payload.get("asset_split_trace", {"enabled": True, "complete": False})
                 if getattr(args, "export_credit_trace", False):
                     entry["export_credit_trace"] = payload.get("export_credit_trace", {"enabled": True, "complete": False})
+                if getattr(args, "capture_credit_trace", False):
+                    entry["capture_credit_trace"] = payload.get("capture_credit_trace", {"enabled": True, "complete": False})
                 rows[arm] = payload
             manifest["trials"].append(entry)
             base.writeManifest(args.output, manifest)
@@ -674,7 +710,12 @@ def run(args):
         manifest["export_credit_status"] = "COMPLETE" if all(
             t.get("export_credit_trace", {}).get("complete") for t in manifest["trials"]) else "INCOMPLETE"
         valid = valid and manifest["export_credit_status"] == "COMPLETE"
-    instrumented = getattr(args, "asset_split_trace", False) or getattr(args, "export_credit_trace", False)
+    if getattr(args, "capture_credit_trace", False):
+        manifest["capture_credit_status"] = "COMPLETE" if all(
+            t.get("capture_credit_trace", {}).get("complete") for t in manifest["trials"]) else "INCOMPLETE"
+        valid = valid and manifest["capture_credit_status"] == "COMPLETE"
+    instrumented = (getattr(args, "asset_split_trace", False) or getattr(args, "export_credit_trace", False)
+        or getattr(args, "capture_credit_trace", False))
     manifest["measurement_status"] = "VALID" if valid else "INVALID"
     manifest["performance_status"] = (("PASS" if all(g["pass"] for g in manifest["groups"]) else "FAIL")
         if formal and valid and not instrumented else "NOT_ASSESSED")
@@ -697,6 +738,8 @@ def main():
         help="optional peer/next-loop-turn/RPC-task-done observations; requires --asset-split-trace")
     parser.add_argument("--export-credit-trace", action="store_true",
         help="opt-in existing exporter reply/callback/credit boundaries; never changes ownership or reports performance PASS")
+    parser.add_argument("--capture-credit-trace", action="store_true",
+        help="opt-in worker's original nonblocking lane acquire result; metadata only, no extra semaphore call")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()

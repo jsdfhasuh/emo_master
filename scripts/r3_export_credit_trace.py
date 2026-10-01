@@ -15,6 +15,7 @@ from contextlib import contextmanager
 import hashlib
 import json
 import os
+from pathlib import Path
 import threading
 import time
 import weakref
@@ -38,6 +39,13 @@ SUCCESS_STAGES = (
     "parent.pipe_poll", "parent.pipe_recv", "parent.export_callback",
     "parent.credit_release",
 )
+ADOPT_PHASE_COUNTS = {
+    "parent.asset_adopt.collect": 1, "parent.asset_adopt.stat": 1,
+    "parent.asset_adopt.hash_create": 1, "parent.asset_adopt.open": 1,
+    "parent.asset_adopt.stream_enter": 1, "parent.asset_adopt.read": 1,
+    "parent.asset_adopt.hash_update": 1, "parent.asset_adopt.stream_exit": 1,
+    "parent.asset_adopt.replace": 1, "parent.asset_adopt.hash_hexdigest": 2,
+}
 _MISSING = object()
 
 
@@ -71,6 +79,116 @@ class _Forward:
         if owner is None:
             raise ReferenceError("observed method owner retired")
         return self.function(owner, *args, **kwargs)
+
+
+class _AdoptScope:
+    """One original adopt invocation; only scalar aggregate evidence is kept."""
+    def __init__(self, trace, owner, staging, metadata, previous):
+        self.trace = weakref.ref(trace)
+        self.owner = weakref.ref(owner)
+        self.staging, self.metadata, self.previous = staging, metadata, previous
+        self.aggregates = {}
+
+    def active(self):
+        trace = self.trace()
+        return trace if trace is not None and not trace.disabled and trace.current_adopt() is self else None
+
+    def call(self, phase, operation, /, *args, **kwargs):
+        trace = self.active()
+        if trace is None:
+            return operation(*args, **kwargs)
+        return trace.call("parent.asset_adopt." + phase, self.metadata, operation, *args, **kwargs)
+
+    def accumulate(self, phase, start, end, outcome, value):
+        # Fixed phase names, one aggregate per invocation, no content or paths.
+        byte_count = len(value) if isinstance(value, bytes) else None
+        item = self.aggregates.setdefault(phase, {
+            "first": start, "last": end, "calls": 0, "failures": 0,
+            "wall_sum_ns": 0, "wall_max_ns": 0,
+            "thread_cpu_sum_ns": 0, "thread_cpu_max_ns": 0,
+            "bytes": 0, "max_chunk_bytes": 0, "empty_calls": 0, "outcome": "OK"})
+        wall = end[0] - start[0]
+        cpu = end[1] - start[1] if start[1] is not None and end[1] is not None else None
+        item["last"], item["calls"] = end, item["calls"] + 1
+        item["wall_sum_ns"] += wall
+        item["wall_max_ns"] = max(item["wall_max_ns"], wall)
+        if cpu is None:
+            item["thread_cpu_sum_ns"] = item["thread_cpu_max_ns"] = None
+        elif item["thread_cpu_sum_ns"] is not None:
+            item["thread_cpu_sum_ns"] += cpu
+            item["thread_cpu_max_ns"] = max(item["thread_cpu_max_ns"], cpu)
+        if outcome != "OK":
+            item["failures"] += 1
+            item["outcome"] = outcome
+        elif byte_count is not None:
+            item["bytes"] += byte_count
+            item["max_chunk_bytes"] = max(item["max_chunk_bytes"], byte_count)
+            item["empty_calls"] += byte_count == 0
+
+    def aggregate(self, phase, operation, /, *args, byte_value=None, **kwargs):
+        trace = self.active()
+        if trace is None:
+            return operation(*args, **kwargs)
+        start, outcome, result = trace.stamp(), "OK", None
+        try:
+            result = operation(*args, **kwargs)
+            return result
+        except BaseException as error:
+            outcome = type(error).__name__[:80]
+            raise
+        finally:
+            end = trace.stamp()
+            if start is not None and end is not None:
+                # Native read bytes are counted after its boundary and are never
+                # saved. Hash updates receive the exact original block object.
+                trace.observe(self.accumulate, phase, start, end, outcome,
+                              result if phase == "read" else byte_value)
+
+    def flush(self):
+        trace = self.trace()
+        if trace is None:
+            return
+        for phase, item in self.aggregates.items():
+            fields = {key: value for key, value in item.items() if key not in ("first", "last", "outcome")}
+            trace.record("parent.asset_adopt." + phase, item["first"], item["last"],
+                         self.metadata, item["outcome"], aggregate=fields,
+                         span_kind="first_to_last_call_envelope")
+
+
+class _AdoptStream:
+    """Local forwarding handle; native context exit alone owns native close."""
+    def __init__(self, stream, scope):
+        self._stream, self._scope = stream, scope
+
+    def __getattr__(self, name):
+        return getattr(self._stream, name)
+
+    def __enter__(self):
+        entered = self._scope.call("stream_enter", self._stream.__enter__)
+        # A native binary file returns itself. Preserve an unusual context
+        # manager's different return value rather than inventing its semantics.
+        return self if entered is self._stream else entered
+
+    def __exit__(self, *args):
+        return self._scope.call("stream_exit", self._stream.__exit__, *args)
+
+    def read(self, *args, **kwargs):
+        return self._scope.aggregate("read", self._stream.read, *args, **kwargs)
+
+
+class _AdoptHash:
+    def __init__(self, digest, scope):
+        self._digest, self._scope = digest, scope
+
+    def __getattr__(self, name):
+        return getattr(self._digest, name)
+
+    def update(self, block):
+        return self._scope.aggregate("hash_update", self._digest.update, block,
+                                     byte_value=block)
+
+    def hexdigest(self):
+        return self._scope.call("hash_hexdigest", self._digest.hexdigest)
 
 
 class ExportCreditTrace:
@@ -198,6 +316,24 @@ class ExportCreditTrace:
     def current(self):
         return getattr(self.local, "metadata", None)
 
+    def current_adopt(self):
+        return getattr(self.local, "adopt", None)
+
+    def begin_adopt(self, owner, staging, metadata):
+        scope = _AdoptScope(self, owner, staging, metadata, self.current_adopt())
+        self.local.adopt = scope
+        return scope
+
+    def end_adopt(self, scope):
+        # Cleanup must still run after an observer failure disabled recording.
+        try:
+            self.local.adopt = scope.previous
+        except Exception as error:
+            self.disabled = True
+            self.diagnostic_errors += 1
+            self.last_diagnostic_error = type(error).__name__[:80]
+        self.observe(scope.flush)
+
     def _set_task(self, task, pool_id, stamp):
         self.local.metadata = self.identity(task, pool_id)
         if stamp is not None:
@@ -306,13 +442,15 @@ class ExportCreditTrace:
     def payload(self):
         with self.lock:
             rows, counters = list(self.rows), dict(self.counters)
-        coverage, missing, incomplete = {}, Counter(), Counter()
+        coverage, missing, incomplete, adopt_missing = {}, Counter(), Counter(), Counter()
         for row in rows:
             if "result_key" not in row:
                 continue
             key = tuple(row.get(name) for name in ("pool_id", "job_id", "result_key", "source_id", "slot", "lane"))
-            item = coverage.setdefault(key, {"stages": Counter(), "available": False})
+            item = coverage.setdefault(key, {"stages": Counter(), "available": False, "aggregates": {}})
             item["stages"][row["stage"]] += row["outcome"] == "OK"
+            if row["stage"] in ("parent.asset_adopt.read", "parent.asset_adopt.hash_update"):
+                item["aggregates"][row["stage"]] = row.get("aggregate", {})
             if row["stage"] == "parent.export_callback" and row.get("export_outcome") == "AVAILABLE":
                 item["available"] = True
         for item in coverage.values():
@@ -326,6 +464,22 @@ class ExportCreditTrace:
                 for stage in SUCCESS_STAGES:
                     if item["stages"][stage] != 1:
                         missing[stage + "_expected_one"] += 1
+            if item["stages"]["parent.asset_adopt"]:
+                for stage, count in ADOPT_PHASE_COUNTS.items():
+                    if item["stages"][stage] != count:
+                        adopt_missing[stage + "_expected_" + str(count)] += 1
+                reads = item["aggregates"].get("parent.asset_adopt.read", {})
+                updates = item["aggregates"].get("parent.asset_adopt.hash_update", {})
+                if not (type(updates.get("calls")) is int and updates["calls"] > 0
+                        and reads.get("calls") == updates["calls"] + 1
+                        and reads.get("empty_calls") == 1 and updates.get("empty_calls") == 0
+                        and type(reads.get("bytes")) is int and reads["bytes"] > 0
+                        and reads["bytes"] == updates.get("bytes")
+                        and reads.get("failures") == updates.get("failures") == 0
+                        and reads.get("max_chunk_bytes") == updates.get("max_chunk_bytes")
+                        and type(reads.get("max_chunk_bytes")) is int
+                        and 0 < reads["max_chunk_bytes"] <= 65536):
+                    adopt_missing["streaming_read_hash_aggregate_mismatch"] += 1
         return {"role": "export_credit", "pid": os.getpid(), "row_limit": self.row_limit,
                 "hook_limit": self.hook_limit, "pool_limit": POOL_LIMIT,
                 "rows": rows, "counters": counters,
@@ -341,7 +495,11 @@ class ExportCreditTrace:
                     "admitted_exports": sum(bool(item["stages"]["parent.export_submit"]) for item in coverage.values()),
                     "incomplete_admitted_stages": dict(incomplete),
                     "available_callbacks": sum(item["available"] for item in coverage.values()),
-                    "missing_available_stages": dict(missing)},
+                    "missing_available_stages": dict(missing),
+                    "successful_adoptions": sum(bool(item["stages"]["parent.asset_adopt"]) for item in coverage.values()),
+                    "missing_adopt_phases": dict(adopt_missing)},
+                "adopt_phase_schema": {"version": 1, "expected_successful_phase_rows": ADOPT_PHASE_COUNTS,
+                    "aggregate_interpretation": "Read/update start_ns, end_ns, elapsed_ms and thread_cpu_ns enclose first through last call, including intervening work. Only aggregate wall_sum_ns/thread_cpu_sum_ns sum individual calls; maxima are individual calls. Aggregates include the final empty read. Native read(65536), update blocks and their order are unchanged; no raw data or paths are retained."},
                 "source_before": self.source_before, "source_after": self.source_after,
                 "source_complete": (set(self.source_before) == set(SOURCE_FILES)
                     and set(self.source_after) == set(SOURCE_FILES)
@@ -351,10 +509,16 @@ class ExportCreditTrace:
                 "interpretation": "Spans are inclusive, include nested observer work, and must not be summed. Boundaries are sampled directly before observer bookkeeping; use ABBA controls for perturbation. Callback entry to adopt entry includes store-lock wait and Python work, not exact lock wait. "
                     "Pipe poll returning does not alone prove a valid reply. Credit release is observed only when the original parent release is called; only OK proves it returned. "
                     "Quarantine/reap spans do not imply a later credit release. No child protocol, semaphore acquire, Condition, service/store/lock identity or owner disposal is changed. "
+                    "Adopt phases are nested inclusive spans, with scalar streaming aggregates; observer overhead cannot be subtracted or used to identify disk latency. "
                     "Thread CPU may be coarsely quantized on Windows; no GIL ownership is observed. Missing rows/identity/coverage never imply success.",
                 "performance_verdict": "NOT_EVALUATED"}
 
     def save(self, destination):
+        # Never serialize/write while one of this observer's original export
+        # owners is active, including an exceptional early exit by its caller.
+        if any(slot.get("thread") and slot["thread"].is_alive()
+               for pool in list(self.pools) for slot in pool.slots):
+            raise RuntimeError("export-credit save requires original owner retirement")
         payload = self.payload()
         content = json.dumps(payload, separators=(",", ":")).encode()
         if len(content) > TRACE_BYTES:
@@ -365,7 +529,8 @@ class ExportCreditTrace:
         complete = (not self.disabled and not self.diagnostic_errors and not failures
                     and self.observer_retired and payload["source_complete"] and payload["source_unchanged"]
                     and not payload["stage_coverage"]["missing_available_stages"]
-                    and not payload["stage_coverage"]["incomplete_admitted_stages"])
+                    and not payload["stage_coverage"]["incomplete_admitted_stages"]
+                    and not payload["stage_coverage"]["missing_adopt_phases"])
         return {"enabled": True, "file": destination.name, "complete": bool(complete),
                 "observer_retired": self.observer_retired, "rows": len(payload["rows"]),
                 "dropped_rows": payload["dropped_rows"],
@@ -451,8 +616,70 @@ def installed(trace, patch, root):
         return active.call("parent.export_callback", details, original_exported,
                            owner, task, path, outcome, fields=fields)
     patch(service.PresentationService, "_exported", exported)
+    original_adopt = AssetStore.adopt
+
+    def adopt(owner, staging, *args, **kwargs):
+        active = ref()
+        details = active.observe(active.current) if active is not None else None
+        if active is None or active.disabled or details is None:
+            return original_adopt(owner, staging, *args, **kwargs)
+
+        def operation():
+            scope = active.observe(active.begin_adopt, owner, staging, details)
+            try:
+                return original_adopt(owner, staging, *args, **kwargs)
+            finally:
+                if scope is not None:
+                    active.end_adopt(scope)
+        return active.call("parent.asset_adopt", details, operation)
+    patch(AssetStore, "adopt", adopt)
+
+    def scope_for(owner=None, staging=None):
+        active = ref()
+        if active is None or active.disabled:
+            return None
+        # A global Path/hash hook is a plain forward outside this one thread's
+        # adopt scope, with no observer clock/accounting/row work.
+        scope = active.current_adopt()
+        if (scope is None or (owner is not None and scope.owner() is not owner)
+                or (staging is not None and scope.staging is not staging)):
+            return None
+        return scope
+
+    original_collect = AssetStore._collect
+
+    def collect(owner, *args, **kwargs):
+        scope = scope_for(owner=owner)
+        if scope is None:
+            return original_collect(owner, *args, **kwargs)
+        return scope.call("collect", original_collect, owner, *args, **kwargs)
+    patch(AssetStore, "_collect", collect)
+
+    for name in ("stat", "open", "replace"):
+        def path_wrapper(original, phase):
+            def observed(staging, *args, **kwargs):
+                scope = scope_for(staging=staging)
+                if scope is None:
+                    return original(staging, *args, **kwargs)
+                result = scope.call(phase, original, staging, *args, **kwargs)
+                active = scope.active()
+                if phase == "open" and active is not None:
+                    return active.observe(_AdoptStream, result, scope, default=result)
+                return result
+            return observed
+        patch(Path, name, path_wrapper(getattr(Path, name), name))
+    original_sha256 = hashlib.sha256
+
+    def sha256(*args, **kwargs):
+        scope = scope_for()
+        if scope is None:
+            return original_sha256(*args, **kwargs)
+        result = scope.call("hash_create", original_sha256, *args, **kwargs)
+        active = scope.active()
+        return (active.observe(_AdoptHash, result, scope, default=result)
+                if active is not None else result)
+    patch(hashlib, "sha256", sha256)
     for owner, name, stage in (
-            (AssetStore, "adopt", "parent.asset_adopt"),
             (ResultStore, "close", "parent.result_close"),
             (service.PresentationService, "_finish", "parent.result_finish"),
             (service.PresentationService, "_retain", "parent.asset_retain"),
@@ -463,4 +690,5 @@ def installed(trace, patch, root):
         yield trace
     finally:
         trace.restore()
-        trace.source_after = trace.observe(fingerprints, root, default={})
+        trace.source_after = (trace.observe(fingerprints, root, default={})
+                              if trace.observer_retired else {})

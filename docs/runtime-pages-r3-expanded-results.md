@@ -591,3 +591,40 @@ callback到adopt包含锁等待和Python前置工作；探针本身也会扰动�
 退出0，全部Python来源前后摘要相同。此前一次执行会话在94%后失联，没有终态或退出码，
 保留为INCOMPLETE；确认原session不可用后才恢复这次完整验证，没有把截断日志当通过。
 新credit Windows对照仍待执行，原1c8d9c混合CI和ABBA缺图失败保留。
+
+## d986fe1：已定位到adopt持有credit期间，尚未归因其内部慢段
+
+本机d986无探针完整CI为1833 PASS、2 SKIP（643秒），静态通过、源码干净。GitHub
+PR两平台和push Windows均1834/1通过；push Ubuntu为1833 PASS、1 FAIL、1 SKIP，
+唯一失败是双正常Job图像结果非COMPLETE。原all断言未显示具体源原因，不能猜成超时；
+现只补逐Job的原COMPLETE断言与已有jobFailureDetails。云端单独检查1 PASS/1.36秒
+仅表示未复现，不覆盖该push失败。本轮无A18新增线程，也不能证明此前ntdll根因已解。
+
+本机四臂credit对照仍INVALID/NOT_ASSESSED：off0、on2、off3各96图，on1仅93图，
+缺58/63/69。三源均明确“source image lane is busy; capture never waits”。它们的前帧
+57/62/68在拒绝前113.64/116.93/133.20ms已收到reply；adopt持续138.79/129.14/
+171.61ms，原release分别在拒绝后26.74/13.92/39.97ms返回。拒绝时adopt尚未结束；
+不是reply未到，也不是PNG尚未编码完。尚未直接记录拒绝调用的slot/lane数值，更未
+拆分adopt内部，因此不归因磁盘、GIL或探针本身。所有owner退休，原始证据保留本机。
+
+下一诊断版维持原控制命令、96/8、1080p/5Hz、off/on/on/off，生产src不变：
+
+- adopt细分_collect、stat/open、hash创建、stream进入/退出、replace和hexdigest；
+  原64KiB read与对应update逐次原样执行，只按每结果固定聚合次数、字节、sum/max。
+  read/update首尾跨度包含彼此交错工作，不能当纯read/hash耗时；只比较各原调用的聚合。
+- worker只转发原free.acquire(False)一次，记录其bool返回和当时实际配置的Job/result/
+  source/slot/lane/capacity/offset/raw_bytes，不另acquire/release/读取semaphore值。
+  False证明本次未取得credit，不伪造前驱owner。原生方法和属性恢复保持相同身份。
+- producer只在原作业体结束、探针恢复后落盘capture-credit-PID.json，512行/1MiB；
+  parent仍有界。原始身份/阶段、细聚合、时间合法性和producer/export lane交叉核验
+  独立于summary；空数据、缺细阶段、错Job/lane、倒序或伪造时间均不得标有效。
+
+门控真实Exporter/Collector用例在observer off/on均证明：adopt阻塞期间下一采集被busy
+拒绝，原release后再采集成功，先前资产hash/像素保持；未修改原.5秒deadline。最终
+6输入/2预热烟测4.37秒通过，parent134行、6/6adopt细阶段完整，producer6个原生尝试
+身份/lane相符、无错误或丢行、owner退休和source稳定。独立窄复核通过；这些只验证
+诊断工具和受控因果，不替代待执行的Windows细分对照或原性能验收。
+
+此版探针最终云端完整检查为1897 PASS、1 SKIP（416.52秒），proto drift、Ruff、
+mypy通过，退出0、全部检查来源前后稳定。后续Windows细分改用独立GitHub标准runner，
+先在云端实现与排查，收敛后再集中本机最终验收；现有本机失败证据继续保留。

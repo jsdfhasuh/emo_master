@@ -14,6 +14,9 @@ import unittest
 from unittest.mock import patch
 
 from scripts import r3_windows_wpr_metadata_preflight as probe
+from scripts.diagnostics import windows_wpr_status_capture as status_capture
+from scripts.diagnostics.windows_wpr_status_absence_fixtures import StrictStatusAbsenceTests  # noqa: F401
+from scripts.diagnostics.windows_wpr_status_capture_fixtures import StatusCaptureFixtures  # noqa: F401
 
 REPO = Path(__file__).resolve().parents[2]
 SECRET = "PRIVATE_SESSION_C:\\private\\trace.etl"
@@ -30,6 +33,9 @@ class MetadataFixtures(unittest.TestCase):
         self.helper.touch()
         self.profile = REPO / "scripts/windows_commit_trace.wprp"
         self.commands = []
+        self.status_body = b"WPR is not recording"
+        self.status_exit = 0
+        self.status_error = None
 
     def fake_run(self, argv, **kwargs):
         self.commands.append(argv)
@@ -41,11 +47,23 @@ class MetadataFixtures(unittest.TestCase):
             kwargs["stdout"].write(b'{"api_status":0,"returned_count":5}\n')
             return SimpleNamespace(returncode=0)
         kwargs["stdout"].write(SECRET.encode())
-        return SimpleNamespace(returncode=probe.ABSENT_STATUS if argv[1] == "-status" else 0)
+        return SimpleNamespace(returncode=0)
+
+    def fake_status(self, argv, **kwargs):
+        self.commands.append(argv)
+        self.assertEqual(kwargs, dict(stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
+                                      stderr=subprocess.STDOUT, shell=False, bufsize=0))
+        if self.status_error:
+            raise self.status_error
+        stream = io.BytesIO(self.status_body)
+        return SimpleNamespace(stdout=stream, poll=lambda: self.status_exit,
+                               wait=lambda timeout: self.status_exit)
 
     def observe(self, run=None):
         capture = io.StringIO()
-        with patch.object(probe.subprocess, "run", side_effect=run or self.fake_run), redirect_stdout(capture):
+        with patch.object(probe.subprocess, "run", side_effect=run or self.fake_run), \
+                patch.object(status_capture.subprocess, "Popen", side_effect=self.fake_status), \
+                patch.object(status_capture, "_pipe_reader", side_effect=lambda stream: stream.read), redirect_stdout(capture):
             code = probe.inspect(self.root, self.helper, self.profile, self.wpr)
         output = capture.getvalue()
         self.assertNotIn(SECRET, output)
@@ -93,23 +111,21 @@ class MetadataFixtures(unittest.TestCase):
         self.assertEqual(len(self.commands), 4)
 
     def test_unexpected_status_zero_never_asserts_absence_or_presence(self):
-        def run(argv, **kwargs):
-            result = self.fake_run(argv, **kwargs)
-            return SimpleNamespace(returncode=0) if "-status" in argv else result
-        code, rows = self.observe(run)
+        self.status_body = SECRET.encode()
+        code, rows = self.observe()
         self.assertEqual(code, 2)
-        self.assertEqual(rows[2]["reason"], "status_unexpected")
+        self.assertEqual(rows[2]["reason"], "status_body_not_exact")
         self.assertEqual(rows[2]["count_validity"], "UNKNOWN")
 
-    def test_signed_windows_status_is_normalized(self):
-        def run(argv, **kwargs):
-            result = self.fake_run(argv, **kwargs)
-            return SimpleNamespace(returncode=probe.ABSENT_STATUS - (1 << 32)) if "-status" in argv else result
-        code, rows = self.observe(run)
-        self.assertEqual(code, 0)
-        self.assertEqual(rows[2]["native_exit"], probe.ABSENT_STATUS)
+    def test_signed_windows_status_is_rejected(self):
+        self.status_exit = 0xC5583000 - (1 << 32)
+        code, rows = self.observe()
+        self.assertEqual(code, 2)
+        self.assertEqual(rows[2]["reason"], "status_exit_not_allowed")
+        self.assertIsNone(rows[2]["native_exit"])
 
     def test_timeout_and_exception_text_stay_private(self):
+        self.status_error = OSError(SECRET)
         def run(argv, **kwargs):
             self.commands.append(argv)
             kwargs["stdout"].write(SECRET.encode())
@@ -280,7 +296,9 @@ class SourceBoundaries(unittest.TestCase):
         tool = (REPO / "scripts/r3_windows_wpr_metadata_preflight.py").read_text()
         native = (REPO / "scripts/windows_wpr_session_count.cpp").read_text()
         workflow = (REPO / ".github/workflows/runtime-wpr-metadata-preflight.yml").read_text()
-        for source in (tool, native, workflow):
+        adapter = (REPO / "scripts/diagnostics/windows_wpr_status_capture.py").read_text()
+        parser = (REPO / "scripts/diagnostics/windows_wpr_status_absence.py").read_text()
+        for source in (tool, adapter, parser, native, workflow):
             for forbidden in ("-start", "-stop", "-cancel", "--control", "--session-check", "sessionCheck",
                               "StartTrace", "ControlTrace", "OpenTrace", "ProcessTrace", "EnableTrace",
                               "AdjustTokenPrivileges", "r3_windows_commit_trace", "windows_commit_trace_reader"):
@@ -292,8 +310,8 @@ class SourceBoundaries(unittest.TestCase):
         for forbidden in ("pip install", "setup-python", "upload-artifact", "pytest", "workflow_dispatch"):
             self.assertNotIn(forbidden, workflow)
         self.assertIn("github.run_attempt == 1", workflow)
-        self.assertIn("91b2647a78b6e1e59faf5a0d63f7eb41bb55dd26", workflow)
-        self.assertIn("fix: preserve WPR profile bytes; read-only metadata 6ca308d1", workflow)
+        self.assertIn("425f04d63c453d96f217b43308d7903569761515", workflow)
+        self.assertIn("diagnostic: classify scoped WPR status; read-only metadata 9eb237ac", workflow)
         self.assertIn("if ($owned)", workflow)
         self.assertEqual(workflow.count("Remove-Item"), 1)
 

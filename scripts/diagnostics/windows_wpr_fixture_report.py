@@ -13,7 +13,7 @@ CASES = (
     (1, "MetadataFixtures", "test_exact_readonly_commands_and_fresh_instance"),
     (2, "MetadataFixtures", "test_failed_profile_does_not_hide_other_readonly_phases"),
     (3, "MetadataFixtures", "test_unexpected_status_zero_never_asserts_absence_or_presence"),
-    (4, "MetadataFixtures", "test_signed_windows_status_is_normalized"),
+    (4, "MetadataFixtures", "test_signed_windows_status_is_rejected"),
     (5, "MetadataFixtures", "test_timeout_and_exception_text_stay_private"),
     (6, "MetadataFixtures", "test_oversized_private_output_is_never_read_or_published"),
     (7, "MetadataFixtures", "test_profile_identity_failure_runs_nothing"),
@@ -39,8 +39,60 @@ CASES = (
     (27, "SourceBoundaries", "test_safe_fixture_report_rejects_unmapped_case"),
     (28, "SourceBoundaries", "test_extracted_workflow_fixture_output_filter"),
     (29, "SourceBoundaries", "test_fixture_inventory_rejects_missing_duplicate_and_extra_cases"),
+    (30, "StrictStatusAbsenceTests", "test_exact_positive_corpus_all_encodings_and_allowed_exits"),
+    (31, "StrictStatusAbsenceTests", "test_individual_ascii_outer_whitespace"),
+    (32, "StrictStatusAbsenceTests", "test_complete_flag_required_even_for_exact_prefix"),
+    (33, "StrictStatusAbsenceTests", "test_private_capture_required"),
+    (34, "StrictStatusAbsenceTests", "test_normal_completion_required_for_timeout_failure_or_termination"),
+    (35, "StrictStatusAbsenceTests", "test_flags_must_be_actual_booleans"),
+    (36, "StrictStatusAbsenceTests", "test_exit_code_type_is_strict"),
+    (37, "StrictStatusAbsenceTests", "test_exit_codes_do_not_alone_prove_absence"),
+    (38, "StrictStatusAbsenceTests", "test_nonallowlisted_exit_codes"),
+    (39, "StrictStatusAbsenceTests", "test_capture_at_exact_byte_bound_is_permitted"),
+    (40, "StrictStatusAbsenceTests", "test_capture_over_byte_bound_is_rejected_before_decode"),
+    (41, "StrictStatusAbsenceTests", "test_extra_or_changed_body_negative_corpus"),
+    (42, "StrictStatusAbsenceTests", "test_unicode_whitespace_is_not_stripped"),
+    (43, "StrictStatusAbsenceTests", "test_repeated_or_mixed_initial_boms_are_rejected"),
+    (44, "StrictStatusAbsenceTests", "test_nonleading_or_internal_bom_is_not_removed"),
+    (45, "StrictStatusAbsenceTests", "test_utf32_bom_prefix_collision_is_explicitly_rejected"),
+    (46, "StrictStatusAbsenceTests", "test_unmarked_utf16_is_never_guessed"),
+    (47, "StrictStatusAbsenceTests", "test_unmarked_utf32_is_not_accepted"),
+    (48, "StrictStatusAbsenceTests", "test_invalid_encoding_never_uses_replacement_or_fallback"),
+    (49, "StrictStatusAbsenceTests", "test_wrong_endian_bom_cannot_confirm_absence"),
+    (50, "StrictStatusAbsenceTests", "test_bom_without_body_is_unknown"),
+    (51, "StrictStatusAbsenceTests", "test_every_phrase_truncation_is_unknown"),
+    (52, "StrictStatusAbsenceTests", "test_exhaustive_single_byte_insertions"),
+    (53, "StrictStatusAbsenceTests", "test_exhaustive_single_byte_substitutions"),
+    (54, "StrictStatusAbsenceTests", "test_input_shape_is_strict"),
+    (55, "StrictStatusAbsenceTests", "test_reason_precedence_is_deterministic"),
+    (56, "StrictStatusAbsenceTests", "test_diagnostics_are_closed_set_and_do_not_retain_raw_input"),
+    (57, "StrictStatusAbsenceTests", "test_observation_and_decision_are_immutable"),
+    (58, "StatusCaptureFixtures", "test_fake_complete_stdout_stderr_and_allowed_exits"),
+    (59, "StatusCaptureFixtures", "test_fake_conflicting_stderr_cannot_be_filtered"),
+    (60, "StatusCaptureFixtures", "test_fake_exit_before_eof_does_not_accept_prefix"),
+    (61, "StatusCaptureFixtures", "test_fake_eof_without_child_completion_is_unknown"),
+    (62, "StatusCaptureFixtures", "test_fake_read_error_after_exact_body_is_unknown"),
+    (63, "StatusCaptureFixtures", "test_fake_poll_and_wait_errors_are_unknown"),
+    (64, "StatusCaptureFixtures", "test_fake_close_error_invalidates_complete_body"),
+    (65, "StatusCaptureFixtures", "test_fake_overflow_is_irreversible"),
+    (66, "StatusCaptureFixtures", "test_fake_nonallowed_and_signed_exits_are_unknown"),
+    (67, "StatusCaptureFixtures", "test_fake_spawn_error_is_private_and_unknown"),
+    (68, "StatusCaptureFixtures", "test_real_stdout_and_stderr_are_both_captured"),
+    (69, "StatusCaptureFixtures", "test_real_delayed_tail_is_not_ignored"),
+    (70, "StatusCaptureFixtures", "test_real_bom_encodings_and_invalid_encoding"),
+    (71, "StatusCaptureFixtures", "test_real_exact_cap_and_over_cap"),
+    (72, "StatusCaptureFixtures", "test_real_timeout_kills_only_owned_child"),
+    (73, "StatusCaptureFixtures", "test_real_inherited_writer_prevents_eof"),
+    (74, "StatusCaptureFixtures", "test_real_windows_exit_dword_or_portable_nonzero"),
+    (75, "StatusCaptureFixtures", "test_both_cli_import_entrypoints_fail_closed_off_windows"),
+    (76, "StatusCaptureFixtures", "test_windows_readfile_eof_and_zero_write_contract"),
+    (77, "StatusCaptureFixtures", "test_windows_open_empty_pipe_and_api_errors_are_not_eof"),
+    (78, "StatusCaptureFixtures", "test_windows_inconsistent_read_count_is_rejected"),
+    (79, "StatusCaptureFixtures", "test_final_read_crossing_deadline_cannot_accept"),
+    (80, "StatusCaptureFixtures", "test_public_success_requires_full_case_inventory"),
 )
-CLASS_IDS = {"MetadataFixtures": 101, "SourceBoundaries": 102, "NativeCounterFixtures": 103}
+CLASS_IDS = {"MetadataFixtures": 101, "SourceBoundaries": 102, "NativeCounterFixtures": 103,
+             "StrictStatusAbsenceTests": 104, "StatusCaptureFixtures": 105}
 
 
 def error_category(error):
@@ -59,7 +111,7 @@ class FixedResult(unittest.TestResult):
         self.rows = []
         self.invalid = 0
         self.cases = {(getattr(module, cls), method): ident for ident, cls, method in CASES}
-        self.lifecycle = {phase + " (" + MODULE + "." + cls + ")": ident
+        self.lifecycle = {phase + " (" + getattr(module, cls).__module__ + "." + cls + ")": ident
                           for cls, ident in CLASS_IDS.items()
                           for phase in ("setUpClass", "tearDownClass")}
 
@@ -106,8 +158,15 @@ class FixedResult(unittest.TestResult):
 
     def records(self):
         invalid = self.invalid or len(self.rows) > 128
+        successful = self.wasSuccessful() and not self.skipped
+        if successful:
+            expected = set(self.cases.values())
+            complete = (self.testsRun == len(expected) and len(self.rows) == len(expected)
+                        and {row["case_id"] for row in self.rows} == expected
+                        and all(row["outcome"] == "PASS" and row["error"] == "NONE" for row in self.rows))
+            invalid = invalid or not complete
         summary = {"phase": "summary", "reason": "report_invalid" if invalid else
-                   "ok" if self.wasSuccessful() else "fixtures_failed",
+                   "ok" if successful else "fixtures_failed",
                    "tests_run": self.testsRun, "failures": len(self.failures),
                    "errors": len(self.errors), "skipped": len(self.skipped),
                    "invalid": int(invalid)}

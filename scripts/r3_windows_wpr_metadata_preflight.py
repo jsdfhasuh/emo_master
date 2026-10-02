@@ -15,8 +15,14 @@ import sys
 import tempfile
 import uuid
 
+if __package__:
+    from .diagnostics.windows_wpr_status_absence import Reason, Status
+    from .diagnostics.windows_wpr_status_capture import observe_status
+else:
+    from diagnostics.windows_wpr_status_absence import Reason, Status
+    from diagnostics.windows_wpr_status_capture import observe_status
+
 PROFILE_SHA256 = "cbb159dc1261ef49abc503861636c0241a22e5538ad803c441862d53dbf1d20b"
-ABSENT_STATUS = 0xC5583000
 MORE_DATA = 234
 CAPACITY = 64
 MAX_OUTPUT = 4 * 1024 * 1024
@@ -27,7 +33,8 @@ REASONS = frozenset(("ok", "wrong_environment", "private_directory_failed", "pro
                      "capability_missing", "command_failed", "command_timeout", "output_limit",
                      "instance_absent", "status_unexpected", "native_output_invalid", "more_data",
                      "api_error", "capacity_reached", "count_inconsistent", "cleanup_failed",
-                     "metadata_inconclusive", "unexpected_failure"))
+                     "metadata_inconclusive", "unexpected_failure")) | frozenset(
+                         "status_" + reason.value for reason in Reason)
 
 
 def row(phase, reason, native_exit=None, api_status=None, returned_count=None):
@@ -129,13 +136,15 @@ def inspect(root, helper, profile, wpr):
     for phase, argv in commands:
         if not wpr.is_file():
             result = row(phase, "capability_missing")
+        elif phase == "instance_status":
+            captured = observe_status(argv, TIMEOUT)
+            result = row(phase, "instance_absent" if captured.decision.status is Status.ABSENT
+                         else "status_" + captured.decision.reason.value, captured.native_exit)
         else:
             result, _ = command(argv, root, phase)
             if result["reason"] == "ok":
                 status = result["native_exit"]
-                if phase == "instance_status":
-                    result = row(phase, "instance_absent" if status == ABSENT_STATUS else "status_unexpected", status)
-                elif status != 0:
+                if status != 0:
                     result = row(phase, "command_failed", status)
         emit(result)
         failed |= result["reason"] not in ("ok", "instance_absent")

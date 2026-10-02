@@ -3180,9 +3180,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def autoLayoutNodes(self) -> None:
-        self.flowScene.layoutNodesGrid(columns=4)
+        self.flowScene.layoutNodesFlow()
         self.focusGraphContent()
-        self.appendRuntimeLog("INFO", "已应用自动布局")
+        self.appendRuntimeLog("INFO", "已按数据流整理节点")
 
     def focusGraphContent(self, checked: bool = False, *, automatic: bool = False) -> None:
         workflowId = (str(self.workflowStore.project.get("projectId", "")), self.workflowStore.activeWorkflowId)

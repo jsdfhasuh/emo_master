@@ -1,12 +1,14 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.apps.designer.ui.node_geometry import gridPositions, measureNode
+from emo_master.apps.designer.ui.flow_layout import LayoutNode, flowPositions
+from emo_master.apps.designer.ui.flow_routing import OrthogonalRouter, Rect, Route, RouteRequest
 
 
 @dataclass
@@ -37,7 +39,7 @@ OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
 
 try:
-    from PySide2.QtCore import QPointF, QRectF, Qt
+    from PySide2.QtCore import QPointF, QRectF, Qt, QTimer
     from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPen, QTransform
     from emo_master.apps.designer.ui.theme import uiFont
     from emo_master.apps.designer.ui.icon_map import operatorIcon
@@ -258,7 +260,8 @@ try:
             )
             self._normalPen = QPen(QColor("#0984e3"), 2.0)
             self._selectedPen = QPen(QColor("#0652dd"), 3.2)
-            self.refreshPath()
+            self.route = Route(())
+            self.setZValue(-1)
 
         def itemChange(
             self, change: QGraphicsItem.GraphicsItemChange, value: object
@@ -277,20 +280,45 @@ try:
             return {"width": float(pen.widthF()), "color": str(pen.color().name())}
 
         def _applySelectionStyle(self, selected: bool) -> None:
-            self.setPen(self._selectedPen if selected else self._normalPen)
+            pen = QPen(self._selectedPen if selected else self._normalPen)
+            if self.route.blocked:
+                pen.setColor(QColor("#dc6b17"))
+                pen.setStyle(Qt.DashLine)
+            self.setPen(pen)
 
         def refreshPath(self) -> None:
-            start = self.sourcePort.sceneBoundingRect().center()
-            end = self.targetPort.sceneBoundingRect().center()
-            ctrl1 = QPointF(start.x() + 80.0, start.y())
-            ctrl2 = QPointF(end.x() - 80.0, end.y())
-            path = QPainterPath(start)
-            path.cubicTo(ctrl1, ctrl2, end)
+            scene = self.scene()
+            if isinstance(scene, FlowScene):
+                scene._routeEdges([self])
+
+        def applyRoute(self, route: Route) -> None:
+            self.route = route
+            self.setToolTip(route.reason)
+            path = QPainterPath()
+            if route.points:
+                path.moveTo(QPointF(*route.points[0]))
+                for index in range(1, len(route.points) - 1):
+                    before, corner, after = route.points[index - 1:index + 2]
+                    incoming = abs(corner[0] - before[0]) + abs(corner[1] - before[1])
+                    outgoing = abs(after[0] - corner[0]) + abs(after[1] - corner[1])
+                    radius = min(8.0, incoming / 2, outgoing / 2)
+                    entry = QPointF(corner[0] + (before[0] - corner[0]) * radius / incoming,
+                                    corner[1] + (before[1] - corner[1]) * radius / incoming)
+                    exitPoint = QPointF(corner[0] + (after[0] - corner[0]) * radius / outgoing,
+                                        corner[1] + (after[1] - corner[1]) * radius / outgoing)
+                    path.lineTo(entry)
+                    path.quadTo(QPointF(*corner), exitPoint)
+                path.lineTo(QPointF(*route.points[-1]))
             self.setPath(path)
+            self._applySelectionStyle(self.isSelected())
 
     class FlowScene(QGraphicsScene):
         def __init__(self) -> None:
             super().__init__()
+            self._routeBatch = False
+            self._routeTimer = QTimer(self)
+            self._routeTimer.setSingleShot(True)
+            self._routeTimer.timeout.connect(self.refreshAllRoutes)
             self._nodeItems: dict[str, _NodeItem] = {}
             self._iconProvider = None
             self._iconContext: Callable[[], tuple] = lambda: ()
@@ -350,11 +378,16 @@ try:
         ) -> None:
             self._connectionErrorHandler = handler
 
+        def clear(self) -> None:
+            self.clearGraph()
+
         def clearGraph(self) -> None:
+            self._routeTimer.stop()
+            self._dragHintItem = None
             if self._iconProvider is not None:
                 for item in self._nodeItems.values():
                     self._iconProvider.unbind(item)
-            self.clear()
+            super().clear()
             self._nodeItems = {}
             self._portItems = {}
             self._edgeItems = {}
@@ -393,6 +426,7 @@ try:
                     labelX = 28.0 if direction == "input" else geometry.width - 28.0 - rect.width()
                     label.setPos(labelX, centerY - rect.height() / 2)
                     self._portItems[(model.nodeId, direction, portName)] = portItem
+            self._scheduleRoutes()
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:
             sourcePort = self._portItems.get((edge.fromNodeId, "output", edge.fromPort))
@@ -411,14 +445,42 @@ try:
             self.addItem(edgeItem)
             self._edgeItems[edgeKey] = edgeItem
             self._inputEdgeIndex[inputKey] = edgeKey
+            self._scheduleRoutes()
+
+        def _scheduleRoutes(self) -> None:
+            if not self._routeBatch and self.mouseGrabberItem() is None:
+                self._routeTimer.start(0)
+
+        def _routeEdges(self, items: list[_EdgeItem]) -> None:
+            if not items:
+                return
+            nodes = {}
+            for key, item in self._nodeItems.items():
+                rect = item.mapRectToScene(item.rect())
+                nodes[key] = Rect(rect.left(), rect.top(), rect.right(), rect.bottom())
+            requests = []
+            for item in items:
+                start = item.sourcePort.sceneBoundingRect().center()
+                end = item.targetPort.sceneBoundingRect().center()
+                edge = item.edge
+                requests.append(RouteRequest((edge.fromNodeId, edge.fromPort, edge.toNodeId, edge.toPort),
+                                             (start.x(), start.y()), (end.x(), end.y())))
+            routes = OrthogonalRouter(nodes, requests).routeAll()
+            for item, request in zip(items, requests):
+                item.applyRoute(routes[request.key])
+
+        def refreshAllRoutes(self) -> None:
+            self._routeTimer.stop()
+            self._routeEdges(list(self._edgeItems.values()))
 
         def refreshEdgesForNode(self, nodeId: str) -> None:
-            for edgeItem in self._edgeItems.values():
-                if (
-                    edgeItem.edge.fromNodeId == nodeId
-                    or edgeItem.edge.toNodeId == nodeId
-                ):
-                    edgeItem.refreshPath()
+            if self._routeBatch:
+                return
+            if self.mouseGrabberItem() is not None:
+                self._routeEdges([item for item in self._edgeItems.values()
+                                  if nodeId in (item.edge.fromNodeId, item.edge.toNodeId)])
+            else:
+                self._scheduleRoutes()
 
         def removeFlowNode(self, nodeId: str) -> None:
             nodeItem = self._nodeItems.get(nodeId)
@@ -444,6 +506,7 @@ try:
                     self._iconProvider.unbind(nodeItem)
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
+                self._scheduleRoutes()
 
         def removeFlowEdge(
             self, fromNodeId: str, fromPort: str, toNodeId: str, toPort: str
@@ -458,6 +521,7 @@ try:
             existing = self._inputEdgeIndex.get(inputKey)
             if existing == edgeKey:
                 del self._inputEdgeIndex[inputKey]
+            self._scheduleRoutes()
 
         def getSelectedEdgeKeys(self) -> list[tuple[str, str, str, str]]:
             selectedItems = self.selectedItems()
@@ -475,10 +539,24 @@ try:
             return edgeKeys
 
         def layoutNodesGrid(self, columns: int = 4) -> None:
-            positions = gridPositions({key: item.geometry for key, item in self._nodeItems.items()}, columns)
-            for nodeId, (x, y) in positions.items():
-                self._nodeItems[nodeId].setPos(x, y)
-                self.refreshEdgesForNode(nodeId)
+            self._applyPositions(gridPositions({key: item.geometry for key, item in self._nodeItems.items()}, columns))
+
+        def _applyPositions(self, positions: dict[str, tuple[float, float]]) -> None:
+            self._routeTimer.stop()
+            self._routeBatch = True
+            try:
+                for nodeId, (x, y) in positions.items():
+                    self._nodeItems[nodeId].setPos(x, y)
+            finally:
+                self._routeBatch = False
+                self.refreshAllRoutes()
+
+        def layoutNodesFlow(self) -> None:
+            positions = flowPositions(
+                {key: LayoutNode(item.geometry.width, item.geometry.height, item.model.kind)
+                 for key, item in self._nodeItems.items()},
+                [(edge[0], edge[2]) for edge in self._edgeItems])
+            self._applyPositions(positions)
 
         def nextNodePosition(self) -> tuple[float, float]:
             bottom = max((item.sceneBoundingRect().bottom() for item in self._nodeItems.values()), default=-28)
@@ -589,6 +667,7 @@ try:
                 self._clearInputHints()
                 self._setDragHint("", None)
             super().mouseReleaseEvent(event)
+            self.refreshAllRoutes()
             callback = getattr(self, "editCompleted", None)
             if callback is not None:
                 callback()
@@ -1059,6 +1138,14 @@ except Exception:  # pragma: no cover
 
         def getSelectedEdgeKeys(self) -> list[tuple[str, str, str, str]]:
             return []
+
+        def layoutNodesFlow(self) -> None:
+            positions = flowPositions(
+                {key: LayoutNode(measureNode(node).width, measureNode(node).height, node.kind)
+                 for key, node in self._nodes.items()},
+                [(edge.fromNodeId, edge.toNodeId) for edge in self._edges])
+            for nodeId, (x, y) in positions.items():
+                self._nodes[nodeId] = replace(self._nodes[nodeId], x=x, y=y)
 
         def layoutNodesGrid(self, columns: int = 4) -> None:
             positions = gridPositions({key: measureNode(node) for key, node in self._nodes.items()}, columns)

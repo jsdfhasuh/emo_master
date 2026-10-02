@@ -43,6 +43,12 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId):
     limits = normalCaptureLimits(presentation)
     for sourceId, source in sources.items():
         scope = scopes[source["resultScopeId"]]
+        if source["kind"] == "runtime_status":
+            raise ValueError(
+                f"{sourceId}: runtime_status is not a captured workflow output; "
+                "use the page's native live Job status label for execution state; "
+                "an unbound runtime_status component shows connection state"
+            )
         if (source["kind"] not in {"node_output", "workflow_output"}
                 or source["workflowId"] != scope["scopeWorkflowId"]
                 or source["callPath"] != scope["callPath"]):

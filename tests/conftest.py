@@ -33,3 +33,20 @@ def ownedFlowScene(retainedQtApplication):
         yield owner
     finally:
         owner.retire()
+
+
+@pytest.fixture
+def ownedDesignerWindow(retainedQtApplication, monkeypatch):
+    """Explicit native ownership for e2e tests which create Designer windows."""
+    from PySide2.QtWidgets import QMessageBox
+    from tests.qt_widget_owner import OwnedDesignerWindows
+    with OwnedDesignerWindows(retainedQtApplication) as owner:
+        originalQuestion = QMessageBox.question
+
+        def question(parent, title, *args, **kwargs):
+            if owner.owns(parent) and title == '项目有未保存修改':
+                return QMessageBox.Discard
+            return originalQuestion(parent, title, *args, **kwargs)
+
+        monkeypatch.setattr(QMessageBox, 'question', question)
+        yield owner

@@ -239,6 +239,139 @@ def testHoughCircleAppliesFrameMaskAndSortsResults(
     assert invalid["error"]["code"] == "E_PARAM_INVALID"
 
 
+@pytest.mark.parametrize("color", [False, True], ids=["gray", "bgr"])
+def testRealHoughCircleFindsSyntheticCirclesAndRespectsFrame(color: bool) -> None:
+    gray = np.zeros((160, 224), dtype=np.uint8)
+    centers = [(56, 80), (168, 80)]
+    for center in centers:
+        cv2.circle(gray, center, 24, 255, 2, lineType=cv2.LINE_8)
+    image = cv2.cvtColor(gray, cv2.COLOR_GRAY2BGR) if color else gray
+    original = image.copy()
+    space = CoordinateSpace2D(
+        sourceId="synthetic-circles", imageWidth=224, imageHeight=160
+    )
+    fullFrame = BBox2D(0, 0, 224, 160, space)
+    leftFrame = BBox2D(8, 32, 96, 96, space)
+    params = {
+        "dp": 1.0,
+        "minDist": 40.0,
+        "param1": 80.0,
+        "param2": 18.0,
+        "minRadius": 20,
+        "maxRadius": 28,
+    }
+    operator = HoughCircleOperator()
+
+    for frame, expectedCenters in [(fullFrame, centers), (leftFrame, centers[:1])]:
+        framePayload = frame.toPayload()
+        result = operator.executeNode(
+            {"image": image, "frame": framePayload}, params, {}
+        )
+
+        assert result["status"] == "ok", result
+        circles = CircleCollection.fromPayload(result["outputs"]["circles"])
+        assert circles.coordinateSpace == space
+        for centerX, centerY in expectedCenters:
+            # Hough localization varies slightly across supported OpenCV builds.
+            assert any(
+                math.hypot(item.circle.center.x - centerX, item.circle.center.y - centerY)
+                <= 3.0
+                and abs(item.circle.radius - 24) <= 4.0
+                for item in circles.items
+            ), circles
+        if frame == leftFrame:
+            assert all(item.circle.center.x < 104 for item in circles.items)
+        assert result["metrics"]["count"] == len(circles.items)
+        assert BBox2D.fromPayload(result["outputs"]["frame"]) == frame
+        assert framePayload == frame.toPayload()
+        np.testing.assert_array_equal(image, original)
+
+
+def testRealHoughCircleReturnsEmptyTypedCollectionForBlankImage() -> None:
+    image = np.zeros((96, 96), dtype=np.uint8)
+    original = image.copy()
+    frame = BBox2D(0, 0, 96, 96, _space(96, 96))
+
+    result = HoughCircleOperator().executeNode(
+        {"image": image, "frame": frame.toPayload()},
+        {"minRadius": 10, "maxRadius": 30, "param2": 18.0},
+        {},
+    )
+
+    assert result["status"] == "ok", result
+    circles = CircleCollection.fromPayload(result["outputs"]["circles"])
+    assert circles.items == ()
+    assert circles.coordinateSpace == frame.coordinateSpace
+    assert result["metrics"]["count"] == 0
+    assert BBox2D.fromPayload(result["outputs"]["frame"]) == frame
+    np.testing.assert_array_equal(image, original)
+
+
+@pytest.mark.parametrize(
+    "inputs,code",
+    [
+        ({}, "E_INPUT_MISSING"),
+        ({"image": [[0, 255]]}, "E_INPUT_TYPE"),
+        ({"image": np.zeros((8, 8), dtype=np.float32)}, "E_INPUT_TYPE"),
+        ({"image": np.zeros((0, 8), dtype=np.uint8)}, "E_INPUT_SHAPE"),
+        ({"image": np.zeros((8, 8, 4), dtype=np.uint8)}, "E_INPUT_SHAPE"),
+        ({"image": np.zeros((8, 8), dtype=np.uint8), "frame": {}}, "E_INPUT_TYPE"),
+        (
+            {
+                "image": np.zeros((8, 8), dtype=np.uint8),
+                "frame": BBox2D(0, 0, 8, 8, _space(9, 8)).toPayload(),
+            },
+            "E_INPUT_SHAPE",
+        ),
+        (
+            {
+                "image": np.zeros((8, 8), dtype=np.uint8),
+                "frame": BBox2D(1, 0, 8, 8, _space(8, 8)).toPayload(),
+            },
+            "E_INPUT_SHAPE",
+        ),
+    ],
+    ids=[
+        "missing", "not-array", "float-pixels", "empty", "four-channels",
+        "malformed-frame", "wrong-frame-size", "frame-outside-image",
+    ],
+)
+def testHoughCircleRejectsInvalidImagesAndFrames(
+    inputs: dict[str, object], code: str
+) -> None:
+    result = HoughCircleOperator().executeNode(inputs, {}, {})
+
+    assert result["status"] == "error"
+    assert result["error"]["code"] == code
+    assert "outputs" not in result
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"dp": 0},
+        {"minDist": float("nan")},
+        {"param1": 0},
+        {"param2": -1},
+        {"minRadius": -1},
+        {"maxRadius": True},
+    ],
+    ids=["zero-dp", "nan-distance", "zero-gradient", "negative-votes", "radius", "bool-radius"],
+)
+def testHoughCircleRejectsInvalidParametersWithoutMutatingImage(
+    params: dict[str, object],
+) -> None:
+    image = np.arange(64, dtype=np.uint8).reshape(8, 8)
+    original = image.copy()
+
+    result = HoughCircleOperator().executeNode({"image": image}, params, {})
+
+    assert result["status"] == "error"
+    assert result["error"]["code"] == "E_PARAM_INVALID"
+    assert "outputs" not in result
+    np.testing.assert_array_equal(image, original)
+
+
 def testHoughLineCircleFilterAnnotateChain(monkeypatch: pytest.MonkeyPatch) -> None:
     edge = np.zeros((40, 40), dtype=np.uint8)
     cv2.line(edge, (5, 8), (32, 8), 255, 1)

@@ -12,7 +12,6 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
-from emo_master.apps.designer.ui.main_window import MainWindow
 
 
 def _ensureQApp():
@@ -337,7 +336,7 @@ def testRuntimeWorkflowV2StreamsLiveLoopEventsAndArtifacts(
     assert not list((tmp_path / "job-workspaces").glob("*"))
 
 
-def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> None:
+def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path, ownedDesignerWindow) -> None:
     class RuntimeClientStub:
         def listOperators(self):
             return []
@@ -347,7 +346,7 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
             return type("Reply", (), {"ok": True, "message": "ok"})()
 
     application = _ensureQApp()
-    window = MainWindow(RuntimeClientStub())
+    window = ownedDesignerWindow(RuntimeClientStub())
     bodyWorkflowId = window.createWorkflow("Body")
     window.workflowController.setWorkflowInterface(bodyWorkflowId, {}, {})
     window.workflowController.switchWorkflow("main")
@@ -471,7 +470,7 @@ def testDesignerSavedSystemNodeProjectLoadsAndRunsInRuntime(tmp_path: Path) -> N
 
 
 def testDesignerBuildsDataSubflowSavesReloadsAndRunsInRuntime(
-    tmp_path: Path, monkeypatch
+    tmp_path: Path, monkeypatch, ownedDesignerWindow
 ) -> None:
     pluginRoot = _writeEchoPlugin(tmp_path)
     monkeypatch.syspath_prepend(str(tmp_path))
@@ -485,7 +484,7 @@ def testDesignerBuildsDataSubflowSavesReloadsAndRunsInRuntime(
             return type("Reply", (), {"ok": True, "message": "ok"})()
 
     _ensureQApp()
-    window = MainWindow(RuntimeClientStub())
+    window = ownedDesignerWindow(RuntimeClientStub())
     bodyWorkflowId = window.createWorkflow("Body")
     window.editWorkflowInterface({"value": "string"}, {"result": "string"})
     window.addNodeFromOperatorPayload(
@@ -540,7 +539,7 @@ def testDesignerBuildsDataSubflowSavesReloadsAndRunsInRuntime(
     assert len(savedPayload["workflows"][bodyWorkflowId]["edges"]) == 2
     assert len(savedPayload["workflows"]["main"]["edges"]) == 2
 
-    reloaded = MainWindow(RuntimeClientStub())
+    reloaded = ownedDesignerWindow(RuntimeClientStub())
     assert reloaded.loadProjectDirectory(str(projectDir)) is True
     reloaded.workflowController.switchWorkflow(bodyWorkflowId)
     reloaded.activeWorkflowId = bodyWorkflowId

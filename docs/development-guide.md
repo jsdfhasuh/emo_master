@@ -30,40 +30,37 @@ if ($LASTEXITCODE -ne 0) { throw "依赖安装失败。" }
 
 `requirements.txt` 是运行依赖；`requirements-dev.txt` 已通过 `-r requirements.txt` 包含运行依赖，并增加 pytest、Ruff、mypy 等开发工具。开发和 CI 统一安装后者。Conda 负责管理解释器环境，项目依赖按仓库文件通过 `python -m pip` 安装，不要自行改换 gRPC、protobuf 或 NumPy 版本来绕过错误。
 
-## 2. 每个新终端都要配置源码路径
+## 2. 源码路径与启动检查
 
 以下及后续源码命令均在 **emo_master 仓库根目录** 执行。IDE 终端也需要相同配置。
 
 ```powershell
 conda activate emo_master
-$env:PYTHONPATH = (Resolve-Path .\src).Path
-$env:HUARAY_CAMERA_SMOKE = "0"
-
-python -c "import sys, emo_master; assert sys.version_info[:2] == (3, 10); print(sys.executable); print(emo_master.__version__); print(emo_master.__file__)"
+python scripts/dev.py run-designer --local --check
 if ($LASTEXITCODE -ne 0) { throw "解释器或源码路径不正确。" }
 python scripts/gen_proto.py --check
 if ($LASTEXITCODE -ne 0) { throw "protobuf 检查失败，请查看第 5 节。" }
 ```
 
-`emo_master.__file__` 应指向当前仓库的 `src/emo_master/__init__.py`。第三方依赖安装成功并不代表项目自身已经安装；目前 `scripts/dev.py` 只包装模块启动，不会给子进程补 `src` 路径。本指南显式配置 `PYTHONPATH`，不依赖 IDE 的隐式路径或其他机器遗留的可编辑安装。
+`--check` 使用真实 Designer 模块、PySide2 和 gRPC 验证导入，不创建窗口、Runtime 或 Job；输出的源码路径应属于当前仓库。`scripts/dev.py` 现为工具子进程设置本仓 `src` 路径并切换到仓库根目录，不依赖 IDE、当前 cwd 或其他工作副本的 `PYTHONPATH`，也不修改父终端环境。
 
-这里用赋值将当前终端的 `PYTHONPATH` 限定为本仓源码，避免串到其他工作副本。不要使用 `setx` 或全局系统环境变量固定某个工作副本。终端关闭后配置失效；新终端要重新执行。本指南尚未将 `pip install -e .` 作为经过验证的标准安装流程。
+直接执行 `python -m emo_master...` 或需要在终端导入项目时，仍可设置 `$env:PYTHONPATH = (Resolve-Path .\src).Path`；不使用 `setx` 或全局系统环境变量固定工作副本。不需要额外的 `pip install -e .`。`HUARAY_CAMERA_SMOKE` 只控制真实相机测试，不能用它禁止正式流程中的设备操作。
 
 ## 3. 默认方式：Designer 内嵌 Runtime
 
-在完成第 2 节配置的同一终端中执行：
+环境已安装时，双击仓库根目录 `start_designer.cmd` 即可。PowerShell 也可执行：
 
 ```powershell
-Remove-Item Env:EMO_RUNTIME_TARGET -ErrorAction SilentlyContinue
-Remove-Item Env:EMO_RUNTIME_DB_PATH -ErrorAction SilentlyContinue
-$env:EMO_RUNTIME_DATA_DIR = Join-Path (Get-Location).Path "manual_test_workspace/runtime-embedded"
-Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue
-python scripts/dev.py run-designer
+.\start_designer.cmd
 ```
+
+双击入口默认使用 `%USERPROFILE%\.conda\envs\emo_master\python.exe`，不会重新安装或创建环境；解释器在其他目录时设置 `$env:EMO_MASTER_PYTHON = '实际路径\python.exe'`。从其他 cwd 可用启动脚本的绝对路径。`./start_designer.cmd --check` 可检查启动配置，失败返回非零退出码。
+
+已经激活 Python 3.10 环境时，等价命令是 `python scripts/dev.py run-designer --local`。`--local` 只在子进程中清除外部 Runtime 地址、数据库/旧数据库路径、日志目录覆盖和 Qt 平台覆盖，并指定 `manual_test_workspace/runtime-embedded`。这使遗留的 `offscreen` 或外部服务配置不会影响本次可见内嵌启动；关闭后父终端原设置仍然保留。
 
 Designer 未配置外部目标时直接创建 `RuntimeService()`。这是同一应用进程内的服务调用，不会额外监听 gRPC 端口；正式 Job 仍在 Runtime 管理的 spawn 子进程中执行。关闭 Designer 时会关闭它拥有的内嵌 Runtime。
 
-`manual_test_workspace` 用于本机隔离数据，不应提交。`EMO_RUNTIME_DB_PATH` 的优先级高于 `EMO_RUNTIME_DATA_DIR`，所以示例先清除它，避免数据仍写到之前指定的数据库。
+`manual_test_workspace` 用于本机隔离数据，不应提交。需要自定义数据库、目录、Qt 平台或连接外部 Runtime 时，继续使用 `python scripts/dev.py run-designer`，不加 `--local`；原环境变量优先级和连接行为保持兼容。不要同时让多个内嵌实例访问同一数据目录。
 
 第一次启动使用本地图像或不涉及设备的流程。打开项目本身不等于已授权执行设备动作；含相机、PLC、TCP 算子的流程只应在确认设备和参数安全后运行。
 

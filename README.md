@@ -43,24 +43,15 @@ conda activate emo_master
 python -m pip install -r requirements-dev.txt
 if ($LASTEXITCODE -ne 0) { throw "依赖安装失败，请先解决错误。" }
 
-# 本项目使用 src 布局；当前 dev.py 不会自动设置源码搜索路径。
-$env:PYTHONPATH = (Resolve-Path .\src).Path
-python -c "import sys, emo_master; print(sys.executable); print(emo_master.__version__); print(emo_master.__file__)"
-if ($LASTEXITCODE -ne 0) { throw "源码导入失败，请检查解释器与 PYTHONPATH。" }
-
-# 日常开发使用独立数据目录，不接触默认运行数据。
-Remove-Item Env:EMO_RUNTIME_DB_PATH -ErrorAction SilentlyContinue
-$env:EMO_RUNTIME_DATA_DIR = Join-Path (Get-Location).Path "manual_test_workspace/runtime-embedded"
-Remove-Item Env:EMO_RUNTIME_TARGET -ErrorAction SilentlyContinue
-Remove-Item Env:QT_QPA_PLATFORM -ErrorAction SilentlyContinue
-$env:HUARAY_CAMERA_SMOKE = "0"
-
-python scripts/gen_proto.py --check
-if ($LASTEXITCODE -ne 0) { throw "protobuf 检查失败，请按开发指南排查。" }
-python scripts/dev.py run-designer
+# dev.py 自动选择当前仓库源码；--local 配置可见窗口和隔离的内嵌 Runtime。
+python scripts/dev.py run-designer --local
 ```
 
-`requirements-dev.txt` 已包含运行依赖，不需要再二选一或重复安装。环境变量只对当前终端及其子进程生效；新开终端后要重新激活环境、设置源码路径和运行模式。已有仓库不要重复克隆，也不要为切换分支丢弃本地修改。
+环境已经安装时，直接双击仓库根目录的 **`start_designer.cmd`**，或在 PowerShell 执行 `./start_designer.cmd`。它默认使用 `%USERPROFILE%\.conda\envs\emo_master\python.exe`，不要求激活 Conda、不安装依赖；解释器在其他位置时可设置 `EMO_MASTER_PYTHON`。启动失败会保留错误供查看。
+
+该入口使用 `manual_test_workspace/runtime-embedded` 存放本机开发数据，不自动开始检测。需要只检查而不开窗口时执行 `./start_designer.cmd --check`。外部 Runtime 调试仍使用不带 `--local` 的原命令，保留显式环境配置。
+
+`requirements-dev.txt` 已包含运行依赖，不需要重复安装。已有仓库和环境跳过上述克隆、创建环境及安装步骤；不要为切换分支丢弃本地修改。
 
 完整的新环境准备、双终端分离运行、IDE 配置、Linux 检查及故障排查见 [开发指南](docs/development-guide.md)。
 

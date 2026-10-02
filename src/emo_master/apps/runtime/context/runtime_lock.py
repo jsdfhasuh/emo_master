@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import errno
 import os
 from pathlib import Path
 import threading
@@ -20,6 +21,14 @@ try:
     msvcrt = _msvcrt
 except ImportError:  # pragma: no cover - only available on Windows
     msvcrt = None
+
+
+class RuntimeDataInUseError(RuntimeError):
+    """Another process holds the exclusive runtime workspace lock."""
+
+    def __init__(self, lockPath: Path) -> None:
+        self.directory = lockPath.parent
+        super().__init__(f"runtime data directory is already in use: {self.directory}")
 
 
 class RuntimeDataLock:
@@ -52,9 +61,9 @@ class RuntimeDataLock:
                 _lockHandle(handle)
             except OSError as err:
                 handle.close()
-                raise RuntimeError(
-                    f"runtime data directory is already in use: {self.path.parent}"
-                ) from err
+                if err.errno in (errno.EACCES, errno.EAGAIN):
+                    raise RuntimeDataInUseError(self.path) from err
+                raise
             self._held[self._key] = (handle, 1)
             self._acquired = True
             self._primary = True

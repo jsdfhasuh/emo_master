@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+import sys
 from typing import cast
 
 import grpc
@@ -10,6 +11,7 @@ from emo_master.apps.designer.services.runtime_client import (
 )
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from emo_master.apps.runtime.context.runtime_lock import RuntimeDataInUseError
 
 
 def resolveRuntimeTarget() -> str:
@@ -83,7 +85,25 @@ def runDesigner() -> None:
                 runtimeTarget=runtimeTarget,
             )
         else:
-            embeddedService = RuntimeService()
+            try:
+                embeddedService = RuntimeService()
+            except RuntimeDataInUseError as err:
+                from PySide2.QtWidgets import QMessageBox
+
+                message = (
+                    "运行数据目录正被另一个 Designer 或 Runtime 使用。\n\n"
+                    f"目录：{err.directory}\n\n"
+                    "请返回已打开的 Designer；如需重新启动，先停止任务并正常关闭原窗口。\n"
+                    "如果窗口已关闭，请等待原进程退出后重试。\n"
+                    "不要删除锁文件或数据库来强制启动。"
+                )
+                print(f"[designer] {message}", file=sys.stderr, flush=True)
+                dialog = QMessageBox()
+                dialog.setIcon(QMessageBox.Warning)
+                dialog.setWindowTitle("Designer 已在运行或数据目录被占用")
+                dialog.setText(message)
+                dialog.exec_()
+                raise SystemExit(2) from None
             runtimeService = cast(RuntimeServiceProtocol, embeddedService)
             runtimeClient = RuntimeClient(
                 runtimeService=runtimeService,

@@ -6,7 +6,7 @@ import math
 import time
 from types import MappingProxyType
 
-from PySide2.QtCore import Qt, QRect
+from PySide2.QtCore import Qt, QRect, Signal
 from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -84,6 +84,8 @@ class RuntimePages(QWidget):
     A hub supplies snapshots and shared image conversion; manual submit remains
     useful for clearly labelled simulation and deterministic widget tests.
     """
+    designExamplesChanged = Signal(bool)
+
     def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None):
         super().__init__(parent)
         assertGuiThread()
@@ -97,6 +99,9 @@ class RuntimePages(QWidget):
         self.simulationState = None
         self.detached = False
         self.editing = False
+        self.editorHost = False
+        self.designExamples = False
+        self._designImage = QImage()
         self.currentPageId = None
         self.pages = {}
         self.widgets = {}
@@ -165,6 +170,14 @@ class RuntimePages(QWidget):
             hub.attach(self)
 
     def fitToAvailableScreen(self, *, resize=True, screen=None):
+        if self.editorHost:
+            self.setMinimumSize(0, 0)
+            area = self.parentWidget().size() if self.parentWidget() else self.size()
+            width, height = surfaceBounds(area.width(), area.height(), self.devicePixelRatioF())
+            self.setMaximumSize(width, height)
+            if resize:
+                self.updateGeometry()
+            return
         screen = screen or self.screen() or QApplication.primaryScreen()
         available = screen.availableGeometry() if screen else QRect(0, 0, 1060, 720)
         ratio = max(self.devicePixelRatioF(), screen.devicePixelRatio() if screen else 1.)
@@ -198,7 +211,36 @@ class RuntimePages(QWidget):
         ratio = self.devicePixelRatioF()
         return math.ceil(self.width() * ratio) * math.ceil(self.height() * ratio) * 4
 
+    def setEditorHost(self):
+        """Keep the embedded editor native-sized, separate from screen fitting."""
+        self.editorHost = True
+        self.setMinimumSize(0, 0)
+        self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", ''))
+        self.fitButton.setText('适配编辑区')
+
+    def setDesignExamples(self, enabled):
+        if enabled and (not self.editorHost or self.hub or self.captureCoverage is not None):
+            raise ValueError('设计示例仅供未连接任务的编辑器使用')
+        from . import design_examples
+        if not enabled and self.designExamples:
+            design_examples.clear(self)
+        changed = self.designExamples != bool(enabled)
+        self.designExamples = bool(enabled)
+        if enabled:
+            self.simulationState = None
+            self.lastView = None
+            design_examples.populate(self)
+        if changed:
+            self.designExamplesChanged.emit(self.designExamples)
+
+    def editorResourceUsage(self):
+        return {'design_image_bytes': self._designImage.sizeInBytes(),
+                'table_bytes': sum(w.model.bytesHeld for rows in self.widgets.values()
+                                   for _c, w in rows.values() if isinstance(w, CollectionView)),
+                'surface_bytes': self.surfaceBytes()}
+
     def setSimulationState(self, state):
+        self.setDesignExamples(False)
         if state not in (None, 'OK', 'NG', 'WAITING', 'ERROR'):
             raise ValueError('未知离线模拟状态')
         if state is not None and (self.hub or self.captureCoverage is not None):
@@ -306,17 +348,24 @@ class RuntimePages(QWidget):
     def _children(self, parent, components, grid, pageId):
         layout = QGridLayout(parent)
         layout.setSpacing(grid.spacing)
+        if self.editorHost:
+            layout.setAlignment(Qt.AlignTop)
         for column in range(grid.columns):
             layout.setColumnStretch(column, 1)
         for component in components:
             card = QFrame()
             card.setObjectName("card")
+            if self.editorHost:
+                card.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
             card.setProperty('componentId', component.componentId)
             backgrounds = {'plain': 'white', 'soft': '#edf3fa', 'outlined': 'transparent'}
             card.setStyleSheet('QFrame#card {background:' + backgrounds[component.props.cardStyle] +
                 ';border:1px solid #c4d0de;border-radius:6px;}')
             if component.type == "container":
                 self._children(card, component.children, component.grid, pageId)
+                if self.editorHost and not component.children:
+                    card.setMinimumHeight(90)
+                    card.layout().addWidget(QLabel(component.props.title or '容器 · 拖入组件'), 0, 0)
             else:
                 box = QVBoxLayout(card)
                 if component.props.title:
@@ -327,6 +376,9 @@ class RuntimePages(QWidget):
                     box.addWidget(title)
                 if component.type == "image":
                     widget = ImageView()
+                    if self.editorHost:
+                        widget.setMinimumSize(100, 96)
+                        widget.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Preferred)
                     if component.bindings:
                         widget.message = '已绑定 · 等待明确任务结果'
                     widget.painted = self._painted
@@ -344,6 +396,15 @@ class RuntimePages(QWidget):
                     if component.type == "number":
                         widget.setObjectName("number")
                 box.addWidget(widget, 1)
+                if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
+                    source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
+                    note = ('来源: ' + str(source.port) if source else
+                            '来源缺失' if component.bindings else '未绑定 · 拖入流程输出')
+                    badge = QLabel(note)
+                    badge.setObjectName('bindingHint')
+                    badge.setWordWrap(True)
+                    badge.setToolTip(str(source) if source else note)
+                    box.addWidget(badge)
                 widget.setStyleSheet(appearanceStyle(component.props))
                 self.widgets[pageId][component.componentId] = (component, widget)
             p = component.layout
@@ -377,6 +438,9 @@ class RuntimePages(QWidget):
         self.stack.setCurrentWidget(self.pages[pageId])
         for key, button in self.buttons.items():
             button.setChecked(key == pageId)
+        if self.designExamples:
+            from .design_examples import populate
+            populate(self)
         if self.hub:
             self.hub.updateImageDemand()
             if self.lastView is not None:
@@ -460,6 +524,8 @@ class RuntimePages(QWidget):
 
     def setCaptureCoverage(self, coverage):
         """Only validated frozen metadata permits partial source compatibility."""
+        if coverage is not None:
+            self.setDesignExamples(False)
         from emo_master.core.presentation.coverage import CaptureCoverage
         if coverage is not None and not isinstance(coverage, CaptureCoverage):
             raise TypeError('validated capture coverage required')
@@ -472,6 +538,7 @@ class RuntimePages(QWidget):
             self.submit(self.hub.session.readSnapshot())
 
     def submit(self, view):
+        self.setDesignExamples(False)
         assertGuiThread()
         if self.detached:
             return
@@ -573,6 +640,9 @@ class RuntimePages(QWidget):
             self._screenWindow = handle
             handle.screenChanged.connect(self._screenChanged)
         self._screenChanged()
+        if self.designExamples:
+            from .design_examples import populate
+            populate(self)
         if self.hub and not self.detached:
             self.hub.updateImageDemand()
             self.submit(self.hub.session.readSnapshot())
@@ -591,6 +661,7 @@ class RuntimePages(QWidget):
             self.hub.updateImageDemand()
 
     def closeEvent(self, event):
+        self.setDesignExamples(False)
         self.detached = True
         if self._screenWindow is not None:
             try:

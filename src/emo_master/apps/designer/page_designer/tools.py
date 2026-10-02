@@ -3,10 +3,11 @@ import json
 
 from PySide2.QtCore import Qt, QObject, QEvent, QMimeData, QTimer
 from PySide2.QtGui import QDrag
+from shiboken2 import isValid
 from PySide2.QtWidgets import (
     QWidget, QFormLayout, QVBoxLayout, QTreeWidget,
     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
-    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog,
+    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog, QCheckBox, QToolButton, QMenu,
 )
 
 from emo_master.core.presentation.models import Props, Placement
@@ -108,38 +109,55 @@ class EditingTools(QObject):
         self.binding.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.binding.setMinimumContentsLength(10)
         self.form.addRow('输出绑定', self.binding)
+        self.bindingButtons = []
         for label, fn in [('应用属性 / 布局', self.apply), ('绑定所选输出', self.bindSelected),
                 ('清除绑定', self.clearBinding), ('复制控件', self.copy), ('删除控件', self.delete),
                 ('从此来源定位流程节点', self.locate)]:
             button = QPushButton(label)
             button.clicked.connect(lambda _checked=False, command=fn: self.w.run(command))
             self.form.addRow(button)
+            if label == '应用属性 / 布局':
+                self.applyButton = button
+            if label in ('绑定所选输出', '清除绑定', '从此来源定位流程节点'):
+                self.bindingButtons.append(button)
         self.extra = QTableWidget(0, 4)
         self.extra.setHorizontalHeaderLabels(['类型/列标题', '值/字段', '显示文字', '颜色'])
         self.extra.setMaximumHeight(170)
         self.form.addRow('表格列 / 判定映射（最多16）', self.extra)
-        add = QPushButton('增加列 / 映射')
+        add = self.extraAdd = QPushButton('增加列 / 映射')
         add.clicked.connect(self.addExtraRow)
         self.form.addRow(add)
-        remove = QPushButton('删除所选列 / 映射')
+        remove = self.extraRemove = QPushButton('删除所选列 / 映射')
         remove.clicked.connect(lambda: self.extra.removeRow(self.extra.currentRow()) if self.extra.currentRow() >= 0 else None)
         self.form.addRow(remove)
         self.fieldHint = QLabel('已知 Blob / Detection 字段可选择；未知结构不自动推断')
         self.fieldHint.setWordWrap(True)
         self.form.addRow(self.fieldHint)
-        self.preview = QPushButton('切换为模拟预览')
+        self.preview = QPushButton('交互预览')
         self.preview.setCheckable(True)
         self.preview.toggled.connect(self.previewMode)
-        self.form.addRow(self.preview)
+        workspace.toolbar.addWidget(self.preview)
         self.simulation = QComboBox()
         for label, value in [('布局（无示例值）', None), ('模拟 OK', 'OK'), ('模拟 NG', 'NG'),
                              ('模拟等待', 'WAITING'), ('模拟错误', 'ERROR')]:
             self.simulation.addItem(label, value)
         self.simulation.currentIndexChanged.connect(lambda _index: self.changeSimulation())
-        self.form.addRow('离线状态（不读写Runtime）', self.simulation)
+        self.simulation.setToolTip('离线状态示例，不读写 Runtime')
+        workspace.toolbar.addWidget(self.simulation)
+        self.examples = QCheckBox('设计示例')
+        self.examples.setChecked(True)
+        self.examples.toggled.connect(self.changeExamples)
+        workspace.renderer.designExamplesChanged.connect(self.syncExamples)
+        workspace.toolbar.addWidget(self.examples)
+        tasks = QToolButton()
+        tasks.setText('任务观察 ▾')
+        tasks.setPopupMode(QToolButton.InstantPopup)
+        taskMenu = QMenu(tasks)
+        tasks.setMenu(taskMenu)
+        workspace.toolbar.addWidget(tasks)
         self.captureNotice = QLabel()
         self.captureNotice.setWordWrap(True)
-        self.form.addRow('正常运行采集预算', self.captureNotice)
+        workspace.detailsLayout.addWidget(self.captureNotice)
         for text, command in [('登记本地输入图片', self.importInput),
                 ('明确开始隔离草稿调试', workspace.coordinator.preview.startDebug),
                 ('观看当前工程任务', workspace.coordinator.preview.watchCurrent),
@@ -147,12 +165,20 @@ class EditingTools(QObject):
                 ('停止自有调试 / 断开观察', workspace.coordinator.preview.closeAsync)]:
             button = QPushButton(text)
             button.clicked.connect(lambda _checked=False, fn=command: self.w.run(fn))
-            self.form.addRow(button)
+            action = taskMenu.addAction(text)
+            action.triggered.connect(button.click)
+            button.setParent(workspace)
+            button.hide()
             if text == '观看当前工程任务':
                 self.observer = QPushButton('弹出只读观察窗口')
                 self.observer.setToolTip('复用已选择任务；包括内嵌页面最多两个共享窗口，关闭弹窗不会断开观察')
                 self.observer.clicked.connect(lambda _checked=False: self.w.openObserver())
-                self.form.addRow(self.observer)
+                action = taskMenu.addAction('弹出只读观察窗口')
+                action.triggered.connect(self.observer.click)
+                self.observer.setParent(workspace)
+                self.observer.hide()
+        from .property_panel import PropertyGroups
+        self.propertyGroups = PropertyGroups(self, panel)
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
@@ -162,6 +188,7 @@ class EditingTools(QObject):
         self.w.propertyScroll = scroll
         self.w.splitter.addWidget(scroll)
         self.refreshCatalog()
+        workspace.renderer.setDesignExamples(True)
 
     def commands(self):
         return PageCommands(self.w.session, manifestsFromCatalog(self.w.coordinator.window.operatorCatalog))
@@ -212,7 +239,7 @@ class EditingTools(QObject):
             item.setData(0, Qt.UserRole, index)
             item.setToolTip(0, choice.title + '\n' + choice.hint)
             nodes[nodeAddress].addChild(item)
-            readable = groups[address].text(0) + ' / ' + nodes[nodeAddress].text(0) + ' / ' + item.text(0)
+            readable = nodes[nodeAddress].text(0)[:24] + ' / ' + item.text(0)
             self.binding.addItem(readable, index)
             self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
         if unsupported:
@@ -275,7 +302,7 @@ class EditingTools(QObject):
             self.preview.blockSignals(False)
             return
         self.w.renderer.editing = not preview
-        self.preview.setText('返回编辑模式' if preview else '切换为模拟预览')
+        self.preview.setText('返回编辑' if preview else '交互预览')
         if self.w.renderer.config != self.w.store.snapshot():
             self.w.refresh()
         self.changeSimulation()
@@ -290,9 +317,31 @@ class EditingTools(QObject):
             self.simulation.setCurrentIndex(0)
             self.simulation.blockSignals(False)
             return
+        wanted = self.examples.isChecked()
         renderer.setSimulationState(self.simulation.currentData() if self.preview.isChecked() else None)
-        if not self.preview.isChecked():
-            renderer.banner.setText('编辑模式 · 不运行设备；选择交互预览后可切换离线示例状态')
+        if self.simulation.currentData() is None or not self.preview.isChecked():
+            if wanted:
+                renderer.setDesignExamples(True)
+            else:
+                renderer.banner.setText('编辑模式 · 无设计示例 · 不运行设备')
+
+    def syncExamples(self, enabled):
+        self.examples.blockSignals(True)
+        self.examples.setChecked(enabled)
+        self.examples.blockSignals(False)
+
+    def changeExamples(self, enabled):
+        try:
+            self.w.renderer.setDesignExamples(enabled)
+            if enabled:
+                self.simulation.blockSignals(True)
+                self.simulation.setCurrentIndex(0)
+                self.simulation.blockSignals(False)
+        except ValueError as error:
+            self.w.message.setText(str(error))
+            self.examples.blockSignals(True)
+            self.examples.setChecked(False)
+            self.examples.blockSignals(False)
 
     def _cellValue(self, row, column):
         widget = self.extra.cellWidget(row, column)
@@ -376,18 +425,22 @@ class EditingTools(QObject):
             self.selected = None
             if self.w.pageId:
                 self.fields['columns'].setValue(self.w.store.snapshot().pages[self.w.pageId].layout.columns)
-            self.title.setText('未选择控件 · 可调整页面列数')
+            self.title.setText('页面属性 · 可调整页面列数')
+            self.propertyGroups.select(None)
             self._loadedPage = self.w.pageId
             self._loadedFields = self._fieldState()
             return
-        self.title.setText(f'{component.type} · {component.componentId[:8]}')
+        from .palette import TITLES
+        self.propertyGroups.select(component.type)
+        self.title.setText(f'{TITLES[component.type]} · {component.componentId[:8]}')
         source = self.w.store.snapshot().dataSources.get(next(iter(component.bindings.values()), ''))
         if source:
             comparable = source.model_dump(exclude={'resultScopeId'})
             index = next((i for i, choice in enumerate(self.choices)
                           if choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
             self.binding.setCurrentIndex(index)
-            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId) + '.' + str(source.port))
+            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId)[:16] + '.' + str(source.port))
+            self.title.setToolTip(str(source.nodeId or source.workflowId) + '.' + str(source.port))
             self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
             self.fields[name].setText(getattr(component.props, name))
@@ -436,8 +489,10 @@ class EditingTools(QObject):
             return
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
         props = item.props.model_dump()
-        props.update({key: self.fields[key].text() for key in ['title', 'text', 'emptyText', 'unit']})
-        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize', 'fontSize']})
+        from .property_panel import CONTENT
+        applicable = CONTENT[item.type] | {'fontSize'}
+        props.update({key: self.fields[key].text() for key in ['title', 'text', 'emptyText', 'unit'] if key in applicable})
+        props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize', 'fontSize'] if key in applicable})
         props.update({key: field.currentData() for key, field in self.appearance.items()})
         rows = [[self._cellValue(r, c) for c in range(4)]
                 for r in range(self.extra.rowCount())]
@@ -456,7 +511,7 @@ class EditingTools(QObject):
                 resultScopeId=self.actionScope.currentData() if mode in ('detail', 'freeze') else None)
             actions = {'clicked': action} if action else {}
         self.commands().update(self.w.pageId, self.selected, props=Props(**props), layout=layout,
-            actions=actions, columns=columns)
+            actions=actions, columns=columns if item.type == 'container' else None)
         self._loadedFields = self._fieldState()
 
     def bindChoice(self, index, key):
@@ -586,7 +641,7 @@ class EditingTools(QObject):
             self.w.message.setText('图片已复制为声明资源；下一次明确调试使用新快照')
 
     def eventFilter(self, obj, event):
-        if self.preview.isChecked():
+        if self.w.closed or not isValid(self.preview) or self.preview.isChecked():
             return False
         kind = event.type()
         if kind in (QEvent.DragEnter, QEvent.DragMove) and event.mimeData().hasFormat(MIME):

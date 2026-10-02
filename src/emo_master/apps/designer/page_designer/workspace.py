@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QListWidget, QPushButton, QInputDialog,
-    QLabel, QMessageBox, QSplitter, QTabWidget, QToolButton, QMenu,
+    QLabel, QMessageBox, QSplitter, QTabWidget, QToolButton, QMenu, QToolBar,
 )
 from PySide2.QtCore import Qt
 from shiboken2 import isValid
@@ -100,8 +100,9 @@ class PageWorkspace(QWidget):
         self.centerPanel.setMinimumWidth(280)
         self.centerLayout = QVBoxLayout(self.centerPanel)
         self.centerLayout.setContentsMargins(0, 0, 0, 0)
-        self.toolbar = QHBoxLayout()
-        self.centerLayout.addLayout(self.toolbar)
+        self.toolbar = QToolBar()
+        self.toolbar.setMovable(False)
+        self.centerLayout.addWidget(self.toolbar)
         for title, index in [('组件栏', 0), ('属性栏', 2)]:
             button = QPushButton(title)
             button.clicked.connect(lambda _checked=False, i=index: self.togglePanel(i))
@@ -109,6 +110,7 @@ class PageWorkspace(QWidget):
         self.splitter.addWidget(self.centerPanel)
         self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
+        self.renderer.setEditorHost()
         self.centerLayout.addWidget(self.renderer, 1)
         self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
         self.message.setWordWrap(True)
@@ -116,6 +118,19 @@ class PageWorkspace(QWidget):
         self.observation = QLabel('页面只观察明确选择的任务；打开、切页和关闭不会启动检测')
         self.observation.setWordWrap(True)
         sidebar.addWidget(self.observation)
+        self.details = QWidget()
+        self.detailsLayout = QVBoxLayout(self.details)
+        self.detailsLayout.setContentsMargins(0, 0, 0, 0)
+        self.detailsLayout.addWidget(self.observation)
+        for widget in (self.renderer.status, self.renderer.jobStatus, self.renderer.identity,
+                       self.renderer.modeLabel, self.renderer.resumeButton):
+            self.detailsLayout.addWidget(widget)
+        self.centerLayout.addWidget(self.details)
+        self.details.hide()
+        detailsButton = QPushButton('任务详情')
+        detailsButton.setCheckable(True)
+        detailsButton.toggled.connect(self.details.setVisible)
+        self.toolbar.addWidget(detailsButton)
         from .tools import EditingTools
         self.tools = EditingTools(self, sidebar)
         self.splitter.setStretchFactor(1, 1)

@@ -292,8 +292,8 @@ class SourceBoundaries(unittest.TestCase):
         for forbidden in ("pip install", "setup-python", "upload-artifact", "pytest", "workflow_dispatch"):
             self.assertNotIn(forbidden, workflow)
         self.assertIn("github.run_attempt == 1", workflow)
-        self.assertIn("255ce58de8a9464f853ab563612e21f369331a95", workflow)
-        self.assertIn("diagnostic: read-only WPR metadata preflight bb2756e4", workflow)
+        self.assertIn("91b2647a78b6e1e59faf5a0d63f7eb41bb55dd26", workflow)
+        self.assertIn("fix: preserve WPR profile bytes; read-only metadata 6ca308d1", workflow)
         self.assertIn("if ($owned)", workflow)
         self.assertEqual(workflow.count("Remove-Item"), 1)
 
@@ -316,6 +316,107 @@ class SourceBoundaries(unittest.TestCase):
         for invalid in (SECRET, 'WPR_METADATA {"phase":"' + SECRET + '"}',
                         "Traceback (most recent call last):", "::warning::" + SECRET):
             self.assertIsNone(re.fullmatch(pattern, invalid))
+
+    def test_windows_checkout_preserves_profile_bytes(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            profile = root / "scripts/windows_commit_trace.wprp"
+            profile.parent.mkdir()
+            original = (REPO / "scripts/windows_commit_trace.wprp").read_bytes()
+            profile.write_bytes(original)
+            attributes = root / ".gitattributes"
+            configured = (REPO / ".gitattributes").read_bytes()
+            self.assertIn(b"scripts/windows_commit_trace.wprp text eol=lf", configured)
+            empty_config = root / "empty-git-config"
+            empty_config.write_bytes(b"")
+            git_env = {key: value for key, value in os.environ.items() if not key.startswith("GIT_")}
+            git_env.update(GIT_ATTR_NOSYSTEM="1", GIT_CONFIG_NOSYSTEM="1", GIT_CONFIG_GLOBAL=str(empty_config))
+            def git(*args):
+                return subprocess.run(["git", "-C", str(root), "-c", "core.attributesFile=" + str(empty_config), *args],
+                                      env=git_env, capture_output=True, check=True, timeout=15)
+            git("init")
+            git("-c", "core.autocrlf=false", "add", "scripts/windows_commit_trace.wprp")
+            # Red control: without a path rule, Windows checkout changes bytes.
+            red = root / "red"
+            red.mkdir()
+            git("-c", "core.autocrlf=true", "checkout-index", "--prefix=" + red.as_posix() + "/", "--", "scripts/windows_commit_trace.wprp")
+            changed = (red / "scripts/windows_commit_trace.wprp").read_bytes()
+            self.assertNotEqual(changed, original)
+            self.assertIn(b"\r\n", changed)
+            # Green: the narrow committed rule preserves the actual raw bytes.
+            attributes.write_bytes(configured)
+            green = root / "green"
+            green.mkdir()
+            git("-c", "core.autocrlf=true", "checkout-index", "--prefix=" + green.as_posix() + "/", "--", "scripts/windows_commit_trace.wprp")
+            self.assertEqual((green / "scripts/windows_commit_trace.wprp").read_bytes(), original)
+            self.assertEqual(hashlib.sha256(original).hexdigest(), probe.PROFILE_SHA256)
+
+    def test_safe_fixture_report_redacts_all_failure_routes(self):
+        import sys
+        from scripts.diagnostics import windows_wpr_fixture_report as report
+        result = report.FixedResult(sys.modules[__name__])
+        case = MetadataFixtures("test_exact_readonly_commands_and_fresh_instance")
+        for kind in (AssertionError, OSError, subprocess.TimeoutExpired, ImportError, ValueError, TypeError, RuntimeError):
+            result.addError(case, (kind, SECRET, None))
+        result.addFailure(case, (AssertionError, SECRET, None))
+        result.addSubTest(case, SECRET, (AssertionError, SECRET, None))
+        result.addSubTest(case, SECRET, (OSError, SECRET, None))
+        result.addSkip(case, SECRET)
+        for phase in ("setUpClass", "tearDownClass"):
+            holder = SimpleNamespace(description=phase + " (" + report.MODULE + ".NativeCounterFixtures)")
+            result.addError(holder, (OSError, SECRET, None))
+        rows, summary = result.records()
+        self.assertEqual({row["case_id"] for row in rows}, {1, 103})
+        self.assertEqual(summary["failures"], 2)
+        self.assertEqual(summary["errors"], 10)
+        self.assertEqual(summary["skipped"], 1)
+        self.assertEqual(summary["reason"], "fixtures_failed")
+        self.assertNotIn(SECRET, json.dumps([rows, summary]))
+        self.assertEqual({row["error"] for row in rows}, {
+            "ASSERTION", "OS_ERROR", "TIMEOUT", "IMPORT", "VALUE", "TYPE", "UNKNOWN", "NONE",
+        })
+
+    def test_safe_fixture_report_rejects_unmapped_case(self):
+        import sys
+        from scripts.diagnostics import windows_wpr_fixture_report as report
+        result = report.FixedResult(sys.modules[__name__])
+        result.addSuccess(unittest.FunctionTestCase(lambda: None))
+        result.addError(SimpleNamespace(description=SECRET), (RuntimeError, SECRET, None))
+        rows, summary = result.records()
+        self.assertEqual(rows, [{"case_id": 0, "outcome": "INVALID", "error": "UNKNOWN"}] * 2)
+        self.assertEqual(summary["reason"], "report_invalid")
+        self.assertEqual(summary["invalid"], 2)
+        self.assertNotIn(SECRET, json.dumps([rows, summary]))
+
+    def test_extracted_workflow_fixture_output_filter(self):
+        import sys
+        from scripts.diagnostics import windows_wpr_fixture_report as report
+        workflow = (REPO / ".github/workflows/runtime-wpr-metadata-preflight.yml").read_text()
+        pattern = re.search(r"\$fixturePattern = '([^']+)'", workflow).group(1)
+        summary_pattern = re.search(r"\$fixtureSummaryPattern = '([^']+)'", workflow).group(1)
+        result = report.FixedResult(sys.modules[__name__])
+        result.addFailure(MetadataFixtures("test_exact_readonly_commands_and_fresh_instance"), (AssertionError, SECRET, None))
+        result.addError(SimpleNamespace(description=SECRET), (RuntimeError, SECRET, None))
+        rows, summary = result.records()
+        for row in rows:
+            self.assertIsNotNone(re.fullmatch(pattern, "WPR_FIXTURE " + json.dumps(row, separators=(",", ":"))))
+        self.assertIsNotNone(re.fullmatch(summary_pattern, "WPR_FIXTURE_SUMMARY " + json.dumps(summary, separators=(",", ":"))))
+        for invalid in (SECRET, 'WPR_FIXTURE {"case_id":1,"outcome":"' + SECRET + '"}', "Traceback: " + SECRET,
+                        'WPR_FIXTURE {"case_id":999,"outcome":"PASS","error":"NONE"}'):
+            self.assertIsNone(re.fullmatch(pattern, invalid))
+            self.assertIsNone(re.fullmatch(summary_pattern, invalid))
+
+    def test_fixture_inventory_rejects_missing_duplicate_and_extra_cases(self):
+        import sys
+        from scripts.diagnostics import windows_wpr_fixture_report as report
+        module = sys.modules[__name__]
+        result = report.FixedResult(module)
+        def declared():
+            return [getattr(module, cls)(method) for _, cls, method in report.CASES]
+        report.validate_suite(unittest.TestSuite(declared()), result)
+        for cases in (declared()[:-1], declared() + declared()[:1], declared() + [unittest.FunctionTestCase(lambda: None)]):
+            with self.assertRaises(ValueError):
+                report.validate_suite(unittest.TestSuite(cases), result)
 
 
 class NativeCounterFixtures(unittest.TestCase):

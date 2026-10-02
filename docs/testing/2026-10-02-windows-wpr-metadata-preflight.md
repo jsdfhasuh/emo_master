@@ -73,8 +73,52 @@ success, fixed-capacity overflow, unrelated errors with misleading output
 parameters, command failures/timeouts, output rejection, private cleanup, and
 the exact command/source/workflow boundaries. They do not run the project suite.
 
-The workflow requires the exact branch, changed workflow path, parent
-`255ce58de8a9464f853ab563612e21f369331a95`, first attempt, and commit subject
-`diagnostic: read-only WPR metadata preflight bb2756e4`. Preparation and offline
-verification do not publish or run it. Publication follows terminal normal CI
-and an independent review; it does not renew capture permission.
+The revised workflow requires the exact branch, changed workflow path, parent
+`91b2647a78b6e1e59faf5a0d63f7eb41bb55dd26`, first attempt, and commit subject
+`fix: preserve WPR profile bytes; read-only metadata 6ca308d1`. Preparation and
+offline verification do not publish or run it. Publication follows terminal
+normal CI and an independent review; it does not renew capture permission.
+
+## Windows checkout portability and bounded fixture reporting
+
+The first read-only run at `91b2647` stopped in `offline_fixtures` with exit 1,
+before native helper compilation or any WPR/API observation. The private fixture
+details were removed, so the failing case and actual cause cannot be recovered.
+Separately, an offline Git checkout with `core.autocrlf=true` reproducibly changes
+the original profile's 28 LF endings to CRLF and fails its byte-identity fixture.
+This is a confirmed portability defect, not proof of that run's exact failure.
+
+A single path-specific `.gitattributes` rule now preserves LF on checkout. The
+profile's Git blob, actual checked-out bytes, and required SHA-256 stay identical;
+the check does not normalize or silently accept different bytes. A controlled
+temporary repository tests the failing checkout without the rule and passing
+checkout with it. No global/local Git setting is changed.
+
+The new independent `windows_wpr_fixture_report` entry point imports the fixture
+module inside private stdout/stderr redirection. Its fixed registry maps the
+original 24 cases to IDs 1–24 and five new regression cases to 25–29. The explicit
+mapping is in that module's `CASES`; ID 21 checks profile bytes, ID 24 checks the
+fake native counter, and ID 25 checks LF preservation. Class setup/teardown IDs
+are 101 (metadata), 102 (source boundaries), and 103 (native stub). ID 900 marks
+bootstrap/import/loader failure; ID 0 marks an unrecognized case and is invalid.
+Before running, the discovered inventory must match the registry exactly once.
+
+Reports contain only fixed numeric IDs, `PASS`/`FAIL`/`ERROR`/`SKIP`/`INVALID`, and
+the fixed error categories `NONE`, `ASSERTION`, `OS_ERROR`, `TIMEOUT`, `IMPORT`,
+`VALUE`, `TYPE`, or `UNKNOWN`. They never format exception objects, traceback
+text, test names, subtest parameters, or skip reasons. Setup, teardown, cleanup,
+and subtest failures map to the declared test or class ID. The summary preserves
+test, failure, error, skip, and invalid counts. Unknown/missing/duplicate cases
+cannot pass. The workflow validates every line before printing any, separately
+rejects empty/malformed reports as `fixture_report_invalid`, and requires both
+a successful process and an `ok` summary before continuing. Raw output is deleted
+with the owned private directory.
+
+The Linux offline suite passes on available Python 3.10, 3.12, and 3.13. The exact
+failed runner image's [published inventory](https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md)
+lists default Python 3.12.10 and GCC
+15.2.0; actual executable selection, Windows DLL resolution, and MSVC compilation
+remain unverified. A discovered `g++` does not itself establish a working native
+stub toolchain. Failures or skips there now identify the bounded native case/class
+instead of exposing compiler paths or error output. No package is installed to
+repair missing tools.

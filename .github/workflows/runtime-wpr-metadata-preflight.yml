@@ -9,15 +9,15 @@ permissions:
   contents: read
 
 concurrency:
-  group: readonly-wpr-metadata-bb2756e4
+  group: readonly-wpr-metadata-lf-6ca308d1
   cancel-in-progress: false
 
 jobs:
   metadata:
     if: >-
       github.run_attempt == 1 &&
-      github.event.before == '255ce58de8a9464f853ab563612e21f369331a95' &&
-      github.event.head_commit.message == 'diagnostic: read-only WPR metadata preflight bb2756e4'
+      github.event.before == '91b2647a78b6e1e59faf5a0d63f7eb41bb55dd26' &&
+      github.event.head_commit.message == 'fix: preserve WPR profile bytes; read-only metadata 6ca308d1'
     runs-on: windows-latest
     timeout-minutes: 10
     steps:
@@ -40,10 +40,23 @@ jobs:
             New-Item -ItemType Directory -Path $root -ErrorAction Stop | Out-Null
             $owned = $true
             # Existing runner Python and compiler only. No package installation.
-            $phase = 'offline_fixtures'; $reason = 'offline_fixtures_failed'
-            python -m unittest scripts.diagnostics.windows_wpr_metadata_preflight_fixtures -q *> (Join-Path $root 'fixtures.private')
+            $phase = 'offline_fixtures'; $reason = 'fixture_report_invalid'
+            $fixturePublic = Join-Path $root 'fixture-public.private'
+            python -m scripts.diagnostics.windows_wpr_fixture_report $root > $fixturePublic 2> (Join-Path $root 'fixture-launch.private')
             $nativeExit = [long]$LASTEXITCODE -band 0xffffffffL
-            if ($nativeExit -ne 0) { throw 'fixtures' }
+            if ((Get-Item -LiteralPath $fixturePublic).Length -gt 32768) { throw 'report' }
+            $fixtureLines = @(Get-Content -LiteralPath $fixturePublic)
+            if ($fixtureLines.Count -lt 1 -or $fixtureLines.Count -gt 129) { throw 'report' }
+            $fixturePattern = '^WPR_FIXTURE \{"case_id":(?:0|[1-9]|1[0-9]|2[0-9]|10[1-3]|900),"outcome":"(?:PASS|FAIL|ERROR|SKIP|INVALID)","error":"(?:NONE|ASSERTION|OS_ERROR|TIMEOUT|IMPORT|VALUE|TYPE|UNKNOWN)"\}$'
+            $fixtureSummaryPattern = '^WPR_FIXTURE_SUMMARY \{"phase":"summary","reason":"(?:ok|fixtures_failed|report_invalid)","tests_run":[0-9]{1,3},"failures":[0-9]{1,3},"errors":[0-9]{1,3},"skipped":[0-9]{1,3},"invalid":[0-9]{1,3}\}$'
+            if ($fixtureLines[-1] -cnotmatch $fixtureSummaryPattern) { throw 'report' }
+            for ($i = 0; $i -lt $fixtureLines.Count - 1; $i++) {
+              if ($fixtureLines[$i] -cnotmatch $fixturePattern) { throw 'report' }
+            }
+            foreach ($line in $fixtureLines) { Write-Output $line }
+            $reason = 'offline_fixtures_failed'
+            $fixtureSummary = $fixtureLines[-1].Substring('WPR_FIXTURE_SUMMARY '.Length) | ConvertFrom-Json
+            if ($nativeExit -ne 0 -or $fixtureSummary.reason -ne 'ok') { throw 'fixtures' }
             $phase = 'compiler_discovery'; $reason = 'compiler_discovery_failed'; $nativeExit = $null
             $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
             if (!(Test-Path -LiteralPath $vswhere)) { throw 'compiler' }

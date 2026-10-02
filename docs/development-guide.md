@@ -152,6 +152,32 @@ python scripts/dev.py run-designer
 
 PowerShell 使用 `$env:EMO_RUNTIME_TARGET = "..."`；CMD 对应写法为 `set "EMO_RUNTIME_TARGET=..."`，不能混用。本页没有提供跨机一键部署：当前入口没有 `--host` / `--port` 命令行解析，gRPC 使用非 TLS 连接。改变监听、认证、路径可达性等要求见 [部署限制](deployment-guide.md)。
 
+## 流程画布自动整理（2026-10-02）
+
+源码启动后，在当前流程点击工具栏“自动布局”或“编辑 → 自动布局”。
+它按实际连线将上游放左、下游放右，分支上下展开；未连接节点放在下方。
+整次整理可用“撤销项目编辑 / 重做项目编辑”（Ctrl+Z / Ctrl+Shift+Z）恢复。
+保存项目后重新打开，节点位置保留；加载、接线及运行不会自动重排节点。
+
+正式连线采用圆角折线，拖动节点时更新关联线，松开后全图重新避障。
+如果手动叠放节点封住端口通道，会显示橙色虚线；悬停查看受阻说明，
+移动节点或再次自动布局可恢复正常连线。复杂图仍可能有线线交叉。
+全部端口保留，布局不改变连接关系、执行语义或页面绑定。
+
+可重现真实 Designer 整理前后截图、保存重开和 40 节点测量：
+
+```powershell
+$env:QT_QPA_PLATFORM = 'windows'
+& "$env:USERPROFILE\.conda\envs\emo_master\python.exe" scripts/validate_flow_layout.py --output "manual_test_workspace/flow-layout-$(Get-Date -Format yyyyMMdd-HHmmss)"
+```
+
+该脚本打开并关闭专用测试窗口，使用正式算子清单中的端口及临时项目，
+不启动 Runtime、YOLO 推理或设备。输出路径必须尚不存在，以保留前次证据。
+生成 `before.png`、`after.png`、`project/project.json` 和带 HEAD、dirty、源码 SHA-256
+及逐轮耗时的 `validation.json`。`before.png` 为旧网格位置配新连线样式，
+不是旧版本曲线截图。完整说明及检查结果见
+[流程整理验证记录](testing/flow-auto-layout-2026-10-02.md)。
+
 ## 5. 日常检查与 protobuf 更新
 
 在第 2 节准备好的终端中运行：

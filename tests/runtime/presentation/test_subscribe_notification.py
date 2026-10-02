@@ -158,13 +158,19 @@ def retire(h, thread, probe=None):
 
 def observeFiniteWait(monkeypatch, store, entered):
     original = store.changed.wait
+    originalWaitFor = store.changed.wait_for
 
     def observe(timeout=None):
-        assert timeout == 0.02
         entered.set()  # Called with the actual shared lock held.
         return original(timeout)
 
+    def observeWaitFor(predicate, timeout=None):
+        # This is the total budget; internal waits may use a smaller remainder.
+        assert timeout == 0.02
+        return originalWaitFor(predicate, timeout=timeout)
+
     monkeypatch.setattr(store.changed, "wait", observe)
+    monkeypatch.setattr(store.changed, "wait_for", observeWaitFor)
 
 def testPublicationBeforeWaitEntryCannotLoseWake(monkeypatch):
     h = harness(monkeypatch)
@@ -264,6 +270,40 @@ def testRealTimeoutReturnsFalseWithoutChangingStore():
     finally:
         thread.join(GUARD)
         assert not thread.is_alive()
+
+
+def testFiniteWaitObserverAllowsRemainingDeadline(monkeypatch):
+    store = ResultStore()
+    entered = threading.Event()
+    originalWait = store.changed.wait
+    originalWaitFor = store.changed.wait_for
+    original = originalWaitFor.__func__
+    originalClock = original.__globals__["_time"]
+    # Model a timeout whose clock has advanced only 16 ms. Unchanged stdlib
+    # wait_for must pass the remaining 4 ms to a second real finite wait.
+    clock = iter([0.0, 0.016, 0.02])
+    localWaitFor = FunctionType(original.__code__, dict(original.__globals__, _time=clock.__next__),
+                               original.__name__, original.__defaults__, original.__closure__)
+    requested = []
+    returned = []
+
+    def recordWait(timeout=None):
+        assert entered.is_set()
+        requested.append(timeout)
+        result = originalWait(timeout)
+        returned.append(result)
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(store.changed, "wait_for", localWaitFor.__get__(store.changed))
+        patch.setattr(store.changed, "wait", recordWait)
+        observeFiniteWait(patch, store, entered)
+        assert store.waitForChange(0) is False
+    assert requested == [0.02, 0.02 - 0.016]
+    assert returned == [False, False]
+    assert store.cursor == 0 and not store.events and not store.history
+    assert store.changed.wait == originalWait and store.changed.wait_for == originalWaitFor
+    assert original.__globals__["_time"] is originalClock
 
 
 @pytest.mark.parametrize("when", ["before_wait", "idle", "cooldown", "published"])

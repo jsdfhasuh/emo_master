@@ -1,0 +1,90 @@
+name: One read-only WPR metadata preflight (NO CAPTURE)
+
+on:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths: [.github/workflows/runtime-wpr-metadata-preflight.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: readonly-wpr-metadata-bb2756e4
+  cancel-in-progress: false
+
+jobs:
+  metadata:
+    if: >-
+      github.run_attempt == 1 &&
+      github.event.before == '255ce58de8a9464f853ab563612e21f369331a95' &&
+      github.event.head_commit.message == 'diagnostic: read-only WPR metadata preflight bb2756e4'
+    runs-on: windows-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 1
+      - name: Inspect existing WPR metadata without allocating a session
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = $null
+          $owned = $false
+          $phase = 'private_directory'
+          $reason = 'private_directory_failed'
+          $nativeExit = $null
+          $result = 2
+          try {
+            $root = Join-Path $env:RUNNER_TEMP ('r3-wpr-metadata-' + [guid]::NewGuid().ToString('N'))
+            New-Item -ItemType Directory -Path $root -ErrorAction Stop | Out-Null
+            $owned = $true
+            # Existing runner Python and compiler only. No package installation.
+            $phase = 'offline_fixtures'; $reason = 'offline_fixtures_failed'
+            python -m unittest scripts.diagnostics.windows_wpr_metadata_preflight_fixtures -q *> (Join-Path $root 'fixtures.private')
+            $nativeExit = [long]$LASTEXITCODE -band 0xffffffffL
+            if ($nativeExit -ne 0) { throw 'fixtures' }
+            $phase = 'compiler_discovery'; $reason = 'compiler_discovery_failed'; $nativeExit = $null
+            $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+            if (!(Test-Path -LiteralPath $vswhere)) { throw 'compiler' }
+            $installation = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2> (Join-Path $root 'discovery.private')
+            $nativeExit = [long]$LASTEXITCODE -band 0xffffffffL
+            if ($nativeExit -ne 0 -or !$installation -or $installation.Count -gt 1) { throw 'compiler' }
+            $vcvars = Join-Path $installation 'VC\Auxiliary\Build\vcvars64.bat'
+            if (!(Test-Path -LiteralPath $vcvars)) { throw 'compiler' }
+            $source = Join-Path $env:GITHUB_WORKSPACE 'scripts\windows_wpr_session_count.cpp'
+            $helper = Join-Path $root 'session-count.exe'
+            $object = Join-Path $root 'session-count.obj'
+            $phase = 'compiler_build'; $reason = 'compiler_build_failed'; $nativeExit = $null
+            & cmd.exe /d /c "call `"$vcvars`" >nul 2>&1 && cl.exe /nologo /std:c++17 /EHsc /W4 /WX /O2 `"$source`" /Fo`"$object`" /Fe`"$helper`" advapi32.lib" *> (Join-Path $root 'compiler.private')
+            $nativeExit = [long]$LASTEXITCODE -band 0xffffffffL
+            if ($nativeExit -ne 0 -or !(Test-Path -LiteralPath $helper)) { throw 'compiler' }
+            $phase = 'metadata'; $reason = 'metadata_failed'; $nativeExit = $null
+            $public = Join-Path $root 'public.private'
+            python scripts/r3_windows_wpr_metadata_preflight.py $root > $public 2> (Join-Path $root 'python-error.private')
+            $nativeExit = [long]$LASTEXITCODE -band 0xffffffffL
+            # Defense in depth: validate the entire candidate output before any
+            # line reaches Actions. Never print a process/error/file verbatim.
+            if ((Get-Item -LiteralPath $public).Length -gt 16384) { throw 'output' }
+            $lines = @(Get-Content -LiteralPath $public)
+            if ($lines.Count -lt 1 -or $lines.Count -gt 12) { throw 'output' }
+            $number = '(?:null|0|[1-9][0-9]{0,9})'
+            $phases = '(?:environment|private_directory|profile_identity|profiles|profile_details|instance_status|session_count|cleanup|complete)'
+            $reasons = '(?:ok|wrong_environment|private_directory_failed|profile_changed|capability_missing|command_failed|command_timeout|output_limit|instance_absent|status_unexpected|native_output_invalid|more_data|api_error|capacity_reached|count_inconsistent|cleanup_failed|metadata_inconclusive|unexpected_failure)'
+            $pattern = '^WPR_METADATA \{"phase":"' + $phases + '","reason":"' + $reasons + '","native_exit":' + $number + ',"api_status":' + $number + ',"returned_count":' + $number + ',"count_validity":"(?:API_REPORTED|UNKNOWN)","capacity":(?:null|64),"capacity_reached":(?:null|0|1),"capacity_exceeded":(?:null|0|1)\}$'
+            foreach ($line in $lines) { if ($line -cnotmatch $pattern) { throw 'output' } }
+            foreach ($line in $lines) { Write-Output $line }
+            if ($nativeExit -ne 0) { throw 'metadata' }
+            $result = 0
+            $phase = 'complete'; $reason = 'ok'
+          } catch {
+            # Only constant phase/reason and numeric status, never $_ or output.
+            $result = 2
+          } finally {
+            if ($owned) {
+              try { Remove-Item -LiteralPath $root -Recurse -Force -ErrorAction Stop }
+              catch { $phase = 'cleanup'; $reason = 'cleanup_failed'; $nativeExit = $null; $result = 2 }
+            }
+          }
+          Write-Output ('WPR_METADATA_WORKFLOW ' + ([ordered]@{phase=$phase; reason=$reason; native_exit=$nativeExit} | ConvertTo-Json -Compress))
+          exit $result

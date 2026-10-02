@@ -1,0 +1,81 @@
+........................................................................ [ 40%]
+.........F.............................................................. [ 80%]
+..................................                                       [100%]
+================================== FAILURES ===================================
+________________________ testCompleteDesignerUserPath _________________________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x18e96c28b90) at 0x0000018E97678DB0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-684/testCompleteDesignerUserPath0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000018E9C13B040>
+
+    def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+        out = Path(os.environ['P4_SCREEN_DIR']) if os.environ.get('P4_SCREEN_DIR') else None
+        records = {'platform': QApplication.platformName(), 'steps': [], 'results': [], 'incremental_reload_ms': []}
+        def shot(name):
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            QApplication.processEvents()
+            if out:
+                assert window.grab().save(str(out/(name+'.png')))
+            records['steps'].append(name)
+        root = tmp_path/'old-project'
+        root.mkdir()
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        doc = sampleProject(root)
+        raw = doc.model_dump()
+        raw['schemaVersion'] = '2.1'
+        raw.pop('presentation')
+        raw.pop('resources')
+        for node in raw['workflows']['main']['nodes']:
+            manifest = runtime.pluginScanResult.activeOperators.get(node.get('operatorId'))
+            if manifest:
+                for key in ('inputPorts', 'outputPorts'):
+                    node[key] = {k: normalizePortType(v) for k, v in getattr(manifest.manifest, key).items()}
+        raw['workflows']['main']['nodes'][1]['params']['imagePath'] = str(root/'input.png')
+        saveProject(root, raw)
+        window = MainWindow(client)
+        window.resize(1500, 980)
+        preview = window.pageCoordinator.preview
+        try:
+            assert window.loadProjectDirectory(str(root))
+            window.show()
+            waitFor(lambda: window.operatorCatalogController.state == 'ready')
+            assert window.saveProjectToDirectory(str(root))
+            assert json.loads((root/'project.json').read_text())['schemaVersion'] == '2.1'
+            next(a for a in window.mainToolbar.actions() if a.text() == 'ҳ�����').trigger()
+            editor = window.pageCoordinator.editor
+            monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('��������', True))
+            click(editor, '�½�ҳ��')
+            overview = editor.pageId
+            image = add(editor, 'image')
+            shot('01-component-drop')
+            number = add(editor, 'number')
+            text = add(editor, 'text')
+            editor.tools.select(text)
+            editor.tools.fields['text'].setText('����ͼ�� �� ��ǰ�ݸ� �� ��ʽ Blob / Count ���')
+            click(editor, 'Ӧ������ / ����')
+            monkeypatch.setattr(QInputDialog, 'getItem', lambda parent, title, label, items, *a, **k: (items[0], True))
+            for key, node, port in [(image, 'blob', 'overlay'), (number, 'count', 'count')]:
+                index = next(i for i, choice in enumerate(editor.tools.choices) if choice.source.nodeId == node and choice.source.port == port)
+                widget = editor.renderer.widgets[overview][key][1]
+                assert drop(widget, {'choice': index}, widget.rect().center()), editor.message.text()
+            shot('02-output-drop')
+            navigation = add(editor, 'navigation_button')
+>           click(editor, '����ҳ��')
+
+tests\ui\page_designer\test_user_path.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x18e9e16a8c0) at 0x0000018E9CAF5940>
+text = '����ҳ��'
+
+    def click(root, text):
+>       button = next(w for w in root.findChildren(QPushButton) if w.text() == text)
+E       StopIteration
+
+tests\ui\page_designer\test_user_path.py:24: StopIteration
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_user_path.py::testCompleteDesignerUserPath
+1 failed, 177 passed in 189.45s (0:03:09)

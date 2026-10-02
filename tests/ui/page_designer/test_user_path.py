@@ -8,7 +8,7 @@ import time
 from PySide2.QtCore import Qt, QPointF, QCoreApplication, QEvent
 from PySide2.QtGui import QDragEnterEvent, QDropEvent
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QApplication, QPushButton, QInputDialog, QMessageBox, QFileDialog
+from PySide2.QtWidgets import QApplication, QPushButton, QInputDialog, QMessageBox, QFileDialog, QMenu
 
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -21,8 +21,16 @@ from test_preview import waitFor
 
 
 def click(root, text):
-    button = next(w for w in root.findChildren(QPushButton) if w.text() == text)
-    QTest.mouseClick(button, Qt.LeftButton)
+    button = next((w for w in root.findChildren(QPushButton) if w.text() == text and not w.isHidden()), None)
+    if button is not None:
+        QTest.mouseClick(button, Qt.LeftButton)
+    else:
+        # Page commands and explicit task operations now live in native menus.
+        menu, action = next((menu, action) for menu in root.findChildren(QMenu)
+                            for action in menu.actions() if action.text() == text)
+        menu.popup(root.mapToGlobal(root.rect().center()))
+        QApplication.processEvents()
+        QTest.mouseClick(menu, Qt.LeftButton, pos=menu.actionGeometry(action).center())
     QApplication.processEvents()
 
 
@@ -130,8 +138,8 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert window.saveProjectToDirectory(str(copy))
         assert json.loads((copy/'project.json').read_text())['presentation'] == before
         shot('03-saved-reopened')
-        click(editor, '切换为模拟预览')
-        assert '模拟' in editor.renderer.banner.text()
+        click(editor, '交互预览')
+        assert '设计示例 · 非检测结果' in editor.renderer.banner.text()
         assert preview.session is None
         click(editor, '明确开始隔离草稿调试')
         waitFor(lambda: preview.hub is not None or preview.error is not None)

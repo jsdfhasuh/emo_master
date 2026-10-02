@@ -82,3 +82,67 @@ def testTypePropertiesPreserveHiddenValuesAndSharedSample(designer):  # noqa: F8
     assert widgets[image1][1].image.cacheKey() == widgets[image2][1].image.cacheKey()
     e.tools.examples.setChecked(False)
     assert e.renderer.editorResourceUsage()['design_image_bytes'] == 0
+
+
+def testPagePropertiesAndLongNamesRemainInSidePanel(designer):  # noqa: F811
+    import pytest
+    c, e, key = setupPage(designer)
+    e.tools.select(None)
+    e.tools.pageName.setText('页面属性修改')
+    e.tools.fields['columns'].setValue(2)
+    history = len(c.session._undo)
+    e.tools.commitPending()
+    assert len(c.session._undo) == history + 1
+    assert e.store.snapshot().pages[e.pageId].name == '页面属性修改'
+    e.tools.select(key)
+    e.tools.fields['title'].setText('很长的标题ABC' * 80)
+    e.tools.commitPending()
+    designer.resize(1280, 720)
+    e.refresh()
+    QApplication.processEvents()
+    assert e.width() <= designer.width()
+    for field in e.tools.fields.values():
+        if field.isVisibleTo(e.propertyScroll.widget()):
+            assert field.width() <= e.propertyScroll.viewport().width()
+    assert e.propertyScroll.horizontalScrollBar().maximum() == 0
+    e.tools.select(None)
+    before = c.session.payload()
+    e.tools.pageName.clear()
+    with pytest.raises(ValueError):
+        e.tools.commitPending()
+    assert c.session.payload() == before
+    assert QApplication.focusWidget() is e.tools.pageName
+    e.tools.pageName.setText('页面属性修改')
+
+
+def testLegacyOfflineExampleCannotSurviveRealUncapturedSession(designer):  # noqa: F811
+    from emo_master.clients.runtime.view_state import SessionView
+    _c, e, key = setupPage(designer, 'number')
+    e.tools.preview.setChecked(True)
+    e.tools.simulation.setCurrentIndex(e.tools.simulation.findData('OK'))
+    assert e.renderer.simulationState == 'OK'
+    for status in ('CONNECTING', 'CONNECTED', 'DISCONNECTED', 'ERROR'):
+        e.renderer.submit(SessionView(0, 0, '', '', status, '', {}, {}, {}))
+        assert e.renderer.simulationState is None
+        assert not e.renderer.designExamples
+        assert '模拟' not in e.renderer.widgets[e.pageId][key][1].text()
+        assert not e.renderer.displayed
+
+
+def testWorkerCannotClearDesignSamplesBeforeThreadGuard(designer):  # noqa: F811
+    import threading
+    from emo_master.clients.runtime.view_state import SessionView
+    _c, e, key = setupPage(designer, 'image')
+    errors = []
+    def worker():
+        try:
+            e.renderer.submit(SessionView(0, 0, '', '', 'CONNECTING', '', {}, {}, {}))
+        except RuntimeError as error:
+            errors.append(str(error))
+    thread = threading.Thread(target=worker)
+    thread.start()
+    thread.join(2)
+    assert not thread.is_alive()
+    assert errors == ['Qt presentation requires the GUI thread']
+    assert e.renderer.designExamples
+    assert not e.renderer.widgets[e.pageId][key][1].image.isNull()

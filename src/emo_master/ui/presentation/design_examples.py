@@ -22,12 +22,12 @@ def sampleImage():
 
 
 def populate(renderer):
-    from .renderer import ImageView
-    if renderer._designImage.isNull():
-        renderer._designImage = sampleImage()
+    from .renderer import ImageView, COLORS, appearanceStyle
     for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values():
         props = component.props
         if isinstance(widget, ImageView):
+            if renderer._designImage.isNull():
+                renderer._designImage = sampleImage()
             widget.setImage(renderer._designImage, '', '设计示例')
         elif isinstance(widget, CollectionView):
             columns = props.columns or [TableColumn(title='序号', fieldPath=['index']),
@@ -39,9 +39,11 @@ def populate(renderer):
                 for column in columns:
                     current = row
                     for part in column.fieldPath[:-1]:
+                        if not isinstance(current.get(part), dict):
+                            current[part] = {}
                         current = current.setdefault(part, {})
                     if column.fieldPath:
-                        current[column.fieldPath[-1]] = index + 1
+                        current.setdefault(column.fieldPath[-1], index + 1)
                 rows.append(row)
             widget.model.replace(rows, '')
             widget.message.setText('设计示例 · 3 行；真实表格按已配置列显示')
@@ -50,6 +52,7 @@ def populate(renderer):
         elif component.type == 'indicator':
             style = next(iter(props.indicatorStates.values()), None)
             widget.setText((style.text if style else '● OK') + ' · 示例')
+            widget.setStyleSheet(appearanceStyle(props) + 'color:' + COLORS[style.color if style else 'green'] + ';')
         elif component.type == 'runtime_status':
             widget.setText('设计示例 · 客户端连接状态')
         elif component.type == 'text' and (component.bindings or not props.text):
@@ -60,7 +63,7 @@ def populate(renderer):
 
 
 def clear(renderer):
-    from .renderer import ImageView
+    from .renderer import ImageView, appearanceStyle
     for rows in renderer.widgets.values():
         for component, widget in rows.values():
             if isinstance(widget, ImageView):
@@ -69,6 +72,9 @@ def clear(renderer):
                 widget.model.columns = component.props.columns
                 widget.clear('尚无集合')
             elif component.type != 'navigation_button':
+                widget.setStyleSheet(appearanceStyle(component.props))
                 widget.setText(component.props.text if component.type == 'text' and not component.bindings
                                else '已绑定 · 等待明确任务结果' if component.bindings else '未绑定')
     renderer._designImage = QImage()
+    renderer.banner.setText('编辑布局 · 无设计示例 · 等待明确选择任务')
+    renderer.identity.setText('尚无已显示结果')

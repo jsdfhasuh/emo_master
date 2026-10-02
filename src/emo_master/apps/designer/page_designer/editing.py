@@ -4,7 +4,7 @@ from uuid import uuid4
 
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, sourceType
-from emo_master.core.presentation.models import Component, DataSource, ResultScope, walkComponents
+from emo_master.core.presentation.models import Component, DataSource, ResultScope, Presentation, walkComponents
 from emo_master.apps.designer.state.presentation_store import _component
 
 
@@ -74,6 +74,10 @@ class PageCommands:
     def __init__(self, session, manifests):
         self.session = session
         self.manifests = manifests
+
+    def preview(self):
+        """Run the identical commands on an isolated, validated draft, without history."""
+        return PageCommands(_PreviewSession(self.session.document()), self.manifests)
 
     def children(self, p, pageId, parentId):
         if parentId is None:
@@ -164,3 +168,20 @@ class PageCommands:
         self.session.editPresentation(edit)
         from emo_master.core.presentation.capture_limits import normalCaptureLimits
         return normalCaptureLimits(self.session.presentation.snapshot())
+
+
+class _PreviewSession:
+    def __init__(self, document):
+        self._document = document.model_copy(deep=True)
+        self.presentation = self
+
+    def document(self):
+        return self._document.model_copy(deep=True)
+
+    def snapshot(self):
+        return self._document.presentation.model_copy(deep=True)
+
+    def editPresentation(self, edit):
+        proposed = self.snapshot()
+        edit(proposed)
+        self._document.presentation = Presentation.model_validate(proposed.model_dump())

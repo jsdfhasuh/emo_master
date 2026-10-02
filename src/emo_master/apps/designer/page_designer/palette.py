@@ -43,6 +43,9 @@ def paintSwatch(painter, rect, kind):
 
 
 class SwatchDelegate(QStyledItemDelegate):
+    def sizeHint(self, option, index):
+        return self.parent().gridSize() - QSize(4, 4)
+
     def paint(self, painter, option, index):
         painter.save()
         box = option.rect.adjusted(3, 3, -3, -3)
@@ -96,4 +99,7 @@ class Palette(QListWidget):
             paintSwatch(painter, QRect(0, 0, 120, 70), item.data(Qt.UserRole))
             painter.end()
             drag.setPixmap(pixmap)
-            drag.exec_(Qt.CopyAction)
+            try:
+                drag.exec_(Qt.CopyAction)
+            finally:
+                drag.deleteLater()

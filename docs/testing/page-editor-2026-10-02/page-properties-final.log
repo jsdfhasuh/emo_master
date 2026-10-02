@@ -1,0 +1,37 @@
+...F                                                                     [100%]
+================================== FAILURES ===================================
+_______________ testPagePropertiesAndLongNamesRemainInSidePanel _______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2e22add4400) at 0x000002E22C525FC0>
+
+    def testPagePropertiesAndLongNamesRemainInSidePanel(designer):  # noqa: F811
+        c, e, key = setupPage(designer)
+        e.tools.select(None)
+        e.tools.pageName.setText('ҳ�������޸�')
+        e.tools.fields['columns'].setValue(2)
+        history = len(c.session._undo)
+        e.tools.commitPending()
+        assert len(c.session._undo) == history + 1
+        assert e.store.snapshot().pages[e.pageId].name == 'ҳ�������޸�'
+        e.tools.select(key)
+        e.tools.fields['title'].setText('�ܳ��ı���ABC' * 80)
+        e.tools.commitPending()
+        designer.resize(1280, 720)
+        e.refresh()
+        QApplication.processEvents()
+        assert e.width() <= designer.width()
+        for field in e.tools.fields.values():
+            if field.isVisibleTo(e.propertyScroll.widget()):
+                assert field.width() <= e.propertyScroll.viewport().width()
+>       assert e.propertyScroll.horizontalScrollBar().maximum() == 0
+E       assert 4 == 0
+E        +  where 4 = <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x000002E22C537B40>()
+E        +    where <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x000002E22C537B40> = <PySide2.QtWidgets.QScrollBar(0x2e22ca301d0) at 0x000002E22C537B40>.maximum
+E        +      where <PySide2.QtWidgets.QScrollBar(0x2e22ca301d0) at 0x000002E22C537B40> = <built-in method horizontalScrollBar of PySide2.QtWidgets.QScrollArea object at 0x000002E22D9D6380>()
+E        +        where <built-in method horizontalScrollBar of PySide2.QtWidgets.QScrollArea object at 0x000002E22D9D6380> = <PySide2.QtWidgets.QScrollArea(0x2e22b596550) at 0x000002E22D9D6380>.horizontalScrollBar
+E        +          where <PySide2.QtWidgets.QScrollArea(0x2e22b596550) at 0x000002E22D9D6380> = <emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x2e22cb0a3b0) at 0x000002E22D9BE640>.propertyScroll
+
+tests\ui\page_designer\test_visual_editor.py:106: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_visual_editor.py::testPagePropertiesAndLongNamesRemainInSidePanel
+1 failed, 3 passed in 1.21s

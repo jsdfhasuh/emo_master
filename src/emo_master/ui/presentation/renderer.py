@@ -6,7 +6,7 @@ import math
 import time
 from types import MappingProxyType
 
-from PySide2.QtCore import Qt, QRect, Signal
+from PySide2.QtCore import Qt, QRect, Signal, QEvent
 from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
@@ -217,8 +217,16 @@ class RuntimePages(QWidget):
         self.setMinimumSize(0, 0)
         self.setStyleSheet(self.styleSheet().replace("font-family: 'Microsoft YaHei'; font-size: 13px; ", ''))
         self.fitButton.setText('适配编辑区')
+        if self.parentWidget():
+            self.parentWidget().installEventFilter(self)
+
+    def eventFilter(self, obj, event):
+        if self.editorHost and obj is self.parentWidget() and event.type() == QEvent.Resize:
+            self.fitToAvailableScreen(resize=False)
+        return super().eventFilter(obj, event)
 
     def setDesignExamples(self, enabled):
+        assertGuiThread()
         if enabled and (not self.editorHost or self.hub or self.captureCoverage is not None):
             raise ValueError('设计示例仅供未连接任务的编辑器使用')
         from . import design_examples
@@ -346,10 +354,16 @@ class RuntimePages(QWidget):
         self.pages[pageId] = scroll
 
     def _children(self, parent, components, grid, pageId):
-        layout = QGridLayout(parent)
+        from .editor_grid import EditorGridLayout
+        layout = (EditorGridLayout if self.editorHost else QGridLayout)(parent)
         layout.setSpacing(grid.spacing)
         if self.editorHost:
-            layout.setAlignment(Qt.AlignTop)
+            # A real stretch row keeps Qt's cellRect valid during native DnD.
+            # AlignTop on QGridLayout can leave zero-height cell geometry until
+            # a later activation when transient child widgets are inserted.
+            layout.setRowStretch(max((c.layout.row + c.layout.rowSpan for c in components), default=0), 1)
+            for row in range(max((c.layout.row + c.layout.rowSpan for c in components), default=0)):
+                layout.setRowMinimumHeight(row, 64)
         for column in range(grid.columns):
             layout.setColumnStretch(column, 1)
         for component in components:
@@ -368,6 +382,8 @@ class RuntimePages(QWidget):
                     card.layout().addWidget(QLabel(component.props.title or '容器 · 拖入组件'), 0, 0)
             else:
                 box = QVBoxLayout(card)
+                if self.editorHost:
+                    box.setContentsMargins(9, 28, 9, 9)
                 if component.props.title:
                     title = QLabel(component.props.title)
                     title.setTextFormat(Qt.PlainText)
@@ -398,7 +414,7 @@ class RuntimePages(QWidget):
                 box.addWidget(widget, 1)
                 if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
-                    note = ('来源: ' + str(source.port) if source else
+                    note = ('来源: ' + str(source.port)[:32] if source else
                             '来源缺失' if component.bindings else '未绑定 · 拖入流程输出')
                     badge = QLabel(note)
                     badge.setObjectName('bindingHint')
@@ -538,10 +554,15 @@ class RuntimePages(QWidget):
             self.submit(self.hub.session.readSnapshot())
 
     def submit(self, view):
-        self.setDesignExamples(False)
         assertGuiThread()
         if self.detached:
             return
+        self.setDesignExamples(False)
+        # A real session, including its initial empty/disconnected snapshot,
+        # retires legacy offline simulations even without a capture manifest.
+        if (self.editorHost or self.hub or self.captureCoverage is not None) and (
+                view.runtimeInstanceId != 'offline-simulation' or view.jobId != 'offline-simulation'):
+            self.simulationState = None
         self.lastView = view
         self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
         from emo_master.ui.presentation.job_status import jobStatusText

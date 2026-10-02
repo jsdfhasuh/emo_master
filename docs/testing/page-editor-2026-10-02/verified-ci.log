@@ -1,0 +1,170 @@
+All checks passed!
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:728: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 293 source files
+..................................................................s..... [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+..................................s..................................... [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 47%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 61%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 72%]
+..................................................................................................................... [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+........................................ssss............................ [ 91%]
+..........................s............................................. [ 93%]
+........................................................................ [ 96%]
+............................................F........................... [ 99%]
+............                                                             [100%]
+================================== FAILURES ===================================
+______ testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners _______
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1f329913360) at 0x000001F32A28D4A0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-704/testThousandNavigationsAndThir0')
+
+    def testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners(qtApp, tmp_path):
+        config = fivePageConfiguration()
+        assert sum(len(list(walkComponents(page.components))) for page in config.pages.values()) == 50
+        existingWidgets = set(qtApp.allWidgets())
+        existingWindows = set(qtApp.allWindows())
+        window = RuntimePages(config)
+        pixels = np.full((1080, 1920, 3), (17, 45, 203), np.uint8)
+        pixels.flags.writeable = False
+        view = resultView(image=pixels, capture=window.expectedCapture)
+        scope = view.scopes["root"]
+        result = scope.result.model_copy(update={"expectedSourceIds": ("image", "count", "decision", "rows"),
+            "sources": (*scope.result.sources,
+                ClosedSource(sourceId="image", state="AVAILABLE", image={"resourceId": "synthetic-image",
+                    "ownerResultKey": scope.result.identity.resultKey, "byteSize": 1, "sha256": "a" * 64,
+                    "mimeType": "image/png", "provenance": {"frameIdentity": "synthetic-frame",
+                        "coordinateSpaceId": "synthetic-space", "trust": "unknown"}}),
+                ClosedSource(sourceId="decision", state="AVAILABLE", valueJson="false"),
+                ClosedSource(sourceId="rows", state="AVAILABLE", valueJson='[{"value":0},{"value":2},{"value":3}]'))})
+        view = replace(view, scopes=MappingProxyType({"root": replace(scope, result=result)}))
+        # Qt's platform resources are initialized before measuring repeat ownership.
+        window.show()
+        drainDeletes(qtApp)
+        warmTimerBackend(qtApp)
+        warmMutexBackend()
+        baseline = nativeCounts(qtApp, phase="pre_fixture_baseline")
+        session = OwnedReadOnlyFixture(view, tmp_path / "owned-session.bin")
+        hub = DisplayHub(session)
+        window.hub = hub
+        hub.attach(window)
+        try:
+            # Warm every supported control and a second native window once.
+            for page in config.pageOrder:
+                QTest.mouseClick(window.buttons[page], Qt.LeftButton)
+                drainDeletes(qtApp)
+            floating = RuntimePages(config, hub=hub)
+            floating.show()
+            floating.close()
+            floating.deleteLater()
+            drainDeletes(qtApp)
+            assert not shiboken2.isValid(floating)
+            before = nativeCounts(qtApp, phase="warmed_fixture_baseline")
+            sessionThread = session.thread.native_id
+            handle = session.handle.fileno()
+            owners = (session.thread, sessionThread, session.handle, handle)
+            assertStableOwners(qtApp, before, session, owners, phase="stable_initial")
+            for index in range(1000):
+                oldPages = dict(window.pages)
+                target = config.pageOrder[index % 5]
+                QTest.mouseClick(window.buttons[target], Qt.LeftButton)
+                drainDeletes(qtApp)
+                assert window.currentPageId == target
+                assert len(window.pages) <= 2 and window.stack.count() <= 2
+                for key, old in oldPages.items():
+                    if key not in window.pages:
+                        assert not shiboken2.isValid(old)
+                rows = window.widgets[target]
+                image = rows[f"{target}-0"][1]
+                assert (image.image.width(), image.image.height()) == (1920, 1080)
+                assert image.image.pixelColor(500, 500).getRgb() == (203, 45, 17, 255)
+                assert rows[f"{target}-1"][1].text() == "2"
+                assert rows[f"{target}-3"][1].text() == "NG"
+                assert rows[f"{target}-5"][1].model.rowCount() == 2
+                for hidden, controls in window.widgets.items():
+                    if hidden != target:
+                        for _component, widget in controls.values():
+                            if isinstance(widget, ImageView):
+                                assert widget.image.isNull()
+                            elif isinstance(widget, CollectionView):
+                                assert widget.model.rowCount() == 0
+                if index % 100 == 99:
+>                   assertStableOwners(qtApp, before, session, owners, phase="navigation", index=index)
+
+tests\ui\presentation\test_retained_acceptance_lifecycle.py:312: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\presentation\test_retained_acceptance_lifecycle.py:187: in assertStableOwners
+    assertNoNewThreadsAtPhase(before, after, phase=phase, index=index)
+tests\ui\presentation\test_retained_acceptance_lifecycle.py:170: in assertNoNewThreadsAtPhase
+    return assertNoNewThreads(before, after)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+before = {'handles': 2549, 'native_threads': 63, 'native_thread_ids': frozenset({752, 776, 1628, 4728, 6668, 8568, ...}), 'python_threads': 17, ...}
+after = {'handles': 2549, 'native_threads': 65, 'native_thread_ids': frozenset({752, 776, 1628, 4728, 6668, 8568, ...}), 'python_threads': 17, ...}
+
+    def assertNoNewThreads(before, after):
+        # Background threads may retire, but their exits must not hide a new owner.
+        for key in ("native_thread_ids", "python_thread_objects"):
+>           assert after[key] <= before[key], (key, after[key] - before[key])
+E           AssertionError: ('native_thread_ids', frozenset({75616, 88712}))
+E           assert frozenset({75...8, 8568, ...}) <= frozenset({75...8, 8568, ...})
+E             
+E             Extra items in the left set:
+E             88712
+E             75616
+
+tests\ui\presentation\test_retained_acceptance_lifecycle.py:163: AssertionError
+---------------------------- Captured stdout call -----------------------------
+A18_THREAD_CHECKPOINT phase=navigation index=399
+=========================== short test summary info ===========================
+SKIPPED [1] tests\core\plugin\test_icon_resources.py:73: symlinks unavailable in this environment
+SKIPPED [1] tests\plugins\test_huaray_camera_smoke.py:10: set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera
+SKIPPED [1] tests\test_r3_export_credit_report.py:411: symlink creation is unavailable
+SKIPPED [2] tests\test_r3_sqlite_wal_metadata.py:145: Windows symlink privilege unavailable
+SKIPPED [2] tests\test_r3_sqlite_wal_metadata.py:153: Windows symlink privilege unavailable
+SKIPPED [1] tests\test_r3_sqlite_wal_metadata.py:477: Non-Windows platform rejection
+FAILED tests/ui/presentation/test_retained_acceptance_lifecycle.py::testThousandNavigationsAndThirtyFloatingCyclesRetireNativeOwners
+1 failed, 2569 passed, 8 skipped, 26 subtests passed in 661.10s (0:11:01)
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+[ci-check] failed pytest with code 1

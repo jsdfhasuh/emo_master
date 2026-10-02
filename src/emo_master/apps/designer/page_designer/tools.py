@@ -7,7 +7,8 @@ from shiboken2 import isValid
 from PySide2.QtWidgets import (
     QWidget, QFormLayout, QVBoxLayout, QTreeWidget,
     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
-    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog, QCheckBox, QToolButton, QMenu,
+    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog, QCheckBox, QToolButton, QMenu, QHeaderView,
+    QSizePolicy, QLayout,
 )
 
 from emo_master.core.presentation.models import Props, Placement
@@ -34,7 +35,10 @@ class Outputs(QTreeWidget):
         if item and item.data(0, Qt.UserRole) is not None:
             drag = QDrag(self)
             drag.setMimeData(mime({'choice': item.data(0, Qt.UserRole)}))
-            drag.exec_(Qt.CopyAction)
+            try:
+                drag.exec_(Qt.CopyAction)
+            finally:
+                drag.deleteLater()
 
 
 class EditingTools(QObject):
@@ -45,6 +49,13 @@ class EditingTools(QObject):
         self.choices = []
         self.dragStart = None
         self.pendingRefresh = False
+        self.refreshTimer = QTimer(self)
+        self.refreshTimer.setSingleShot(True)
+        self.refreshTimer.timeout.connect(self.finishRefresh)
+        self.selection = None
+        self.gridPreview = None
+        self.hoverTarget = None
+        self.bindingMarks = []
         self._loadedFields = None
         self._loadedPage = None
         self.palette = Palette()
@@ -68,6 +79,12 @@ class EditingTools(QObject):
         self.form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.title = QLabel('选择控件编辑')
         self.form.addRow(self.title)
+        self.propertyError = QLabel()
+        self.propertyError.setStyleSheet('color:#b91c1c')
+        self.propertyError.hide()
+        self.form.addRow(self.propertyError)
+        self.pageName = QLineEdit()
+        self.form.addRow('页面名称', self.pageName)
         self.fields = {}
         for name, label in [('title', '标题'), ('text', '文字'), ('emptyText', '空值文字'), ('unit', '单位')]:
             field = QLineEdit()
@@ -110,6 +127,7 @@ class EditingTools(QObject):
         self.binding.setMinimumContentsLength(10)
         self.form.addRow('输出绑定', self.binding)
         self.bindingButtons = []
+        self.operationButtons = []
         for label, fn in [('应用属性 / 布局', self.apply), ('绑定所选输出', self.bindSelected),
                 ('清除绑定', self.clearBinding), ('复制控件', self.copy), ('删除控件', self.delete),
                 ('从此来源定位流程节点', self.locate)]:
@@ -120,9 +138,14 @@ class EditingTools(QObject):
                 self.applyButton = button
             if label in ('绑定所选输出', '清除绑定', '从此来源定位流程节点'):
                 self.bindingButtons.append(button)
+            if label in ('复制控件', '删除控件'):
+                self.operationButtons.append(button)
         self.extra = QTableWidget(0, 4)
         self.extra.setHorizontalHeaderLabels(['类型/列标题', '值/字段', '显示文字', '颜色'])
         self.extra.setMaximumHeight(170)
+        self.extra.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.extra.horizontalHeader().setMinimumSectionSize(40)
+        self.extra.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.form.addRow('表格列 / 判定映射（最多16）', self.extra)
         add = self.extraAdd = QPushButton('增加列 / 映射')
         add.clicked.connect(self.addExtraRow)
@@ -143,14 +166,26 @@ class EditingTools(QObject):
             self.simulation.addItem(label, value)
         self.simulation.currentIndexChanged.connect(lambda _index: self.changeSimulation())
         self.simulation.setToolTip('离线状态示例，不读写 Runtime')
-        workspace.toolbar.addWidget(self.simulation)
+        self.simulation.setParent(workspace)
+        self.simulation.hide()
+        offline = workspace.viewMenu.addMenu('离线状态（非检测结果）')
+        for index in range(self.simulation.count()):
+            action = offline.addAction(self.simulation.itemText(index))
+            action.triggered.connect(lambda _checked=False, i=index: self.simulation.setCurrentIndex(i))
         self.examples = QCheckBox('设计示例')
         self.examples.setChecked(True)
         self.examples.toggled.connect(self.changeExamples)
         workspace.renderer.designExamplesChanged.connect(self.syncExamples)
-        workspace.toolbar.addWidget(self.examples)
+        self.examples.setParent(workspace)
+        self.examples.hide()
+        sampleAction = workspace.viewMenu.addAction('设计示例 · 非检测结果')
+        sampleAction.setCheckable(True)
+        sampleAction.setChecked(True)
+        sampleAction.toggled.connect(self.examples.setChecked)
+        self.examples.toggled.connect(sampleAction.setChecked)
+        workspace.renderer.designExamplesChanged.connect(sampleAction.setChecked)
         tasks = QToolButton()
-        tasks.setText('任务观察 ▾')
+        tasks.setText('任务 ▾')
         tasks.setPopupMode(QToolButton.InstantPopup)
         taskMenu = QMenu(tasks)
         tasks.setMenu(taskMenu)
@@ -185,6 +220,8 @@ class EditingTools(QObject):
         scroll.setMinimumWidth(240)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         panel.setMinimumWidth(0)
+        panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
+        self.form.setSizeConstraint(QLayout.SetNoConstraint)
         self.w.propertyScroll = scroll
         self.w.splitter.addWidget(scroll)
         self.refreshCatalog()
@@ -276,6 +313,8 @@ class EditingTools(QObject):
 
     def install(self):
         for widget in [self.w.renderer, *self.w.renderer.findChildren(QWidget)]:
+            if widget.property('editorDecoration'):
+                continue
             widget.installEventFilter(self)
             widget.setAcceptDrops(not self.preview.isChecked())
         if self.w.pageId in self.w.renderer.pages:
@@ -290,7 +329,9 @@ class EditingTools(QObject):
             for widget, children in grids:
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
                 widget.layout().setRowMinimumHeight(row, 0 if self.preview.isChecked() else 64)
+                widget.layout().setGeometry(widget.rect())
                 widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
+        self.updateSelection()
 
     def previewMode(self, preview):
         try:
@@ -404,7 +445,7 @@ class EditingTools(QObject):
         values = tuple((name, field.text() if isinstance(field, QLineEdit) else field.value())
                        for name, field in self.fields.items())
         rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
-        return (values, self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
+        return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
                 tuple((name, field.currentData()) for name, field in self.appearance.items()), rows)
 
     def commitPending(self):
@@ -419,13 +460,15 @@ class EditingTools(QObject):
         if key != self.selected:
             self.commitPending()
         self.selected = key
+        self.updateSelection()
         try:
             component = _component(self.w.store.snapshot(), self.w.pageId, key)
         except KeyError:
             self.selected = None
             if self.w.pageId:
                 self.fields['columns'].setValue(self.w.store.snapshot().pages[self.w.pageId].layout.columns)
-            self.title.setText('页面属性 · 可调整页面列数')
+                self.pageName.setText(self.w.store.snapshot().pages[self.w.pageId].name)
+            self.title.setText('页面属性')
             self.propertyGroups.select(None)
             self._loadedPage = self.w.pageId
             self._loadedFields = self._fieldState()
@@ -439,7 +482,7 @@ class EditingTools(QObject):
             index = next((i for i, choice in enumerate(self.choices)
                           if choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
             self.binding.setCurrentIndex(index)
-            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId)[:16] + '.' + str(source.port))
+            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId)[:16] + '.' + str(source.port)[:24])
             self.title.setToolTip(str(source.nodeId or source.workflowId) + '.' + str(source.port))
             self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
@@ -471,7 +514,10 @@ class EditingTools(QObject):
         self.actionScope.setCurrentIndex(max(0, self.actionScope.findData(action.resultScopeId if action else None)))
         self.actionScope.setEnabled(component.type == 'navigation_button')
         self.extra.setRowCount(0)
-        self.extra.setHorizontalHeaderLabels(['列标题', '选择字段', '', ''] if component.type == 'table' else ['类型', '值（布尔填true/false）', '显示文字', '颜色'])
+        self.extra.setHorizontalHeaderLabels(['列标题', '选择字段', '', ''] if component.type == 'table' else ['类型', '值', '显示文字', '颜色'])
+        self.extra.setColumnHidden(2, component.type == 'table')
+        self.extra.setColumnHidden(3, component.type == 'table')
+        self.extra.setToolTip('布尔值填写 true/false；文字值保持原文')
         data = [(c.title, tuple(c.fieldPath)) for c in component.props.columns] if component.type == 'table' else [
             (*decodeIndicatorKey(key), style.text, style.color) for key, style in component.props.indicatorStates.items()]
         for row in data:
@@ -480,11 +526,30 @@ class EditingTools(QObject):
         self._loadedFields = self._fieldState()
 
     def apply(self):
+        try:
+            self.applyFields()
+            self.propertyError.hide()
+        except ValueError as error:
+            message = str(error)
+            self.propertyError.setText(message)
+            self.propertyError.show()
+            field = next((widget for name, widget in self.fields.items() if name in message), self.extra
+                         if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
+            if not self.selected and 'name' in message:
+                field = self.pageName
+            self.w.propertyScroll.ensureWidgetVisible(field)
+            field.setFocus()
+            raise
+
+    def applyFields(self):
         if not self.w.pageId:
             return
         columns = self.fields['columns'].value()
         if not self.selected:
-            self.w.session.editPresentation(lambda p: setattr(p.pages[self.w.pageId].layout, 'columns', columns))
+            def editPage(p):
+                p.pages[self.w.pageId].layout.columns = columns
+                p.pages[self.w.pageId].name = self.pageName.text()
+            self.w.session.editPresentation(editPage)
             self._loadedFields = self._fieldState()
             return
         item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
@@ -557,15 +622,87 @@ class EditingTools(QObject):
             widget = widget.parentWidget()
         return None, None
 
-    def drop(self, payload, widget, point):
+    def clearGridPreview(self):
+        if self.gridPreview is not None and isValid(self.gridPreview):
+            self.gridPreview.hide()
+            self.gridPreview.deleteLater()
+        self.gridPreview = None
+
+    def showGridPreview(self, grid, columns, placement, message, valid):
+        from .canvas_tools import GridPreview
+        if self.gridPreview is not None and isValid(self.gridPreview) and self.gridPreview.parentWidget() is grid:
+            self.gridPreview.columns, self.gridPreview.placement = columns, placement
+            self.gridPreview.message, self.gridPreview.valid = message, valid
+            self.gridPreview.setGeometry(grid.rect())
+            self.gridPreview.update()
+            self.w.message.setText(message)
+            return
+        self.clearGridPreview()
+        self.gridPreview = GridPreview(grid, columns, placement, message, valid)
+        self.w.message.setText(message)
+
+    def clearSelection(self):
+        if self.selection:
+            self.selection.dispose()
+            self.selection = None
+        self.clearGridPreview()
+        self.clearBindingMarks()
+        self.hoverTarget = None
+        self.dragStart = None
+
+    def clearBindingMarks(self):
+        for mark in self.bindingMarks:
+            if isValid(mark):
+                mark.hide()
+                mark.deleteLater()
+        self.bindingMarks.clear()
+
+    def highlightBindings(self, index):
+        if self.bindingMarks or self.w.pageId not in self.w.renderer.pages:
+            return
+        from .canvas_tools import Outline
+        from .editing import ACCEPTED
+        choice = self.choices[index]
+        for card in self.w.renderer.pages[self.w.pageId].widget().findChildren(QWidget):
+            key = card.property('componentId')
+            if key:
+                item = _component(self.w.store.snapshot(), self.w.pageId, key)
+                valid = choice.source.expectedType in ACCEPTED.get(item.type, set())
+                text = '类型兼容 · 松开校验绑定' if valid else '不兼容: ' + choice.source.expectedType + ' → ' + item.type
+                mark = Outline(card, text, valid)
+                mark.setGeometry(card.rect())
+                mark.show()
+                mark.raise_()
+                self.bindingMarks.append(mark)
+
+    def updateSelection(self):
+        self.clearSelection()
+        if self.selected and not self.preview.isChecked() and self.w.pageId in self.w.renderer.pages:
+            from .canvas_tools import Selection
+            body = self.w.renderer.pages[self.w.pageId].widget()
+            for card in body.findChildren(QWidget):
+                if card.property('componentId') == self.selected:
+                    self.selection = Selection(self, card, self.selected)
+                    break
+
+    def shutdown(self):
+        self.refreshTimer.stop()
+        self.pendingRefresh = False
+        self.clearSelection()
+
+    def drop(self, payload, widget, point, *, preview=False):
         if self.preview.isChecked() or not self.w.pageId:
             raise ValueError('先创建页面并进入编辑模式')
         key, card = self.componentAt(widget)
+        commands = self.commands().preview() if preview else self.commands()
         if 'choice' in payload:
             if not key:
                 raise ValueError('将输出拖到兼容控件上')
             index = int(payload['choice'])
             choice = self.choices[index]
+            if preview:
+                commands.bind(self.w.pageId, key, choice)
+                return
             name, ok = QInputDialog.getItem(self.w, '确认绑定', choice.title + '\n' + choice.hint,
                                            ['绑定到所选控件的值/图像/行'], 0, False)
             if ok:
@@ -581,33 +718,33 @@ class EditingTools(QObject):
             gridWidget = gridWidget.parentWidget()
         if gridWidget is None:
             raise ValueError('请拖入页面网格')
+        from .canvas_tools import cellAt
         position = gridWidget.mapFromGlobal(widget.mapToGlobal(point))
-        layout = gridWidget.layout()
-        layout.activate()
         columnCount = (_component(self.w.store.snapshot(), self.w.pageId, parentId).grid.columns if parentId
                        else self.w.store.snapshot().pages[self.w.pageId].layout.columns)
-        col = min(columnCount-1, max(0, position.x() * columnCount // max(1, gridWidget.width())))
-        row = 0
-        for r in range(layout.rowCount()):
-            rect = layout.cellRect(r, col)
-            if position.y() <= rect.bottom():
-                row = r
-                break
-        else:
-            row = layout.rowCount() if layout.count() else 0
+        row, col = cellAt(gridWidget, columnCount, position)
         if key and _component(self.w.store.snapshot(), self.w.pageId, key).type != 'container':
             occupied = _component(self.w.store.snapshot(), self.w.pageId, key).layout
             row, col = occupied.row, occupied.column
+        if not preview and self.hoverTarget is not None:
+            oldWidget, oldPoint, oldPayload, target = self.hoverTarget
+            if oldWidget is widget and oldPoint == point and oldPayload == payload:
+                gridWidget, columnCount, row, col, parentId = target
+        if preview:
+            self.hoverTarget = (widget, point, dict(payload), (gridWidget, columnCount, row, col, parentId))
         if 'move' in payload:
-            self.commands().move(self.w.pageId, payload['move'], row, col, parentId)
-            self.selected = payload['move']
+            commands.move(self.w.pageId, payload['move'], row, col, parentId)
+            selected = payload['move']
         else:
-            self.selected = self.commands().add(self.w.pageId, payload['kind'], row, col, parentId)
+            selected = commands.add(self.w.pageId, payload['kind'], row, col, parentId)
+        if not preview:
+            self.selected = selected
+        return gridWidget, columnCount, row, col
 
     def laterRefresh(self):
         if not self.pendingRefresh:
             self.pendingRefresh = True
-            QTimer.singleShot(0, self.finishRefresh)
+            self.refreshTimer.start(0)
 
     def finishRefresh(self):
         self.pendingRefresh = False
@@ -643,11 +780,50 @@ class EditingTools(QObject):
     def eventFilter(self, obj, event):
         if self.w.closed or not isValid(self.preview) or self.preview.isChecked():
             return False
+        if obj.property('editorDecoration'):
+            return False
         kind = event.type()
         if kind in (QEvent.DragEnter, QEvent.DragMove) and event.mimeData().hasFormat(MIME):
-            event.acceptProposedAction()
+            payload = json.loads(bytes(event.mimeData().data(MIME)))
+            self.hoverTarget = None
+            try:
+                if 'choice' in payload:
+                    self.highlightBindings(int(payload['choice']))
+                target = self.drop(payload, obj, event.pos(), preview=True)
+                if target:
+                    grid, columns, row, column = target
+                    placement = (_component(self.w.store.snapshot(), self.w.pageId, payload['move']).layout.model_copy()
+                                 if 'move' in payload else Placement())
+                    placement.row, placement.column = row, column
+                    self.showGridPreview(grid, columns, placement, '合法位置 · 松开应用', True)
+                else:
+                    key, card = self.componentAt(obj)
+                    self.showGridPreview(card, 1, Placement(), '类型兼容 · 松开确认绑定', True)
+                event.acceptProposedAction()
+            except (ValueError, KeyError, IndexError) as error:
+                from .canvas_tools import describeError
+                key, card = self.componentAt(obj)
+                message = '不可放置: ' + describeError(error)
+                self.w.message.setText(message)
+                if card:
+                    self.showGridPreview(card, 1, Placement(), message, False)
+                elif self.hoverTarget:
+                    grid, columns, row, column, _parent = self.hoverTarget[3]
+                    self.showGridPreview(grid, columns, Placement(row=max(0, min(4095, row)),
+                        column=max(0, min(23, column))), message, False)
+                else:
+                    self.clearGridPreview()
+                # Keep receiving moves so another cell can become valid; drop
+                # still runs the same authoritative validation before mutation.
+                event.acceptProposedAction()
             return True
+        if kind == QEvent.DragLeave:
+            self.hoverTarget = None
+            self.clearGridPreview()
+            self.clearBindingMarks()
         if kind == QEvent.Drop and event.mimeData().hasFormat(MIME):
+            self.clearGridPreview()
+            self.clearBindingMarks()
             try:
                 # Match button commands: validate/commit the form before a drop
                 # mutates the draft and its deferred refresh reloads the inputs.
@@ -658,6 +834,8 @@ class EditingTools(QObject):
             except (ValueError, KeyError, IndexError) as error:
                 self.w.message.setText(str(error))
                 event.ignore()
+            finally:
+                self.hoverTarget = None
             return True
         key, _card = self.componentAt(obj)
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and not key:
@@ -683,7 +861,12 @@ class EditingTools(QObject):
                 self.dragStart = None
                 drag = QDrag(self.w)
                 drag.setMimeData(mime({'move': key}))
-                drag.exec_(Qt.MoveAction)
+                try:
+                    drag.exec_(Qt.MoveAction)
+                finally:
+                    drag.deleteLater()
+                    self.hoverTarget = None
+                    self.clearGridPreview()
             return True
         if kind == QEvent.MouseButtonRelease and key:
             self.dragStart = None

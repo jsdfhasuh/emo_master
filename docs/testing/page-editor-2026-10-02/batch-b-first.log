@@ -1,0 +1,1144 @@
+FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF......                                  [100%]
+================================== FAILURES ===================================
+_____________________ testNativePaletteSplitterAndSearch ______________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f596ebcc20) at 0x000001F597D88300>
+
+    def testNativePaletteSplitterAndSearch(designer):  # noqa: F811
+        c = designer.pageCoordinator
+>       c.showPages()
+
+tests\ui\page_designer\test_visual_editor.py:9: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F598CE4E50>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599012010) at 0x000001F598D21D40>
+panel = <PySide2.QtWidgets.QWidget(0x1f59905af50) at 0x000001F598CB3400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+______________ testTypedIndicatorPlainTextFalseAndAppearanceSave ______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f598fe07e0) at 0x000001F599ED8180>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testTypedIndicatorPlainTextFal0')
+
+    def testTypedIndicatorPlainTextFalseAndAppearanceSave(designer, tmp_path):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_usable_properties.py:16: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F598D17CD0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599010150) at 0x000001F598CC2680>
+panel = <PySide2.QtWidgets.QWidget(0x1f596ebe4a0) at 0x000001F598CC2180>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____________ testDuplicateTypedValuesPreservePendingFormAndDraft _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f598fe08c0) at 0x000001F598C5C0C0>
+
+    def testDuplicateTypedValuesPreservePendingFormAndDraft(designer):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_usable_properties.py:36: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A013880>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991f4b70) at 0x000001F599DEF3C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f596eb1620) at 0x000001F599DFB400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+____________ testKnownCollectionFieldsAreSelectedWithoutJsonPaths _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f598fdb5a0) at 0x000001F599E0A040>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testKnownCollectionFieldsAreSe0')
+
+    def testKnownCollectionFieldsAreSelectedWithoutJsonPaths(designer, tmp_path):  # noqa: F811
+        coordinator = designer.pageCoordinator
+        designer.workflowController.loadPayload(blank(tmp_path).model_dump())
+        coordinator.session.acceptLoaded()
+        waitFor(lambda: designer.operatorCatalogController.state == 'ready')
+        designer.operatorCatalog = [asdict(m) for m in metadata().values()]
+>       coordinator.showPages()
+
+tests\ui\page_designer\test_usable_properties.py:53: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A011540>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991e9a30) at 0x000001F599E045C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f59905fc50) at 0x000001F599EDBF80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+________________ testAllReadOnlyActionsEditedWithExplicitScope ________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990610e0) at 0x000001F598CD2180>
+
+    def testAllReadOnlyActionsEditedWithExplicitScope(designer):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer, 'navigation_button')
+
+tests\ui\page_designer\test_usable_properties.py:72: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E00340>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991e8270) at 0x000001F597D8B180>
+panel = <PySide2.QtWidgets.QWidget(0x1f5993da560) at 0x000001F597DA3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_______________ testOfflineStatesDoNotTouchRuntimeOrDirtyDraft ________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905b8f0) at 0x000001F598CD3700>
+
+    def testOfflineStatesDoNotTouchRuntimeOrDirtyDraft(designer):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_usable_properties.py:100: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A01ED70>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599016030) at 0x000001F599EEC940>
+panel = <PySide2.QtWidgets.QWidget(0x1f5993cf2e0) at 0x000001F599E93F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________________ testSaveCommitsVisibleUnappliedProperties __________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599065fa0) at 0x000001F5EF831380>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testSaveCommitsVisibleUnapplie0')
+
+    def testSaveCommitsVisibleUnappliedProperties(designer, tmp_path):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer)
+
+tests\ui\page_designer\test_pending_inputs.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599DB3160>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991e6e30) at 0x000001F599EE6640>
+panel = <PySide2.QtWidgets.QWidget(0x1f598fd6490) at 0x000001F599F43400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+___________ testInvalidPendingInputBlocksSaveWithoutDiscardingText ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599060820) at 0x000001F597DA3000>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testInvalidPendingInputBlocksS0')
+
+    def testInvalidPendingInputBlocksSaveWithoutDiscardingText(designer, tmp_path):  # noqa: F811
+>       coordinator, editor, key = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_pending_inputs.py:35: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E01900>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599007030) at 0x000001F599F59900>
+panel = <PySide2.QtWidgets.QWidget(0x1f5992366a0) at 0x000001F598CC3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+______________ testSelectingAnotherComponentCommitsPendingInput _______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905af50) at 0x000001F597DA2100>
+
+    def testSelectingAnotherComponentCommitsPendingInput(designer):  # noqa: F811
+>       coordinator, editor, first = setupPage(designer)
+
+tests\ui\page_designer\test_pending_inputs.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599FC99F0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991ed470) at 0x000001F599DFAE40>
+panel = <PySide2.QtWidgets.QWidget(0x1f598fd52a0) at 0x000001F599DFB400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________________ testInvalidInputBlocksComponentSelection ___________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905a9a0) at 0x000001F597E00480>
+
+    def testInvalidInputBlocksComponentSelection(designer):  # noqa: F811
+>       _, editor, first = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_pending_inputs.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A02BEE0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f59900cd70) at 0x000001F599DD7380>
+panel = <PySide2.QtWidgets.QWidget(0x1f598fd3550) at 0x000001F599DE3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____ testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[palette] _____
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905ad90) at 0x000001F599E587C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F59A013C40>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testNativeDropCommitsPendingPr0')
+operation = 'palette'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeypatch, tmp_path, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F598D160B0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991ef9d0) at 0x000001F599EF5880>
+panel = <PySide2.QtWidgets.QWidget(0x1f599231e70) at 0x000001F599EF7A40>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____ testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[output] ______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599064fe0) at 0x000001F598CE06C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F599E234F0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testNativeDropCommitsPendingPr1')
+operation = 'output'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeypatch, tmp_path, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A05F910>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599011dd0) at 0x000001F599EA6680>
+panel = <PySide2.QtWidgets.QWidget(0x1f599223b20) at 0x000001F599EA7240>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+______ testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[move] _______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599060d60) at 0x000001F597DB0BC0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F598D32590>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-669/testNativeDropCommitsPendingPr2')
+operation = 'move'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeypatch, tmp_path, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:64: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A033250>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991f4dd0) at 0x000001F599EF56C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f599630430) at 0x000001F599E5B400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_______ testNativeDropRejectsInvalidPendingFormWithoutMutation[palette] _______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905aaf0) at 0x000001F597DB03C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F598D09900>
+operation = 'palette'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropRejectsInvalidPendingFormWithoutMutation(designer, monkeypatch, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599ECB370>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599011b30) at 0x000001F597D8A6C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f596feec00) at 0x000001F599DEFEC0>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_______ testNativeDropRejectsInvalidPendingFormWithoutMutation[output] ________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599064d40) at 0x000001F597D8BB00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F598D0BEB0>
+operation = 'output'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropRejectsInvalidPendingFormWithoutMutation(designer, monkeypatch, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F598D16E00>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991e97d0) at 0x000001F599EF5100>
+panel = <PySide2.QtWidgets.QWidget(0x1f599266bb0) at 0x000001F599EABF80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+________ testNativeDropRejectsInvalidPendingFormWithoutMutation[move] _________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990607b0) at 0x000001F599F0DAC0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F598D0AEF0>
+operation = 'move'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropRejectsInvalidPendingFormWithoutMutation(designer, monkeypatch, operation):  # noqa: F811
+>       coordinator, editor, key = setupDropPage(designer)
+
+tests\ui\page_designer\test_pending_drops.py:106: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F47F40>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599012b70) at 0x000001F599DEDE00>
+panel = <PySide2.QtWidgets.QWidget(0x1f5993a85c0) at 0x000001F599DFBF80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____________ testNavigationTargetsVisiblePageForNativeAdd[mouse] _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990602e0) at 0x000001F599DE2200>
+route = 'mouse'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationTargetsVisiblePageForNativeAdd(designer, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+>       coordinator.showPages()
+
+tests\ui\page_designer\test_page_navigation.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A028370>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991e9630) at 0x000001F599E09D40>
+panel = <PySide2.QtWidgets.QWidget(0x1f5993aa150) at 0x000001F599DE3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+___________ testNavigationTargetsVisiblePageForNativeAdd[keyboard] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905a2a0) at 0x000001F59A005840>
+route = 'keyboard'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationTargetsVisiblePageForNativeAdd(designer, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+>       coordinator.showPages()
+
+tests\ui\page_designer\test_page_navigation.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E21BD0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5990085d0) at 0x000001F599F4DFC0>
+panel = <PySide2.QtWidgets.QWidget(0x1f599266d00) at 0x000001F599DDF180>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____________ testNavigationTargetsVisiblePageForNativeAdd[list] ______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990659f0) at 0x000001F59A100B40>
+route = 'list'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationTargetsVisiblePageForNativeAdd(designer, route):  # noqa: F811
+        coordinator = designer.pageCoordinator
+>       coordinator.showPages()
+
+tests\ui\page_designer\test_page_navigation.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E02F20>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991ee410) at 0x000001F599F79F80>
+panel = <PySide2.QtWidgets.QWidget(0x1f599263c00) at 0x000001F599F73400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________ testTopNavigationTargetsVisibleComponentForNativeBinding ___________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990649c0) at 0x000001F59A043C00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F598B2E440>
+
+    def testTopNavigationTargetsVisibleComponentForNativeBinding(designer, monkeypatch):  # noqa: F811
+>       _, editor, original = setupDropPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_drops.py:26: in setupDropPage
+    coordinator, editor, key = setupPage(window, 'indicator')
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F7E3B0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f59900b7f0) at 0x000001F599FE0840>
+panel = <PySide2.QtWidgets.QWidget(0x1f599263a40) at 0x000001F599FE38C0>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+___________ testNavigationCommitsPendingInputToOriginalPage[mouse] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990609e0) at 0x000001F597DACA40>
+route = 'mouse'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationCommitsPendingInputToOriginalPage(designer, route):  # noqa: F811
+>       _, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599EFFF10>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991f5d90) at 0x000001F599E9AC40>
+panel = <PySide2.QtWidgets.QWidget(0x1f599500f20) at 0x000001F598CC3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________ testNavigationCommitsPendingInputToOriginalPage[keyboard] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599060d60) at 0x000001F599FB8340>
+route = 'keyboard'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationCommitsPendingInputToOriginalPage(designer, route):  # noqa: F811
+>       _, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E81F00>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599012cb0) at 0x000001F599EC2440>
+panel = <PySide2.QtWidgets.QWidget(0x1f59963c790) at 0x000001F599EC0600>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+____________ testNavigationCommitsPendingInputToOriginalPage[list] ____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905ae70) at 0x000001F599E7C540>
+route = 'list'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testNavigationCommitsPendingInputToOriginalPage(designer, route):  # noqa: F811
+>       _, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:80: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F54610>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991ec1d0) at 0x000001F599FC1800>
+panel = <PySide2.QtWidgets.QWidget(0x1f5992660c0) at 0x000001F599F6B400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_______ testInvalidInputBlocksNavigationAndRetainsOriginalTarget[mouse] _______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599065980) at 0x000001F599ED8240>
+route = 'mouse'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_page_navigation.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F946A0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5990088f0) at 0x000001F59A0E7B00>
+panel = <PySide2.QtWidgets.QWidget(0x1f5994af520) at 0x000001F59A0E7E00>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____ testInvalidInputBlocksNavigationAndRetainsOriginalTarget[keyboard] ______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599065c20) at 0x000001F599FA6540>
+route = 'keyboard'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_page_navigation.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F4B490>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991efa10) at 0x000001F59A04DF00>
+panel = <PySide2.QtWidgets.QWidget(0x1f599310420) at 0x000001F59A0F3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_______ testInvalidInputBlocksNavigationAndRetainsOriginalTarget[list] ________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599060190) at 0x000001F599FECE80>
+route = 'list'
+
+    @pytest.mark.parametrize('route', ['mouse', 'keyboard', 'list'])
+    def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_page_navigation.py:103: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A0FC310>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599007110) at 0x000001F599EC28C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f599251ed0) at 0x000001F599EC3F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_________ testPreviewNavigationReturnsToVisibleEditingPage[top-None] __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990603c0) at 0x000001F59A0EE240>
+state = None, route = 'top'
+
+    @pytest.mark.parametrize('state', [None, 'OK'])
+    @pytest.mark.parametrize('route', ['top', 'action'])
+    def testPreviewNavigationReturnsToVisibleEditingPage(designer, state, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599E228F0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991f2c70) at 0x000001F59A101CC0>
+panel = <PySide2.QtWidgets.QWidget(0x1f59944a9d0) at 0x000001F59A073F80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________ testPreviewNavigationReturnsToVisibleEditingPage[top-OK] ___________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905ff60) at 0x000001F599F3EB00>
+state = 'OK', route = 'top'
+
+    @pytest.mark.parametrize('state', [None, 'OK'])
+    @pytest.mark.parametrize('route', ['top', 'action'])
+    def testPreviewNavigationReturnsToVisibleEditingPage(designer, state, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599EFCE50>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f599012490) at 0x000001F599E164C0>
+panel = <PySide2.QtWidgets.QWidget(0x1f5994466e0) at 0x000001F59A003400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+________ testPreviewNavigationReturnsToVisibleEditingPage[action-None] ________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905b0a0) at 0x000001F5FFE46080>
+state = None, route = 'action'
+
+    @pytest.mark.parametrize('state', [None, 'OK'])
+    @pytest.mark.parametrize('route', ['top', 'action'])
+    def testPreviewNavigationReturnsToVisibleEditingPage(designer, state, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F4BF40>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991ef230) at 0x000001F599FA6D40>
+panel = <PySide2.QtWidgets.QWidget(0x1f599649f90) at 0x000001F599E93400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_________ testPreviewNavigationReturnsToVisibleEditingPage[action-OK] _________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599064a30) at 0x000001F599EDE540>
+state = 'OK', route = 'action'
+
+    @pytest.mark.parametrize('state', [None, 'OK'])
+    @pytest.mark.parametrize('route', ['top', 'action'])
+    def testPreviewNavigationReturnsToVisibleEditingPage(designer, state, route):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer)
+
+tests\ui\page_designer\test_page_navigation.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A1133A0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5990112b0) at 0x000001F59A06F800>
+panel = <PySide2.QtWidgets.QWidget(0x1f599375f20) at 0x000001F599F7BF80>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+_____________ testInvalidInputBlocksPreviewModeTransition[False] ______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f5990603c0) at 0x000001F599F02F00>
+preview = False
+
+    @pytest.mark.parametrize('preview', [False, True])
+    def testInvalidInputBlocksPreviewModeTransition(designer, preview):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_page_navigation.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F598D14550>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f5991f1eb0) at 0x000001F599EC2140>
+panel = <PySide2.QtWidgets.QWidget(0x1f599250f70) at 0x000001F599EC2940>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+______________ testInvalidInputBlocksPreviewModeTransition[True] ______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f599060e40) at 0x000001F59A06EC00>
+preview = True
+
+    @pytest.mark.parametrize('preview', [False, True])
+    def testInvalidInputBlocksPreviewModeTransition(designer, preview):  # noqa: F811
+>       coordinator, editor, original = setupPage(designer, 'indicator')
+
+tests\ui\page_designer\test_page_navigation.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\ui\page_designer\test_pending_inputs.py:12: in setupPage
+    coordinator.showPages()
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F599F46860>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f59900c690) at 0x000001F59A0C8E00>
+panel = <PySide2.QtWidgets.QWidget(0x1f599357e90) at 0x000001F59A0C8AC0>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+__________ testDetailNavigationValidatesBeforePinningDisplayedResult __________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1f59905ba40) at 0x000001F599E5A100>
+qtApp = <PySide2.QtWidgets.QApplication(0x1f597305430) at 0x000001F597D856B0>
+
+    def testDetailNavigationValidatesBeforePinningDisplayedResult(designer, qtApp):  # noqa: F811
+        from examples.runtime_pages_p3 import LocalDemo
+        from emo_master.clients.runtime.display_session import DisplaySession
+        from emo_master.ui.presentation.hub import DisplayHub
+        from tests.ui.presentation.test_real import until
+    
+        backend = LocalDemo(count=8)
+        session = DisplaySession(backend.address, backend.jobId)
+        editor = hub = None
+        try:
+            coordinator = designer.pageCoordinator
+            designer.workflowController.loadPayload(backend.project.model_dump())
+            coordinator.session.acceptLoaded()
+>           coordinator.showPages()
+
+tests\ui\page_designer\test_page_navigation.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\page_designer\coordinator.py:77: in showPages
+    self.editor = PageWorkspace(self)
+src\emo_master\apps\designer\page_designer\workspace.py:135: in __init__
+    self.tools = EditingTools(self, sidebar)
+src\emo_master\apps\designer\page_designer\tools.py:177: in __init__
+    self.propertyGroups = PropertyGroups(self, panel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.page_designer.property_panel.PropertyGroups object at 0x000001F59A0B7BB0>
+tools = <emo_master.apps.designer.page_designer.tools.EditingTools(0x1f59958de20) at 0x000001F59A444D80>
+panel = <PySide2.QtWidgets.QWidget(0x1f599520c10) at 0x000001F59A446400>
+
+    def __init__(self, tools, panel):
+        self.tools = tools
+        rows = []
+        while tools.form.rowCount():
+>           row = tools.form.takeRow(0)
+E           AttributeError: 'PySide2.QtWidgets.QFormLayout' object has no attribute 'takeRow'
+
+src\emo_master\apps\designer\page_designer\property_panel.py:18: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_visual_editor.py::testNativePaletteSplitterAndSearch
+FAILED tests/ui/page_designer/test_usable_properties.py::testTypedIndicatorPlainTextFalseAndAppearanceSave
+FAILED tests/ui/page_designer/test_usable_properties.py::testDuplicateTypedValuesPreservePendingFormAndDraft
+FAILED tests/ui/page_designer/test_usable_properties.py::testKnownCollectionFieldsAreSelectedWithoutJsonPaths
+FAILED tests/ui/page_designer/test_usable_properties.py::testAllReadOnlyActionsEditedWithExplicitScope
+FAILED tests/ui/page_designer/test_usable_properties.py::testOfflineStatesDoNotTouchRuntimeOrDirtyDraft
+FAILED tests/ui/page_designer/test_pending_inputs.py::testSaveCommitsVisibleUnappliedProperties
+FAILED tests/ui/page_designer/test_pending_inputs.py::testInvalidPendingInputBlocksSaveWithoutDiscardingText
+FAILED tests/ui/page_designer/test_pending_inputs.py::testSelectingAnotherComponentCommitsPendingInput
+FAILED tests/ui/page_designer/test_pending_inputs.py::testInvalidInputBlocksComponentSelection
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[palette]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[output]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[move]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropRejectsInvalidPendingFormWithoutMutation[palette]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropRejectsInvalidPendingFormWithoutMutation[output]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropRejectsInvalidPendingFormWithoutMutation[move]
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationTargetsVisiblePageForNativeAdd[mouse]
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationTargetsVisiblePageForNativeAdd[keyboard]
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationTargetsVisiblePageForNativeAdd[list]
+FAILED tests/ui/page_designer/test_page_navigation.py::testTopNavigationTargetsVisibleComponentForNativeBinding
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationCommitsPendingInputToOriginalPage[mouse]
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationCommitsPendingInputToOriginalPage[keyboard]
+FAILED tests/ui/page_designer/test_page_navigation.py::testNavigationCommitsPendingInputToOriginalPage[list]
+FAILED tests/ui/page_designer/test_page_navigation.py::testInvalidInputBlocksNavigationAndRetainsOriginalTarget[mouse]
+FAILED tests/ui/page_designer/test_page_navigation.py::testInvalidInputBlocksNavigationAndRetainsOriginalTarget[keyboard]
+FAILED tests/ui/page_designer/test_page_navigation.py::testInvalidInputBlocksNavigationAndRetainsOriginalTarget[list]
+FAILED tests/ui/page_designer/test_page_navigation.py::testPreviewNavigationReturnsToVisibleEditingPage[top-None]
+FAILED tests/ui/page_designer/test_page_navigation.py::testPreviewNavigationReturnsToVisibleEditingPage[top-OK]
+FAILED tests/ui/page_designer/test_page_navigation.py::testPreviewNavigationReturnsToVisibleEditingPage[action-None]
+FAILED tests/ui/page_designer/test_page_navigation.py::testPreviewNavigationReturnsToVisibleEditingPage[action-OK]
+FAILED tests/ui/page_designer/test_page_navigation.py::testInvalidInputBlocksPreviewModeTransition[False]
+FAILED tests/ui/page_designer/test_page_navigation.py::testInvalidInputBlocksPreviewModeTransition[True]
+FAILED tests/ui/page_designer/test_page_navigation.py::testDetailNavigationValidatesBeforePinningDisplayedResult
+33 failed, 6 passed in 10.67s

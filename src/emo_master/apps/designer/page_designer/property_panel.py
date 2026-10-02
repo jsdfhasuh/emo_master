@@ -27,13 +27,15 @@ class PropertyGroups:
         self.rows = []
         reverse = {widget: name for name, widget in tools.fields.items()}
         for label, widget in rows:
-            if widget is tools.title:
+            if widget in (tools.title, tools.applyButton, tools.propertyError):
                 tools.form.addRow(widget)
-                widget.setWordWrap(True)
+                if isinstance(widget, QLabel):
+                    widget.setWordWrap(True)
                 continue
             name = reverse.get(widget)
             group = ('布局' if name in LAYOUT else '外观' if name == 'fontSize' or widget in tools.appearance.values()
-                     else '数据绑定' if widget is tools.binding else '内容')
+                     else '数据绑定' if widget is tools.binding or widget in tools.bindingButtons
+                     else '操作' if widget in tools.operationButtons else '内容')
             if group not in self.groups:
                 box = QGroupBox(group)
                 form = QFormLayout(box)
@@ -57,7 +59,7 @@ class PropertyGroups:
                 widget.setMinimumContentsLength(8)
             form.addRow(wrapper)
             self.rows.append((wrapper, widget, name, group))
-        for group in ('内容', '布局', '外观', '数据绑定'):
+        for group in ('内容', '布局', '外观', '数据绑定', '操作'):
             if group in self.groups:
                 tools.form.addRow(self.groups[group][0])
 
@@ -67,6 +69,8 @@ class PropertyGroups:
             visible = kind is not None
             if widget is t.applyButton:
                 visible = True
+            if widget is t.pageName:
+                visible = kind is None
             if name in CONTENT.get(kind, set()):
                 visible = True
             elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize'}:

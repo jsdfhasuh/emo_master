@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QListWidget, QPushButton, QInputDialog,
-    QLabel, QMessageBox,
+    QLabel, QMessageBox, QSplitter, QTabWidget, QToolButton, QMenu,
 )
 from PySide2.QtCore import Qt
 from shiboken2 import isValid
@@ -65,24 +65,51 @@ class PageWorkspace(QWidget):
         self.pageId = None
         self.closed = False
         self.root = QHBoxLayout(self)
-        sidebar = QVBoxLayout()
-        self.root.addLayout(sidebar)
+        self.splitter = QSplitter(Qt.Horizontal)
+        self.root.addWidget(self.splitter)
+        self.leftPanel = QWidget()
+        self.leftPanel.setMinimumWidth(180)
+        sidebar = QVBoxLayout(self.leftPanel)
+        sidebar.setContentsMargins(0, 0, 0, 0)
+        self.splitter.addWidget(self.leftPanel)
+        self.libraryTabs = QTabWidget()
+        sidebar.addWidget(self.libraryTabs, 3)
         sidebar.addWidget(QLabel('页面 · 默认首页标 ★'))
         self.pageList = QListWidget()
-        self.pageList.setMaximumWidth(230)
+        self.pageList.setMinimumHeight(80)
         self.pageList.currentRowChanged.connect(self.choosePage)
-        sidebar.addWidget(self.pageList)
-        for title, command in [('新建页面', self.newPage), ('重命名', self.renamePage),
-                ('复制页面', self.copyPage), ('上移', lambda: self.movePage(-1)),
-                ('下移', lambda: self.movePage(1)), ('设为首页', self.defaultPage),
-                ('删除页面', self.deletePage), ('撤销', lambda: coordinator.history()),
-                ('重做', lambda: coordinator.history(True))]:
+        sidebar.addWidget(self.pageList, 2)
+        commands = QHBoxLayout()
+        sidebar.addLayout(commands)
+        new = QPushButton('新建页面')
+        new.clicked.connect(lambda: self.run(self.newPage))
+        commands.addWidget(new)
+        more = QToolButton()
+        more.setText('页面操作 ▾')
+        more.setPopupMode(QToolButton.InstantPopup)
+        menu = QMenu(more)
+        for title, command in [('重命名', self.renamePage), ('复制页面', self.copyPage),
+                ('上移', lambda: self.movePage(-1)), ('下移', lambda: self.movePage(1)),
+                ('设为首页', self.defaultPage), ('删除页面', self.deletePage),
+                ('撤销', lambda: coordinator.history()), ('重做', lambda: coordinator.history(True))]:
+            action = menu.addAction(title)
+            action.triggered.connect(lambda _checked=False, fn=command: self.run(fn))
+        more.setMenu(menu)
+        commands.addWidget(more)
+        self.centerPanel = QWidget()
+        self.centerPanel.setMinimumWidth(280)
+        self.centerLayout = QVBoxLayout(self.centerPanel)
+        self.centerLayout.setContentsMargins(0, 0, 0, 0)
+        self.toolbar = QHBoxLayout()
+        self.centerLayout.addLayout(self.toolbar)
+        for title, index in [('组件栏', 0), ('属性栏', 2)]:
             button = QPushButton(title)
-            button.clicked.connect(lambda _checked=False, fn=command: self.run(fn))
-            sidebar.addWidget(button)
+            button.clicked.connect(lambda _checked=False, i=index: self.togglePanel(i))
+            self.toolbar.addWidget(button)
+        self.splitter.addWidget(self.centerPanel)
         self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
-        self.root.addWidget(self.renderer, 1)
+        self.centerLayout.addWidget(self.renderer, 1)
         self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
         self.message.setWordWrap(True)
         sidebar.addWidget(self.message)
@@ -91,7 +118,24 @@ class PageWorkspace(QWidget):
         sidebar.addWidget(self.observation)
         from .tools import EditingTools
         self.tools = EditingTools(self, sidebar)
+        self.splitter.setStretchFactor(1, 1)
+        self.splitter.setCollapsible(1, False)
+        saved = coordinator.window.settingsStore.value('pageDesigner/splitter', [260, 700, 340])
+        try:
+            self.splitter.setSizes([int(v) for v in saved])
+        except (TypeError, ValueError):
+            self.splitter.setSizes([260, 700, 340])
+        self.splitter.splitterMoved.connect(self.savePanelSizes)
         self.refresh()
+
+    def savePanelSizes(self, *_args):
+        self.coordinator.window.settingsStore.setValue('pageDesigner/splitter', self.splitter.sizes())
+
+    def togglePanel(self, index):
+        sizes = self.splitter.sizes()
+        sizes[index] = (260 if index == 0 else 340) if sizes[index] == 0 else 0
+        self.splitter.setSizes(sizes)
+        self.savePanelSizes()
 
     def run(self, command):
         try:

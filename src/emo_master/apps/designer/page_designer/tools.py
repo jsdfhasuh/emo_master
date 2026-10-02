@@ -4,7 +4,7 @@ import json
 from PySide2.QtCore import Qt, QObject, QEvent, QMimeData, QTimer
 from PySide2.QtGui import QDrag
 from PySide2.QtWidgets import (
-    QWidget, QFormLayout, QListWidget, QListWidgetItem, QTreeWidget,
+    QWidget, QFormLayout, QVBoxLayout, QTreeWidget,
     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
     QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog,
 )
@@ -14,6 +14,7 @@ from emo_master.core.presentation.catalog import buildOutputCatalog
 from emo_master.core.presentation.validation import validateBindings, pageScopes
 from emo_master.apps.designer.state.presentation_store import _component
 from .editing import PageCommands, manifestsFromCatalog, outputChoices
+from .palette import Palette
 from .property_adapters import (decodeIndicatorKey, indicatorStatesFromRows,
                                 tableFieldChoices, actionFromFields)
 
@@ -24,15 +25,6 @@ def mime(payload):
     data = QMimeData()
     data.setData(MIME, json.dumps(payload).encode())
     return data
-
-
-class Palette(QListWidget):
-    def startDrag(self, actions):
-        item = self.currentItem()
-        if item:
-            drag = QDrag(self)
-            drag.setMimeData(mime({'kind': item.data(Qt.UserRole)}))
-            drag.exec_(Qt.CopyAction)
 
 
 class Outputs(QTreeWidget):
@@ -55,23 +47,24 @@ class EditingTools(QObject):
         self._loadedFields = None
         self._loadedPage = None
         self.palette = Palette()
-        self.palette.setDragEnabled(True)
-        self.palette.setMaximumHeight(145)
-        for kind, title in [('image', '图像'), ('number', '数值'), ('text', '文字'),
-                ('indicator', '判定指示'), ('table', '集合表格'), ('navigation_button', '导航按钮'),
-                ('container', '容器'), ('runtime_status', '客户端连接状态（无业务绑定）')]:
-            item = QListWidgetItem(title)
-            item.setData(Qt.UserRole, kind)
-            self.palette.addItem(item)
-        sidebar.insertWidget(0, QLabel('组件 · 拖入网格'))
-        sidebar.insertWidget(1, self.palette)
+        library = QWidget()
+        libraryLayout = QVBoxLayout(library)
+        libraryLayout.setContentsMargins(0, 0, 0, 0)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText('搜索组件')
+        self.search.textChanged.connect(self.palette.search)
+        libraryLayout.addWidget(self.search)
+        libraryLayout.addWidget(self.palette)
+        workspace.libraryTabs.addTab(library, '组件')
         self.outputs = Outputs()
-        self.outputs.setHeaderLabels(['流程数据 · 静态目录，不运行算子'])
+        self.outputs.setHeaderLabels(['流程数据 · 拖到兼容组件'])
         self.outputs.setDragEnabled(True)
-        self.outputs.setMinimumWidth(240)
-        sidebar.insertWidget(2, self.outputs)
+        self.outputs.setMinimumWidth(0)
+        workspace.libraryTabs.addTab(self.outputs, '流程数据')
         panel = QWidget()
         self.form = QFormLayout(panel)
+        self.form.setRowWrapPolicy(QFormLayout.WrapAllRows)
+        self.form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.title = QLabel('选择控件编辑')
         self.form.addRow(self.title)
         self.fields = {}
@@ -163,9 +156,11 @@ class EditingTools(QObject):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setWidget(panel)
-        scroll.setMinimumWidth(275)
-        scroll.setMaximumWidth(370)
-        self.w.root.addWidget(scroll)
+        scroll.setMinimumWidth(240)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        panel.setMinimumWidth(0)
+        self.w.propertyScroll = scroll
+        self.w.splitter.addWidget(scroll)
         self.refreshCatalog()
 
     def commands(self):

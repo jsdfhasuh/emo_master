@@ -377,9 +377,13 @@ class RuntimePages(QWidget):
                 ';border:1px solid #c4d0de;border-radius:6px;}')
             if component.type == "container":
                 self._children(card, component.children, component.grid, pageId)
+                if component.props.title:
+                    from .container_title import ContainerTitle
+                    card.containerTitle = ContainerTitle(card, component.props.title,
+                        appearanceStyle(component.props), editing=self.editorHost)
                 if self.editorHost and not component.children:
                     card.setMinimumHeight(90)
-                    card.layout().addWidget(QLabel(component.props.title or '容器 · 拖入组件'), 0, 0)
+                    card.layout().addWidget(QLabel('容器 · 拖入组件'), 0, 0)
             else:
                 box = QVBoxLayout(card)
                 if self.editorHost:

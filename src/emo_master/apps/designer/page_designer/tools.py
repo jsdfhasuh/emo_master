@@ -628,17 +628,18 @@ class EditingTools(QObject):
             self.gridPreview.deleteLater()
         self.gridPreview = None
 
-    def showGridPreview(self, grid, columns, placement, message, valid):
+    def showGridPreview(self, grid, columns, placement, message, valid, *, box=None):
         from .canvas_tools import GridPreview
         if self.gridPreview is not None and isValid(self.gridPreview) and self.gridPreview.parentWidget() is grid:
             self.gridPreview.columns, self.gridPreview.placement = columns, placement
             self.gridPreview.message, self.gridPreview.valid = message, valid
+            self.gridPreview.box = box
             self.gridPreview.setGeometry(grid.rect())
             self.gridPreview.update()
             self.w.message.setText(message)
             return
         self.clearGridPreview()
-        self.gridPreview = GridPreview(grid, columns, placement, message, valid)
+        self.gridPreview = GridPreview(grid, columns, placement, message, valid, box)
         self.w.message.setText(message)
 
     def clearSelection(self):

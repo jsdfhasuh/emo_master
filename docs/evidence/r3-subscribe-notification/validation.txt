@@ -1,0 +1,51 @@
+Historical focused-stage record, preserved below. Its statements about unrun
+checks describe that stage only. Subsequent frozen-candidate full CI and the
+reviewed ABBA comparison are indexed in source-evidence.json and documented in
+../../testing/2026-10-02-subscribe-notification-comparison.md.
+
+Validation date: 2026-10-02 UTC
+Candidate: /workspace/scratch/a6c68496e0bc/subscription-notification-candidate
+Base: 655eeac84d0602aa670c76af67679509782bbd7f (detached, no commit or push)
+Interpreter: /workspace/scratch/a6c68496e0bc/emo_master/.venv/bin/python (existing Python 3.10.21)
+Scope: serial bounded focused tests in approved cloud runtime slot
+
+Initial focused Ruff (before first test run):
+$ <python> -m ruff check src/emo_master/apps/runtime/presentation/store.py src/emo_master/apps/runtime/presentation/rpc.py tests/runtime/presentation/test_subscribe_notification.py
+All checks passed!
+
+$ QT_QPA_PLATFORM=offscreen <python> -m pytest -q tests/runtime/presentation/test_subscribe_notification.py
+Raw: focused-initial.txt
+23 passed in 0.48s
+
+After strengthening finite-wait registration instrumentation:
+$ QT_QPA_PLATFORM=offscreen <python> -m pytest -q tests/runtime/presentation/test_subscribe_notification.py
+Raw: focused-final.txt
+23 passed in 0.45s
+
+After independent static review removed a scheduler-sensitive exact empty-snapshot
+count for the real finite-timeout cancellation case:
+$ QT_QPA_PLATFORM=offscreen <python> -m pytest -q tests/runtime/presentation/test_subscribe_notification.py
+Raw: focused-review.txt
+23 passed in 0.39s
+
+$ <python> -m ruff check src/emo_master/apps/runtime/presentation/store.py src/emo_master/apps/runtime/presentation/rpc.py tests/runtime/presentation/test_subscribe_notification.py
+Raw: ruff.txt
+All checks passed!
+
+$ git diff --check
+(no output; exit 0)
+
+All test executions are listed above; none failed. Early read-only file discovery
+returned exit 2 because this repository has no .agents directory; no test or
+production mutation failed. The optional local skills directory was absent.
+Raw logs preserve all collected stdout/stderr. Pytest elapsed totals are test
+runtime, not Subscribe latency measurements.
+
+No full CI, Windows test, system trace, user-computer run, commit or push was run.
+Independent final static review approved production code, tests and evidence on
+2026-10-02. The reviewer ran no additional workload. Broader checks and publication
+remain unrun; approval does not imply performance acceptance.
+
+Local commit preparation subsequently found staged patch-context whitespace
+and missing Git author identity; both diagnosed resolutions are recorded in
+freeze-issues.txt. Neither changed production code/tests or reran test workloads.

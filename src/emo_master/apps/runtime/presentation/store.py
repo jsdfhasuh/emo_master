@@ -13,6 +13,7 @@ class ResultStore:
 
     def __init__(self):
         self.lock = threading.RLock()
+        self.changed = threading.Condition(self.lock)
         self.open = {}
         self.history = deque()
         self.latest = {}
@@ -27,6 +28,11 @@ class ResultStore:
     def _notify(self, result=None):
         self.cursor += 1
         self.events.append((self.cursor, result))
+        self.changed.notify_all()
+
+    def waitForChange(self, cursor):
+        with self.changed:
+            return self.changed.wait_for(lambda: self.cursor != cursor, timeout=0.02)
 
     def metadataBytes(self):
         # Shared immutable results count once across latest/history/replay.

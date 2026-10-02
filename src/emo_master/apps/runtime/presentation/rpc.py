@@ -141,7 +141,9 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                 yield result
                 cursor = result.cursor
                 request.runtime_instance_id = result.runtime_instance_id
-            time.sleep(0.02)
+                time.sleep(0.02)
+            else:
+                self.service.store.waitForChange(result.cursor)
 
     def _asset(self, request, context, action):
         if request.runtime_instance_id != self.service.runtimeInstanceId:

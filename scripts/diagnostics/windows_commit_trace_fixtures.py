@@ -234,7 +234,12 @@ def testControllerDeadlinesAndSingleStartAreStatic():
     assert "start-attempted.private" in source
 
 
-def testWrongEnvironmentCannotStartCaptureAndCleansOwnDirectory(tmp_path, capsys):
+def testWrongEnvironmentCannotStartCaptureAndCleansOwnDirectory(monkeypatch, tmp_path, capsys):
+    # This fixture must reject every host, including the real Windows CI runner,
+    # before native capability probes or the runner's real GITHUB_OUTPUT access.
+    monkeypatch.setattr(trace, "os", SimpleNamespace(name="fixture", environ={}))
+    native_calls = []
+    monkeypatch.setattr(trace, "checked_private", lambda *a, **kw: native_calls.append(a) or 0)
     root = tmp_path / "private"
     root.mkdir()
     reader = root / "reader.exe"
@@ -244,6 +249,7 @@ def testWrongEnvironmentCannotStartCaptureAndCleansOwnDirectory(tmp_path, capsys
     assert message["reason"] == "wrong_environment"
     assert message["original_pytest_exit"] is None and not message["suite_complete"]
     assert message["cleanup_confirmed"] is True and not root.exists()
+    assert native_calls == []
 
 
 def controller_fixture(monkeypatch, tmp_path, *, start_error=False, cancel_error=False, suite_timeout=False):
@@ -355,3 +361,18 @@ def testTargetsCompleteStopsOnlyTraceAndStillWaitsForSuite(monkeypatch, tmp_path
     assert summary["suite_complete"] and summary["original_pytest_exit"] == 1
     assert sum("-start" in c for c in calls) == 1
     assert sum("-stop" in c for c in calls) == 1
+
+
+def testPreflightOnlyWorkflowHasNoCaptureInvocation():
+    root = Path(__file__).resolve().parents[2]
+    workflow = root / ".github/workflows/runtime-kernel-preflight-only.yml"
+    source = workflow.read_text()
+    assert "github.run_attempt == 1" in source
+    assert "github.event.before == 'ecf8bcfcf193e05807556340d670f05c0f3d9e15'" in source
+    assert "fix: notify idle display streams; preflight-only 20261002" in source
+    assert "& $reader --preflight" in source
+    assert "python -m pytest -q scripts/diagnostics/windows_commit_trace_fixtures.py" in source
+    for forbidden in ("--control", "--session-check", "wpr", "-start", "-stop", "-cancel", "upload-artifact", "actions/cache"):
+        assert forbidden not in source
+    assert "capture_attempted=$false" in source and "capture_attempted=$true" not in source
+    assert "native_exit=$nativeExit" in source

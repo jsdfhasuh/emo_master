@@ -53,6 +53,7 @@ class EditingTools(QObject):
         self.refreshTimer.setSingleShot(True)
         self.refreshTimer.timeout.connect(self.finishRefresh)
         self.selection = None
+        self.retainedSelection = None
         self.gridPreview = None
         self.hoverTarget = None
         self.bindingMarks = []
@@ -325,7 +326,8 @@ class EditingTools(QObject):
                 if key:
                     item = _component(self.w.store.snapshot(), self.w.pageId, key)
                     if item.type == 'container':
-                        grids.append((widget, item.children))
+                        content = widget.containerTitle.body if hasattr(widget, 'containerTitle') else widget
+                        grids.append((content, item.children))
             for widget, children in grids:
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
                 widget.layout().setRowMinimumHeight(row, 0 if self.preview.isChecked() else 64)
@@ -643,7 +645,7 @@ class EditingTools(QObject):
         self.w.message.setText(message)
 
     def clearSelection(self):
-        if self.selection:
+        if self.selection and self.selection is not self.retainedSelection:
             self.selection.dispose()
             self.selection = None
         self.clearGridPreview()
@@ -677,6 +679,8 @@ class EditingTools(QObject):
                 self.bindingMarks.append(mark)
 
     def updateSelection(self):
+        if self.retainedSelection is not None:
+            return
         self.clearSelection()
         if self.selected and not self.preview.isChecked() and self.w.pageId in self.w.renderer.pages:
             from .canvas_tools import Selection
@@ -712,9 +716,14 @@ class EditingTools(QObject):
         parentId = None
         gridWidget = widget
         while gridWidget and not gridWidget.property('pageGrid'):
+            if gridWidget.property('containerGridId'):
+                parentId = gridWidget.property('containerGridId')
+                break
             candidate = gridWidget.property('componentId')
             if candidate and _component(self.w.store.snapshot(), self.w.pageId, candidate).type == 'container':
                 parentId = candidate
+                if hasattr(gridWidget, 'containerTitle'):
+                    gridWidget = gridWidget.containerTitle.body
                 break
             gridWidget = gridWidget.parentWidget()
         if gridWidget is None:

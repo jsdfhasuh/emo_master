@@ -118,6 +118,7 @@ class ResizeHandle(QWidget):
         if event.button() == Qt.LeftButton:
             try:
                 self.selection.begin(self, event.globalPos())
+                self.grabMouse()
                 self.grabKeyboard()
             except (ValueError, KeyError) as error:
                 self.selection.tools.w.message.setText(str(error))
@@ -129,6 +130,7 @@ class ResizeHandle(QWidget):
 
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
+            self.releaseMouse()
             self.releaseKeyboard()
             if self.selection.active:
                 self.selection.move(event.globalPos())
@@ -178,9 +180,26 @@ class Selection(QObject):
 
     def begin(self, handle, point):
         self.tools.commitPending()
+        if self.tools.w.renderer.config != self.tools.w.store.snapshot():
+            # Keep the gesture receiver alive while the accepted form rebuilds
+            # the canvas. Reparent it before deferred deletion of the old page;
+            # never process events or create another input/session owner here.
+            self.tools.retainedSelection = self
+            self.card.removeEventFilter(self)
+            try:
+                self.tools.w.refresh()
+                body = self.tools.w.renderer.pages[self.tools.w.pageId].widget()
+                self.card = next(card for card in body.findChildren(QWidget)
+                                 if card.property('componentId') == self.key)
+                for widget in [self.outline, *self.handles]:
+                    widget.setParent(self.card)
+                self.card.installEventFilter(self)
+                self.position()
+            finally:
+                self.tools.retainedSelection = None
         self.original = _component(self.tools.w.store.snapshot(), self.tools.w.pageId, self.key)
         self.grid = self.card.parentWidget()
-        parentId = self.grid.property('componentId')
+        parentId = self.grid.property('containerGridId') or self.grid.property('componentId')
         p = self.tools.w.store.snapshot()
         self.columns = (_component(p, self.tools.w.pageId, parentId).grid.columns if parentId
                         else p.pages[self.tools.w.pageId].layout.columns)
@@ -220,6 +239,7 @@ class Selection(QObject):
 
     def cancel(self):
         if self.active and isValid(self.active):
+            self.active.releaseMouse()
             self.active.releaseKeyboard()
         self.active = None
         self.tools.clearGridPreview()

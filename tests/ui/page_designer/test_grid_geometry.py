@@ -85,7 +85,7 @@ def testContainerTitleSurvivesChildrenReopenAndStandaloneRendering(designer, tmp
     title = e.renderer.pages[e.pageId].findChild(QLabel, 'containerTitle')
     assert title.text() == 'Container <title>' and title.textFormat() == Qt.PlainText
     card = e.renderer.widgets[e.pageId][child][1].parentWidget()
-    assert card.geometry().top() > title.geometry().bottom()
+    assert card.mapTo(title.parentWidget(), QPoint()).y() > title.geometry().bottom()
     assert card.parentWidget().layout().getItemPosition(0) == (0, 0, 1, 1)
     saved = e.store.snapshot()
     assert designer.saveProjectToDirectory(str(tmp_path / 'titled'))
@@ -97,7 +97,7 @@ def testContainerTitleSurvivesChildrenReopenAndStandaloneRendering(designer, tmp
     title = runtime.pages[saved.defaultPageId].findChild(QLabel, 'containerTitle')
     assert title.text() == 'Container <title>' and title.isVisible()
     card = runtime.widgets[saved.defaultPageId][child][1].parentWidget()
-    assert card.geometry().top() > title.geometry().bottom()
+    assert card.mapTo(title.parentWidget(), QPoint()).y() > title.geometry().bottom()
     runtime.close()
 
 

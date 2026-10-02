@@ -1,6 +1,6 @@
 """Grid hit testing and widget-free measurement of a proposed resize."""
 from PySide2.QtCore import QRect, QSize
-from PySide2.QtWidgets import QGridLayout, QLayoutItem, QScrollArea, QStyle
+from PySide2.QtWidgets import QGridLayout, QLayoutItem, QScrollArea
 
 
 def columnAt(layout, columns, x):
@@ -88,15 +88,18 @@ def resizeBox(grid, card, columns, placement):
     scroll = viewport.parentWidget() if viewport else None
     if isinstance(scroll, QScrollArea) and scroll.widget() is grid:
         available = scroll.maximumViewportSize()
-        extent = scroll.style().pixelMetric(QStyle.PM_ScrollBarExtent)
+        # Designer QSS can override scrollbar dimensions independently of the
+        # platform style's PM_ScrollBarExtent.
+        verticalWidth = scroll.verticalScrollBar().sizeHint().width()
+        horizontalHeight = scroll.horizontalScrollBar().sizeHint().height()
         vertical = horizontal = False
         for _ in range(3):
-            width = max(minimum.width(), available.width() - (extent if vertical else 0))
-            height = max(minimum.height(), available.height() - (extent if horizontal else 0))
+            width = max(minimum.width(), available.width() - (verticalWidth if vertical else 0))
+            height = max(minimum.height(), available.height() - (horizontalHeight if horizontal else 0))
             if measured.hasHeightForWidth():
                 height = max(height, measured.minimumHeightForWidth(width))
-            vertical = height > available.height() - (extent if horizontal else 0)
-            horizontal = width > available.width() - (extent if vertical else 0)
+            vertical = height > available.height() - (horizontalHeight if horizontal else 0)
+            horizontal = width > available.width() - (verticalWidth if vertical else 0)
             size = QSize(width, height)
     if measured.hasHeightForWidth():
         size.setHeight(max(size.height(), measured.minimumHeightForWidth(size.width())))

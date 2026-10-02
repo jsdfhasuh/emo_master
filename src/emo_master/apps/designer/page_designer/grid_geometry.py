@@ -82,8 +82,12 @@ def resizeBox(grid, card, columns, placement):
     for row in range(end + 1):
         measured.setRowMinimumHeight(row, 64)
     measured.setRowStretch(end, 1)
-    minimum = measured.minimumSize().expandedTo(grid.minimumSize())
-    size = grid.size().expandedTo(minimum)
+    # A styled QFrame's border belongs to the widget, not its child layout.
+    # Measuring against rect() can change word wrapping even for a 1px border.
+    contents = grid.contentsRect()
+    border = grid.size() - contents.size()
+    minimum = measured.minimumSize().expandedTo(grid.minimumSize() - border)
+    size = contents.size().expandedTo(minimum)
     viewport = grid.parentWidget()
     scroll = viewport.parentWidget() if viewport else None
     if isinstance(scroll, QScrollArea) and scroll.widget() is grid:
@@ -103,5 +107,5 @@ def resizeBox(grid, card, columns, placement):
             size = QSize(width, height)
     if measured.hasHeightForWidth():
         size.setHeight(max(size.height(), measured.minimumHeightForWidth(size.width())))
-    measured.setGeometry(QRect(grid.rect().topLeft(), size))
+    measured.setGeometry(QRect(contents.topLeft(), size))
     return QRect(target.geometry()) if target is not None else QRect()

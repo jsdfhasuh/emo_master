@@ -1,0 +1,36 @@
+{
+  "operatorId": "communication.tcp.receive_once",
+  "displayName": "TCP Receive Once",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins._communication_operators:TcpReceiveOnceOperator",
+  "category": "通讯",
+  "iconKey": "tcp-receive",
+  "summary": "在有界超时内监听并接收一个 TCP 客户端的一条完整消息。",
+  "inputPorts": {},
+  "outputPorts": {
+    "message": {"type": "tcpMessage", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "peerHost": {"type": "string", "required": true, "nullable": false},
+    "peerPort": {"type": "integer", "required": true, "nullable": false},
+    "text": {"type": "string", "required": false, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "bindHost": {"type": "string", "default": "127.0.0.1"},
+      "port": {"type": "integer", "minimum": 1, "maximum": 65535, "default": 10001},
+      "acceptTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 5000},
+      "readTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 1000},
+      "framing": {"type": "string", "enum": ["newline", "quoted", "idle", "fixedLength"], "default": "newline"},
+      "expectedBytes": {"type": "integer", "minimum": 0, "maximum": 16777216, "default": 0},
+      "maxMessageBytes": {"type": "integer", "minimum": 1, "maximum": 16777216, "default": 1048576},
+      "messageEncoding": {"type": "string", "enum": ["utf-8", "ascii", "latin-1", "hex", "base64"], "default": "utf-8"},
+      "messageTextEncoding": {"type": "string", "enum": ["none", "utf-8", "ascii", "latin-1"], "default": "none"},
+      "ackText": {"type": "string", "default": ""},
+      "ackEncoding": {"type": "string", "enum": ["utf-8", "ascii", "latin-1", "hex", "base64"], "default": "utf-8"},
+      "ackAppendNewline": {"type": "boolean", "default": true},
+      "maxAckBytes": {"type": "integer", "minimum": 1, "maximum": 16777216, "default": 1048576}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

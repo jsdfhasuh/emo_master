@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Designer 全窗口前后对比</title>
+<style>
+*{box-sizing:border-box}body{margin:0;background:#f5f6f8;color:#20242b;font:14px/1.6 "Microsoft YaHei UI",sans-serif;letter-spacing:0}header{padding:20px 24px;background:#fff;border-bottom:1px solid #d8dce3}h1{font-size:22px;margin:0 0 8px}h2{font-size:18px;margin:0 0 12px}p{margin:8px 0;color:#626b78}nav{display:flex;gap:14px;flex-wrap:wrap}a{color:#2563eb}select{font:inherit;padding:6px 12px;border:1px solid #d8dce3;border-radius:4px;background:white}main{max-width:2200px;margin:auto}section{padding:24px;border-bottom:1px solid #d8dce3;scroll-margin-top:12px}.pair{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:16px;align-items:start}figure{margin:0;min-width:0}figcaption{margin-bottom:8px}img{width:100%;height:auto;display:block;border:1px solid #d8dce3}.controls{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin:16px 0}footer{padding:24px}@media(max-width:900px){.pair{grid-template-columns:1fr}}
+</style>
+<header>
+<h1>Designer 全窗口前后对比</h1>
+<p>2026-09-10 · Windows Qt5 实际控件渲染 · 隔离设置与模拟运行时 · 无相机连接</p>
+<p>完整 CI：751 通过，1 项真实相机测试跳过。Windows 原生 Qt 新增几何与像素测试：20 通过。</p>
+<div class="controls"><label for="scale">修改后截图</label><select id="scale">
+<option value="after-100">100% DPI</option><option value="after-125">125% DPI</option><option value="after-150">150% DPI</option><option value="after-200">200% DPI</option><option value="after-1366">1366 × 768 窗口</option><option value="after-1920">1920 × 1080 屏幕</option>
+</select><a id="report" href="after-100/report.json">本组几何报告</a><a href="ci-check.txt">完整 CI 日志</a><a href="README.md">归档索引</a></div>
+<p>左侧为本次改造前的 100% 基线，不是各档 DPI 的旧版本截图。预览色块为测试图；相机始终未连接。150% / 200% 下首次定位保留至少 85% 缩放，画布可平移，另提供手动适应整图截图。</p>
+<nav id="nav"></nav>
+</header>
+<main id="gallery"></main>
+<section><h2>补充验证</h2><nav id="extras"></nav></section>
+<footer>边界：跨屏验证使用隐藏的独立 Qt 测试窗口，不操作当前 Designer。当前两块屏幕均为物理 1920 × 1080，原生缩放 100% / 125%。150% / 200% 由测试进程 QT_SCALE_FACTOR 验证；未修改 Windows 全局缩放。真实 1366 × 768 / 4K 显示器、安装器和硬件采集尚未验收。</footer>
+<script>
+const windows=[['main','主窗口 / 折叠栏'],['main-expanded','主窗口 / 展开与选中节点'],['main-preview','主窗口 / 图像预览'],['project-entry','项目入口'],['operator-search','算子搜索'],['parameters','通用参数'],['huaray_camera','相机工作区'],['roi','ROI 工作区'],['histogram','直方图工作区'],['logs','日志'],['global-counters','全局计数器'],['workflow-package','流程包预览']];
+const gallery=document.getElementById('gallery'),nav=document.getElementById('nav');
+for(const [name,title] of windows){const section=document.createElement('section');section.id=name;const heading=document.createElement('h2');heading.textContent=title;section.append(heading);const pair=document.createElement('div');pair.className='pair';for(const [folder,label] of [['before','改造前 · 100%'],['after-100','改造后']]){const figure=document.createElement('figure'),caption=document.createElement('figcaption'),link=document.createElement('a'),image=document.createElement('img');caption.textContent=label;image.alt=title+' · '+label;image.loading='lazy';image.src=folder+'/'+name+'.png';link.href=image.src;link.target='_blank';link.append(image);if(folder!=='before')figure.dataset.name=name;figure.append(caption,link);pair.append(figure)}section.append(pair);gallery.append(section);const jump=document.createElement('a');jump.href='#'+name;jump.textContent=title;nav.append(jump)}
+function update(){const folder=document.getElementById('scale').value;document.querySelectorAll('figure[data-name]').forEach(figure=>{const path=folder+'/'+figure.dataset.name+'.png';figure.querySelector('img').src=path;figure.querySelector('a').href=path});document.getElementById('report').href=folder+'/report.json';const extras=document.getElementById('extras');extras.replaceChildren();for(const [path,title] of [[folder+'/main-fit.png','手动适应画布'],['after-100/screen-move-0.png','跨屏：第一屏'],['after-100/screen-move-1.png','跨屏：第二屏'],['after-100/screen-move-2.png','跨屏：返回第一屏']]){const link=document.createElement('a');link.href=path;link.textContent=title;link.target='_blank';extras.append(link)}}
+document.getElementById('scale').addEventListener('change',update);update();
+</script>
+</html>

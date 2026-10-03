@@ -1,0 +1,55 @@
+{
+  "platform": "windows",
+  "job": "facb9caa-04af-46e2-8eb1-60bb73bb8b6e",
+  "steps": [],
+  "designer_imported": false,
+  "result_key": "7f31123e-8c6f-4b90-8cfd-46ff1a3b5910",
+  "count": "2",
+  "image_sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+  "mode": "release",
+  "release_revision": "3fa86f4a0ce86e4a5d85911f7268728e2386c433a203f6823567e235908e137d",
+  "timing": [
+    {
+      "key": "7f31123e-8c6f-4b90-8cfd-46ff1a3b5910",
+      "ready_ns": 696683382105400,
+      "gui_ns": 696683391836800,
+      "scope_end_ns": 696683370560400,
+      "paint_ns": 696683393669700
+    },
+    {
+      "key": "7f31123e-8c6f-4b90-8cfd-46ff1a3b5910",
+      "ready_ns": 696683382105400,
+      "gui_ns": 696683422750100,
+      "scope_end_ns": 696683370560400
+    }
+  ],
+  "hub": {
+    "windows": 2,
+    "qt_image_bytes": 57600,
+    "qt_image_limit": 25165824,
+    "conversions": 1,
+    "coalesced_results": 0,
+    "pending_gui_notifications": 0,
+    "live_decoded_bytes": 57600,
+    "ui_decoded_reference_bytes": 57600,
+    "live_ui_decoded_bytes": 57600,
+    "decoded_retention_accounted_bytes": 57600,
+    "decoded_retention_reserved": 67108864,
+    "pin_decoded_bytes": 0,
+    "pin_limit": 16777216,
+    "conversion_scratch_limit": 8388608,
+    "window_surface_reserved": 33554432,
+    "table_bytes": 0,
+    "table_limit": 16777216
+  },
+  "session": {
+    "received": 1,
+    "decoded": 1,
+    "dropped": 0,
+    "read_failed": 0,
+    "resets": 1
+  },
+  "single_window_exit_preserved_session": true,
+  "error": null,
+  "closed": true
+}

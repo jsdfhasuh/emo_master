@@ -1,0 +1,25 @@
+{
+  "platform": "windows",
+  "scale": "1",
+  "device_pixel_ratio": 1.0,
+  "keys": [
+    "75532843-9430-457f-84d3-cd1a27d44964",
+    "4bf1e171-0fdd-4860-9e52-73ba158882b2"
+  ],
+  "observed_counts": [
+    2,
+    3
+  ],
+  "jobs": 1,
+  "resources": {
+    "windows": 2,
+    "qt_image_bytes": 57600,
+    "qt_image_limit": 25165824,
+    "conversions": 2,
+    "coalesced_results": 0,
+    "pending_gui_notifications": 0
+  },
+  "keyboard_navigation": true,
+  "window_visible": true,
+  "shutdown_confirmed": true
+}

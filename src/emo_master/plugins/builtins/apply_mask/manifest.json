@@ -1,0 +1,28 @@
+{
+  "operatorId": "vision.mask.apply",
+  "displayName": "Apply Mask",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._arithmetic_operators:ApplyMaskOperator",
+  "category": "Mask",
+  "iconKey": "apply-mask",
+  "summary": "使用二值 Mask 保留图像区域，并以固定像素值填充区域外。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "maskFrame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "invert": {"type": "boolean", "default": false},
+      "fillValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,88 @@
+name: One Windows preflight validation (NO CAPTURE)
+
+on:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths: [.github/workflows/runtime-kernel-preflight-only.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-preflight-only-7a1c9b20
+  cancel-in-progress: false
+
+jobs:
+  preflight:
+    if: >-
+      github.run_attempt == 1 &&
+      github.event.before == 'ecf8bcfcf193e05807556340d670f05c0f3d9e15' &&
+      github.event.head_commit.message == 'fix: notify idle display streams; preflight-only 20261002'
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTEST_ADDOPTS: ''
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install only original CI project dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Validate offline fixtures and existing native compiler without capture
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "r3-preflight-only-$env:GITHUB_RUN_ID-1"
+          $stage = 'private_directory'
+          $reason = 'private_directory_failed'
+          $nativeExit = $null
+          try {
+            if (Test-Path $root) { throw 'preexisting' }
+            New-Item -ItemType Directory $root | Out-Null
+            $stage = 'offline_fixtures'; $reason = 'offline_fixtures_failed'; $nativeExit = $null
+            python -m pytest -q scripts/diagnostics/windows_commit_trace_fixtures.py *> (Join-Path $root 'fixtures.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0) { throw 'fixtures' }
+            $stage = 'compiler_discovery'; $reason = 'compiler_discovery_failed'; $nativeExit = $null
+            $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+            if (!(Test-Path $vswhere)) { throw 'compiler' }
+            $installation = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2> (Join-Path $root 'discovery.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0 -or !$installation -or $installation.Count -gt 1) { throw 'compiler' }
+            $vcvars = Join-Path $installation 'VC\Auxiliary\Build\vcvars64.bat'
+            if (!(Test-Path $vcvars)) { throw 'compiler' }
+            $source = Join-Path $env:GITHUB_WORKSPACE 'scripts\windows_commit_trace_reader.cpp'
+            $reader = Join-Path $root 'reader.exe'
+            $object = Join-Path $root 'reader.obj'
+            $stage = 'compiler_build'; $reason = 'compiler_build_failed'; $nativeExit = $null
+            & cmd.exe /d /c "call `"$vcvars`" >nul 2>&1 && cl.exe /nologo /std:c++17 /EHsc /W4 /O2 `"$source`" /Fo`"$object`" /Fe`"$reader`" tdh.lib advapi32.lib" *> (Join-Path $root 'compiler.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0 -or !(Test-Path $reader)) { throw 'compiler' }
+            $stage = 'native_preflight'; $reason = 'native_preflight_failed'; $nativeExit = $null
+            & $reader --preflight *> (Join-Path $root 'native-preflight.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0) { throw 'schema' }
+            Write-Output ('KERNEL_PREFLIGHT_ONLY ' + ([ordered]@{stage='complete'; status='PASS'; reason='ok'; native_exit=0; capture_attempted=$false} | ConvertTo-Json -Compress))
+          } catch {
+            # Fixed enums and a numeric native status only. Never stringify errors.
+            Write-Output ('KERNEL_PREFLIGHT_ONLY ' + ([ordered]@{stage=$stage; status='FAIL'; reason=$reason; native_exit=$nativeExit; capture_attempted=$false} | ConvertTo-Json -Compress))
+            exit 2
+          }
+      - name: Remove private preflight outputs
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "r3-preflight-only-$env:GITHUB_RUN_ID-1"
+          try {
+            if (Test-Path $root) { Remove-Item -LiteralPath $root -Recurse -Force }
+            Write-Output 'KERNEL_PREFLIGHT_PRIVATE_FILES_REMOVED'
+          } catch {
+            Write-Output 'KERNEL_PREFLIGHT_CLEANUP_UNCONFIRMED'
+            exit 2
+          }

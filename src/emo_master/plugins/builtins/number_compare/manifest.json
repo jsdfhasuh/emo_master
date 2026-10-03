@@ -1,0 +1,29 @@
+{
+  "operatorId": "vision.compare.number",
+  "displayName": "Compare Number",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.number_compare.operator:NumberCompareOperator",
+  "category": "数值与逻辑",
+  "iconKey": "compare",
+  "summary": "比较两个有限数值并输出布尔结果；未连接 right 时使用参数阈值。",
+  "inputPorts": {
+    "left": {"type": "number", "required": true, "nullable": false},
+    "right": {"type": "number", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "result": {"type": "boolean", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "operator": {
+        "type": "string",
+        "enum": ["eq", "ne", "lt", "lte", "gt", "gte"],
+        "default": "gte"
+      },
+      "rightValue": {"type": "number", "default": 0.0}
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,21 @@
+{
+  "operatorId": "vision.value.number",
+  "displayName": "Number",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.number_value.operator:NumberValueOperator",
+  "category": "数值与逻辑",
+  "iconKey": "number",
+  "summary": "输出一个有限数值，可作为比较阈值或其他数值参数。",
+  "inputPorts": {},
+  "outputPorts": {
+    "value": {"type": "number", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "value": {"type": "number", "default": 0.0}
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

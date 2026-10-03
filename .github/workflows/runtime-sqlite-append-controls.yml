@@ -1,0 +1,81 @@
+name: Windows SQLite append controls (not acceptance)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths:
+      - .github/workflows/runtime-sqlite-append-controls.yml
+      - scripts/r3_sqlite_append_controls.py
+      - tests/test_r3_sqlite_append_controls.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-sqlite-append-controls-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  control:
+    name: Fixed append lifetime and JSONL controls / Windows / Python 3.10
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install the existing test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Run the fixed seven isolated controls
+        id: controls
+        shell: pwsh
+        run: |
+          $output = Join-Path $env:RUNNER_TEMP 'sqlite-append-control-evidence'
+          python scripts/r3_sqlite_append_controls.py --repo $env:GITHUB_WORKSPACE --output $output
+          exit $LASTEXITCODE
+      - name: Print bounded evidence and validate the fixed experiment
+        if: always()
+        shell: python
+        env:
+          ORIGINAL_CONTROL_STEP: ${{ steps.controls.outcome }}
+        run: |
+          import json, os, sys
+          from pathlib import Path
+          repo = Path(os.environ["GITHUB_WORKSPACE"])
+          sys.path.insert(0, str(repo))
+          from scripts.r3_sqlite_append_controls import (
+              CASES, LOG_CAP, RESULT_CAP, SUMMARY_CAP, TOTAL_CAP, source_identity, validate_output)
+          root = Path(os.environ["RUNNER_TEMP"]) / "sqlite-append-control-evidence"
+          names = [("summary.json", SUMMARY_CAP)]
+          for case in CASES:
+              names.extend([(f"{case}/result.json", RESULT_CAP), (f"{case}/worker.log", LOG_CAP)])
+          collected, total = [], 0
+          for name, cap in names:
+              path = root / name
+              if not path.exists():
+                  continue
+              if path.is_symlink() or not path.is_file():
+                  raise RuntimeError("APPEND_CONTROL_INVALID: unexpected evidence file")
+              with path.open("rb") as handle:
+                  data = handle.read(cap + 1)
+              total += len(data)
+              if len(data) > cap or total > TOTAL_CAP:
+                  raise RuntimeError("APPEND_CONTROL_INVALID: evidence exceeds fixed quota")
+              collected.append((name, data.decode("utf-8")))
+          for name, content in collected:
+              print("APPEND_CONTROL_FILE_BEGIN " + json.dumps(name))
+              print(content)
+              print("APPEND_CONTROL_FILE_END " + json.dumps(name))
+          if os.environ.get("ORIGINAL_CONTROL_STEP") not in {"success", "failure"}:
+              raise RuntimeError("APPEND_CONTROL_INVALID: controls did not finish")
+          summary = validate_output(root, expected_source=source_identity(repo))
+          if os.environ["ORIGINAL_CONTROL_STEP"] != "success":
+              raise RuntimeError("APPEND_CONTROL_INVALID: original control process failed")
+          print("CONTROL_EXECUTION_VALID: fixed input/settings/ownership checks only; not latency acceptance or a hosted root cause")
+          print("Raw and counted calibration differences are not observer-cost corrections. Background overlap, natural finalization and storage-path limits remain explicit in the evidence.")

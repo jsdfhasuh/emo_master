@@ -1,0 +1,92 @@
+resize before (9, 9, 1038, 111) ghost (9, 9, 1038, 568)
+resize after (9, 9, 1038, 128)
+Fwindow 1280 workspace 1280 renderer 754 nav [(9, 365), (380, 365)]
+.container title before/after ['CONTAINER-TITLE'] [] saved CONTAINER-TITLE
+Fgrid 736 cells [(9, 9, 440, 79), (449, 9, 139, 79), (588, 9, 139, 79)]
+actual committed column 1
+hit 446 240 (1, 1)
+F
+================================== FAILURES ===================================
+_____________________ test_resize_preview_matches_commit ______________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2deb18933b0) at 0x000002DEB3463680>
+
+    def test_resize_preview_matches_commit(designer):
+        c,e,key = setupPage(designer, 'number')
+        designer.resize(1600,900)
+        settle()
+        e.tools.select(key)
+        s=e.tools.selection
+        s.begin(s.handles[1], QPoint(0,0))
+        s.move(QPoint(0,64))
+        ghost=cellBox(s.grid,s.columns,s.candidate)
+        designer.grab().save(str(Path(__file__).with_name('resize-preview.png')))
+        print('resize before',s.card.geometry().getRect(),'ghost',ghost.getRect())
+        s.finish()
+        settle()
+        after=e.tools.selection.card.geometry()
+        designer.grab().save(str(Path(__file__).with_name('resize-committed.png')))
+        print('resize after',after.getRect())
+>       assert abs(ghost.height()-after.height()) <= 16
+E       assert 440 <= 16
+E        +  where 440 = abs((568 - 128))
+E        +    where 568 = <built-in method height of PySide2.QtCore.QRect object at 0x000002DEB114CB40>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000002DEB114CB40> = PySide2.QtCore.QRect(9, 9, 1038, 568).height
+E        +    and   128 = <built-in method height of PySide2.QtCore.QRect object at 0x000002DEB32A3580>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000002DEB32A3580> = PySide2.QtCore.QRect(9, 9, 1038, 128).height
+
+manual_test_workspace\page-review-20261002\test_review.py:39: AssertionError
+____________________ test_container_keeps_configured_title ____________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2deb201bf20) at 0x000002DEB3716A80>
+
+    def test_container_keeps_configured_title(designer):
+        c,e,key=setupPage(designer,'container')
+        e.tools.fields['title'].setText('CONTAINER-TITLE')
+        e.tools.apply()
+        e.refresh()
+        settle()
+        before=[w.text() for w in e.renderer.findChildren(QLabel) if w.text()=='CONTAINER-TITLE']
+        e.tools.commands().add(e.pageId,'text',0,0,key)
+        e.refresh()
+        settle()
+        after=[w.text() for w in e.renderer.pages[e.pageId].findChildren(QLabel) if w.text()=='CONTAINER-TITLE']
+        designer.grab().save(str(Path(__file__).with_name('container.png')))
+        print('container title before/after',before,after,'saved',_component(e.store.snapshot(),e.pageId,key).props.title)
+>       assert after
+E       assert []
+
+manual_test_workspace\page-review-20261002\test_review.py:67: AssertionError
+___________________ test_column_hit_test_matches_real_cell ____________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2deb5d41120) at 0x000002DEB3CA5E40>
+
+    def test_column_hit_test_matches_real_cell(designer):
+        c,e,key=setupPage(designer,'navigation_button')
+        def config(p):
+            p.pages[e.pageId].layout.columns=3
+            _component(p,e.pageId,key).props.text='A long navigation button label forcing its minimum width'
+        c.session.editPresentation(config)
+        e.refresh()
+        designer.resize(1280,720)
+        settle()
+        grid=e.renderer.pages[e.pageId].widget()
+        layout=grid.layout()
+        print('grid',grid.width(),'cells',[layout.cellRect(0,i).getRect() for i in range(3)])
+        rect=layout.cellRect(0,0)
+        point=QPoint(rect.right()-2,layout.cellRect(1,0).center().y())
+        actual=cellAt(grid,3,point)
+        e.tools.drop({'kind':'number'},grid,point)
+        added=_component(e.store.snapshot(),e.pageId,e.tools.selected)
+        print('actual committed column',added.layout.column)
+        designer.grab().save(str(Path(__file__).with_name('column.png')))
+        print('hit',point.x(),point.y(),actual)
+>       assert actual[1] == 0
+E       assert 1 == 0
+
+manual_test_workspace\page-review-20261002\test_review.py:89: AssertionError
+=========================== short test summary info ===========================
+FAILED manual_test_workspace/page-review-20261002/test_review.py::test_resize_preview_matches_commit
+FAILED manual_test_workspace/page-review-20261002/test_review.py::test_container_keeps_configured_title
+FAILED manual_test_workspace/page-review-20261002/test_review.py::test_column_hit_test_matches_real_cell
+3 failed, 1 passed in 3.02s

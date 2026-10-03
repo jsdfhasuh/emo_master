@@ -1,0 +1,99 @@
+name: Windows A18 phase diagnostics (not acceptance)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths:
+      - .github/workflows/runtime-a18-diagnostics.yml
+      - scripts/r3_a18_thread_diagnostics.py
+      - tests/test_r3_native_thread_origins.py
+      - tests/ui/presentation/test_retained_acceptance_lifecycle.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-a18-diagnostics-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Existing A18 checkpoints / original order / Windows / Python 3.10
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install the existing test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record the checkout outside the test process
+        shell: pwsh
+        run: |
+          git rev-parse HEAD
+          git status --short
+      - name: Run original full pytest order with the A18 observer alone
+        id: observed_tests
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'runtime-a18-phase-diagnostics.json'
+          python -m pytest -q -p scripts.r3_a18_thread_diagnostics --native-thread-origins $evidence
+          exit $LASTEXITCODE
+      - name: Print bounded failure evidence in this job log
+        if: always()
+        shell: python
+        env:
+          ORIGINAL_TEST_STEP: ${{ steps.observed_tests.outcome }}
+        run: |
+          import json, os
+          from pathlib import Path
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-a18-phase-diagnostics.json"
+          if not evidence.exists():
+              print("A18_NOT_CAPTURED: no native-identity failure evidence; inconclusive, not thread acceptance or proof that uninstrumented Windows is fixed")
+              if os.environ.get("ORIGINAL_TEST_STEP") != "success":
+                  raise RuntimeError("A18_DIAGNOSTIC_UNAVAILABLE: inspect the original pytest result for other failures or incomplete coverage")
+          else:
+              if not evidence.is_file() or not 0 < evidence.stat().st_size <= 32 * 1024:
+                  raise RuntimeError("A18_DIAGNOSTIC_INVALID: empty or oversized evidence")
+              content = evidence.read_text(encoding="ascii")
+              print("A18_PHASE_DIAGNOSTIC_JSON_BEGIN")
+              print(content)
+              print("A18_PHASE_DIAGNOSTIC_JSON_END")
+              record = json.loads(content)
+              expected = [("pre_fixture_baseline", None), ("warmed_fixture_baseline", None),
+                  ("stable_initial", None)] + [("navigation", index) for index in range(99, 1000, 100)] + [
+                  ("floating", index) for index in range(30)] + [("hidden_observers", None),
+                  ("owners_closed", None), ("fixture_released", None)]
+              rows = record.get("checkpoints", [])
+              valid = (record.get("schema_version") == 2 and record.get("role") == "diagnostic_only"
+                  and record.get("trigger") == "original_assertNoNewThreads_failed"
+                  and record.get("failure_kind") == "native_thread_ids"
+                  and record.get("checkpoint_identity") == "unverified"
+                  and record.get("observer_retired") is True and record.get("errors") == []
+                  and record.get("snapshot_match") == "live_argument_dict_id"
+                  and record.get("output_truncated") is False
+                  and record.get("omitted_checkpoint_count") == 0
+                  and 3 <= len(rows) <= 46 and record.get("checkpoint_calls") == len(rows)
+                  and record.get("after_sample") == len(rows) - 1
+                  and record.get("before_sample") in (0, 1)
+                  and [(row.get("phase"), row.get("index")) for row in rows] == expected[:len(rows)]
+                  and all(row.get("sample") == index and row.get("native_ids_status") == "complete"
+                      and len(row.get("native_thread_ids", [])) <= 128 for index, row in enumerate(rows)))
+              if not valid:
+                  raise RuntimeError("A18_DIAGNOSTIC_INVALID: missing, truncated, unknown or unrestored checkpoint evidence")
+              print("DIAGNOSTIC_ONLY: checkpoint identities remain unverified; start modules are not creators, owners or retention causes. Original pytest outcome is unchanged.")
+      - name: Expose full native WAL race failure context after the original run
+        if: always()
+        timeout-minutes: 2
+        shell: pwsh
+        run: |
+          # Separate process and unchanged predicates; plain assertions expose
+          # the existing bounded result dictionary without pytest truncation.
+          python -m pytest -q --assert=plain --tb=long tests/test_r3_sqlite_wal_metadata.py::testNativeWalChangesAreDetected
+          exit $LASTEXITCODE

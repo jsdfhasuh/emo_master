@@ -1,0 +1,323 @@
+{
+  "schemaVersion": "1.0",
+  "defaultPageId": "1a89bce6-3b68-4310-8e10-672eced226a1",
+  "pageOrder": [
+    "1a89bce6-3b68-4310-8e10-672eced226a1",
+    "11c89a57-5f15-412e-a48c-c25a0760a6a7"
+  ],
+  "navigation": {
+    "mode": "tabs"
+  },
+  "resultScopes": {
+    "e5209c64-0568-4458-ab59-b8b6bf197738": {
+      "entryWorkflowId": "main",
+      "scopeWorkflowId": "main",
+      "callPath": [],
+      "commitPolicy": "workflow_terminal"
+    }
+  },
+  "dataSources": {
+    "25360c6d-60d1-45b7-a3d0-3cb3898497ee": {
+      "kind": "node_output",
+      "resultScopeId": "e5209c64-0568-4458-ab59-b8b6bf197738",
+      "workflowId": "main",
+      "callPath": [],
+      "nodeId": "count",
+      "port": "count",
+      "fieldPath": [],
+      "expectedType": "integer",
+      "name": null,
+      "ruleVersion": "1.0"
+    },
+    "e867a695-0c64-407d-b3e0-816e2139a6bc": {
+      "kind": "node_output",
+      "resultScopeId": "e5209c64-0568-4458-ab59-b8b6bf197738",
+      "workflowId": "main",
+      "callPath": [],
+      "nodeId": "blob",
+      "port": "overlay",
+      "fieldPath": [],
+      "expectedType": "image",
+      "name": null,
+      "ruleVersion": "1.0"
+    }
+  },
+  "pages": {
+    "11c89a57-5f15-412e-a48c-c25a0760a6a7": {
+      "name": "检测详情",
+      "layout": {
+        "type": "grid",
+        "columns": 1,
+        "spacing": 8
+      },
+      "components": [
+        {
+          "componentId": "fd19a82e-ebe1-4edb-a005-6d536a89f09f",
+          "type": "image",
+          "version": "1.0",
+          "layout": {
+            "row": 0,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "image": "e867a695-0c64-407d-b3e0-816e2139a6bc"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "2c7a006c-ddcd-48a6-a17a-480460b2c110",
+          "type": "number",
+          "version": "1.0",
+          "layout": {
+            "row": 1,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "value": "25360c6d-60d1-45b7-a3d0-3cb3898497ee"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "391253aa-ba82-40f4-aa8b-254b86c6dc33",
+          "type": "text",
+          "version": "1.0",
+          "layout": {
+            "row": 2,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "测试项目交付 · 本地图像 · 真实 Blob / Count",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "c0e08a92-04c2-45d1-904c-40f57023f6cd",
+          "type": "navigation_button",
+          "version": "1.0",
+          "layout": {
+            "row": 4,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "返回总览",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "1a89bce6-3b68-4310-8e10-672eced226a1",
+              "context": "live",
+              "resultScopeId": null
+            }
+          },
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        }
+      ],
+      "resultScopeIds": []
+    },
+    "1a89bce6-3b68-4310-8e10-672eced226a1": {
+      "name": "运行总览",
+      "layout": {
+        "type": "grid",
+        "columns": 1,
+        "spacing": 8
+      },
+      "components": [
+        {
+          "componentId": "59dd3960-d7a3-4c52-9e02-12c1dce21a6b",
+          "type": "image",
+          "version": "1.0",
+          "layout": {
+            "row": 0,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "image": "e867a695-0c64-407d-b3e0-816e2139a6bc"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "86ff908a-3e0c-4d3d-9504-dd7501fa5a24",
+          "type": "number",
+          "version": "1.0",
+          "layout": {
+            "row": 1,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "value": "25360c6d-60d1-45b7-a3d0-3cb3898497ee"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "78675014-2e31-45e2-883b-ad92f53e72f3",
+          "type": "text",
+          "version": "1.0",
+          "layout": {
+            "row": 2,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "测试项目交付 · 本地图像 · 真实 Blob / Count",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "96c0725c-94a8-41c6-b376-d7c23c60bb44",
+          "type": "navigation_button",
+          "version": "1.0",
+          "layout": {
+            "row": 4,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "检测详情",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "11c89a57-5f15-412e-a48c-c25a0760a6a7",
+              "context": "live",
+              "resultScopeId": null
+            }
+          },
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        }
+      ],
+      "resultScopeIds": []
+    }
+  }
+}

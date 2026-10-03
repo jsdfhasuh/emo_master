@@ -1,0 +1,21 @@
+{
+  "head": "55863779cbaa43153c9bc553ee448076f99b6a86",
+  "dirty": " M docs/development-guide.md\n",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "os": "Windows-10-10.0.26200-SP0",
+  "command": "python scripts/ci_check.py",
+  "PYTEST_ADDOPTS": "--ignore=manual_test_workspace -ra",
+  "allPythonFilesCount": 604,
+  "allPythonHashesSha256": "cb4582bfd093325235d07f2998e1f644bc9410680c31bd22bfd1f5bbc0823996",
+  "relevantSha256": {
+    "scripts/validate_flow_layout.py": "ffd56322551f047c4428aff1e80df2755b6445f555746991e22ddbb42ec2e333",
+    "src/emo_master/apps/designer/ui/flow_layout.py": "80a0dfe009664a903768a2382a13fb1c807e5cc082ec6a5ccf5443b34201977f",
+    "src/emo_master/apps/designer/ui/flow_routing.py": "571d6ab3772f3dfe40b1060ff06fccf24eced8c0c91cd9177e87cf078f09fb55",
+    "src/emo_master/apps/designer/ui/flow_scene.py": "47141af7c51b64a6cda6555b5c043ed3c745501ef8b299d742f06f996158befe",
+    "src/emo_master/apps/designer/ui/main_window.py": "7900e2291c0099fc40774ffefc4d9018a6cd804599bc244b096bbebfec2ab147",
+    "tests/designer/test_flow_layout_qt.py": "6cf274dac53b0b2577bc2b7822bd3127133437addd0964f2fa1b8d647e5d9d56",
+    "tests/designer/test_flow_layout_routing.py": "ae6098b35b1e447b42fc15295ad6787e842bb7207559b4a5ba3d09f4b3e279f2",
+    "tests/designer/test_flow_scene_interactions.py": "c27d81900fd784fa07c5ae8503b92afcd88a380b79cb8443f4824dc4905de398"
+  },
+  "fullManifestLocalPath": "manual_test_workspace\\flow-layout-check\\ci-final-context.json"
+}

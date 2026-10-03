@@ -1,0 +1,32 @@
+{
+  "pending": {
+    "preview": [
+      9,
+      9,
+      748,
+      317
+    ],
+    "committed": [
+      9,
+      9,
+      748,
+      317
+    ]
+  },
+  "container": {
+    "preview": [
+      9,
+      9,
+      748,
+      320
+    ],
+    "committed": [
+      9,
+      9,
+      748,
+      320
+    ]
+  },
+  "saveReopen": true,
+  "job": null
+}

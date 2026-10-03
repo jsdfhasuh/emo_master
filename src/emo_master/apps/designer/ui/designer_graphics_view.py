@@ -1,14 +1,24 @@
 from __future__ import annotations
 
+from typing import Any
 
 try:
-    from PySide2.QtCore import QPoint, Qt
+    from PySide2.QtCore import QPoint, QSize, QTimer, Qt, Signal
+    from PySide2.QtGui import QPainter
     from PySide2.QtWidgets import QGraphicsView
 
     class DesignerGraphicsView(QGraphicsView):
+        zoomChanged: Any = Signal(float)
+
         def __init__(self, scene) -> None:
             super().__init__(scene)
-            self._zoomFactor = 1.0
+            self._pendingFit: tuple[tuple[float, float, float, float], float] | None = None
+            self._fitViewportSize: QSize | None = None
+            self._fitTimer = QTimer(self)
+            self._fitTimer.setSingleShot(True)
+            self._fitTimer.timeout.connect(self._applyPendingFit)
+            self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform)
+            self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
             self._minZoom = 0.35
             self._maxZoom = 3.0
             self._zoomStep = 1.15
@@ -23,7 +33,48 @@ try:
                 setVerticalPolicy(Qt.ScrollBarAlwaysOff)
 
         def getZoomFactor(self) -> float:
-            return float(self._zoomFactor)
+            return float(self.transform().m11())
+
+        def setZoomFactor(self, factor: float, underMouse: bool = False) -> None:
+            self._pendingFit = None
+            self._fitTimer.stop()
+            target = max(self._minZoom, min(self._maxZoom, float(factor)))
+            self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse if underMouse else QGraphicsView.AnchorViewCenter)
+            self.scale(target / self.getZoomFactor(), target / self.getZoomFactor())
+            self.zoomChanged.emit(self.getZoomFactor())
+
+        def fitContent(self, bounds, minimumZoom: float = 0.02) -> None:
+            self._pendingFit = (bounds, minimumZoom)
+            self._fitViewportSize = None
+            self._fitTimer.start(0)
+
+        def _applyPendingFit(self) -> None:
+            if self._pendingFit is None or not self.isVisible():
+                return
+            size = self.viewport().size()
+            if self._fitViewportSize != size:
+                # Top-level screen constraints can resize us after the first show.
+                self._fitViewportSize = size
+                self._fitTimer.start(0)
+                return
+            (x, y, width, height), minimum = self._pendingFit
+            self._pendingFit = None
+            target = min((self.viewport().width() - 24) / max(1, width),
+                         (self.viewport().height() - 24) / max(1, height), 1.0)
+            self.resetTransform()
+            self.scale(max(minimum, target), max(minimum, target))
+            self.centerOn(x + width / 2, y + height / 2)
+            self.zoomChanged.emit(self.getZoomFactor())
+
+        def showEvent(self, event):
+            super().showEvent(event)
+            if self._pendingFit is not None:
+                self._fitTimer.start(0)
+
+        def resizeEvent(self, event):
+            super().resizeEvent(event)
+            if self._pendingFit is not None:
+                self._fitTimer.start(0)
 
         def isPanning(self) -> bool:
             return self._isPanning
@@ -33,24 +84,15 @@ try:
 
         def zoomByDelta(self, delta: int) -> None:
             factor = self._zoomStep if delta > 0 else 1.0 / self._zoomStep
-            target = self._zoomFactor * factor
-            if target < self._minZoom or target > self._maxZoom:
-                return
-            setAnchor = getattr(self, "setTransformationAnchor", None)
-            anchor = getattr(QGraphicsView, "AnchorUnderMouse", None)
-            if callable(setAnchor) and anchor is not None:
-                setAnchor(anchor)
-            scaleMethod = getattr(self, "scale", None)
-            if callable(scaleMethod):
-                scaleMethod(factor, factor)
-            self._zoomFactor = target
+            self.setZoomFactor(self.getZoomFactor() * factor, underMouse=True)
 
         def beginPanAt(self, x: float, y: float) -> bool:
             sceneMethod = getattr(self, "scene", None)
             sceneObj = sceneMethod() if callable(sceneMethod) else None
             sceneItemAt = getattr(sceneObj, "itemAtPoint", None)
             if callable(sceneItemAt):
-                if sceneItemAt(float(x), float(y)) is not None:
+                point = self.mapToScene(int(x), int(y))
+                if sceneItemAt(point.x(), point.y()) is not None:
                     return False
             itemAt = getattr(self, "itemAt", None)
             if callable(itemAt):
@@ -148,6 +190,12 @@ except Exception:  # pragma: no cover
 
         def getZoomFactor(self) -> float:
             return float(self._zoomFactor)
+
+        def setZoomFactor(self, factor: float, underMouse: bool = False) -> None:
+            self._zoomFactor = max(0.35, min(3.0, float(factor)))
+
+        def fitContent(self, bounds, minimumZoom: float = 0.02) -> None:
+            self._zoomFactor = max(minimumZoom, 1.0)
 
         def zoomByDelta(self, delta: int) -> None:
             factor = 1.15 if delta > 0 else 1.0 / 1.15

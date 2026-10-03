@@ -1,0 +1,73 @@
+.................F...................................................... [ 75%]
+........................                                                 [100%]
+================================== FAILURES ===================================
+________________ testC1ThroughC4RealSpawnAndClassifiedLoopback ________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-364/testC1ThroughC4RealSpawnAndCla0')
+
+    def testC1ThroughC4RealSpawnAndClassifiedLoopback(tmp_path):
+        from examples.runtime_pages_p2 import pacedProject, pluginRoots
+        from emo_master.apps.runtime.grpc_server.service import RuntimeService
+        from emo_master.apps.runtime.presentation.service import PresentationService
+        runtime = RuntimeService(dbPath=tmp_path / "state.db", workspaceRoot=tmp_path / "jobs", pluginRootPaths=pluginRoots(tmp_path))
+        presentation = PresentationService(runtime, tmp_path / "display")
+    
+        def simulatedCamera(request, context):
+            assert request.session_id == "SIMULATED-NO-DEVICE"
+            while context.is_active():
+                yield pb.OperatorPreviewFrame(session_id=request.session_id, width=160, height=120)
+                time.sleep(.05)
+        runtime.StreamOperatorPreviewFrames = simulatedCamera
+        server = AioRuntimeServer(runtime, presentation)
+        transport = grpc.insecure_channel(f"127.0.0.1:{server.port}")
+        display = rpc.DisplayServiceStub(transport)
+        legacy = rpc.RuntimeServiceStub(transport)
+        jobs = []
+        calls = []
+        try:
+            prepared = display.Prepare(pb.DisplayPrepareRequest(project_json=pacedProject(tmp_path, count=10000).model_dump_json(), resource_root=str(tmp_path)), timeout=15)
+            for label, jobCount, displayCount, cameras in [("C1", 1, 1, 0), ("C2", 1, 1, 1), ("C3", 1, 2, 1), ("C4", 2, 2, 1)]:
+                while len(jobs) < jobCount:
+                    jobs.append(display.Start(pb.DisplayStartRequest(prepared_id=prepared.prepared_id), timeout=5).job_id)
+                for job in jobs:
+                    call = legacy.StreamJobEvents(pb.StreamJobEventsRequest(job_id=job, follow=True))
+                    assert next(call).job_id == job
+                    calls.append(call)
+                for index in range(displayCount):
+                    call = display.Subscribe(pb.DisplayRequest(job_id=jobs[index % jobCount]))
+                    assert next(call).job_id in jobs
+                    calls.append(call)
+                if cameras:
+                    call = legacy.StreamOperatorPreviewFrames(pb.StreamOperatorPreviewFramesRequest(session_id="SIMULATED-NO-DEVICE"))
+                    assert next(call).width == 160
+                    calls.append(call)
+                until(lambda: server.active["display"] == displayCount and server.active["events"] == jobCount)
+                latencies = []
+                for _ in range(10):
+                    start = time.monotonic()
+                    assert legacy.GetJobStatus(pb.GetJobStatusRequest(job_id=jobs[0]), timeout=.2).ok
+                    latencies.append((time.monotonic() - start) * 1000)
+                assert max(latencies) < 200
+                print(label, "control_ms", latencies, "active", server.active)
+                if label == "C4":
+                    for excess in [display.Subscribe(pb.DisplayRequest(job_id=jobs[0]), timeout=.5),
+                        legacy.StreamJobEvents(pb.StreamJobEventsRequest(job_id=jobs[0], follow=True), timeout=.5),
+                        legacy.StreamOperatorPreviewFrames(pb.StreamOperatorPreviewFramesRequest(session_id="SIMULATED-NO-DEVICE"), timeout=.5)]:
+                        with pytest.raises(grpc.RpcError) as error:
+                            next(excess)
+                        assert error.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
+                for call in calls:
+                    call.cancel()
+                calls.clear()
+                until(lambda: server.active["display"] == server.active["events"] == server.active["camera"] == 0)
+>           assert all(runtime.jobRepository.get(job).status == "RUNNING" for job in jobs)
+E           assert False
+E            +  where False = all(<generator object testC1ThroughC4RealSpawnAndClassifiedLoopback.<locals>.<genexpr> at 0x000001A01A1B74C0>)
+
+tests\runtime\presentation\test_network.py:234: AssertionError
+---------------------------- Captured stdout call -----------------------------
+C1 control_ms [0.0, 0.0, 0.0, 0.0, 15.000000013969839, 0.0, 15.999999945051968, 0.0, 0.0, 0.0] active {'control': 0, 'events': 1, 'display': 1, 'camera': 0, 'asset': 0, 'bulk': 0}
+C2 control_ms [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.000000013969839, 0.0, 0.0, 0.0] active {'control': 0, 'events': 1, 'display': 1, 'camera': 1, 'asset': 0, 'bulk': 0}
+C3 control_ms [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 15.000000013969839] active {'control': 0, 'events': 1, 'display': 2, 'camera': 1, 'asset': 0, 'bulk': 0}
+C4 control_ms [15.000000013969839, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] active {'control': 0, 'events': 2, 'display': 2, 'camera': 1, 'asset': 0, 'bulk': 0}
+1 failed, 95 passed in 30.28s

@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 
+from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.ui.main_window import MainWindow
 
 
@@ -181,6 +182,36 @@ def testStartupOpenProjectLoadsPathAndReturnsTrue(tmp_path: Path) -> None:
     assert window.showStartupProjectEntry() is True
 
 
+def testStartupOpenProjectRefreshesWorkflowTabs(tmp_path: Path) -> None:
+    ensureQApp()
+    projectDir = tmp_path / "multi-workflow-project"
+    projectDir.mkdir(parents=True, exist_ok=True)
+    workflowStore = WorkflowStore()
+    bodyWorkflowId = workflowStore.createWorkflow("Body")
+    (projectDir / "project.json").write_text(
+        json.dumps(
+            workflowStore.toPayload("multi-workflow-project"),
+            ensure_ascii=True,
+            indent=2,
+        ),
+        encoding="utf-8",
+    )
+    window = MainWindow(
+        RuntimeClientStub(),
+        showStartupEntry=True,
+        projectEntryDialogFactory=lambda: EntryDialogStub(
+            "open_project", str(projectDir / "project.json")
+        ),
+    )
+
+    assert window.showStartupProjectEntry() is True
+    assert window.workflowTabs.count() == 3
+    assert window.workflowTabs.tabBar().tabData(0) == "main"
+    assert window.workflowTabs.tabBar().tabData(1) == bodyWorkflowId
+    assert window.workflowTabs.tabBar().tabData(2) is None
+    assert window.workflowTabs.tabText(1) == "Body"
+
+
 def testStartupNewBlankPromptsDirectoryAndSaves(tmp_path: Path) -> None:
     ensureQApp()
     projectDir = tmp_path / "blank_project"
@@ -204,6 +235,32 @@ def testStartupNewBlankCancelDirectoryReturnsFalse() -> None:
     )
     window._chooseProjectDirectory = lambda title: ""  # type: ignore[method-assign]
     assert window.showStartupProjectEntry() is False
+
+
+def testStartupNewBlankStopsWhenSaveFails(tmp_path: Path) -> None:
+    class CountingRuntimeClientStub(RuntimeClientStub):
+        def __init__(self) -> None:
+            self.loadCalls = 0
+
+        def loadProject(self, projectPath: str):
+            self.loadCalls += 1
+            return super().loadProject(projectPath)
+
+    runtimeClient = CountingRuntimeClientStub()
+    projectDir = tmp_path / "failed-blank-project"
+    window = MainWindow(
+        runtimeClient,
+        showStartupEntry=True,
+        projectEntryDialogFactory=lambda: EntryDialogStub("new_blank", ""),
+    )
+    window._chooseProjectDirectory = lambda title: str(projectDir)  # type: ignore[method-assign]
+    window.projectController.saveProjectToDirectory = (  # type: ignore[method-assign]
+        lambda *args, **kwargs: (False, None)
+    )
+
+    assert window.showStartupProjectEntry() is False
+    assert runtimeClient.loadCalls == 0
+    assert window.currentProjectDir is None
 
 
 def testStartupDialogUsesHomepageLayoutMode() -> None:

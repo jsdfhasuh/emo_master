@@ -1,0 +1,5 @@
+callback starts, repository status COMPLETED
+wait terminal COMPLETED assets 0
+callback ends assets 9
+after 500ms assets 9
+[]

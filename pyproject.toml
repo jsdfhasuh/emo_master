@@ -1,22 +1,24 @@
 [project]
 name = "emo_master"
-version = "0.1.0"
+version = "0.6.1"
 requires-python = ">=3.10,<3.11"
 dependencies = [
   "PySide2>=5.15",
-  "grpcio>=1.62",
-  "grpcio-tools>=1.62",
-  "protobuf>=4.25",
+  "grpcio==1.78.0",
+  "grpcio-tools==1.78.0",
+  "protobuf==6.33.6",
   "pydantic>=2.6",
   "opencv-python>=4.9,<4.11",
   "PyYAML>=6.0",
   "fastapi>=0.110",
   "uvicorn>=0.29",
-  "numpy<2"
+  "onnxruntime==1.23.2",
+  "numpy<2",
+  "defusedxml==0.7.1"
 ]
 
 [project.optional-dependencies]
-dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy>=1.9", "ruff>=0.3"]
+dev = ["pytest>=8.0", "pytest-cov>=5.0", "mypy==2.3.1", "ruff==0.15.6"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]

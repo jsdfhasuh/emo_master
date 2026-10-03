@@ -1,0 +1,27 @@
+{
+  "operatorId": "vision.analysis.contour",
+  "displayName": "Contour Extraction",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._shape_operators:ContourExtractionOperator",
+  "category": "分析",
+  "iconKey": "contour",
+  "summary": "从二值 Mask 提取多边形轮廓与完整层级集合。",
+  "inputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "polygons": {"type": "list<polygon2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "retrievalMode": {"type": "string", "enum": ["external", "list", "ccomp", "tree"], "default": "tree"},
+      "approximation": {"type": "string", "enum": ["none", "simple"], "default": "simple"}
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

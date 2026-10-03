@@ -1,24 +1,13 @@
 from emo_master.apps.designer.ui.flow_scene import (
     FlowEdgeViewModel,
     FlowNodeViewModel,
-    FlowScene,
 )
 
 
-def ensureQApp() -> None:
-    try:
-        from PySide2.QtWidgets import QApplication
-
-        app = QApplication.instance()
-        if app is None:
-            _ = QApplication([])
-    except Exception:
-        pass
 
 
-def testFlowSceneNodeDoubleClickHandlerTriggered() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneNodeDoubleClickHandlerTriggered(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     captured: list[str] = []
 
     scene.setNodeDoubleClickHandler(lambda nodeId: captured.append(nodeId))
@@ -33,8 +22,8 @@ def testFlowSceneNodeDoubleClickHandlerTriggered() -> None:
     assert captured == ["node-x"]
 
 
-def testFlowSceneCanvasClickHandlerTriggered() -> None:
-    scene = FlowScene()
+def testFlowSceneCanvasClickHandlerTriggered(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     captured = {"count": 0}
 
     scene.setCanvasClickHandler(
@@ -47,8 +36,8 @@ def testFlowSceneCanvasClickHandlerTriggered() -> None:
     assert captured["count"] == 1
 
 
-def testFlowSceneOperatorDropHandlerTriggered() -> None:
-    scene = FlowScene()
+def testFlowSceneOperatorDropHandlerTriggered(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     captured: dict[str, object] = {}
 
     def dropHandler(payload: dict[str, object], x: float, y: float) -> None:
@@ -66,9 +55,8 @@ def testFlowSceneOperatorDropHandlerTriggered() -> None:
     assert payload.get("operatorId") == "vision.edge.canny"
 
 
-def testFlowSceneConnectionReasonShowsTypeMismatch() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneConnectionReasonShowsTypeMismatch(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",
@@ -99,9 +87,8 @@ def testFlowSceneConnectionReasonShowsTypeMismatch() -> None:
     assert "mask" in reason
 
 
-def testFlowScenePreviewConnectionTargetWithSnapHint() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowScenePreviewConnectionTargetWithSnapHint(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",
@@ -132,9 +119,8 @@ def testFlowScenePreviewConnectionTargetWithSnapHint() -> None:
     assert previewResult.get("targetKey") == ("node-b", "input", "imageIn")
 
 
-def testFlowSceneSelectedEdgeStyleIsEnhanced() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneSelectedEdgeStyleIsEnhanced(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",
@@ -174,9 +160,8 @@ def testFlowSceneSelectedEdgeStyleIsEnhanced() -> None:
     assert float(selectedStyle["width"]) > float(normalStyle["width"])
 
 
-def testFlowSceneDragPreviewSupportsSnapRadius() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneDragPreviewSupportsSnapRadius(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",
@@ -207,9 +192,8 @@ def testFlowSceneDragPreviewSupportsSnapRadius() -> None:
     assert nearTarget.get("targetKey") == ("node-b", "input", "imageIn")
 
 
-def testFlowSceneDragHintOnlyVisibleDuringDrag() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneDragHintOnlyVisibleDuringDrag(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",
@@ -249,9 +233,8 @@ def testFlowSceneDragHintOnlyVisibleDuringDrag() -> None:
     assert getDragHintText() == ""
 
 
-def testFlowSceneIfNodeStyleUsesSpecialPalette() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneIfNodeStyleUsesSpecialPalette(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="if-node",
@@ -270,9 +253,8 @@ def testFlowSceneIfNodeStyleUsesSpecialPalette() -> None:
     assert style.get("variant") == "if"
 
 
-def testFlowSceneSwitchNodeStyleUsesSpecialPalette() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneSwitchNodeStyleUsesSpecialPalette(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="switch-node",
@@ -298,9 +280,8 @@ def testFlowSceneSwitchNodeStyleUsesSpecialPalette() -> None:
     assert style.get("variant") == "switch"
 
 
-def testFlowSceneDoesNotInferSwitchVariantForOtherOperator() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneDoesNotInferSwitchVariantForOtherOperator(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="custom-node",
@@ -326,9 +307,8 @@ def testFlowSceneDoesNotInferSwitchVariantForOtherOperator() -> None:
     assert style.get("variant") == "default"
 
 
-def testFlowSceneNodeRuntimeStateChangesVisualStyle() -> None:
-    ensureQApp()
-    scene = FlowScene()
+def testFlowSceneNodeRuntimeStateChangesVisualStyle(ownedFlowScene) -> None:
+    scene = ownedFlowScene()
     scene.addFlowNode(
         FlowNodeViewModel(
             nodeId="node-a",

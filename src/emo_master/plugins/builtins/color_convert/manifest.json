@@ -1,0 +1,44 @@
+{
+  "operatorId": "vision.preprocess.color_convert",
+  "displayName": "Color Convert",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.color_convert.operator:ColorConvertOperator",
+  "category": "预处理",
+  "iconKey": "color",
+  "summary": "在 BGR、RGB、GRAY、HSV 和 OpenCV uint8 LAB 之间转换颜色空间。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "sourceSpace": {
+        "type": "string",
+        "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
+        "default": "BGR"
+      },
+      "targetSpace": {
+        "type": "string",
+        "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
+        "default": "GRAY"
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

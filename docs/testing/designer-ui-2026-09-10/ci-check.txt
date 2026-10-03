@@ -1,0 +1,34 @@
+[ci-check] running proto-drift: C:\Users\dd109\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\dd109\.conda\envs\emo_master\python.exe -m ruff check src tests
+All checks passed!
+[ci-check] running mypy: C:\Users\dd109\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:552: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 223 source files
+[ci-check] running pytest: C:\Users\dd109\.conda\envs\emo_master\python.exe -m pytest -q
+........................................................................ [  9%]
+........................................................................ [ 19%]
+........................................................................ [ 28%]
+........................................................................ [ 38%]
+........................................................................ [ 47%]
+........................................................................ [ 57%]
+...............................................................s........ [ 67%]
+........................................................................ [ 76%]
+........................................................................ [ 86%]
+........................................................................ [ 95%]
+................................                                         [100%]
+751 passed, 1 skipped in 84.20s (0:01:24)
+[ci-check] all checks passed

@@ -1,0 +1,9 @@
+src/emo_master/plugins/builtins/*/assets/*.svg text eol=lf
+# The read-only WPR preflight checks the original profile's exact Git bytes.
+scripts/windows_commit_trace.wprp text eol=lf
+# Raw Windows evidence is hash-verified; preserve CRLF and pytest diagnostic spaces.
+docs/evidence/p1-runtime-pages/** -text -whitespace
+docs/evidence/p4/** -text -whitespace
+docs/evidence/p5/** -text -whitespace
+docs/testing/page-editor-2026-10-02/*.log -text -whitespace
+docs/testing/floating-toolbox-2026-10-04/** -text -whitespace

@@ -1,0 +1,61 @@
+{
+  "operatorId": "vision.io.huaray_camera",
+  "displayName": "Huaray IMV Camera",
+  "version": "1.1.1",
+  "entry": "emo_master.plugins.builtins.huaray_camera.operator:HuarayCameraOperator",
+  "category": "图像采集",
+  "iconKey": "camera",
+  "iconResource": "assets/icon.svg",
+  "summary": "通过华睿 IMV SDK 直连相机，每次执行采集一帧并保留作业内连接。",
+  "inputPorts": {},
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.1"},
+    "blockId": {"type": "integer", "required": true, "nullable": false},
+    "deviceTimestamp": {"type": "integer", "required": true, "nullable": false},
+    "actualExposureUs": {"type": "number", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "selectionMode": {"type": "string", "enum": ["ip", "cameraKey", "userId", "index"], "default": "ip"},
+      "ipAddress": {"type": "string", "default": "", "maxLength": 255},
+      "cameraKey": {"type": "string", "default": "", "maxLength": 255},
+      "userId": {"type": "string", "default": "", "maxLength": 255},
+      "deviceIndex": {"type": "integer", "minimum": 0, "maximum": 99, "default": 0},
+      "triggerMode": {"type": "string", "enum": ["hardware", "software", "freeRun"], "default": "hardware"},
+      "triggerSource": {"type": "string", "enum": ["Line1", "Line2", "Line3", "Line4"], "default": "Line1"},
+      "triggerActivation": {"type": "string", "enum": ["RisingEdge", "FallingEdge"], "default": "RisingEdge"},
+      "captureTimeoutMs": {"type": "integer", "minimum": 1, "maximum": 60000, "default": 5000},
+      "retryCount": {"type": "integer", "minimum": 0, "maximum": 3, "default": 1},
+      "retryDelayMs": {"type": "integer", "minimum": 0, "maximum": 5000, "default": 200},
+      "outputColor": {"type": "string", "enum": ["bgr", "gray"], "default": "bgr"},
+      "demosaic": {"type": "string", "enum": ["nearest", "bilinear", "edgeSensing"], "default": "bilinear"},
+      "exposureMode": {"type": "string", "enum": ["keep", "manual"], "default": "keep"},
+      "exposureUs": {"type": "number", "exclusiveMinimum": 0, "default": 10000.0},
+      "gainMode": {"type": "string", "enum": ["keep", "manual"], "default": "keep"},
+      "gainRaw": {"type": "number", "default": 0.0},
+      "frameRateMode": {"type": "string", "enum": ["keep", "manual"], "default": "keep"},
+      "frameRate": {"type": "number", "exclusiveMinimum": 0, "default": 30.0},
+      "roiMode": {"type": "string", "enum": ["keep", "custom", "full"], "default": "keep"},
+      "width": {"type": "integer", "minimum": 1, "default": 1},
+      "height": {"type": "integer", "minimum": 1, "default": 1},
+      "offsetX": {"type": "integer", "minimum": 0, "default": 0},
+      "offsetY": {"type": "integer", "minimum": 0, "default": 0},
+      "pixelFormat": {"type": "string", "enum": ["keep", "Mono8", "BayerGR8", "BayerRG8", "BayerGB8", "BayerBG8", "RGB8", "BGR8"], "default": "keep"}
+    },
+    "required": []
+  },
+  "minCoreVersion": "0.4.0",
+  "maxCoreVersion": "1.x",
+  "editor": {
+    "schemaVersion": "1.0",
+    "kind": "customUi",
+    "openMode": "window",
+    "uiResource": "ui/editor.ui",
+    "controllerEntry": "emo_master.plugins.builtins.huaray_camera.editor:HuarayCameraEditorController",
+    "fallback": "schemaForm",
+    "previewMode": "live"
+  }
+}

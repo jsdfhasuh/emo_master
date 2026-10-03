@@ -1,0 +1,1 @@
+"""RGB region-statistics builtin."""

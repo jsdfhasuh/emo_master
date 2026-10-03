@@ -1,0 +1,28 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\jsdfhasuh\my_scripts\emo_master
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 18 items
+
+tests/designer/test_builtin_operator_editor_ui.py::testBuiltinCameraRoiAndHistogramUiControllersLoad <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  5%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[None-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 11%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[bad-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 16%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[nan-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 22%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[-1-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 27%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[12-12] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 33%]
+tests/designer/test_builtin_operator_editor_ui.py::testCameraEditorShowsOriginalStreamFailure[False] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 38%]
+tests/designer/test_builtin_operator_editor_ui.py::testCameraEditorShowsOriginalStreamFailure[True] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [ 44%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabsUseTabBarMetadataAndSwitchWithoutCreating <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 50%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuSetsSelectedTabAsEntry <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 55%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuActionsTargetClickedWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 61%]
+tests/designer/test_main_window_workflow_tabs.py::testPlusTabPromptsForNameAndCancelRestoresActiveTab <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 66%]
+tests/designer/test_main_window_workflow_tabs.py::testReferencedWorkflowDeleteFailureShowsReasonAndPreservesState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 72%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageExportDialogWritesDedicatedPackage <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 77%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 83%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackagePreviewCancelDoesNotCaptureOrImport <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 88%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportCanInsertMappedSubflowIntoCurrentWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 94%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportFailureWarnsWithoutChangingProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [100%]
+
+============================= 18 passed in 2.92s ==============================

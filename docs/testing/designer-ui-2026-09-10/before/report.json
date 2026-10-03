@@ -1,0 +1,227 @@
+{
+  "platform": "windows",
+  "scale": 1.0,
+  "font": "宋体",
+  "screen": "\\\\.\\DISPLAY1",
+  "windows": {
+    "main": {
+      "size": [
+        1600,
+        900
+      ],
+      "minimum": [
+        1040,
+        691
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        1600,
+        900
+      ]
+    },
+    "main-expanded": {
+      "size": [
+        1600,
+        1195
+      ],
+      "minimum": [
+        1040,
+        1195
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        1600,
+        1195
+      ]
+    },
+    "project-entry": {
+      "size": [
+        720,
+        520
+      ],
+      "minimum": [
+        436,
+        393
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        720,
+        520
+      ]
+    },
+    "parameters": {
+      "size": [
+        432,
+        288
+      ],
+      "minimum": [
+        356,
+        288
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        432,
+        288
+      ]
+    },
+    "global-counters": {
+      "size": [
+        720,
+        440
+      ],
+      "minimum": [
+        656,
+        199
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        720,
+        440
+      ]
+    },
+    "logs": {
+      "size": [
+        900,
+        520
+      ],
+      "minimum": [
+        658,
+        284
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        900,
+        520
+      ]
+    },
+    "workflow-package": {
+      "size": [
+        760,
+        690
+      ],
+      "minimum": [
+        447,
+        690
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        760,
+        690
+      ]
+    },
+    "huaray_camera": {
+      "size": [
+        980,
+        720
+      ],
+      "minimum": [
+        684,
+        639
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        980,
+        720
+      ]
+    },
+    "roi": {
+      "size": [
+        980,
+        851
+      ],
+      "minimum": [
+        713,
+        851
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        980,
+        851
+      ]
+    },
+    "histogram": {
+      "size": [
+        980,
+        734
+      ],
+      "minimum": [
+        684,
+        734
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        980,
+        734
+      ]
+    },
+    "operator-search": {
+      "size": [
+        560,
+        340
+      ],
+      "minimum": [
+        426,
+        244
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        560,
+        340
+      ]
+    },
+    "main-preview": {
+      "size": [
+        1600,
+        1195
+      ],
+      "minimum": [
+        1040,
+        1195
+      ],
+      "dpr": 1.0,
+      "pixels": [
+        1600,
+        1195
+      ]
+    }
+  },
+  "project_sha256": "74a67f1d6bf93507de92d6edd09b23411305a8143b23359609fed964478d2c85",
+  "sidebar": {
+    "collapsed": true,
+    "width": 180,
+    "minimum": 180,
+    "maximum": 36
+  },
+  "node_geometry": [
+    {
+      "node": "camera",
+      "size": [
+        220.0,
+        92.0
+      ],
+      "overflow": [
+        "deviceTimestamp",
+        "actualExposureUs"
+      ]
+    },
+    {
+      "node": "input",
+      "size": [
+        220.0,
+        92.0
+      ],
+      "overflow": []
+    },
+    {
+      "node": "output",
+      "size": [
+        220.0,
+        92.0
+      ],
+      "overflow": [
+        "deviceTimestamp",
+        "actualExposureUs"
+      ]
+    }
+  ]
+}

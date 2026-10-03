@@ -1,0 +1,20 @@
+{
+  "operatorId": "vision.preprocess.equalize",
+  "displayName": "Histogram Equalize",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._intensity_operators:EqualizeOperator",
+  "category": "预处理",
+  "iconKey": "equalize",
+  "summary": "均衡灰度图或 BGR 图像 LAB 色彩空间的 L 通道。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {"type": "object", "properties": {}},
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

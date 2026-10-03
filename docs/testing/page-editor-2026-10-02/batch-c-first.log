@@ -1,0 +1,114 @@
+............F.FF...................                                      [100%]
+================================== FAILURES ===================================
+_____ testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[palette] _____
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x19d381abe10) at 0x0000019D3B0E6B40>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000019D3B024580>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-673/testNativeDropCommitsPendingPr0')
+operation = 'palette'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeypatch, tmp_path, operation):  # noqa: F811
+        coordinator, editor, key = setupDropPage(designer)
+        pageId = editor.pageId
+        tools = editor.tools
+        tools.fields['title'].setText('δ��Ӧ�õı���')
+        tools.fields['fontSize'].setValue(32)
+        tools.addExtraRow(values=('boolean', 'true', '�����ж�����', 'green'))
+        monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: ('bind', True))
+        history = len(coordinator.session._undo)
+    
+        event = sendPendingDrop(editor, key, operation)
+    
+>       assert event.isAccepted(), editor.message.text()
+E       AssertionError: 1 validation error for ProjectDocument
+E         presentation
+E           Value error, components overlap [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E             For further information visit https://errors.pydantic.dev/2.13/v/value_error
+E       assert False
+E        +  where False = <built-in method isAccepted of PySide2.QtGui.QDropEvent object at 0x0000019D3B103F80>()
+E        +    where <built-in method isAccepted of PySide2.QtGui.QDropEvent object at 0x0000019D3B103F80> = <PySide2.QtGui.QDropEvent object at 0x0000019D3B103F80>.isAccepted
+
+tests\ui\page_designer\test_pending_drops.py:75: AssertionError
+______ testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[move] _______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x19d3a48bc90) at 0x0000019D3B043C00>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000019D3B0B7DC0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-673/testNativeDropCommitsPendingPr2')
+operation = 'move'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave(designer, monkeypatch, tmp_path, operation):  # noqa: F811
+        coordinator, editor, key = setupDropPage(designer)
+        pageId = editor.pageId
+        tools = editor.tools
+        tools.fields['title'].setText('δ��Ӧ�õı���')
+        tools.fields['fontSize'].setValue(32)
+        tools.addExtraRow(values=('boolean', 'true', '�����ж�����', 'green'))
+        monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: ('bind', True))
+        history = len(coordinator.session._undo)
+    
+        event = sendPendingDrop(editor, key, operation)
+    
+        assert event.isAccepted(), editor.message.text()
+        assert event.dropAction() == (Qt.MoveAction if operation == 'move' else Qt.CopyAction)
+        item = _component(editor.store.snapshot(), pageId, key)
+        assert item.props.title == 'δ��Ӧ�õı���'
+        assert item.props.fontSize == 32
+        assert item.props.indicatorStates['true'].text == '�����ж�����'
+>       assert len(coordinator.session._undo) == history + 2  # one form edit, one drop
+E       AssertionError: assert 4 == (3 + 2)
+E        +  where 4 = len([{'schemaVersion': '2.1', 'project': {'projectId': '14ac921c-57c6-418e-a1a1-c787423896f4', 'name': 'project', 'revisio...ac921c-57c6-418e-a1a1-c787423896f4', 'name': 'project', 'revision': 1, 'createdAt': '2026-10-02T13:26:21Z', ...}, ...}])
+E        +    where [{'schemaVersion': '2.1', 'project': {'projectId': '14ac921c-57c6-418e-a1a1-c787423896f4', 'name': 'project', 'revisio...ac921c-57c6-418e-a1a1-c787423896f4', 'name': 'project', 'revision': 1, 'createdAt': '2026-10-02T13:26:21Z', ...}, ...}] = <emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x0000019D3B115C00>._undo
+E        +      where <emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x0000019D3B115C00> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x0000019D3B115E10>.session
+
+tests\ui\page_designer\test_pending_drops.py:81: AssertionError
+_______ testNativeDropRejectsInvalidPendingFormWithoutMutation[palette] _______
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x19d39c42ee0) at 0x0000019D3B0D2380>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000019D3B19D6C0>
+operation = 'palette'
+
+    @pytest.mark.parametrize('operation', ['palette', 'output', 'move'])
+    def testNativeDropRejectsInvalidPendingFormWithoutMutation(designer, monkeypatch, operation):  # noqa: F811
+        coordinator, editor, key = setupDropPage(designer)
+        tools = editor.tools
+        tools.fields['title'].setText('����δ�ύ�ı���')
+        tools.fields['fontSize'].setValue(32)
+        tools.addExtraRow(values=('boolean', 'invalid boolean', '��������', 'green'))
+        dialogs = []
+        monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: (dialogs.append('binding') or 'bind', True))
+        before = coordinator.session.payload()
+        history = len(coordinator.session._undo)
+    
+        event = sendPendingDrop(editor, key, operation)
+    
+        assert not event.isAccepted()
+        assert coordinator.session.payload() == before
+        assert len(coordinator.session._undo) == history
+        assert tools.selected == key
+        assert tools.fields['title'].text() == '����δ�ύ�ı���'
+        assert tools.fields['fontSize'].value() == 32
+        assert tools.extra.item(0, 1).text() == 'invalid boolean'
+        assert tools.extra.item(0, 2).text() == '��������'
+        assert 'true or false' in editor.message.text()
+        assert not tools.pendingRefresh
+        assert not dialogs
+        # Correcting the retained field permits the same native gesture.
+        tools.extra.item(0, 1).setText('false')
+>       assert sendPendingDrop(editor, key, operation).isAccepted(), editor.message.text()
+E       AssertionError: 1 validation error for ProjectDocument
+E         presentation
+E           Value error, components overlap [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E             For further information visit https://errors.pydantic.dev/2.13/v/value_error
+E       assert False
+E        +  where False = <built-in method isAccepted of PySide2.QtGui.QDropEvent object at 0x0000019D3B1CDDC0>()
+E        +    where <built-in method isAccepted of PySide2.QtGui.QDropEvent object at 0x0000019D3B1CDDC0> = <PySide2.QtGui.QDropEvent object at 0x0000019D3B1CDDC0>.isAccepted
+E        +      where <PySide2.QtGui.QDropEvent object at 0x0000019D3B1CDDC0> = sendPendingDrop(<emo_master.apps.designer.page_designer.workspace.PageWorkspace(0x19d3a49f020) at 0x0000019D3B1CDA00>, '53b5fcbc-af39-452d-b752-48368a094d49', 'palette')
+
+tests\ui\page_designer\test_pending_drops.py:131: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[palette]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropCommitsPendingPropertiesBeforeRefreshAndSave[move]
+FAILED tests/ui/page_designer/test_pending_drops.py::testNativeDropRejectsInvalidPendingFormWithoutMutation[palette]
+3 failed, 32 passed in 10.01s

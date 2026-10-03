@@ -1,0 +1,24 @@
+{
+  "operatorId": "vision.collection.count",
+  "displayName": "Count Collection",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.collection_count.operator:CollectionCountOperator",
+  "category": "结果处理",
+  "iconKey": "count",
+  "summary": "统计 Blob 或 Detection 集合中的目标数量。",
+  "inputPorts": {
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "detections": {"type": "detectionCollection", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "measurements": {"type": "shapeMeasurementCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "lines": {"type": "lineCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "circles": {"type": "circleCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "matches": {"type": "templateMatchCollection", "required": false, "nullable": false, "schemaVersion": "1.2"}
+  },
+  "outputPorts": {
+    "count": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}},
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

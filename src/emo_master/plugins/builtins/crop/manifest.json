@@ -1,0 +1,63 @@
+{
+  "operatorId": "vision.preprocess.crop",
+  "displayName": "Crop / Pad",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.crop.operator:CropOperator",
+  "category": "预处理",
+  "iconKey": "crop",
+  "summary": "按参数或 BBox ROI 裁剪图像、添加常量边框，并保留回源坐标。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "roi": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "x": {"type": "number", "default": 0.0},
+      "y": {"type": "number", "default": 0.0},
+      "width": {"type": "number", "minimum": 0.0, "default": 0.0},
+      "height": {"type": "number", "minimum": 0.0, "default": 0.0},
+      "clip": {"type": "boolean", "default": true},
+      "paddingLeft": {"type": "integer", "minimum": 0, "default": 0},
+      "paddingTop": {"type": "integer", "minimum": 0, "default": 0},
+      "paddingRight": {"type": "integer", "minimum": 0, "default": 0},
+      "paddingBottom": {"type": "integer", "minimum": 0, "default": 0},
+      "padValue": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

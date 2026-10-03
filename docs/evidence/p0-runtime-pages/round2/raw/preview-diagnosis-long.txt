@@ -1,0 +1,8 @@
+callback starts, repository status RUNNING
+callback ends assets 0
+wait terminal COMPLETED assets 0
+after 500ms assets 0
+loaded key dafeec07077b7e020b67c6126abf7f6455be009a21dcc9ba25d3ff5d49e1ec9b workflow keys ['main']
+assets []
+
+[('preview.snapshot.failed', "[Errno 2] No such file or directory: 'C:\\\\Users\\\\JSDFHA~1\\\\AppData\\\\Local\\\\Temp\\\\testSuccessfulJobPromotesCurrentAndDirectUpstreamSnapshots-xxxxxxxxxxxxxxxxxxxxxxxxxxx-n97ozfep\\\\jobs\\\\d9418482-2e55-4919-a739-945c6f5792fe\\\\preview_staging\\\\assets\\\\.742e5c1d95a4e7a3834ade724c61f6519b134fcf3b5d75870ae4c6f35e0002ed.png.3d309a3db580476f85d8743461ac0ac2.tmp'"), ('preview.snapshot.failed', "[Errno 2] No such file or directory: 'C:\\\\Users\\\\JSDFHA~1\\\\AppData\\\\Local\\\\Temp\\\\testSuccessfulJobPromotesCurrentAndDirectUpstreamSnapshots-xxxxxxxxxxxxxxxxxxxxxxxxxxx-n97ozfep\\\\jobs\\\\d9418482-2e55-4919-a739-945c6f5792fe\\\\preview_staging\\\\assets\\\\.7ccfa3f31ef4e1a082f0990f8bd6e3fefe5407eae52391e6a7273d07fb7cb818.png.18628b89198c42dba3d06164a8ad8150.tmp'")]

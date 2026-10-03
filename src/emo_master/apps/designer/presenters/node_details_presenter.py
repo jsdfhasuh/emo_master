@@ -5,10 +5,12 @@ class NodeDetailsPresenter:
     def __init__(
         self,
         flowModel,
-        nodeRuntimeState: dict[str, dict[str, str]],
+        nodeRuntimeState: dict[str, dict[str, object]],
+        getActiveWorkflowId=None,
     ) -> None:
         self.flowModel = flowModel
         self.nodeRuntimeState = nodeRuntimeState
+        self.getActiveWorkflowId = getActiveWorkflowId or (lambda: "")
 
     def buildSummary(self) -> str:
         detailModel = self.buildModel()
@@ -27,6 +29,11 @@ class NodeDetailsPresenter:
             f"必填: {detailModel.get('required', '无')}",
             f"未填: {detailModel.get('missing', '无')}",
             f"运行状态: {detailModel.get('runtimeStatus', '-')}",
+            f"工作流: {detailModel.get('workflowId', '-')}",
+            f"运行实例: {detailModel.get('workflowRunId', '-')}",
+            f"父运行实例: {detailModel.get('parentWorkflowRunId', '-')}",
+            f"节点运行: {detailModel.get('nodeRunId', '-')}",
+            f"迭代路径: {detailModel.get('iterationPath', '-')}",
             f"分支命中: {detailModel.get('branch', '-')}",
             "参数:",
         ]
@@ -93,6 +100,11 @@ class NodeDetailsPresenter:
             if len(missingRequired) == 0
             else ", ".join(missingRequired),
             "runtimeStatus": runtimeStatus,
+            "workflowId": runtimeInfo.get("workflowId", self.getActiveWorkflowId()),
+            "workflowRunId": runtimeInfo.get("workflowRunId", "-"),
+            "parentWorkflowRunId": runtimeInfo.get("parentWorkflowRunId", "-"),
+            "nodeRunId": runtimeInfo.get("nodeRunId", "-"),
+            "iterationPath": runtimeInfo.get("iterationPath", ()),
             "branch": branchHit,
             "params": paramLines,
         }

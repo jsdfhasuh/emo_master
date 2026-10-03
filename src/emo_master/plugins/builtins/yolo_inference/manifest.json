@@ -1,0 +1,98 @@
+{
+  "operatorId": "vision.inference.yolo",
+  "displayName": "YOLO Inference",
+  "version": "1.2.1",
+  "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
+  "category": "推理",
+  "iconKey": "yolo",
+  "iconResource": "assets/icon.svg",
+  "summary": "使用 ONNX Runtime CPU 执行 YOLOv8/YOLO11 目标检测，输出标准 DetectionCollection。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "detections": {
+      "type": "detectionCollection",
+      "required": true,
+      "schemaVersion": "1.x"
+    },
+    "overlay": {
+      "type": "image",
+      "required": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "modelPath": {
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "YOLO ONNX 模型 (*.onnx)"
+      },
+      "confidence": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.25
+      },
+      "iou": {
+        "type": "number",
+        "minimum": 0.0,
+        "maximum": 1.0,
+        "default": 0.45
+      },
+      "imageSize": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 640
+      },
+      "maxDetections": {
+        "type": "integer",
+        "minimum": 1,
+        "default": 300
+      },
+      "device": {
+        "type": "string",
+        "enum": ["auto", "cpu"],
+        "default": "auto"
+      },
+      "classes": {
+        "type": "array",
+        "items": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "default": []
+      },
+      "agnosticNms": {
+        "type": "boolean",
+        "default": false
+      },
+      "drawOverlay": {
+        "type": "boolean",
+        "default": false
+      }
+    },
+    "required": ["modelPath"]
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

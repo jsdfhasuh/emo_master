@@ -82,17 +82,24 @@ def testSidebarStaysCollapsedAcrossShowResizeAndRestore(styledApp):
             window.resize(width, height)
             window.restoreMainSplitterSizes()
             styledApp.processEvents()
-            assert window.sidebarContainer.width() == 36
-            assert window.sidebarContainer.minimumWidth() == 36
-            assert window.sidebarContainer.maximumWidth() == 36
+            assert window.sidebarContainer.isHidden()
+            assert window.getMainSplitterSizes()[0] == 0
+            assert not window.floatingToolbox.isExpanded()
+            assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
         window.expandSidebar()
+        styledApp.processEvents()
+        canvasSize = window.flowView.viewport().size()
         window.saveMainSplitterSizes([260, 850, 320])
-        stored = window.getMainSplitterSizes()
+        stored = window.settingsStore.value('ui/main_splitter_sizes')
+        assert stored == [260, 850, 320]
         window.collapseSidebar()
         window.resize(1200, 680)
         styledApp.processEvents()
         window.expandSidebar()
-        assert window.sidebarContainer.width() >= 180
+        styledApp.processEvents()
+        assert window.floatingToolbox.isExpanded()
+        assert window.sidebarContainer.isHidden()
+        assert canvasSize.width() > window.floatingToolbox.width()
         assert window.layoutController._expandedSplitterSizes == stored
     finally:
         window.close()

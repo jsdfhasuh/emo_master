@@ -131,7 +131,7 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
     sizes = getSplitterSizes()
     assert isinstance(sizes, list)
     assert len(sizes) == 3
-    assert sizes[0] > 0
+    assert sizes[0] == 0 if hasattr(window, 'floatingToolbox') else sizes[0] > 0
     assert sizes[1] > 0
     assert sizes[2] > 0
 
@@ -142,7 +142,7 @@ def testMainWindowUsesHorizontalSplitterAndPersistsSizes() -> None:
 
     restoredWindow = MainWindow(RuntimeClientStub(), settingsStore=settings)
     restoredSizes = restoredWindow.getMainSplitterSizes()
-    assert restoredSizes[0] == 36
+    assert restoredSizes[0] == (0 if hasattr(restoredWindow, 'floatingToolbox') else 36)
     assert restoredWindow.layoutController._expandedSplitterSizes == [260, 900, 360]
 
 
@@ -171,7 +171,7 @@ def testCollapsedSidebarUsesLiveSplitterSizes() -> None:
 
     window.collapseSidebar()
     sizes = window.getMainSplitterSizes()
-    assert sizes[0] == 36
+    assert sizes[0] == (0 if hasattr(window, 'floatingToolbox') else 36)
     assert sizes[2] <= 300
 
 

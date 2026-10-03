@@ -14,6 +14,7 @@ try:
     from PySide2.QtWidgets import (
         QApplication,
         QGridLayout,
+        QLabel,
         QLineEdit,
         QPushButton,
         QVBoxLayout,
@@ -27,13 +28,14 @@ try:
     OPERATOR_MIME_TYPE = "application/x-emo-operator"
 
     class _OperatorCardButton(QPushButton):
-        def __init__(self, payload: dict[str, object]) -> None:
+        def __init__(self, payload: dict[str, object], *, compact: bool = False) -> None:
             displayName = str(payload.get("displayName", ""))
             iconKey = str(payload.get("iconKey", "default"))
             operatorId = str(payload.get("operatorId", ""))
             super().__init__(displayName)
             self._displayName = displayName
             self._operatorId = operatorId
+            self._compact = compact
             self._icon = operatorIcon(iconKey)
             self.setAccessibleName(displayName)
             self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
@@ -44,7 +46,8 @@ try:
             self.setToolTip(_buildTooltip(payload))
 
         def sizeHint(self):
-            return QSize(240, max(72, self.fontMetrics().height() * 2 + 30))
+            return QSize(240, max(60 if self._compact else 72,
+                                  self.fontMetrics().height() * 2 + (24 if self._compact else 30)))
 
         def setOperatorIcon(self, icon) -> None:
             self._icon = icon
@@ -69,7 +72,7 @@ try:
             painter.setPen(QColor("#626b78"))
             fm = painter.fontMetrics()
             subtitle = fm.elidedText(self._operatorId, Qt.ElideRight, max(0, self.width() - 24))
-            painter.drawText(12, self.height() - 14 - fm.descent(), subtitle)
+            painter.drawText(12, self.height() - (8 if self._compact else 14) - fm.descent(), subtitle)
 
         def mousePressEvent(self, event) -> None:  # type: ignore[override]
             self._dragStartPos = event.pos()
@@ -122,6 +125,8 @@ try:
             self._recentOperatorIds: list[str] = []
             self._recentEnabled = True
             self._lastPopupPoint: tuple[int, int] | None = None
+            self._embedded = False
+            self._embeddedCloseHandler: Callable[[], None] | None = None
             self._grid = QGridLayout()
             self._grid.setContentsMargins(8, 8, 8, 8)
             self._grid.setSpacing(8)
@@ -138,6 +143,9 @@ try:
 
             rootLayout = QVBoxLayout()
             rootLayout.addWidget(self.searchInput)
+            self.emptyLabel = QLabel('没有匹配的算子，试试其他名称或分类')
+            self.emptyLabel.setWordWrap(True)
+            rootLayout.addWidget(self.emptyLabel)
             gridHost = QWidget()
             gridHost.setLayout(self._grid)
             self._scroll = scrollContent(gridHost)
@@ -153,6 +161,22 @@ try:
 
         def setCreateHandler(self, handler: CreateHandler | None) -> None:
             self._createHandler = handler
+
+        def setEmbedded(self, parent: QWidget, closeHandler: Callable[[], None]) -> None:
+            """Reuse the card/MIME/catalog logic without a second native window."""
+            self.hide()
+            application = QApplication.instance()
+            if application is not None:
+                application.removeEventFilter(self)
+            self._embedded = True
+            self._embeddedCloseHandler = closeHandler
+            self.setParent(parent, Qt.Widget)
+            self.setMinimumSize(0, 0)
+            self.layout().setContentsMargins(8, 8, 8, 8)
+            self._grid.setContentsMargins(0, 0, 0, 0)
+            self.searchInput.setPlaceholderText('搜索算子（名称 / ID）')
+            self.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+            self._refreshGrid()
 
         def setIconProvider(self, provider) -> None:
             if self._iconProvider is not None:
@@ -210,6 +234,10 @@ try:
             return visibleIds
 
         def showAt(self, anchorWidget: object, keepPosition: bool = False) -> None:
+            if self._embedded:
+                self.show()
+                self.searchInput.setFocus(Qt.OtherFocusReason)
+                return
             if keepPosition and self._lastPopupPoint is not None:
                 self.move(QPoint(self._lastPopupPoint[0], self._lastPopupPoint[1]))
             else:
@@ -239,6 +267,8 @@ try:
                     event.accept()
                     self.close()
                     return True
+            if self._embedded:
+                return bool(super().eventFilter(watched, event))
             # The application filter also sees the native QWindow press first.
             # Wait for QWidget dispatch to identify the actual clicked control.
             if (event.type() == QEvent.MouseButtonPress and self.isVisible()
@@ -250,6 +280,13 @@ try:
             if event.type() == QEvent.ApplicationDeactivate and self.isVisible():
                 self.close()
             return bool(super().eventFilter(watched, event))
+
+        def closeEvent(self, event):
+            if self._embedded and self._embeddedCloseHandler is not None:
+                event.ignore()
+                self._embeddedCloseHandler()
+            else:
+                super().closeEvent(event)
 
         def keyPressEvent(self, event) -> None:  # type: ignore[override]
             if event.key() == Qt.Key_Escape:
@@ -276,8 +313,9 @@ try:
             self._clearButtons()
             filteredOperators = self._filterAndSortOperators()
             self._visibleOperators = filteredOperators
+            self.emptyLabel.setVisible(not filteredOperators)
             for index, payload in enumerate(filteredOperators):
-                button = _OperatorCardButton(payload)
+                button = _OperatorCardButton(payload, compact=self._embedded)
                 button.clicked.connect(
                     lambda checked=False, current=payload: self._create(current)
                 )
@@ -320,7 +358,7 @@ try:
                     return (1, 10_000, operatorId)
                 if operatorId in recentIndex:
                     return (0, recentIndex[operatorId], operatorId)
-                return (1, 10_000, operatorId)
+                return (1, 10_000 + int(self._embedded and bool(payload.get('systemNodeKind'))), operatorId)
 
             return sorted(filtered, key=sortKey)
 

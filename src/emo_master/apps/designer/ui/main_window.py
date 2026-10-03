@@ -1338,6 +1338,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.applySidebarState()
         self.operatorBubble = OperatorBubble(self)
         self.operatorBubble.setCreateHandler(self.addNodeFromOperatorPayload)
+        if _nativeQt:
+            from emo_master.apps.designer.ui.floating_toolbox import FloatingToolbox
+
+            self.floatingToolbox = FloatingToolbox(self)
+            self.layoutController.setFloatingToolbox(self.floatingToolbox)
         self.refreshSidebarNodeList()
         self._refreshWorkflowTabs()
         self.applyResponsiveLayout()
@@ -3482,6 +3487,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshBubbleOperators()
 
     def toggleCategoryDrawer(self, categoryName: str) -> None:
+        if getattr(self, 'floatingToolbox', None) is not None:
+            self.expandSidebar()
+            self.setActiveCategory(categoryName)
+            return
         if self.isSidebarCollapsed:
             self.expandSidebar()
         if (
@@ -3525,6 +3534,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.operatorBubble.showAt(button, keepPosition=keepPosition)
 
     def collapseOperatorBubble(self) -> None:
+        if getattr(self, 'floatingToolbox', None) is not None:
+            return
         if self.operatorBubble is None:
             return
         self.operatorBubble.close()

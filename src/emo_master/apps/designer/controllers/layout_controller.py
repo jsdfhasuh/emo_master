@@ -38,6 +38,13 @@ class LayoutController:
         self._layoutMode = "normal"
         self._menuBarFontSize = 14
         self._applying = False
+        self.floatingToolbox = None
+
+    def setFloatingToolbox(self, toolbox) -> None:
+        self.floatingToolbox = toolbox
+        self.sidebarContainer.hide()
+        self._applySizes()
+        self.applySidebarState()
 
     def getMainSplitterSizes(self) -> list[int]:
         sizes = getattr(self.mainSplitter, "sizes", lambda: self._currentSplitterSizes)()
@@ -47,7 +54,7 @@ class LayoutController:
         if len(sizes) != 3 or any(size < 0 for size in sizes):
             return
         expanded = [int(size) for size in sizes]
-        if self.isSidebarCollapsedGetter() and expanded[0] < self._sidebarMinWidth:
+        if (self.floatingToolbox is not None or self.isSidebarCollapsedGetter()) and expanded[0] < self._sidebarMinWidth:
             expanded[0] = self._expandedSplitterSizes[0]
         self._expandedSplitterSizes = expanded
         self.settingsStore.setValue("ui/main_splitter_sizes", expanded)
@@ -70,6 +77,11 @@ class LayoutController:
         self._applying = True
         try:
             collapsed = self.isSidebarCollapsedGetter()
+            if self.floatingToolbox is not None:
+                self.sidebarContainer.hide()
+                self._currentSplitterSizes = [0, *self._expandedSplitterSizes[1:]]
+                self.mainSplitter.setSizes(self._currentSplitterSizes)
+                return
             width = self._sidebarCollapsedWidth if collapsed else self._sidebarMinWidth
             self.sidebarContainer.setMinimumWidth(width)
             self.sidebarContainer.setMaximumWidth(self._sidebarCollapsedWidth if collapsed else 16777215)
@@ -92,13 +104,17 @@ class LayoutController:
         self.canvasPanel.setMaximumWidth(16777215)
         self.previewImageLabel.setMinimumHeight(90)
         collapsed = self.isSidebarCollapsedGetter()
-        self.sidebarContainer.setMinimumWidth(self._sidebarCollapsedWidth if collapsed else self._sidebarMinWidth)
-        self.sidebarContainer.setMaximumWidth(self._sidebarCollapsedWidth if collapsed else 16777215)
+        if self.floatingToolbox is None:
+            self.sidebarContainer.setMinimumWidth(self._sidebarCollapsedWidth if collapsed else self._sidebarMinWidth)
+            self.sidebarContainer.setMaximumWidth(self._sidebarCollapsedWidth if collapsed else 16777215)
         if not self._splitterSizesInitialized:
             self.restoreMainSplitterSizes()
 
     def applySidebarState(self) -> None:
         collapsed = self.isSidebarCollapsedGetter()
+        if self.floatingToolbox is not None:
+            self.floatingToolbox.setExpanded(not collapsed)
+            return
         for widget in (self.categoryPanel, self.dependencyTreeContainer, self.nodeListContainer):
             widget.setVisible(not collapsed)
         self._applySizes()

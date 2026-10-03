@@ -1,0 +1,16 @@
+{
+  "baseHead": "3a97f22a6faee442997acc4c0f263acd42d3240c",
+  "candidateTree": "8f36dfc426e6999a6d7e7aa33f04991b91c075fa",
+  "paths": {
+    "src/emo_master/apps/designer/controllers/layout_controller.py": "01c524530187e907bf947bc5becfa4dfbbaedd11a6e3bbc768c36631857a851b",
+    "src/emo_master/apps/designer/ui/floating_toolbox.py": "9ceb264057d8aa29afd76c9b98d8cffad0ea5161c5200394533c254bc2773bef",
+    "src/emo_master/apps/designer/ui/main_window.py": "5b261b684ca5859dd79047db1c18c092aeccde2fe597203f4b781b70af6d4d8a",
+    "src/emo_master/apps/designer/ui/operator_bubble.py": "93f00930f861548307d7cac783f81e2929ec20be79324b57e7a01238aa4a8552",
+    "tests/designer/test_floating_toolbox.py": "f3ee586260403afd2808334fe43d9b0a2ebe42a27bc3af02aa69d230b44540e8",
+    "tests/designer/test_main_window_layout.py": "136133d05d37e18a11ba9a28fb6c6872c0358d74de4924fb23f4c854d1dfb824",
+    "tests/designer/test_sidebar_collapse.py": "c496407680da89d9bf403a8f647f3bd363215342120b998c0fbd7078b911123e",
+    "tests/designer/test_visual_layout.py": "80d91b38b4e9d4585ced6fa2bb084f41da26a75fb4da5124390b098f725d4707"
+  },
+  "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\frozen",
+  "scope": "only eight staged task files; pre-existing dirty UI work excluded"
+}

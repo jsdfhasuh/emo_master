@@ -1,0 +1,182 @@
+....FF.FF......................................F........................ [100%]
+================================== FAILURES ===================================
+____________ testClickAddsOneNodeThroughExistingProjectTransaction ____________
+
+toolboxWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3b6ffc0) at 0x0000024FE4924780>, [])
+
+    def testClickAddsOneNodeThroughExistingProjectTransaction(toolboxWindow):
+        window, calls = toolboxWindow
+        window.expandSidebar()
+        window.operatorBubble.searchInput.setText('resize')
+        before = len(window.flowModel.nodes)
+        history = len(window.pageCoordinator.session._undo)
+        window.operatorBubble._buttons[0].click()
+        assert len(window.flowModel.nodes) == before + 1
+>       node = window.flowModel.nodes[-1]
+E       KeyError: -1
+
+tests\designer\test_floating_toolbox.py:114: KeyError
+________________ testDragUsesExistingMimeAndActualViewportDrop ________________
+
+toolboxWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3c59b90) at 0x0000024FE0FF8AC0>, [])
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000024FE491F2E0>
+
+    def testDragUsesExistingMimeAndActualViewportDrop(toolboxWindow, monkeypatch):
+        import emo_master.apps.designer.ui.operator_bubble as cards
+        window, calls = toolboxWindow
+        window.expandSidebar()
+        window.operatorBubble.searchInput.setText('resize')
+        button = window.operatorBubble._buttons[0]
+        dropped = []
+        before = len(window.flowModel.nodes)
+        history = len(window.pageCoordinator.session._undo)
+        viewport = window.flowView.viewport()
+        destination = QPoint(viewport.width() - 70, viewport.height() // 2)
+        expected = window.flowView.mapToScene(destination)
+    
+        def transfer(drag, *_args):
+            mime = drag.mimeData()
+            dropped.append(json.loads(bytes(mime.data(OPERATOR_MIME_TYPE))))
+            enter = QDragEnterEvent(destination, Qt.CopyAction, mime, Qt.LeftButton, Qt.NoModifier)
+            QApplication.sendEvent(viewport, enter)
+            move = QDragMoveEvent(destination, Qt.CopyAction, mime, Qt.LeftButton, Qt.NoModifier)
+            QApplication.sendEvent(viewport, move)
+            drop = QDropEvent(QPointF(destination), Qt.CopyAction, mime, Qt.LeftButton, Qt.NoModifier)
+            QApplication.sendEvent(viewport, drop)
+            assert drop.isAccepted()
+            return Qt.CopyAction
+    
+        monkeypatch.setattr(cards.QDrag, 'exec_', transfer)
+        start = QPoint(20, 20)
+        QTest.mousePress(button, Qt.LeftButton, pos=start)
+        event = QMouseEvent(QEvent.MouseMove, QPointF(start + QPoint(40, 0)),
+                            Qt.NoButton, Qt.LeftButton, Qt.NoModifier)
+        QApplication.sendEvent(button, event)
+        QTest.mouseRelease(button, Qt.LeftButton, pos=start + QPoint(40, 0))
+        assert dropped[0]['operatorId'] == 'vision.test.resize'
+        assert len(window.flowModel.nodes) == before + 1
+        assert len(window.pageCoordinator.session._undo) == history + 1
+>       nodeItem = window.flowScene._nodeItems[window.flowModel.nodes[-1].nodeId]
+E       KeyError: -1
+
+tests\designer\test_floating_toolbox.py:158: KeyError
+__________ testHeaderDragIsClampedAndStoredOutsideProject[position0] __________
+
+toolboxWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3b7a0c0) at 0x0000024FDF7D25C0>, [])
+position = PySide2.QtCore.QPoint(-500, -300)
+
+    @pytest.mark.parametrize('position', [QPoint(-500, -300), QPoint(100_000, 100_000)])
+    def testHeaderDragIsClampedAndStoredOutsideProject(toolboxWindow, position):
+        window, _ = toolboxWindow
+        window.expandSidebar()
+        toolbox = window.floatingToolbox
+        before = window.pageCoordinator.session.payload()
+        undo = len(window.pageCoordinator.session._undo)
+        handle = toolbox.dragHandle
+        local = QPoint(10, 14)
+        start = handle.mapToGlobal(local)
+        end = start + position - toolbox.pos()
+        for kind, globalPoint, buttons in ((QEvent.MouseButtonPress, start, Qt.LeftButton),
+                                           (QEvent.MouseMove, end, Qt.LeftButton),
+                                           (QEvent.MouseButtonRelease, end, Qt.NoButton)):
+            event = QMouseEvent(kind, QPointF(handle.mapFromGlobal(globalPoint)), QPointF(globalPoint),
+                               Qt.NoButton if kind == QEvent.MouseMove else Qt.LeftButton,
+                               buttons, Qt.NoModifier)
+            QApplication.sendEvent(handle, event)
+        assert window.flowView.viewport().rect().contains(toolbox.geometry())
+        assert window.settingsStore.value(FloatingToolbox.positionKey) == [toolbox.x(), toolbox.y()]
+        assert window.pageCoordinator.session.payload() == before
+        assert len(window.pageCoordinator.session._undo) == undo
+        window.resize(640, 499)
+        QApplication.processEvents()
+>       assert window.flowView.viewport().rect().contains(toolbox.geometry())
+E       assert False
+E        +  where False = <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE491A100>(PySide2.QtCore.QRect(-266, -98, 308, 248))
+E        +    where <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE491A100> = PySide2.QtCore.QRect(0, 0, 346, 272).contains
+E        +      where PySide2.QtCore.QRect(0, 0, 346, 272) = <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE490DA00>()
+E        +        where <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE490DA00> = <PySide2.QtWidgets.QWidget(0x24fe3fb4ba0) at 0x0000024FE490DA00>.rect
+E        +          where <PySide2.QtWidgets.QWidget(0x24fe3fb4ba0) at 0x0000024FE490DA00> = <built-in method viewport of DesignerGraphicsView object at 0x0000024FE1D3D140>()
+E        +            where <built-in method viewport of DesignerGraphicsView object at 0x0000024FE1D3D140> = <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe3b71ca0) at 0x0000024FE1D3D140>.viewport
+E        +              where <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe3b71ca0) at 0x0000024FE1D3D140> = <emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3b7a0c0) at 0x0000024FDF7D25C0>.flowView
+E        +    and   PySide2.QtCore.QRect(-266, -98, 308, 248) = <built-in method geometry of FloatingToolbox object at 0x0000024FE490F740>()
+E        +      where <built-in method geometry of FloatingToolbox object at 0x0000024FE490F740> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x24fe07b4930, name="floatingToolbox") at 0x0000024FE490F740>.geometry
+
+tests\designer\test_floating_toolbox.py:199: AssertionError
+__________ testHeaderDragIsClampedAndStoredOutsideProject[position1] __________
+
+toolboxWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3b7b4e0) at 0x0000024FE1D34F00>, [])
+position = PySide2.QtCore.QPoint(100000, 100000)
+
+    @pytest.mark.parametrize('position', [QPoint(-500, -300), QPoint(100_000, 100_000)])
+    def testHeaderDragIsClampedAndStoredOutsideProject(toolboxWindow, position):
+        window, _ = toolboxWindow
+        window.expandSidebar()
+        toolbox = window.floatingToolbox
+        before = window.pageCoordinator.session.payload()
+        undo = len(window.pageCoordinator.session._undo)
+        handle = toolbox.dragHandle
+        local = QPoint(10, 14)
+        start = handle.mapToGlobal(local)
+        end = start + position - toolbox.pos()
+        for kind, globalPoint, buttons in ((QEvent.MouseButtonPress, start, Qt.LeftButton),
+                                           (QEvent.MouseMove, end, Qt.LeftButton),
+                                           (QEvent.MouseButtonRelease, end, Qt.NoButton)):
+            event = QMouseEvent(kind, QPointF(handle.mapFromGlobal(globalPoint)), QPointF(globalPoint),
+                               Qt.NoButton if kind == QEvent.MouseMove else Qt.LeftButton,
+                               buttons, Qt.NoModifier)
+            QApplication.sendEvent(handle, event)
+        assert window.flowView.viewport().rect().contains(toolbox.geometry())
+        assert window.settingsStore.value(FloatingToolbox.positionKey) == [toolbox.x(), toolbox.y()]
+        assert window.pageCoordinator.session.payload() == before
+        assert len(window.pageCoordinator.session._undo) == undo
+        window.resize(640, 499)
+        QApplication.processEvents()
+>       assert window.flowView.viewport().rect().contains(toolbox.geometry())
+E       assert False
+E        +  where False = <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE1CE9780>(PySide2.QtCore.QRect(-252, -98, 308, 248))
+E        +    where <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE1CE9780> = PySide2.QtCore.QRect(0, 0, 346, 272).contains
+E        +      where PySide2.QtCore.QRect(0, 0, 346, 272) = <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE49CF100>()
+E        +        where <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE49CF100> = <PySide2.QtWidgets.QWidget(0x24fe3bd2860) at 0x0000024FE49CF100>.rect
+E        +          where <PySide2.QtWidgets.QWidget(0x24fe3bd2860) at 0x0000024FE49CF100> = <built-in method viewport of DesignerGraphicsView object at 0x0000024FE1CC9780>()
+E        +            where <built-in method viewport of DesignerGraphicsView object at 0x0000024FE1CC9780> = <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe3b72aa0) at 0x0000024FE1CC9780>.viewport
+E        +              where <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe3b72aa0) at 0x0000024FE1CC9780> = <emo_master.apps.designer.ui.main_window.MainWindow(0x24fe3b7b4e0) at 0x0000024FE1D34F00>.flowView
+E        +    and   PySide2.QtCore.QRect(-252, -98, 308, 248) = <built-in method geometry of FloatingToolbox object at 0x0000024FE1CA9B00>()
+E        +      where <built-in method geometry of FloatingToolbox object at 0x0000024FE1CA9B00> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x24fe07b5110, name="floatingToolbox") at 0x0000024FE1CA9B00>.geometry
+
+tests\designer\test_floating_toolbox.py:199: AssertionError
+_____________ testSidebarStaysCollapsedAcrossShowResizeAndRestore _____________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x24fe03812b0) at 0x0000024FE0ECCF90>
+
+    def testSidebarStaysCollapsedAcrossShowResizeAndRestore(styledApp):
+        window = makeWindow()
+        try:
+            window.show()
+            for width, height in ((1280, 720), (960, 540), (1800, 900)):
+                window.resize(width, height)
+                window.restoreMainSplitterSizes()
+                styledApp.processEvents()
+                assert window.sidebarContainer.isHidden()
+                assert window.getMainSplitterSizes()[0] == 0
+                assert not window.floatingToolbox.isExpanded()
+>               assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+E               assert False
+E                +  where False = <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE490CBC0>(PySide2.QtCore.QRect(41, -8, 148, 46))
+E                +    where <built-in method contains of PySide2.QtCore.QRect object at 0x0000024FE490CBC0> = PySide2.QtCore.QRect(0, 0, 904, 493).contains
+E                +      where PySide2.QtCore.QRect(0, 0, 904, 493) = <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE20F4CC0>()
+E                +        where <built-in method rect of PySide2.QtWidgets.QWidget object at 0x0000024FE20F4CC0> = <PySide2.QtWidgets.QWidget(0x24fe465c670) at 0x0000024FE20F4CC0>.rect
+E                +          where <PySide2.QtWidgets.QWidget(0x24fe465c670) at 0x0000024FE20F4CC0> = <built-in method viewport of DesignerGraphicsView object at 0x0000024FE2405F40>()
+E                +            where <built-in method viewport of DesignerGraphicsView object at 0x0000024FE2405F40> = <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe4284d40) at 0x0000024FE2405F40>.viewport
+E                +              where <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x24fe4284d40) at 0x0000024FE2405F40> = <emo_master.apps.designer.ui.main_window.MainWindow(0x24fe427a380) at 0x0000024FE1D21A40>.flowView
+E                +    and   PySide2.QtCore.QRect(41, -8, 148, 46) = <built-in method geometry of FloatingToolbox object at 0x0000024FE2404800>()
+E                +      where <built-in method geometry of FloatingToolbox object at 0x0000024FE2404800> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x24fe42ce8f0, name="floatingToolbox") at 0x0000024FE2404800>.geometry
+E                +        where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x24fe42ce8f0, name="floatingToolbox") at 0x0000024FE2404800> = <emo_master.apps.designer.ui.main_window.MainWindow(0x24fe427a380) at 0x0000024FE1D21A40>.floatingToolbox
+
+tests\designer\test_visual_layout.py:88: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_floating_toolbox.py::testClickAddsOneNodeThroughExistingProjectTransaction
+FAILED tests/designer/test_floating_toolbox.py::testDragUsesExistingMimeAndActualViewportDrop
+FAILED tests/designer/test_floating_toolbox.py::testHeaderDragIsClampedAndStoredOutsideProject[position0]
+FAILED tests/designer/test_floating_toolbox.py::testHeaderDragIsClampedAndStoredOutsideProject[position1]
+FAILED tests/designer/test_visual_layout.py::testSidebarStaysCollapsedAcrossShowResizeAndRestore
+5 failed, 67 passed in 9.91s

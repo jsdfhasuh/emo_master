@@ -1,0 +1,182 @@
+[
+  {
+    "case": "1280x720-1",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1280x720-1",
+      "--width",
+      "1280",
+      "--height",
+      "720",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1280x720-1.25",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1280x720-1.25",
+      "--width",
+      "1280",
+      "--height",
+      "720",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1280x720-1.5",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1280x720-1.5",
+      "--width",
+      "1280",
+      "--height",
+      "720",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1280x720-2",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1280x720-2",
+      "--width",
+      "1280",
+      "--height",
+      "720",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1600x900-1",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1600x900-1",
+      "--width",
+      "1600",
+      "--height",
+      "900",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1600x900-1.25",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1600x900-1.25",
+      "--width",
+      "1600",
+      "--height",
+      "900",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1600x900-1.5",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1600x900-1.5",
+      "--width",
+      "1600",
+      "--height",
+      "900",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1600x900-2",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1600x900-2",
+      "--width",
+      "1600",
+      "--height",
+      "900",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1920x1080-1",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1920x1080-1",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1920x1080-1.25",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1920x1080-1.25",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1920x1080-1.5",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1920x1080-1.5",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  },
+  {
+    "case": "1920x1080-2",
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "docs/testing/floating-toolbox-2026-10-04/capture.py",
+      "--output",
+      "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\manual_test_workspace\\floating-toolbox-20261003\\matrix-final\\1920x1080-2",
+      "--width",
+      "1920",
+      "--height",
+      "1080",
+      "--physical-screen"
+    ],
+    "exitCode": 0
+  }
+]

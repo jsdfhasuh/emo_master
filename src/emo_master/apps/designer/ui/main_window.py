@@ -1294,9 +1294,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
             deliveryContext=self if _nativeQt else None,
             onInspectionStarting=(self.nodeResultCoordinator.rememberDraft if self.nodeResultCoordinator else None),
-            onInspectionEvent=(self.nodeResultCoordinator.event if self.nodeResultCoordinator else None),
+            onInspectionEvent=(self.nodeResultCoordinator.applyRuntimeEvent if self.nodeResultCoordinator else None),
             onInspectionStatus=(self.nodeResultCoordinator.status if self.nodeResultCoordinator else None),
             onInspectionAccepted=(self.nodeResultCoordinator.accepted if self.nodeResultCoordinator else None),
+            onInspectionClosing=(self.nodeResultCoordinator.close if self.nodeResultCoordinator else None),
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
@@ -2568,8 +2569,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 shutdown()
         try:
             self.runtimeController.close()
-            if self.nodeResultCoordinator is not None:
-                self.nodeResultCoordinator.close()
         except Exception as error:
             message = f'关闭未完成，保留窗口和运行时资源；请再次关闭重试：{error}'
             self.appendRuntimeLog('ERROR', message)

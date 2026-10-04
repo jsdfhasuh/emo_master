@@ -9,6 +9,7 @@ from emo_master.apps.designer.state.run_result_history import RunResultHistory
 from emo_master.apps.designer.services.inspection_images import InspectionImages, ImageSelection
 from .node_image_decode import decodeNodeImage
 from .node_result_panel import NodeResultPanel
+from .widgets import scrollContent
 
 
 class NodeResultCoordinator(QObject):
@@ -34,16 +35,21 @@ class NodeResultCoordinator(QObject):
         for old in (getattr(window, 'nodeDetailsScroll', window.nodeStatusSection), window.previewSection):
             rightLayout.removeWidget(old)
             old.hide()
-        rightLayout.addWidget(self.panel, 1)
+        self.panelScroll = scrollContent(self.panel, name='nodeResultScroll')
+        # Keep enough usable flow-canvas height for the existing toolbox on
+        # very short windows, while letting result content itself scroll.
+        self.panelScroll.setMinimumHeight(max(180, self.panelScroll.minimumSizeHint().height()))
+        rightLayout.addWidget(self.panelScroll, 1)
         tools = getattr(window, 'runResultTools', None)
         if tools:
-            self.panel.imagePage.layout().addWidget(tools)
+            self.panel.imageContent.layout().addWidget(tools)
         window.previewImageLabel = self.panel.image
         window.previewSection = self.panel.imagePage
         self.panel.selectionChanged.connect(self.refresh)
         self.panel.portChanged.connect(self.refresh)
         self.panel.logs.clicked.connect(window.openLogDialog)
         self.panel.configureRequested.connect(self.configure)
+        self.panel.enlargeRequested.connect(self.openViewer)
 
     def blueprint(self):
         window = self.window
@@ -69,13 +75,22 @@ class NodeResultCoordinator(QObject):
         self.history.accept(jobId, definitions, revision)
         self.refresh()
 
-    def event(self, event):
+    def applyRuntimeEvent(self, event):
         self.history.applyEvent(event)
 
     def status(self, reply):
         current = self.history.current
         if current and self.window.currentJobId == current.jobId:
             current.status = str(getattr(reply, 'status', current.status))
+            acceptedAt = getattr(reply, 'accepted_at_ms', 0)
+            if type(acceptedAt) is int and 0 < acceptedAt < 253402300799000:
+                current.acceptedAtMs = acceptedAt
+            if (current.status in {'COMPLETED', 'FAILED', 'ABORTED'} and self.history.selected is current
+                    and self.imagePacket is None and not self.images.hasWork()):
+                # A five-second waiting request may have ended during a long
+                # run. Terminal readiness permits a new bounded query; a
+                # successful in-flight image is never read again for status.
+                self.imageSelection = None
 
     def refresh(self):
         if self.closed:
@@ -90,16 +105,22 @@ class NodeResultCoordinator(QObject):
         view = self.panel.render(window.activeWorkflowId, nodeId, draft)
         record = view['record']
         tools = getattr(window, 'runResultTools', None)
+        if tools:
+            # Keep legacy shortcuts for an old, unassociated observation only.
+            # Accepted inspection Jobs use the shared asset port and one log
+            # entry; a mutable server filename is never a history shortcut.
+            tools.setVisible(view['job'] is None)
         if tools and view['job']:
             tools.origin.setText('所选任务保存图见端口选项 · 任务 ' + view['job'].jobId[:8])
             tools.path = None  # Never open a mutable or already-cleaned output path for history.
             tools.openFile.setEnabled(False)
         identity = (view['job'].jobId if view['job'] else '', window.activeWorkflowId,
                     nodeId, record['nodeRunId'] if record else '', self.panel.ports.currentData(),
-                    record['status'] if record else '', view['job'].status if view['job'] else '')
+                    record['status'] if record else '')
         if identity != self.imageSelection:
             self.imageSelection = identity
             self._clearImage('尚未运行' if view['job'] is None else
+                             '所选节点没有图像输出端口' if not self.panel.ports.count() else
                              '本次执行未产生有效图片' if record and record['status'] in ('FAILED', 'SKIPPED') else
                              '节点图片尚未发布')
             selection = None
@@ -116,7 +137,7 @@ class NodeResultCoordinator(QObject):
         if self.viewer:
             self.viewer.showResult(None, message, self.imageSelection)
 
-    @Slot(int)  # type: ignore[operator] - PySide2's Slot stub is not callable.
+    @Slot(int)  # type: ignore[operator]  # PySide2's Slot stub is not callable.
     def _imageReady(self, generation):
         if self.closed:
             return
@@ -137,16 +158,34 @@ class NodeResultCoordinator(QObject):
         source = packet['source']
         stamp = (datetime.fromtimestamp(source.createdAtMs / 1000).strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
                  if source.createdAtMs else '采集时间未提供')
-        text = (f'{source.port} · {source.width} × {source.height} · {packet["format"]}\n'
+        name = self.panel.title.text()
+        compactName = name if len(name) <= 64 else name[:63] + '…'
+        text = (f'{compactName} · {source.port} · {source.width} × {source.height} · {packet["format"]}\n'
                 f'{stamp} · 任务 {source.originJobId[:8]} · 执行 {source.nodeRunId[:8]}')
         self.panel.imageMeta.setText(text)
-        self.panel.imageMeta.setToolTip(f'Job {source.originJobId}\nWorkflowRun {source.workflowRunId}\n'
+        self.panel.imageMeta.setToolTip(f'{name}\nJob {source.originJobId}\nWorkflowRun {source.workflowRunId}\n'
                                        f'NodeRun {source.nodeRunId}\nCapture {source.captureId}\n资产 {source.sourceId}')
         self.panel.image.setPixmap(self.pixmap)
         self.panel.enlarge.setEnabled(True)
         self.modelUpdatedNs = time.monotonic_ns()
         if self.viewer:
             self.viewer.showResult(self.pixmap, text, self.imageSelection)
+
+    def openViewer(self):
+        if self.closed or self.pixmap.isNull():
+            return
+        if self.viewer is None:
+            from .node_image_viewer import NodeImageViewer
+            self.viewer = NodeImageViewer(self.window)
+            self.viewer.closed.connect(self._viewerClosed)
+        self.viewer.showResult(self.pixmap, self.panel.imageMeta.text(), self.imageSelection)
+        self.viewer.show()
+        self.viewer.view.fit()
+        self.viewer.raise_()
+
+    def _viewerClosed(self):
+        if self.sender() is self.viewer:
+            self.viewer = None
 
     def configure(self):
         if self.window.flowModel.selectedNodeId:
@@ -163,5 +202,7 @@ class NodeResultCoordinator(QObject):
     def close(self):
         self.closed = True
         self._clearImage('检查已关闭')
+        if self.viewer:
+            self.viewer.close()
         self.images.close()
         self.history.clear()

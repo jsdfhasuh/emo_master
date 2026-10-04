@@ -1,0 +1,144 @@
+........................................................................ [ 33%]
+...............................................FF.....F................. [ 66%]
+...............................................F.......................  [100%]
+================================== FAILURES ===================================
+________________ testLongDetailsDoNotForceWindowBeyondViewport ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1dbedd5faf0) at 0x000001DBEE89B870>
+
+    def testLongDetailsDoNotForceWindowBeyondViewport(styledApp):
+        window = makeWindow()
+        try:
+            window.jobMessageCard.setText("C:/" + "very-long-directory/" * 60 + "project.json")
+            window.nodeDetailParamsCard.setText("\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80)))
+            window.resize(1000, 600)
+            window.show()
+            styledApp.processEvents()
+            assert window.minimumSizeHint().height() < 500
+            assert window.minimumSizeHint().width() < 800
+>           assert window.nodeDetailsScroll.verticalScrollBar().maximum() > 0
+E           assert 0 > 0
+E            +  where 0 = <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x000001DBEEAB2B80>()
+E            +    where <built-in method maximum of PySide2.QtWidgets.QScrollBar object at 0x000001DBEEAB2B80> = <PySide2.QtWidgets.QScrollBar(0x1dbf08c4b70) at 0x000001DBEEAB2B80>.maximum
+E            +      where <PySide2.QtWidgets.QScrollBar(0x1dbf08c4b70) at 0x000001DBEEAB2B80> = <built-in method verticalScrollBar of PySide2.QtWidgets.QScrollArea object at 0x000001DBEEAB1CC0>()
+E            +        where <built-in method verticalScrollBar of PySide2.QtWidgets.QScrollArea object at 0x000001DBEEAB1CC0> = <PySide2.QtWidgets.QScrollArea(0x1dbf0907190, name="nodeDetailsScroll") at 0x000001DBEEAB1CC0>.verticalScrollBar
+E            +          where <PySide2.QtWidgets.QScrollArea(0x1dbf0907190, name="nodeDetailsScroll") at 0x000001DBEEAB1CC0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1dbf08dfbb0) at 0x000001DBEE9F9FC0>.nodeDetailsScroll
+
+tests\designer\test_visual_layout.py:145: AssertionError
+_______ testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible ________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1dbedd5faf0) at 0x000001DBEE89B870>
+
+    def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
+        from tests.designer.qt_wait import waitForCatalog
+    
+        window = makeWindow()
+        try:
+            window.show()
+            waitForCatalog(window)
+            # Initial catalog completion refreshes node details. Populate the actual
+            # long-text case after that refresh, rather than testing reset placeholders.
+            details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
+            window.nodeDetailParamsCard.setText(details)
+            fontSize = window.nodeDetailParamsCard.font().pointSizeF()
+            window.resize(1000, 499)
+            styledApp.processEvents()
+    
+            assert window.height() == 499
+            assert window.minimumSizeHint().height() < 500
+            assert window.nodeDetailParamsCard.text() == details
+            assert window.nodeDetailParamsCard.font().pointSizeF() == fontSize
+            assert window.rightPanelContainer.rect().contains(window.summarySection.geometry())
+>           assert window.rightPanelContainer.rect().contains(window.previewSection.geometry())
+E           assert False
+E            +  where False = <built-in method contains of PySide2.QtCore.QRect object at 0x000001DBEEACC7C0>(PySide2.QtCore.QRect(0, 0, 640, 480))
+E            +    where <built-in method contains of PySide2.QtCore.QRect object at 0x000001DBEEACC7C0> = PySide2.QtCore.QRect(0, 0, 263, 571).contains
+E            +      where PySide2.QtCore.QRect(0, 0, 263, 571) = <built-in method rect of PySide2.QtWidgets.QWidget object at 0x000001DBEEACA140>()
+E            +        where <built-in method rect of PySide2.QtWidgets.QWidget object at 0x000001DBEEACA140> = <PySide2.QtWidgets.QWidget(0x1dbf0770a40) at 0x000001DBEEACA140>.rect
+E            +          where <PySide2.QtWidgets.QWidget(0x1dbf0770a40) at 0x000001DBEEACA140> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1dbf07e4f50) at 0x000001DBEF826280>.rightPanelContainer
+E            +    and   PySide2.QtCore.QRect(0, 0, 640, 480) = <built-in method geometry of PySide2.QtWidgets.QWidget object at 0x000001DBEEADDF00>()
+E            +      where <built-in method geometry of PySide2.QtWidgets.QWidget object at 0x000001DBEEADDF00> = <PySide2.QtWidgets.QWidget(0x1dbf08dbee0) at 0x000001DBEEADDF00>.geometry
+E            +        where <PySide2.QtWidgets.QWidget(0x1dbf08dbee0) at 0x000001DBEEADDF00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1dbf07e4f50) at 0x000001DBEF826280>.previewSection
+
+tests\designer\test_visual_layout.py:171: AssertionError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1dbedd5faf0) at 0x000001DBEE89B870>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001DBF0FA1B00>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001DBF0FA1B00> = <PySide2.QtWidgets.QToolButton(0x1dbf0930da0, name="primaryButton") at 0x000001DBF0FA1B00>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x1dbf0930da0, name="primaryButton") at 0x000001DBF0FA1B00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1dbf0227930) at 0x000001DBF0BE2C00>.startButton
+
+tests\designer\test_visual_layout.py:296: AssertionError
+________ testPreviewReusesOneSessionHidesWithWorkspaceAndClosesViewing ________
+
+designer = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1dbf24f8690) at 0x000001DBF3EC48C0>, <test_current_job_viewing....terTarget(workflowId='detect', nodeId='load-b', parameterPath=['imagePath']), resourceId='second')], siteBindings=[])))
+
+    def testPreviewReusesOneSessionHidesWithWorkspaceAndClosesViewing(designer):
+        coordinator, preview = selectJob(designer)
+        editor = coordinator.editor
+        observer, hub, session = preview.observer, preview.hub, preview.session
+        assert observer.isWindow() and observer.isVisible()
+        assert not observer.editing and editor.renderer.editing
+        assert hub.windows == {observer} and editor.renderer.hub is None
+        assert observer.config == editor.renderer.config
+        coordinator.showFlow()
+        assert not observer.isVisible() and not editor.isVisible()
+        coordinator.showPages()
+        assert not observer.isVisible()
+        assert preview.openObserver() is observer
+        assert preview.session is session and len(Session.instances) == 1
+        observer.close()
+>       waitFor(lambda: not preview.active())
+
+tests\ui\page_designer\test_current_job_viewing.py:273: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+predicate = <function testPreviewReusesOneSessionHidesWithWorkspaceAndClosesViewing.<locals>.<lambda> at 0x000001DBF4BAB910>
+
+    def waitFor(predicate):
+        end = time.monotonic() + 5
+        while time.monotonic() < end:
+            QApplication.processEvents()
+            if predicate():
+                return
+            time.sleep(.005)
+>       raise AssertionError('bounded Qt wait')
+E       AssertionError: bounded Qt wait
+
+tests\ui\page_designer\test_current_job_viewing.py:29: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\presentation\renderer.py", line 670, in showEvent
+    handle.screenChanged.connect(self._screenChanged)
+AttributeError: 'PySide2.QtWidgets.QWidgetItem' object has no attribute 'screenChanged'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\preview_window.py", line 164, in closeEvent
+    super().closeEvent(event)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\presentation\renderer.py", line 701, in closeEvent
+    self._screenWindow.screenChanged.disconnect(self._screenChanged)
+AttributeError: 'PySide2.QtWidgets.QWidgetItem' object has no attribute 'screenChanged'
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\preview_window.py", line 164, in closeEvent
+    super().closeEvent(event)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\presentation\renderer.py", line 701, in closeEvent
+    self._screenWindow.screenChanged.disconnect(self._screenChanged)
+AttributeError: 'PySide2.QtWidgets.QWidgetItem' object has no attribute 'screenChanged'
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testLongDetailsDoNotForceWindowBeyondViewport
+FAILED tests/designer/test_visual_layout.py::testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+FAILED tests/ui/page_designer/test_current_job_viewing.py::testPreviewReusesOneSessionHidesWithWorkspaceAndClosesViewing
+4 failed, 211 passed in 82.06s (0:01:22)

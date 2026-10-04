@@ -31,7 +31,7 @@ class RunResultRecord:
     def enforceLimit(self):
         while self.inspection._nodes and self.retainedBytes > RUN_METADATA_LIMIT:
             self.inspection._nodes.popitem(last=False)
-            self.notice = '节点摘要超过会话额度，最早更新的记录已释放'
+            self.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过会话额度，最早更新的记录已释放'
 
 
 class RunResultHistory:
@@ -68,19 +68,29 @@ class RunResultHistory:
             return
         wasLive = self.selected is self.current
         frozen = {}
+        limited = False
         for node in definitions:
             if len(frozen) >= 64 or not isinstance(node, dict):
+                limited = True
                 break
             identity = (str(node.get('workflowId', '')), str(node.get('nodeId', '')))
             definition = {name: clipText(str(node.get(name, '')), 128)
                           for name in ('workflowId', 'nodeId', 'displayName', 'operatorId')}
+            name = str(node.get('displayName', ''))
+            definition['displayName'] = clipText(name, 2048)
+            definition['displayNameTruncated'] = definition['displayName'] != name
             for side in ('inputPorts', 'outputPorts'):
                 ports = node.get(side, {})
+                limited = limited or (isinstance(ports, dict) and len(ports) > 64)
                 definition[side] = {clipText(str(port), 64): clipText(str(kind), 64)
                                     for port, kind in list(ports.items())[:64]} if isinstance(ports, dict) else {}
             if encodedBytes(definition) <= 4096:
                 frozen[identity] = definition
+            else:
+                limited = True
         record = RunResultRecord(jobId, int(revision), int(acceptedAtMs or time.time() * 1000), frozen)
+        if limited:
+            record.notice = 'E_INSPECTION_METADATA_BUDGET: 节点定义或端口超过摘要额度，部分内容未保留（节点上限64）'
         self.runs[jobId] = record
         self.notice = ''
         while len(self.runs) > 2:
@@ -105,8 +115,14 @@ class RunResultHistory:
         kind = event.get('eventType', '')
         if run.status in {'COMPLETED', 'FAILED', 'ABORTED'} and kind.startswith('node.'):
             return False
+        identifiers = (event.get('workflowId', ''), event.get('nodeId', ''))
+        willEvict = (kind in {'node.started', 'node.completed', 'node.failed', 'node.skipped'}
+                     and all(isinstance(value, str) for value in identifiers)
+                     and identifiers not in run.inspection._nodes and len(run.inspection._nodes) >= 64)
         if not run.inspection.applyEvent(event):
             return False
+        if willEvict:
+            run.notice = 'E_INSPECTION_METADATA_BUDGET: 节点摘要超过64条，最早更新的记录已释放；可查看任务日志'
         if kind in {'job.completed', 'job.failed', 'job.aborted'}:
             run.status = kind.split('.')[1].upper()
         elif kind == 'node.started':

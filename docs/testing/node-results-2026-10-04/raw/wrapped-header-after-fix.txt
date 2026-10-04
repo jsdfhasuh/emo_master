@@ -1,0 +1,70 @@
+....F..................F....                                             [100%]
+================================== FAILURES ===================================
+_________ testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll _________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x17486ae8380) at 0x000001748847A130>
+
+    def testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll(designerApplication):
+        from PySide2.QtWidgets import QWidget, QVBoxLayout, QSplitter
+        from emo_master.apps.designer.ui.node_result_panel import NodeResultPanel
+        from emo_master.apps.designer.ui.widgets import scrollContent
+        from emo_master.apps.designer.state.run_result_history import RunResultHistory
+        history = RunResultHistory()
+        history.accept('12345678-1234-1234-1234-123456789012', [
+            {'workflowId': 'main', 'nodeId': 'load', 'displayName': '图像输入',
+             'operatorId': 'vision.io.image_loader', 'outputPorts': {'image': 'image'}}])
+        panel = NodeResultPanel(history)
+        host = QWidget()
+        layout = QVBoxLayout(host)
+        summary = QWidget()
+        summary.setFixedHeight(120)
+        layout.addWidget(summary)
+        layout.addWidget(panel, 1)
+        host.setFixedWidth(260)
+        splitter = QSplitter()
+        splitter.addWidget(QWidget())
+        splitter.addWidget(host)
+        scroll = scrollContent(splitter)
+        scroll.resize(540, 400)
+        try:
+            panel.render('main', 'load')
+            scroll.show()
+            for _ in range(8):
+                designerApplication.processEvents()
+>           assert panel.origin.height() >= panel.origin.heightForWidth(panel.origin.width())
+E           assert 72 >= 90
+E            +  where 72 = <built-in method height of WrapLabel object at 0x0000017489603B40>()
+E            +    where <built-in method height of WrapLabel object at 0x0000017489603B40> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40>.height
+E            +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x174888f2210, name="nodeResultPanel") at 0x000001748854BCC0>.origin
+E            +  and   90 = <built-in method heightForWidth of WrapLabel object at 0x0000017489603B40>(218)
+E            +    where <built-in method heightForWidth of WrapLabel object at 0x0000017489603B40> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40>.heightForWidth
+E            +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x174888f2210, name="nodeResultPanel") at 0x000001748854BCC0>.origin
+E            +    and   218 = <built-in method width of WrapLabel object at 0x0000017489603B40>()
+E            +      where <built-in method width of WrapLabel object at 0x0000017489603B40> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40>.width
+E            +        where <emo_master.apps.designer.ui.widgets.WrapLabel(0x174888f31d0) at 0x0000017489603B40> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x174888f2210, name="nodeResultPanel") at 0x000001748854BCC0>.origin
+
+tests\designer\test_node_result_panel.py:125: AssertionError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x17486ae8380) at 0x000001748847A130>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x0000017489E72300>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x0000017489E72300> = <PySide2.QtWidgets.QToolButton(0x17486fc7060, name="primaryButton") at 0x0000017489E72300>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x17486fc7060, name="primaryButton") at 0x0000017489E72300> = <emo_master.apps.designer.ui.main_window.MainWindow(0x174893b8c30) at 0x00000174897F0580>.startButton
+
+tests\designer\test_visual_layout.py:311: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_result_panel.py::testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+2 failed, 26 passed in 7.29s

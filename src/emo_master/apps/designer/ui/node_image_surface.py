@@ -18,9 +18,11 @@ class NodeImageSurface(QLabel):
         self.setMinimumSize(120, 120)
         self.setObjectName('previewImage')
         self.lastPaintNs = 0
+        self.firstImagePaintNs = 0
 
     def setPixmap(self, pixmap):
         self._sourcePixmap = QPixmap(pixmap)  # Implicitly shared, not a bitmap copy.
+        self.firstImagePaintNs = 0
         super().setText('')
         self.update()
 
@@ -29,6 +31,7 @@ class NodeImageSurface(QLabel):
 
     def setText(self, message):
         self._sourcePixmap = QPixmap()
+        self.firstImagePaintNs = 0
         super().setText(message)
 
     def paintEvent(self, event):
@@ -45,6 +48,8 @@ class NodeImageSurface(QLabel):
             painter.drawPixmap(target, self._sourcePixmap, QRectF(self._sourcePixmap.rect()))
             painter.end()
         self.lastPaintNs = time.monotonic_ns()
+        if not self._sourcePixmap.isNull() and not self.firstImagePaintNs:
+            self.firstImagePaintNs = self.lastPaintNs
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.LeftButton and not self._sourcePixmap.isNull():

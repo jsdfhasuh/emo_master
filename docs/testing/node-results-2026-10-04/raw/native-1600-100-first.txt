@@ -1,0 +1,23 @@
+Process emo-master-job-bfc4a781-d788-437b-89ee-79f567373b2c:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 91, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 169, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: image file not found: C:\Users\JSDFHA~1\AppData\Local\Temp\emo-node-results-cw7axhv_\临时 工程 A\missing.png
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\node-results-2026-10-04\capture.py", line 298, in <module>
+    main()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\node-results-2026-10-04\capture.py", line 266, in main
+    wait(lambda: runtime.runInspectionStore.stats()['sessions'] == 0, 5)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\node-results-2026-10-04\capture.py", line 90, in wait
+    raise AssertionError('Condition not reached before outer GUI watchdog')
+AssertionError: Condition not reached before outer GUI watchdog

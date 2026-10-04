@@ -1,0 +1,47 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+__ testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime __
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-891/testTwoRealRunsFollowSelection0')
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ef808c17a0) at 0x000001EF820858F0>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001EF82086410>
+
+    def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tmp_path, designerApplication,
+                                                                                  ownedDesignerWindow):
+        with running(tmp_path) as (runtime, client, project, unusedSession):
+            # The helper's explicit test lease is closed before Designer opens its
+            # own lease. Viewing never creates another Job or subscriber.
+            client.inspectionSession('close', project, unusedSession)
+            window = ownedDesignerWindow(client)
+            window.resize(1280, 720)
+            window.show()
+            try:
+                wait(designerApplication, lambda: window.operatorCatalogController.state == 'ready')
+                assert window.loadProjectDirectory(project)
+                coordinator = window.nodeResultCoordinator
+                panel = coordinator.panel
+                window.navigateToNodeFromSidebar('load')
+                assert not coordinator.history.current and len(runtime.jobRepository.all()) == 0
+                window.startJob()
+>               wait(designerApplication, lambda: coordinator.imagePacket is not None)
+
+tests\designer\test_node_image_viewer.py:83: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+app = <PySide2.QtWidgets.QApplication(0x1ef808c17a0) at 0x000001EF820858F0>
+predicate = <function testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime.<locals>.<lambda> at 0x000001EF835130A0>
+timeout = 10
+
+    def wait(app, predicate, timeout=10):
+        deadline = time.monotonic() + timeout
+        while not predicate():
+>           assert time.monotonic() < deadline, 'Qt condition was not reached before the outer watchdog'
+E           AssertionError: Qt condition was not reached before the outer watchdog
+E           assert 1320513.984 < 1320513.984
+E            +  where 1320513.984 = <built-in function monotonic>()
+E            +    where <built-in function monotonic> = time.monotonic
+
+tests\designer\test_node_image_viewer.py:18: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime
+1 failed, 1 passed in 12.70s

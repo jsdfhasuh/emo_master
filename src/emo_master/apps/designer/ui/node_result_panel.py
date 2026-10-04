@@ -1,13 +1,13 @@
 """Native read-only result panel; no Runtime or execution ownership."""
 from datetime import datetime
 
-from PySide2.QtCore import Qt, Signal
+from PySide2.QtCore import QEvent, Qt, Signal
 from PySide2.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QToolButton,
                               QTabWidget, QComboBox, QTextEdit, QLabel)
 
 from emo_master.apps.designer.presenters.node_run_presenter import describePort, inspectionText
 from emo_master.core.contracts.port_types import normalizePortType
-from .widgets import WrapLabel
+from .widgets import WrapLabel, ElidedLabel, scrollContent
 from .node_image_surface import NodeImageSurface
 
 
@@ -49,7 +49,7 @@ class NodeResultPanel(QWidget):
             button.clicked.connect(lambda _checked=False, previous=older: self._selectRun(previous))
             top.addWidget(button)
         root.addLayout(top)
-        self.title = WrapLabel('未选中节点')
+        self.title = ElidedLabel('未选中节点')
         self.title.setTextFormat(Qt.PlainText)
         self.origin = WrapLabel('明确运行后查看真实结果')
         self.origin.setTextFormat(Qt.PlainText)
@@ -60,9 +60,17 @@ class NodeResultPanel(QWidget):
         root.addWidget(self.origin)
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
+        self.tabs.setUsesScrollButtons(True)
+        # Generic Designer tool-button padding leaves the native 16px tab
+        # arrows no drawable area on a narrow sidebar. Scope this exception.
+        self.tabs.tabBar().setStyleSheet('QTabBar::scroller { width: 32px; } '
+            'QToolButton { padding: 0; min-width: 16px; max-width: 16px; border: 0; background: #ffffff; } '
+            'QToolButton::left-arrow, QToolButton::right-arrow { width: 12px; height: 12px; }')
         root.addWidget(self.tabs, 1)
-        self.imagePage = QWidget()
-        imageLayout = QVBoxLayout(self.imagePage)
+        self.imageContent = QWidget()
+        self.imagePage = scrollContent(self.imageContent, name='nodeImageScroll')
+        self.imagePage.setMinimumHeight(self.imagePage.minimumSizeHint().height())
+        imageLayout = QVBoxLayout(self.imageContent)
         imageLayout.setContentsMargins(0, 6, 0, 0)
         self.ports = QComboBox()
         self.ports.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
@@ -99,6 +107,31 @@ class NodeResultPanel(QWidget):
         actions.addWidget(self.logs)
         actions.addStretch(1)
         root.addLayout(actions)
+        for page in (self.imagePage, self.values, self.execution, self.inputs):
+            page.ensurePolished()
+            page.setMinimumHeight(page.minimumSizeHint().height())
+        self.tabs.ensurePolished()
+        self.tabs.setMinimumHeight(self.tabs.minimumSizeHint().height())
+
+    def event(self, event):
+        result = super().event(event)
+        if event.type() in (QEvent.Resize, QEvent.Show, QEvent.LayoutRequest,
+                            QEvent.FontChange, QEvent.StyleChange) and self.layout() is not None:
+            # QSplitter uses minimumSizeHint, ignoring nested height-for-width.
+            # Wrapped origin/identity lines must reserve their actual height;
+            # the enclosing scroll surface can then expose the bottom actions.
+            margins = self.layout().contentsMargins()
+            width = max(1, self.width() - margins.left() - margins.right())
+            for name in ('operator', 'origin', 'notice'):
+                label = getattr(self, name, None)
+                if label is not None and not label.isHidden():
+                    required = label.heightForWidth(width)
+                    if required >= 0 and required != label.minimumHeight():
+                        label.setMinimumHeight(required)
+            minimum = self.layout().minimumHeightForWidth(max(1, self.width()))
+            if minimum >= 0 and minimum != self.minimumHeight():
+                self.setMinimumHeight(minimum)
+        return result
 
     def _textPage(self, title):
         text = QTextEdit()
@@ -122,7 +155,9 @@ class NodeResultPanel(QWidget):
         self.previous.setChecked(view['history'])
         self.title.setText((definition.get('displayName') or definition.get('operatorId') or nodeId)
                            if nodeId else '未选中节点')
-        self.title.setToolTip(str(definition.get('operatorId', '')) + '\n' + str(nodeId))
+        self.title.setToolTip(self.title.text() +
+            ('\n名称已因摘要额度截断' if definition.get('displayNameTruncated') else '') +
+            '\n' + str(definition.get('operatorId', '')) + '\n' + str(nodeId))
         self.operator.setText('算子：' + definition.get('operatorId', '未提供'))
         status = {'RUNNING': '运行中', 'COMPLETED': '执行完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过'}
         nodeStatus = status.get(record['status'], record['status']) if record else '尚无执行记录'
@@ -144,6 +179,7 @@ class NodeResultPanel(QWidget):
         self.execution.setPlainText(execution)
         self.configure.setEnabled(bool(nodeId))
         self.notice.setText(self.history.notice or (run.notice if run else ''))
+        self.notice.setVisible(bool(self.notice.text()))
         ports = [port for port, kind in definition.get('outputPorts', {}).items()
                  if normalizePortType(kind) == 'image']
         previousPort = self.ports.currentData()

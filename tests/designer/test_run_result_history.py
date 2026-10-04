@@ -77,3 +77,21 @@ def testSummaryAndFrozenPortMetadataShareTheSameBudget():
     assert len(history.current.definitions) <= 64
     assert history.current.retainedBytes <= RUN_METADATA_LIMIT
     assert history.view('other-workflow', '0')['record'] is None
+    assert 'E_INSPECTION_METADATA_BUDGET' in history.current.notice
+
+
+def testNodeCountEvictionIsExplicitInsteadOfLookingLikeAnUnexecutedNode():
+    history = RunResultHistory()
+    nodes = [{**definitions()[0], 'nodeId': str(i)} for i in range(65)]
+    history.accept('a', nodes)
+    assert len(history.current.definitions) == 64
+    assert '节点上限64' in history.current.notice
+    for i in range(65):
+        raw = event('node.completed', i + 1, node=str(i), value=i)
+        raw['jobId'] = 'a'
+        history.applyEvent(raw)
+    assert history.view('main', '0')['record'] is None
+    assert history.view('main', '64')['record']['status'] == 'COMPLETED'
+    assert 'E_INSPECTION_METADATA_BUDGET' in history.current.notice
+    assert '最早更新的记录已释放' in history.current.notice
+    assert history.current.retainedBytes <= RUN_METADATA_LIMIT

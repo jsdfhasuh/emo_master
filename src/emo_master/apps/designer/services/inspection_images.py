@@ -113,6 +113,10 @@ class InspectionImages:
             self.decodedBytes = 0
             return value
 
+    def hasWork(self):
+        with self._condition:
+            return bool(self._active or self._pending or (self._mailbox and 'image' in self._mailbox))
+
     def reset(self):
         with self._condition:
             self._projectGeneration += 1
@@ -140,7 +144,7 @@ class InspectionImages:
                 return
             self._mailbox = value
             self.decodedBytes = value.get('bytes', 0)
-            self.peakDecodedBytes = max(self.peakDecodedBytes, self.decodedBytes)
+            self.peakDecodedBytes = max(self.peakDecodedBytes, self.decodedBytes, value.get('peakDecodedBytes', 0))
         self.notify(generation)
 
     def _run(self):
@@ -225,10 +229,13 @@ class InspectionImages:
             self.reads += 1
         payload, mime = self.client.readInspectionAsset(selection.projectId, sessionId, source.sourceId, context)
         context.check()
-        self.peakScratchBytes = max(self.peakScratchBytes, 2 * len(payload))
-        image, size, formatName = self.decoder(payload, source.width, source.height)
-        self.peakScratchBytes = max(self.peakScratchBytes, size)
+        self.peakScratchBytes = max(self.peakScratchBytes, 2 * len(payload),
+                                   getattr(self.client, 'inspectionPeakScratchBytes', 0))
+        decoded = self.decoder(payload, source.width, source.height)
+        image, size, formatName = decoded
+        self.peakScratchBytes = max(self.peakScratchBytes, getattr(decoded, 'scratchBytes', size))
         del payload
         context.check()
         return {'image': image, 'bytes': size, 'format': formatName, 'mime': mime,
+                'peakDecodedBytes': getattr(decoded, 'peakDecodedBytes', size),
                 'source': source, 'selection': selection}

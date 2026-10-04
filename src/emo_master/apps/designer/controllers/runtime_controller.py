@@ -33,6 +33,7 @@ class RuntimeController:
         onInspectionEvent=None,
         onInspectionStatus=None,
         onInspectionAccepted=None,
+        onInspectionClosing=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -57,6 +58,7 @@ class RuntimeController:
         self.onInspectionEvent = onInspectionEvent
         self.onInspectionStatus = onInspectionStatus
         self.onInspectionAccepted = onInspectionAccepted
+        self.onInspectionClosing = onInspectionClosing
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -441,6 +443,10 @@ class RuntimeController:
             self._waitForWorker(worker, 12000 if stopStarted else 2000)
             self._worker = None
         closeClient = getattr(self.runtimeClient, "close", None)
+        if self.onInspectionClosing:
+            # Subscriptions/Start are retired, but the transport still exists
+            # to release the read-only lease before closing its channel.
+            self.onInspectionClosing()
         if callable(closeClient):
             try:
                 closeClient()

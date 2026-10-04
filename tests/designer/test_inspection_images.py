@@ -105,6 +105,51 @@ def testOlderRuntimeCapabilityIsExplicitAndDoesNotInventPixels():
         images.close()
 
 
+def testLostRenewalClearsImageAndRecoveringLeaseRetriesOnlySelectedSource():
+    import time
+    client = Client()
+    client.release.set()
+    client.failRenew = False
+    method = client.inspectionSession
+
+    def renew(action, *args):
+        if action == 'renew' and client.failRenew:
+            raise RuntimeError('injected connection lost; task is unaffected')
+        return method(action, *args)
+
+    client.inspectionSession = renew
+    delivered = threading.Event()
+    images = InspectionImages(client, lambda *_args: ('pixels', 4, 'PNG'), lambda *_args: delivered.set())
+
+    def forceDueRenewal():
+        # Make the already existing timer due; production's 10s interval and
+        # the 5s per-read deadline remain unchanged.
+        with images._condition:
+            images._renewAt = time.monotonic() - 1
+            images._condition.notify_all()
+
+    try:
+        images.ensureSession('project')
+        generation = images.select(selection())
+        assert delivered.wait(2)
+        assert images.take(generation)['image'] == 'pixels'
+        delivered.clear()
+        client.failRenew = True
+        forceDueRenewal()
+        assert delivered.wait(2)
+        assert 'connection lost' in images.take(generation)['message']
+        assert len(client.calls) == 1 and images.sessionId == 'session'
+        delivered.clear()
+        client.failRenew = False
+        forceDueRenewal()
+        assert delivered.wait(2)
+        assert images.take(generation)['image'] == 'pixels'
+        assert len(client.calls) == 2 and images._pending is None
+        assert images._thread.name == 'designer-node-image'
+    finally:
+        images.close()
+
+
 @pytest.mark.parametrize('extension, shape', [('.png', (5, 7, 3)), ('.jpg', (5, 7, 3)), ('.bmp', (5, 7, 3)),
                                             ('.png', (5, 7)), ('.png', (5, 7, 4))])
 def testActualChannelsStrideDimensionsAndOwnedQImage(tmp_path, extension, shape):
@@ -145,3 +190,31 @@ def testCorruptDimensionsAndDecodeBudgetsDoNotReturnPartialImage():
         decodeNodeImage(bytearray(encoded.tobytes()), 1500, 1500)
     with pytest.raises(ValueError, match='READ_BUDGET'):
         decodeNodeImage(bytearray(4 * 1024 * 1024 + 1), 1, 1)
+
+
+def testSixteenBitColorChecksNativeBitmapBeforeReadAndChargesConversion(monkeypatch):
+    import cv2
+    import numpy as np
+    import emo_master.apps.designer.ui.node_image_decode as module
+    _, encoded = cv2.imencode('.png', np.full((5, 7, 4), 65535, np.uint16))
+    decoded = decodeNodeImage(bytearray(encoded.tobytes()), 7, 5)
+    image, used, formatName = decoded
+    assert image.pixelColor(0, 0).red() == 255 and used == 140 and formatName == 'PNG'
+    assert decoded.peakDecodedBytes == 280 and decoded.scratchBytes >= 280
+    # A 4-byte-only estimate would admit this 9.6 MB native 16-bit bitmap.
+    _, oversized = cv2.imencode('.png', np.zeros((1200, 1000, 3), np.uint16))
+    readerType = module.QImageReader
+
+    class Probe:
+        def __init__(self, *args):
+            self.reader = readerType(*args)
+
+        def __getattr__(self, name):
+            return getattr(self.reader, name)
+
+        def read(self):
+            pytest.fail('The over-budget native bitmap must be rejected before allocation')
+
+    monkeypatch.setattr(module, 'QImageReader', Probe)
+    with pytest.raises(ValueError, match='DECODE_BUDGET'):
+        decodeNodeImage(bytearray(oversized.tobytes()), 1000, 1200)

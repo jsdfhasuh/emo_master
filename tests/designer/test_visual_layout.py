@@ -8,8 +8,8 @@ import pytest
 import emo_master  # noqa: F401 - preload the Windows dependency DLLs before Qt
 
 pytest.importorskip("PySide2")
-from PySide2.QtCore import QPoint, QRectF, QResource, QTimer, Qt
-from PySide2.QtGui import QImage, QPainter, QPixmap
+from PySide2.QtCore import QRectF, QResource, QTimer, Qt
+from PySide2.QtGui import QImage, QPainter, QPixmap, QTextCursor
 from PySide2.QtWidgets import QGraphicsSimpleTextItem, QStackedWidget, QToolButton, QVBoxLayout, QWidget
 
 from emo_master.apps.designer.ui.flow_scene import FlowNodeViewModel
@@ -133,16 +133,21 @@ def testTabsDoNotReserveEmptyPagesOrMoveOnSelection(styledApp):
 
 
 def testLongDetailsDoNotForceWindowBeyondViewport(styledApp):
+    from tests.designer.qt_wait import waitForCatalog
+
     window = makeWindow()
     try:
-        window.jobMessageCard.setText("C:/" + "very-long-directory/" * 60 + "project.json")
-        window.nodeDetailParamsCard.setText("\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80)))
         window.resize(1000, 600)
         window.show()
+        waitForCatalog(window)
+        window.jobMessageCard.setText("C:/" + "very-long-directory/" * 60 + "project.json")
+        panel = window.nodeResultCoordinator.panel
+        panel.execution.setPlainText("\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80)))
+        panel.tabs.setCurrentWidget(panel.execution)
         styledApp.processEvents()
         assert window.minimumSizeHint().height() < 500
         assert window.minimumSizeHint().width() < 800
-        assert window.nodeDetailsScroll.verticalScrollBar().maximum() > 0
+        assert panel.execution.verticalScrollBar().maximum() > 0
         assert window.jobMessageCard.toolTip().endswith("project.json")
     finally:
         window.close()
@@ -155,36 +160,49 @@ def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
     try:
         window.show()
         waitForCatalog(window)
-        # Initial catalog completion refreshes node details. Populate the actual
-        # long-text case after that refresh, rather than testing reset placeholders.
+        window.addNodeFromOperatorPayload({'operatorId': 'test.layout', 'displayName': '布局检查',
+            'inputPorts': {}, 'outputPorts': {'image': 'image'}, 'paramSchema': {}})
+        panel = window.nodeResultCoordinator.panel
+        # Keep the 80-line, unchanged-font and last-line-reachability constraints
+        # on the visible result tabs replacing the old hidden detail section.
         details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
-        window.nodeDetailParamsCard.setText(details)
-        fontSize = window.nodeDetailParamsCard.font().pointSizeF()
+        panel.execution.setPlainText(details)
+        fontSize = panel.execution.font().pointSizeF()
         window.resize(1000, 499)
         styledApp.processEvents()
 
         assert window.height() == 499
         assert window.minimumSizeHint().height() < 500
-        assert window.nodeDetailParamsCard.text() == details
-        assert window.nodeDetailParamsCard.font().pointSizeF() == fontSize
+        assert panel.execution.toPlainText() == details
+        assert panel.execution.font().pointSizeF() == fontSize
         assert window.rightPanelContainer.rect().contains(window.summarySection.geometry())
-        assert window.rightPanelContainer.rect().contains(window.previewSection.geometry())
+        scroll = window.nodeResultCoordinator.panelScroll
+        assert window.rightPanelContainer.rect().contains(scroll.geometry())
+        assert scroll.height() >= scroll.minimumSizeHint().height()
+        assert panel.tabs.isTabVisible(0)
+        panel.tabs.setCurrentWidget(panel.imagePage)
+        styledApp.processEvents()
+        assert panel.tabs.rect().contains(panel.imagePage.geometry())
         assert window.jobStatusCard.height() >= window.jobStatusCard.minimumSizeHint().height()
         assert window.jobMessageCard.height() >= window.jobMessageCard.minimumSizeHint().height()
         assert window.previewImageLabel.height() >= 90
 
-        scroll = window.nodeDetailsScroll
-        bar = scroll.verticalScrollBar()
-        assert bar.maximum() > 0
-        assert scroll.height() >= scroll.minimumSizeHint().height()
-        bar.setValue(bar.maximum())
+        panel.tabs.setCurrentWidget(panel.execution)
+        scroll.ensureWidgetVisible(panel.execution)
         styledApp.processEvents()
-        card = window.nodeDetailParamsCard
-        lastLineBottom = card.mapTo(scroll.viewport(), QPoint(
-            card.contentsRect().left(), card.contentsRect().bottom())).y()
-        assert lastLineBottom < scroll.viewport().height()
-        assert lastLineBottom - card.fontMetrics().height() + 1 >= 0
-        assert card.text().splitlines()[-1].startswith('parameter_79:')
+        bar = panel.execution.verticalScrollBar()
+        assert bar.maximum() > 0
+        assert panel.execution.height() >= panel.execution.minimumSizeHint().height()
+        bar.setValue(bar.maximum())
+        cursor = panel.execution.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        panel.execution.setTextCursor(cursor)
+        panel.execution.ensureCursorVisible()
+        styledApp.processEvents()
+        lastLine = panel.execution.cursorRect()
+        assert lastLine.bottom() < panel.execution.viewport().height()
+        assert lastLine.top() >= 0
+        assert panel.execution.toPlainText().splitlines()[-1].startswith('parameter_79:')
     finally:
         window.close()
 

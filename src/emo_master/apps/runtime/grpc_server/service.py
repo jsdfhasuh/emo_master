@@ -690,7 +690,6 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
 
     @_withProjectStateLock
-    @_withProjectStateLock
     def OpenRunInspectionSession(self, request, context):
         return self._inspectionSessionReply(request, "open")
 
@@ -705,19 +704,29 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def _inspectionSessionReply(self, request, action):
         sessionId = str(getattr(request, "session_id", ""))
         try:
-            if self.loadedDocument is None or not self._projectMatches(str(request.project_id)):
-                raise ValueError("E_PROJECT_NOT_LOADED: requested project copy is not loaded")
-            key = self._loadedProjectPreviewKey
             if action == "open":
-                sessionId = self.runInspectionStore.open(key)
-            elif action == "renew":
-                self.runInspectionStore.renew(sessionId, key)
+                if self.loadedDocument is None or not self._projectMatches(str(request.project_id)):
+                    raise ValueError("E_PROJECT_NOT_LOADED: requested project copy is not loaded")
+                references = (self.loadedProjectId, self.loadedProjectPath,
+                              str(Path(self.loadedProjectPath or "") / "project.json"))
+                sessionId = self.runInspectionStore.open(self._loadedProjectPreviewKey,
+                    (self._inspectionReference(value) for value in references if value))
             else:
-                self.runInspectionStore.closeSession(sessionId, key)
+                key = self.runInspectionStore.keyForReference(sessionId, self._inspectionReference(request.project_id))
+                if action == "renew":
+                    self.runInspectionStore.renew(sessionId, key)
+                else:
+                    self.runInspectionStore.closeSession(sessionId, key)
             return runtime_pb2.RunInspectionSessionReply(ok=True, session_id=sessionId,
                 runtime_instance_id=self.runtimeInstanceId, ttl_ms=30000)
         except ValueError as error:
             return runtime_pb2.RunInspectionSessionReply(ok=False, code=str(error).split(":")[0], message=str(error))
+
+    @staticmethod
+    def _inspectionReference(value):
+        if not str(value):
+            raise ValueError("E_INSPECTION_IDENTITY: an explicit project copy reference is required")
+        return os.path.normcase(str(Path(str(value)).resolve()))
 
     def ListNodePreviewSources(self, request, context):  # type: ignore[override]
         _ = context
@@ -729,11 +738,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         if inspectionId:
             # Frozen Job definitions may differ from the currently edited draft.
             with self._projectStateLock:
-                if self.loadedDocument is None or not self._projectMatches(projectId):
-                    return runtime_pb2.ListNodePreviewSourcesReply(capture_state="INVALID_JOB", message="工程副本不可用")
                 try:
+                    key = self.runInspectionStore.keyForReference(inspectionId, self._inspectionReference(projectId))
                     assets, state, message = self.runInspectionStore.list(
-                        inspectionId, self._loadedProjectPreviewKey, jobId, workflowId, nodeId)
+                        inspectionId, key, jobId, workflowId, nodeId)
                 except ValueError as error:
                     return runtime_pb2.ListNodePreviewSourcesReply(capture_state="EXPIRED", message=str(error))
                 job = self.jobRepository.get(jobId)
@@ -845,12 +853,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         requestedProjectId = str(getattr(request, "project_id", ""))
         inspectionId = str(getattr(request, "inspection_session_id", ""))
         if inspectionId:
-            with self._projectStateLock:
-                if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
-                    raise ValueError("E_PROJECT_NOT_LOADED")
-                projectKey = self._loadedProjectPreviewKey
             active = getattr(context, "is_active", lambda: True)
             try:
+                with self._projectStateLock:
+                    projectKey = self.runInspectionStore.keyForReference(inspectionId, self._inspectionReference(requestedProjectId))
                 yield from (runtime_pb2.PreviewDownloadChunk(asset_id=assetId, content=chunk, mime_type=mime)
                             for chunk, mime in self.runInspectionStore.stream(inspectionId, projectKey, assetId, active))
             except (KeyError, ValueError, OSError) as error:

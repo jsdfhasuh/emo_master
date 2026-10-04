@@ -6,6 +6,24 @@ def testRuntimeClientHasListOperatorsMethod() -> None:
     assert hasattr(RuntimeClient, "listOperators")
 
 
+def testInspectionReadDoesNotOverallocateOrCancelSuccessfulDecodeContext() -> None:
+    from emo_master.apps.designer.services.display_calls import DisplayCallContext
+
+    class Service:
+        def StreamPreviewAsset(self, request, context):
+            for _ in range(16):
+                yield runtime_pb2.PreviewDownloadChunk(asset_id=request.asset_id,
+                    mime_type='image/png', content=b'x' * (256 * 1024))
+
+    client = RuntimeClient(Service())
+    context = DisplayCallContext()
+    payload, mime = client.readInspectionAsset('project', 'session', 'asset', context)
+    context.check()  # The same deadline continues through decode.
+    assert mime == 'image/png' and len(payload) == 4 * 1024 * 1024
+    assert payload.__alloc__() == len(payload) + 1  # CPython terminating byte, no spare payload capacity.
+    assert client.inspectionPeakScratchBytes <= 8 * 1024 * 1024
+
+
 def testRuntimeClientUsesServiceForListOperators() -> None:
     class StubService:
         def __init__(self) -> None:

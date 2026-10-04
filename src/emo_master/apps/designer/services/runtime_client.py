@@ -245,6 +245,7 @@ class RuntimeClient:
         self._closed = False
         self._closing = False
         self._closeLock = threading.RLock()
+        self.inspectionPeakScratchBytes = 0
         self._runtimeTarget = runtimeTarget
         self._displayService = displayService
         self._displayChannel = None
@@ -525,20 +526,38 @@ class RuntimeClient:
             cancellation.attach(stream)
         buffer = bytearray()
         mime = ""
+        complete = False
         try:
             for chunk in stream:
                 cancellation.check()
                 if str(chunk.asset_id) != assetId:
                     raise RuntimeClientError("E_INSPECTION_IDENTITY", "读图资产标识不匹配")
-                if len(buffer) + len(chunk.content) > 4 * 1024 * 1024:
+                size = len(buffer) + len(chunk.content)
+                if size > 4 * 1024 * 1024:
                     raise RuntimeClientError("E_INSPECTION_READ_BUDGET", "编码图片超过4 MiB，读图与 Qt 转换暂存合计限8 MiB")
-                buffer.extend(chunk.content)
+                # bytearray.extend can reserve >4 MiB for a <=4 MiB payload.
+                # Exact-sized buffers bound both the old/new copy and the
+                # subsequent Qt encoded copy to 8 MiB of image storage.
+                joined = bytearray(size)
+                self.inspectionPeakScratchBytes = max(self.inspectionPeakScratchBytes,
+                    len(buffer) + size + len(chunk.content))
+                joined[:len(buffer)] = buffer
+                joined[len(buffer):] = chunk.content
+                buffer = joined
+                del joined
                 mime = str(chunk.mime_type)
             if not buffer:
                 raise RuntimeClientError("E_INSPECTION_READ", "资产为空或读取失败")
+            complete = True
             return buffer, mime
         finally:
-            cancellation.cancel()
+            # The same deadline/cancellation also guards decode. A successful
+            # stream must retire its call without cancelling the whole choice.
+            if not complete:
+                cancellation.cancel()
+            cancel = getattr(stream, "cancel", None)
+            if callable(cancel):
+                cancel()
             close = getattr(stream, "close", None)
             if callable(close):
                 close()

@@ -51,6 +51,7 @@ class InspectionSession:
     retired: list = field(default_factory=list)
     closed: bool = False
     pending: dict = field(default_factory=dict)
+    projectReferences: frozenset = field(default_factory=frozenset)
 
 
 class RunInspectionStore:
@@ -99,14 +100,24 @@ class RunInspectionStore:
             return total + self.usage(projectKey)
         return sum(p.stat().st_size for p in self.assets.root.rglob('*') if p.is_file())
 
-    def open(self, projectKey):
+    def open(self, projectKey, projectReferences=()):
         with self._lock:
             self.expire()
             if self._stop.is_set() or len(self.sessions) >= 2:
                 raise ValueError('E_INSPECTION_SESSION_BUDGET: Runtime accepts at most two sessions')
-            session = InspectionSession(str(uuid4()), projectKey, self.clock() + TTL_SECONDS)
+            session = InspectionSession(str(uuid4()), projectKey, self.clock() + TTL_SECONDS,
+                                        projectReferences=frozenset(projectReferences))
             self.sessions[session.sessionId] = session
             return session.sessionId
+
+    def keyForReference(self, sessionId, projectReference):
+        """Resolve the frozen copy, even after Runtime loads another project."""
+        with self._lock:
+            self.expire()
+            session = self.sessions.get(sessionId)
+            if session is None or session.closed or projectReference not in session.projectReferences:
+                raise ValueError('E_INSPECTION_SESSION_EXPIRED: session expired or belongs to another project copy')
+            return session.projectKey
 
     def require(self, sessionId, projectKey):
         with self._lock:

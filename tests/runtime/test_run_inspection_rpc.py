@@ -141,6 +141,27 @@ def testSessionCapacityRejectedRequestOldClientAndLeaseCloseDoNotStopJob(tmp_pat
         assert runtime.runInspectionStore.stats()['sessions'] == 1
 
 
+def testFrozenSessionCanRenewReadAndCloseAfterAnotherProjectCopyLoads(tmp_path):
+    with running(tmp_path) as (runtime, client, project, session):
+        reply = client.startJob(project, inspectionSessionId=session)
+        assert reply.ok and waitForTerminal(runtime, reply.job_id).status == 'COMPLETED'
+        source = listed(client, project, session, reply.job_id).sources[0]
+        other = tmp_path / '同 projectId 的另一 工程副本'
+        saveProject(other, sampleProject(other).model_dump())
+        assert client.loadProject(str(other)).ok
+        # An identical projectId is insufficient to substitute another copy.
+        with pytest.raises(Exception, match='EXPIRED'):
+            client.inspectionSession('renew', str(other), session)
+        assert client.inspectionSession('renew', project, session).ok
+        assert listed(client, project, session, reply.job_id).sources[0] == source
+        payload, _ = client.readInspectionAsset(project, session, source.sourceId, DisplayCallContext())
+        assert cv2.imdecode(np.frombuffer(payload, np.uint8), cv2.IMREAD_COLOR).shape == (240, 360, 3)
+        assert client.inspectionSession('close', project, session).ok
+        assert runtime.runInspectionStore.stats()['encodedBytes'] == 0
+        assert runtime.runInspectionStore.stats()['sessions'] == 0
+        assert len(runtime.jobRepository.all()) == 1 and not runtime._closed
+
+
 @pytest.mark.parametrize('mode', ['graceful', 'force'])
 def testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly(tmp_path, mode):
     def configure(document, root):

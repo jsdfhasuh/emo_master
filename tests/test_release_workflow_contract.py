@@ -33,6 +33,8 @@ class ReleaseWorkflowContractTests(unittest.TestCase):
         self.assertNotRegex(text, r"gh\s+release|git\s+(?:push|tag)|publish_release:\s*true")
         self.assertIn("--expected-source-sha", text)
         self.assertIn("if: always()", text)
+        self.assertIn("psutil pywinauto Pillow", text)
+        self.assertIn("from PIL import ImageGrab", text)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from emo_master.apps.designer.state.node_run_inspection import NodeRunInspection
 
 
 @dataclass
@@ -16,6 +17,7 @@ class RuntimePanelState:
     lastMessage: str = ""
     activeJobId: str | None = None
     allowEventsWithoutActiveJob: bool = field(default=True, init=False, repr=False)
+    nodeInspection: NodeRunInspection = field(default_factory=NodeRunInspection)
 
     def setActiveJob(self, jobId: str | None) -> None:
         if self.activeJobId == jobId:
@@ -24,6 +26,7 @@ class RuntimePanelState:
         self.activeJobId = jobId
         self.allowEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
         self.nodeStatus.clear()
+        self.nodeInspection.clear()
         self.nodeStatusByRun.clear()
         self.iterationPathByNode.clear()
         self.nodeStatusByWorkflowRun.clear()
@@ -45,6 +48,8 @@ class RuntimePanelState:
         if self.activeJobId and eventJobId != self.activeJobId:
             return
         if self.activeJobId is None and not self.allowEventsWithoutActiveJob:
+            return
+        if not self.nodeInspection.applyEvent(event):
             return
         eventType = event.get("eventType")
         nodeId = event.get("nodeId")

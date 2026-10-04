@@ -755,12 +755,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowModel = FlowGraphModel()
         self.workflowStore = WorkflowStore()
         self.activeWorkflowId = self.workflowStore.activeWorkflowId
+        self.runtimePanelState = RuntimePanelState()
         self.nodeDetailsPresenter = NodeDetailsPresenter(
             flowModel=self.flowModel,
             nodeRuntimeState=self._nodeRuntimeState,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
+            getInspection=lambda workflowId, nodeId: self.runtimePanelState.nodeInspection.get(
+                workflowId, nodeId, self.currentJobId),
         )
-        self.runtimePanelState = RuntimePanelState()
         self.nodeParamDialog: NodeParamDialog | None = None
         self.logDock: RuntimeLogDock | None = None
         self.logDialog: RuntimeLogDock | None = None
@@ -1143,8 +1145,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.nodeDetailMetaCard = detailLabel("")
         self.nodeDetailPortsCard = detailLabel("输入: 无\n输出: 无")
         self.nodeDetailParamsCard = detailLabel("参数:\n- 无")
+        self.nodeRunDetailsCard = detailLabel("选择节点查看本次运行数据")
+        if _nativeQt:
+            self.nodeRunDetailsCard.setTextFormat(Qt.PlainText)
+            self.nodeRunDetailsCard.setTextInteractionFlags(Qt.TextSelectableByMouse)
         for detailWidget in [
             self.nodeDetailTitleCard,
+            self.nodeRunDetailsCard,
             self.nodeDetailMetaCard,
             self.nodeDetailPortsCard,
             self.nodeDetailParamsCard,
@@ -1197,6 +1204,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setAlign):
             setAlign(Qt.AlignCenter)
         previewLayout.addWidget(self.previewImageLabel)
+        if _nativeQt:
+            from emo_master.apps.designer.ui.run_result_tools import RunResultTools
+            self.runResultTools = RunResultTools(self)
+            previewLayout.addWidget(self.runResultTools)
+        self._displayedRunImage: tuple[object, ...] | None = None
         self.previewSection.setLayout(previewLayout)
         rightPanel.addWidget(self.previewSection)
         if _nativeQt:
@@ -1282,7 +1294,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             runtimeClient=self.runtimeClient,
             appendLog=self.appendRuntimeLog,
         )
-        self.operatorEditorManager = OperatorEditorManager(
+        self.operatorEditorManager: OperatorEditorManager = OperatorEditorManager(
             runtimeClient=self.runtimeClient,
             settingsStore=self.settingsStore,
             applyParams=self._applyEditorParams,
@@ -2558,6 +2570,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
+        self.runtimePanelState.nodeInspection.clear()
+        self._displayedRunImage = None
         self._saveRuntimeLogSettings()
         try:
             super().closeEvent(event)
@@ -2637,6 +2651,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.currentJobId is None and self._allowRuntimeEventsWithoutActiveJob
         ) or (self.currentJobId is not None and jobId == self.currentJobId)
         if not isCurrentJobEvent:
+            return
+        if self.runtimePanelState.nodeInspection.isSuperseded(event):
             return
         info: dict[str, object] = {
             "status": status,
@@ -3278,6 +3294,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.nodeDetailMetaCard.setText("")
             self.nodeDetailPortsCard.setText("输入: 无\n输出: 无")
             self.nodeDetailParamsCard.setText("参数:\n- 无")
+            self.nodeRunDetailsCard.setText("选择节点查看本次输入、输出、耗时和错误。")
             return
 
         title = str(detailModel.get("title", ""))
@@ -3304,6 +3321,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         params = paramsRaw if isinstance(paramsRaw, list) else []
 
         self.nodeDetailTitleCard.setText(title)
+        from emo_master.apps.designer.presenters.node_run_presenter import inspectionText
+        inspection = detailModel.get('inspection')
+        self.nodeRunDetailsCard.setText(inspectionText(
+            inspection if isinstance(inspection, dict) else None, self.currentJobId))
         self.nodeDetailMetaCard.setText(
             f"ID: {nodeId}\n算子: {operatorId}\n运行状态: {runtimeStatus}\n分支命中: {branch}"
         )
@@ -3316,8 +3337,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def _refreshPreviewImage(self) -> None:
         imagePath = self.runtimePanelState.latestImagePath
+        tools = getattr(self, 'runResultTools', None)
+        if tools is not None:
+            tools.refresh()
+        imageIdentity = (self.currentJobId, imagePath,
+                         self.runtimePanelState.latestArtifact.get('artifactId'),
+                         self.runtimePanelState.latestArtifact.get('checksum'))
+        if getattr(self, '_displayedRunImage', None) == imageIdentity:
+            return
+        self._displayedRunImage = None
         if imagePath is None:
             self.previewImageLabel.setText("暂无图片")
+            self._displayedRunImage = imageIdentity
             return
         if not Path(imagePath).exists():
             self.previewImageLabel.setText(f"图片不存在\n{imagePath}")
@@ -3329,6 +3360,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
 
         self.previewImageLabel.setPixmap(pixmap)
+        self._displayedRunImage = imageIdentity
 
     def openLogDialog(self) -> None:
         if self.logDock is None:

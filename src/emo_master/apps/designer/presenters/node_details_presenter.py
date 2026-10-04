@@ -7,10 +7,12 @@ class NodeDetailsPresenter:
         flowModel,
         nodeRuntimeState: dict[str, dict[str, object]],
         getActiveWorkflowId=None,
+        getInspection=None,
     ) -> None:
         self.flowModel = flowModel
         self.nodeRuntimeState = nodeRuntimeState
         self.getActiveWorkflowId = getActiveWorkflowId or (lambda: "")
+        self.getInspection = getInspection or (lambda _workflow, _node: None)
 
     def buildSummary(self) -> str:
         detailModel = self.buildModel()
@@ -87,6 +89,9 @@ class NodeDetailsPresenter:
 
         runtimeInfo = self.nodeRuntimeState.get(selectedNodeId, {})
         runtimeStatus = runtimeInfo.get("status", "-")
+        inspection = self.getInspection(self.getActiveWorkflowId(), node.nodeId)
+        if inspection is not None:
+            runtimeStatus = inspection['status']
         branchHit = runtimeInfo.get("branch", "-")
         return {
             "state": "selected",
@@ -107,4 +112,5 @@ class NodeDetailsPresenter:
             "iterationPath": runtimeInfo.get("iterationPath", ()),
             "branch": branchHit,
             "params": paramLines,
+            "inspection": inspection,
         }

@@ -402,6 +402,7 @@ def _projectEvent(event: RuntimeEvent) -> dict[str, object]:
                 "status",
                 "metrics",
                 "diagnostics",
+                "ioSummary",
                 "branch",
                 "artifact",
                 "artifacts",

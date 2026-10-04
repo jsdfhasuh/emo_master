@@ -15,6 +15,7 @@ from emo_master.core.contracts.port_types import (
     matchesPortSpec,
 )
 from emo_master.core.workflow.models import CompiledProject
+from emo_master.core.contracts.run_inspection import finishInspection, startInspection
 
 
 @dataclass(frozen=True)
@@ -157,10 +158,13 @@ class WorkflowRunner:
                         "node.skipped",
                         nodeContext,
                         f"node skipped: {node.nodeId}",
-                        payload={"status": "SKIPPED"},
+                        payload={"status": "SKIPPED", "ioSummary": startInspection(nodeInput),
+                                 "code": "E_INPUT_NOT_PRODUCED", "message": "upstream did not produce input"},
                     )
                     continue
-                self.publish("node.started", nodeContext, f"node started: {node.nodeId}")
+                inspection = startInspection(nodeInput)
+                self.publish("node.started", nodeContext, f"node started: {node.nodeId}",
+                             payload={"ioSummary": inspection})
                 try:
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation
@@ -184,6 +188,7 @@ class WorkflowRunner:
                         "message": str(err),
                         "metrics": getattr(err, "metrics", {}),
                         "diagnostics": getattr(err, "diagnostics", {}),
+                        "ioSummary": inspection,
                     }
                     self.publish(
                         "node.failed",
@@ -206,6 +211,7 @@ class WorkflowRunner:
                     "outputs": _jsonSafe(nodeOutputs),
                     "metrics": _jsonSafe(nodeMetrics),
                     "diagnostics": _jsonSafe(nodeDiagnostics),
+                    "ioSummary": finishInspection(inspection, nodeOutputs),
                 }
                 branch = _branchName(node.operatorId, nodeOutputs)
                 if branch:

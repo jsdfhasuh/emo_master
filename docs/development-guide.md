@@ -297,3 +297,23 @@ python scripts/validate_page_editor.py --output manual_test_workspace/page-edito
 代码依据：`scripts/dev.py`、`scripts/ci_check.py`、`scripts/gen_proto.py`、`pyproject.toml`、`requirements-dev.txt`、`apps/designer/main.py`、`apps/runtime/main.py`；后两者位于 `src/emo_master` 下。
 
 环境变量和进程行为参考 [Python 3.10 命令行与环境](https://docs.python.org/3.10/using/cmdline.html) 及 [PowerShell 环境变量](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.core/about/about_environment_variables)。
+
+### 流程设计中查看运行结果（2026-10-04）
+
+保存当前项目并正常关闭旧 Designer，再按第 0 节从源码启动。新代码不会热更新已经打开的窗口；外部 Runtime 也需要使用同版代码才能上报新的输入摘要。
+
+1. 在 **流程设计** 明确点击 **运行流程 / 开始运行**。选中画布节点，右侧 **当前节点** 会显示本次实际输入、实际输出、算子上报的耗时、诊断及错误。例如计数节点的 `count = 2`，比较节点的 `result = true`。`0`、`false`、空值均按真实值显示。
+2. 图像端口只展示尺寸摘要，集合只展示数量，不展开或复制完整内容。下方 **结果预览** 展示当前任务由保存节点产出的图片，标明任务和来源节点；**打开结果图** 打开本机可访问的文件。远端 Runtime 的服务器路径不可直接当成本机文件打开。
+3. **运行日志** 打开既有日志面板。内嵌 `--local` 模式的 Runtime JSONL 文件默认位于 `manual_test_workspace/runtime-embedded/logs/`；自定义或外部模式的日志在服务端配置的数据目录。GUI 本地日志缓存和 Runtime 落盘日志是两个来源。
+4. 切换节点仅查看，不启动新任务。开始新任务、节点重新执行、失败或跳过时不会继续显示上一轮成功输出。旧 Runtime 的事件没有输入摘要时，界面明确提示缺失，保留其已经上报的本次输出和诊断。
+5. 当前节点摘要只保留同一任务每个节点最近观察到的执行，显示流程、节点执行标识和循环索引；最多 64 个节点，超过后淘汰最早更新项。完整调用历史继续查看日志。节点“已完成”表示执行成功，业务判定以输出值为准。
+
+隔离的真实 Qt 验证和截图脚本：
+
+```powershell
+$env:QT_QPA_PLATFORM = 'windows'
+$env:PYTHONUTF8 = '1'
+& "$env:USERPROFILE\.conda\envs\emo_master\python.exe" docs/testing/flow-run-inspector-2026-10-04/capture.py --output "manual_test_workspace/flow-inspection-$(Get-Date -Format yyyyMMdd-HHmmss)"
+```
+
+脚本只创建自己的临时项目、数据库、输出和窗口，明确运行一件本地图像及一件缺图故障注入，不接真实设备。输出目录必须不存在，避免覆盖证据。结果、限制及原始记录见 [节点运行查看验证](testing/flow-run-inspector-2026-10-04.md)。

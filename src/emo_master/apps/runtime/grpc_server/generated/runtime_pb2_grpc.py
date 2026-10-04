@@ -34,6 +34,21 @@ class RuntimeServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.OpenRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
+        self.RenewRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RenewRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
+        self.CloseRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
         self.LoadProject = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/LoadProject',
                 request_serializer=runtime__pb2.LoadProjectRequest.SerializeToString,
@@ -158,6 +173,24 @@ class RuntimeServiceStub(object):
 
 class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def OpenRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RenewRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def LoadProject(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -306,6 +339,21 @@ class RuntimeServiceServicer(object):
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'OpenRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
+            'RenewRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.RenewRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
+            'CloseRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
             'LoadProject': grpc.unary_unary_rpc_method_handler(
                     servicer.LoadProject,
                     request_deserializer=runtime__pb2.LoadProjectRequest.FromString,
@@ -436,6 +484,87 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class RuntimeService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def OpenRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RenewRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RenewRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def LoadProject(request,

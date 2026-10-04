@@ -34,6 +34,7 @@ from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
 from emo_master.apps.runtime.preview.executor import PurePreviewExecutor, parsePreviewParams
 from emo_master.apps.runtime.preview.live import LivePreviewManager
 from emo_master.apps.runtime.preview.store import PreviewAssetStore
+from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
@@ -54,7 +55,8 @@ def _withProjectStateLock(method: Any) -> Any:
         self.jobSupervisor.assertMutationAllowed()
         with self._projectStateLock:
             if self._closing and method.__name__ in {
-                "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession"
+                "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession",
+                "OpenRunInspectionSession", "RenewRunInspectionSession"
             }:
                 raise RuntimeError("E_RUNTIME_CLOSING")
             return method(self, *args, **kwargs)
@@ -143,6 +145,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.previewAssetStore = PreviewAssetStore(
             self.workspaceRoot.parent / "preview-cache"
         )
+        self.runInspectionStore = RunInspectionStore(self.previewAssetStore)
+        self.eventStore.addSink(self.runInspectionStore.observe)
         self.previewExecutor = PurePreviewExecutor(
             self.pluginScanResult.activeOperators,
             self.previewAssetStore,
@@ -275,6 +279,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 ("project_id", ""), ("workflow_id", ""), ("inputs_json", ""),
                 ("capture_presentation", False))}
             arguments["legacy_snapshot_policy"] = policy
+            inspectionId = str(getattr(request, "inspection_session_id", ""))
+            if inspectionId:
+                arguments["inspection_session_id"] = inspectionId
             fingerprint = hashlib.sha256(json.dumps(arguments, sort_keys=True).encode()).hexdigest()
             previous = self._startRequests.get(requestId)
             if previous:
@@ -294,6 +301,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         reply.runtime_instance_id = self.runtimeInstanceId
         reply.start_request_id = requestId
         reply.legacy_snapshot_policy = policy if policy in {"ALL", "NONE"} else ""
+        if reply.job_id and str(getattr(request, "inspection_session_id", "")):
+            reply.project_revision = self.jobRepository.get(reply.job_id).projectRevision
+            reply.inspection_session_id = str(getattr(request, "inspection_session_id", ""))
         if requestId:
             if not reply.ok and not reply.job_id:
                 reply.status = "REJECTED"
@@ -349,6 +359,12 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             return runtime_pb2.StartJobReply(
                 ok=False, job_id="", status="FAILED", message="workflow not found"
             )
+        inspectionId = str(getattr(request, "inspection_session_id", ""))
+        if inspectionId:
+            try:
+                self.runInspectionStore.require(inspectionId, self._loadedProjectPreviewKey)
+            except ValueError as error:
+                return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
         inputsJson = str(getattr(request, "inputs_json", "") or "{}")
         try:
             inputs = json.loads(inputsJson)
@@ -417,6 +433,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     notifySinks=False,
                 )
             try:
+                if inspectionId:
+                    self.runInspectionStore.attach(inspectionId, self._loadedProjectPreviewKey, record.jobId, document,
+                                                   accepted=False)
                 snapshotPath, workspacePath = self._createSnapshot(record.jobId, document)
                 self._workspacePaths[record.jobId] = workspacePath
                 self._jobPreviewKeys[record.jobId] = self._loadedProjectPreviewKey
@@ -436,6 +455,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     from dataclasses import replace
                     spec = replace(spec, presentation=presentation.attachNormal(record.jobId, capture))
                 self.jobManager.start(record, spec)
+                if inspectionId:
+                    self.runInspectionStore.confirm(inspectionId, self._loadedProjectPreviewKey, record.jobId)
             except Exception as err:
                 self.eventStore.append(
                     record.jobId,
@@ -463,6 +484,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     message=str(err),
                 )
                 self.jobMessages.pop(record.jobId, None)
+                if inspectionId:
+                    self.runInspectionStore.abandon(inspectionId, self._loadedProjectPreviewKey, record.jobId)
                 self._jobPreviewKeys.pop(record.jobId, None)
                 self._removeWorkspace(record.jobId)
                 if capture is not None:
@@ -667,12 +690,63 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         )
 
     @_withProjectStateLock
+    @_withProjectStateLock
+    def OpenRunInspectionSession(self, request, context):
+        return self._inspectionSessionReply(request, "open")
+
+    @_withProjectStateLock
+    def RenewRunInspectionSession(self, request, context):
+        return self._inspectionSessionReply(request, "renew")
+
+    @_withProjectStateLock
+    def CloseRunInspectionSession(self, request, context):
+        return self._inspectionSessionReply(request, "close")
+
+    def _inspectionSessionReply(self, request, action):
+        sessionId = str(getattr(request, "session_id", ""))
+        try:
+            if self.loadedDocument is None or not self._projectMatches(str(request.project_id)):
+                raise ValueError("E_PROJECT_NOT_LOADED: requested project copy is not loaded")
+            key = self._loadedProjectPreviewKey
+            if action == "open":
+                sessionId = self.runInspectionStore.open(key)
+            elif action == "renew":
+                self.runInspectionStore.renew(sessionId, key)
+            else:
+                self.runInspectionStore.closeSession(sessionId, key)
+            return runtime_pb2.RunInspectionSessionReply(ok=True, session_id=sessionId,
+                runtime_instance_id=self.runtimeInstanceId, ttl_ms=30000)
+        except ValueError as error:
+            return runtime_pb2.RunInspectionSessionReply(ok=False, code=str(error).split(":")[0], message=str(error))
+
     def ListNodePreviewSources(self, request, context):  # type: ignore[override]
         _ = context
         projectId = str(getattr(request, "project_id", ""))
         workflowId = str(getattr(request, "workflow_id", ""))
         nodeId = str(getattr(request, "node_id", ""))
         jobId = str(getattr(request, "job_id", ""))
+        inspectionId = str(getattr(request, "inspection_session_id", ""))
+        if inspectionId:
+            # Frozen Job definitions may differ from the currently edited draft.
+            with self._projectStateLock:
+                if self.loadedDocument is None or not self._projectMatches(projectId):
+                    return runtime_pb2.ListNodePreviewSourcesReply(capture_state="INVALID_JOB", message="工程副本不可用")
+                try:
+                    assets, state, message = self.runInspectionStore.list(
+                        inspectionId, self._loadedProjectPreviewKey, jobId, workflowId, nodeId)
+                except ValueError as error:
+                    return runtime_pb2.ListNodePreviewSourcesReply(capture_state="EXPIRED", message=str(error))
+                job = self.jobRepository.get(jobId)
+                sources = [runtime_pb2.PreviewSourceInfo(source_id=asset.assetId,
+                    label=asset.port, source_kind="current", workflow_id=asset.workflowId, node_id=asset.nodeId,
+                    port=asset.port, width=asset.width, height=asset.height, mime_type=asset.mimeType,
+                    origin_job_id=asset.originJobId, origin_project_revision=asset.originProjectRevision,
+                    capture_id=asset.captureId, workflow_run_id=asset.workflowRunId, node_run_id=asset.nodeRunId,
+                    created_at_ms=asset.createdAtMs, iteration_path_json=json.dumps(list(asset.iterationPath)),
+                    snapshot_state="CURRENT") for asset in assets]
+                return runtime_pb2.ListNodePreviewSourcesReply(sources=sources, job_id=jobId,
+                    legacy_snapshot_policy=job.legacySnapshotPolicy if job else "UNKNOWN",
+                    capture_state=state, message=message)
         if (self.loadedDocument is None or not self._projectMatches(projectId)
                 or workflowId not in self.loadedDocument.workflows):
             return runtime_pb2.ListNodePreviewSourcesReply(capture_state="INVALID_JOB",
@@ -708,7 +782,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 width=asset.width, height=asset.height, mime_type=asset.mimeType,
                 iteration_path_json=json.dumps(list(asset.iterationPath)),
                 origin_job_id=asset.originJobId, origin_project_revision=asset.originProjectRevision,
-                capture_id=asset.captureId, created_at_ms=asset.createdAtMs, snapshot_state=state))
+                capture_id=asset.captureId, created_at_ms=asset.createdAtMs, snapshot_state=state,
+                workflow_run_id=asset.workflowRunId, node_run_id=asset.nodeRunId))
         if not jobId:
             state, message = "NO_JOB_SELECTED", "尚未选择任务；历史快照需明确选择"
         elif not verified or policy not in {"ALL", "NONE"}:
@@ -768,6 +843,21 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def StreamPreviewAsset(self, request, context):  # type: ignore[override]
         assetId = str(getattr(request, "asset_id", ""))
         requestedProjectId = str(getattr(request, "project_id", ""))
+        inspectionId = str(getattr(request, "inspection_session_id", ""))
+        if inspectionId:
+            with self._projectStateLock:
+                if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
+                    raise ValueError("E_PROJECT_NOT_LOADED")
+                projectKey = self._loadedProjectPreviewKey
+            active = getattr(context, "is_active", lambda: True)
+            try:
+                yield from (runtime_pb2.PreviewDownloadChunk(asset_id=assetId, content=chunk, mime_type=mime)
+                            for chunk, mime in self.runInspectionStore.stream(inspectionId, projectKey, assetId, active))
+            except (KeyError, ValueError, OSError) as error:
+                if context is not None:
+                    context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(error))
+                raise
+            return
         with self._projectStateLock:
             if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
                 return
@@ -1120,6 +1210,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         # No callback, producer, process or IPC owner can write these stores now.
         if presentation is not None:
             presentation.close()
+        self._closeStep("inspection-sink", lambda: self.eventStore.removeSink(self.runInspectionStore.observe))
+        self._closeStep("inspection-assets", self.runInspectionStore.close, retryable=True)
         self._closeStep("preview-assets", self.previewAssetStore.close)
         self._closeStep("event-sink", lambda: self.eventStore.removeSink(self._operationalLogSink))
         def closeWriter():
@@ -1251,6 +1343,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.jobMessages.pop(jobId, None)
         previewKey = self._jobPreviewKeys.pop(jobId, "")
         workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
+        self.runInspectionStore.terminal(jobId, workspace, status)
         if status == JobStatus.COMPLETED.value and previewKey:
             try:
                 self.previewAssetStore.promote(

@@ -53,7 +53,12 @@ def main():
         try:
             code = process.wait(timeout=args.watchdog)
         except subprocess.TimeoutExpired:
-            process.kill()
+            if os.name == 'nt':
+                # Only this wrapper's owned process tree, including spawn Jobs.
+                subprocess.run(['taskkill', '/PID', str(process.pid), '/T', '/F'],
+                               stdout=handle, stderr=subprocess.STDOUT, check=False, timeout=10)
+            if process.poll() is None:
+                process.kill()
             process.wait()
             code = 124
     metadata.update(exitCode=code, durationSeconds=time.monotonic() - start,

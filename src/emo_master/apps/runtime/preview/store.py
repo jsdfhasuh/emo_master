@@ -61,6 +61,8 @@ class PreviewAsset:
     originJobId: str = ""
     originProjectRevision: int = 0
     captureId: str = ""
+    workflowRunId: str = ""
+    nodeRunId: str = ""
 
 
 class PreviewSnapshotWriter:
@@ -154,7 +156,9 @@ class PreviewSnapshotWriter:
                         "createdAtMs": createdAtMs,
                     }
                 entry.update(originJobId=originJobId, originProjectRevision=self.projectRevision,
-                             captureId=captureId)
+                             captureId=captureId,
+                             workflowRunId=str(getattr(context, 'workflowRunId', '')),
+                             nodeRunId=str(getattr(context, 'nodeRunId', '')))
                 previous = nextEntries.get(key)
                 if previous is not None:
                     obsolete.append(self.root / str(previous["relativePath"]))
@@ -183,6 +187,7 @@ class PreviewAssetStore:
         self._lock = threading.RLock()
         self._pendingCleanup: set[Path] = set()
         self._cleanupScanRequired = True
+        self.inspectionUsage = lambda projectKey=None: 0
         self._loadPersistentAssets()
 
     def _retirePending(self) -> bool:
@@ -500,6 +505,8 @@ class PreviewAssetStore:
                         originJobId=str(entry.get("originJobId", "")),
                         originProjectRevision=_intValue(entry.get("originProjectRevision", 0)),
                         captureId=str(entry.get("captureId", "")),
+                        workflowRunId=str(entry.get('workflowRunId', '')),
+                        nodeRunId=str(entry.get('nodeRunId', '')),
                     )
             self._assets = {**loaded, **transient}
 
@@ -509,11 +516,12 @@ class PreviewAssetStore:
             if not projectRoot.is_dir() or projectRoot.name.startswith("_"):
                 continue
             entries = [entry for entry in _readIndex(projectRoot / "index.json") if _validEntry(entry)]
-            entries = self._trimEntries(projectRoot, entries, _PROJECT_LIMIT_BYTES)
+            entries = self._trimEntries(projectRoot, entries,
+                                       max(0, _PROJECT_LIMIT_BYTES - self.inspectionUsage(projectRoot.name)))
             _atomicJson(projectRoot / "index.json", {"entries": entries})
             projects.append((projectRoot, entries))
         combined: list[tuple[int, Path, dict[str, object], int]] = []
-        total = 0
+        total = self.inspectionUsage()
         for projectRoot, entries in projects:
             for entry in entries:
                 path = projectRoot / str(entry["relativePath"])

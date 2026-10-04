@@ -32,6 +32,7 @@ class RuntimeController:
         onInspectionStarting=None,
         onInspectionEvent=None,
         onInspectionStatus=None,
+        onInspectionAccepted=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -55,6 +56,7 @@ class RuntimeController:
         self.onInspectionStarting = onInspectionStarting
         self.onInspectionEvent = onInspectionEvent
         self.onInspectionStatus = onInspectionStatus
+        self.onInspectionAccepted = onInspectionAccepted
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -92,8 +94,7 @@ class RuntimeController:
             self.appendLog("ERROR", f"页面采集准备失败：{error}")
             return
         self._captureCurrentRun = capturePresentation
-        if self.onInspectionStarting:
-            self.onInspectionStarting()
+        inspection = self.onInspectionStarting() if self.onInspectionStarting else None
         # A new start attempt must not keep presenting the previous terminal job
         # if the worker fails before it receives a new job id.
         self.setCurrentJobId(None)
@@ -108,6 +109,7 @@ class RuntimeController:
             previousCaptureJob=self._previousCaptureJob,
         )
         worker.captureRequirements = dict(captureRequest) if isinstance(captureRequest, dict) else {}
+        worker.inspection = inspection
         if not self._bindQtWorker(worker):
             worker.jobAccepted.connect(self._onJobAccepted)
             worker.eventReceived.connect(self._onRuntimeEvent)
@@ -132,6 +134,8 @@ class RuntimeController:
         self._jobActive = True
         currentJobId = str(getattr(reply, "job_id", ""))
         self.setCurrentJobId(currentJobId or None)
+        if self.onInspectionAccepted and getattr(reply, 'ok', False):
+            self.onInspectionAccepted(reply)
         self.invalidatePreviewSources()
         generation = str(getattr(reply, "runtime_instance_id", ""))
         if self._captureCurrentRun and currentJobId and generation:

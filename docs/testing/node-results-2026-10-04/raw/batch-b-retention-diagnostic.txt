@@ -1,0 +1,21 @@
+F..                                                                      [100%]
+================================== FAILURES ===================================
+____ testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-881/testDifferentRealJobsRetainSam0')
+
+    def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_path):
+        with running(tmp_path) as (runtime, client, project, session):
+            first = client.startJob(project, inspectionSessionId=session)
+            assert first.ok and first.project_revision == runtime.loadedDocument.project.revision
+            assert waitForTerminal(runtime, first.job_id).status == 'COMPLETED'
+            listing = listed(client, project, session, first.job_id)
+>           assert listing.sources, listing
+E           AssertionError: PreviewSourceListing(sources=(), jobId='5e428844-6dcf-43b9-afb4-707f474ebde4', legacySnapshotPolicy='ALL', captureState='PREPARING', message='任务尚未结束，节点图片尚未接管')
+E           assert ()
+E            +  where () = PreviewSourceListing(sources=(), jobId='5e428844-6dcf-43b9-afb4-707f474ebde4', legacySnapshotPolicy='ALL', captureState='PREPARING', message='任务尚未结束，节点图片尚未接管').sources
+
+tests\runtime\test_run_inspection_rpc.py:55: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_run_inspection_rpc.py::testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion
+1 failed, 2 passed in 4.14s

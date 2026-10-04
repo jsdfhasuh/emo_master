@@ -1,0 +1,41 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+____ testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-883/testDifferentRealJobsRetainSam0')
+
+    def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_path):
+        with running(tmp_path) as (runtime, client, project, session):
+            first = client.startJob(project, inspectionSessionId=session)
+            assert first.ok and first.project_revision == runtime.loadedDocument.project.revision
+            assert waitForTerminal(runtime, first.job_id).status == 'COMPLETED'
+            try:
+>               listing = listed(client, project, session, first.job_id)
+
+tests\runtime\test_run_inspection_rpc.py:61: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000027F383A81C0>
+project = 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-883\\testDifferentRealJobsRetainSam0\\本地 图片'
+session = '1a70c8c3-a594-432b-9c65-0c48a95ddb3a'
+job = 'ee073f92-18c0-4963-bd4f-faefe2bc74d2', node = 'load'
+
+    def listed(client, project, session, job, node='load'):
+        deadline = time.monotonic() + 5
+        while True:
+            listing = client.listNodePreviewSourcesWithMetadata(project, 'main', node, jobId=job, inspectionSessionId=session)
+            if listing.captureState != 'PREPARING':
+                return listing
+>           assert time.monotonic() < deadline, listing
+E           AssertionError: PreviewSourceListing(sources=(), jobId='ee073f92-18c0-4963-bd4f-faefe2bc74d2', legacySnapshotPolicy='ALL', captureState='PREPARING', message='节点图片接管尚未封闭；任务终态不等于资产已经就绪')
+E           assert 1319254.968 < 1319254.968
+E            +  where 1319254.968 = <built-in function monotonic>()
+E            +    where <built-in function monotonic> = time.monotonic
+
+tests\runtime\test_run_inspection_rpc.py:51: AssertionError
+---------------------------- Captured stdout call -----------------------------
+INSPECTION InspectionJob(jobId='ee073f92-18c0-4963-bd4f-faefe2bc74d2', revision=1, definitions={('main', 'blob'): {'blobs': 'blobCollection', 'mask': 'image', 'overlay': 'image', 'frame': 'bbox2d'}, ('main', 'count'): {'count': 'integer'}, ('main', 'input'): {}, ('main', 'load'): {'image': 'image', 'frame': 'bbox2d'}, ('main', 'output'): {}, ('main', 'presence'): {'result': 'boolean'}, ('main', 'save'): {'result': 'json'}}, last={('main', 'input'): {'nodeRunId': 'ba5a3d66-6c39-4a36-921e-d4ba4756afc9', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 7}, ('main', 'load'): {'nodeRunId': '8ed0fe25-7187-4e91-81ad-e582ae31d9a6', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 9}, ('main', 'output'): {'nodeRunId': '2132b645-c87a-4c6c-83c2-d5c5d95dee36', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 11}, ('main', 'blob'): {'nodeRunId': '986f6259-a7f3-4db1-af16-59935413a989', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 13}, ('main', 'count'): {'nodeRunId': '92db9737-23d0-4d02-b3d2-632653b02e7a', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 15}, ('main', 'save'): {'nodeRunId': 'c87458ec-72ef-4cea-bdb2-0f36ab48683e', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 18}, ('main', 'presence'): {'nodeRunId': '375def0a-e04b-4462-8d79-1a888c71a16a', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'status': 'node.completed', 'sequence': 20}}, sources=[], ready=False, status='COMPLETED', reason='', reasons={}, artifact={'path': 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-883\\testDifferentRealJobsRetainSam0\\jobs\\ee073f92-18c0-4963-bd4f-faefe2bc74d2\\artifacts\\d0b16539-8685-4afe-8a6c-7c1fbc16bc50.png', 'checksum': '43fc47282897fc09fd54af6470095e5ac2ec34873f06f98d4b6e9551ed7ca52f', 'artifactId': 'd0b16539-8685-4afe-8a6c-7c1fbc16bc50', 'mimeType': 'image/png', 'workflowId': 'main', 'nodeId': 'save', 'workflowRunId': '91590f94-4999-4c91-be52-129e6895620a', 'nodeRunId': 'c87458ec-72ef-4cea-bdb2-0f36ab48683e', 'createdAtMs': 1791111244611}, readers=0, retired=False, directory=WindowsPath('//?/C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-883/testDifferentRealJobsRetainSam0/preview-cache/_inspection/c2e0ac5aea9e93b142698d1a4d6e71c95a0323713b343c1f5226ba1a21debea6/1a70c8c3-a594-432b-9c65-0c48a95ddb3a/ee073f92-18c0-4963-bd4f-faefe2bc74d2'))
+FINALIZATION {}
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_run_inspection_rpc.py::testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion
+1 failed in 6.98s

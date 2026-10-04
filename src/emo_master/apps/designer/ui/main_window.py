@@ -1296,6 +1296,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             onInspectionStarting=(self.nodeResultCoordinator.rememberDraft if self.nodeResultCoordinator else None),
             onInspectionEvent=(self.nodeResultCoordinator.event if self.nodeResultCoordinator else None),
             onInspectionStatus=(self.nodeResultCoordinator.status if self.nodeResultCoordinator else None),
+            onInspectionAccepted=(self.nodeResultCoordinator.accepted if self.nodeResultCoordinator else None),
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
@@ -1808,8 +1809,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _setCurrentJobId(self, jobId: str | None) -> None:
         if self.currentJobId == jobId:
             return
-        if jobId and self.nodeResultCoordinator is not None:
-            self.nodeResultCoordinator.accepted(jobId)
         hadActiveJob = self.currentJobId is not None
         self.currentJobId = jobId
         self._allowRuntimeEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
@@ -2569,6 +2568,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 shutdown()
         try:
             self.runtimeController.close()
+            if self.nodeResultCoordinator is not None:
+                self.nodeResultCoordinator.close()
         except Exception as error:
             message = f'关闭未完成，保留窗口和运行时资源；请再次关闭重试：{error}'
             self.appendRuntimeLog('ERROR', message)
@@ -2582,8 +2583,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
         self.runtimePanelState.nodeInspection.clear()
-        if self.nodeResultCoordinator is not None:
-            self.nodeResultCoordinator.close()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
         try:
@@ -3351,6 +3350,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
 
     def _refreshPreviewImage(self) -> None:
+        if self.nodeResultCoordinator is not None and self.nodeResultCoordinator.history.current is not None:
+            self.nodeResultCoordinator.refresh()
+            return
         imagePath = self.runtimePanelState.latestImagePath
         tools = getattr(self, 'runResultTools', None)
         if tools is not None:

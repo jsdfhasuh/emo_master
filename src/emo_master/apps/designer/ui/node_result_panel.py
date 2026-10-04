@@ -7,13 +7,16 @@ from PySide2.QtWidgets import (QWidget, QVBoxLayout, QHBoxLayout, QToolButton,
 
 from emo_master.apps.designer.presenters.node_run_presenter import describePort, inspectionText
 from emo_master.core.contracts.port_types import normalizePortType
-from .widgets import WrapLabel, PreviewLabel
+from .widgets import WrapLabel
+from .node_image_surface import NodeImageSurface
 
 
-def portText(batch):
+def portText(batch, definitions=None):
     if batch is None:
         return '本次执行未提供端口值'
-    rows = [item['port'] + ' = ' + describePort(item['value']) for item in batch['items']]
+    rows = [item['port'] + ' = ' + describePort(item['value']) +
+            '  [' + str((definitions or {}).get(item['port'], item['value'].get('kind', '未知'))) + ']'
+            for item in batch['items']]
     if not rows:
         rows.append('无端口值')
     if batch.get('omitted'):
@@ -51,6 +54,9 @@ class NodeResultPanel(QWidget):
         self.origin = WrapLabel('明确运行后查看真实结果')
         self.origin.setTextFormat(Qt.PlainText)
         root.addWidget(self.title)
+        self.operator = WrapLabel('')
+        self.operator.setTextFormat(Qt.PlainText)
+        root.addWidget(self.operator)
         root.addWidget(self.origin)
         self.tabs = QTabWidget()
         self.tabs.setDocumentMode(True)
@@ -63,7 +69,8 @@ class NodeResultPanel(QWidget):
         self.ports.setMinimumContentsLength(5)
         self.ports.currentIndexChanged.connect(lambda _index: self.portChanged.emit())
         imageLayout.addWidget(self.ports)
-        self.image = PreviewLabel('本次尚无节点图片')
+        self.image = NodeImageSurface('本次尚无节点图片')
+        self.image.activated.connect(self.enlargeRequested)
         self.image.setMinimumHeight(150)
         imageLayout.addWidget(self.image, 1)
         self.imageMeta = WrapLabel('')
@@ -116,6 +123,7 @@ class NodeResultPanel(QWidget):
         self.title.setText((definition.get('displayName') or definition.get('operatorId') or nodeId)
                            if nodeId else '未选中节点')
         self.title.setToolTip(str(definition.get('operatorId', '')) + '\n' + str(nodeId))
+        self.operator.setText('算子：' + definition.get('operatorId', '未提供'))
         status = {'RUNNING': '运行中', 'COMPLETED': '执行完成', 'FAILED': '执行失败', 'SKIPPED': '已跳过'}
         nodeStatus = status.get(record['status'], record['status']) if record else '尚无执行记录'
         if run:
@@ -125,17 +133,24 @@ class NodeResultPanel(QWidget):
             self.origin.setToolTip('任务：' + run.jobId)
         else:
             self.origin.setText('尚未运行 · 明确启动后查看真实结果')
-        unavailable = '上一轮没有此节点' if run and not definition else '本次尚未收到此节点的执行记录'
-        self.values.setPlainText(portText(record['io']['outputs']) if record else unavailable)
-        self.inputs.setPlainText(portText(record['io']['inputs']) if record else unavailable)
-        self.execution.setPlainText(inspectionText(record, run.jobId if run else None, bool(nodeId)))
+        unavailable = '所选任务没有此节点' if run and not definition else '本次尚未收到此节点的执行记录'
+        self.values.setPlainText(portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable)
+        self.inputs.setPlainText(portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
+        execution = inspectionText(record, run.jobId if run else None, bool(nodeId))
+        if view['history']:
+            execution = execution.replace('本次运行', '上一次运行（只读）')
+        if record:
+            execution += '\n流程执行：' + record['workflowRunId'] + '\n节点执行完整标识：' + record['nodeRunId']
+        self.execution.setPlainText(execution)
         self.configure.setEnabled(bool(nodeId))
         self.notice.setText(self.history.notice or (run.notice if run else ''))
         ports = [port for port, kind in definition.get('outputPorts', {}).items()
                  if normalizePortType(kind) == 'image']
         previousPort = self.ports.currentData()
         wanted = [(port, port) for port in ports]
-        if run and run.artifact:
+        saved = bool(run and run.artifact and run.artifact.get('nodeId') == nodeId
+                     and run.artifact.get('workflowId') == workflowId)
+        if saved:
             wanted.append(('保存结果图', '__saved_result__'))
         before = [(self.ports.itemText(i), self.ports.itemData(i)) for i in range(self.ports.count())]
         if before != wanted:
@@ -146,7 +161,7 @@ class NodeResultPanel(QWidget):
             match = self.ports.findData(previousPort)
             self.ports.setCurrentIndex(max(0, match))
             self.ports.blockSignals(False)
-        self.tabs.setTabVisible(0, bool(ports) or bool(run and run.artifact))
+        self.tabs.setTabVisible(0, bool(ports) or saved)
         defaultKey = (run.jobId if run else '', workflowId, nodeId)
         if defaultKey != self._defaulted:
             self.tabs.setCurrentIndex(0 if ports else 1 if definition.get('outputPorts') else 2)

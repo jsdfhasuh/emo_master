@@ -29,6 +29,7 @@ message StartJobRequest {
   string start_request_id = 5;
   string expected_runtime_instance_id = 6;
   string legacy_snapshot_policy = 7; // Empty means ALL, preserving old clients.
+  string inspection_session_id = 8; // Optional, session-only node result retention.
 }
 
 message StartJobReply {
@@ -39,6 +40,8 @@ message StartJobReply {
   string runtime_instance_id = 5;
   string start_request_id = 6;
   string legacy_snapshot_policy = 7;
+  int64 project_revision = 8;
+  string inspection_session_id = 9;
 }
 
 message StartRequestLookup {
@@ -169,6 +172,7 @@ message ListNodePreviewSourcesRequest {
   string workflow_id = 2;
   string node_id = 3;
   string job_id = 4; // Explicit selected run; empty never chooses a global last Job.
+  string inspection_session_id = 5;
 }
 
 message PreviewSourceInfo {
@@ -187,6 +191,8 @@ message PreviewSourceInfo {
   string capture_id = 13;
   int64 created_at_ms = 14;
   string snapshot_state = 15;
+  string workflow_run_id = 16;
+  string node_run_id = 17;
 }
 
 message ListNodePreviewSourcesReply {
@@ -217,6 +223,21 @@ message PreviewAssetReply {
 message GetPreviewAssetRequest {
   string asset_id = 1;
   string project_id = 2;
+  string inspection_session_id = 3;
+}
+
+message RunInspectionSessionRequest {
+  string project_id = 1;
+  string session_id = 2;
+}
+
+message RunInspectionSessionReply {
+  bool ok = 1;
+  string session_id = 2;
+  string runtime_instance_id = 3;
+  int32 ttl_ms = 4;
+  string code = 5;
+  string message = 6;
 }
 
 message PreviewDownloadChunk {
@@ -384,6 +405,9 @@ message ResetGlobalCounterReply {
 }
 
 service RuntimeService {
+  rpc OpenRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
+  rpc RenewRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
+  rpc CloseRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
   rpc StartJob(StartJobRequest) returns (StartJobReply);

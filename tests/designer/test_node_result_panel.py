@@ -9,6 +9,7 @@ def testUnifiedPanelUsesRealValuesAndPreviousRunWithoutChangingDraft():
     panel = window.nodeResultCoordinator.panel
     before = window.flowModel.toProjectGraph()
     window._setCurrentJobId('job')
+    window.nodeResultCoordinator.accepted('job')
     deliver(window, node, value=0)
     assert 'count = 0' in panel.values.toPlainText()
     assert panel.tabs.currentWidget() is panel.values
@@ -16,6 +17,7 @@ def testUnifiedPanelUsesRealValuesAndPreviousRunWithoutChangingDraft():
     window._setCurrentJobId(None)  # Startup attempt, before a new acceptance.
     assert history.current.jobId == 'job' and history.previous is None
     window._setCurrentJobId('b')
+    window.nodeResultCoordinator.accepted('b')
     raw = {'eventType': 'node.completed', 'jobId': 'b', 'workflowId': 'main', 'nodeId': node,
            'nodeRunId': 'b-node', 'sequence': 1, 'payload': {'outputs': {'count': False}}}
     window.runtimeController._onRuntimeEvent(SimpleNamespace(**raw))
@@ -31,6 +33,7 @@ def testDeclaredButMissingImageKeepsImageTabAndMissingHistoryDoesNotUseDraft():
     window, node = windowWithNode()
     window.flowModel.nodes[node].outputPorts['image'] = 'image'
     window._setCurrentJobId('a')
+    window.nodeResultCoordinator.accepted('a')
     panel = window.nodeResultCoordinator.panel
     assert panel.tabs.isTabVisible(0)
     assert panel.tabs.currentIndex() == 0
@@ -38,4 +41,4 @@ def testDeclaredButMissingImageKeepsImageTabAndMissingHistoryDoesNotUseDraft():
     assert not panel.enlarge.isEnabled()
     window.addNodeFromOperatorPayload({'operatorId': 'new', 'displayName': '后来新增',
         'inputPorts': {}, 'outputPorts': {'value': 'number'}, 'paramSchema': {}})
-    assert '上一轮没有此节点' in panel.values.toPlainText()
+    assert '所选任务没有此节点' in panel.values.toPlainText()

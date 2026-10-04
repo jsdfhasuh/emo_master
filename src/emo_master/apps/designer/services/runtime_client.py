@@ -63,6 +63,8 @@ class PreviewSource:
     captureId: str = ""
     createdAtMs: int = 0
     snapshotState: str = "UNKNOWN"
+    workflowRunId: str = ""
+    nodeRunId: str = ""
 
 
 @dataclass(frozen=True)
@@ -409,10 +411,11 @@ class RuntimeClient:
         workflowId: str,
         nodeId: str,
         jobId: str = "",
+        inspectionSessionId: str = "",
     ) -> list[PreviewSource]:
         """Compatibility wrapper; sourceKind remains a spatial relationship."""
         return list(self.listNodePreviewSourcesWithMetadata(
-            projectId, workflowId, nodeId, jobId=jobId).sources)
+            projectId, workflowId, nodeId, jobId=jobId, inspectionSessionId=inspectionSessionId).sources)
 
     def listNodePreviewSourcesWithMetadata(
         self,
@@ -420,16 +423,18 @@ class RuntimeClient:
         workflowId: str,
         nodeId: str,
         jobId: str = "",
+        inspectionSessionId: str = "",
+        cancellation: DisplayCallContext | None = None,
     ) -> PreviewSourceListing:
-        reply = self._call(
-            "ListNodePreviewSources",
-            runtime_pb2.ListNodePreviewSourcesRequest(
+        request = runtime_pb2.ListNodePreviewSourcesRequest(
                 project_id=projectId,
                 workflow_id=workflowId,
                 node_id=nodeId,
                 job_id=jobId,
-            ),
-        )
+                inspection_session_id=inspectionSessionId,
+            )
+        reply = (self._call("ListNodePreviewSources", request) if cancellation is None else
+                 self._displayCall("ListNodePreviewSources", request, 5000, cancellation, 'node-inspection'))
         replyJobId = str(getattr(reply, "job_id", ""))
         policy = str(getattr(reply, "legacy_snapshot_policy", ""))
         captureState = str(getattr(reply, "capture_state", "")) or "UNKNOWN"
@@ -462,6 +467,8 @@ class RuntimeClient:
                 captureId=captureId,
                 createdAtMs=int(getattr(source, "created_at_ms", 0)),
                 snapshotState=state,
+                workflowRunId=str(getattr(source, "workflow_run_id", "")),
+                nodeRunId=str(getattr(source, "node_run_id", "")),
             ))
         return PreviewSourceListing(
             sources=tuple(sources), jobId=replyJobId,
@@ -488,6 +495,53 @@ class RuntimeClient:
                 )
 
         return self._call("UploadPreviewImage", chunks())
+
+    def inspectionSession(self, action: str, projectId: str, sessionId: str = ""):
+        method = {"open": "OpenRunInspectionSession", "renew": "RenewRunInspectionSession",
+                  "close": "CloseRunInspectionSession"}[action]
+        if not callable(getattr(self.runtimeService, method, None)):
+            raise RuntimeClientError("E_INSPECTION_UNSUPPORTED", "Runtime 不支持两次运行图片检查会话")
+        try:
+            reply = self._call(method, runtime_pb2.RunInspectionSessionRequest(project_id=projectId, session_id=sessionId))
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_INSPECTION_UNSUPPORTED", "旧 Runtime 不支持运行检查会话；无法保留两次节点图片") from error
+            raise
+        if not getattr(reply, "ok", False):
+            raise RuntimeClientError(str(reply.code), str(reply.message))
+        return reply
+
+    def readInspectionAsset(self, projectId: str, sessionId: str, assetId: str,
+                            cancellation: DisplayCallContext) -> tuple[bytearray, str]:
+        """One bounded stream, retired by its actual consumer, not cancellation."""
+        cancellation.start(5000)
+        request = runtime_pb2.GetPreviewAssetRequest(project_id=projectId, asset_id=assetId,
+                                                    inspection_session_id=sessionId)
+        method: Any = self.runtimeService.StreamPreviewAsset
+        if "context" in _signatureParameters(method):
+            stream = method(request, cancellation)
+        else:
+            stream = method(request, timeout=cancellation.time_remaining())
+            cancellation.attach(stream)
+        buffer = bytearray()
+        mime = ""
+        try:
+            for chunk in stream:
+                cancellation.check()
+                if str(chunk.asset_id) != assetId:
+                    raise RuntimeClientError("E_INSPECTION_IDENTITY", "读图资产标识不匹配")
+                if len(buffer) + len(chunk.content) > 4 * 1024 * 1024:
+                    raise RuntimeClientError("E_INSPECTION_READ_BUDGET", "编码图片超过4 MiB，读图与 Qt 转换暂存合计限8 MiB")
+                buffer.extend(chunk.content)
+                mime = str(chunk.mime_type)
+            if not buffer:
+                raise RuntimeClientError("E_INSPECTION_READ", "资产为空或读取失败")
+            return buffer, mime
+        finally:
+            cancellation.cancel()
+            close = getattr(stream, "close", None)
+            if callable(close):
+                close()
 
     def downloadPreviewAsset(
         self,
@@ -768,6 +822,7 @@ class RuntimeClient:
         legacySnapshotPolicy: str = "ALL",
         startRequestId: str = "",
         expectedRuntimeInstanceId: str = "",
+        inspectionSessionId: str = "",
     ) -> object:
         policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
         if policy == "NONE":
@@ -791,6 +846,7 @@ class RuntimeClient:
             capture_presentation=capturePresentation, start_request_id=startRequestId,
             expected_runtime_instance_id=expectedRuntimeInstanceId,
             legacy_snapshot_policy=policy,
+            inspection_session_id=inspectionSessionId,
         )
         return self._call("StartJob", request)
 

@@ -1,0 +1,60 @@
+......FF.                                                                [100%]
+================================== FAILURES ===================================
+____ testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-880/testDifferentRealJobsRetainSam0')
+
+    def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_path):
+        with running(tmp_path) as (runtime, client, project, session):
+            first = client.startJob(project, inspectionSessionId=session)
+            assert first.ok and first.project_revision == runtime.loadedDocument.project.revision
+            assert waitForTerminal(runtime, first.job_id).status == 'COMPLETED'
+>           a = listed(client, project, session, first.job_id).sources[0]
+E           IndexError: tuple index out of range
+
+tests\runtime\test_run_inspection_rpc.py:53: IndexError
+______ testActualFailedJobKeepsEarlierCompletedNodeAndNoFailedNodePixels ______
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-880/testActualFailedJobKeepsEarlie0')
+
+    def testActualFailedJobKeepsEarlierCompletedNodeAndNoFailedNodePixels(tmp_path):
+        with running(tmp_path) as (runtime, client, project, session):
+            save = next(node for node in runtime.loadedDocument.workflows['main'].nodes if node.nodeId == 'save')
+            save.params['outputPath'] = str(tmp_path / 'nonexistent-directory' / 'result.unsupported')
+            start = client.startJob(project, inspectionSessionId=session)
+            assert start.ok and waitForTerminal(runtime, start.job_id).status == 'FAILED'
+            source = listed(client, project, session, start.job_id).sources[0]
+            content, _ = client.readInspectionAsset(project, session, source.sourceId, DisplayCallContext())
+            assert cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_COLOR).shape == (240, 360, 3)
+            assert not listed(client, project, session, start.job_id, 'save').sources
+>           assert not (runtime.workspaceRoot / start.job_id).exists()
+E           assert not True
+E            +  where True = exists()
+E            +    where exists = (WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-880/testActualFailedJobKeepsEarlie0/jobs') / 'b2fba005-f8f5-4ec6-a0fb-38f4465add33').exists
+E            +      where WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-880/testActualFailedJobKeepsEarlie0/jobs') = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001FD56F75DB0>.workspaceRoot
+E            +      and   'b2fba005-f8f5-4ec6-a0fb-38f4465add33' = ok: true\njob_id: "b2fba005-f8f5-4ec6-a0fb-38f4465add33"\nmessage: "job accepted"\nstatus: "ACCEPTED"\nruntime_instance_id...bb694"\nlegacy_snapshot_policy: "ALL"\nproject_revision: 1\ninspection_session_id: "8709d2c2-8339-4a35-a5a3-ccaca5c4a85f"\n.job_id
+
+tests\runtime\test_run_inspection_rpc.py:94: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-b2fba005-f8f5-4ec6-a0fb-38f4465add33:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 91, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 169, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 330, in _runNode
+    result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\plugins\builtins\image_saver\operator.py", line 111, in executeNode
+    writeOk = cv2.imwrite(str(outputFile), image)
+cv2.error: OpenCV(4.10.0) D:\a\opencv-python\opencv-python\opencv\modules\imgcodecs\src\loadsave.cpp:708: error: (-2:Unspecified error) could not find a writer for the specified extension in function 'cv::imwrite_'
+
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_run_inspection_rpc.py::testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion
+FAILED tests/runtime/test_run_inspection_rpc.py::testActualFailedJobKeepsEarlierCompletedNodeAndNoFailedNodePixels
+2 failed, 7 passed in 4.93s

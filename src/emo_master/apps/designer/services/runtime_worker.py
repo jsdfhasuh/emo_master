@@ -291,6 +291,9 @@ def _runWorker(worker: RuntimeWorker) -> None:
             if not worker.expectedRuntimeInstanceId or (not acceptsKeywords and not required.issubset(parameters)):
                 raise ValueError("当前 Runtime 客户端不支持 NONE 启动请求身份；未创建任务")
         _releasePreviousCapture(worker)
+        inspection = getattr(worker, 'inspection', None)
+        if inspection is not None:
+            worker.inspectionSessionId = inspection.ensureSession(worker.projectId)
         if worker.stopRequested():
             return
         try:
@@ -535,6 +538,11 @@ def _startJobCompat(worker: RuntimeWorker):
         for parameter in parameters.values()
     )
     keywordArguments: dict[str, object] = {}
+    sessionId = getattr(worker, 'inspectionSessionId', '')
+    if sessionId:
+        if not acceptsVarKeywords and 'inspectionSessionId' not in parameters:
+            raise ValueError('当前 Runtime 客户端不支持运行检查会话；未创建任务')
+        keywordArguments['inspectionSessionId'] = sessionId
     if acceptsVarKeywords or "workflowId" in parameters:
         keywordArguments["workflowId"] = worker.workflowId
     elif "workflow_id" in parameters:

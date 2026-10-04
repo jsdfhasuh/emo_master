@@ -116,6 +116,8 @@ class RunResultHistory:
             if isinstance(artifact, dict):
                 run.artifact = {key: clipText(str(artifact.get(key, '')), 512)
                                 for key in ('path', 'nodeId', 'artifactId', 'mimeType', 'checksum')}
+                run.artifact.update(workflowId=event.get('workflowId', ''), nodeId=event.get('nodeId', ''),
+                                    nodeRunId=event.get('nodeRunId', ''), workflowRunId=event.get('workflowRunId', ''))
         run.enforceLimit()
         return True
 

@@ -55,9 +55,10 @@ jobs:
   package:
     name: Build Windows package
     needs: validate
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@master
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@d5f3617a7265c545c793366f93e3a114212d8c59
     with:
       target: emo-master
+      packager_ref: d5f3617a7265c545c793366f93e3a114212d8c59
       source_ref: ${{ github.sha }}
       release_tag: ${{ github.ref_name }}
       release_repo: ${{ github.repository }}

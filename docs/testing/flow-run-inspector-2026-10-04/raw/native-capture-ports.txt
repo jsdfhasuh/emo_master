@@ -1,0 +1,1 @@
+{"status": "PASS", "retainedInspectionBytes": 5369, "jobsBeforeStart": 0, "jobsAfterSelectingNodes": 1, "windowClosed": true, "runtimeClosed": true}

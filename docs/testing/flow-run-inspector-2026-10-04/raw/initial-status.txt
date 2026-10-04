@@ -1,0 +1,37 @@
+ M docs/development-guide.md
+ M scripts/validate_page_editor.py
+ M src/emo_master/apps/designer/page_designer/canvas_tools.py
+ M src/emo_master/apps/designer/page_designer/coordinator.py
+ M src/emo_master/apps/designer/page_designer/grid_geometry.py
+ M src/emo_master/apps/designer/page_designer/palette.py
+ M src/emo_master/apps/designer/page_designer/preview.py
+ M src/emo_master/apps/designer/page_designer/property_panel.py
+ M src/emo_master/apps/designer/page_designer/tools.py
+ M src/emo_master/apps/designer/page_designer/workspace.py
+ M src/emo_master/apps/designer/ui/main_window.py
+ M src/emo_master/apps/designer/ui/styles/app.qss
+ M src/emo_master/ui/presentation/design_examples.py
+ M src/emo_master/ui/presentation/renderer.py
+ M tests/designer/test_visual_layout.py
+ M tests/ui/page_designer/test_current_job_viewing.py
+ M tests/ui/page_designer/test_delivery_path.py
+ M tests/ui/page_designer/test_normal_run_path.py
+ M tests/ui/page_designer/test_normal_run_viewing.py
+ M tests/ui/page_designer/test_page_navigation.py
+ M tests/ui/page_designer/test_preview.py
+ M tests/ui/page_designer/test_retained_acceptance_multiscope.py
+ M tests/ui/page_designer/test_two_job_observation.py
+ M tests/ui/page_designer/test_usable_properties.py
+ M tests/ui/page_designer/test_user_path.py
+ M tests/ui/page_designer/test_visual_editor.py
+?? docs/testing/workspace-switch-2026-10-03.md
+?? docs/testing/workspace-switch-2026-10-03/
+?? docs/testing/workspace-ui-2026-10-03.md
+?? docs/testing/workspace-ui-2026-10-03/
+?? scripts/validate_designer_workspaces.py
+?? src/emo_master/apps/designer/page_designer/chrome.py
+?? src/emo_master/apps/designer/page_designer/preview_window.py
+?? src/emo_master/apps/designer/page_designer/workspace_switch.py
+?? tests/ui/page_designer/test_palette.py
+?? tests/ui/page_designer/test_workspace_modes.py
+?? tests/ui/page_designer/test_workspace_switch.py

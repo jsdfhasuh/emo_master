@@ -1,0 +1,24 @@
+.......................F................................................ [ 85%]
+............                                                             [100%]
+================================== FAILURES ===================================
+________ testSelectionSwitchKeepsReadOnlyInspectionWithoutDraftChanges ________
+
+    def testSelectionSwitchKeepsReadOnlyInspectionWithoutDraftChanges():
+        window, first = windowWithNode()
+        second = window.flowModel.addNode('vision.compare.number', '比较', {'left': 'number'}, {'result': 'boolean'})
+        window._setCurrentJobId('job')
+        window.flowModel.selectNode(first)
+        deliver(window, first, value=2)
+        before = window.flowModel.toProjectGraph()
+        window.flowModel.selectNode(second)
+        window.onNodeSelectionChanged()
+>       assert '本次尚未收到' in window.nodeRunDetailsCard.text()
+E       assert '本次尚未收到' in '本次运行 · 已完成\n任务：job · 流程：main\n节点执行：invocati\n循环索引：2\n更新：16:00:00.123\n算子耗时：1.5 ms\n实际输入：\n  left = 0\n实际输出：\n  count = 2\n节点完成状态表示执行状态；判定值以实际输出为准。'
+E        +  where '本次运行 · 已完成\n任务：job · 流程：main\n节点执行：invocati\n循环索引：2\n更新：16:00:00.123\n算子耗时：1.5 ms\n实际输入：\n  left = 0\n实际输出：\n  count = 2\n节点完成状态表示执行状态；判定值以实际输出为准。' = <built-in method text of WrapLabel object at 0x000001FCC793EE00>()
+E        +    where <built-in method text of WrapLabel object at 0x000001FCC793EE00> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x1fcc6f81880, name="statusCard") at 0x000001FCC793EE00>.text
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x1fcc6f81880, name="statusCard") at 0x000001FCC793EE00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1fcc6f71270) at 0x000001FCC29D4800>.nodeRunDetailsCard
+
+tests\designer\test_run_inspector_ui.py:59: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_run_inspector_ui.py::testSelectionSwitchKeepsReadOnlyInspectionWithoutDraftChanges
+1 failed, 83 passed in 4.96s

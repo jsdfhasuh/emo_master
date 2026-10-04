@@ -29,6 +29,9 @@ class RuntimeController:
         getLegacySnapshotPolicy: Callable[[], str] | None = None,
         invalidatePreviewSources: Callable[[], None] | None = None,
         deliveryContext=None,
+        onInspectionStarting=None,
+        onInspectionEvent=None,
+        onInspectionStatus=None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -49,6 +52,9 @@ class RuntimeController:
         self.getLegacySnapshotPolicy = getLegacySnapshotPolicy or (lambda: "ALL")
         self.invalidatePreviewSources = invalidatePreviewSources or (lambda: None)
         self.deliveryContext = deliveryContext
+        self.onInspectionStarting = onInspectionStarting
+        self.onInspectionEvent = onInspectionEvent
+        self.onInspectionStatus = onInspectionStatus
         self._captureCurrentRun = False
         self._previousCaptureJob: tuple[str, str] | None = None
         self._startUncertain = False
@@ -86,6 +92,8 @@ class RuntimeController:
             self.appendLog("ERROR", f"页面采集准备失败：{error}")
             return
         self._captureCurrentRun = capturePresentation
+        if self.onInspectionStarting:
+            self.onInspectionStarting()
         # A new start attempt must not keep presenting the previous terminal job
         # if the worker fails before it receives a new job id.
         self.setCurrentJobId(None)
@@ -211,6 +219,8 @@ class RuntimeController:
         else:
             self.appendEvent(event)
         self.runtimePanelState.applyEvent(event)
+        if self.onInspectionEvent:
+            self.onInspectionEvent(event)
         self.applyRuntimeEventToNode(event)
         self.refreshRuntimePanelView()
 
@@ -218,6 +228,8 @@ class RuntimeController:
         runtimeStatus = str(getattr(statusReply, "status", "UNKNOWN"))
         runtimeMessage = str(getattr(statusReply, "message", ""))
         self.runtimePanelState.updateJob(runtimeStatus, runtimeMessage)
+        if self.onInspectionStatus:
+            self.onInspectionStatus(statusReply)
         self.appendLog("INFO", f"作业状态：{runtimeStatus} | {runtimeMessage}")
         if runtimeStatus in ("COMPLETED", "FAILED", "ABORTED", "REJECTED"):
             self._startUncertain = False

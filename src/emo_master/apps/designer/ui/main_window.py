@@ -1216,6 +1216,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         addRightStretch = getattr(rightPanel, "addStretch", None)
         if callable(addRightStretch) and not _nativeQt:
             addRightStretch(1)
+        self.nodeResultCoordinator = None
+        if _nativeQt:
+            from emo_master.apps.designer.ui.node_result_coordinator import NodeResultCoordinator
+            self.nodeResultCoordinator = NodeResultCoordinator(self, rightPanel)
         self.rightPanelContainer.setLayout(rightPanel)
         self.mainSplitter = QSplitter(Qt.Horizontal)
         setChildrenCollapsible = getattr(
@@ -1289,6 +1293,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
             deliveryContext=self if _nativeQt else None,
+            onInspectionStarting=(self.nodeResultCoordinator.rememberDraft if self.nodeResultCoordinator else None),
+            onInspectionEvent=(self.nodeResultCoordinator.event if self.nodeResultCoordinator else None),
+            onInspectionStatus=(self.nodeResultCoordinator.status if self.nodeResultCoordinator else None),
         )
         self.operatorCatalogController = OperatorCatalogController(
             runtimeClient=self.runtimeClient,
@@ -1498,6 +1505,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _applyLoadedProjectState(
         self, loadedProjectPath: str | None, currentProjectDir: Path | None
     ) -> None:
+        if self.nodeResultCoordinator is not None:
+            self.nodeResultCoordinator.reset()
         self._projectInstanceToken = uuid4().hex
         self.operatorEditorManager.closeAll()
         self.nodeParamDialog = None
@@ -1799,6 +1808,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _setCurrentJobId(self, jobId: str | None) -> None:
         if self.currentJobId == jobId:
             return
+        if jobId and self.nodeResultCoordinator is not None:
+            self.nodeResultCoordinator.accepted(jobId)
         hadActiveJob = self.currentJobId is not None
         self.currentJobId = jobId
         self._allowRuntimeEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
@@ -2571,6 +2582,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.pageCoordinator is not None:
             self.pageCoordinator.shutdown()
         self.runtimePanelState.nodeInspection.clear()
+        if self.nodeResultCoordinator is not None:
+            self.nodeResultCoordinator.close()
         self._displayedRunImage = None
         self._saveRuntimeLogSettings()
         try:
@@ -3282,6 +3295,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshPreviewImage()
 
     def _refreshNodeDetailsView(self) -> None:
+        if self.nodeResultCoordinator is not None:
+            self.nodeResultCoordinator.refresh()
         detailModel = self.getCurrentNodeDetailViewModel()
         self.runtimeStatusOutput.setPlainText("")
         state = str(detailModel.get("state", "empty"))

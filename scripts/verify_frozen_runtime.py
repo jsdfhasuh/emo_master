@@ -21,6 +21,21 @@ import traceback
 import zipfile
 
 ROOT = Path(__file__).resolve().parents[1]
+TERMINAL_JOB_STATUSES = {'COMPLETED', 'FAILED', 'ABORTED'}
+
+
+def console_json(report):
+    # Windows hosted consoles may use cp1252; evidence files remain UTF-8.
+    return json.dumps(report, ensure_ascii=True, indent=2)
+
+
+def capture_window(window, path):
+    # The viewer opens a second page window, which can obscure its shell.
+    window.set_focus()
+    time.sleep(.25)
+    captured = window.capture_as_image()
+    require(captured is not None, 'native window screenshot unavailable')
+    captured.save(str(path))
 
 
 def require(condition, message):
@@ -165,7 +180,7 @@ def designer(product, report):
     process = product.start('designer', [])
     window = wait_for(lambda: window_for(process, '项目入口'), process=process)
     require(window.is_visible(), 'Designer chooser not visible')
-    window.capture_as_image().save(str(product.output / 'designer-startup.png'))
+    capture_window(window, product.output / 'designer-startup.png')
     # Cancel only this owned chooser. No project or user data is changed.
     window.close()
     require(process.wait(timeout=30) == 0, 'Designer startup cancellation did not exit cleanly')
@@ -233,7 +248,7 @@ def runtime(product, report):
         (product.output / 'runtime-overlay.png').write_bytes(asset.content)
         def terminal():
             value = execution.GetJobStatus(pb.GetJobStatusRequest(job_id=started.job_id), timeout=3)
-            return value if value.status in {'COMPLETED', 'FAILED', 'STOPPED'} else None
+            return value if value.status in TERMINAL_JOB_STATUSES else None
         status = wait_for(terminal, process=host)
         require(status.ok and status.status == 'COMPLETED' and status.pid > 0 and status.pid != host.pid,
                 'real spawned worker did not complete')
@@ -247,7 +262,7 @@ def runtime(product, report):
             require(not any('操作失败：' in t for t in texts), 'OperatorView reports operation failure')
             return texts if any('Runtime 就绪' in t and '已连接 Job ' + started.job_id in t for t in texts) else None
         texts = wait_for(view_ready, process=viewer)
-        window.capture_as_image().save(str(product.output / 'operator-view.png'))
+        capture_window(window, product.output / 'operator-view.png')
         window.close()
         require(viewer.wait(timeout=30) == 0, 'OperatorView did not close gracefully')
         require(host.poll() is None, 'viewer close stopped owned Runtime')
@@ -352,7 +367,7 @@ def main():
             report['checks'].setdefault(name, {'status': 'NOT_RUN', 'reason': 'prior prerequisite failed'})
         report['ended_utc'] = datetime.now(timezone.utc).isoformat()
         evidence_path.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
-    print(json.dumps(report, ensure_ascii=False, indent=2))
+    print(console_json(report))
     return int(report['status'] != 'PASS')
 
 

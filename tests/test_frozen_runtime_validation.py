@@ -14,6 +14,16 @@ SPEC.loader.exec_module(harness)
 
 
 class FrozenHarnessTests(unittest.TestCase):
+    def testConsoleReportSupportsWindowsLegacyEncoding(self):
+        report = {'status': 'PASS', 'window_title': '项目入口'}
+        rendered = harness.console_json(report)
+        rendered.encode('cp1252')
+        self.assertEqual(json.loads(rendered), report)
+
+    def testAbortedJobIsTerminal(self):
+        self.assertIn('ABORTED', harness.TERMINAL_JOB_STATUSES)
+        self.assertNotIn('STOPPED', harness.TERMINAL_JOB_STATUSES)
+
     def testRejectsVacuousIcons(self):
         for data in [{}, {'status': 'ok'}, {'status': 'ok', 'checks': {'guiIcons': {'status': 'ok', 'samples': []}}}]:
             with self.assertRaises(AssertionError):

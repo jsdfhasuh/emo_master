@@ -1303,6 +1303,36 @@
         "1 passed in 4.31s"
       ],
       "failedTests": []
+    },
+    {
+      "run": "post-cleanup",
+      "files": {
+        "post-cleanup/candidate.json": "b161d4aa73671e2a2929b32b2dff9adc22e890381f4030d942696af5ca28ae9e",
+        "post-cleanup/raw.log": "60d07cfae59c1a8463c244c08bfaceef8ddeab7321a4ea872644158cbfb18a3b",
+        "post-cleanup/result.json": "cb289199a1f5eef8edd5e0a52fd49e85ed6836d92867a69963c3b6e83fd32855"
+      },
+      "status": "PASS",
+      "candidate.json": {
+        "head": "b11b3f624853d385c5715b9930411e12444dac35",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "e2b20b0538025baa943f087de0ea394db99d96c1081a0171cb2e73be0bf6dc6d"
+      },
+      "result.json": {
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer/test_editor.py::testDeletedSourceLocalErrorAndPendingProjectValidation",
+          "tests/designer/test_operator_editor_manager.py"
+        ],
+        "exitCode": 0,
+        "seconds": 6.530999999959022
+      },
+      "pytestSummaries": [
+        "4 passed in 5.92s"
+      ],
+      "failedTests": []
     }
   ],
   "classification": "PASS is scoped to the recorded run; SKIP is not PASS; interrupted remainders are NOT_RUN. Prior FAIL and native crashes remain intact.",
@@ -1310,5 +1340,7 @@
   "finalWorkspaceSpecialized": "c-verified",
   "independentSpecialized": "clean-verified",
   "independentNativePath": "native-clean-verified",
-  "fileHashesOrigin": "SHA256 of working-tree evidence bytes at index generation; Git may normalize text line endings. PNG hashes are byte-preserving."
+  "fileHashesOrigin": "SHA256 of working-tree evidence bytes at index generation; Git may normalize text line endings. PNG hashes are byte-preserving.",
+  "updatedAt": "2026-10-05T11:46:08.925560+08:00",
+  "deliveryAudit": "delivery-final.json"
 }

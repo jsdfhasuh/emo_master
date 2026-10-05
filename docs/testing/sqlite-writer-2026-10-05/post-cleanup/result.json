@@ -1,0 +1,12 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/sqlite_writer/test_editor.py::testDeletedSourceLocalErrorAndPendingProjectValidation",
+    "tests/designer/test_operator_editor_manager.py"
+  ],
+  "exitCode": 0,
+  "seconds": 6.530999999959022
+}

@@ -83,6 +83,7 @@ pytest，没有删断言或把 skip 算成 PASS。
 | 受影响回归 | PASS | c-regression：71 passed，9.09 秒 pytest |
 | 兼容性修正专项 | PASS | ci-compat：25 passed，3.26 秒 pytest |
 | 排除原 UI dirty 的独立候选 | PASS | clean-verified：74 passed，29.92 秒；native-clean-verified：1 passed，5.23 秒 |
+| 未提交辅助方法清理后的配置回归 | PASS | post-cleanup：4 passed，5.92 秒；第三批正式源码未改变 |
 | Windows 可见 Qt 100/125/150/200% | PASS（功能） | native-final-1 / 1.25 / 1.5 / 2，各 1 passed；每次两次实际写入并保存重开 |
 | 首次修改后完整 CI | FAIL | ci-final：2789 passed、21 failed、8 skipped、28 subtests，739.05 秒；见下面的归因 |
 | 中途取消的两次 CI | NOT_RUN（剩余部分） | ci-post-review / ci-final-reviewed 保留 partial raw.log 和 aborted.json；不当作完整 CI |
@@ -105,8 +106,12 @@ operatorId（用 getattr 保持兼容）；19 个是通用内置算子测试仍�
 lifecycle-first 均有原生 access violation（exitCode 3221225477），堆栈保留，不按 PASS 计数。
 native-first/native-second 为 FAIL：前者暴露画布清空后的已删除节点访问，后者实际写入后
 右侧只显示“7 个字段”而非提交回执。这些都是本轮定位的具体问题，不能统归旧崩溃。
-`clean-candidate` 还有 1 FAIL/71 PASS：SQLite 待提交处理依赖原 UI dirty 中的
-discardChanges 方法。已改用原正式编辑器的 loaded baseline，不提交该 UI helper。
+`clean-candidate` 还有 1 FAIL/71 PASS：SQLite 待提交处理依赖本轮早期新增、尚未提交的
+discardChanges 方法。已改用原正式编辑器的 loaded baseline，不提交该辅助方法。
+最后核对起始 status、160 文件备份及本会话 apply_patch 记录，确认它不属于用户原有
+UI 修改；在仓库外保留补丁后仅撤去这 7 行。清理后补跑待提交配置及编辑器管理专项
+4 PASS，正式源码仍与已经通过的独立候选完全一致。工作区剩余恰为原来的 160 个路径。
+`ci-verified` 是清理前已记录摘要的完整运行，清理后未再次运行全量 CI；不修改旧证据。
 `clean-candidate-final` 的 1 FAIL/73 PASS 与 `c-reviewed-final` 的 1 FAIL/85 PASS 是新来源
 目录测试使用悬空子流程、被正式 ProjectDocument 提前拒绝；改成分别验证正式定义
 未加载时不能采用旧端口，以及悬空引用被模型拒绝。最终专项保留了这两种检查。
@@ -196,4 +201,7 @@ INTEGER/REAL/TEXT 亲和性；不自动修正业务约束。图片引用只保�
 原性能/资源/Qt 稳定性状态不变，现场发布 NOT_RUN。证据索引见
 [evidence-index.json](sqlite-writer-2026-10-05/evidence-index.json)，提交前的源码及原修改
 保留核对见 [submission-audit.json](sqlite-writer-2026-10-05/submission-audit.json)。
+第三批功能提交为 `b11b3f624853d385c5715b9930411e12444dac35`。最终的文档校正单独提交，
+不改写三批功能历史；交付时的工作区/源码核对见
+[delivery-final.json](sqlite-writer-2026-10-05/delivery-final.json)。
 完成本轮后停止，不扩展数据库查询页、自动迁移、其它数据库、BLOB 或发布。

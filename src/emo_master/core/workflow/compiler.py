@@ -21,6 +21,7 @@ from emo_master.core.workflow.models import (
     freezeMapping,
 )
 from emo_master.core.workflow.validation import validateProjectDocument
+from emo_master.core.workflow.parameter_bindings import compileBindings
 
 
 class WorkflowCompiler:
@@ -159,7 +160,12 @@ class WorkflowCompiler:
                         nodeId=nodeId,
                     )
                 )
-        topology = _topological_order(nodes, edges)
+        bindings, outgoingBindings, bindingIssues = compileBindings(
+            nodeById, document.project.projectId, workflowId)
+        issues.extend(bindingIssues)
+        # Dependencies affect scheduling, never the public input/output ports.
+        dependencyEdges = tuple(CompiledEdge(b.fromNode, b.fromPort, b.toNode, "") for b in bindings)
+        topology = _topological_order(nodes, edges + dependencyEdges)
         if topology is None:
             issues.append(
                 ValidationIssue(
@@ -182,6 +188,8 @@ class WorkflowCompiler:
             incomingEdges=freezeMapping({key: tuple(value) for key, value in incoming.items()}),
             outgoingEdges=freezeMapping({key: tuple(value) for key, value in outgoing.items()}),
             topologicalOrder=tuple(topology or ()),
+            parameterBindings=bindings,
+            outgoingBindings=freezeMapping(outgoingBindings),
         )
 
     def _nodePorts(

@@ -526,6 +526,9 @@ def _populateImportedWorkflow(
     for sourceNode in source.nodes:
         node = sourceNode.model_dump(mode="python")
         node["nodeId"] = nodeIdMap[sourceNode.nodeId]
+        if sourceNode.operatorId == "vision.io.sqlite_writer":
+            from emo_master.core.contracts.sqlite_writer import rebindParams
+            node["params"] = rebindParams(sourceNode.params, nodeIdMap)
         if sourceNode.kind == "subflow":
             node["targetWorkflowId"] = _mappedWorkflowId(
                 sourceNode.targetWorkflowId,

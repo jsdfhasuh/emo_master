@@ -16,6 +16,7 @@ from emo_master.core.contracts.port_types import (
 )
 from emo_master.core.workflow.models import CompiledProject
 from emo_master.core.contracts.run_inspection import finishInspection, startInspection
+from emo_master.core.workflow.parameter_bindings import captureBoundValue
 
 
 @dataclass(frozen=True)
@@ -123,6 +124,8 @@ class WorkflowRunner:
         cancellation.raise_if_cancelled()
         self.publish("workflow.started", context, f"workflow started: {workflowId}")
         nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
         supplied = dict(inputs or {})
         missingInputs = _missingKeys(workflow.inputs, supplied)
         if missingInputs:
@@ -167,7 +170,8 @@ class WorkflowRunner:
                              payload={"ioSummary": inspection})
                 try:
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
-                        node, nodeInput, supplied, nodeContext, cancellation
+                        node, nodeInput, supplied, nodeContext, cancellation,
+                        boundValues.get(nodeId, {})
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
                     if self.resultCollector is not None:
@@ -205,6 +209,10 @@ class WorkflowRunner:
                     outputs.update(nodeInput)
                     outputs.update(nodeOutputs)
                 self._route(nodeId, nodeOutputs, workflow.outgoingEdges, nodeInputs)
+                for binding in workflow.outgoingBindings.get(nodeId, ()):
+                    if binding.fromPort in nodeOutputs:
+                        boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
+                            nodeOutputs[binding.fromPort], binding, nodeContext)
                 cancellation.raise_if_cancelled()
                 payload = {
                     "status": "COMPLETED",
@@ -268,7 +276,7 @@ class WorkflowRunner:
             )
             raise
 
-    def _runNode(self, node, nodeInput, supplied, context, cancellation):
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
         if node.kind == "operator":
             missingInputs = _missingRequiredKeys(
                 node.inputPorts,
@@ -325,6 +333,7 @@ class WorkflowRunner:
             "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
             "logger": logger,
             "globalCounters": self.globalCounters,
+            "mappedOutputs": dict(boundValues or {}),
         }
         try:
             result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)

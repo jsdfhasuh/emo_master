@@ -51,6 +51,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.io.huaray_camera",
         "vision.io.coordinate_reader",
         "vision.io.result_writer",
+        "vision.io.sqlite_writer",
         "vision.image.absdiff",
         "vision.image.add_weighted",
         "vision.mask.apply",
@@ -73,7 +74,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.state.counter",
         "vision.value.number",
     } <= operatorIds
-    assert len(operatorIds) == 49
+    assert len(operatorIds) == 50
     assert list(rejectedReply.rejected) == []
 
 

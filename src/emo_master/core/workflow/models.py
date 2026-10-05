@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from types import MappingProxyType
 from typing import Any, Mapping
+from emo_master.core.workflow.parameter_bindings import CompiledBinding
 
 
 @dataclass(frozen=True)
@@ -37,6 +38,8 @@ class CompiledWorkflow:
     incomingEdges: Mapping[str, tuple[CompiledEdge, ...]]
     outgoingEdges: Mapping[str, tuple[CompiledEdge, ...]]
     topologicalOrder: tuple[str, ...]
+    parameterBindings: tuple[CompiledBinding, ...] = ()
+    outgoingBindings: Mapping[str, tuple[CompiledBinding, ...]] = MappingProxyType({})
 
 
 @dataclass(frozen=True)

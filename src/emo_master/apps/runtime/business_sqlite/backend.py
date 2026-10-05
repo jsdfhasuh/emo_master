@@ -16,7 +16,7 @@ from typing import Any, Callable
 
 from emo_master.core.contracts.sqlite_writer import (
     SqliteWriterError, identifier, quoteIdentifier, toStorage, parseConfig,
-    MAX_RECORD_BYTES,
+    MAX_RECORD_BYTES, sqliteIdentifierKey, isTransientPath,
 )
 
 LOCK_TIMEOUT = 2.0
@@ -40,7 +40,7 @@ def resolveTarget(raw: str, projectRoot: Path, protected=()) -> Path:
             raise SqliteWriterError("E_SQLITE_TARGET", "不能使用 Runtime 内部库、缓存或任务临时目录")
         if path.exists() and target.is_file() and os.path.samefile(path, target):
             raise SqliteWriterError("E_SQLITE_TARGET", "目标是 Runtime 内部数据库的文件别名")
-    if path.name.casefold() in {"runtime.sqlite3", "runtime.db"} or any(p in {"preview-cache", "preview_staging"} for p in path.parts):
+    if path.name.casefold() in {"runtime.sqlite3", "runtime.db"} or isTransientPath(path):
         raise SqliteWriterError("E_SQLITE_TARGET", "不能使用 Runtime 内部库或预览缓存")
     if path.exists() and not path.is_file():
         raise SqliteWriterError("E_SQLITE_TARGET", "目标不是普通文件")
@@ -137,7 +137,8 @@ def tableStructure(connection, table: str) -> dict[str, Any]:
     for row in indexes:
         if row[2]:
             indexName = '"' + row[1].replace('"', '""') + '"'
-            names = [r[2] for r in connection.execute(f"PRAGMA index_info({indexName})")]
+            names = [sqliteIdentifierKey(r[2]) if isinstance(r[2], str) else r[2]
+                     for r in connection.execute(f"PRAGMA index_info({indexName})")]
             if names == ["write_id"] and not row[4]:
                 uniqueWriteId = True
     foreignKeys = list(connection.execute(f"PRAGMA foreign_key_list({quoteIdentifier(table)})"))
@@ -162,13 +163,15 @@ def inspect(path: Path, table="", cancelled=lambda: False) -> dict[str, Any]:
 
 
 def validateMappings(config, structure):
-    columns = {c["name"].casefold(): c for c in structure["columns"]}
+    columns = {sqliteIdentifierKey(c["name"]): c for c in structure["columns"]}
     mapped = set()
     for index, row in enumerate(config["mappings"]):
-        name = row["column"].casefold()
+        name = sqliteIdentifierKey(row["column"])
         column = columns.get(name)
         if column is None:
             raise SqliteWriterError("E_SQLITE_SCHEMA", "目标列不存在：" + row["column"], index)
+        if name in mapped:
+            raise SqliteWriterError("E_SQLITE_SCHEMA", "数据库列重复映射", index)
         if column["generated"]:
             raise SqliteWriterError("E_SQLITE_SCHEMA", "生成列不能显式写入", index)
         expected = {"BOOLEAN": "INTEGER", "JSON": "TEXT", "UTC_TIME": "TEXT", "FILE_REFERENCE": "TEXT"}.get(row["storageType"], row["storageType"])
@@ -200,9 +203,9 @@ def createPlan(table: str, columns: list[dict[str, Any]]) -> tuple[str, list[dic
         name = identifier(column.get("name"))
         storage = column.get("storageType")
         nullable = column.get("nullable", False)
-        if name.casefold() in seen or storage not in {"INTEGER", "REAL", "TEXT", "BOOLEAN", "JSON", "UTC_TIME", "FILE_REFERENCE"} or type(nullable) is not bool:
+        if sqliteIdentifierKey(name) in seen or storage not in {"INTEGER", "REAL", "TEXT", "BOOLEAN", "JSON", "UTC_TIME", "FILE_REFERENCE"} or type(nullable) is not bool:
             raise SqliteWriterError("E_SQLITE_CONFIG", "重复列、保留列或无效类型", index)
-        seen.add(name.casefold())
+        seen.add(sqliteIdentifierKey(name))
         declared = {"BOOLEAN": "INTEGER", "JSON": "TEXT", "UTC_TIME": "TEXT", "FILE_REFERENCE": "TEXT"}.get(storage, storage)
         fragment = quoteIdentifier(name) + " " + declared + ("" if nullable else " NOT NULL")
         item = {"name": name, "storageType": storage, "nullable": nullable}
@@ -258,9 +261,9 @@ def insert(path: Path, config, values: dict[str, Any], writeId: str, cancelled=l
             connection.execute("BEGIN IMMEDIATE")
             structure = tableStructure(connection, config["table"])
             validateMappings(config, structure)
-            if any(k.casefold() == "write_id" and v != writeId for k, v in values.items()):
+            if any(sqliteIdentifierKey(k) == "write_id" and v != writeId for k, v in values.items()):
                 raise SqliteWriterError("E_SQLITE_VALUE", "write_id 必须与本次回执的 writeId 一致")
-            if any(c["name"].casefold() == "write_id" for c in structure["columns"]) and not any(k.casefold() == "write_id" for k in values):
+            if any(sqliteIdentifierKey(c["name"]) == "write_id" for c in structure["columns"]) and not any(sqliteIdentifierKey(k) == "write_id" for k in values):
                 values = {**values, "write_id": writeId}
             if len(json.dumps(values, ensure_ascii=False, allow_nan=False).encode("utf-8")) > MAX_RECORD_BYTES:
                 raise SqliteWriterError("E_SQLITE_LIMIT", "单条序列化记录超过 1 MiB（含 write_id）")

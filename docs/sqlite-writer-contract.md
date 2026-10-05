@@ -38,6 +38,8 @@ INTEGER 使用 SQLite 有符号 64 位；REAL 必须有限且整数转实数无�
 TEXT 不自动把数值转文字，UTC_TIME 需要带时区 ISO 8601 并归一 UTC，JSON 存 TEXT。
 FILE_REFERENCE 绑定只支持 Image Saver 的正式持久保存结果，保存其完整 path，
 不复制或归档图片，不接受预览/任务临时图片，不承诺文件永久存在。
+持久引用保存为规范化绝对路径；同时检查原始路径与解析后的实际路径，按本机文件系统
+大小写规则识别缓存目录，目录联接/符号链接不能隐藏预览缓存位置。
 
 `missing:error/null/default` 分别报错、显式 NULL、从 INSERT 省略列。
 已产出的 None 是真实空值，不能因配置 default 而替换为数据库默认值；0、False、空串保留。
@@ -68,6 +70,8 @@ SQLite 管理专用后台执行器最多 2 个已接纳操作，不增加待执�
 BEGIN IMMEDIATE 单条事务，在同一事务内再次读取真实 schema，按列名参数化 INSERT。
 仅 INTEGER/REAL/TEXT 亲和性支持，生成列不可显式写，未映射必填且无默认/生成列报错。
 允许新增无关可省略列和改变列顺序；映射列删除或新增必填列拒绝。
+列名、映射去重、保留列和建表列按 SQLite 的 ASCII 大小写规则匹配；不使用 Unicode
+casefold 合并不同列。例如 Straße/STRASSE 可分别声明 TEXT/INTEGER，必须逐列验证。
 启用 foreign_keys，保留 CHECK/UNIQUE、已有触发器和外键语义。普通运行没有 DDL、UPSERT、
 异步写入队列、自动重试、断线补发或重复 INSERT。
 

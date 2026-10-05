@@ -6,6 +6,7 @@ from copy import deepcopy
 from datetime import datetime, timezone
 import json
 import math
+import os
 from pathlib import Path
 from typing import Any
 
@@ -27,10 +28,22 @@ class SqliteWriterError(ValueError):
         super().__init__((f"映射第 {row + 1} 行：" if row is not None else "") + message)
 
 
+_IDENTIFIER_FOLD = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
+
+
+def sqliteIdentifierKey(value: str) -> str:
+    """SQLite folds ASCII identifier letters only, not Unicode case pairs."""
+    return value.translate(_IDENTIFIER_FOLD)
+
+
+def isTransientPath(path: Path) -> bool:
+    return any(os.path.normcase(part) in {"preview-cache", "preview_staging", "jobs"} for part in path.parts)
+
+
 def identifier(value: object) -> str:
     if not isinstance(value, str) or not value or len(value) > 128 or any(ord(c) < 32 for c in value):
         raise SqliteWriterError("E_SQLITE_CONFIG", "表名和列名必须为 1–128 个可见字符")
-    if value.casefold().startswith("sqlite_"):
+    if sqliteIdentifierKey(value).startswith("sqlite_"):
         raise SqliteWriterError("E_SQLITE_CONFIG", "不能使用 SQLite 内部名称")
     return value
 
@@ -62,9 +75,9 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
             if not isinstance(row, dict) or set(row) - {"column", "source", "storageType", "missing"}:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "字段映射格式无效")
             column = identifier(row.get("column"))
-            if column.casefold() in seen:
+            if sqliteIdentifierKey(column) in seen:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "数据库列重复映射")
-            seen.add(column.casefold())
+            seen.add(sqliteIdentifierKey(column))
             if row.get("storageType") not in STORAGE_TYPES or row.get("missing", "error") not in MISSING_POLICIES:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "存储类型或缺失策略无效")
             source = row.get("source")
@@ -85,7 +98,7 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
                     raise SqliteWriterError("E_SQLITE_TYPE", "上下文与存储类型不兼容")
             else:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的数据来源")
-            if column.casefold() == "write_id" and (source != {"kind": "context", "key": "writeId"}
+            if sqliteIdentifierKey(column) == "write_id" and (source != {"kind": "context", "key": "writeId"}
                     or row["storageType"] != "TEXT" or row.get("missing", "error") != "error"):
                 raise SqliteWriterError("E_SQLITE_CONFIG", "write_id 为写入身份，只能映射执行上下文 writeId（TEXT，缺失报错）")
         except SqliteWriterError as error:
@@ -171,8 +184,15 @@ def toStorage(value: Any, storage: str, *, checkFile: bool = True) -> Any:
             value = value.get("path")
         if isinstance(value, str) and value:
             path = Path(value)
-            if checkFile and (not path.is_absolute() or not path.is_file() or any(p in {"preview-cache", "preview_staging", "jobs"} for p in path.parts)):
-                raise SqliteWriterError("E_SQLITE_VALUE", "图片引用必须为已保存的持久文件，不能使用任务或预览缓存")
+            if checkFile:
+                try:
+                    resolved = path.resolve(strict=True)
+                    valid = path.is_absolute() and resolved.is_file() and not isTransientPath(path) and not isTransientPath(resolved)
+                except (OSError, RuntimeError):
+                    valid = False
+                if not valid:
+                    raise SqliteWriterError("E_SQLITE_VALUE", "图片引用必须为已保存的持久文件，不能使用任务或预览缓存")
+                return str(resolved)
             return value
     if storage == "UTC_TIME" and isinstance(value, str):
         try:

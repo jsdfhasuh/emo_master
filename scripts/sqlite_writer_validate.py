@@ -14,6 +14,8 @@ import time
 
 ROOT = Path(__file__).resolve().parent.parent
 SUITES = {
+    'review-isolation': ['tests/sqlite_writer/test_review_isolation.py', 'tests/sqlite_writer/test_backend.py',
+                         'tests/sqlite_writer/test_rpc.py', 'tests/sqlite_writer/test_faults.py'],
     'review-receipts': ['tests/sqlite_writer/test_review_receipts.py', 'tests/sqlite_writer/test_inspection.py',
                         'tests/runtime/test_runner_io_summary.py', 'tests/designer/test_node_run_inspection.py'],
     'a': ['tests/sqlite_writer/test_dependencies.py', 'tests/runtime/test_runtime_workflow_architecture.py',

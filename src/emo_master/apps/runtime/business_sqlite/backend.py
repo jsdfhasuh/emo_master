@@ -331,11 +331,62 @@ class SqliteManagement:
         self.pool.shutdown(wait=True)
 
 
+@dataclass
+class _WriterTarget:
+    node: Any
+    config: dict[str, Any]
+    path: Path
+    structure: dict[str, Any]
+
+
+def _prepareDebugDatabase(writers: list[_WriterTarget], projectRoot: Path, protected, debugRoot: Path, cancelled):
+    import hashlib
+    template: Path | None = None
+    # Select one explicit test template for the whole business database. Distinct
+    # templates must not silently overwrite one another or split related tables.
+    for writer in writers:
+        if writer.config.get("debugDatabasePath"):
+            candidate = resolveTarget(writer.config["debugDatabasePath"], projectRoot, protected)
+            if not candidate.is_file():
+                raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "专用测试库不存在")
+            if template is not None and not os.path.samefile(candidate, template):
+                raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "同一业务数据库必须使用同一个专用测试库")
+            template = candidate
+    for writer in writers:
+        structure = writer.structure
+        complexSchema = structure["foreignKeys"] or structure["triggers"] or structure["externalIndexes"] or any(c["generated"] for c in structure["columns"])
+        if complexSchema and template is None:
+            raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "此结构需要专用测试库；不复制业务数据或回退正式库")
+        if template is not None:
+            tested = inspect(template, writer.config["table"], cancelled)
+            if tested["structure"] is None:
+                raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "专用测试库缺少目标表：" + writer.config["table"])
+            validateMappings(writer.config, tested["structure"])
+    canonical = min(os.path.normcase(str(writer.path)) for writer in writers)
+    debugRoot.mkdir(parents=True, exist_ok=True)
+    isolated = debugRoot / (hashlib.sha256(canonical.encode()).hexdigest()[:24] + ".sqlite3")
+    existed = isolated.exists()
+    with connectionFor(isolated, create=True, guard=OperationGuard(cancelled)) as connection:
+        if template is not None and not existed:
+            # Copy an explicit test template once. The read-only source is never
+            # a business database (including another node's target or an alias).
+            sourceGuard = OperationGuard(cancelled)
+            with connectionFor(template, readonly=True, guard=sourceGuard) as source:
+                source.backup(connection, pages=64, progress=lambda *_: sourceGuard.check(), sleep=.02)
+        for writer in writers:
+            table = writer.config["table"]
+            exists = connection.execute("SELECT 1 FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+            if not exists and template is None:
+                connection.execute(writer.structure["createSql"])
+            validateMappings(writer.config, tableStructure(connection, table))
+    return isolated
+
+
 def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path | None = None, cancelled=lambda: False):
     """Resolve relative paths before snapshots; inspect all writers before a run."""
     from emo_master.core.contracts.sqlite_writer import OPERATOR_ID
-    import hashlib
     result = document.model_copy(deep=True)
+    writers = []
     for wid, workflow in result.workflows.items():
         for node in workflow.nodes:
             if node.operatorId != OPERATOR_ID:
@@ -348,36 +399,18 @@ def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path 
             if target['structure'] is None:
                 raise SqliteWriterError('E_SQLITE_SCHEMA', '目标表不存在；请明确初始化')
             validateMappings(config, target["structure"])
-            if debugRoot is not None:
-                structure = target["structure"]
-                complexSchema = structure["foreignKeys"] or structure["triggers"] or structure["externalIndexes"] or any(c["generated"] for c in structure["columns"])
-                template = None
-                if config.get("debugDatabasePath"):
-                    template = resolveTarget(config["debugDatabasePath"], projectRoot, (*protected, path))
-                    tested = inspect(template, config["table"], cancelled)
-                    if not tested['exists']:
-                        raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "专用测试库不存在")
-                    if tested['structure'] is None:
-                        raise SqliteWriterError('E_SQLITE_DEBUG_SCHEMA', '专用测试库缺少目标表')
-                    validateMappings(config, tested['structure'])
-                if complexSchema and template is None:
-                    raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "此结构需要专用测试库；不复制业务数据或回退正式库")
-                debugRoot.mkdir(parents=True, exist_ok=True)
-                isolated = debugRoot / (hashlib.sha256((str(path) + '\0' + config["table"]).encode()).hexdigest()[:24] + '.sqlite3')
-                # Copy only validated schema. Other tables/records are never copied.
-                with connectionFor(isolated, create=True, guard=OperationGuard()) as connection:
-                    exists = connection.execute("SELECT 1 FROM sqlite_schema WHERE name=?", (config["table"],)).fetchone()
-                    if not exists:
-                        if template is None:
-                            connection.execute(structure["createSql"])
-                        else:
-                            # Explicit test data only; the actual business file
-                            # and its aliases were rejected above. Copy to the
-                            # owned namespace, never write to the test template.
-                            sourceGuard = OperationGuard(cancelled)
-                            with connectionFor(template, readonly=True, guard=sourceGuard) as source:
-                                source.backup(connection, pages=64, progress=lambda *_: sourceGuard.check(), sleep=.02)
-                    validateMappings(config, tableStructure(connection, config["table"]))
-                path = isolated
-            node.params = {**config, "databasePath": str(path)}
+            writers.append(_WriterTarget(node, config, path, target["structure"]))
+    groups: dict[tuple[int, int], list[_WriterTarget]] = {}
+    if debugRoot is not None:
+        for writer in writers:
+            stat = writer.path.stat()
+            groups.setdefault((stat.st_dev, stat.st_ino), []).append(writer)
+        allProtected = (*protected, *(writer.path for writer in writers))
+        for members in groups.values():
+            isolated = _prepareDebugDatabase(members, projectRoot, allProtected, debugRoot, cancelled)
+            for writer in members:
+                writer.node.params = {**writer.config, "databasePath": str(isolated)}
+    else:
+        for writer in writers:
+            writer.node.params = {**writer.config, "databasePath": str(writer.path)}
     return result

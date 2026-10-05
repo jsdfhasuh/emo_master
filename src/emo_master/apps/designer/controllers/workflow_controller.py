@@ -122,6 +122,36 @@ class WorkflowController:
         )
         return workingStore
 
+    def duplicateNode(self, nodeId):
+        """Copy one operator; its stable external source references stay intact."""
+        from uuid import uuid4
+        from emo_master.core.contracts.sqlite_writer import rebindParams
+        self.captureActiveWorkflow()
+        workflow = self.workflowStore.get(self.activeWorkflowId)
+        original = next(n for n in workflow.nodes if n['nodeId'] == nodeId)
+        if original.get('kind', 'operator') != 'operator':
+            raise ValueError('仅支持复制普通算子节点；控制流程请复制整个工作流')
+        node = deepcopy(original)
+        node['nodeId'] = 'node-' + uuid4().hex[:8]
+        node['displayName'] = str(node.get('displayName') or node.get('operatorId')) + ' 副本'
+        node['params'] = rebindParams(node.get('params', {}), {})
+        workflow.nodes.append(node)
+        positions = workflow.layout.setdefault('nodePositions', {})
+        position = positions.get(nodeId, {'x': 20., 'y': 20.})
+        positions[node['nodeId']] = {'x': position['x'] + 40, 'y': position['y'] + 100}
+        self._renderActive()
+        return node['nodeId']
+
+    def duplicateWorkflow(self, workflowId):
+        """Use the existing import ID remap for a full reachable workflow copy."""
+        store = self._capturedWorkflowStoreCopy()
+        document = buildWorkflowPackage(store, workflowId)
+        result = importWorkflowPackage(store, document)
+        replaceWorkflowStoreState(self.workflowStore, store)
+        self._refreshWorkflowReferences()
+        self._renderActive()
+        return result.rootWorkflowId
+
     def commitSavedPayload(self, payload: dict[str, object]) -> None:
         self.workflowStore.commitSavedPayload(payload)
 

@@ -6,6 +6,7 @@ from pathlib import Path
 import numpy as np
 import pytest
 
+from emo_master import __version__
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
@@ -27,7 +28,7 @@ from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOpe
 
 def _registry() -> dict[str, object]:
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    result = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    result = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     assert result.rejectedOperators == {}
     return dict(result.activeOperators)
 

@@ -1,0 +1,143 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_______________________ testCompleteSqliteDesignerPath ________________________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001C4ED7E0AF0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-944/testCompleteSqliteDesignerPath0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001C4ED7E09D0>
+
+    def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
+        out = Path(os.environ['EMO_SQLITE_SCREEN_DIR']) if os.environ.get('EMO_SQLITE_SCREEN_DIR') else None
+        screenshots = {}
+        root = tmp_path / '工程 中文 空格'
+        root.mkdir()
+        blank = project(nodes=[])
+        blank['workflows']['main']['inputs'] = {}
+        saveProject(root, blank)
+        runtime = RuntimeService(dbPath=tmp_path / 'runtime-state.sqlite3', workspaceRoot=tmp_path / 'jobs')
+        server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        client = RuntimeClient(rpc.RuntimeServiceStub(channel), runtimeTarget=f'127.0.0.1:{port}')
+        records = {'platform': QApplication.platformName(), 'jobs': [], 'rows': [], 'screenSizes': [],
+                   'devicePixelRatio': QApplication.primaryScreen().devicePixelRatio()}
+        def shot(widget, name):
+            QApplication.processEvents()
+            if out:
+                path = out / (name + '.png')
+                assert widget.grab().save(str(path))
+                screenshots[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        with ownedDesignerWindow as windows:
+            window = windows(client)
+            try:
+                window.resize(1600, 900)
+                assert window.loadProjectDirectory(str(root))
+                window.show()
+                waitQt(lambda: window.operatorCatalogController.state == 'ready')
+                viewport = window.flowView.viewport()
+                sourceId = dragOperator(window, 'vision.value.number', QPoint(viewport.width() // 3, 80), monkeypatch)
+                sourceEditor = doubleNode(window, sourceId)
+                assert sourceEditor is not None and sourceEditor._schemaForm is not None
+                sourceEditor._schemaForm._controls['value'].setValue(7)
+                QTest.mouseClick(sourceEditor._applyButton, Qt.LeftButton)
+                assert window.flowModel.nodes[sourceId].params['value'] == 7
+                sourceEditor.forceClose()
+                writerId = dragOperator(window, OPERATOR_ID, QPoint(viewport.width() * 2 // 3, 180), monkeypatch)
+                window.autoLayoutNodes()
+                shot(window, '00-drop-before-double')
+                writerEditor = doubleNode(window, writerId)
+                controller = writerEditor._controller
+                assert controller is not None and controller.__class__.__name__ == 'SqliteWriterEditorController', (
+                    writerId, writerEditor.key, window.operatorEditorManager.keys(),
+                    window.flowView.viewport().size(), window._operatorDefinition(OPERATOR_ID),
+                    writerEditor._statusLabel.text())
+                controller.path.setText('业务 数据.sqlite3')
+                controller.table.setCurrentText('检测记录')
+                QTest.mouseClick(controller.addButton, Qt.LeftButton)
+                controller.fields.item(0, 0).setText('数量')
+                controller.fields.cellWidget(0, 2).setCurrentIndex(controller.fields.cellWidget(0, 2).findData('INTEGER'))
+                chooseNodeSource(controller, 0, sourceId, 'value')
+                QTest.mouseClick(controller.addButton, Qt.LeftButton)
+                controller.fields.selectRow(1)
+                QTest.mouseClick(controller.deleteButton, Qt.LeftButton)
+                assert controller.fields.rowCount() == 1
+                QTest.mouseClick(controller.inspectButton, Qt.LeftButton)
+                waitQt(lambda: controller._pending is None)
+                assert not (root / '业务 数据.sqlite3').exists()
+                assert str(root) in controller.location.text()
+                previewErrors = []
+                previewTimer = QTimer()
+                def closePreview():
+                    dialog = QApplication.activeModalWidget()
+                    if dialog is not None and dialog.windowTitle() == '建表预览 · 尚未执行':
+                        try:
+                            shot(dialog, '02-create-plan')
+                            assert 'CREATE TABLE' in dialog.findChild(QPlainTextEdit).toPlainText()
+                        except Exception as error:
+                            previewErrors.append(str(error))
+                        finally:
+                            dialog.reject()
+                            previewTimer.stop()
+                previewTimer.timeout.connect(closePreview)
+                previewTimer.start(20)
+                QTest.mouseClick(controller.previewButton, Qt.LeftButton)
+                waitQt(lambda: controller._pending is None and controller._preview is not None)
+                assert not previewErrors and not (root / '业务 数据.sqlite3').exists()
+                # The actual confirmation dialog is clicked; it is not bypassed with SQL.
+                confirmationErrors = []
+                def confirm():
+                    dialog = QApplication.activeModalWidget()
+                    try:
+                        assert isinstance(dialog, QMessageBox)
+                        assert str(root) in dialog.text() and '检测记录' in dialog.text()
+                        QTest.mouseClick(dialog.button(QMessageBox.Yes), Qt.LeftButton)
+                    except Exception as error:
+                        confirmationErrors.append(str(error))
+                        if dialog:
+                            dialog.reject()
+                QTimer.singleShot(40, confirm)
+                QTest.mouseClick(controller.createButton, Qt.LeftButton)
+                waitQt(lambda: controller._pending is None)
+                assert not confirmationErrors and (root / '业务 数据.sqlite3').is_file(), controller.error.text()
+                assert len(controller._schema['columns']) == 3
+                shot(writerEditor, '01-field-mapping')
+                before = len(window.pageCoordinator.session._undo)
+                QTest.mouseClick(writerEditor._applyButton, Qt.LeftButton)
+                assert not writerEditor.isDirty(), controller.error.text()
+                assert len(window.pageCoordinator.session._undo) == before + 1
+                assert not window.flowModel.edges
+                params = window.flowModel.getNodeParams(writerId)
+                assert params['mappings'][0]['source'] == {'kind': 'node_output', 'nodeId': sourceId, 'port': 'value'}
+                window.pageCoordinator.history()
+                assert window.flowModel.getNodeParams(writerId) == {}
+                window.pageCoordinator.history(redo=True)
+                assert window.flowModel.getNodeParams(writerId) == params
+                writerEditor.forceClose()
+                for number in (7, 13):
+                    if number == 13:
+                        sourceEditor = doubleNode(window, sourceId)
+                        sourceEditor._schemaForm._controls['value'].setValue(number)
+                        QTest.mouseClick(sourceEditor._applyButton, Qt.LeftButton)
+                        sourceEditor.forceClose()
+                    # Run action uses the existing RuntimeController and spawn worker.
+                    window._toolbarActions['开始运行'].trigger()
+                    waitQt(lambda: window.currentJobId and not window.isJobRunning and window.runtimeController._worker is None)
+                    job = window.currentJobId
+                    state = runtime.jobRepository.get(job)
+                    assert state.status == 'COMPLETED', state
+                    receipt = next(json.loads(e.payloadJson)['receipt'] for e in runtime.eventStore.readMerged(job) if e.eventType == 'sqlite.write.finished')
+                    assert receipt['status'] == 'COMMITTED' and receipt['execution']['nodeId'] == writerId
+                    records['jobs'].append(receipt)
+                    window.flowScene.setNodeSelected(writerId)
+                    window.onNodeSelectionChanged()
+                    panelText = window.nodeResultCoordinator.panel.values.toPlainText()
+>                   assert 'COMMITTED' in panelText, (panelText,
+                        window.nodeResultCoordinator.history.view(window.activeWorkflowId, writerId))
+E                       AssertionError: ('receipt = 对象 · 7 个字段（未展开）  [json]', {'job': RunResultRecord(jobId='5cb259b7-a97b-4d03-a0d2-a6c69051c0b6', revision=2...owId': 'main', 'nodeId': 'node-21a2cb6a', 'nodeRunId': '31b1ef49-89a5-4b90-b431-c3fed5683eee', ...}, 'history': False})
+E                       assert 'COMMITTED' in 'receipt = 对象 · 7 个字段（未展开）  [json]'
+
+tests\sqlite_writer\test_user_path.py:229: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath
+1 failed in 3.56s

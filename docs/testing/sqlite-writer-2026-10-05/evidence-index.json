@@ -1,0 +1,1314 @@
+{
+  "generatedAt": "2026-10-05T11:37:32.664472+08:00",
+  "runs": [
+    {
+      "run": "a-first",
+      "files": {
+        "a-first/candidate.json": "4cd5ade40518005642dc6b8b1428c92d7d757c88104b0c1a2d372f93e869b1f7",
+        "a-first/raw.log": "71fc5c3a8cd662698c3464218ba612a833369cb128e2ff6329d89714e2b5752c",
+        "a-first/result.json": "2af39e72d016bc275010bfb373cbe80b8658d264b302afcd0285f602c9cea36c"
+      },
+      "candidate.json": {
+        "head": "c5c61a9a88e7b3d0f098975e90977e2937ca0e72",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "061e4946867d4a973533f92aa4ce33e9ae50ba6a7e5d3cbac6392e71446c9316"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 9.734999999869615,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer/test_dependencies.py",
+          "tests/runtime/test_runtime_workflow_architecture.py",
+          "tests/runtime/test_workflow_subflow_contracts.py",
+          "tests/runtime/test_workflow_loop_contracts_v2.py",
+          "tests/designer/test_workflow_package.py",
+          "tests/runtime/test_operator_registration.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "13 failed, 51 passed in 9.07s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[0]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[False]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[None]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value4]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value5]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row0-E_BINDING_NODE]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row1-E_BINDING_PORT]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row2-E_BINDING_TYPE]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row3-E_WORKFLOW_CYCLE]",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testMixedCanvasAndMappingCycleRejected",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testIndependentJobsNeverReuseDelivery",
+        "FAILED tests/sqlite_writer/test_dependencies.py::testRepeatedSubflowAndLoopInvocationsAreIsolated"
+      ]
+    },
+    {
+      "run": "a-second",
+      "files": {
+        "a-second/candidate.json": "98db8b99d3cefe5f3824e9e0965600d0c126d23fa6893378daacfa7952449c9e",
+        "a-second/mypy.log": "0f09d30aa0eb79bb8fd5b03b0f9a7c57f7612d17564b76218f6db80f7cb382b3",
+        "a-second/raw.log": "e409d43ff952cac3a75219d7b4b106cbccbfbbd526baf58c2abd6b4e3846e5ca",
+        "a-second/result.json": "9cdaf0713b8eb87d74427052a832b8841b8419f8507ef04236ad696bc9ffa0a7"
+      },
+      "candidate.json": {
+        "head": "c5c61a9a88e7b3d0f098975e90977e2937ca0e72",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "22e6045649319472614920b21ea3c3fc34bce832406bf50f08cbf72c6bedcef5"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 4.828999999910593,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer/test_dependencies.py",
+          "tests/runtime/test_runtime_workflow_architecture.py",
+          "tests/runtime/test_workflow_subflow_contracts.py",
+          "tests/runtime/test_workflow_loop_contracts_v2.py",
+          "tests/designer/test_workflow_package.py",
+          "tests/runtime/test_operator_registration.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "64 passed in 4.19s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "b-final",
+      "files": {
+        "b-final/candidate.json": "8bbddf0a1a567a971116fe46d536568a7acf04608f6123916418705023397972",
+        "b-final/raw.log": "8ac0b0a8ef410b65a4b15f609503e26ebb7b3cbf78dc4d4eeb262aa872936314",
+        "b-final/result.json": "1a11a2b8c106eeee98097d13035984d1e8b306f76f5d3f9502ad364820724186"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "2b9add493a604b793165564fa74924e70dc355bed2fd8cb9af89941752ef0227"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 28.531999999890104,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "56 passed in 27.94s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "b-first",
+      "files": {
+        "b-first/candidate.json": "965090767e680ed69e64fb9ec3e3d9fdbb9bb6b90bf3c2995ff4f9d6b3cddb35",
+        "b-first/raw.log": "f8433987474d7862e3d2586d8d1c8d22e6b75d7603086c55a42e48187a761dfe",
+        "b-first/result.json": "06f5d5cf7a1d8231f113ac12c20beb84277a7ddd2a1b5263daade259f895fb1b"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "fda3982ec561d19642b13abd5a5fbf25c0920568c0f3117753116320dff730e7"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 14.125,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "2 failed, 45 passed in 13.49s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_backend.py::testMissingNullAndOmissionDefaultAreDifferent",
+        "FAILED tests/sqlite_writer/test_backend.py::testSchemaRequiredGeneratedAffinityAndTransactionRecheck"
+      ]
+    },
+    {
+      "run": "b-review",
+      "files": {
+        "b-review/candidate.json": "22fff11850add53c5349286d221dbfb20753338a1d57c18c01448ea804d0c0c1",
+        "b-review/raw.log": "ab40d5efbcb89ec311e90871c253569b7aeed234173a7d34d4ce312654a6039e",
+        "b-review/result.json": "030ec919beb3f8f3d6934351018370b991ec2634095df89938badeaeffca7200"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "95c51fc209ac7476fb775747b45d5f33efc2b98a79ad261269c12aa5d3a4e143"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 28.29700000002049,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "56 passed in 27.73s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "b-reviewed-final",
+      "files": {
+        "b-reviewed-final/candidate.json": "ecd39ac97a8f3285b06f51c128144ca7c17f158623113d7b238d4059d684d25c",
+        "b-reviewed-final/raw.log": "b4e071916148ecf28378141ce1c364d9bb0fbbe51ab23a08e2cf97a60c71fe5a",
+        "b-reviewed-final/result.json": "c9bbd4d6e9108deba251008576f2f84d067e14a47c1ed8847e2c7ffb4ff76bc8"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "31aed0acf067cb4a11e776ec7ad2f2bf3957578d545d560cb6c4b29d81b3e17c"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 28.75,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "59 passed in 28.14s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "b-second",
+      "files": {
+        "b-second/candidate.json": "a25a830e6a53f6bb15392ee77b2657cd9da0090081e69c62636e29d28afe8d8f",
+        "b-second/raw.log": "ca2229be49b02540e870a165f60c71264267bb84d3d6f7564be65a6f40a546e2",
+        "b-second/result.json": "f7680e53f10da0847b18348e3391fe5a23059f4219292a010191bf9b715a3a59"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "48dc7a34ec0bb0baa1a26da3e6f54b0e3ea38a64c5d30051c1d5f03d4c04fdc7"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 10.422000000020489,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 50 passed in 9.77s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_rpc.py::testTypedReadonlyInitializeNormalSpawnTwoRunsAndPreflight"
+      ]
+    },
+    {
+      "run": "b-third",
+      "files": {
+        "b-third/candidate.json": "5823930df45117c9aa3ba860aface805ca1a09037042f9ed80a18f74588bd4e0",
+        "b-third/raw.log": "f8b7430115c828c31ae9f96151ca479efffb056462b95fe6c19ec6117ad21c90",
+        "b-third/result.json": "e2c0bbb74b97d4b120919d6e53ab50deada65b9ba6e3252da26708c2c839ac22"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "0a1642fef50d43b25fe18bdba50e2c1fd47fcb49fd89527bfb8c1e6b55d3076f"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 28.890999999828637,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "55 passed in 26.57s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "b-with-test-template",
+      "files": {
+        "b-with-test-template/candidate.json": "034028df83ef97012c1ba4da194c0c02c06e236e73d413d5fdfeefd9c554ec3b",
+        "b-with-test-template/mypy.log": "d8c1c2938337e918b916b636da80ba082d11e1d08759a4f27c8bb965fb98608b",
+        "b-with-test-template/raw.log": "26d84d6f0317dcc4bae32e626f198a267b878cdbf5bea3e9c8b329da0660de25",
+        "b-with-test-template/result.json": "f438e9576b1cb6b5bf37d50d9fb31024fca067cb591bd0c6d301d1683eb6e8eb"
+      },
+      "candidate.json": {
+        "head": "4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f57ef1e609c737d4f0d426df7b0f879bc58ab0dbc15b7a2621ebbbdb6dfffbbd"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 28.875,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "56 passed in 28.26s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "baseline",
+      "files": {
+        "baseline/dirty.txt": "73d7366611b3761ffc52a14f04eed5a7ab2476a4955382f768dba4c8ce9ac6e6",
+        "baseline/raw.log": "b8f04a2379ee5e053c38ef563185b57019116d1a810a573ac3b8ce3eab5832e1"
+      },
+      "status": "FAIL_BASELINE",
+      "pytestSummaries": [
+        "1 failed, 2737 passed, 8 skipped, 28 subtests passed in 701.71s (0:11:41)"
+      ],
+      "failedTests": [
+        "FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+      ],
+      "identityNote": "Executed before batch A; original HEAD/dirty source and Git bundle preserved in the external backup. Baseline has raw.log and dirty.txt, no result.json."
+    },
+    {
+      "run": "c-eighth",
+      "files": {
+        "c-eighth/candidate.json": "c84fdce7eddf16f3f9cd2b0b07e03cf50a5bd372d783cd33f976c7c75ffb87c9",
+        "c-eighth/raw.log": "ae85949647d211e5a40f5a2a2327d59b3cf567537ab29bc954f04e3a8e55db89",
+        "c-eighth/result.json": "4a3c766d743284601918f6dc4503db1155110ee7803bd088554189dd5f2a158a"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "b8b7001e179733486e0f4f8e92f4d960b12726a1e3361a503796233ec5518807"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 33.04700000002049,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "84 passed in 32.17s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "c-fifth",
+      "files": {
+        "c-fifth/candidate.json": "f6d088cb9701459f3851881ec34b2511b85a8b5db4e305a8352ab6a63030842f",
+        "c-fifth/raw.log": "dc8dd4d7253ec33f436a36199e5efb82f3a1bf0aca7c9d2ae8b736c2707dc22c",
+        "c-fifth/result.json": "de22354246659abf8eeb997991291be7ba753334677e5e2f7f8c5ad12a34ec5d"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f84e1659f99fe8c95fdfc27e01a6074e6918015f8ce0486d8dc903a377f2dfd7"
+      },
+      "result.json": {
+        "exitCode": 3221225477,
+        "seconds": 29.265999999828637,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "c-first",
+      "files": {
+        "c-first/candidate.json": "e87bae4e36f26622caea434e59a5c6015cc8c58679ff4fe37cd5819f55cdb4cb",
+        "c-first/raw.log": "78ebaaa91923f1dc5d16b0a2f94ab7981ae8a615b941456f5e51e5094e9bf2de",
+        "c-first/result.json": "fa2986660970870adb0673514709dab8463c547aaf64586c6428e2318f87a20e"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "c816b46921001d3c95d6373ef9022182587bbc447be619acfb3b3dce0ac00088"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 34.968000000109896,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 71 passed in 31.64s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "c-fourth",
+      "files": {
+        "c-fourth/candidate.json": "a006dd92f5e66ef6141cff3f24d9d7e8317c7b56e7f6ca699abd37bc31db0c37",
+        "c-fourth/raw.log": "90aa99625ff89f9501a04dd22950d81136e6d72b837af9d9827c8bea4c5f7d62",
+        "c-fourth/result.json": "062aa11f17a3ceb10a0f9f83dc4928d205c62221becc3e0f4962040792f12efc"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "eb9873e8114602a13103bc94b4f4e90914cdee793f20992d38eb18d0a0cda32e"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 31.358999999938533,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 71 passed in 30.05s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "c-regression",
+      "files": {
+        "c-regression/candidate.json": "ba76224fdf88d4b45c7df7d4e24ea669578552493adb090af8fcea95d7fa8fc7",
+        "c-regression/raw.log": "c8d012ccb6e19dd3b5fb8333e108fb9125f0b347eaf156b4756d562550d1e639",
+        "c-regression/result.json": "8f7a4e34708a12e7a1218d643acf7c1e163eb3ac968eb54f70fea5ef8ea39170"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 9.858999999938533,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/designer/test_flow_scene_interactions.py",
+          "tests/designer/test_flow_layout_qt.py",
+          "tests/designer/test_flow_layout_routing.py",
+          "tests/designer/test_node_run_inspection.py",
+          "tests/designer/test_node_result_panel.py",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/designer/test_workflow_package.py",
+          "tests/core/project/test_package_builder.py",
+          "tests/runtime/test_runtime_grpc_network.py",
+          "tests/runtime/test_runtime_project_execution.py",
+          "tests/runtime/test_runner_io_summary.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "71 passed in 9.09s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "c-reviewed-final",
+      "files": {
+        "c-reviewed-final/candidate.json": "1d581d16028edbad615160a03903eba9643e1ef8c6ab3a51f50efa3ab385ce09",
+        "c-reviewed-final/raw.log": "0b996cac3704a75e17e8d0fa911eced88caf10ec6d9abf0bb44ccd945bf84fe8",
+        "c-reviewed-final/result.json": "b0687b0f6ad9593b064f86cf826235f42aeb077cb1e510090ba18544283fd9ea"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "530ac4dd71ff03c2ac87f06a0ee34361a8eeb805f7e6e2cda4ae4e17b0ce82cc"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 34.32799999997951,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 85 passed in 33.33s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_editor.py::testUnavailableFormalDefinitionCannotOfferSavedStalePorts"
+      ]
+    },
+    {
+      "run": "c-second",
+      "files": {
+        "c-second/candidate.json": "5a72e8fcf42d1409904c8f5828aaa8ae87ed2dc8323c8312cf96ba28fe0e05d7",
+        "c-second/raw.log": "33560fa9bdea9ada25125ff7a63238a80fd53daeca2838653ed9cb24de6c7c54",
+        "c-second/result.json": "546e8d7e30157e78a59531ff71164b252f824a5d05e3cc4a0dba112bd8c5e8f4"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "0910cc3df74814722a05a4129c901b5b430ab33feae9c8ca2e49b05f8f8889c0"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 30.516000000061467,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 71 passed in 29.57s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "c-seventh",
+      "files": {
+        "c-seventh/candidate.json": "2441732b7bf4061081a2a83a09f0c26c5c76d8b6052de52e08e360e286a69669",
+        "c-seventh/raw.log": "e60d02a64fac52e8280f2716fb650e68692f25898ae802dedb0756134be13bc0",
+        "c-seventh/result.json": "a69ff5737b15a374fdd4472e6e927203cf954d51c7d72477917c43c9ca0bb0eb"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "9610329e48e928718d7d876da48a21451930a224e4b14856d56043bf90f41e55"
+      },
+      "result.json": {
+        "exitCode": 3221225477,
+        "seconds": 10.234000000171363,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "c-sixth",
+      "files": {
+        "c-sixth/candidate.json": "b286d1024669378b51bd69fbf2e0228a66e80d76e9b201855335ea065166f42c",
+        "c-sixth/raw.log": "2f65e2779f54790e7b49435bd29fa7c7f7ab79cc052e7167360a5fcf48e565dd",
+        "c-sixth/result.json": "bc9edcbfab194437e8edfa7bd5fb45fd52d48efa6c6e94b4c70b938cbe9992da"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "c1684491595f80f7e830e48bfc284d513397ff3447e8a4e93f21d0ad9679621d"
+      },
+      "result.json": {
+        "exitCode": 3221225477,
+        "seconds": 9.234999999869615,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "c-third",
+      "files": {
+        "c-third/candidate.json": "7103365dbcaa766fbd7fe6495ecfa057d8d045e16809037ab33bd79a2db6e9c2",
+        "c-third/raw.log": "991cb2cbee6d53db8e22256f57fa7e2c7573cb8703e1112a47af66959b716513",
+        "c-third/result.json": "22e7f0320fed355401faf81b919dd330f6ecea350cdbfa707b86b56654bffc28"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "2105f908ae58136d05392e1d0e945c47ac0f19470917c482d50ecca1c95e5f6e"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 30.70299999997951,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 71 passed in 29.80s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "c-verified",
+      "files": {
+        "c-verified/candidate.json": "7b1b6a063e8826331afafc619678ab37b76cf0788950aa7a8ab4b0622df44e13",
+        "c-verified/raw.log": "0b898f7411701706794c953035896d49b06636d5831ae2f64264fe0aa30175f2",
+        "c-verified/result.json": "40e6e331953886e7ee212a6a1ba50e597cc5111fd955d0dc49fb627933216857"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "fc6424f37f441f62d963b05406d34fcce2c2e54a285df569661b6a4a6ce5d00a"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 34.375,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer",
+          "tests/designer/test_operator_editor_manager.py",
+          "tests/designer/test_builtin_operator_editor_ui.py",
+          "tests/ui/page_designer/test_user_path.py"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "86 passed in 33.44s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "ci-compat",
+      "files": {
+        "ci-compat/candidate.json": "595914d0a6ec5d488471bff1fe289142062987f319f3dd595bf0c025fd559eb8",
+        "ci-compat/raw.log": "acd305f100fbb7efe907732fa94ad31ccdb223d850197e0437b9a543b0d0ffe4",
+        "ci-compat/result.json": "f6b49ae0bf425fa42716e181afcd8af75f688530f2a187aac88c6ef736111908"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "1e812b6a28e236f02e23133de089e60438993a0243215774e2a56620f99211bd"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 4.530999999959022,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/designer/test_main_window_project_save_load.py",
+          "tests/runtime/presentation/test_normal_capture_status_validation.py",
+          "tests/runtime/test_builtin_communication_operator_workflows.py",
+          "tests/runtime/test_builtin_coordinate_operator_workflow.py",
+          "tests/runtime/test_builtin_vision_operator_workflows.py",
+          "tests/runtime/test_real_onnx_result_pipeline.py",
+          "tests/sqlite_writer/test_dependencies.py::testBuiltinSqlitePreservesActualCoreCapabilityGate"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "25 passed in 3.26s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "ci-final",
+      "files": {
+        "ci-final/candidate.json": "5ef98bcb33f9404a44012b91479b2425356755e096639061bd879c6c2c200586",
+        "ci-final/raw.log": "9c1302549af6aaa4b33bf7f312da984f0a6522f15ef2029837af744b6a54b4f5",
+        "ci-final/result.json": "8b26753b293d7a5d1077f614b6e3442ea8ca67566fb7ba74e88734343d118ba7"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 741.6400000001304,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "scripts/ci_check.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "21 failed, 2789 passed, 8 skipped, 28 subtests passed in 739.05s (0:12:19)"
+      ],
+      "failedTests": [
+        "FAILED tests/designer/test_main_window_project_save_load.py::testMainWindowCanSaveAndLoadProjectDirectory",
+        "FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow",
+        "FAILED tests/runtime/presentation/test_normal_capture_status_validation.py::testPlatformStatusBindingExplainsNormalCaptureBoundary[job_state]",
+        "FAILED tests/runtime/presentation/test_normal_capture_status_validation.py::testPlatformStatusBindingExplainsNormalCaptureBoundary[connection_state]",
+        "FAILED tests/runtime/test_builtin_communication_operator_workflows.py::testRuntimeChainsSlmpReadIntoSlmpWrite",
+        "FAILED tests/runtime/test_builtin_communication_operator_workflows.py::testRuntimeWritesTcpClientTextOutput",
+        "FAILED tests/runtime/test_builtin_communication_operator_workflows.py::testRuntimeWritesTcpReceiveTextOutput",
+        "FAILED tests/runtime/test_builtin_coordinate_operator_workflow.py::testRuntimeReadsAndCalculatesCoordinateFile",
+        "FAILED tests/runtime/test_builtin_coordinate_operator_workflow.py::testRuntimeSubtractsTwoCoordinateFilesAsStronglyTypedVectors",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testThresholdBuiltinRunsThroughCompilerAndRunner",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testBlobBuiltinRunsThroughCompilerAndRunner",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testThresholdMaskFeedsBlobThroughMultipleInputs",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testPreprocessChainPreservesFrameIntoBlobCoordinates",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testRgbBuiltinRunsThroughCompilerAndRunner",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testYoloBuiltinRunsThroughCompilerAndRunner",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testRoiBlobFilterCountCompareAndIfRunAsBusinessClosure",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testYoloPostprocessAnnotateWriterAndArtifactRunAsBusinessClosure",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testThresholdContourMeasurementFilterSortSelectAnnotateWriterClosure",
+        "FAILED tests/runtime/test_builtin_vision_operator_workflows.py::testPerspectiveTemplateFilterAnnotateWriterPreservesHomography",
+        "FAILED tests/runtime/test_real_onnx_result_pipeline.py::testRealOnnxCountsAnnotatesAndSavesResults[0.25-1]",
+        "FAILED tests/runtime/test_real_onnx_result_pipeline.py::testRealOnnxCountsAnnotatesAndSavesResults[0.95-0]"
+      ]
+    },
+    {
+      "run": "ci-final-reviewed",
+      "files": {
+        "ci-final-reviewed/aborted.json": "4c8d7f15c7a1c61359fe1a55c10d54db9cb536f6dda39bebb60c19c4595c74a3",
+        "ci-final-reviewed/candidate.json": "135755344b0e36a1119307fb089c876963147cbb1adbc0c95732f2669180f3b1",
+        "ci-final-reviewed/raw.log": "764e8731d7afb107963e768063ef504c9756e635199687730da1e02236bbcb87"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "530ac4dd71ff03c2ac87f06a0ee34361a8eeb805f7e6e2cda4ae4e17b0ce82cc"
+      },
+      "aborted.json": {
+        "command": "\"C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe\" scripts/sqlite_writer_validate.py --phase ci --output docs/testing/sqlite-writer-2026-10-05/ci-final-reviewed",
+        "remainingSuite": "NOT_RUN",
+        "reason": "new source-catalog test used a dangling subflow rejected by ProjectDocument before catalog validation; correct new fixture then run complete final suite"
+      },
+      "status": "NOT_RUN_REMAINDER",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "ci-post-review",
+      "files": {
+        "ci-post-review/aborted.json": "2e069071a1b74f1bbe5796de0a7789b2c64d984bbdb09d52344076779b88f67c",
+        "ci-post-review/candidate.json": "3622d9493bca1d5cc712f8c8527ca210d7b52ba1716c828cabdd6eec92e082a0",
+        "ci-post-review/raw.log": "5677f3807909a3c2df46d06c106adb7ee8c34c74cb1ec81f9bfbbcf07bc4daae"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "1e812b6a28e236f02e23133de089e60438993a0243215774e2a56620f99211bd"
+      },
+      "aborted.json": {
+        "command": "\"C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe\" scripts/sqlite_writer_validate.py --phase ci --output docs/testing/sqlite-writer-2026-10-05/ci-post-review",
+        "remainingSuite": "NOT_RUN",
+        "reason": "clean indexed candidate exposed dependency on uncommitted editor discardChanges; preserve partial output and rerun final source"
+      },
+      "status": "NOT_RUN_REMAINDER",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "ci-verified",
+      "files": {
+        "ci-verified/candidate.json": "9a73b0c967fa23278888edf9e6a5dbaa02980e14429cca207728947ae718dce6",
+        "ci-verified/raw.log": "912b51a0966090ab865cb8baec86fe66bfe4910f53064d8b6ef632006d6e6718",
+        "ci-verified/result.json": "83a4ff18a225c4c35b38a15c452fbbf4f4059b7d69f556151c6eb9de0e8b01e1"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "fc6424f37f441f62d963b05406d34fcce2c2e54a285df569661b6a4a6ce5d00a"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 746.4529999999795,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "scripts/ci_check.py"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 2811 passed, 8 skipped, 28 subtests passed in 744.10s (0:12:24)"
+      ],
+      "failedTests": [
+        "FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+      ]
+    },
+    {
+      "run": "clean-candidate",
+      "files": {
+        "clean-candidate/candidate.json": "ff260699b7440d632928412bd76cf10fd484a538ea1d5c59af48e1b7f8a89ca5",
+        "clean-candidate/raw.log": "8ae90586ef5eec025521711ffadc7ad5d9cbfc474446b6be25abd2ca828466e6",
+        "clean-candidate/result.json": "257b78dc476eb6ae04abb859ff0616b682a0dfe6700408496c0e5a167e2eec88"
+      },
+      "candidate.json": {
+        "indexedTree": "59dcdfd25ceed1c623b88ff542699fdcda55005a",
+        "parentHead": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "sourceDigest": "3deffe14342a766e870d2872d8c571011729f080f5a26491066cab301c940c99"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 34.265000000130385,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 71 passed in 33.59s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_editor.py::testDeletedSourceLocalErrorAndPendingProjectValidation"
+      ]
+    },
+    {
+      "run": "clean-candidate-final",
+      "files": {
+        "clean-candidate-final/candidate.json": "eb5d6b524fde9b5d0becc2139012e5bda0adc52d4f04925e2495f51906b8bbe3",
+        "clean-candidate-final/raw.log": "90738bc44c392c11a649e46766dc992626c3cef24eacbe20e9f9d4fa56af682e",
+        "clean-candidate-final/result.json": "6e82196637d5ef3a246f2747d8cfbc65e6651a875c6f0e5f32172e905f927dc6"
+      },
+      "candidate.json": {
+        "indexedTree": "32d757e514ad81151590099611845a11bccfacd4",
+        "parentHead": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "sourceDigest": "47a7afaca6ac0c64fb61b53a6946958a64440e00f4c56f2efca1e35a91cd6752"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 29.937000000150874,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed, 73 passed in 29.27s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_editor.py::testUnavailableFormalDefinitionCannotOfferSavedStalePorts"
+      ]
+    },
+    {
+      "run": "clean-verified",
+      "files": {
+        "clean-verified/candidate.json": "42885c69d0511eea1ba98a563ffaaafc0ff048134e00356db825442cc65624c0",
+        "clean-verified/raw.log": "10b38852c42b44194131da061e379150728fc4be681cd8717a7788629c506f9c",
+        "clean-verified/result.json": "82ac8669e08a95b0949ef3c27c4003777cd86db788c205749d03b6356e911c6a"
+      },
+      "candidate.json": {
+        "indexedTree": "8ad183489ec7666ffcf3c44f9de8c2196cd0bc2f",
+        "parentHead": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "sourceDigest": "4d63ca7d7b5def56df95ec02877b5a567d4b60e839845170299edc47eef89549"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 30.625,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "74 passed in 29.92s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "lifecycle-first",
+      "files": {
+        "lifecycle-first/candidate.json": "0ca3eadd8c5b32790def6633701c9a28f0ba6aacad1dc5d2eaf1ed8355a7a972",
+        "lifecycle-first/raw.log": "d06f06cceddd316cfc5702f279a8f46437aca069af882ba59b8bc2b8f5d4de0b",
+        "lifecycle-first/result.json": "c71bb6498511578e3cd3350ea9b541692b954ac5423fb0e2ead36b49ceb15a0e"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "b98e8a8bcb02481bef42b80e28958f8037bc7a85d7c80f37e229b08194e29e0c"
+      },
+      "result.json": {
+        "exitCode": 3221225477,
+        "seconds": 6.3600000001024455,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "pytest",
+          "-q",
+          "tests/sqlite_writer/test_editor.py::testProjectCloseDuringModalRejectsCallbacksAndInitialization"
+        ]
+      },
+      "status": "FAIL",
+      "pytestSummaries": [],
+      "failedTests": []
+    },
+    {
+      "run": "native-clean-verified",
+      "files": {
+        "native-clean-verified/00-drop-before-double.png": "51c0181261dbc8043e81a6a839762cbbaa31ad1d75de6c7b347a3338e1f2459c",
+        "native-clean-verified/01-field-mapping.png": "57893edad977cbef0ffcb511ae8496027aecc48968a8b7f5cffdd84da81fbb5c",
+        "native-clean-verified/02-create-plan.png": "59963d9493b2871ea4fbc405c600f11a5b335d52962932e576bc1c531c14a99f",
+        "native-clean-verified/03-run-13.png": "2a44eaae9adb22504b63f9a79dad13d1397ae8a5e2eba3dc7061d9b094290f00",
+        "native-clean-verified/03-run-7.png": "0540ceca2bb4af0be55f2194754babd4704a81aa11381ea664a25d70e711990a",
+        "native-clean-verified/04-reopened.png": "59a2e5d6214c76d04812b60f30b7913da2fd8ebc380aa299427160c9f8fa119c",
+        "native-clean-verified/05-editor-1280x720.png": "56cfe440210687ab130c180f4f5f5f9db66aeb0c3724ac66a5a8aefd81a228a3",
+        "native-clean-verified/05-editor-1600x900.png": "bd3fb0a086eb95293e0160b5a04a7138146498edc1f848d68147a1623a006cbd",
+        "native-clean-verified/05-editor-1920x1080.png": "bd3fb0a086eb95293e0160b5a04a7138146498edc1f848d68147a1623a006cbd",
+        "native-clean-verified/candidate.json": "42885c69d0511eea1ba98a563ffaaafc0ff048134e00356db825442cc65624c0",
+        "native-clean-verified/raw.log": "d71189f9bed5e583d7622a58ecc5d212c644c884a93563a6242eeba73b71fc49",
+        "native-clean-verified/result.json": "a6b80c5d7da58577ea95f3bad206eb11ab477777e22b532db804173dd25cf1cc",
+        "native-clean-verified/ui-results.json": "bd9348887d69484ba5ca0a29c081a81e130b9624e3cebc4493b198c685eb0367"
+      },
+      "candidate.json": {
+        "indexedTree": "8ad183489ec7666ffcf3c44f9de8c2196cd0bc2f",
+        "parentHead": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "sourceDigest": "4d63ca7d7b5def56df95ec02877b5a567d4b60e839845170299edc47eef89549"
+      },
+      "result.json": {
+        "indexedTree": "8ad183489ec7666ffcf3c44f9de8c2196cd0bc2f",
+        "exitCode": 0,
+        "seconds": 6.186999999918044,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp=QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q','tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ]
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 5.23s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-final-1",
+      "files": {
+        "native-final-1/00-drop-before-double.png": "162df877b924fb76a21438c384edb08ad1353b6e126f58d13dfd6ec0707649ba",
+        "native-final-1/01-field-mapping.png": "80440ed25eaf3efddbf7a9eb2648fa6903f4be6f71672bd6e9c87d1fc9b545a8",
+        "native-final-1/02-create-plan.png": "01906bd7c7548ab942ebbaa2468fe1514c09c31e3541ede5b5cd1776ce6381c5",
+        "native-final-1/03-run-13.png": "741f304cb3f6c06fd6365165f54c8e5764b399772a71b1401faae15fd329eb6b",
+        "native-final-1/03-run-7.png": "f18a55b79beaee7ac37b089090c0e6c61cc6328d201f74b87268f849387f1aaf",
+        "native-final-1/04-reopened.png": "34e871c48c6d4d2049454ab50d8012dcd2e59330540401b94198a9a78ca710c3",
+        "native-final-1/05-editor-1280x720.png": "9a16947c29e77a15e29ef357ab608f229c6aaf55316ba5abd9b3f77bac337a49",
+        "native-final-1/05-editor-1600x900.png": "7d0e6e17cd2d8de63f4a182f0904362a30fb117f04da8ac9a19b85a65e221622",
+        "native-final-1/05-editor-1920x1080.png": "7d0e6e17cd2d8de63f4a182f0904362a30fb117f04da8ac9a19b85a65e221622",
+        "native-final-1/candidate.json": "057a73e52966da9360e85d12afb35edf2c47f8a9567bfaf3acb8199c4b4171be",
+        "native-final-1/raw.log": "2f5418aa6a2bde5d9678d12d674e69d237cfdfd9cad2da59a82bb870b3237643",
+        "native-final-1/result.json": "040182042e82d2c388e7f3dcf9d480046eedaed14bf825548eff5bbea8ca368d",
+        "native-final-1/ui-results.json": "9def3324a600f7d47b78754b77b9e06dc41062c2c01a66fe584faa7bb5ffea33"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 5.797000000020489,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 4.76s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-final-1.25",
+      "files": {
+        "native-final-1.25/00-drop-before-double.png": "356c226763810d0174454a7794258604cf91b81e69f319c4d7f8e69222b74b39",
+        "native-final-1.25/01-field-mapping.png": "4c522334e144c1978b164678137d46e7b56e855edb95a33e91d0055eda52ec1a",
+        "native-final-1.25/02-create-plan.png": "5363af2a0fb22360041cb43162578b21cfc24adec98cea4cdcc2dcbc5a4a8192",
+        "native-final-1.25/03-run-13.png": "826a377b973fc0474096892965d9a265b4f6ec3c25f3883fc8fb3dff83cf0a2c",
+        "native-final-1.25/03-run-7.png": "8dae159d19dedf2059d62d9e4e5fe82ff9fb74d93f6f7035ebfa605063f2f8cf",
+        "native-final-1.25/04-reopened.png": "c8cb45d4944656df50c456d206bbb922cc2fb1d40baec40dea8f148988863169",
+        "native-final-1.25/05-editor-1280x720.png": "3bfd9140f026c7513717ee456aa875933c7873111210e0e6766356f717767f04",
+        "native-final-1.25/05-editor-1600x900.png": "db9791dd0728552ab44f9e9a3da15cdb9b612d1c7ff5d5f63a5861bf795753be",
+        "native-final-1.25/05-editor-1920x1080.png": "db9791dd0728552ab44f9e9a3da15cdb9b612d1c7ff5d5f63a5861bf795753be",
+        "native-final-1.25/candidate.json": "8a1a66f5d679571e6c0e514dd31eb2608fea6fb6028aa910f25b4d90f7274c21",
+        "native-final-1.25/raw.log": "35e94c18ebfeb6d9ac590ea093429224b64427c3c4e0c1ac567af008b1e54fb5",
+        "native-final-1.25/result.json": "1b627ad18dfda98d44954fba31c1a08ee9436c68306d85122664e7cba1d0bfa8",
+        "native-final-1.25/ui-results.json": "70031e45e6f7c9b74610f4f1340ac0c284f49c3540dc6627ae3ab250267432b3"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 10.125,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1.25",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 9.02s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-final-1.5",
+      "files": {
+        "native-final-1.5/00-drop-before-double.png": "55d6b3fbbdb081185205d1a21287bd52a6ffeb253d58dde363df53fb30388244",
+        "native-final-1.5/01-field-mapping.png": "faa1e2c1c43df8e379dc838e09b3ed4079639aba4bd2d8925bbcf869aac15700",
+        "native-final-1.5/02-create-plan.png": "51a4821ac38ffd2d4120733151e0fc096a612d91c31ca82e26fd646a92ada663",
+        "native-final-1.5/03-run-13.png": "66c76303931d5b9b062f2b47eea1b94dbb8aaf716138bcc7d1de8c117fe34ce2",
+        "native-final-1.5/03-run-7.png": "c73f03d13e52872af94e092e416cc4c441aabd7772053ac50b2a8352efa04d13",
+        "native-final-1.5/04-reopened.png": "505fbaf840a9d2f667ad533e03579c67ade15f1b1991e0d28ccd87db9f8919f3",
+        "native-final-1.5/05-editor-1280x720.png": "280dd8c3c8ee986d8f340418284f9c7308398c04b99267b13084a56a9b579630",
+        "native-final-1.5/05-editor-1600x900.png": "ceec42d7e6f987a46433232180f69fef9e90ea9cb37229fa960d231283e71d34",
+        "native-final-1.5/05-editor-1920x1080.png": "8bef3cbf4775e83c3e7da516f745085278116137a6d997d7f22ab3062d25dd70",
+        "native-final-1.5/candidate.json": "be0eb198fe2efe3c065769c764f2dd449451ac862e74e937fe88b9105f16b696",
+        "native-final-1.5/raw.log": "bbe08256af81d1e3d87b27c3312a486279b5d4d6dbe70785d8afa20a68cf9104",
+        "native-final-1.5/result.json": "d511e0c5770826d43a228e08721e2f8e2267643ea14aeb7b00c9bfe76b56f5e6",
+        "native-final-1.5/ui-results.json": "5218a6a6eebfcef42413664f24509c0aa751a23b84fac758ebb9aca530a3e200"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 9.686999999918044,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1.5",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 8.65s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-final-2",
+      "files": {
+        "native-final-2/00-drop-before-double.png": "1669903ad896c785c0d0d60514bb0038e18fc1aa04ed6456a384b1b81918d25d",
+        "native-final-2/01-field-mapping.png": "3335387a5609af91e989b7a1459ef239cece80477cb06c4957a690c7856236a2",
+        "native-final-2/02-create-plan.png": "bf2a5ef15869070df61738093f797fc878c18125e9ebf04f5eaa722ffa55b4e1",
+        "native-final-2/03-run-13.png": "88a1033e2e3b074ca33e86226bd5911d4646659965b007f9a8acfad166b0610f",
+        "native-final-2/03-run-7.png": "bb837dc2e60db78899f8a7af7fc405947b887e64fe6ae0078d1d145fa55b2659",
+        "native-final-2/04-reopened.png": "65e8590cf17acea65fc9cf8bd089c3cc6bfe5dd629986e25738970aac519efaa",
+        "native-final-2/05-editor-1280x720.png": "7c5b256167b08aaca48dbbebad1610530bc8381d894ac1b75e3d05252e8ac7eb",
+        "native-final-2/05-editor-1600x900.png": "3095babe5a7fad921267054e7065aeaa7eb958ca90fc22feaa84897f7d42078c",
+        "native-final-2/05-editor-1920x1080.png": "3095babe5a7fad921267054e7065aeaa7eb958ca90fc22feaa84897f7d42078c",
+        "native-final-2/candidate.json": "94666721cc2fb2ea2fb06b1c3eadd20815838275871337e0e9f0a5c60f411fb7",
+        "native-final-2/raw.log": "65e866704e0c138f59309efecc25accd340a402de9679ce910a606ddaccbcdf1",
+        "native-final-2/result.json": "276cebc1300fc1118e5fb6fd9092e3ea87204d770496a1e8bb4d77c2d89cb527",
+        "native-final-2/ui-results.json": "4f0627128298109c52bbbdf4e713ccc50b788f64c315158032d516f1a35c13f1"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "f73efb4441c0eab7cae7f5415199d18c12a566a61b74acf65e1029e5e0cee86d"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 9.422000000020489,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "2",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 8.45s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-first",
+      "files": {
+        "native-first/00-drop-before-double.png": "dea7b97007dcec3f775a1b84d00c8a47204bb214b73615b3e9457d9f26019177",
+        "native-first/01-field-mapping.png": "c1aadc52df040159a850c3b13c05790d13323cd4fd17513098700e81f8669c06",
+        "native-first/02-create-plan.png": "0700b4c00905e6038b303b841f4a262a74ba2875bb2d9aed89edd20694a1f302",
+        "native-first/candidate.json": "55867a8baf8f8180e8b50ced46c4cb63f2f515a854b683aec2100f456b2e62c8",
+        "native-first/raw.log": "9d8ba2ecd7e2c2be7f2d680977d117ecb23a4e00d8c4184145c27dede01cf481",
+        "native-first/result.json": "b6e935f373c5d53fca5ae51aa264b8c86975286d6dbe802edafc15b2b75f071f"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "1013b6d64d8f63bc94738107e8e711ce66128ed625ce4b72fda9cf08a9f577b0"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 19.438000000081956,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1",
+        "watchdogSeconds": 180
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed in 18.50s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "native-fourth",
+      "files": {
+        "native-fourth/00-drop-before-double.png": "162df877b924fb76a21438c384edb08ad1353b6e126f58d13dfd6ec0707649ba",
+        "native-fourth/01-field-mapping.png": "e5d3f3ca0a1537890929869bce19d1ddc7770cb64bca240758ed56d6f70d3a77",
+        "native-fourth/02-create-plan.png": "5cd74925bba2a38d8ddf991be19327728f89ce9b1f2bf0fb18bad9aec9720a4d",
+        "native-fourth/03-run-13.png": "5ec4e9b2a23a8f13666df6820d171557415a9199c5d1587bd4705fa64d3c751c",
+        "native-fourth/03-run-7.png": "4a3ced70b99a218115827d9f775096f6d0d7c9b69bc3df5ca0a73d4ff37032e7",
+        "native-fourth/04-reopened.png": "e8cb6039e8baa9eff68482ef86eee48755af8b1f51a3756b1f09d3b7cf42cb68",
+        "native-fourth/05-editor-1280x720.png": "9e52da2431272eb34479d835de9886c0233574fee678dba6feacedfd8e840239",
+        "native-fourth/05-editor-1600x900.png": "cf2c2d47360cdd532334e6d7eca8cc063e9a983f093913a525974058c2d5b940",
+        "native-fourth/05-editor-1920x1080.png": "cf2c2d47360cdd532334e6d7eca8cc063e9a983f093913a525974058c2d5b940",
+        "native-fourth/candidate.json": "de2c292f76baf02121fc551b47d6d01c73bd12fe05c6038bdbd666fe06556f1c",
+        "native-fourth/raw.log": "623b24162240181436a1f978b3fbbe10a402eede07cc1a8934143e8988e851cd",
+        "native-fourth/result.json": "a1d73f62e529a2f4e8b91a063c358f5146f3a2712d1b5f4c047e1e740ee75794",
+        "native-fourth/ui-results.json": "dc2e17bd83d2a687bd33b409f53671794c27524b5ff4b04c5518d0fabdff1bf1"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "b98e8a8bcb02481bef42b80e28958f8037bc7a85d7c80f37e229b08194e29e0c"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 5.4530000002123415,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 4.50s"
+      ],
+      "failedTests": []
+    },
+    {
+      "run": "native-second",
+      "files": {
+        "native-second/00-drop-before-double.png": "162df877b924fb76a21438c384edb08ad1353b6e126f58d13dfd6ec0707649ba",
+        "native-second/01-field-mapping.png": "c1aadc52df040159a850c3b13c05790d13323cd4fd17513098700e81f8669c06",
+        "native-second/02-create-plan.png": "06f2b1b599a025172ec7c46d8311ef3e6a8e462df657c44cbccc0168fbb8f146",
+        "native-second/candidate.json": "501ed93ba0cf85c8c160c5b47616f857f914bfc3ce5f287fb1cf7a0fda1f9de4",
+        "native-second/raw.log": "d0ea5a9257b60dc7dbbffd3869c47d214c92961bf467cae7505b4ffc0807e997",
+        "native-second/result.json": "c0c5fa5ecbdc9bcfba28af75fd9778d4cf77692f0e3690dae4b297cf8de738ad"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "625da14faf19a95804130d5b223285e7051d530b85a19baf81cbd4993377b686"
+      },
+      "result.json": {
+        "exitCode": 1,
+        "seconds": 4.5149999998975545,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1",
+        "watchdogSeconds": 180
+      },
+      "status": "FAIL",
+      "pytestSummaries": [
+        "1 failed in 3.56s"
+      ],
+      "failedTests": [
+        "FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath"
+      ]
+    },
+    {
+      "run": "native-third",
+      "files": {
+        "native-third/00-drop-before-double.png": "162df877b924fb76a21438c384edb08ad1353b6e126f58d13dfd6ec0707649ba",
+        "native-third/01-field-mapping.png": "c1aadc52df040159a850c3b13c05790d13323cd4fd17513098700e81f8669c06",
+        "native-third/02-create-plan.png": "06fb884c203a54f66c38e36034a345b23f4c99ff79d0d6bfde6951d1ded5996a",
+        "native-third/03-run-13.png": "4cb522eaca26042d80b16b8138e2c3a55b0c92225229342bf1d5f446fc8e4091",
+        "native-third/03-run-7.png": "692d52d56dd87e4dd0a5e2738445e2c8e86963db33272e08d7501183bfcb96a2",
+        "native-third/04-reopened.png": "f27f1db04e9074dddfa7c4b9519bad95643637f58eb2b5035e66c239ac7cf107",
+        "native-third/05-editor-1280x720.png": "7fa192c490e6dd19a4c28ae2dc54f31a074de311b7b82fe90c2b653628b486a7",
+        "native-third/05-editor-1600x900.png": "4fa931369c0164c288ee3e75e641b52c85c3b081b3f486b3117470e39464c446",
+        "native-third/05-editor-1920x1080.png": "4fa931369c0164c288ee3e75e641b52c85c3b081b3f486b3117470e39464c446",
+        "native-third/candidate.json": "edd43b43d2b8e02a5f13d235b07c6be0d1f3b1743486ffaf737d2ae1f7c57ffb",
+        "native-third/raw.log": "27c0f986f42e8c3ffd78eae59d7a61bb8c5bc67c741157411c278bdc8da91698",
+        "native-third/result.json": "d6f795c507794dc55c9349c79d078b2212ab1c1c17c42db0b403af8a24c9e43d",
+        "native-third/ui-results.json": "2b17a8dfb98184739798399ae0bceeea4c9f6d1c8392d370c5481cb7d819b140"
+      },
+      "candidate.json": {
+        "head": "00004554759b5e339bd91f4e71100cec2059bf66",
+        "branch": "agent/runtime-workflow-architecture-v1",
+        "sourceDigest": "ab56fc631eb3af8ef04eec39a11f39ca29ea0b079ec1c360f5ac425b25ce1873"
+      },
+      "result.json": {
+        "exitCode": 0,
+        "seconds": 5.2810000001918525,
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-c",
+          "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+        ],
+        "scale": "1",
+        "watchdogSeconds": 180
+      },
+      "status": "PASS",
+      "pytestSummaries": [
+        "1 passed in 4.31s"
+      ],
+      "failedTests": []
+    }
+  ],
+  "classification": "PASS is scoped to the recorded run; SKIP is not PASS; interrupted remainders are NOT_RUN. Prior FAIL and native crashes remain intact.",
+  "finalCompleteCi": "ci-verified",
+  "finalWorkspaceSpecialized": "c-verified",
+  "independentSpecialized": "clean-verified",
+  "independentNativePath": "native-clean-verified",
+  "fileHashesOrigin": "SHA256 of working-tree evidence bytes at index generation; Git may normalize text line endings. PNG hashes are byte-preserving."
+}

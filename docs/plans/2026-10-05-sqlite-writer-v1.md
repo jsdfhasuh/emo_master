@@ -72,3 +72,23 @@ JSON，一次调用一行，不展开、不截断，不保存 BLOB、预览缓�
 
 每批用 `scripts/sqlite_writer_validate.py` 保留可重复的专项结果。完成本轮后停止，
 不扩展现场发布。最终实现契约与结果分别见本轮 SQLite 契约及测试报告。
+
+## 实施记录
+
+A 已提交 `4dbcd1fe8b1b1d01a058b32f16d9dede8f49d89f`，专项 64 PASS；
+B 已提交 `00004554759b5e339bd91f4e71100cec2059bf66`，最后复核专项 59 PASS。
+C 的正式配置编辑器、来源提示、统一撤销、真实回执查看及 Qt 用户路径已实现；
+本报告随第三批提交，不改动先前提交历史。
+第三批最终专项 `c-verified` 为 86 PASS，受影响回归 71 PASS，兼容性专项 25 PASS。
+排除原 UI dirty 的正式源码独立候选有 74 项 SQLite 专项 PASS，原生 Qt 完整用户路径
+1 PASS，未依赖未提交页面编辑器 helper。可见 Windows Qt 四种
+QT_SCALE_FACTOR 设置均通过真实 A/B 写入与保存重开。请求的窗口尺寸和实际尺寸分别记录，
+不能把 QWidget 截图/Qt 缩放设置当成更换物理显示器、OS DPI 或现场验收。
+
+最终完整 CI `ci-verified` 为 2811 PASS、1 FAIL、8 SKIP、28 subtests；协议生成、Ruff 和
+mypy 通过，唯一 FAIL 仍为改动前的窄工具栏测试。首次完整 CI 的 21 FAIL 和两次中断
+NOT_RUN 保留，并记录修正具体问题后重跑的结果；不能把本轮功能通过写成完整 CI 通过。
+
+所有初轮失败、Qt 原生异常栈及原基线失败保留。完整 CI 的最终分类、提交/同步状态和
+操作入口以 [本轮验证报告](../testing/sqlite-writer-2026-10-05.md) 为准，
+本节不宣称完整 CI、既有 Qt 稳定性、性能或现场发布已经通过。

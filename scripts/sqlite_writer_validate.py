@@ -21,6 +21,19 @@ SUITES = {
           'tests/runtime/test_runtime_project_execution.py', 'tests/runtime/test_runner_io_summary.py'],
     'c': ['tests/sqlite_writer', 'tests/designer/test_operator_editor_manager.py',
           'tests/designer/test_builtin_operator_editor_ui.py', 'tests/ui/page_designer/test_user_path.py'],
+    'c-lifecycle': ['tests/sqlite_writer/test_editor.py::testProjectCloseDuringModalRejectsCallbacksAndInitialization'],
+    'c-regression': ['tests/designer/test_flow_scene_interactions.py', 'tests/designer/test_flow_layout_qt.py',
+        'tests/designer/test_flow_layout_routing.py', 'tests/designer/test_node_run_inspection.py',
+        'tests/designer/test_node_result_panel.py', 'tests/designer/test_operator_editor_manager.py',
+        'tests/designer/test_builtin_operator_editor_ui.py', 'tests/designer/test_workflow_package.py',
+        'tests/core/project/test_package_builder.py', 'tests/runtime/test_runtime_grpc_network.py',
+        'tests/runtime/test_runtime_project_execution.py', 'tests/runtime/test_runner_io_summary.py'],
+    'ci-compat': ['tests/designer/test_main_window_project_save_load.py',
+        'tests/runtime/presentation/test_normal_capture_status_validation.py',
+        'tests/runtime/test_builtin_communication_operator_workflows.py',
+        'tests/runtime/test_builtin_coordinate_operator_workflow.py',
+        'tests/runtime/test_builtin_vision_operator_workflows.py', 'tests/runtime/test_real_onnx_result_pipeline.py',
+        'tests/sqlite_writer/test_dependencies.py::testBuiltinSqlitePreservesActualCoreCapabilityGate'],
 }
 
 

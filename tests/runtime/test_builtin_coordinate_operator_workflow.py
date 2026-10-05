@@ -4,6 +4,7 @@ from pathlib import Path
 
 import pytest
 
+from emo_master import __version__
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
@@ -19,7 +20,7 @@ def testRuntimeReadsAndCalculatesCoordinateFile(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    scan = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    scan = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     assert scan.rejectedOperators == {}
     registry = dict(scan.activeOperators)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(_project())
@@ -48,7 +49,7 @@ def testRuntimeSubtractsTwoCoordinateFilesAsStronglyTypedVectors(
     (tmp_path / "left.csv").write_text("5,7\n1,-2\n", encoding="utf-8")
     (tmp_path / "right.csv").write_text("2,3\n-4,3\n", encoding="utf-8")
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    scan = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    scan = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     assert scan.rejectedOperators == {}
     registry = dict(scan.activeOperators)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(_subtractProject())

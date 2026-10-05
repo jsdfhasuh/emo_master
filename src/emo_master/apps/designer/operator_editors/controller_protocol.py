@@ -56,6 +56,7 @@ class EditorContext:
         appendLog: Callable[[str, str], None],
         workflowOptions: list[str] | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
+        getSqliteDraft: Callable[[EditorKey], dict] | None = None,
     ) -> None:
         self.key = key
         self.operatorId = operatorId
@@ -65,6 +66,7 @@ class EditorContext:
         self.workflowOptions = list(workflowOptions or [])
         self._runtimeClient = runtimeClient
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
+        self._getSqliteDraft = getSqliteDraft
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self._appendLog = appendLog
@@ -99,6 +101,23 @@ class EditorContext:
 
     def currentJobId(self) -> str:
         return str(self._getCurrentJobId() or "")
+
+    def sqliteDraft(self):
+        from copy import deepcopy
+        if self._getSqliteDraft is None:
+            raise EditorContextError('E_SQLITE_DRAFT', '当前 Designer 没有提供正式来源目录')
+        return deepcopy(self._getSqliteDraft(self.key))
+
+    def sqliteTarget(self, action, path, directory, table='', columns=None, **kwargs):
+        method = getattr(self._runtimeClient, 'sqliteTarget', None)
+        if not callable(method):
+            raise EditorContextError('E_SQLITE_UNSUPPORTED', '旧 Runtime 不支持 SQLite 检查和初始化')
+        return method(action, path, directory, table, columns, **kwargs)
+
+    def sqliteLocation(self):
+        address = str(getattr(self._runtimeClient, '_runtimeTarget', ''))
+        local = not address or address.startswith(('127.0.0.1:', 'localhost:', '[::1]:'))
+        return ('本机内嵌 Runtime' if not address else address), local
 
     def bindPreviewInvalidation(self, callback: Callable[[], None]) -> None:
         self._invalidatePreviewSources = callback

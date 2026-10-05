@@ -67,6 +67,8 @@ try:
             variant = self._resolveVariant(model)
             self._variant = variant
             self._runtimeState = "IDLE"
+            self._bindingSource = False
+            self._sqliteSummary = None
             self._operatorIcon = operatorIcon("default" if getattr(model, "kind", "operator") == "operator" else "flow")
             self.setPen(QPen(self._getBorderColor(variant, self._runtimeState), 1.4))
             self.setBrush(QBrush(self._getFillColor(variant, self._runtimeState)))
@@ -83,6 +85,12 @@ try:
             titleText.setPos(44.0, 10.0)
             titleText.setAcceptedMouseButtons(Qt.NoButton)
             self.setToolTip(model.title)
+            if getattr(model, 'operatorId', '') == 'vision.io.sqlite_writer':
+                self._sqliteSummary = QGraphicsSimpleTextItem('未配置目标 · 0 个映射', self)
+                self._sqliteSummary.setFont(self.bodyFont)
+                self._sqliteSummary.setBrush(QColor('#b45309'))
+                self._sqliteSummary.setPos(16, self.geometry.header - metrics.height() - 6)
+                self._sqliteSummary.setAcceptedMouseButtons(Qt.NoButton)
             if variant == "if":
                 branchText = QGraphicsSimpleTextItem("条件分支", self)
                 branchText.setFont(self.bodyFont)
@@ -95,7 +103,8 @@ try:
         def paint(self, painter, option, widget=None):
             painter.setRenderHint(QPainter.Antialiasing)
             painter.setBrush(self.brush())
-            painter.setPen(QPen(QColor("#2563eb"), 2.0) if self.isSelected() else self.pen())
+            painter.setPen(QPen(QColor("#2563eb"), 2.0) if self.isSelected() else
+                           QPen(QColor('#8b5cf6'), 2.5) if self._bindingSource else self.pen())
             painter.drawRoundedRect(self.rect(), 6.0, 6.0)
             self._operatorIcon.paint(painter, 16, 10, 20, 20)
             painter.setPen(QPen(QColor("#e5e7eb"), 1.0))
@@ -320,6 +329,9 @@ try:
             self._routeTimer.setSingleShot(True)
             self._routeTimer.timeout.connect(self.refreshAllRoutes)
             self._nodeItems: dict[str, _NodeItem] = {}
+            self._bindingItems: list[QGraphicsPathItem] = []
+            self._bindingTarget = None
+            self._bindingSources = ()
             self._iconProvider = None
             self._iconContext: Callable[[], tuple] = lambda: ()
             self._portItems: dict[tuple[str, str, str], _PortItem] = {}
@@ -382,13 +394,23 @@ try:
             self.clearGraph()
 
         def clearGraph(self) -> None:
+            hadSelection = bool(self.selectedItems())
             self._routeTimer.stop()
             self._dragHintItem = None
             if self._iconProvider is not None:
                 for item in self._nodeItems.values():
                     self._iconProvider.unbind(item)
-            super().clear()
+            # Native selectionChanged is synchronous during clear(). Consumers
+            # must never inspect wrappers for items Qt has already destroyed.
+            previous = self.blockSignals(True)
+            try:
+                super().clear()
+            finally:
+                self.blockSignals(previous)
             self._nodeItems = {}
+            self._bindingItems = []
+            self._bindingTarget = None
+            self._bindingSources = ()
             self._portItems = {}
             self._edgeItems = {}
             self._inputEdgeIndex = {}
@@ -398,6 +420,8 @@ try:
             self._snapTargetPort = None
             self._dragInvalidReason = ""
             self._setDragHint("", None)
+            if hadSelection and not previous:
+                self.selectionChanged.emit()
 
         def itemAtPoint(self, x: float, y: float):
             return self.itemAt(QPointF(float(x), float(y)), QTransform())
@@ -472,8 +496,10 @@ try:
         def refreshAllRoutes(self) -> None:
             self._routeTimer.stop()
             self._routeEdges(list(self._edgeItems.values()))
+            self._refreshBindingPaths()
 
         def refreshEdgesForNode(self, nodeId: str) -> None:
+            self._refreshBindingPaths()
             if self._routeBatch:
                 return
             if self.mouseGrabberItem() is not None:
@@ -481,6 +507,56 @@ try:
                                   if nodeId in (item.edge.fromNodeId, item.edge.toNodeId)])
             else:
                 self._scheduleRoutes()
+
+        def setSqliteHints(self, nodeId, summary, error=''):
+            item = self._nodeItems.get(nodeId)
+            if item is None or item._sqliteSummary is None:
+                return
+            full = summary + (' · 配置错误：' + error if error else '')
+            metrics = QFontMetricsF(item.bodyFont)
+            item._sqliteSummary.setText(metrics.elidedText(full, Qt.ElideRight, item.geometry.width - 32))
+            item._sqliteSummary.setBrush(QColor('#c0392b' if error else '#475569'))
+            item.setToolTip(item.model.title + '\n' + full)
+
+        def setBindingDependencies(self, target, sources):
+            sources = tuple(dict.fromkeys(s for s in sources if s in self._nodeItems))
+            if self._bindingTarget == target and self._bindingSources == sources:
+                self._refreshBindingPaths()
+                return
+            for item in self._bindingItems:
+                self.removeItem(item)
+            self._bindingItems = []
+            self._bindingTarget = target
+            self._bindingSources = sources
+            for key, item in self._nodeItems.items():
+                item._bindingSource = key in self._bindingSources
+                item.update()
+            if target in self._nodeItems:
+                for _source in self._bindingSources:
+                    item = QGraphicsPathItem()
+                    item.setPen(QPen(QColor('#8b5cf6'), 1.5, Qt.DashLine))
+                    item.setAcceptedMouseButtons(Qt.NoButton)
+                    item.setZValue(-.5)
+                    item.setToolTip('字段映射依赖 · 临时提示，不是画布连线')
+                    self.addItem(item)
+                    self._bindingItems.append(item)
+            self._refreshBindingPaths()
+
+        def _refreshBindingPaths(self):
+            target = self._nodeItems.get(self._bindingTarget)
+            if target is None:
+                return
+            end = target.sceneBoundingRect().center()
+            for source, item in zip(self._bindingSources, self._bindingItems):
+                node = self._nodeItems.get(source)
+                if node is None:
+                    item.setPath(QPainterPath())
+                    continue
+                start = node.sceneBoundingRect().center()
+                path = QPainterPath(start)
+                middle = (start.x() + end.x()) / 2
+                path.cubicTo(QPointF(middle, start.y()), QPointF(middle, end.y()), end)
+                item.setPath(path)
 
         def removeFlowNode(self, nodeId: str) -> None:
             nodeItem = self._nodeItems.get(nodeId)

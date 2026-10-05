@@ -1,0 +1,27 @@
+..............................................F......................... [ 97%]
+..                                                                       [100%]
+================================== FAILURES ===================================
+__________ testUnavailableFormalDefinitionCannotOfferSavedStalePorts __________
+
+    def testUnavailableFormalDefinitionCannotOfferSavedStalePorts():
+        payload = draftPayload()
+        payload['workflows']['main']['nodes'].append({'nodeId': 'deleted-call', 'kind': 'subflow',
+            'targetWorkflowId': 'removed', 'outputPorts': {'stale': 'integer'}})
+>       sources = {n['nodeId']: n for n in sourceCatalog(payload, 'main', [])}
+
+tests\sqlite_writer\test_editor.py:55: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+workflowId = 'main', catalog = []
+
+    def sourceCatalog(payload, workflowId, catalog):
+>       document = ProjectDocument.model_validate(payload)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E         Value error, main.deleted-call.targetWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ...ices': {'bindings': {}}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\apps\designer\operator_editors\sqlite_sources.py:12: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_editor.py::testUnavailableFormalDefinitionCannotOfferSavedStalePorts
+1 failed, 73 passed in 29.27s

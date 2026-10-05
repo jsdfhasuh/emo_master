@@ -70,6 +70,11 @@ class NodeRunInspection:
                   'status': status, 'sequence': sequence, 'timestampMs': timestamp, 'io': io,
                   'metrics': summarizePorts(payload.get('metrics')), 'message': _text(message, 512),
                   'diagnostic': _text(diagnostic, 512), 'code': _text(event.get('code') or payload.get('code') or '', 64)}
+        if isinstance(diagnostics, dict):
+            from emo_master.core.contracts.sqlite_writer import receiptSummary
+            receipt = receiptSummary(diagnostics.get('sqliteReceipt'), identities)
+            if receipt is not None:
+                record['sqliteReceipt'] = receipt
         # Identity from a remote endpoint is data too. Bound it before retention.
         for field in ('jobId', 'workflowId', 'nodeId', 'nodeRunId', 'workflowRunId'):
             record[field] = clipText(record[field], 128)
@@ -84,6 +89,8 @@ class NodeRunInspection:
             # and an explicit unavailable marker rather than exceed the budget.
             record['io'] = {'version': 1, 'inputs': None, 'outputs': None, 'legacy': False,
                             'unavailableReason': '摘要超过界面额度，未保留端口值'}
+        if encodedBytes(record) > MAX_NODE_BYTES:
+            record.pop('sqliteReceipt', None)
         self._nodes[key] = record
         self._nodes.move_to_end(key)
         while len(self._nodes) > MAX_INSPECTED_NODES:

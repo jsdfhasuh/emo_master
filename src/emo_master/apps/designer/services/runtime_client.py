@@ -95,6 +95,7 @@ class GlobalCounterInfo:
 class RuntimeClientError(RuntimeError):
     def __init__(self, code: str, message: str) -> None:
         self.code = code
+        self.sqliteReply: Any = None
         super().__init__(message)
 
 
@@ -498,7 +499,7 @@ class RuntimeClient:
         return self._call("UploadPreviewImage", chunks())
 
     def sqliteTarget(self, action: str, databasePath: str, projectDirectory: str,
-                     table: str = "", columns=None, *, confirmed=False):
+                     table: str = "", columns=None, *, confirmed=False, cancellationToken=None):
         method = {"inspect": "InspectSqliteTarget", "initialize": "InitializeSqliteTarget"}[action]
         if not callable(getattr(self.runtimeService, method, None)):
             raise RuntimeClientError("E_SQLITE_UNSUPPORTED", "旧 Runtime 不支持 SQLite 目标检查/初始化")
@@ -509,13 +510,16 @@ class RuntimeClient:
         request = (runtime_pb2.InitializeSqliteTargetRequest(**fields, columns=wire, confirmed=confirmed)
                    if action == "initialize" else runtime_pb2.InspectSqliteTargetRequest(**fields, proposed_columns=wire))
         try:
-            reply = self._call(method, request)
+            reply = (self._call(method, request) if cancellationToken is None else
+                     self._displayCall(method, request, self.deadlineMs, cancellationToken, 'sqlite-editor'))
         except RuntimeClientError as error:
             if "UNIMPLEMENTED" in error.code:
                 raise RuntimeClientError("E_SQLITE_UNSUPPORTED", "旧 Runtime 不支持 SQLite 管理接口") from error
             raise
         if not getattr(reply, "ok", False):
-            raise RuntimeClientError(str(reply.code), str(reply.message))
+            rejected = RuntimeClientError(str(reply.code), str(reply.message))
+            rejected.sqliteReply = reply
+            raise rejected
         return reply
 
     def inspectionSession(self, action: str, projectId: str, sessionId: str = ""):

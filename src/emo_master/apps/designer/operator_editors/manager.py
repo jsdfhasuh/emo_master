@@ -30,11 +30,13 @@ class OperatorEditorManager:
         appendLog: Callable[[str, str], None],
         cacheRoot: Path | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
+        getSqliteDraft: Callable[[EditorKey], dict] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.applyParams = applyParams
         self.appendLog = appendLog
         self.getCurrentJobId = getCurrentJobId or (lambda: None)
+        self.getSqliteDraft = getSqliteDraft
         self._trustStore = EditorTrustStore(settingsStore)
         self._assetCache = EditorAssetCache(cacheRoot)
         self._windows: dict[EditorKey, OperatorWorkspaceWindow] = {}
@@ -78,6 +80,7 @@ class OperatorEditorManager:
             appendLog=self.appendLog,
             workflowOptions=workflowOptions,
             getCurrentJobId=self.getCurrentJobId,
+            getSqliteDraft=self.getSqliteDraft,
         )
 
         customRoot = None
@@ -193,6 +196,31 @@ class OperatorEditorManager:
     def closeAll(self) -> None:
         self.invalidatePreviewSources()
         self._closeKeys(tuple(self._windows))
+
+    def resolveSqlitePending(self, parent=None) -> bool:
+        """Keep SQLite's pending validation at save/project-switch/close boundaries."""
+        from PySide2.QtWidgets import QMessageBox
+        for window in tuple(self._windows.values()):
+            if window.context.operatorId != 'vision.io.sqlite_writer' or not window.isDirty():
+                continue
+            answer = QMessageBox.question(parent or window, '未应用的 SQLite 配置',
+                'SQLite 字段映射尚未应用。应用后继续？',
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Cancel)
+            if answer == QMessageBox.Cancel:
+                return False
+            if answer == QMessageBox.Save and not window.applyChanges():
+                window.show()
+                window.raise_()
+                return False
+            if answer == QMessageBox.Discard:
+                # Use the existing loaded baseline; do not depend on unrelated
+                # uncommitted generic-editor UI helpers in a developer checkout.
+                if window._controller is not None:
+                    window._controller.loadParams(dict(window._loadedParams))
+                elif window._schemaForm is not None:
+                    window._schemaForm.setSchema(window.context.paramSchema, dict(window._loadedParams))
+                window._dirtyHint = False
+        return True
 
     def _closeKeys(self, keys) -> None:
         for key in list(keys):

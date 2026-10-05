@@ -85,6 +85,9 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
                     raise SqliteWriterError("E_SQLITE_TYPE", "上下文与存储类型不兼容")
             else:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的数据来源")
+            if column.casefold() == "write_id" and (source != {"kind": "context", "key": "writeId"}
+                    or row["storageType"] != "TEXT" or row.get("missing", "error") != "error"):
+                raise SqliteWriterError("E_SQLITE_CONFIG", "write_id 为写入身份，只能映射执行上下文 writeId（TEXT，缺失报错）")
         except SqliteWriterError as error:
             raise SqliteWriterError(error.code, str(error), index) from error
     result = {"configVersion": 1, "databasePath": path, "table": table,
@@ -193,3 +196,36 @@ def rebindParams(params: Mapping[str, Any], nodeIdMap: Mapping[str, str]) -> dic
             if isinstance(oldId, str):
                 source["nodeId"] = nodeIdMap.get(oldId, oldId)
     return result
+
+
+def receiptSummary(value, identity):
+    """Bounded real receipt for the existing node inspector, not a data source."""
+    if not isinstance(value, dict) or not isinstance(value.get('status'), str) or value['status'] not in {'COMMITTED', 'SKIPPED', 'FAILED', 'UNKNOWN'}:
+        return None
+    execution = value.get('execution')
+    if not isinstance(execution, dict) or any(execution.get(key) != expected for key, expected in identity.items()):
+        return None
+    writeId = value.get('writeId')
+    if not isinstance(writeId, str):
+        return None
+    try:
+        if not 1 <= len(writeId.encode('utf-8')) <= 128:
+            return None
+    except UnicodeEncodeError:
+        return None
+    rows = value.get('rowsAffected')
+    if rows is not None and (type(rows) is not int or rows not in {0, 1}):
+        return None
+    if rows != {'COMMITTED': 1, 'SKIPPED': 0, 'FAILED': 0, 'UNKNOWN': None}[value['status']]:
+        return None
+    primary = value.get('primaryKey')
+    if primary is not None and (type(primary) is not int or not -(2**63) <= primary < 2**63):
+        primary = None
+    elapsed = value.get('elapsedMs')
+    elapsed = elapsed if type(elapsed) in {int, float} and 0 <= elapsed < 2**53 and math.isfinite(elapsed) else None
+    error = value.get('error')
+    from emo_master.core.contracts.run_inspection import clipText
+    problem = ({'code': clipText(error.get('code', '') if isinstance(error.get('code'), str) else '', 64),
+                'message': clipText(error.get('message', '') if isinstance(error.get('message'), str) else '', 512)} if isinstance(error, dict) else None)
+    return {'writeId': writeId, 'status': value['status'], 'rowsAffected': rows,
+            'primaryKey': primary, 'elapsedMs': elapsed, 'error': problem}

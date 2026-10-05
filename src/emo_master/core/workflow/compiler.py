@@ -209,6 +209,14 @@ class WorkflowCompiler:
                 return metadata[0], metadata[1]
         return dict(node.inputPorts), dict(node.outputPorts)
 
+    def nodePortDefinitions(self, document: ProjectDocument, workflowId: str, node: WorkflowNode):
+        """Read formal ports without compiling an unfinished Designer draft."""
+        if node.kind == "loop":
+            contract = self._loopContract(document, node)
+            return deepcopy(dict(contract.inputPorts)), deepcopy(dict(contract.outputPorts))
+        inputs, outputs = self._nodePorts(document, workflowId, node)
+        return deepcopy(inputs), deepcopy(outputs)
+
     def _loopContract(
         self, document: ProjectDocument, node: WorkflowNode
     ) -> LoopContract:

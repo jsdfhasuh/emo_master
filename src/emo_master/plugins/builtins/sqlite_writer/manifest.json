@@ -17,5 +17,11 @@
     "failurePolicy": {"type": "string", "enum": ["stop", "continue"], "default": "stop"}
   }},
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "editor": {
+    "schemaVersion": "1.0", "kind": "customUi", "openMode": "window",
+    "uiResource": "ui/editor.ui",
+    "controllerEntry": "emo_master.plugins.builtins.sqlite_writer.editor:SqliteWriterEditorController",
+    "fallback": "schemaForm", "previewMode": "none"
+  }
 }

@@ -66,9 +66,24 @@ def inspectionText(record: dict | None, jobId: str | None, selected: bool = True
         lines.extend(f"  {item['port']} = {describePort(item['value'])}" for item in remaining)
     if record['diagnostic']:
         lines.append('诊断：' + record['diagnostic'])
+    if record.get('sqliteReceipt'):
+        lines.append(sqliteReceiptText(record['sqliteReceipt']))
     if status in {'FAILED', 'SKIPPED'}:
         lines.append(('错误：' if status == 'FAILED' else '跳过原因：') + record['code'] + ' ' + record['message'])
     if io.get('legacy'):
         lines.append('旧事件未提供输入摘要；仅展示已上报的本次输出、指标和诊断。')
     lines.append('节点完成状态表示执行状态；判定值以实际输出为准。')
+    return '\n'.join(lines)
+
+
+def sqliteReceiptText(receipt):
+    labels = {'COMMITTED': '事务提交成功', 'SKIPPED': '明确禁用，未写入',
+              'FAILED': '数据库写入失败', 'UNKNOWN': '提交结果不确定，不自动重试'}
+    elapsed = '不可取得' if receipt['elapsedMs'] is None else f"{receipt['elapsedMs']:.3f} ms"
+    lines = ['receipt · 数据库写入：' + receipt['status'] + ' · ' + labels[receipt['status']],
+             'writeId：' + receipt['writeId'], '影响记录数：' + str(receipt['rowsAffected']),
+             '记录主键：' + str(receipt['primaryKey']), '写入耗时：' + elapsed]
+    if receipt['error']:
+        lines.append('错误：' + receipt['error']['code'] + ' · ' + receipt['error']['message'])
+    lines.append('节点执行完成与数据库提交状态分别展示；UNKNOWN 不能等同回滚。')
     return '\n'.join(lines)

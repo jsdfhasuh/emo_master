@@ -1309,6 +1309,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             applyParams=self._applyEditorParams,
             appendLog=self.appendEditorLog,
             getCurrentJobId=lambda: self.currentJobId,
+            getSqliteDraft=self._sqliteEditorDraft,
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,
@@ -1427,6 +1428,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", "请选择有效的 project.json")
 
     def saveProjectAction(self) -> None:
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            return
         if (
             self.currentProjectDir is not None
             and (self.currentProjectDir / "project.json").exists()
@@ -1481,6 +1484,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.refreshRecentProjectsMenu()
 
     def saveProjectToDirectory(self, projectDirPath: str) -> bool:
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            return False
         projectName = (
             Path(projectDirPath).name if Path(projectDirPath).name != "" else "project"
         )
@@ -1492,6 +1497,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str) -> bool:
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            return False
         self._focusedWorkflowId = None
         self._workflowViewStates.clear()
         ok, loadedProjectPath, currentProjectDir = (
@@ -1749,6 +1756,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         editMenu = addMenu("编辑")
         self._addMenuAction(editMenu, "自动布局", self.autoLayoutNodes)
         self._addMenuAction(editMenu, "校验流程图", self.validateGraph)
+        self._addMenuAction(editMenu, '复制所选算子', self.duplicateSelectedNode)
+        self._addMenuAction(editMenu, '复制当前工作流', self.duplicateCurrentWorkflow)
 
         viewMenu = addMenu("视图")
         self._addMenuAction(viewMenu, "切换侧边栏", self.toggleSidebar)
@@ -2556,6 +2565,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            event.ignore()
+            return
         if self.pageCoordinator is not None:
             if not self.pageCoordinator.prepareClose():
                 event.ignore()
@@ -3487,6 +3499,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             dock.hide()
 
     def updateToolbarState(self) -> None:
+        from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
+        refreshCanvasHints(self)
         canRun = self.loadedProjectPath is not None and not self.isJobRunning
         canStop = self.isJobRunning and self.currentJobId is not None
 
@@ -3765,6 +3779,31 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def updateNodeParams(self, nodeId: str, params: dict[str, object]) -> None:
         self.applyNodeParams(nodeId, params)
 
+    def _sqliteEditorDraft(self, key):
+        from emo_master.apps.designer.operator_editors.sqlite_canvas import draftForEditor
+        return draftForEditor(self, key)
+
+    @draftCommand
+    def duplicateSelectedNode(self):
+        selected = self.flowModel.selectedNodeId
+        if not selected:
+            return None
+        try:
+            nodeId = self.workflowController.duplicateNode(selected)
+            self.flowScene.setNodeSelected(nodeId)
+            self.onNodeSelectionChanged()
+            return nodeId
+        except (ValueError, KeyError) as error:
+            self.appendRuntimeLog('ERROR', str(error))
+            return None
+
+    @draftCommand
+    def duplicateCurrentWorkflow(self):
+        workflowId = self.workflowController.duplicateWorkflow(self.activeWorkflowId)
+        self._refreshWorkflowTabs()
+        return workflowId
+
+    @draftCommand
     def _applyEditorParams(
         self, key: EditorKey, params: dict[str, object]
     ) -> bool:

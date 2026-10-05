@@ -9,6 +9,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from emo_master import __version__
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.apps.runtime.workflow.runner import WorkflowRunner
@@ -22,7 +23,7 @@ def testRuntimeChainsSlmpReadIntoSlmpWrite(tmp_path: Path) -> None:
     server = _TwoTransactionSlmpServer()
     server.start()
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    scan = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    scan = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     assert scan.rejectedOperators == {}
     registry = dict(scan.activeOperators)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(
@@ -69,7 +70,7 @@ def testRuntimeRoutesSlmpBitBooleanThroughIf(tmp_path: Path) -> None:
     server = _TwoTransactionSlmpServer((struct.pack("<H", 1),))
     server.start()
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    scan = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    scan = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     registry = dict(scan.activeOperators)
     compiled = WorkflowCompiler(operatorRegistry=registry).compile(
         _bitProject(server.port)
@@ -168,7 +169,7 @@ def testRuntimeWritesTcpReceiveTextOutput(tmp_path: Path) -> None:
 
 def _builtinRegistry() -> dict[str, Any]:
     pluginRoot = Path(__file__).resolve().parents[2] / "src" / "emo_master" / "plugins"
-    scan = PluginRegistry(coreVersion="0.4.0").scan(pluginRoot)
+    scan = PluginRegistry(coreVersion=__version__).scan(pluginRoot)
     assert scan.rejectedOperators == {}
     return dict(scan.activeOperators)
 

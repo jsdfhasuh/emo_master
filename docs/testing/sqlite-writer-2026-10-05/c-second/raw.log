@@ -1,0 +1,59 @@
+..........................................................F............. [100%]
+================================== FAILURES ===================================
+_______________________ testCompleteSqliteDesignerPath ________________________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000155C9B43280>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-938/testCompleteSqliteDesignerPath0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000155C9B42FB0>
+
+    def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
+        out = Path(os.environ['EMO_SQLITE_SCREEN_DIR']) if os.environ.get('EMO_SQLITE_SCREEN_DIR') else None
+        screenshots = {}
+        root = tmp_path / '工程 中文 空格'
+        root.mkdir()
+        blank = project(nodes=[])
+        blank['workflows']['main']['inputs'] = {}
+        saveProject(root, blank)
+        runtime = RuntimeService(dbPath=tmp_path / 'runtime-state.sqlite3', workspaceRoot=tmp_path / 'jobs')
+        server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        client = RuntimeClient(rpc.RuntimeServiceStub(channel), runtimeTarget=f'127.0.0.1:{port}')
+        records = {'platform': QApplication.platformName(), 'jobs': [], 'rows': [], 'screenSizes': [],
+                   'devicePixelRatio': QApplication.primaryScreen().devicePixelRatio()}
+        def shot(widget, name):
+            QApplication.processEvents()
+            if out:
+                path = out / (name + '.png')
+                assert widget.grab().save(str(path))
+                screenshots[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        with ownedDesignerWindow as windows:
+            window = windows(client)
+            try:
+                window.resize(1600, 900)
+                assert window.loadProjectDirectory(str(root))
+                window.show()
+                waitQt(lambda: window.operatorCatalogController.state == 'ready')
+                viewport = window.flowView.viewport()
+                sourceId = dragOperator(window, 'vision.value.number', QPoint(viewport.width() // 3, 80), monkeypatch)
+                sourceEditor = doubleNode(window, sourceId)
+                assert sourceEditor is not None and sourceEditor._schemaForm is not None
+                sourceEditor._schemaForm._controls['value'].setValue(7)
+                QTest.mouseClick(sourceEditor._applyButton, Qt.LeftButton)
+                assert window.flowModel.nodes[sourceId].params['value'] == 7
+                sourceEditor.forceClose()
+                writerId = dragOperator(window, OPERATOR_ID, QPoint(viewport.width() * 2 // 3, 180), monkeypatch)
+                writerEditor = doubleNode(window, writerId)
+                controller = writerEditor._controller
+>               assert controller is not None and controller.__class__.__name__ == 'SqliteWriterEditorController', (
+                    writerId, writerEditor.key, window.operatorEditorManager.keys(),
+                    window.flowView.viewport().size(), window._operatorDefinition(OPERATOR_ID),
+                    writerEditor._statusLabel.text())
+E                   AssertionError: ('node-aa7a8f08', EditorKey(projectId='sqlite-test', workflowId='main', nodeId='node-a6542f2a'), (EditorKey(projectId=...peratorId': 'vision.io.sqlite_writer', 'displayName': 'SQLite 数据库写入', 'version': '1.0.0', 'category': '输入输出', ...}, '')
+E                   assert (None is not None)
+
+tests\sqlite_writer\test_user_path.py:136: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath
+1 failed, 71 passed in 29.57s

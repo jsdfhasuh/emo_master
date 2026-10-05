@@ -86,6 +86,19 @@ def testMixedCanvasAndMappingCycleRejected():
     assert "E_WORKFLOW_CYCLE" in {i.code for i in error.value.issues}
 
 
+def testBuiltinSqlitePreservesActualCoreCapabilityGate():
+    from pathlib import Path
+    from emo_master import __version__
+    from emo_master.core.plugin.registry import PluginRegistry
+    root = Path('src/emo_master/plugins')
+    legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
+    assert set(legacy.rejectedOperators) == {OPERATOR_ID}
+    assert legacy.rejectedOperators[OPERATOR_ID][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
+    assert OPERATOR_ID not in legacy.activeOperators and 'vision.value.number' in legacy.activeOperators
+    current = PluginRegistry(coreVersion=__version__).scan(root)
+    assert current.rejectedOperators == {} and OPERATOR_ID in current.activeOperators
+
+
 def testIndependentJobsNeverReuseDelivery():
     Probe.calls.clear()
     run(project(), "A", "A")

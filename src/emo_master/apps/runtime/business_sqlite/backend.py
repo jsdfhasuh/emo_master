@@ -156,7 +156,7 @@ def inspect(path: Path, table="", cancelled=lambda: False) -> dict[str, Any]:
         if len(tables) > 256:
             raise SqliteWriterError("E_SQLITE_LIMIT", "数据库超过 256 表检查额度")
         answer["tables"] = [r[0] for r in tables]
-        if table:
+        if table and connection.execute('SELECT 1 FROM sqlite_schema WHERE name=? COLLATE NOCASE', (table,)).fetchone():
             answer["structure"] = tableStructure(connection, table)
     return answer
 
@@ -258,6 +258,8 @@ def insert(path: Path, config, values: dict[str, Any], writeId: str, cancelled=l
             connection.execute("BEGIN IMMEDIATE")
             structure = tableStructure(connection, config["table"])
             validateMappings(config, structure)
+            if any(k.casefold() == "write_id" and v != writeId for k, v in values.items()):
+                raise SqliteWriterError("E_SQLITE_VALUE", "write_id 必须与本次回执的 writeId 一致")
             if any(c["name"].casefold() == "write_id" for c in structure["columns"]) and not any(k.casefold() == "write_id" for k in values):
                 values = {**values, "write_id": writeId}
             if len(json.dumps(values, ensure_ascii=False, allow_nan=False).encode("utf-8")) > MAX_RECORD_BYTES:
@@ -338,6 +340,8 @@ def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path 
             target = inspect(path, config["table"], cancelled)
             if not target["exists"]:
                 raise SqliteWriterError("E_SQLITE_TARGET", "数据库不存在；请明确初始化")
+            if target['structure'] is None:
+                raise SqliteWriterError('E_SQLITE_SCHEMA', '目标表不存在；请明确初始化')
             validateMappings(config, target["structure"])
             if debugRoot is not None:
                 structure = target["structure"]
@@ -348,6 +352,8 @@ def freezeTargets(document, projectRoot: Path, protected=(), *, debugRoot: Path 
                     tested = inspect(template, config["table"], cancelled)
                     if not tested['exists']:
                         raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "专用测试库不存在")
+                    if tested['structure'] is None:
+                        raise SqliteWriterError('E_SQLITE_DEBUG_SCHEMA', '专用测试库缺少目标表')
                     validateMappings(config, tested['structure'])
                 if complexSchema and template is None:
                     raise SqliteWriterError("E_SQLITE_DEBUG_SCHEMA", "此结构需要专用测试库；不复制业务数据或回退正式库")

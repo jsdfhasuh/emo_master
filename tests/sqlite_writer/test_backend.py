@@ -67,6 +67,24 @@ def testRealRunnerSingleRecordFullJsonFalsyAndReceipt(tmp_path, value):
     assert [e['eventType'] for e in events].count('sqlite.write.started') == 1
 
 
+def testWriteIdMappingCannotDivergeFromCommittedReceipt(tmp_path):
+    from emo_master.core.contracts.sqlite_writer import parseConfig
+    path = makeDb(tmp_path / 'business.sqlite3')
+    identity = {'column': 'WRITE_ID', 'source': {'kind': 'context', 'key': 'writeId'},
+                'storageType': 'TEXT', 'missing': 'error'}
+    rows = [mapping(), identity]
+    parseConfig(config(path, rows))
+    receipt, _, _ = actualRun(path, 7, rows=rows)
+    with sqlite3.connect(path) as connection:
+        assert connection.execute('SELECT write_id FROM records').fetchone()[0] == receipt['writeId']
+    with pytest.raises(SqliteWriterError, match='write_id 为写入身份'):
+        parseConfig(config(path, [mapping(), {**identity, 'source': {'kind': 'constant', 'value': 'wrong'}}]))
+    with pytest.raises(SqliteWriterError, match='write_id 必须与本次回执'):
+        insert(path, config(path), {'value': 'no write', 'write_id': 'wrong'}, 'expected')
+    with sqlite3.connect(path) as connection:
+        assert connection.execute('SELECT count(*) FROM records').fetchone()[0] == 1
+
+
 class MissingSource:
     meta = SimpleNamespace(inputPorts={}, outputPorts={"value": {"type": "string", "required": False, "nullable": True}})
     def executeNode(self, inputs, params, context):

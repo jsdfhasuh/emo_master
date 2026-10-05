@@ -170,6 +170,9 @@ class NodeResultPanel(QWidget):
             self.origin.setText('尚未运行 · 明确启动后查看真实结果')
         unavailable = '所选任务没有此节点' if run and not definition else '本次尚未收到此节点的执行记录'
         self.values.setPlainText(portText(record['io']['outputs'], definition.get('outputPorts')) if record else unavailable)
+        if definition.get('operatorId') == 'vision.io.sqlite_writer' and record and record.get('sqliteReceipt'):
+            from emo_master.apps.designer.presenters.node_run_presenter import sqliteReceiptText
+            self.values.setPlainText(sqliteReceiptText(record['sqliteReceipt']))
         self.inputs.setPlainText(portText(record['io']['inputs'], definition.get('inputPorts')) if record else unavailable)
         execution = inspectionText(record, run.jobId if run else None, bool(nodeId))
         if view['history']:

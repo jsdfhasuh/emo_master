@@ -33,6 +33,8 @@ def measureNode(model, textWidth: Callable[[str], float] | None = None,
     )
     if operatorId in {"vision.flow.if", "vision.flow.switch"} or implicitBranch:
         header += math.ceil(lineHeight) + 4
+    if operatorId == 'vision.io.sqlite_writer':
+        header += math.ceil(lineHeight) + 6
     available = width - (76 if both else 56)
     if both:
         leftShare = available * left / max(1, left + right)

@@ -169,6 +169,7 @@ class WorkflowRunner:
                 inspection = startInspection(nodeInput)
                 self.publish("node.started", nodeContext, f"node started: {node.nodeId}",
                              payload={"ioSummary": inspection})
+                nodeDiagnostics = {}
                 try:
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation,
@@ -187,12 +188,23 @@ class WorkflowRunner:
                     code = getattr(err, "code", "E_EXEC_FAILED")
                     if isinstance(err, WorkflowExecutionError):
                         code = err.code
+                    failedDiagnostics = getattr(err, "diagnostics", {})
+                    if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
+                        # Cancellation after a returned commit does not undo the
+                        # external write. Preserve only this invocation's receipt;
+                        # the node and task still retain their failure/cancel state.
+                        from emo_master.core.contracts.sqlite_writer import receiptSummary
+                        identity = {"jobId": nodeContext.jobId, "workflowId": nodeContext.workflowId,
+                                    "workflowRunId": nodeContext.workflowRunId, "nodeId": node.nodeId,
+                                    "nodeRunId": nodeContext.nodeRunId}
+                        if receiptSummary(nodeDiagnostics["sqliteReceipt"], identity) is not None:
+                            failedDiagnostics = {**failedDiagnostics, "sqliteReceipt": nodeDiagnostics["sqliteReceipt"]}
                     failedPayload = {
                         "status": "FAILED",
                         "code": str(code),
                         "message": str(err),
                         "metrics": getattr(err, "metrics", {}),
-                        "diagnostics": getattr(err, "diagnostics", {}),
+                        "diagnostics": failedDiagnostics,
                         "ioSummary": inspection,
                     }
                     self.publish(

@@ -72,7 +72,10 @@ BEGIN IMMEDIATE 单条事务，在同一事务内再次读取真实 schema，按
 异步写入队列、自动重试、断线补发或重复 INSERT。
 
 receipt 包含 writeId、status、rowsAffected、可取得的自动整数主键、执行身份、elapsedMs、error。
-COMMITTED 只在 commit 返回成功后报告；SKIPPED 为明确禁用；FAILED 为已知失败；
+COMMITTED 只在 INSERT 实际影响恰好一行且 commit 返回成功后报告；
+触发器 RAISE(IGNORE) 或 ON CONFLICT IGNORE 导致零行时返回 E_SQLITE_NO_INSERT，
+回滚该事务（包括触发器副作用），按 stop/continue 策略返回 FAILED，不自动重试。
+SKIPPED 为明确禁用；FAILED 为已知失败；
 UNKNOWN 为无法确认提交，rowsAffected 为 null，不能等同回滚。
 回执丢失时数据库中可能已经存在记录；唯一 write_id 可用于人工核对，新调用不会自动复用/重试。
 强杀时未结束的写入由 Runtime 在 Job 终态事件之前补 UNKNOWN 节点诊断。
@@ -83,6 +86,8 @@ continue 正常返回 FAILED/UNKNOWN 回执且写 ERROR 日志，与“节点执
 原生节点结果面板按 Job/workflowRun/nodeRun 身份保留有界真实回执，并在原来的
 每节点 8 KiB/64 节点额度内显示提交状态、主键及错误，不用 JSON 字段数量代替回执。
 新增执行失败或下一次调用不会沿用旧 COMMITTED。
+已返回真实回执之后发生取消或结果收尾失败，node.failed 仍携带同一 Job/workflowRun/nodeRun
+的已确认回执；节点/任务取消状态与数据库提交状态分别呈现，不将已提交记录说成已回滚。
 
 ## 原生配置与项目编辑
 

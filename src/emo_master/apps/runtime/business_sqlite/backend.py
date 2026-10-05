@@ -269,6 +269,11 @@ def insert(path: Path, config, values: dict[str, Any], writeId: str, cancelled=l
                 cursor = connection.execute(sql, tuple(values.values()))
             else:
                 cursor = connection.execute(f"INSERT INTO {quoteIdentifier(config['table'])} DEFAULT VALUES")
+            # RAISE(IGNORE) and ON CONFLICT IGNORE may succeed without inserting
+            # anything. Reject that outcome before commit, including trigger
+            # side effects, rather than fabricate a one-record receipt.
+            if cursor.rowcount != 1:
+                raise SqliteWriterError("E_SQLITE_NO_INSERT", "数据库未插入一条记录；约束或触发器可能忽略了写入")
             guard.check()
             committing = True
             connection.commit()

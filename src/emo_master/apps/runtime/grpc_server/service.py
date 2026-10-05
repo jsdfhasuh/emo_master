@@ -98,6 +98,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self._closed = False
         self._closing = False
         self._closeStages: dict[str, str] = {}
+        from emo_master.apps.runtime.business_sqlite.backend import SqliteManagement
+        self.sqliteManagement = SqliteManagement()
         try:
             self.sqliteStore = SqliteStore(dbPath)
             self.sqliteStore.initialize()
@@ -105,6 +107,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 self.sqliteStore.markOrphanedJobsFailed()
             self.jobRepository = JobRepository(self.sqliteStore)
             self.eventStore = EventStore(self.sqliteStore)
+            from emo_master.apps.runtime.business_sqlite.outcomes import SqliteOutcomes
+            self.sqliteOutcomes = SqliteOutcomes(self.eventStore)
+            self.eventStore.beforeTerminal = self.sqliteOutcomes.beforeTerminal
+            self.eventStore.addSink(self.sqliteOutcomes.observe)
         except BaseException:
             self._runtimeDataLock.release()
             raise
@@ -244,6 +250,14 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
         return runtime_pb2.LoadProjectReply(ok=True, status="READY", message="project loaded")
 
+    def InspectSqliteTarget(self, request, context):  # type: ignore[override]
+        from emo_master.apps.runtime.business_sqlite.rpc import managementRpc
+        return managementRpc(self, request, context)
+
+    def InitializeSqliteTarget(self, request, context):  # type: ignore[override]
+        from emo_master.apps.runtime.business_sqlite.rpc import managementRpc
+        return managementRpc(self, request, context, creating=True)
+
     @_withProjectStateLock
     def ValidateProject(self, request, context):  # type: ignore[override]
         _ = context
@@ -374,6 +388,14 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             return runtime_pb2.StartJobReply(
                 ok=False, job_id="", status="FAILED", message=f"invalid inputs_json: {err}"
             )
+
+        try:
+            from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
+            if any(n.operatorId == "vision.io.sqlite_writer" for w in document.workflows.values() for n in w.nodes):
+                document = self.sqliteManagement.run(lambda cancelled: freezeTargets(document, Path(self.loadedProjectPath),
+                    (self.sqliteStore.dbPath, self.workspaceRoot, self.previewAssetStore.root), cancelled=cancelled), context)
+        except Exception as error:
+            return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
 
         capture = None
         presentation = getattr(self, "_presentationOwner", None)
@@ -1194,6 +1216,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self._maintenanceStop.set()
         errors = list(self.livePreviewManager.closeAll())
         self._closeStep("preview-producers", self.previewExecutor.close)
+        self._closeStep("sqlite-management", self.sqliteManagement.close, retryable=True)
         deadline = time.monotonic() + 2.0
         primary = None
         try:

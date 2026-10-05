@@ -17,7 +17,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rp
 from emo_master.apps.runtime.presentation.rpc import DisplayRpc
 
 
-LIMITS = {"control": 4, "events": 2, "display": 2, "camera": 1, "asset": 2, "bulk": 2}
+LIMITS = {"control": 4, "events": 2, "display": 2, "camera": 1, "asset": 2, "bulk": 2, "sqlite": 2}
 
 
 class RpcAbort(Exception):
@@ -221,7 +221,8 @@ class AioRuntimeServer:
             category = {"StreamJobEvents": "events", "Subscribe": "display",
                         "StreamOperatorPreviewFrames": "camera", "StreamPreviewAsset": "asset", "ReadAsset": "asset",
                         "Prepare": "bulk", "LoadProject": "bulk", "RunOperatorPreview": "bulk",
-                        "OpenOperatorPreviewSession": "bulk"}.get(name, "control")
+                        "OpenOperatorPreviewSession": "bulk", "InspectSqliteTarget": "sqlite",
+                        "InitializeSqliteTarget": "sqlite"}.get(name, "control")
             handler = getattr(implementation, name)
             if method.client_streaming:
                 wrapper = self._upload(handler)

@@ -1,0 +1,35 @@
+.......................................F...........                      [100%]
+================================== FAILURES ===================================
+__________ testTypedReadonlyInitializeNormalSpawnTwoRunsAndPreflight __________
+
+network = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000021FBEB7EA40>, <emo_master.apps.runtime.m...9E0>, <emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc.RuntimeServiceStub object at 0x0000021FBEDAAA70>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-929/testTypedReadonlyInitializeNor0')
+
+    def testTypedReadonlyInitializeNormalSpawnTwoRunsAndPreflight(network, tmp_path):
+        service, _, client, _ = network
+        root = tmp_path / '工程 中文 空格'
+        root.mkdir()
+        path = root / '业务.sqlite3'
+        columns = [{'name': 'value', 'storageType': 'JSON', 'nullable': True}]
+        preview = client.sqliteTarget('inspect', str(path), str(root), 'records', columns)
+        assert not preview.exists and preview.preview_sql.startswith('CREATE TABLE') and not path.exists()
+        assert preview.runtime_host and preview.resolved_path == str(path)
+        with pytest.raises(RuntimeClientError, match='明确确认'):
+            client.sqliteTarget('initialize', str(path), str(root), 'records', columns)
+        initialized = client.sqliteTarget('initialize', str(path), str(root), 'records', columns, confirmed=True)
+        assert initialized.exists and len(initialized.columns) == 3
+        payload = project()
+        payload['workflows']['main']['nodes'][0]['params']['databasePath'] = path.name
+        (root / 'project.json').write_text(json.dumps(payload), encoding='utf-8')
+        assert client.loadProject(str(root)).ok
+        identities = []
+        for value in ['A 实际数据', 'B 不同数据']:
+            started = client.startJob('sqlite-test', inputs={'value': value})
+            assert started.ok, started.message
+>           assert waitForTerminal(service, started.job_id, timeout=15).status == 'COMPLETED'
+E           TypeError: waitForTerminal() got an unexpected keyword argument 'timeout'
+
+tests\sqlite_writer\test_rpc.py:61: TypeError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_rpc.py::testTypedReadonlyInitializeNormalSpawnTwoRunsAndPreflight
+1 failed, 50 passed in 9.77s

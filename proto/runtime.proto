@@ -405,6 +405,8 @@ message ResetGlobalCounterReply {
 }
 
 service RuntimeService {
+  rpc InspectSqliteTarget (InspectSqliteTargetRequest) returns (SqliteTargetReply);
+  rpc InitializeSqliteTarget (InitializeSqliteTargetRequest) returns (SqliteTargetReply);
   rpc OpenRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
   rpc RenewRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
   rpc CloseRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
@@ -432,6 +434,54 @@ service RuntimeService {
   rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
   rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
   rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
+}
+
+message SqliteColumnPlan {
+  string name = 1;
+  string storage_type = 2;
+  bool nullable = 3;
+  bool has_default = 4;
+  string default_json = 5;
+}
+
+message InspectSqliteTargetRequest {
+  string database_path = 1;
+  string project_directory = 2;
+  string table = 3;
+  repeated SqliteColumnPlan proposed_columns = 4;
+}
+
+message InitializeSqliteTargetRequest {
+  string database_path = 1;
+  string project_directory = 2;
+  string table = 3;
+  repeated SqliteColumnPlan columns = 4;
+  bool confirmed = 5;
+}
+
+message SqliteColumnInfo {
+  string name = 1;
+  string declared_type = 2;
+  string affinity = 3;
+  bool nullable = 4;
+  bool has_default = 5;
+  string default_sql = 6;
+  int32 primary_key = 7;
+  bool generated = 8;
+  bool auto_primary_key = 9;
+}
+
+message SqliteTargetReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_host = 4;
+  string resolved_path = 5;
+  bool exists = 6;
+  repeated string tables = 7;
+  repeated SqliteColumnInfo columns = 8;
+  string structure_json = 9;
+  string preview_sql = 10;
 }
 
 // Opt-in P2 service. Existing RuntimeService wire contract is unchanged.

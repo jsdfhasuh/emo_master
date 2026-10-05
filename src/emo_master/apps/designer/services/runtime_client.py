@@ -497,6 +497,27 @@ class RuntimeClient:
 
         return self._call("UploadPreviewImage", chunks())
 
+    def sqliteTarget(self, action: str, databasePath: str, projectDirectory: str,
+                     table: str = "", columns=None, *, confirmed=False):
+        method = {"inspect": "InspectSqliteTarget", "initialize": "InitializeSqliteTarget"}[action]
+        if not callable(getattr(self.runtimeService, method, None)):
+            raise RuntimeClientError("E_SQLITE_UNSUPPORTED", "旧 Runtime 不支持 SQLite 目标检查/初始化")
+        wire = [runtime_pb2.SqliteColumnPlan(name=c["name"], storage_type=c["storageType"],
+            nullable=c.get("nullable", False), has_default="default" in c,
+            default_json=json.dumps(c["default"], ensure_ascii=False, allow_nan=False) if "default" in c else "") for c in columns or []]
+        fields = dict(database_path=databasePath, project_directory=projectDirectory, table=table)
+        request = (runtime_pb2.InitializeSqliteTargetRequest(**fields, columns=wire, confirmed=confirmed)
+                   if action == "initialize" else runtime_pb2.InspectSqliteTargetRequest(**fields, proposed_columns=wire))
+        try:
+            reply = self._call(method, request)
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_SQLITE_UNSUPPORTED", "旧 Runtime 不支持 SQLite 管理接口") from error
+            raise
+        if not getattr(reply, "ok", False):
+            raise RuntimeClientError(str(reply.code), str(reply.message))
+        return reply
+
     def inspectionSession(self, action: str, projectId: str, sessionId: str = ""):
         method = {"open": "OpenRunInspectionSession", "renew": "RenewRunInspectionSession",
                   "close": "CloseRunInspectionSession"}[action]

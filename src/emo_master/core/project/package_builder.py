@@ -96,12 +96,12 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
         "runtimeMin": "0.2.0",
         "runtimeMax": "1.x",
         "requiredOperators": dependencies,
-        "checksum": _collectChecksums(projectDir, projectJsonBytes),
+        "checksum": _collectChecksums(projectDir, projectJsonBytes, payload),
     }
 
     with zipfile.ZipFile(packagePath, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for filePath in projectDir.rglob("*"):
-            if filePath.is_file():
+            if filePath.is_file() and not _databaseFile(filePath, projectDir, payload):
                 relativePath = filePath.relative_to(projectDir).as_posix()
                 if relativePath in {
                     "project.json",
@@ -119,10 +119,10 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
     return packagePath
 
 
-def _collectChecksums(projectDir: Path, projectJsonBytes: bytes) -> dict[str, str]:
+def _collectChecksums(projectDir: Path, projectJsonBytes: bytes, payload=None) -> dict[str, str]:
     checksums: dict[str, str] = {}
     for filePath in projectDir.rglob("*"):
-        if filePath.is_file():
+        if filePath.is_file() and not _databaseFile(filePath, projectDir, payload or {}):
             relativePath = filePath.relative_to(projectDir).as_posix()
             if relativePath in {
                 "project.json",
@@ -134,6 +134,26 @@ def _collectChecksums(projectDir: Path, projectJsonBytes: bytes) -> dict[str, st
             checksums[relativePath] = hashlib.sha256(filePath.read_bytes()).hexdigest()
     checksums["project.json"] = hashlib.sha256(projectJsonBytes).hexdigest()
     return checksums
+
+
+def _databaseFile(path: Path, root: Path, payload: dict) -> bool:
+    # Business data and SQLite sidecars must not become project delivery assets.
+    name = path.name.casefold()
+    base = name.removesuffix('-wal').removesuffix('-shm').removesuffix('-journal')
+    if Path(base).suffix in {'.sqlite', '.sqlite3', '.db', '.db3'}:
+        return True
+    for workflow in payload.get('workflows', {}).values():
+        for node in workflow.get('nodes', []):
+            if node.get('operatorId') != 'vision.io.sqlite_writer':
+                continue
+            for raw in (node.get('params', {}).get('databasePath'), node.get('params', {}).get('debugDatabasePath')):
+              if isinstance(raw, str) and raw:
+                target = Path(raw)
+                if not target.is_absolute():
+                    target = root / target
+                if path.resolve() in {Path(str(target.resolve()) + ending) for ending in ('', '-wal', '-shm', '-journal')}:
+                    return True
+    return False
 
 
 def _requiredOperators(payload: dict[str, object]) -> list[object]:

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping
 
@@ -335,6 +336,12 @@ class WorkflowRunner:
             "globalCounters": self.globalCounters,
             "mappedOutputs": dict(boundValues or {}),
         }
+        if node.operatorId == "vision.io.sqlite_writer":
+            from emo_master.apps.runtime.business_sqlite.backend import insert
+            runtimeContext["sqliteInsert"] = insert
+            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
+            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
+                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
         try:
             result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
         except Exception as err:

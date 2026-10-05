@@ -42,7 +42,7 @@ def quoteIdentifier(value: str) -> str:
 def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
     if type(params.get("configVersion")) is not int or params["configVersion"] != 1:
         raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的 SQLite 配置版本")
-    if set(params) - {"configVersion", "databasePath", "table", "mappings", "failurePolicy"}:
+    if set(params) - {"configVersion", "databasePath", "debugDatabasePath", "table", "mappings", "failurePolicy"}:
         raise SqliteWriterError("E_SQLITE_CONFIG", "存在不支持的 SQLite 参数")
     path = params.get("databasePath")
     if not isinstance(path, str) or not path.strip():
@@ -87,8 +87,14 @@ def parseConfig(params: Mapping[str, Any]) -> dict[str, Any]:
                 raise SqliteWriterError("E_SQLITE_CONFIG", "不支持的数据来源")
         except SqliteWriterError as error:
             raise SqliteWriterError(error.code, str(error), index) from error
-    return {"configVersion": 1, "databasePath": path, "table": table,
-            "mappings": deepcopy(rows), "failurePolicy": failure}
+    result = {"configVersion": 1, "databasePath": path, "table": table,
+              "mappings": deepcopy(rows), "failurePolicy": failure}
+    if "debugDatabasePath" in params:
+        debugPath = params["debugDatabasePath"]
+        if not isinstance(debugPath, str) or not debugPath.strip():
+            raise SqliteWriterError("E_SQLITE_TARGET", "专用测试库路径必须为非空文字")
+        result["debugDatabasePath"] = debugPath
+    return result
 
 
 def acceptsSource(spec: object, storage: str) -> bool:

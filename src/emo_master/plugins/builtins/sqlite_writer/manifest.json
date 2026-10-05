@@ -11,6 +11,7 @@
   "paramSchema": {"type": "object", "properties": {
     "configVersion": {"type": "integer", "default": 1},
     "databasePath": {"type": "string", "default": ""},
+    "debugDatabasePath": {"type": "string"},
     "table": {"type": "string", "default": "records"},
     "mappings": {"type": "array", "items": {"type": "object"}, "default": []},
     "failurePolicy": {"type": "string", "enum": ["stop", "continue"], "default": "stop"}

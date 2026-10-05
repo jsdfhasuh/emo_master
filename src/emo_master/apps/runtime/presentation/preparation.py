@@ -68,6 +68,10 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
             for node in workflow.nodes:
                 if node.kind == "operator":
                     node.params = parameters[workflowId][node.nodeId]
+        from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
+        document = freezeTargets(document, resourceRoot.resolve(),
+            (Path(snapshot.runtimeDbPath), destination, root / "jobs", root / "staging"),
+            debugRoot=Path(snapshot.runtimeDbPath).parent / "business-sqlite" if mode == "debug" else None)
         WorkflowCompiler(operatorRegistry=registry).compile(document)
         presentation = document.presentation
         used = {key for key, source in presentation.dataSources.items()
@@ -94,4 +98,9 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
         return PreparedProject(snapshot, projectPath, json.dumps({"sources": sources, "scopes": scopes}), tuple(files))
     except BaseException:
         shutil.rmtree(destination)
+        if mode == "debug":
+            stateRoot = Path(snapshot.runtimeDbPath).parent.resolve()
+            if (stateRoot.is_relative_to(root.resolve()) and stateRoot.name == snapshot.snapshotId
+                    and stateRoot.parent.name == "debug"):
+                shutil.rmtree(stateRoot, ignore_errors=True)
         raise

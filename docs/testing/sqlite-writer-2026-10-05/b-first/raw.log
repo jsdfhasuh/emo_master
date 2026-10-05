@@ -1,0 +1,96 @@
+......FF.......................................                          [100%]
+================================== FAILURES ===================================
+________________ testMissingNullAndOmissionDefaultAreDifferent ________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-928/testMissingNullAndOmissionDefa0')
+
+    def testMissingNullAndOmissionDefaultAreDifferent(tmp_path):
+        path = makeDb(tmp_path / "business.sqlite3", columns=[{"name": "value", "storageType": "TEXT", "nullable": True, "default": "db default"}])
+        payload = project()
+        payload['workflows']['main']['nodes'].append({'nodeId': 'optional', 'operatorId': 'test.optional',
+            'outputPorts': {'value': {'type': 'string', 'required': False, 'nullable': True}}})
+        for missing in ('default', 'null'):
+            row = mapping(node='optional', storage='TEXT', missing=missing)
+>           receipt, _, _ = actualRun(path, 'ignored', rows=[row], payload=payload, registry={'test.optional': MissingSource})
+
+tests\sqlite_writer\test_backend.py:81: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_backend.py:34: in actualRun
+    compiled = WorkflowCompiler(operators).compile(payload)
+src\emo_master\core\workflow\compiler.py:44: in compile
+    else ProjectDocument.model_validate(migrateProjectPayload(project))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+enablePresentation = False
+
+    def migrateProjectPayload(
+        payload: dict[str, object], *, enablePresentation: bool = False
+    ) -> dict[str, object]:
+        """Validate before migration; preserve 2.1 unless page editing is explicit."""
+        if enablePresentation and payload.get("schemaVersion") != "2.2":
+            from emo_master.core.project.models import ProjectDocument
+            from emo_master.core.presentation.models import Presentation
+            from emo_master.core.project.resources import ResourcePlan
+    
+            upgraded = migrateProjectPayload(payload)
+            # Legacy migration must also pass the original strict project contract.
+            upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+            upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+                            resources=ResourcePlan().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        source = deepcopy(payload)
+        if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+            # Merely relabelling a legacy-shaped document is not the explicit 2.2
+            # migration. Preserve the public unsupported-schema diagnostic prefix.
+            raise ValueError(
+                "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+                "presentation and resources are required"
+            )
+        if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2"}:
+            # v2.1 is already the canonical source. Validate it before returning so
+            # unknown fields and invalid kinds cannot disappear in normalization.
+            from emo_master.core.project.models import ProjectDocument
+    
+>           return ProjectDocument.model_validate(source).model_dump(mode="python")
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E           workflows.main.nodes.3.outputPorts.value
+E             Input should be a valid string [type=string_type, input_value={'type': 'string', 'requi...False, 'nullable': True}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/string_type
+
+src\emo_master\core\project\migration.py:88: ValidationError
+__________ testSchemaRequiredGeneratedAffinityAndTransactionRecheck ___________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-928/testSchemaRequiredGeneratedAff0')
+
+    def testSchemaRequiredGeneratedAffinityAndTransactionRecheck(tmp_path):
+        path = tmp_path / 'business.sqlite3'
+        with sqlite3.connect(path) as connection:
+            connection.execute('CREATE TABLE records (value TEXT, optional INTEGER, derived TEXT GENERATED ALWAYS AS (value))')
+        spec = config(path)
+        validateMappings(spec, inspect(path, 'records')['structure'])
+        insert(path, spec, {'value': 'A'}, 'a')
+        with sqlite3.connect(path) as connection:
+            connection.execute("ALTER TABLE records ADD COLUMN mandatory TEXT NOT NULL DEFAULT 'default'")
+        insert(path, spec, {'value': 'B'}, 'b')
+        with sqlite3.connect(path) as connection:
+            connection.execute('ALTER TABLE records DROP COLUMN mandatory')
+            connection.execute('DELETE FROM records')
+            connection.execute('ALTER TABLE records ADD COLUMN mandatory TEXT NOT NULL')
+        with pytest.raises(SqliteWriterError, match='未映射必填列'):
+            insert(path, spec, {'value': 'C'}, 'c')
+        bad = config(path, rows=[mapping(column='derived')])
+        with pytest.raises(SqliteWriterError, match='生成列'):
+            validateMappings(bad, inspect(path, 'records')['structure'])
+        bad = config(path, rows=[mapping(storage='INTEGER')])
+        with pytest.raises(SqliteWriterError, match='亲和性'):
+            validateMappings(bad, inspect(path, 'records')['structure'])
+        with sqlite3.connect(path) as connection:
+>           connection.execute('ALTER TABLE records DROP COLUMN value')
+E           sqlite3.OperationalError: error in table records after drop column: no such column: value
+
+tests\sqlite_writer\test_backend.py:112: OperationalError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_backend.py::testMissingNullAndOmissionDefaultAreDifferent
+FAILED tests/sqlite_writer/test_backend.py::testSchemaRequiredGeneratedAffinityAndTransactionRecheck
+2 failed, 45 passed in 13.49s

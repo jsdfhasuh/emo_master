@@ -18,6 +18,7 @@ class EventStore:
         self._terminalJobs: set[str] = set()
         self._terminalSequences: dict[str, int] = {}
         self._sinks: list[Callable[[RuntimeEvent], object]] = []
+        self.beforeTerminal: Callable[[str], None] | None = None
         # follow() checks retained and persisted history while waiting on the
         # same condition.  A re-entrant lock avoids self-deadlocking there.
         self._condition = threading.Condition(threading.RLock())
@@ -43,6 +44,11 @@ class EventStore:
         payloadJson = json.dumps(payload or {}, ensure_ascii=True, default=str)
         timestamp = int(time.time() * 1000) if timestampMs is None else timestampMs
         with self._condition:
+            # Optional owner hook publishes unresolved side-effect diagnostics
+            # before a terminal cursor becomes visible. Legacy stores have none.
+            beforeTerminal = getattr(self, "beforeTerminal", None)
+            if eventType in {"job.completed", "job.failed", "job.aborted"} and callable(beforeTerminal):
+                beforeTerminal(jobId)
             iterationPathJson = json.dumps(list(iterationPath), ensure_ascii=True)
             append = getattr(self.persistence, "appendJobEvent", None) if self.persistence is not None else None
             if self.persistence is not None:

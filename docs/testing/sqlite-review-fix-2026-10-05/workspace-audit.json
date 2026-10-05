@@ -1,0 +1,20 @@
+{
+  "head": "933c424ebfa07a56c71a90c438656fb39b5d1af9",
+  "sourceDigest": "3c470da76a690f8ad7b561d8b0faac4cbdbd3056015fc7976d29480729ddeb77",
+  "matchesFinalCiCode": true,
+  "originalDirtyPaths": 160,
+  "allOriginalFilesByteIdentical": true,
+  "changedOriginalFiles": [],
+  "backup": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-fix-20261005-124811-0992366",
+  "finalCi": {
+    "exitCode": 1,
+    "passed": 2843,
+    "failed": 1,
+    "skipped": 8,
+    "subtestsPassed": 28,
+    "baselineFailures": [
+      "tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+    ],
+    "newFailures": []
+  }
+}

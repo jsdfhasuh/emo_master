@@ -1,0 +1,53 @@
+{
+  "recordedAt": "2026-10-05T12:16:33.146954+08:00",
+  "head": "3fe04720f3702f9ffb923e3c7f9abb181ac145c6",
+  "sourceDigest": "e2b20b0538025baa943f087de0ea394db99d96c1081a0171cb2e73be0bf6dc6d",
+  "sourceUnchangedDuringReview": true,
+  "dirtyUnchangedDuringReview": true,
+  "originalDirtyPaths": 160,
+  "originalFilesStillByteIdentical": 159,
+  "stagedFiles": 0,
+  "regressionExitCode": 0,
+  "regression": "74 passed in 28.03s",
+  "newConfirmedFindings": 5,
+  "counterexampleRuns": 7,
+  "fullCiThisReview": "NOT_RUN",
+  "findings": [
+    {
+      "id": "R1",
+      "priority": "P1",
+      "case": [
+        "trigger_ignore",
+        "unique_ignore"
+      ],
+      "location": "src/emo_master/plugins/builtins/sqlite_writer/operator.py:98-99"
+    },
+    {
+      "id": "R2",
+      "priority": "P1",
+      "case": "cancel_after_commit",
+      "location": "src/emo_master/apps/runtime/workflow/runner.py:185"
+    },
+    {
+      "id": "R3",
+      "priority": "P1",
+      "case": "debug_two_tables",
+      "location": "src/emo_master/apps/runtime/business_sqlite/backend.py:361"
+    },
+    {
+      "id": "R4",
+      "priority": "P2",
+      "case": [
+        "transient_cache_reference",
+        "real_image_cache_reference"
+      ],
+      "location": "src/emo_master/core/contracts/sqlite_writer.py:174"
+    },
+    {
+      "id": "R5",
+      "priority": "P2",
+      "case": "unicode_metadata_collision",
+      "location": "src/emo_master/apps/runtime/business_sqlite/backend.py:165"
+    }
+  ]
+}

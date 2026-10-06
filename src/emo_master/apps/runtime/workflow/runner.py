@@ -54,6 +54,7 @@ class WorkflowRunner:
         previewSnapshotStore: object | None = None,
         globalCounters: object | None = None,
         resultCollector: Any = None,
+        retainOperators: bool = False,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -63,6 +64,7 @@ class WorkflowRunner:
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
         self.resultCollector = resultCollector
+        self.retainOperators = retainOperators
         self.captureErrors = 0
         self._operatorLogManager = OperatorLogManager(
             self.publish if eventPublisher is not None else None
@@ -95,7 +97,7 @@ class WorkflowRunner:
                 inputs,
                 context,
                 cancellation,
-                disposeWhenComplete=isRootCall,
+                disposeWhenComplete=isRootCall and not self.retainOperators,
             )
             if self.resultCollector is not None:
                 self._capture("output", context, result.outputs, workflow=True)
@@ -482,6 +484,17 @@ class WorkflowRunner:
             failedNodeIds[0] if failedNodeIds else "",
             diagnostics={"cleanupErrors": cleanupErrors},
         )
+
+    def closeSession(self, context: RunContext, primaryError: Exception | None = None) -> None:
+        """The retained-session owner calls this once before its Job terminal."""
+        cleanupError = self.disposeOperators()
+        self._operatorLogManager.finalize()
+        if cleanupError is not None:
+            self._publishCleanupFailure(context, cleanupError)
+            if primaryError is None or getattr(primaryError, "code", "") == "E_CANCELLED":
+                # A requested stop is not a successful release if disposal fails.
+                raise cleanupError from primaryError
+            self._attachCleanupDiagnostics(primaryError, cleanupError)
 
     @staticmethod
     def _attachCleanupDiagnostics(

@@ -59,6 +59,9 @@ class JobProcessSpec:
     presentation: dict | None = None
     legacySnapshotPolicy: str = "ALL"
     heartbeatCell: HeartbeatCell | None = field(default=None, repr=False, compare=False)
+    continuous: bool = False
+    cycleIntervalMs: int = 100
+    copyArtifacts: bool = True
 
     @property
     def inputs_json(self) -> str:

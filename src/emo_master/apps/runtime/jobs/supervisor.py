@@ -75,7 +75,9 @@ class JobSupervisor:
                 raise ValueError(f"duplicate job id: {spec.jobId}")
 
             cancelEvent = self._context.Event()
-            eventQueue = self._context.Queue()
+            # Continuous diagnostics must backpressure the producer, not accumulate
+            # an unbounded feeder backlog that outlives cancellation and retention.
+            eventQueue = self._context.Queue(maxsize=64) if spec.continuous else self._context.Queue()
             heartbeatTimeoutMs = max(100, spec.heartbeatTimeoutMs or self.heartbeatTimeoutMs)
             heartbeatIntervalMs = min(
                 max(50, spec.heartbeatIntervalMs),

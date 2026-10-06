@@ -145,7 +145,7 @@ def verifyContents(files):
             any(value != '1.0' for value in compatibility.get('components', {}).values())):
         raise ValueError('incompatible package format / application / plugin / component')
     document = ProjectDocument.model_validate(readJson(files['project.json']))
-    if document.resources is None:
+    if document.schemaVersion != '2.2' or document.resources is None:
         raise ValueError('2.2 resources required')
     declared = {'project.json', 'manifest.json'} | {i.path for i in document.resources.items.values()}
     if files.keys() != declared:

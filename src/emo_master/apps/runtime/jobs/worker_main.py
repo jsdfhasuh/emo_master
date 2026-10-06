@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
+import queue
 import threading
+import time
 
 from emo_master import __version__
 from emo_master.apps.runtime.context.global_counters import ProjectGlobalCounters
@@ -30,7 +33,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
         # close. Cell pulses continue until the existing feeder flush finishes.
         with heartbeatEmissionLock:
             heartbeatEventsStopped.set()
-            _put(eventQueue, event)
+        _put(eventQueue, event)
 
     heartbeatThread = threading.Thread(
         target=heartbeatLoop,
@@ -67,21 +70,21 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             compiledProject=compiled,
             operatorRegistry=registry,
             eventPublisher=publisher,
-            artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)),
+            artifactStore=ArtifactStore(Path(spec.jobWorkspacePath)) if spec.copyArtifacts else None,
             previewSnapshotStore=(PreviewSnapshotWriter(Path(spec.jobWorkspacePath),
                 jobId=spec.jobId, projectRevision=document.project.revision)
                 if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
             globalCounters=globalCounters,
             resultCollector=_collector(spec, eventQueue),
+            retainOperators=spec.continuous,
         )
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
-        context = RunContext.root(
-            spec.jobId,
-            spec.workflowId,
-            spec.jobWorkspacePath,
-            projectId=spec.projectId,
-        )
-        runner.run(spec.workflowId, inputs, context, token)
+        if spec.continuous:
+            _runContinuous(runner, spec, inputs, token, cancelEvent)
+        else:
+            context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+                                      projectId=spec.projectId)
+            runner.run(spec.workflowId, inputs, context, token)
         publishTerminal({"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
     except CancellationRequested as err:
         publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
@@ -117,6 +120,27 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
                 heartbeatThread.join(timeout=1.0)
 
 
+def _runContinuous(runner, spec, inputs, token, cancelEvent):
+    context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+                              projectId=spec.projectId)
+    primaryError = None
+    try:
+        while True:
+            token.raise_if_cancelled()
+            started = time.monotonic()
+            context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+                                      projectId=spec.projectId)
+            runner.run(spec.workflowId, deepcopy(inputs), context, token)
+            delay = max(0.0, spec.cycleIntervalMs / 1000.0 - (time.monotonic() - started))
+            if cancelEvent.wait(delay):
+                token.raise_if_cancelled()
+    except Exception as error:
+        primaryError = error
+        raise
+    finally:
+        runner.closeSession(context, primaryError)
+
+
 def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopEvent: threading.Event, intervalMs: int, heartbeatCell: HeartbeatCell | None = None, eventsStopped: threading.Event | None = None, emissionLock=None) -> None:
     interval = max(0.05, intervalMs / 1000.0)
     if eventsStopped is None:
@@ -128,7 +152,15 @@ def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopE
             heartbeatCell.publish()
         with emissionLock:
             if not eventsStopped.is_set():
-                _put(eventQueue, {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()})
+                event = {"eventType": "process.heartbeat", "jobId": jobId, "projectId": projectId, "workflowId": workflowId, "pid": _pid()}
+                if heartbeatCell is None:
+                    _put(eventQueue, event)
+                else:
+                    # Diagnostic backpressure must not pause authoritative cell pulses.
+                    try:
+                        eventQueue.put_nowait(event)
+                    except queue.Full:
+                        pass
         if stopEvent.wait(interval):
             return
 

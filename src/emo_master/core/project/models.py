@@ -27,6 +27,13 @@ class RuntimeSettings(StrictModel):
     eventRetentionPerJob: int = Field(default=10000, ge=1)
 
 
+class ProductionSettings(StrictModel):
+    autoStart: bool = False
+    mode: Literal["single", "continuous"] = "single"
+    cycleIntervalMs: int = Field(default=100, ge=1)
+    inputs: dict[str, object] = Field(default_factory=dict)
+
+
 class WorkflowNode(StrictModel):
     nodeId: str
     kind: Literal[
@@ -71,7 +78,7 @@ class ProjectDevices(StrictModel):
 
 
 class ProjectDocument(StrictModel):
-    schemaVersion: Literal["2.0", "2.1", "2.2"]
+    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -81,22 +88,30 @@ class ProjectDocument(StrictModel):
     devices: ProjectDevices = Field(default_factory=ProjectDevices)
     presentation: Presentation | None = None
     resources: ResourcePlan | None = None
+    production: ProductionSettings | None = None
 
     @model_validator(mode="after")
     def validateVersion(self) -> "ProjectDocument":
-        if self.schemaVersion != "2.2":
+        if self.schemaVersion not in {"2.2", "2.3"}:
             if {"presentation", "resources"} & self.model_fields_set:
                 raise ValueError("presentation/resources require explicit project 2.2 migration")
         elif self.presentation is None or self.resources is None:
-            raise ValueError("project 2.2 requires presentation and resources")
+            raise ValueError("project 2.2/2.3 requires presentation and resources")
+        if self.schemaVersion == "2.3":
+            if self.production is None:
+                raise ValueError("project 2.3 requires production settings")
+        elif "production" in self.model_fields_set:
+            raise ValueError("production requires explicit project 2.3 migration")
         return self
 
     @model_serializer(mode="wrap")
     def serializeVersion(self, handler):
         payload = handler(self)
-        if self.schemaVersion != "2.2":
+        if self.schemaVersion not in {"2.2", "2.3"}:
             payload.pop("presentation", None)
             payload.pop("resources", None)
+        if self.schemaVersion != "2.3":
+            payload.pop("production", None)
         return payload
 
     @model_validator(mode="after")

@@ -153,7 +153,7 @@ class ProjectController:
         except ValueError as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') == '2.2':
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
             loaded, runtimePath = True, str(projectDir)

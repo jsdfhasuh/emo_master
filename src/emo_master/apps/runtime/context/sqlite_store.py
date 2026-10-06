@@ -22,6 +22,7 @@ from emo_master.apps.runtime.events.models import RuntimeEvent
 class SqliteStore:
     def __init__(self, dbPath: Path) -> None:
         self.dbPath = dbPath
+        self.jobEventRetention: int | None = None
         self.dbPath.parent.mkdir(parents=True, exist_ok=True)
         self._idleConnection: sqlite3.Connection | None = None
         self._idleConnectionReady = False
@@ -270,6 +271,13 @@ class SqliteStore:
                     timestampMs,
                 ),
             )
+            limit = self.jobEventRetention
+            if limit and (sequence % min(100, limit) == 0
+                          or eventType in {"job.completed", "job.failed", "job.aborted"}):
+                # Production diagnostics are a rolling window, not the product
+                # result archive. Keep the high cursor so sequence never resets.
+                connection.execute("DELETE FROM jobEvents WHERE jobId = ? AND sequence <= ?",
+                                   (jobId, sequence - limit))
             connection.commit()
         return sequence
 

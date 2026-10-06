@@ -58,10 +58,17 @@ def utc_now_iso() -> str:
 
 
 def migrateProjectPayload(
-    payload: dict[str, object], *, enablePresentation: bool = False
+    payload: dict[str, object], *, enablePresentation: bool = False,
+    enableProduction: bool = False,
 ) -> dict[str, object]:
     """Validate before migration; preserve 2.1 unless page editing is explicit."""
-    if enablePresentation and payload.get("schemaVersion") != "2.2":
+    if enableProduction and payload.get("schemaVersion") != "2.3":
+        from emo_master.core.project.models import ProjectDocument, ProductionSettings
+
+        upgraded = migrateProjectPayload(payload, enablePresentation=True)
+        upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
+        return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+    if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.presentation.models import Presentation
         from emo_master.core.project.resources import ResourcePlan
@@ -80,7 +87,7 @@ def migrateProjectPayload(
             "unsupported project schemaVersion: legacy-shaped '2.2' document; "
             "presentation and resources are required"
         )
-    if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2"}:
+    if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3"}:
         # v2.1 is already the canonical source. Validate it before returning so
         # unknown fields and invalid kinds cannot disappear in normalization.
         from emo_master.core.project.models import ProjectDocument

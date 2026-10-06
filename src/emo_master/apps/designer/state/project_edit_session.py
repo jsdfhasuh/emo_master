@@ -31,7 +31,7 @@ class ProjectEditSession:
         self._editing = False
         self._saved = self._signature()
         # An explicit upgrade is a change until persisted, including an empty page set.
-        if enablePresentation and payload.get("schemaVersion") != "2.2":
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
             self._saved = "unpersisted-2.2-upgrade"
         from emo_master.apps.designer.state.presentation_store import PresentationStore
 

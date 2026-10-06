@@ -78,6 +78,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         maxConcurrentJobs: int = 2,
         workspaceRoot: Path | None = None,
         logDirectory: Path | None = None,
+        productionMode: bool = False,
     ) -> None:
         explicitDbPath = dbPath is not None
         if dbPath is None:
@@ -89,6 +90,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 else dbPath.parent / "jobs"
             )
         self.workspaceRoot = workspaceRoot
+        self.productionMode = productionMode
         self.workspaceRoot.mkdir(parents=True, exist_ok=True)
         lockName = self.workspaceRoot.name or "runtime"
         self._runtimeDataLock = RuntimeDataLock(
@@ -224,6 +226,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 raise ValueError("project file must contain an object")
             canonical = migrateProjectPayload(rawPayload)
             document = ProjectDocument.model_validate(canonical)
+            if self.productionMode:
+                from emo_master.core.project.runtime_directory import prepareRuntimeProject
+                document = prepareRuntimeProject(document, projectFile.parent,
+                    self.pluginScanResult.activeOperators,
+                    protectedPaths=(*self.sqliteProtectedPaths(), self.operationalLogWriter.directory))
             WorkflowCompiler(operatorRegistry=self.pluginScanResult.activeOperators).compile(
                 document,
                 pluginRootPaths=self.pluginRootPaths,
@@ -245,6 +252,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self.loadedProjectPath, self.loadedProjectId
         )
         self.eventStore.retentionPerJob = document.runtime.eventRetentionPerJob
+        if self.productionMode:
+            self.sqliteStore.jobEventRetention = document.runtime.eventRetentionPerJob
         self.jobSupervisor.maxConcurrentJobs = document.runtime.maxConcurrentJobs
         self.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
         self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
@@ -478,6 +487,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
                     runtimeDbPath=str(self.sqliteStore.dbPath),
                     legacySnapshotPolicy=legacyPolicy,
+                    continuous=(self.productionMode and document.production is not None
+                                and document.production.mode == "continuous"),
+                    cycleIntervalMs=(document.production.cycleIntervalMs if document.production else 100),
+                    copyArtifacts=not self.productionMode,
                 )
                 if capture is not None:
                     from dataclasses import replace

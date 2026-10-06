@@ -92,6 +92,8 @@ class WorkflowStore:
              "resources": document.resources.model_dump()}
             if document.presentation is not None and document.resources is not None else {}
         )
+        if document.production is not None:
+            self.projectExtensions["production"] = document.production.model_dump()
         self.workflowOrder = list(document.workflowOrder)
         self.entryWorkflowId = document.entryWorkflowId
         self.activeWorkflowId = self.entryWorkflowId
@@ -548,7 +550,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": "2.2" if self.projectExtensions else "2.1",
+            "schemaVersion": ("2.3" if "production" in self.projectExtensions
+                              else "2.2" if self.projectExtensions else "2.1"),
             **deepcopy(self.projectExtensions),
             "project": project,
             "entryWorkflowId": self.entryWorkflowId,

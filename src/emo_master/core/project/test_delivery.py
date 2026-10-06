@@ -80,7 +80,8 @@ def portableDocument(document):
 
 def validateTestProject(document, root, registry):
     """Same formal release snapshot and compiler as Runtime, without execution."""
-    if document.resources is None or document.presentation is None or not document.presentation.pages:
+    if (document.schemaVersion != '2.2' or document.resources is None
+            or document.presentation is None or not document.presentation.pages):
         raise ValueError('nonempty project 2.2 pages required')
     if document.devices.bindings:
         raise ValueError('device configuration is not part of a local test delivery')

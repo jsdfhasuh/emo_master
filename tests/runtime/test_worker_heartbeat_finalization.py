@@ -60,6 +60,8 @@ class _DrainQueue:
         assert not self.closed, "heartbeat enqueue raced queue close"
         self.events.append(event)
 
+    put_nowait = put
+
     def close(self):
         self.closed = True
 
@@ -117,6 +119,58 @@ def testCellPulsesThroughFeederDrainWithoutPostTerminalEvents(monkeypatch, tmp_p
         worker.join(2)
     assert not worker.is_alive()
     assert bool(errors) is (outcome == "failed")
+    assert not any(thread.name == "runtime-heartbeat-job-stop" for thread in threading.enumerate())
+
+
+@pytest.mark.parametrize("outcome", ["completed", "failed", "aborted"])
+def testCellPulsesWhileTerminalEnqueueWaitsForCapacity(monkeypatch, tmp_path, outcome):
+    supervisor, repository, _, process, cell, clock = _withCell(monkeypatch)
+    waiting, release = threading.Event(), threading.Event()
+
+    def run():
+        if outcome == "failed":
+            raise RuntimeError("computation failed")
+        if outcome == "aborted":
+            raise CancellationRequested("cancelled")
+
+    _stubComputation(monkeypatch, run)
+
+    class TerminalQueue(_DrainQueue):
+        def put(self, event):
+            if event["eventType"] == f"job.{outcome}":
+                waiting.set()
+                assert release.wait(3), "test did not release terminal enqueue"
+            super().put(event)
+
+    events, errors = TerminalQueue(), []
+
+    def execute():
+        try:
+            workerModule.runJobProcess(_spec(tmp_path, cell), threading.Event(), events)
+        except BaseException as error:
+            errors.append(error)
+
+    worker = threading.Thread(target=execute)
+    worker.start()
+    try:
+        assert waiting.wait(1)
+        count = len(events.events)
+        for sample in (6000, 12000):
+            clock[0] = sample
+            deadline = time.monotonic() + 1
+            while cell.read() != sample and time.monotonic() < deadline:
+                threading.Event().wait(.005)
+            assert cell.read() == sample
+            supervisor.checkHeartbeat("job-stop")
+            assert not process.terminated and repository.get("job-stop").status == "RUNNING"
+        assert len(events.events) == count
+    finally:
+        release.set()
+        events.release.set()
+        worker.join(2)
+    assert not worker.is_alive()
+    assert bool(errors) is (outcome == "failed")
+    assert events.events[-1]["eventType"] == f"job.{outcome}"
     assert not any(thread.name == "runtime-heartbeat-job-stop" for thread in threading.enumerate())
 
 
@@ -188,6 +242,9 @@ def _spawnedDrainingWorker(spec, cancel, queue, drainStarted, returned, clock):
     class QueueOwner:
         def put(self, event):
             queue.put(event)
+
+        def put_nowait(self, event):
+            queue.put_nowait(event)
 
         def close(self):
             queue.close()

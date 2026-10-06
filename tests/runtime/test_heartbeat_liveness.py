@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import multiprocessing
 import queue
-from threading import Event, Thread
+from threading import Event, Lock, Thread
+import time
 
 import pytest
 
@@ -71,6 +72,41 @@ def testDelayedPersistenceDoesNotKillWorkerWithUnconsumedHeartbeat(monkeypatch) 
     assert [event.eventType for event in store.read("job-stop")] == [
         "job.process.started", "process.heartbeat",
     ]
+
+
+def testFullDiagnosticQueueDoesNotBlockCellOrTerminalLock(monkeypatch) -> None:
+    supervisor, repository, _, process, cell, clock = _withCell(monkeypatch)
+    events = multiprocessing.get_context("spawn").Queue(maxsize=64)
+    for _ in range(64):
+        events.put({"eventType": "backlog"})
+    stop, lock = Event(), Lock()
+    worker = Thread(target=heartbeatLoop,
+                    args=("job-stop", "project", "main", events, stop, 50, cell, Event(), lock))
+    worker.start()
+    try:
+        for sample in (100, 6000, 12000):
+            clock[0] = sample
+            deadline = time.monotonic() + 1
+            while cell.read() != sample and time.monotonic() < deadline:
+                stop.wait(.005)
+            assert cell.read() == sample
+            assert lock.acquire(timeout=.1), "diagnostic enqueue holds the terminal lock"
+            lock.release()
+            supervisor.checkHeartbeat("job-stop")
+            assert not process.terminated and repository.get("job-stop").status == "RUNNING"
+        assert events.qsize() == 64
+    finally:
+        stop.set()
+        # Draining also retires the producer when this test runs against the old code.
+        while True:
+            try:
+                events.get(timeout=.1)
+            except queue.Empty:
+                break
+        worker.join(2)
+        events.close()
+        events.join_thread()
+    assert not worker.is_alive()
 
 
 @pytest.mark.parametrize("published", [False, True])
@@ -165,6 +201,8 @@ def testHeartbeatEmissionPublishesCellBeforeUnchangedFormalEvent(monkeypatch) ->
             assert cell.read() == 42
             events.append(event)
             stop.set()
+
+        put_nowait = put
 
     heartbeatLoop("job", "project", "main", ObserverQueue(), stop, 500, cell)
     assert len(events) == 1

@@ -1,6 +1,6 @@
 """One action registry for the mutually exclusive designer workspaces."""
 from PySide2.QtCore import Qt, QObject, QEvent
-from PySide2.QtWidgets import QAction, QActionGroup, QMenu, QToolButton
+from PySide2.QtWidgets import QAction, QActionGroup, QMenu, QToolButton, QStyle
 
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.apps.designer.ui.widgets import ElidedLabel
@@ -10,6 +10,8 @@ from .workspace_switch import WorkspaceSwitch
 class WorkspaceChrome(QObject):
     def __init__(self, coordinator):
         super().__init__(coordinator.window)
+        self._sizingTools = False
+        self._toolSizeKey = None
         self.c = coordinator
         w = coordinator.window
         self.window = w
@@ -42,12 +44,8 @@ class WorkspaceChrome(QObject):
             tool = self.addTool(action)
             setattr(w, attribute, tool)
         toolbar.addSeparator()
-        self.undo = self.action('撤销', lambda: coordinator.history(), shortcut='Ctrl+Z')
-        self.redo = self.action('重做', lambda: coordinator.history(True), shortcut='Ctrl+Shift+Z')
-        for action in (self.undo, self.redo):
-            self.addTool(action)
-            self.menus['编辑'].insertAction(self.menus['编辑'].actions()[0], action)
-        toolbar.addSeparator()
+        # QToolBar overflows from the end. Keep the run controls ahead of edit
+        # conveniences so even a narrow running window retains its Stop button.
         for name, attribute, title in [('开始运行', 'startButton', '运行流程'),
                                        ('停止运行', 'stopButton', '停止运行')]:
             action = w._toolbarActions[name]
@@ -55,6 +53,13 @@ class WorkspaceChrome(QObject):
             tool = self.addTool(action)
             tool.setObjectName('primaryButton' if name == '开始运行' else 'dangerButton')
             setattr(w, attribute, tool)
+        toolbar.addSeparator()
+        self.undo = self.action('撤销', lambda: coordinator.history(), shortcut='Ctrl+Z')
+        self.redo = self.action('重做', lambda: coordinator.history(True), shortcut='Ctrl+Shift+Z')
+        for action in (self.undo, self.redo):
+            self.addTool(action)
+            self.menus['编辑'].insertAction(self.menus['编辑'].actions()[0], action)
+        toolbar.addSeparator()
         self.testMenu = QMenu('图片测试', w)
         self.testActions = {}
         for title, command in [('选择测试图片', coordinator.importInput),
@@ -112,14 +117,61 @@ class WorkspaceChrome(QObject):
         self.update()
 
     def eventFilter(self, obj, event):
-        if event.type() == QEvent.Resize:
+        if event.type() in (QEvent.Resize, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange):
             self.resizeTools()
         return super().eventFilter(obj, event)
 
     def resizeTools(self):
-        style = Qt.ToolButtonIconOnly if self.window.mainToolbar.width() < 900 else Qt.ToolButtonTextBesideIcon
-        for button in (self.window.loadButton, self.window.saveProjectButton):
-            button.setToolButtonStyle(style)
+        if self._sizingTools:
+            return
+        toolbar = self.window.mainToolbar
+        buttons = (self.window.loadButton, self.window.saveProjectButton,
+                   self.window.startButton, self.window.stopButton)
+        key = (toolbar.width(), toolbar.font().toString(), toolbar.styleSheet(),
+               self.selector.font().toString(), self.selector.sizeHint().width(),
+               tuple((a.isVisible(), a.text()) for a in toolbar.actions()),
+               tuple((b.font().toString(), b.iconSize().width(), b.iconSize().height()) for b in buttons))
+        # Changing a button's style posts another LayoutRequest. A stable key
+        # keeps both that callback and routine status refreshes idempotent.
+        if key == self._toolSizeKey:
+            return
+        self._toolSizeKey = key
+        self._sizingTools = True
+        try:
+            for button in buttons:
+                button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+            if toolbar.width() < 900:
+                for button in buttons[:2]:
+                    button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+            if self.c.pageActive():
+                return
+            for group in (buttons[:2], buttons[2:]):
+                if self._runControlsWidth() <= toolbar.contentsRect().width():
+                    break
+                for button in group:
+                    button.setToolButtonStyle(Qt.ToolButtonIconOnly)
+        finally:
+            self._sizingTools = False
+
+    def _runControlsWidth(self):
+        toolbar = self.window.mainToolbar
+        layout = toolbar.layout()
+        left, _top, right, _bottom = layout.getContentsMargins()
+        style = toolbar.style()
+        spacing = max(0, layout.spacing(), style.pixelMetric(QStyle.PM_ToolBarItemSpacing))
+        width = left + right + style.pixelMetric(QStyle.PM_ToolBarExtensionExtent)
+        if toolbar.isMovable():
+            width += style.pixelMetric(QStyle.PM_ToolBarHandleExtent)
+        count = 0
+        for action in toolbar.actions():
+            if action.isVisible():
+                widget = toolbar.widgetForAction(action)
+                if widget is not None:
+                    width += max(widget.sizeHint().width(), widget.minimumWidth())
+                    count += 1
+            if action is self.window._toolbarActions['停止运行']:
+                break
+        return width + max(0, count - 1) * spacing
 
     def action(self, title, command, shortcut=''):
         action = QAction(title, self.window)
@@ -133,6 +185,7 @@ class WorkspaceChrome(QObject):
         self.window.mainToolbar.addAction(action)
         tool = self.window.mainToolbar.widgetForAction(action)
         tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        tool.setAccessibleName(action.text())
         return tool
 
     def command(self, command):
@@ -155,7 +208,6 @@ class WorkspaceChrome(QObject):
             action.setChecked(self.window.nextRunLegacySnapshotPolicy == value)
 
     def update(self):
-        self.resizeTools()
         pages = self.c.pageActive()
         self.testStatus.setVisible(not pages and self.c.preview.backend is not None)
         self.workspaceActions[int(pages)].setChecked(True)
@@ -181,6 +233,7 @@ class WorkspaceChrome(QObject):
         self.testActions['停止测试'].setEnabled(not pages and preview.backend is not None and not preview.busy)
         for action, history in [(self.undo, self.c.session._undo), (self.redo, self.c.session._redo)]:
             action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
+        self.resizeTools()
 
     def historyDescription(self, history, *, redo=False):
         if not history:

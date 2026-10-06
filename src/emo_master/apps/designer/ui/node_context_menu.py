@@ -56,6 +56,9 @@ class NodeContextMenu(QObject):
     def _blockedReason(self, key, context):
         if not self._valid(context):
             return '节点或工程已变化，请重新右键选择'
+        registry = getattr(self.window, 'designerActions', None)
+        if registry is not None:
+            return registry.blockedReason(key)
         node = context[-1]
         if key == 'results':
             coordinator = getattr(self.window, 'nodeResultCoordinator', None)
@@ -88,6 +91,10 @@ class NodeContextMenu(QObject):
             if key == 'copy':
                 self.menu.addSeparator()
             action = QAction(text, self.menu)
+            registry = getattr(self.window, 'designerActions', None)
+            if registry is not None:
+                # Show the canonical key without registering a duplicate shortcut.
+                action.setText(text + '\t' + registry.shortcutLabel(key))
             action.setData(key)
             reason = self._blockedReason(key, context)
             action.setEnabled(not reason)
@@ -104,6 +111,10 @@ class NodeContextMenu(QObject):
 
     def _invoke(self, key, context, action):
         if not isValid(action) or not action.isEnabled() or self._blockedReason(key, context):
+            return
+        registry = getattr(self.window, 'designerActions', None)
+        if registry is not None:
+            registry.invoke(key)
             return
         nodeId = context[3]
         if key == 'configure':

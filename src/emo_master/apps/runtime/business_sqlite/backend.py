@@ -15,7 +15,7 @@ import time
 from typing import Any, Callable
 
 from emo_master.core.contracts.sqlite_writer import (
-    SqliteWriterError, identifier, quoteIdentifier, toStorage, parseConfig,
+    SqliteWriterError, SqliteCommittedCleanupError, identifier, quoteIdentifier, toStorage, parseConfig,
     MAX_RECORD_BYTES, sqliteIdentifierKey, isTransientPath,
 )
 from emo_master.apps.runtime.business_sqlite.schema import tableFlags
@@ -56,6 +56,8 @@ class OperationGuard:
         self.stop = threading.Event()
         self.connection: sqlite3.Connection | None = None
         self.thread: threading.Thread | None = None
+        self.commitConfirmed = False
+        self.primaryKey: int | None = None
 
     def check(self):
         if self.cancelled():
@@ -84,8 +86,10 @@ class OperationGuard:
         if self.thread is not None:
             self.thread.join()
         if self.connection is not None:
-            self.connection.set_progress_handler(None, 0)
-            self.connection.close()
+            try:
+                self.connection.set_progress_handler(None, 0)
+            finally:
+                self.connection.close()
 
 
 @contextmanager
@@ -95,12 +99,26 @@ def connectionFor(path: Path, *, create=False, readonly=False, guard: OperationG
     mode = "ro" if readonly else "rwc" if create else "rw"
     connection = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,
                                 isolation_level=None)
+    bodyError = None
     try:
         guard.attach(connection)
         connection.execute("PRAGMA foreign_keys=ON")
         yield connection
+    except BaseException as error:
+        bodyError = error
+        raise
     finally:
-        guard.close()
+        try:
+            guard.close()
+        except Exception as error:
+            if guard.commitConfirmed:
+                raise SqliteCommittedCleanupError(guard.primaryKey, str(error)) from error
+            if bodyError is not None:
+                # Preserve UNKNOWN, cancellation and known rollback failures;
+                # a second cleanup fault cannot turn them into a generic write failure.
+                setattr(bodyError, 'sqliteCleanupError', {"code": "E_SQLITE_CLEANUP", "message": str(error)})
+                raise bodyError from error
+            raise
 
 
 def affinity(declared: str) -> str:
@@ -281,10 +299,12 @@ def insert(path: Path, config, values: dict[str, Any], writeId: str, cancelled=l
             if cursor.rowcount != 1:
                 raise SqliteWriterError("E_SQLITE_NO_INSERT", "数据库未插入一条记录；约束或触发器可能忽略了写入")
             guard.check()
+            primary = [c for c in structure["columns"] if c["autoPrimaryKey"]]
+            guard.primaryKey = cursor.lastrowid if primary else None
             committing = True
             connection.commit()
-            primary = [c for c in structure["columns"] if c["autoPrimaryKey"]]
-            return cursor.lastrowid if primary else None
+            guard.commitConfirmed = True
+            return guard.primaryKey
         except BaseException as error:
             uncertain = committing and not connection.in_transaction
             if connection.in_transaction:

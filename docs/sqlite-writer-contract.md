@@ -86,6 +86,10 @@ casefold 合并不同列。例如 Straße/STRASSE 可分别声明 TEXT/INTEGER�
 
 receipt 包含 writeId、status、rowsAffected、可取得的自动整数主键、执行身份、elapsedMs、error。
 COMMITTED 只在 INSERT 实际影响恰好一行且 commit 返回成功后报告；
+提交后清理异常不能将已提交记录改报 FAILED/0。回执保留 COMMITTED、真实主键及 writeId，
+单独携带有界 cleanupError 并写 ERROR 日志；stop 策略使节点失败，continue 策略完成节点，
+两者都不重试 INSERT。此时发生取消仍传播取消状态，并携带同次已提交回执。
+禁用进度回调失败仍尝试关闭连接；监控退出及实际清理返回之前不完成操作或归还后台额度。
 触发器 RAISE(IGNORE) 或 ON CONFLICT IGNORE 导致零行时返回 E_SQLITE_NO_INSERT，
 回滚该事务（包括触发器副作用），按 stop/continue 策略返回 FAILED，不自动重试。
 SKIPPED 为明确禁用；FAILED 为已知失败；

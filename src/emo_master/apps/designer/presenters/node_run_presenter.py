@@ -85,5 +85,7 @@ def sqliteReceiptText(receipt):
              '记录主键：' + str(receipt['primaryKey']), '写入耗时：' + elapsed]
     if receipt['error']:
         lines.append('错误：' + receipt['error']['code'] + ' · ' + receipt['error']['message'])
+    if receipt.get('cleanupError'):
+        lines.append('清理异常：' + receipt['cleanupError']['code'] + ' · ' + receipt['cleanupError']['message'])
     lines.append('节点执行完成与数据库提交状态分别展示；UNKNOWN 不能等同回滚。')
     return '\n'.join(lines)

@@ -28,6 +28,13 @@ class SqliteWriterError(ValueError):
         super().__init__((f"映射第 {row + 1} 行：" if row is not None else "") + message)
 
 
+class SqliteCommittedCleanupError(SqliteWriterError):
+    """Commit returned successfully; cleanup must not invent a failed write."""
+    def __init__(self, primaryKey: int | None, message: str):
+        self.primaryKey = primaryKey
+        super().__init__('E_SQLITE_CLEANUP', 'SQLite 已提交，资源清理报告异常：' + message)
+
+
 _IDENTIFIER_FOLD = str.maketrans("ABCDEFGHIJKLMNOPQRSTUVWXYZ", "abcdefghijklmnopqrstuvwxyz")
 
 
@@ -252,5 +259,10 @@ def receiptSummary(value, identity):
     from emo_master.core.contracts.run_inspection import clipText
     problem = ({'code': clipText(error.get('code', '') if isinstance(error.get('code'), str) else '', 64),
                 'message': clipText(error.get('message', '') if isinstance(error.get('message'), str) else '', 512)} if isinstance(error, dict) else None)
-    return {'writeId': writeId, 'status': value['status'], 'rowsAffected': rows,
-            'primaryKey': primary, 'elapsedMs': elapsed, 'error': problem}
+    result = {'writeId': writeId, 'status': value['status'], 'rowsAffected': rows,
+              'primaryKey': primary, 'elapsedMs': elapsed, 'error': problem}
+    cleanup = value.get('cleanupError')
+    if isinstance(cleanup, dict):
+        result['cleanupError'] = {'code': clipText(cleanup.get('code', '') if isinstance(cleanup.get('code'), str) else '', 64),
+                                 'message': clipText(cleanup.get('message', '') if isinstance(cleanup.get('message'), str) else '', 512)}
+    return result

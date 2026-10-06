@@ -7,7 +7,7 @@ import sqlite3
 import time
 from uuid import uuid4
 
-from emo_master.core.contracts.sqlite_writer import OPERATOR_ID, parseConfig, SqliteWriterError, toStorage
+from emo_master.core.contracts.sqlite_writer import OPERATOR_ID, parseConfig, SqliteWriterError, SqliteCommittedCleanupError, toStorage
 from emo_master.core.contracts.operator_logging import getOperatorLogger
 from emo_master.core.workflow.parameter_bindings import BoundValue
 
@@ -97,7 +97,26 @@ class SqliteWriterOperator:
                 publish("sqlite.write.started", receipt)
                 primary = insert(path, config, values, writeId, cancelled)
                 receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=primary)
+        except SqliteCommittedCleanupError as error:
+            cleanup = {"code": error.code, "message": str(error)}
+            receipt.update(status="COMMITTED", rowsAffected=1, primaryKey=error.primaryKey,
+                           cleanupError=cleanup, elapsedMs=(time.monotonic() - begin) * 1000)
+            diagnostics = {"sqliteReceipt": receipt, "sqliteCleanup": cleanup, "severity": "ERROR"}
+            publish("sqlite.write.finished", receipt)
+            logger.error(str(error), code=error.code, payload={"receipt": receipt})
+            try:
+                check()
+            except Exception as cancelledError:
+                # Cancellation still wins task status while the confirmed
+                # external write and cleanup diagnostic retain their identity.
+                setattr(cancelledError, 'diagnostics', diagnostics)
+                raise
+            if config is None or config["failurePolicy"] == "stop":
+                return {"status": "error", "error": cleanup, "diagnostics": diagnostics}
+            return {"status": "ok", "outputs": {"receipt": receipt}, "diagnostics": diagnostics}
         except Exception as error:
+            if getattr(error, 'sqliteCleanupError', None) is not None:
+                receipt['cleanupError'] = getattr(error, 'sqliteCleanupError')
             code = getattr(error, "code", "")
             if not code:
                 code = "E_SQLITE_CONSTRAINT" if isinstance(error, sqlite3.IntegrityError) else "E_SQLITE_LOCKED" if isinstance(error, sqlite3.OperationalError) and "locked" in str(error) else "E_SQLITE_WRITE"

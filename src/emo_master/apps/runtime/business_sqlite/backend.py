@@ -18,6 +18,7 @@ from emo_master.core.contracts.sqlite_writer import (
     SqliteWriterError, identifier, quoteIdentifier, toStorage, parseConfig,
     MAX_RECORD_BYTES, sqliteIdentifierKey, isTransientPath,
 )
+from emo_master.apps.runtime.business_sqlite.schema import tableFlags
 
 LOCK_TIMEOUT = 2.0
 OPERATION_TIMEOUT = 5.0
@@ -115,15 +116,17 @@ def affinity(declared: str) -> str:
 
 def tableStructure(connection, table: str) -> dict[str, Any]:
     identifier(table)
-    found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
-    if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+    found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE type IN ('table','view') AND name=? COLLATE NOCASE", (table,)).fetchone()
+    if not found or found[1] != "table":
         raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+    kind, withoutRowid = tableFlags(connection, found[0], str(found[2]))
+    if kind != 'table':
+        raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图、虚拟表或其影子表")
     columns = []
     raw = list(connection.execute(f"PRAGMA table_xinfo({quoteIdentifier(table)})"))
     if len(raw) > 256:
         raise SqliteWriterError("E_SQLITE_LIMIT", "目标表超过 256 列检查额度")
     primary = [r for r in raw if r[5]]
-    withoutRowid = "WITHOUT ROWID" in str(found[2]).upper()
     indexes = list(connection.execute(f"PRAGMA index_list({quoteIdentifier(table)})"))
     # INTEGER PRIMARY KEY DESC owns a PK index, so it is not a rowid alias.
     indexedPrimary = any(row[3] == "pk" for row in indexes)

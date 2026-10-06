@@ -73,6 +73,9 @@ SQLite 管理专用后台执行器最多 2 个已接纳操作，不增加待执�
 BEGIN IMMEDIATE 单条事务，在同一事务内再次读取真实 schema，按列名参数化 INSERT。
 仅 INTEGER/REAL/TEXT 亲和性支持，生成列不可显式写，未映射必填且无默认/生成列报错。
 允许新增无关可省略列和改变列顺序；映射列删除或新增必填列拒绝。
+表类型和 WITHOUT ROWID 优先使用 SQLite table_list 元数据；旧 SQLite 的兼容解析将
+字符串、带引号标识符和注释视为不透明内容，不能因默认值中的 SQL 关键词误判普通表。
+表查询排除同名触发器和索引，视图、虚拟表仍明确拒绝。
 列名、映射去重、保留列和建表列按 SQLite 的 ASCII 大小写规则匹配；不使用 Unicode
 casefold 合并不同列。例如 Straße/STRASSE 可分别声明 TEXT/INTEGER，必须逐列验证。
 启用 foreign_keys，保留 CHECK/UNIQUE、已有触发器和外键语义。普通运行没有 DDL、UPSERT、

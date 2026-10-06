@@ -80,6 +80,8 @@ class PageCoordinator:
         self.stack.setCurrentWidget(self.editor)
 
     def history(self, redo=False):
+        if self.window.isJobRunning:
+            return
         if not self._canSync():
             return
         if (self.session.redo if redo else self.session.undo)():

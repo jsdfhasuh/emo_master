@@ -1,4 +1,5 @@
 from emo_master.apps.designer.page_designer.commands import draftCommand
+from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
 import json
 from pathlib import Path
@@ -3193,6 +3194,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def deleteSelectedElements(self) -> None:
+        if not flowEditAllowed(self):
+            return
         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
         for fromNode, fromPort, toNode, toPort in selectedEdgeKeys:
             self.flowModel.removeEdge(fromNode, fromPort, toNode, toPort)
@@ -3226,6 +3229,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def autoLayoutNodes(self) -> None:
+        if not flowEditAllowed(self):
+            return
         self.flowScene.layoutNodesFlow()
         self.focusGraphContent()
         self.appendRuntimeLog("INFO", "已按数据流整理节点")
@@ -3709,6 +3714,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return getOperatorGlyph("default")
 
     def openNodeParamDialog(self, nodeId: str) -> None:
+        if not flowEditAllowed(self):
+            return
         node = self.flowModel.nodes.get(nodeId)
         if node is None:
             self.appendRuntimeLog("ERROR", "未找到所选节点")
@@ -3787,6 +3794,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def duplicateSelectedNode(self):
+        if not flowEditAllowed(self):
+            return None
         selected = self.flowModel.selectedNodeId
         if not selected:
             return None
@@ -3801,6 +3810,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def duplicateCurrentWorkflow(self):
+        if not flowEditAllowed(self):
+            return None
         workflowId = self.workflowController.duplicateWorkflow(self.activeWorkflowId)
         self._refreshWorkflowTabs()
         return workflowId

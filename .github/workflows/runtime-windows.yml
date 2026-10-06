@@ -1,0 +1,96 @@
+name: Build Operator Runtime
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: Source branch, tag or commit containing the operator Runtime
+        required: true
+        type: string
+      packager_ref:
+        description: Packager commit containing configs/emo-master-runtime.json
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  validate:
+    runs-on: windows-latest
+    outputs:
+      release_tag: ${{ steps.version.outputs.tag }}
+      source_sha: ${{ steps.version.outputs.sha }}
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTHONUTF8: '1'
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.10'
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Resolve source identity
+        id: version
+        shell: pwsh
+        run: |
+          $env:PYTHONPATH = (Resolve-Path src).Path
+          $version = python -c "import emo_master; print(emo_master.__version__)"
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot read source version' }
+          $sha = git rev-parse HEAD
+          Add-Content $env:GITHUB_OUTPUT "tag=v$($version.Trim())"
+          Add-Content $env:GITHUB_OUTPUT "sha=$sha"
+      - name: Runtime source regression
+        run: >-
+          python -m pytest tests/core/test_runtime_directory.py tests/core/test_runtime_package.py
+          tests/runtime/test_production_continuous.py tests/runtime/test_production_boundaries.py
+          tests/ui/operator_view/test_production_window.py tests/runtime/test_operator_lifecycle.py
+          tests/runtime/test_worker_heartbeat_finalization.py tests/runtime/test_heartbeat_liveness.py
+          tests/test_windows_package_entry.py
+          tests/test_package_bootstrap.py tests/test_operator_runtime_validation.py -q
+  package:
+    needs: validate
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@fe4921772287cb5d2f5946283f5a4122f5067f89
+    with:
+      target: emo-master-runtime
+      source_ref: ${{ needs.validate.outputs.source_sha }}
+      packager_ref: ${{ inputs.packager_ref }}
+      release_tag: ${{ needs.validate.outputs.release_tag }}
+      release_repo: ${{ github.repository }}
+      publish_release: false
+    secrets: inherit
+  verify_archive:
+    needs: [validate, package]
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.validate.outputs.source_sha }}
+          persist-credentials: false
+      - uses: actions/download-artifact@v4
+        with:
+          name: ${{ needs.package.outputs.artifact_name }}
+          path: release-assets
+      - name: Verify extracted portable Runtime
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.validate.outputs.release_tag }}
+          SOURCE_SHA: ${{ needs.validate.outputs.source_sha }}
+        run: |
+          $archive = "release-assets/emo-master-runtime-windows-$env:RELEASE_TAG.zip"
+          $manifest = Get-Content -LiteralPath 'release-assets/manifest.json' -Raw | ConvertFrom-Json
+          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
+          if ($manifest.sha256 -ne $hash -or $manifest.source_commit -ne $env:SOURCE_SHA) {
+            throw 'Runtime artifact hash or source identity mismatch'
+          }
+          ./scripts/verify_runtime_package.ps1 -Archive "release-assets/emo-master-runtime-windows-$env:RELEASE_TAG.zip" -ReportPath 'archive-check/self-test.json'
+      - uses: actions/upload-artifact@v4
+        with:
+          name: operator-runtime-archive-acceptance
+          path: archive-check/*
+          if-no-files-found: error

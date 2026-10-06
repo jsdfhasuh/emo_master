@@ -12,6 +12,10 @@ def main(arguments: Sequence[str] | None = None) -> int:
         from emo_master.apps.package_selftest import runSelfTestCommand
 
         return runSelfTestCommand(commandArguments)
+    if commandArguments and commandArguments[0] == "--run-project":
+        from emo_master.apps.operator_runtime.main import main as runProject
+
+        return runProject(commandArguments[1:])
     if commandArguments and commandArguments[0] in {"--runtime", "--operator-view"}:
         if commandArguments[0] == "--runtime":
             from emo_master.apps.runtime.release_host import main as runEntry

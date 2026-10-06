@@ -29,7 +29,7 @@ class PreparedProject:
 
 
 def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=None,
-            mode="debug", releaseRevision=None) -> PreparedProject:
+            mode="debug", releaseRevision=None, protected=()) -> PreparedProject:
     root.mkdir(parents=True, exist_ok=True)
     snapshot = freezeProjectSnapshot(project, {k: v.manifest for k, v in registry.items()},
         mode=mode, resourceRoot=resourceRoot, siteDataRoot=root, siteValues=siteValues,
@@ -70,7 +70,7 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
                     node.params = parameters[workflowId][node.nodeId]
         from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
         document = freezeTargets(document, resourceRoot.resolve(),
-            (Path(snapshot.runtimeDbPath), destination, root / "jobs", root / "staging"),
+            (*protected, Path(snapshot.runtimeDbPath), destination, root / "jobs", root / "staging"),
             debugRoot=Path(snapshot.runtimeDbPath).parent / "business-sqlite" if mode == "debug" else None)
         WorkflowCompiler(operatorRegistry=registry).compile(document)
         presentation = document.presentation

@@ -25,11 +25,7 @@ def columnsFromWire(columns):
 def managementRpc(service, request, context, *, creating=False):
     path = None
     try:
-        protected = [service.sqliteStore.dbPath, service.workspaceRoot, service.previewAssetStore.root]
-        owner = getattr(service, "_presentationOwner", None)
-        if owner is not None:
-            protected.append(owner.root)
-        path = resolveTarget(request.database_path, Path(request.project_directory), protected)
+        path = resolveTarget(request.database_path, Path(request.project_directory), service.sqliteProtectedPaths())
         columns = columnsFromWire(request.columns if creating else request.proposed_columns)
         preview = createPlan(request.table, columns)[0] if columns else ""
         if creating and not request.confirmed:

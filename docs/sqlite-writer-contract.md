@@ -49,6 +49,9 @@ FILE_REFERENCE 绑定只支持 Image Saver 的正式持久保存结果，保存�
 文件位于 Runtime 主机本地盘。相对路径由原工程目录解析并在执行快照中冻结，
 不以 Job cwd 或 prepared 目录解析。拒绝用户 SQLite URI、内存库、UNC/映射网络盘、
 内部库及其文件别名、预览缓存、任务临时目录。
+管理接口、普通 StartJob 与页面项目的 debug/release 准备共用 Runtime 所有者提供的
+保护列表，包含实际内部库、任务工作区、旧预览缓存及页面资源根目录。自定义文件名和
+硬链接别名不绕过保护；debug 模板也接受同一保护检查。准备失败不创建 Job 或保留准备记录。
 
 正式 typed RPC `InspectSqliteTarget` / `InitializeSqliteTarget` 接受路径、工程目录、
 表名及结构化 `SqliteColumnPlan`，返回 Runtime 主机、最终路径、表/列元数据和建表预览。

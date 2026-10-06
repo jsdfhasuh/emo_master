@@ -81,7 +81,8 @@ class PresentationService:
                 raise RuntimeError("E_RUNTIME_CLOSING")
             if len(self.prepared) >= 8:
                 raise ValueError("prepared record quota exceeded")
-            record = prepare(project, self.runtime.pluginScanResult.activeOperators, self.root, resourceRoot, **kwargs)
+            record = prepare(project, self.runtime.pluginScanResult.activeOperators, self.root, resourceRoot,
+                             protected=self.runtime.sqliteProtectedPaths(), **kwargs)
             try:
                 if any(s["expectedType"] == "image" for s in json.loads(record.sourceJson)["sources"].values()) and self.exporter is None:
                     self.exporter = ExportPool(self.root / "staging", self._exported)

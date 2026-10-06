@@ -250,6 +250,12 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
         return runtime_pb2.LoadProjectReply(ok=True, status="READY", message="project loaded")
 
+    def sqliteProtectedPaths(self):
+        """One owner-defined boundary for management, normal runs and preparation."""
+        paths = (self.sqliteStore.dbPath, self.workspaceRoot, self.previewAssetStore.root)
+        owner = getattr(self, "_presentationOwner", None)
+        return (*paths, owner.root) if owner is not None else paths
+
     def InspectSqliteTarget(self, request, context):  # type: ignore[override]
         from emo_master.apps.runtime.business_sqlite.rpc import managementRpc
         return managementRpc(self, request, context)
@@ -393,7 +399,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             from emo_master.apps.runtime.business_sqlite.backend import freezeTargets
             if any(n.operatorId == "vision.io.sqlite_writer" for w in document.workflows.values() for n in w.nodes):
                 document = self.sqliteManagement.run(lambda cancelled: freezeTargets(document, Path(self.loadedProjectPath),
-                    (self.sqliteStore.dbPath, self.workspaceRoot, self.previewAssetStore.root), cancelled=cancelled), context)
+                    self.sqliteProtectedPaths(), cancelled=cancelled), context)
         except Exception as error:
             return runtime_pb2.StartJobReply(ok=False, status="REJECTED", message=str(error))
 

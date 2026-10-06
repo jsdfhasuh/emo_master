@@ -1,0 +1,19 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "scripts/validate_designer_toolbar.py",
+    "--output",
+    "docs/testing/toolbar-width-2026-10-07/native-200/screens",
+    "--platform",
+    "windows"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 3.0,
+  "outerWatchdogSeconds": 90,
+  "timedOut": false,
+  "qtPlatform": "windows",
+  "qtScaleFactor": "2",
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\toolbar-width-20261007-002955-281239\\test-runtime"
+}

@@ -1,0 +1,17 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\validate_designer_toolbar.py", line 62, in main
+    settle()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\validate_designer_toolbar.py", line 58, in settle
+    QTest.qWait(50)
+AttributeError: type object 'PySide2.QtTest.QTest' has no attribute 'qWait'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\validate_designer_toolbar.py", line 112, in <module>
+    raise SystemExit(main())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\validate_designer_toolbar.py", line 104, in main
+    settle()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\scripts\validate_designer_toolbar.py", line 58, in settle
+    QTest.qWait(50)
+AttributeError: type object 'PySide2.QtTest.QTest' has no attribute 'qWait'

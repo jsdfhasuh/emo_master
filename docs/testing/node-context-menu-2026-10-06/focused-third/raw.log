@@ -1,0 +1,16 @@
+......F...............                                                   [100%]
+================================== FAILURES ===================================
+___________ testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth ____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x25800b2ed00) at 0x0000025801201280>, ['node-d995fa3b', 'node-3c1f98d8'], <test_node_context_menu.Client object at 0x000002580122AB60>)
+
+    def testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth(canvas):
+        window, (first, second), _client = canvas
+        originalNodes = set(window.flowModel.nodes)
+>       assert window.flowScene.simulateDragConnection(first, 'count', second, 'value') is not None
+E       AttributeError: 'FlowScene' object has no attribute 'simulateDragConnection'
+
+tests\designer\test_node_context_menu.py:149: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_context_menu.py::testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth
+1 failed, 21 passed in 7.68s

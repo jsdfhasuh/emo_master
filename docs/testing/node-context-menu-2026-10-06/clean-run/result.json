@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_node_context_menu.py",
+    "tests/designer/test_flow_scene_interactions.py",
+    "tests/designer/test_main_window_project_save_load.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\operator-context-menu-20261006-193415-837042\\clean-candidate",
+  "exitCode": 0,
+  "seconds": 6.422000000020489,
+  "identity": "../clean-candidate.json"
+}

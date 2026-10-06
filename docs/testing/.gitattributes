@@ -1,0 +1,7 @@
+# Preserve the exact Windows evidence bytes and their recorded SHA-256 hashes.
+workspace-ui-2026-10-03/** -text -whitespace
+workspace-switch-2026-10-03/** -text -whitespace
+standalone-runtime-2026-10-06/** -text -whitespace
+runtime-delivery-2026-10-06/** -text -whitespace
+runtime-review-fixes-2026-10-06/** -text -whitespace
+pending-work-2026-10-06/** -text -whitespace

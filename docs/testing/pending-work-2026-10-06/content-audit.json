@@ -1,0 +1,41 @@
+{
+  "headAtAudit": "79c5166089e0f6e4ab6b69ab156f8384d16f9ce5",
+  "incomingWorkingFiles": 233,
+  "workingContentMismatches": [],
+  "sourceFilesComparedToPreviousCI": 760,
+  "sourceHashMismatches": [],
+  "previousCIHead": "4ed4330064727e25c8dff8dc265b3eb0376aa4ba",
+  "previousCISourceDigest": "5d1117d685956d45e79f2a1d6b8cd8c2453a113e17e1b864884faeb19f6675f7",
+  "previousCIResult": {
+    "passed": 2992,
+    "failed": 1,
+    "skipped": 8,
+    "subtestsPassed": 28,
+    "seconds": 992.77
+  },
+  "historicalEvidence": {
+    "path": "docs/evidence/p4/a-first/evidence.json",
+    "normalizedBytesEqual": true,
+    "jsonEqual": true
+  },
+  "artifactManifests": [
+    {
+      "directory": "docs/testing/workspace-ui-2026-10-03",
+      "checked": 101,
+      "mismatches": []
+    },
+    {
+      "directory": "docs/testing/workspace-switch-2026-10-03",
+      "checked": 21,
+      "mismatches": []
+    }
+  ],
+  "backup": {
+    "directory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\organize-existing-20261006-215103-113405",
+    "bundleRef": "dce541532909e18ec8113abbe643deba87b67d64 refs/heads/agent/runtime-workflow-architecture-v1",
+    "bundleSHA256": "9187acda4db9add5105284366bffacaa8b0cb1362bcf0edf3a59eeb503f04fa8",
+    "worktreeZipSHA256": "2b47b8f8337b7658b481cd54837669de63deb51838921a0e1e130ddd5193f791",
+    "bundleVerified": true,
+    "allZipEntriesHashVerified": true
+  }
+}

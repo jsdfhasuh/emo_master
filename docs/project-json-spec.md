@@ -1,4 +1,4 @@
-# project.json v2.1 / v2.2 规范
+# project.json v2.1 / v2.2 / v2.3 规范
 
 `project.json v2.1` 是 Designer 与 Runtime 的唯一项目源。磁盘模型由
 `ProjectDocument` 严格校验；Designer 读取 v1/v2.0 时只在内存中迁移，保存 v2.1
@@ -8,6 +8,14 @@
 `resources`（1.0）；两者均不能为空对象之外的 null，缺字段拒绝。普通旧项目仍保持上述 2.1 路径。
 完整 API、字段、调用作用域、写时复制、资源和快照规则见 [P1 正式契约](runtime-pages-p1-contract.md)。
 默认入口尚未启用页面执行链路，2.2 完整发布在 P5 前被旧发布器明确拒绝。
+
+2026-10-06 独立操作员入口增量支持 2.3，在 2.2 的 `presentation`、`resources`
+之外新增必需的 `production` 对象：`autoStart=false`、`mode="single"`、
+`cycleIntervalMs=100`（正整数）、`inputs={}`。旧 2.1/2.2 读取和保存不隐式升级；
+通过 `migrateProjectPayload(enableProduction=True)` 或工程配置脚本显式升级。
+普通 Designer 单次运行不采用生产连续策略，保存 2.3 必须保留生产设置。
+完整工程目录可用 `start_runtime.cmd` 运行；旧测试发布器仍仅接受 2.2，普通发布器
+继续拒绝 2.2/2.3。运行方式、路径和交付边界见 [独立 Runtime](operator-runtime.md)。
 
 ## 目录
 

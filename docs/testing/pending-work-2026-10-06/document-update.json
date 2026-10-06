@@ -1,0 +1,8 @@
+{
+  "path": "docs/development-guide.md",
+  "beforeSHA256": "77ad3f23b6ebb153f2a0075151f6a7c020585e3d13ead9e02c040a68ea082030",
+  "afterSHA256": "be84a7f7eae2305648e55ce1e7f834003754b08e87bd08bf6303392b440a83f9",
+  "afterGitBlob": "649335954f9a4835bf625c94e59f7dc3a965250f",
+  "exactSingleSentenceReplacement": true,
+  "change": "Synchronize the source-start documentation with the existing two-button workspace selector."
+}

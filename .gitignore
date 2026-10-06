@@ -38,9 +38,8 @@ Thumbs.db
 # Local demo outputs
 tmp_demo_input*.png
 
-# Private handoff/reference material and local implementation plans
+# Private handoff/reference material
 learn/
-docs/plans/
 
 # Local Windows manual Designer acceptance workspace
 manual_test_workspace/

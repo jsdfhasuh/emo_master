@@ -1,0 +1,13 @@
+{
+  "mandatory": false,
+  "notes": "0.6.1",
+  "sha256": "876dc699cc7a7f071ed1b9914b6e615595c116b32968ee5e7550fe7b50b67600",
+  "url": "https://github.com/jsdfhasuh/emo_master/releases/download/v0.6.1/emo-master-runtime-windows-v0.6.1.zip",
+  "version": "0.6.1",
+  "source_repo": "jsdfhasuh/emo_master",
+  "source_ref": "agent/runtime-workflow-architecture-v1",
+  "source_commit": "9737f04312a2803f824e4bbeab6ea845549edaf7",
+  "source_base_ref": "v0.6.1",
+  "source_compare_url": "https://github.com/jsdfhasuh/emo_master/compare/v0.6.1...9737f04312a2803f824e4bbeab6ea845549edaf7",
+  "archive_compression": "zip/deflate"
+}

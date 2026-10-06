@@ -1220,6 +1220,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if _nativeQt:
             from emo_master.apps.designer.ui.node_result_coordinator import NodeResultCoordinator
             self.nodeResultCoordinator = NodeResultCoordinator(self, rightPanel)
+            from emo_master.apps.designer.ui.node_context_menu import NodeContextMenu
+            self.nodeContextMenu = NodeContextMenu(self)
         self.rightPanelContainer.setLayout(rightPanel)
         self.mainSplitter = QSplitter(Qt.Horizontal)
         setChildrenCollapsible = getattr(

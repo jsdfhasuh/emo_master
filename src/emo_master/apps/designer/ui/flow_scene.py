@@ -34,6 +34,7 @@ class FlowEdgeViewModel:
 ConnectionHandler = Callable[[str, str, str, str], FlowEdgeViewModel | None]
 ConnectionErrorHandler = Callable[[str], None]
 NodeDoubleClickHandler = Callable[[str], None]
+NodeContextMenuHandler = Callable[[str, int, int], None]
 CanvasClickHandler = Callable[[], None]
 OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
@@ -49,6 +50,7 @@ try:
         QGraphicsPathItem,
         QGraphicsRectItem,
         QGraphicsScene,
+        QGraphicsSceneContextMenuEvent,
         QGraphicsSceneMouseEvent,
         QGraphicsSimpleTextItem,
     )
@@ -339,6 +341,7 @@ try:
             self._inputEdgeIndex: dict[tuple[str, str], tuple[str, str, str, str]] = {}
             self._connectionHandler: ConnectionHandler | None = None
             self._nodeDoubleClickHandler: NodeDoubleClickHandler | None = None
+            self._nodeContextMenuHandler: NodeContextMenuHandler | None = None
             self._canvasClickHandler: CanvasClickHandler | None = None
             self._operatorDropHandler: OperatorDropHandler | None = None
             self._connectionErrorHandler: ConnectionErrorHandler | None = None
@@ -381,6 +384,9 @@ try:
 
         def setCanvasClickHandler(self, handler: CanvasClickHandler | None) -> None:
             self._canvasClickHandler = handler
+
+        def setNodeContextMenuHandler(self, handler: NodeContextMenuHandler | None) -> None:
+            self._nodeContextMenuHandler = handler
 
         def setOperatorDropHandler(self, handler: OperatorDropHandler | None) -> None:
             self._operatorDropHandler = handler
@@ -668,6 +674,30 @@ try:
             if self._nodeDoubleClickHandler is None:
                 return
             self._nodeDoubleClickHandler(nodeId)
+
+        def handleNodeContextMenu(self, nodeId: str, screenX: int, screenY: int) -> bool:
+            if self._nodeContextMenuHandler is None or not self.hasNode(nodeId):
+                return False
+            self._nodeContextMenuHandler(nodeId, screenX, screenY)
+            return True
+
+        def contextMenuEvent(self, event: QGraphicsSceneContextMenuEvent) -> None:
+            nodeId = self.getSelectedNodeId() if event.reason() == QGraphicsSceneContextMenuEvent.Keyboard else None
+            if nodeId is None and event.reason() != QGraphicsSceneContextMenuEvent.Keyboard:
+                for item in self.items(event.scenePos()):
+                    current = item
+                    while current is not None and not isinstance(current, _NodeItem):
+                        current = current.parentItem()
+                    if isinstance(current, _NodeItem):
+                        nodeId = current.model.nodeId
+                        break
+                    if isinstance(item, _EdgeItem):
+                        break
+            point = event.screenPos()
+            if nodeId is not None and self.handleNodeContextMenu(nodeId, point.x(), point.y()):
+                event.accept()
+                return
+            super().contextMenuEvent(event)
 
         def simulateCanvasClick(self) -> None:
             if self._canvasClickHandler is None:
@@ -1105,6 +1135,7 @@ except Exception:  # pragma: no cover
             self._selectedNodeId: str | None = None
             self._connectionHandler: ConnectionHandler | None = None
             self._nodeDoubleClickHandler: NodeDoubleClickHandler | None = None
+            self._nodeContextMenuHandler: NodeContextMenuHandler | None = None
             self._canvasClickHandler: CanvasClickHandler | None = None
             self._operatorDropHandler: OperatorDropHandler | None = None
             self._connectionErrorHandler: ConnectionErrorHandler | None = None
@@ -1141,6 +1172,9 @@ except Exception:  # pragma: no cover
 
         def setCanvasClickHandler(self, handler: CanvasClickHandler | None) -> None:
             self._canvasClickHandler = handler
+
+        def setNodeContextMenuHandler(self, handler: NodeContextMenuHandler | None) -> None:
+            self._nodeContextMenuHandler = handler
 
         def setOperatorDropHandler(self, handler: OperatorDropHandler | None) -> None:
             self._operatorDropHandler = handler
@@ -1349,6 +1383,12 @@ except Exception:  # pragma: no cover
             if self._nodeDoubleClickHandler is None:
                 return
             self._nodeDoubleClickHandler(nodeId)
+
+        def handleNodeContextMenu(self, nodeId: str, screenX: int, screenY: int) -> bool:
+            if self._nodeContextMenuHandler is None or not self.hasNode(nodeId):
+                return False
+            self._nodeContextMenuHandler(nodeId, screenX, screenY)
+            return True
 
         def simulateCanvasClick(self) -> None:
             if self._canvasClickHandler is None:

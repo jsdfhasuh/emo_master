@@ -1,0 +1,143 @@
+FFFFF.....................................                               [100%]
+================================== FAILURES ===================================
+_ testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic[stop] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-986/testCleanupFailureAfterActualC0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023D6C1477F0>
+policy = 'stop'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic(tmp_path, monkeypatch, policy):
+        path = makeDb(tmp_path / 'business.sqlite3')
+        original = backend.OperationGuard.close
+        def failAfterActualClose(self):
+            original(self)
+            raise OSError('injected cleanup failure after real close')
+        with monkeypatch.context() as injection:
+            injection.setattr(backend.OperationGuard, 'close', failAfterActualClose)
+            if policy == 'stop':
+                with pytest.raises(WorkflowExecutionError) as failed:
+                    actualRun(path, 'actual', policy=policy)
+                receipt = failed.value.diagnostics['sqliteReceipt']
+>               assert failed.value.code == 'E_SQLITE_CLEANUP'
+E               AssertionError: assert 'E_SQLITE_WRITE' == 'E_SQLITE_CLEANUP'
+E                 
+E                 - E_SQLITE_CLEANUP
+E                 + E_SQLITE_WRITE
+
+tests\sqlite_writer\test_review_cleanup.py:29: AssertionError
+_ testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic[continue] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-986/testCleanupFailureAfterActualC1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023D43D8BC70>
+policy = 'continue'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic(tmp_path, monkeypatch, policy):
+        path = makeDb(tmp_path / 'business.sqlite3')
+        original = backend.OperationGuard.close
+        def failAfterActualClose(self):
+            original(self)
+            raise OSError('injected cleanup failure after real close')
+        with monkeypatch.context() as injection:
+            injection.setattr(backend.OperationGuard, 'close', failAfterActualClose)
+            if policy == 'stop':
+                with pytest.raises(WorkflowExecutionError) as failed:
+                    actualRun(path, 'actual', policy=policy)
+                receipt = failed.value.diagnostics['sqliteReceipt']
+                assert failed.value.code == 'E_SQLITE_CLEANUP'
+            else:
+                receipt, _, events = actualRun(path, 'actual', policy=policy)
+                assert any(e['eventType'] == 'node.log' and e['level'] == 'ERROR' for e in events)
+>       assert receipt['status'] == 'COMMITTED' and receipt['rowsAffected'] == 1 and receipt['primaryKey'] == 1
+E       AssertionError: assert ('FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED)
+
+tests\sqlite_writer\test_review_cleanup.py:33: AssertionError
+_ testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel[stop] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-986/testCancelDuringFaultyPostComm0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023D43D93940>
+policy = 'stop'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel(tmp_path, monkeypatch, policy):
+        path = makeDb(tmp_path / 'cancel.sqlite3')
+        token = CancellationToken()
+        original = backend.OperationGuard.close
+        def cancelAfterClose(self):
+            original(self)
+            token.cancel()
+            raise OSError('cleanup acknowledgement failed')
+        with monkeypatch.context() as injection:
+            injection.setattr(backend.OperationGuard, 'close', cancelAfterClose)
+            with pytest.raises(CancellationRequested) as cancelled:
+                actualRun(path, 'committed', policy=policy, token=token)
+>       receipt = cancelled.value.diagnostics['sqliteReceipt']
+E       AttributeError: 'CancellationRequested' object has no attribute 'diagnostics'
+
+tests\sqlite_writer\test_review_cleanup.py:56: AttributeError
+_ testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel[continue] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-986/testCancelDuringFaultyPostComm1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023D43F3F6D0>
+policy = 'continue'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel(tmp_path, monkeypatch, policy):
+        path = makeDb(tmp_path / 'cancel.sqlite3')
+        token = CancellationToken()
+        original = backend.OperationGuard.close
+        def cancelAfterClose(self):
+            original(self)
+            token.cancel()
+            raise OSError('cleanup acknowledgement failed')
+        with monkeypatch.context() as injection:
+            injection.setattr(backend.OperationGuard, 'close', cancelAfterClose)
+            with pytest.raises(CancellationRequested) as cancelled:
+                actualRun(path, 'committed', policy=policy, token=token)
+>       receipt = cancelled.value.diagnostics['sqliteReceipt']
+E       AttributeError: 'CancellationRequested' object has no attribute 'diagnostics'
+
+tests\sqlite_writer\test_review_cleanup.py:56: AttributeError
+_________ testProgressHandlerCleanupFailureStillClosesRealConnection __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-986/testProgressHandlerCleanupFail0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000023D43D91BD0>
+
+    def testProgressHandlerCleanupFailureStillClosesRealConnection(tmp_path, monkeypatch):
+        path = makeDb(tmp_path / 'handler.sqlite3')
+        original = backend.sqlite3.connect
+        connections = []
+        class HandlerCleanupFault:
+            def __init__(self, connection):
+                self.connection = connection
+            def __getattr__(self, name):
+                return getattr(self.connection, name)
+            def set_progress_handler(self, handler, steps):
+                if handler is None:
+                    raise RuntimeError('injected handler cleanup failure')
+                return self.connection.set_progress_handler(handler, steps)
+        def connect(*args, **kwargs):
+            connection = original(*args, **kwargs)
+            connections.append(connection)
+            return HandlerCleanupFault(connection)
+        with monkeypatch.context() as injection:
+            injection.setattr(backend.sqlite3, 'connect', connect)
+            receipt, _, _ = actualRun(path, 7, policy='continue')
+>       assert receipt['status'] == 'COMMITTED' and receipt['cleanupError']['code'] == 'E_SQLITE_CLEANUP'
+E       AssertionError: assert ('FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED)
+
+tests\sqlite_writer\test_review_cleanup.py:83: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_cleanup.py::testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic[stop]
+FAILED tests/sqlite_writer/test_review_cleanup.py::testCleanupFailureAfterActualCloseRetainsConfirmedCommitAndDiagnostic[continue]
+FAILED tests/sqlite_writer/test_review_cleanup.py::testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel[stop]
+FAILED tests/sqlite_writer/test_review_cleanup.py::testCancelDuringFaultyPostCommitCleanupKeepsReceiptAndPropagatesCancel[continue]
+FAILED tests/sqlite_writer/test_review_cleanup.py::testProgressHandlerCleanupFailureStillClosesRealConnection
+5 failed, 37 passed in 3.96s

@@ -1,0 +1,118 @@
+REVIEW_EVIDENCE {"probe": "normal", "receipt": {"writeId": "343ed907-48d9-424d-a689-f00b5f75c44c", "status": "COMMITTED", "rowsAffected": 1, "primaryKey": 1, "execution": {"jobId": "job", "projectId": "", "workflowId": "main", "workflowRunId": "609b424e-20ca-4bcc-89dc-92eecc6f780d", "nodeId": "writer", "nodeRunId": "534587d0-36c5-4bda-a10f-b8dae69a9299", "iterationPath": []}, "elapsedMs": 108.99999993853271, "error": null}, "rows": [["{\"actual\":[0,false,null,\"\"]}"]]}
+.REVIEW_EVIDENCE {"probe": "schema-literal", "literal": "WITHOUT ROWID", "initializeError": null, "structure": {"table": "records", "columns": [{"name": "id", "declaredType": "INTEGER", "affinity": "INTEGER", "nullable": false, "defaultSql": null, "primaryKey": 1, "generated": false, "autoPrimaryKey": false}, {"name": "write_id", "declaredType": "TEXT", "affinity": "TEXT", "nullable": false, "defaultSql": null, "primaryKey": 0, "generated": false, "autoPrimaryKey": false}, {"name": "value", "declaredType": "TEXT", "affinity": "TEXT", "nullable": false, "defaultSql": "'WITHOUT ROWID'", "primaryKey": 0, "generated": false, "autoPrimaryKey": false}], "createSql": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'WITHOUT ROWID')", "uniqueWriteId": true, "externalIndexes": [], "foreignKeys": [], "triggers": []}, "native": [["main", "sqlite_sequence", "table", 2, 0, 0], ["main", "records", "table", 3, 0, 0], ["main", "sqlite_schema", "table", 5, 0, 0], ["temp", "sqlite_temp_schema", "table", 5, 0, 0]], "ddl": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'WITHOUT ROWID')", "receipt": {"writeId": "78b170fb-9041-4ca5-b351-c51c1dd59ed4", "status": "FAILED", "rowsAffected": 0, "primaryKey": null, "execution": {"jobId": "job", "projectId": "", "workflowId": "main", "workflowRunId": "20e4da2a-701a-45e3-beeb-795fc75a54d4", "nodeId": "writer", "nodeRunId": "26991d6d-eea8-4e08-9526-ccfa4b91d8ce", "iterationPath": []}, "elapsedMs": 0.0, "error": {"code": "E_SQLITE_SCHEMA", "message": "\u672a\u6620\u5c04\u5fc5\u586b\u5217\uff1aid", "mappingRow": null}}}
+FREVIEW_EVIDENCE {"probe": "schema-literal", "literal": "CREATE VIRTUAL TABLE", "initializeError": {"type": "SqliteWriterError", "code": "E_SQLITE_SCHEMA", "message": "\u76ee\u6807\u5fc5\u987b\u4e3a\u666e\u901a\u8868\uff0c\u4e0d\u80fd\u4e3a\u89c6\u56fe\u6216\u865a\u62df\u8868"}, "structure": null, "native": [["main", "sqlite_sequence", "table", 2, 0, 0], ["main", "records", "table", 3, 0, 0], ["main", "sqlite_schema", "table", 5, 0, 0], ["temp", "sqlite_temp_schema", "table", 5, 0, 0]], "ddl": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'CREATE VIRTUAL TABLE')", "receipt": {"writeId": "0a63bd70-8f16-4ebb-b287-621a75a4177c", "status": "FAILED", "rowsAffected": 0, "primaryKey": null, "execution": {"jobId": "job", "projectId": "", "workflowId": "main", "workflowRunId": "099bb02a-2404-4b31-a94c-06c02c2abbd3", "nodeId": "writer", "nodeRunId": "6e27a0a2-7e61-400a-ab0f-09fe18ebbedf", "iterationPath": []}, "elapsedMs": 0.0, "error": {"code": "E_SQLITE_SCHEMA", "message": "\u76ee\u6807\u5fc5\u987b\u4e3a\u666e\u901a\u8868\uff0c\u4e0d\u80fd\u4e3a\u89c6\u56fe\u6216\u865a\u62df\u8868", "mappingRow": null}}}
+FREVIEW_EVIDENCE {"probe": "cleanup-after-commit", "faultInjection": true, "receipt": {"writeId": "977892e3-e740-4800-b4bf-59f3bf1492db", "status": "FAILED", "rowsAffected": 0, "primaryKey": null, "execution": {"jobId": "job", "projectId": "", "workflowId": "main", "workflowRunId": "d4bf86a1-3034-4e4a-ae27-7c41745225ec", "nodeId": "writer", "nodeRunId": "6a47888c-5325-40d3-82bf-6211f7de90b3", "iterationPath": []}, "elapsedMs": 109.99999986961484, "error": {"code": "E_SQLITE_WRITE", "message": "injected cleanup failure after actual connection close", "mappingRow": null}}, "rows": [["\"confirmed\"", "977892e3-e740-4800-b4bf-59f3bf1492db"]], "liveMonitors": []}
+FREVIEW_EVIDENCE {"probe": "invalid-unicode-bound-json", "unboundControl": "PASS", "failurePolicy": "continue", "receipt": null, "error": {"type": "UnicodeEncodeError", "code": "", "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed"}, "rows": 0}
+F
+================================== FAILURES ===================================
+______ testSqlKeywordsInsideDefaultsDoNotChangeTableKind[WITHOUT ROWID] _______
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/probe-temp/testSqlKeywordsInsideDefaultsD0')
+literal = 'WITHOUT ROWID'
+
+    @pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE'])
+    def testSqlKeywordsInsideDefaultsDoNotChangeTableKind(tmp_path, literal):
+        path = tmp_path / 'keyword-default.sqlite3'
+        error = None
+        structure = None
+        try:
+            result = backend.initialize(path, 'records', [{'name': 'value', 'storageType': 'TEXT', 'default': literal}])
+            structure = result['structure']
+        except Exception as failure:
+            error = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+        with sqlite3.connect(path) as connection:
+            native = connection.execute('PRAGMA table_list').fetchall()
+            ddl = connection.execute("SELECT sql FROM sqlite_schema WHERE type='table' AND name='records'").fetchone()[0]
+        rows = [{'column': 'value', 'storageType': 'TEXT', 'source': {'kind': 'constant', 'value': 'real'}, 'missing': 'error'}]
+        receipt, _, _ = actualRun(path, None, rows=rows, policy='continue')
+        emit('schema-literal', {'literal': literal, 'initializeError': error, 'structure': structure, 'native': native, 'ddl': ddl, 'receipt': receipt})
+        assert error is None, 'ordinary table was created but initialization returned an error'
+>       assert structure['columns'][0]['autoPrimaryKey'] is True, 'ordinary rowid table lost its automatic integer primary key'
+E       AssertionError: ordinary rowid table lost its automatic integer primary key
+E       assert False is True
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py:54: AssertionError
+___ testSqlKeywordsInsideDefaultsDoNotChangeTableKind[CREATE VIRTUAL TABLE] ___
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/probe-temp/testSqlKeywordsInsideDefaultsD1')
+literal = 'CREATE VIRTUAL TABLE'
+
+    @pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE'])
+    def testSqlKeywordsInsideDefaultsDoNotChangeTableKind(tmp_path, literal):
+        path = tmp_path / 'keyword-default.sqlite3'
+        error = None
+        structure = None
+        try:
+            result = backend.initialize(path, 'records', [{'name': 'value', 'storageType': 'TEXT', 'default': literal}])
+            structure = result['structure']
+        except Exception as failure:
+            error = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+        with sqlite3.connect(path) as connection:
+            native = connection.execute('PRAGMA table_list').fetchall()
+            ddl = connection.execute("SELECT sql FROM sqlite_schema WHERE type='table' AND name='records'").fetchone()[0]
+        rows = [{'column': 'value', 'storageType': 'TEXT', 'source': {'kind': 'constant', 'value': 'real'}, 'missing': 'error'}]
+        receipt, _, _ = actualRun(path, None, rows=rows, policy='continue')
+        emit('schema-literal', {'literal': literal, 'initializeError': error, 'structure': structure, 'native': native, 'ddl': ddl, 'receipt': receipt})
+>       assert error is None, 'ordinary table was created but initialization returned an error'
+E       AssertionError: ordinary table was created but initialization returned an error
+E       assert {'type': 'SqliteWriterError', 'code': 'E_SQLITE_SCHEMA', 'message': '目标必须为普通表，不能为视图或虚拟表'} is None
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py:53: AssertionError
+_____________ testConfirmedCommitSurvivesConnectionCleanupFailure _____________
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/probe-temp/testConfirmedCommitSurvivesCon0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002166F9BB820>
+
+    def testConfirmedCommitSurvivesConnectionCleanupFailure(tmp_path, monkeypatch):
+        path = makeDb(tmp_path / 'cleanup.sqlite3')
+        original = backend.OperationGuard.close
+        def failAfterActualCleanup(self):
+            original(self)
+            raise OSError('injected cleanup failure after actual connection close')
+        with monkeypatch.context() as patch:
+            patch.setattr(backend.OperationGuard, 'close', failAfterActualCleanup)
+            receipt, _, _ = actualRun(path, 'confirmed', policy='continue')
+        with sqlite3.connect(path) as connection:
+            rows = connection.execute('SELECT value, write_id FROM records').fetchall()
+        monitors = [t.name for t in threading.enumerate() if t.name == 'sqlite-interrupt']
+        emit('cleanup-after-commit', {'faultInjection': True, 'receipt': receipt, 'rows': rows, 'liveMonitors': monitors})
+        assert len(rows) == 1 and rows[0][1] == receipt['writeId'] and not monitors
+>       assert receipt['status'] == 'COMMITTED' and receipt['rowsAffected'] == 1, 'confirmed stored row is falsely reported FAILED/0'
+E       AssertionError: confirmed stored row is falsely reported FAILED/0
+E       assert ('FAILED' == 'COMMITTED'
+E         
+E         - COMMITTED
+E         + FAILED)
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py:72: AssertionError
+________________ testBadUtf8BoundValueUsesWriterContinuePolicy ________________
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/probe-temp/testBadUtf8BoundValueUsesWrite0')
+
+    def testBadUtf8BoundValueUsesWriterContinuePolicy(tmp_path):
+        value = {'text': '\ud800'}
+        # The same output passes the existing formal json-port validation when not bound.
+        bare = project(nodes=[])
+        runner = WorkflowRunner(WorkflowCompiler({}).compile(bare), {}, eventPublisher=lambda **_: None)
+        runner.run('main', {'value': value}, RunContext.root('control', 'main'), CancellationToken())
+        path = makeDb(tmp_path / 'unicode.sqlite3')
+        receipt = None
+        error = None
+        try:
+            receipt, _, _ = actualRun(path, value, policy='continue')
+        except Exception as failure:
+            error = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+        with sqlite3.connect(path) as connection:
+            count = connection.execute('SELECT count(*) FROM records').fetchone()[0]
+        emit('invalid-unicode-bound-json', {'unboundControl': 'PASS', 'failurePolicy': 'continue', 'receipt': receipt, 'error': error, 'rows': count})
+>       assert error is None, 'conversion escaped at source collection, bypassing SQLite writer and its continue policy'
+E       AssertionError: conversion escaped at source collection, bypassing SQLite writer and its continue policy
+E       assert {'type': 'UnicodeEncodeError', 'code': '', 'message': "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed"} is None
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py:91: AssertionError
+=========================== short test summary info ===========================
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py::testSqlKeywordsInsideDefaultsDoNotChangeTableKind[WITHOUT ROWID]
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py::testSqlKeywordsInsideDefaultsDoNotChangeTableKind[CREATE VIRTUAL TABLE]
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py::testConfirmedCommitSurvivesConnectionCleanupFailure
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_review_round2.py::testBadUtf8BoundValueUsesWriterContinuePolicy
+4 failed, 1 passed in 1.77s

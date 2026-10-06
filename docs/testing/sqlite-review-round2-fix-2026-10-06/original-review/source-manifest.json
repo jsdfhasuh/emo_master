@@ -1,0 +1,54 @@
+{
+  "reviewHead": "89b2c276ba06bc710eb7dace95cbe0dcc54302ae",
+  "originalResultsRetained": true,
+  "files": [
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\review-result.json",
+      "copy": "review-result.json",
+      "bytes": 17093,
+      "sha256": "5168f7e95d186a8f673ad6e5a45f1d68516a3213300d3412ee3e8b81328120c7"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\probes-raw.log",
+      "copy": "probes-raw.log",
+      "bytes": 12637,
+      "sha256": "34eaae9a3c9d98a510c3ebc62e35fe89e00d8cba250b81202694a722d547648d"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-raw.log",
+      "copy": "protected-raw.log",
+      "bytes": 4236,
+      "sha256": "5f1ab8ed733d30e963a9be12d9c3fdae755ec4f364d7c9110e0c235ef0d61671"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-shortpath-raw.log",
+      "copy": "protected-shortpath-raw.log",
+      "bytes": 6399,
+      "sha256": "d29a2e4958804057052da16df44e4711dc6ee59aa00a84994487633fdc17a9fa"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\bound-json-network-raw.log",
+      "copy": "bound-json-network-raw.log",
+      "bytes": 3726,
+      "sha256": "dfac2882a961e084ced07e812ac4666cc57b0ca5a94fe2448427d5ef6d711643"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\test_review_round2.py",
+      "copy": "test_review_round2.py.txt",
+      "bytes": 5000,
+      "sha256": "6876b113e3a9bd76e0e11002dba71bfeb6a454bf5c2ac372fb909610b9a10e5c"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\test_protected_prepare.py",
+      "copy": "test_protected_prepare.py.txt",
+      "bytes": 6316,
+      "sha256": "93cf21e9a692b9d5dd841942c8bc803973f06440b3ad6469a7b20a901bb3d479"
+    },
+    {
+      "original": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\test_bound_encoding_network.py",
+      "copy": "test_bound_encoding_network.py.txt",
+      "bytes": 4088,
+      "sha256": "03551c0530c25cfe9ae16a3b1bd44d1387742296d40952db4b60b712e501e83d"
+    }
+  ]
+}

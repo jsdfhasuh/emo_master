@@ -1,0 +1,108 @@
+FF..............                                                         [100%]
+================================== FAILURES ===================================
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug] _
+
+mode = 'debug'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 70, in protectionProbe
+E                     internal = makeDb(parent / 'arbitrary-name.sqlite3')
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_backend.py", line 26, in makeDb
+E                     initialize(path, table, columns or [{"name": "value", "storageType": "JSON", "nullable": True}])
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 228, in initialize
+E                     with connectionFor(path, create=True, guard=guard) as connection:
+E                   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py", line 135, in __enter__
+E                     return next(self.gen)
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 95, in connectionFor
+E                     connection = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,
+E                 sqlite3.OperationalError: invalid uri authority: %3F
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...h.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,\nsqlite3.OperationalError: invalid uri authority: %3F\n'}
+
+tests\sqlite_writer\test_review_protection.py:134: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 70, in protectionProbe
+    internal = makeDb(parent / 'arbitrary-name.sqlite3')
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_backend.py", line 26, in makeDb
+    initialize(path, table, columns or [{"name": "value", "storageType": "JSON", "nullable": True}])
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 228, in initialize
+    with connectionFor(path, create=True, guard=guard) as connection:
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py", line 135, in __enter__
+    return next(self.gen)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 95, in connectionFor
+    connection = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,
+sqlite3.OperationalError: invalid uri authority: %3F
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release] _
+
+mode = 'release'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 70, in protectionProbe
+E                     internal = makeDb(parent / 'arbitrary-name.sqlite3')
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_backend.py", line 26, in makeDb
+E                     initialize(path, table, columns or [{"name": "value", "storageType": "JSON", "nullable": True}])
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 228, in initialize
+E                     with connectionFor(path, create=True, guard=guard) as connection:
+E                   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py", line 135, in __enter__
+E                     return next(self.gen)
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 95, in connectionFor
+E                     connection = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,
+E                 sqlite3.OperationalError: invalid uri authority: %3F
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...h.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,\nsqlite3.OperationalError: invalid uri authority: %3F\n'}
+
+tests\sqlite_writer\test_review_protection.py:134: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 70, in protectionProbe
+    internal = makeDb(parent / 'arbitrary-name.sqlite3')
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_backend.py", line 26, in makeDb
+    initialize(path, table, columns or [{"name": "value", "storageType": "JSON", "nullable": True}])
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 228, in initialize
+    with connectionFor(path, create=True, guard=guard) as connection:
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py", line 135, in __enter__
+    return next(self.gen)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\business_sqlite\backend.py", line 95, in connectionFor
+    connection = sqlite3.connect(path.as_uri() + f"?mode={mode}", uri=True, timeout=LOCK_TIMEOUT,
+sqlite3.OperationalError: invalid uri authority: %3F
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug]
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release]
+2 failed, 14 passed in 14.28s

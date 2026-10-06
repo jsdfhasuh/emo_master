@@ -1,0 +1,158 @@
+FF..............                                                         [100%]
+================================== FAILURES ===================================
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug] _
+
+self = <multiprocessing.connection.PipeConnection object at 0x00000287A06C6D70>
+maxsize = None
+
+    def _recv_bytes(self, maxsize=None):
+        if self._got_empty_message:
+            self._got_empty_message = False
+            return io.BytesIO()
+        else:
+            bsize = 128 if maxsize is None else min(maxsize, 128)
+            try:
+>               ov, err = _winapi.ReadFile(self._handle, bsize,
+                                            overlapped=True)
+E                                           BrokenPipeError: [WinError 109] 管道已结束。
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:301: BrokenPipeError
+
+During handling of the above exception, another exception occurred:
+
+mode = 'debug'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+>               result = receive.recv()
+
+tests\sqlite_writer\test_review_protection.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:250: in recv
+    buf = self._recv_bytes()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <multiprocessing.connection.PipeConnection object at 0x00000287A06C6D70>
+maxsize = None
+
+    def _recv_bytes(self, maxsize=None):
+        if self._got_empty_message:
+            self._got_empty_message = False
+            return io.BytesIO()
+        else:
+            bsize = 128 if maxsize is None else min(maxsize, 128)
+            try:
+                ov, err = _winapi.ReadFile(self._handle, bsize,
+                                            overlapped=True)
+                try:
+                    if err == _winapi.ERROR_IO_PENDING:
+                        waitres = _winapi.WaitForMultipleObjects(
+                            [ov.event], False, INFINITE)
+                        assert waitres == WAIT_OBJECT_0
+                except:
+                    ov.cancel()
+                    raise
+                finally:
+                    nread, err = ov.GetOverlappedResult(True)
+                    if err == 0:
+                        f = io.BytesIO()
+                        f.write(ov.getbuffer())
+                        return f
+                    elif err == _winapi.ERROR_MORE_DATA:
+                        return self._get_more_data(ov, maxsize)
+            except OSError as e:
+                if e.winerror == _winapi.ERROR_BROKEN_PIPE:
+>                   raise EOFError
+E                   EOFError
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:321: EOFError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-1:
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release] _
+
+self = <multiprocessing.connection.PipeConnection object at 0x00000287A07DFEB0>
+maxsize = None
+
+    def _recv_bytes(self, maxsize=None):
+        if self._got_empty_message:
+            self._got_empty_message = False
+            return io.BytesIO()
+        else:
+            bsize = 128 if maxsize is None else min(maxsize, 128)
+            try:
+>               ov, err = _winapi.ReadFile(self._handle, bsize,
+                                            overlapped=True)
+E                                           BrokenPipeError: [WinError 109] 管道已结束。
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:301: BrokenPipeError
+
+During handling of the above exception, another exception occurred:
+
+mode = 'release'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+>               result = receive.recv()
+
+tests\sqlite_writer\test_review_protection.py:128: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:250: in recv
+    buf = self._recv_bytes()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <multiprocessing.connection.PipeConnection object at 0x00000287A07DFEB0>
+maxsize = None
+
+    def _recv_bytes(self, maxsize=None):
+        if self._got_empty_message:
+            self._got_empty_message = False
+            return io.BytesIO()
+        else:
+            bsize = 128 if maxsize is None else min(maxsize, 128)
+            try:
+                ov, err = _winapi.ReadFile(self._handle, bsize,
+                                            overlapped=True)
+                try:
+                    if err == _winapi.ERROR_IO_PENDING:
+                        waitres = _winapi.WaitForMultipleObjects(
+                            [ov.event], False, INFINITE)
+                        assert waitres == WAIT_OBJECT_0
+                except:
+                    ov.cancel()
+                    raise
+                finally:
+                    nread, err = ov.GetOverlappedResult(True)
+                    if err == 0:
+                        f = io.BytesIO()
+                        f.write(ov.getbuffer())
+                        return f
+                    elif err == _winapi.ERROR_MORE_DATA:
+                        return self._get_more_data(ov, maxsize)
+            except OSError as e:
+                if e.winerror == _winapi.ERROR_BROKEN_PIPE:
+>                   raise EOFError
+E                   EOFError
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\connection.py:321: EOFError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-2:
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug]
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release]
+2 failed, 14 passed in 8.25s

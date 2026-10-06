@@ -150,3 +150,5 @@ P5-A 测试交付算子 allowlist 没有扩大到 SQLite，页面项目含此算
 不静默丢弃配置。没有数据库迁移、BLOB、长期查询页面、跨机/EXE 或现场发布验收。
 
 基线和本轮结果见 [验证报告](testing/sqlite-writer-2026-10-05.md)。
+第二轮审核修复及原始失败、复验和完整 CI 证据见
+[第二轮修复报告](testing/sqlite-review-round2-fix-2026-10-06.md)。

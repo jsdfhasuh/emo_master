@@ -19,6 +19,8 @@ def testNativePaletteSplitterAndSearch(designer):  # noqa: F811
     assert [e.tools.palette.item(i).data(Qt.UserRole) for i in range(8)
             if not e.tools.palette.item(i).isHidden()] == ['image']
     e.tools.search.clear()
+    if e.splitter.sizes()[0] == 0:
+        e.togglePanel(0)
     e.togglePanel(0)
     assert e.splitter.sizes()[0] == 0
     e.togglePanel(0)
@@ -37,7 +39,7 @@ def testSamplesAreTransientAndRealStatesNeverFallback(designer, tmp_path):  # no
     e.refresh()
     before, history = c.session.payload(), len(c.session._undo)
     r = e.renderer
-    assert r.designExamples and e.tools.examples.isChecked()
+    assert r.designExamples
     assert not r.widgets[e.pageId][image][1].image.isNull()
     assert r.widgets[e.pageId][number][1].text() == '128.50'
     assert r.widgets[e.pageId][table][1].model.rowCount() == 3
@@ -49,7 +51,7 @@ def testSamplesAreTransientAndRealStatesNeverFallback(designer, tmp_path):  # no
     assert saved['presentation'] == before['presentation']
     for status in ('CONNECTED', 'DISCONNECTED', 'ERROR'):
         r.submit(SessionView(1, 1, 'runtime', 'job', status, '', {}, {}, {}))
-        assert not r.designExamples and not e.tools.examples.isChecked()
+        assert not r.designExamples
         assert r.widgets[e.pageId][image][1].image.isNull()
         assert r.widgets[e.pageId][table][1].model.columns == []
     e.refresh()
@@ -80,7 +82,7 @@ def testTypePropertiesPreserveHiddenValuesAndSharedSample(designer):  # noqa: F8
     e.refresh()
     widgets = e.renderer.widgets[e.pageId]
     assert widgets[image1][1].image.cacheKey() == widgets[image2][1].image.cacheKey()
-    e.tools.examples.setChecked(False)
+    e.renderer.setDesignExamples(False)
     assert e.renderer.editorResourceUsage()['design_image_bytes'] == 0
 
 
@@ -118,8 +120,7 @@ def testPagePropertiesAndLongNamesRemainInSidePanel(designer):  # noqa: F811
 def testLegacyOfflineExampleCannotSurviveRealUncapturedSession(designer):  # noqa: F811
     from emo_master.clients.runtime.view_state import SessionView
     _c, e, key = setupPage(designer, 'number')
-    e.tools.preview.setChecked(True)
-    e.tools.simulation.setCurrentIndex(e.tools.simulation.findData('OK'))
+    e.renderer.setSimulationState('OK')
     assert e.renderer.simulationState == 'OK'
     for status in ('CONNECTING', 'CONNECTED', 'DISCONNECTED', 'ERROR'):
         e.renderer.submit(SessionView(0, 0, '', '', status, '', {}, {}, {}))

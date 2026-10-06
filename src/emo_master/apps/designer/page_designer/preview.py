@@ -18,6 +18,8 @@ from emo_master.core.presentation.coverage import CaptureCoverage
 
 LOCAL_OPERATORS = frozenset({'vision.io.image_loader', 'vision.analysis.blob',
     'vision.collection.count', 'vision.io.image_saver'})
+STATUS_LABELS = {'ACCEPTED': '等待开始', 'STARTING': '正在启动', 'RUNNING': '运行中',
+                 'STOPPING': '正在停止', 'COMPLETED': '已完成', 'FAILED': '失败', 'ABORTED': '已停止'}
 
 
 def checkLocalDraft(document):
@@ -52,7 +54,7 @@ class LocalBackend:
     def __init__(self, runtime):
         from emo_master.apps.runtime.grpc_server.service import RuntimeService
         if not isinstance(runtime, RuntimeService):
-            raise ValueError('当前 Runtime 不支持本地草稿准备；请使用内嵌开发入口或只读连接已有 Job')
+            raise ValueError('当前连接不支持图片测试，请使用本机内嵌运行模式；已有运行结果仍可在页面预览中查看')
         self.runtime = runtime
         self.root = runtime.workspaceRoot.parent / 'presentation'
         self.service = self.server = self.channel = None
@@ -150,6 +152,7 @@ class PreviewController(QObject):
         self.events = queue.Queue(maxsize=1)
         self.closing = False
         self.onClosed = None
+        self.closeExecution = False
         self.error = None
         self.coverage = None
         self.selectedJob = None
@@ -162,14 +165,29 @@ class PreviewController(QObject):
         self.timer.start(25)
 
     def message(self, text):
+        from .property_panel import editorMessage
+        self.coordinator.window.appendRuntimeLog('INFO', text)
+        text = editorMessage(text)
+        for original, readable in [
+                ('当前 Runtime 尚无页面服务；请先明确运行工程', '尚未运行：请切换到流程设计，运行流程或开始图片测试'),
+                ('当前 Runtime 不支持工程任务/来源元数据协商；页面设计仍可使用，请升级 Runtime 或使用高级只读连接',
+                 '当前运行服务不支持查看项目结果，请更新运行服务；也可通过“高级连接”查看已有结果'),
+                ('当前 Runtime 尚未提供只读任务目录；页面可继续编辑，不会为观看启动 Runtime',
+                 '当前连接无法查询运行结果；请检查运行服务，或通过“高级连接”查看已有结果')]:
+            text = text.replace(original, readable)
         if self.coordinator.editor:
             self.coordinator.editor.message.setText(text)
-        self.coordinator.window.appendRuntimeLog('INFO', text)
+        self.coordinator.window.statusBar().showMessage(text)
+        if self.observer is not None and isValid(self.observer):
+            self.observer.status.setText(text)
+        if hasattr(self.coordinator, 'chrome'):
+            self.coordinator.chrome.update()
 
-    def launch(self, operation):
+    def launch(self, operation, *, cleanup=False):
         if self.busy:
             raise ValueError('上一操作正在收尾，请稍候')
         self.busy = True
+        self.cleaning = cleanup
         self.error = None
         def work():
             try:
@@ -181,8 +199,8 @@ class PreviewController(QObject):
         self.worker.start()
 
     def startDebug(self):
-        if self.session or self.backend or self.closing:
-            raise ValueError('请先明确停止本次本地调试 / 断开观察，再启动新草稿')
+        if self.busy or self.backend or self.closing:
+            raise ValueError('请先停止当前图片测试，再开始新的测试')
         self.coordinator.sync()
         document = self.coordinator.session.document()
         checkLocalDraft(document)
@@ -193,19 +211,20 @@ class PreviewController(QObject):
         def start():
             self.backend = LocalBackend(runtime)
             job = self.backend.start(document, root)
-            self.session = DisplaySession(self.backend.address, job, imageDemand=True)
-            return job
-        self.message('正在冻结草稿、物化临时输入/数据库/输出；不会热修改当前采集计划')
+            return {'kind': 'debug_started', 'job': job}
+        self.message('正在使用当前配置和测试图片开始测试')
         self.launch(start)
 
     def connect(self, address, job):
-        if self.session or self.backend or self.closing:
-            raise ValueError('先断开当前观察会话')
+        if self.busy or self.session or self.closing:
+            raise ValueError('请先停止查看当前结果')
         host, separator, port = address.rpartition(':')
         if (host not in {'127.0.0.1', 'localhost'} or not separator or not port.isdecimal()
                 or not 0 < int(port) < 65536 or not job.strip()):
             raise ValueError('仅接受本机 loopback 地址和明确 Job ID')
         job = job.strip()
+        if self.observer is None:
+            self.openObserver()
         projectId = self.coordinator.session.document().project.projectId
         def attach():
             # Negotiate using the supplied endpoint only. Viewing never creates a
@@ -243,28 +262,41 @@ class PreviewController(QObject):
         """Offer only verified current-project Jobs, with the explicit run selected."""
         if self.busy or self.closing:
             raise ValueError('上一操作正在收尾，请稍候')
-        if self.backend is not None:
-            raise ValueError('请先明确停止自有隔离调试，再观看正常运行任务')
         if self.session is not None:
-            self.closeAsync(self.watchCurrent)
+            self.stopViewing(self.watchCurrent)
             return
+        if self.observer is None:
+            self.openObserver()
         self.coordinator.sync()
+        observer = self.observer
+        if observer is not None:
+            observer.setDesignExamples(False)
+            observer.setSimulationState(None)
+            observer.setSource(True)
+            observer.banner.setText('运行结果 · 等待选择运行记录')
         projectId = self.coordinator.session.document().project.projectId
         client = self.coordinator.window.runtimeClient
-        if not all(callable(getattr(client, name, None)) for name in
+        if self.backend is None and not all(callable(getattr(client, name, None)) for name in
                    ('displayAddress', 'getDisplayCapabilities', 'listDisplayJobs')):
             raise ValueError('当前 Runtime 尚未提供只读任务目录；页面可继续编辑，不会为观看启动 Runtime')
         def listJobs():
-            capabilities = client.getDisplayCapabilities()
+            backend = self.backend
+            if backend is not None:
+                capabilities = backend.stub.Capabilities(pb.DisplayEmpty(), timeout=5)
+                address = backend.address
+                jobs = list(backend.stub.ListJobs(pb.DisplayEmpty(project_id=projectId), timeout=5).jobs)
+            else:
+                capabilities = client.getDisplayCapabilities()
+                self._checkCapabilities(capabilities, currentProject=True)
+                address = client.displayAddress()
+                jobs = client.listDisplayJobs(projectId)
             self._checkCapabilities(capabilities, currentProject=True)
-            address = client.displayAddress()
             if not address:
                 raise ValueError('当前 Runtime 尚无展示端点；请在下一次明确开始运行时启用采集')
-            jobs = [item for item in client.listDisplayJobs(projectId)
-                    if item.project_id == projectId]
+            jobs = [item for item in jobs if item.project_id == projectId]
             return {'kind': 'choices', 'jobs': jobs, 'address': address,
                     'projectId': projectId, 'capabilities': capabilities}
-        self.message('正在读取当前工程任务；只观察，不启动、不更改采集计划')
+        self.message('正在查找已有运行结果，不会启动流程')
         self.launch(listJobs)
 
     def _chooseJob(self, value):
@@ -272,16 +304,16 @@ class PreviewController(QObject):
             raise ValueError('工程已切换，忽略旧工程任务列表')
         jobs = value['jobs']
         if not jobs:
-            raise ValueError('当前工程没有可观看任务；请从主工具栏明确开始运行')
+            raise ValueError('尚未运行：请切换到流程设计并运行或进行图片测试')
         current = self.coordinator.window.currentJobId
         # Preserve an explicitly selected page observer independently of the
         # controller's owned Job; never assign currentJobId and inherit Stop rights.
-        preferred = current or getattr(self.selectedJob, 'job_id', '')
+        preferred = (self.backend.jobId if self.backend else current) or getattr(self.selectedJob, 'job_id', '')
         index = next((i for i, item in enumerate(jobs) if item.job_id == preferred), 0)
         if len(jobs) > 1:
             labels = [self._jobLabel(item) for item in jobs]
-            label, ok = QInputDialog.getItem(self.coordinator.window, '观看当前工程任务',
-                '选择已有任务（仅观察；执行状态不等于产品 OK/NG）', labels, index, False)
+            label, ok = QInputDialog.getItem(self.coordinator.window, '查看运行结果',
+                '选择已有运行记录', labels, index, False)
             if not ok:
                 self.message('已取消选择任务；未启动或停止任何任务')
                 return
@@ -292,11 +324,11 @@ class PreviewController(QObject):
 
     @staticmethod
     def _jobLabel(metadata, *, includeStatus=True):
-        mode = {'runtime': '正常运行', 'debug': '隔离调试', 'release': '测试发布'}.get(
+        mode = {'runtime': '正常运行', 'debug': '图片测试', 'release': '测试发布'}.get(
             getattr(metadata, 'mode', ''), '旧任务（语义未声明）')
         capture = '已采集页面来源' if getattr(metadata, 'capture_enabled', False) else '未采集页面来源'
-        status = f' · {metadata.status}' if includeStatus else ''
-        return f'{metadata.job_id}{status} · {mode} · {capture}'
+        status = ' · ' + STATUS_LABELS.get(metadata.status, metadata.status) if includeStatus else ''
+        return f'{mode}{status} · {capture} · {metadata.job_id[:8]}'
 
     def _attach(self, address, metadata, coverage):
         if coverage is None:
@@ -311,97 +343,79 @@ class PreviewController(QObject):
         # No native Qt calls here: destruction can follow the Designer owner.
         if self.observerToken is token:
             self.observer = self.observerToken = None
+            QTimer.singleShot(0, self.stopViewing)
 
     def retireObserver(self):
         observer = self.observer
+        self.observer = self.observerToken = None
         if observer is not None and isValid(observer):
+            observer.retiring = True
             observer.close()
             observer.deleteLater()
 
+    def previewClosed(self, observer):
+        if self.observer is observer:
+            self.observer = self.observerToken = None
+            self.stopViewing()
+
     def openObserver(self):
-        """Open one read-only view of the already selected, shared Job session."""
         if self.busy or self.closing:
             raise ValueError('上一操作正在收尾，请稍候')
-        editor = self.coordinator.editor
-        metadata = self.selectedJob
-        if (editor is None or self.hub is None or self.session is None or metadata is None
-                or self.coverage is None):
-            raise ValueError('请先观看当前工程任务，再弹出只读观察窗口')
-        projectId = self.coordinator.session.document().project.projectId
-        if (metadata.project_id != projectId or self.coverage.jobId != metadata.job_id
-                or self.coverage.runtimeInstanceId != metadata.runtime_instance_id
-                or self.hub.session is not self.session or self.session.jobId != metadata.job_id
-                or editor.renderer.hub is not self.hub or editor.renderer not in self.hub.windows):
-            self.retireObserver()
-            raise ValueError('当前观察任务或工程已变化，请重新观看当前工程任务')
         self.coordinator.sync()
+        presentation = self.coordinator.session.presentation.snapshot()
+        if not presentation.pages:
+            raise ValueError('请先新建页面')
         observer = self.observer
-        if observer is not None and isValid(observer):
-            if observer.detached:
-                raise ValueError('只读观察窗口正在关闭，请稍候')
-            if observer.hub is not self.hub:
-                self.retireObserver()
-                raise ValueError('旧观察窗口正在收尾，请稍后重试')
-            observer.showNormal() if observer.isMinimized() else observer.show()
-            observer.raise_()
-            observer.activateWindow()
-            return observer
-        if len(self.hub.windows) >= 2:
-            raise ValueError('最多两个共享窗口（包括隐藏的内嵌页面）')
-        from .workspace import ObserverPages
-        # A frozen detail may intentionally defer committed form edits. Clone
-        # what the editor displays; never reload it or copy its frozen ticket.
-        observer = ObserverPages(editor.renderer.config, parent=self.coordinator.window,
-            label='只读观察窗口 · ' + metadata.job_id)
-        token = object()
-        self.observer, self.observerToken = observer, token
-        observer.destroyed.connect(lambda _object=None: self._observerDestroyed(token))
-        try:
-            observer.setCaptureCoverage(self.coverage)
-            observer.banner.setText(self.observationLabel)
-            if editor.renderer.currentPageId:
-                observer.navigate(editor.renderer.currentPageId)
-            observer.hub = self.hub
-            self.hub.attach(observer)
-            observer.show()
-        except BaseException:
-            observer.close()
-            observer.deleteLater()
-            raise
+        if observer is None or not isValid(observer):
+            from .preview_window import PreviewWindow
+            observer = PreviewWindow(self, presentation)
+            token = object()
+            self.observer, self.observerToken = observer, token
+            observer.destroyed.connect(lambda _object=None: self._observerDestroyed(token))
+            editor = self.coordinator.editor
+            if editor and editor.pageId:
+                observer.navigate(editor.pageId)
+        else:
+            self.refreshObserver(presentation)
+        observer.showNormal() if observer.isMinimized() else observer.show()
+        observer.raise_()
+        observer.activateWindow()
         return observer
 
     def refreshObserver(self, presentation):
         observer = self.observer
         if observer is None or not isValid(observer) or observer.detached:
             return
-        if observer.hub is not self.hub:
-            self.retireObserver()
+        if observer.frozen is not None:
+            # Undo may return to the displayed configuration while a result is
+            # pinned. Never apply an obsolete intermediate edit on resume.
+            observer.pendingPresentation = (presentation.model_copy(deep=True)
+                                            if observer.config != presentation else None)
         elif observer.config != presentation:
-            # A real configuration replacement releases its old frozen view,
-            # as in the embedded renderer. A no-op refresh keeps the pin.
             observer.reload(presentation)
 
     def refreshJobStatus(self):
-        editor = self.coordinator.editor
-        if editor is None:
-            return
         from emo_master.ui.presentation.job_status import jobStatusText
+        backend = self.backend
+        runtime = getattr(backend, 'runtime', None)
+        job = runtime.jobRepository.getCurrentSnapshot(backend.jobId) if runtime and backend.jobId else None
+        if hasattr(self.coordinator, 'chrome'):
+            status = self.coordinator.chrome.testStatus
+            if backend is not None:
+                label = STATUS_LABELS.get(job.status, job.status) if job else '正在准备'
+                status.setText('图片测试：' + label + (' · ' + job.message if job and job.message else ''))
+            status.setVisible(backend is not None and not self.coordinator.pageActive())
+        observer = self.observer
+        if observer is None or not isValid(observer):
+            return
         text = self.observationLabel
-        session = self.session
-        if (session is not None and self.hub is not None and self.hub.session is session
-                and editor.renderer.hub is self.hub and not self.closing
-                and (self.selectedJob is not None or self.backend is not None)):
-            text += '\n' + jobStatusText(session.readSnapshot().job)
+        if self.session is not None and not self.closing:
+            text += '\n' + jobStatusText(self.session.readSnapshot().job)
         if self.coverageDetails:
             text += '\n' + self.coverageDetails
-        if editor.observation.text() != text:
-            editor.observation.setText(text)
+        observer.jobStatus.setText(text)
 
     def refreshCoverage(self):
-        editor = self.coordinator.editor
-        if editor is None:
-            return
-        editor.renderer.setCaptureCoverage(self.coverage)
         observer = self.observer
         if (observer is not None and isValid(observer) and not observer.detached
                 and observer.hub is self.hub):
@@ -438,98 +452,115 @@ class PreviewController(QObject):
         if kind == 'error':
             self.error = value
             self.message('操作失败：' + value)
-            # Keep owners reachable and allow an explicit cleanup retry.
+            if self.closing and not self.cleaning:
+                self._finishClose()
+                return
+            # Failed cleanup retains ownership and permits an explicit retry.
             self.closing = False
+            self.onClosed = None
             return
-        if value == '__closed__':
+        if value['kind'] == 'closed':
+            if self.closeExecution and not value['execution']:
+                self._finishClose()
+                return
             self.closing = False
             self.error = None
-            self.message('本观察者已断开；外部 Runtime 未停止')
+            self.message('已停止查看' if not self.closeExecution else '图片测试和结果查看已收尾')
+            self.closeExecution = False
             callback, self.onClosed = self.onClosed, None
             if callback:
                 callback()
             return
         if self.closing:
-            self.closeAsync(self.onClosed)
+            self._finishClose()
             return
-        if isinstance(value, dict) and value['kind'] == 'choices':
+        if value['kind'] == 'debug_started':
+            self.message('图片测试已启动；可在页面预览中查看运行结果')
+            return
+        if value['kind'] == 'choices':
             try:
                 self._chooseJob(value)
             except ValueError as error:
                 self.error = str(error)
-                self.message('无法观看：' + str(error))
+                self.message('无法查看：' + str(error))
             return
-        if isinstance(value, dict):
-            self.selectedJob = value['metadata']
-            self.coverage = value['coverage']
-            label = self._jobLabel(self.selectedJob, includeStatus=self.coverage is None)
-            prefix = '只读观看 · 选择时状态：' if self.coverage is None else '只读观看 · 已选择任务：'
-            self.observationLabel = prefix + label + ' · 执行状态不等于产品 OK/NG'
-            if self.coverage is None:
-                self.observationLabel += '\n旧 Runtime 未提供来源清单；仅允许完整采集摘要匹配的结果'
-            elif not self.coverage.enabled or getattr(self.selectedJob, 'resources_released', False):
-                self.observationLabel += '\n任务未保留页面资源（未采集或已释放）；不会重跑任务补取数据'
-        else:
-            self.selectedJob = None
-            self.coverage = None
-            label = value
-            self.observationLabel = '隔离草稿调试 · ' + value + ' · 临时数据库/输出，与正常运行分开'
+        self.selectedJob = value['metadata']
+        self.coverage = value['coverage']
+        self.observationLabel = self._jobLabel(self.selectedJob, includeStatus=False)
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
-        if self.coordinator.editor:
-            renderer = self.coordinator.editor.renderer
-            renderer.hub = self.hub
-            renderer.setCaptureCoverage(self.coverage)
+        observer = self.observer
+        if observer is not None and isValid(observer):
+            observer.setDesignExamples(False)
+            observer.setSource(True)
+            observer.hub = self.hub
+            observer.setCaptureCoverage(self.coverage)
             if self.hub:
-                self.hub.attach(renderer)
-            else:
-                from types import MappingProxyType
-                from emo_master.clients.runtime.view_state import SessionView
-                empty = MappingProxyType({})
-                renderer.submit(SessionView(0, 0, self.coverage.runtimeInstanceId, self.coverage.jobId,
-                    'NOT_CAPTURED', '任务未采集页面来源或资源已释放；下一次明确启动才生效', empty, empty, empty))
-            self.coordinator.editor.tools.preview.setChecked(True)
-            self.coordinator.editor.tools.changeSimulation()
-            renderer.banner.setText(self.observationLabel)
+                try:
+                    self.hub.attach(observer)
+                except BaseException as error:
+                    self.hub.detach(observer)
+                    observer.hub = None
+                    self.retireObserver()
+                    self.error = str(error)
+                    self.message('无法查看：' + str(error))
+                    return
+            observer.banner.setText('运行结果')
             self.refreshCoverage()
-        self.message('已选择明确任务 ' + label)
+        self.message('已连接运行结果')
+
+    def stopViewing(self, callback=None):
+        self._requestClose(False, callback)
+
+    def stopTest(self):
+        if self.backend is None:
+            return
+        self._requestClose(True, None)
 
     def closeAsync(self, callback=None):
-        self.closing = True
-        self.onClosed = callback
-        if self.busy:
-            return
+        # Project/application lifecycle is the only combined cleanup path.
         self.retireObserver()
-        editor = self.coordinator.editor
-        embedded = editor.renderer if editor else None
+        self._requestClose(True, callback)
+
+    def _requestClose(self, execution, callback):
+        # A newer view intent cancels an older sample/reconnect callback; closing
+        # execution has priority over subsequent window destruction callbacks.
+        if execution or not self.closeExecution:
+            self.onClosed = callback
+        self.closeExecution = self.closeExecution or execution
+        self.closing = True
+        if not self.busy:
+            self._finishClose()
+
+    def _finishClose(self):
         if self.hub:
             for renderer in tuple(self.hub.windows):
-                if renderer is not embedded:
-                    renderer.close()
-                    renderer.deleteLater()
-                    continue
                 self.hub.detach(renderer)
-                renderer.hub = None
+                if isValid(renderer):
+                    renderer.hub = None
             self.hub.deleteLater()
             self.hub = None
         self.coverage = None
         self.selectedJob = None
         self.observationLabel = ''
-        self.refreshCoverage()
-        if self.coordinator.editor:
-            renderer = self.coordinator.editor.renderer
-            renderer.reload(renderer.config)
-            renderer.setSimulationState(None)
-            renderer.banner.setText('模拟布局预览 · 已断开实时结果')
+        observer = self.observer
+        if observer is not None and isValid(observer):
+            observer.hub = None
+            observer.setCaptureCoverage(None)
+            observer.reload(observer.config)
+            observer.setDesignExamples(False)
+            observer.setSimulationState(None)
+            observer.banner.setText('运行结果 · 已停止查看')
+        execution = self.closeExecution
         def close():
             if self.session:
                 self.session.close()
                 self.session = None
-            if self.backend:
+            if execution and self.backend:
                 self.backend.close()
                 self.backend = None
-            return '__closed__'
-        self.message('正在异步收尾本观察者及本次自有调试；界面仍可响应')
-        self.launch(close)
+            return {'kind': 'closed', 'execution': execution}
+        self.message('正在结束图片测试' if self.closeExecution else '正在停止查看，流程继续运行')
+        self.launch(close, cleanup=True)
 
     def active(self):
         return self.busy or self.session is not None or self.backend is not None

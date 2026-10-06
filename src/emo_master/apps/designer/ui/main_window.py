@@ -1064,7 +1064,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.mainToolbar.addSeparator()
         self._addToolbarGroup("运行", [self.startButton, self.stopButton])
         if _nativeQt:
-            self.mainToolbar.addWidget(QLabel(" 下次节点快照："))
             combo = QComboBox(self)
             self.legacySnapshotPolicyCombo = combo
             combo.setObjectName("legacySnapshotPolicyCombo")
@@ -1073,7 +1072,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             combo.setToolTip("仅影响下一次明确开始运行；不改变当前作业，不保存到项目")
             combo.currentIndexChanged.connect(
                 lambda _index: self.setNextRunLegacySnapshotPolicy(str(combo.currentData())))
-            self.mainToolbar.addWidget(combo)
+            combo.hide()
         self.mainToolbar.addSeparator()
         self._addToolbarGroup("编辑", [self.autoLayoutButton, self.validateGraphButton])
         self.mainToolbar.addSeparator()
@@ -1726,7 +1725,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 continue
             action = QAction(icon(iconName, "#ffffff" if label == "开始运行" else "#475569"), label, self)
             action.setToolTip(label)
-            action.triggered.connect(lambda checked=False, command=callback: command())
+            action.triggered.connect(lambda checked=False, command=callback, action=action:
+                                     command() if action.isEnabled() else None)
             self.mainToolbar.addAction(action)
             tool = self.mainToolbar.widgetForAction(action)
             tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if label in {
@@ -1767,6 +1767,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         viewMenu = addMenu("视图")
         self._addMenuAction(viewMenu, "切换侧边栏", self.toggleSidebar)
         self._addMenuAction(viewMenu, "聚焦画布内容", self.focusGraphContent)
+        self._workspaceMenus = {"文件": fileMenu, "运行": runMenu, "编辑": editMenu, "视图": viewMenu}
 
     def _addMenuAction(self, menu, title: str, callback) -> None:
         sharedTitle = "加载项目" if title == "打开项目" else title
@@ -1777,7 +1778,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
             def onTriggered(checked: bool = False) -> None:
                 _ = checked
-                callback()
+                if not _nativeQt or action.isEnabled():
+                    callback()
 
             triggered.connect(onTriggered)
         addAction = getattr(menu, "addAction", None)
@@ -3528,6 +3530,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if name in self._toolbarActions:
                 self._toolbarActions[name].setEnabled(enabled)
         self._updateRunBlockedHint(canRun)
+        coordinator = getattr(self, 'pageCoordinator', None)
+        if coordinator is not None and hasattr(coordinator, 'chrome'):
+            coordinator.chrome.update()
         actions = getattr(self, 'designerActions', None)
         if actions is not None:
             actions.refresh()

@@ -5,9 +5,9 @@ from PySide2.QtCore import Qt, QObject, QEvent, QMimeData, QTimer
 from PySide2.QtGui import QDrag
 from shiboken2 import isValid
 from PySide2.QtWidgets import (
-    QWidget, QFormLayout, QVBoxLayout, QTreeWidget,
+    QWidget, QFormLayout, QVBoxLayout, QHBoxLayout, QTreeWidget,
     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
-    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QFileDialog, QCheckBox, QToolButton, QMenu, QHeaderView,
+    QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem, QToolButton, QMenu, QHeaderView,
     QSizePolicy, QLayout,
 )
 
@@ -17,6 +17,7 @@ from emo_master.core.presentation.validation import validateBindings, pageScopes
 from emo_master.apps.designer.state.presentation_store import _component
 from .editing import PageCommands, manifestsFromCatalog, outputChoices
 from .palette import Palette
+from emo_master.apps.designer.ui.widgets import ElidedLabel
 from .property_adapters import (decodeIndicatorKey, indicatorStatesFromRows,
                                 tableFieldChoices, actionFromFields)
 
@@ -70,15 +71,15 @@ class EditingTools(QObject):
         libraryLayout.addWidget(self.palette)
         workspace.libraryTabs.addTab(library, '组件')
         self.outputs = Outputs()
-        self.outputs.setHeaderLabels(['流程数据 · 拖到兼容组件'])
+        self.outputs.setHeaderLabels(['流程结果 · 拖到组件'])
         self.outputs.setDragEnabled(True)
         self.outputs.setMinimumWidth(0)
-        workspace.libraryTabs.addTab(self.outputs, '流程数据')
+        workspace.libraryTabs.addTab(self.outputs, '流程结果')
         panel = QWidget()
         self.form = QFormLayout(panel)
         self.form.setRowWrapPolicy(QFormLayout.WrapAllRows)
         self.form.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
-        self.title = QLabel('选择控件编辑')
+        self.title = ElidedLabel('页面属性')
         self.form.addRow(self.title)
         self.propertyError = QLabel()
         self.propertyError.setStyleSheet('color:#b91c1c')
@@ -92,7 +93,7 @@ class EditingTools(QObject):
             self.fields[name] = field
             self.form.addRow(label, field)
         for name, label, maximum, minimum in [('row', '行', 4095, 0), ('column', '列', 23, 0),
-                ('rowSpan', '行跨度', 128, 1), ('columnSpan', '列跨度', 24, 1),
+                ('rowSpan', '占用行数', 128, 1), ('columnSpan', '占用列数', 24, 1),
                 ('decimals', '小数位', 12, 0), ('pageSize', '每页行数', 100, 1),
                 ('columns', '页面/容器列数', 24, 1)]:
             field = QSpinBox()
@@ -100,14 +101,14 @@ class EditingTools(QObject):
             self.fields[name] = field
             self.form.addRow(label, field)
         self.destination = QComboBox()
-        self.form.addRow('导航目标（稳定 ID）', self.destination)
+        self.form.addRow('目标页面', self.destination)
         self.actionMode = QComboBox()
         for label, value in [('未配置', 'none'), ('跳转页面（实时）', 'navigate'),
-                ('查看已显示结果详情', 'detail'), ('冻结已显示结果', 'freeze'), ('恢复实时', 'resume_live')]:
+                ('查看已显示结果详情', 'detail'), ('固定当前结果', 'freeze'), ('继续更新', 'resume_live')]:
             self.actionMode.addItem(label, value)
-        self.form.addRow('只读按钮动作', self.actionMode)
+        self.form.addRow('点击后', self.actionMode)
         self.actionScope = QComboBox()
-        self.form.addRow('已显示结果作用域', self.actionScope)
+        self.form.addRow('结果所属流程', self.actionScope)
         self.appearance = {}
         for name, label, choices in [
             ('fontFamily', '字体', [('系统字体', 'system'), ('无衬线', 'sans'), ('衬线', 'serif'), ('等宽', 'monospace')]),
@@ -126,18 +127,18 @@ class EditingTools(QObject):
         self.binding = QComboBox()
         self.binding.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
         self.binding.setMinimumContentsLength(10)
-        self.form.addRow('输出绑定', self.binding)
+        self.form.addRow('数据来源', self.binding)
         self.bindingButtons = []
         self.operationButtons = []
-        for label, fn in [('应用属性 / 布局', self.apply), ('绑定所选输出', self.bindSelected),
-                ('清除绑定', self.clearBinding), ('复制控件', self.copy), ('删除控件', self.delete),
-                ('从此来源定位流程节点', self.locate)]:
+        for label, fn in [('应用修改', self.apply), ('使用此来源', self.bindSelected),
+                ('取消关联', self.clearBinding), ('复制控件', self.copy), ('删除控件', self.delete),
+                ('定位流程节点', self.locate)]:
             button = QPushButton(label)
             button.clicked.connect(lambda _checked=False, command=fn: self.w.run(command))
             self.form.addRow(button)
-            if label == '应用属性 / 布局':
+            if label == '应用修改':
                 self.applyButton = button
-            if label in ('绑定所选输出', '清除绑定', '从此来源定位流程节点'):
+            if label in ('使用此来源', '取消关联', '定位流程节点'):
                 self.bindingButtons.append(button)
             if label in ('复制控件', '删除控件'):
                 self.operationButtons.append(button)
@@ -157,62 +158,9 @@ class EditingTools(QObject):
         self.fieldHint = QLabel('已知 Blob / Detection 字段可选择；未知结构不自动推断')
         self.fieldHint.setWordWrap(True)
         self.form.addRow(self.fieldHint)
-        self.preview = QPushButton('交互预览')
-        self.preview.setCheckable(True)
-        self.preview.toggled.connect(self.previewMode)
-        workspace.toolbar.addWidget(self.preview)
-        self.simulation = QComboBox()
-        for label, value in [('布局（无示例值）', None), ('模拟 OK', 'OK'), ('模拟 NG', 'NG'),
-                             ('模拟等待', 'WAITING'), ('模拟错误', 'ERROR')]:
-            self.simulation.addItem(label, value)
-        self.simulation.currentIndexChanged.connect(lambda _index: self.changeSimulation())
-        self.simulation.setToolTip('离线状态示例，不读写 Runtime')
-        self.simulation.setParent(workspace)
-        self.simulation.hide()
-        offline = workspace.viewMenu.addMenu('离线状态（非检测结果）')
-        for index in range(self.simulation.count()):
-            action = offline.addAction(self.simulation.itemText(index))
-            action.triggered.connect(lambda _checked=False, i=index: self.simulation.setCurrentIndex(i))
-        self.examples = QCheckBox('设计示例')
-        self.examples.setChecked(True)
-        self.examples.toggled.connect(self.changeExamples)
-        workspace.renderer.designExamplesChanged.connect(self.syncExamples)
-        self.examples.setParent(workspace)
-        self.examples.hide()
-        sampleAction = workspace.viewMenu.addAction('设计示例 · 非检测结果')
-        sampleAction.setCheckable(True)
-        sampleAction.setChecked(True)
-        sampleAction.toggled.connect(self.examples.setChecked)
-        self.examples.toggled.connect(sampleAction.setChecked)
-        workspace.renderer.designExamplesChanged.connect(sampleAction.setChecked)
-        tasks = QToolButton()
-        tasks.setText('任务 ▾')
-        tasks.setPopupMode(QToolButton.InstantPopup)
-        taskMenu = QMenu(tasks)
-        tasks.setMenu(taskMenu)
-        workspace.toolbar.addWidget(tasks)
         self.captureNotice = QLabel()
         self.captureNotice.setWordWrap(True)
         workspace.detailsLayout.addWidget(self.captureNotice)
-        for text, command in [('登记本地输入图片', self.importInput),
-                ('明确开始隔离草稿调试', workspace.coordinator.preview.startDebug),
-                ('观看当前工程任务', workspace.coordinator.preview.watchCurrent),
-                ('只读连接已有 Job', self.connectJob),
-                ('停止自有调试 / 断开观察', workspace.coordinator.preview.closeAsync)]:
-            button = QPushButton(text)
-            button.clicked.connect(lambda _checked=False, fn=command: self.w.run(fn))
-            action = taskMenu.addAction(text)
-            action.triggered.connect(button.click)
-            button.setParent(workspace)
-            button.hide()
-            if text == '观看当前工程任务':
-                self.observer = QPushButton('弹出只读观察窗口')
-                self.observer.setToolTip('复用已选择任务；包括内嵌页面最多两个共享窗口，关闭弹窗不会断开观察')
-                self.observer.clicked.connect(lambda _checked=False: self.w.openObserver())
-                action = taskMenu.addAction('弹出只读观察窗口')
-                action.triggered.connect(self.observer.click)
-                self.observer.setParent(workspace)
-                self.observer.hide()
         from .property_panel import PropertyGroups
         self.propertyGroups = PropertyGroups(self, panel)
         scroll = QScrollArea()
@@ -224,7 +172,29 @@ class EditingTools(QObject):
         panel.setSizePolicy(QSizePolicy.Ignored, QSizePolicy.Preferred)
         self.form.setSizeConstraint(QLayout.SetNoConstraint)
         self.w.propertyScroll = scroll
-        self.w.splitter.addWidget(scroll)
+        propertyPanel = QWidget()
+        propertyPanel.setObjectName('pagePropertyPanel')
+        outer = QVBoxLayout(propertyPanel)
+        outer.setContentsMargins(8, 0, 8, 0)
+        header = QHBoxLayout()
+        self.title.setObjectName('panelTitle')
+        self.title.setWordWrap(False)
+        header.addWidget(self.title, 1)
+        self.componentMenu = QMenu(propertyPanel)
+        for button in self.operationButtons:
+            action = self.componentMenu.addAction(button.text())
+            action.triggered.connect(button.click)
+        self.componentMore = QToolButton()
+        self.componentMore.setText('操作')
+        self.componentMore.setPopupMode(QToolButton.InstantPopup)
+        self.componentMore.setMenu(self.componentMenu)
+        header.addWidget(self.componentMore)
+        outer.addLayout(header)
+        outer.addWidget(self.propertyError)
+        outer.addWidget(scroll, 1)
+        self.applyButton.setObjectName('primaryButton')
+        outer.addWidget(self.applyButton)
+        self.w.splitter.addWidget(propertyPanel)
         self.refreshCatalog()
         workspace.renderer.setDesignExamples(True)
 
@@ -313,11 +283,15 @@ class EditingTools(QObject):
         self.select(self.selected)
 
     def install(self):
+        for page in self.w.renderer.pages.values():
+            # Reserve the editing scrollbar lane so resizing a nested component
+            # cannot change its parent grid width midway through the gesture.
+            page.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOn)
         for widget in [self.w.renderer, *self.w.renderer.findChildren(QWidget)]:
             if widget.property('editorDecoration'):
                 continue
             widget.installEventFilter(self)
-            widget.setAcceptDrops(not self.preview.isChecked())
+            widget.setAcceptDrops(True)
         if self.w.pageId in self.w.renderer.pages:
             body = self.w.renderer.pages[self.w.pageId].widget()
             grids = [(body, self.w.store.snapshot().pages[self.w.pageId].components)]
@@ -330,61 +304,10 @@ class EditingTools(QObject):
                         grids.append((content, item.children))
             for widget, children in grids:
                 row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
-                widget.layout().setRowMinimumHeight(row, 0 if self.preview.isChecked() else 64)
+                widget.layout().setRowMinimumHeight(row, 64)
                 widget.layout().setGeometry(widget.rect())
                 widget.setToolTip('编辑模式下底部空白行为组件拖入区域')
         self.updateSelection()
-
-    def previewMode(self, preview):
-        try:
-            self.commitPending()
-        except ValueError as error:
-            self.w.message.setText(str(error))
-            self.preview.blockSignals(True)
-            self.preview.setChecked(not preview)
-            self.preview.blockSignals(False)
-            return
-        self.w.renderer.editing = not preview
-        self.preview.setText('返回编辑' if preview else '交互预览')
-        if self.w.renderer.config != self.w.store.snapshot():
-            self.w.refresh()
-        self.changeSimulation()
-        self.install()
-
-    def changeSimulation(self):
-        renderer = self.w.renderer
-        if renderer.hub or renderer.captureCoverage is not None:
-            if self.simulation.currentData() is not None:
-                self.w.message.setText('请先断开任务观察，再使用离线模拟')
-            self.simulation.blockSignals(True)
-            self.simulation.setCurrentIndex(0)
-            self.simulation.blockSignals(False)
-            return
-        wanted = self.examples.isChecked()
-        renderer.setSimulationState(self.simulation.currentData() if self.preview.isChecked() else None)
-        if self.simulation.currentData() is None or not self.preview.isChecked():
-            if wanted:
-                renderer.setDesignExamples(True)
-            else:
-                renderer.banner.setText('编辑模式 · 无设计示例 · 不运行设备')
-
-    def syncExamples(self, enabled):
-        self.examples.blockSignals(True)
-        self.examples.setChecked(enabled)
-        self.examples.blockSignals(False)
-
-    def changeExamples(self, enabled):
-        try:
-            self.w.renderer.setDesignExamples(enabled)
-            if enabled:
-                self.simulation.blockSignals(True)
-                self.simulation.setCurrentIndex(0)
-                self.simulation.blockSignals(False)
-        except ValueError as error:
-            self.w.message.setText(str(error))
-            self.examples.blockSignals(True)
-            self.examples.setChecked(False)
-            self.examples.blockSignals(False)
 
     def _cellValue(self, row, column):
         widget = self.extra.cellWidget(row, column)
@@ -462,6 +385,8 @@ class EditingTools(QObject):
         if key != self.selected:
             self.commitPending()
         self.selected = key
+        self.componentMore.setEnabled(key is not None)
+        self.applyButton.setEnabled(self.w.pageId is not None)
         self.updateSelection()
         try:
             component = _component(self.w.store.snapshot(), self.w.pageId, key)
@@ -477,15 +402,15 @@ class EditingTools(QObject):
             return
         from .palette import TITLES
         self.propertyGroups.select(component.type)
-        self.title.setText(f'{TITLES[component.type]} · {component.componentId[:8]}')
+        self.title.setText(component.props.title or TITLES[component.type])
+        self.title.setToolTip(self.title.text() + '\n组件编号：' + component.componentId)
         source = self.w.store.snapshot().dataSources.get(next(iter(component.bindings.values()), ''))
         if source:
             comparable = source.model_dump(exclude={'resultScopeId'})
             index = next((i for i, choice in enumerate(self.choices)
                           if choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
             self.binding.setCurrentIndex(index)
-            self.title.setText(self.title.text() + '\n已绑定: ' + str(source.nodeId or source.workflowId)[:16] + '.' + str(source.port)[:24])
-            self.title.setToolTip(str(source.nodeId or source.workflowId) + '.' + str(source.port))
+            self.title.setToolTip(self.title.toolTip() + '\n数据来源：' + str(source.nodeId or source.workflowId) + '.' + str(source.port))
             self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
             self.fields[name].setText(getattr(component.props, name))
@@ -530,10 +455,16 @@ class EditingTools(QObject):
     def apply(self):
         try:
             self.applyFields()
+            if not self.propertyError.isHidden():
+                self.w.message.setText('修改已应用')
+                self.w.coordinator.window.statusBar().clearMessage()
             self.propertyError.hide()
         except ValueError as error:
+            from .property_panel import editorMessage
             message = str(error)
-            self.propertyError.setText(message)
+            self.propertyError.setText(editorMessage(message))
+            self.propertyError.setToolTip(message)
+            self.w.coordinator.window.appendRuntimeLog('ERROR', message)
             self.propertyError.show()
             field = next((widget for name, widget in self.fields.items() if name in message), self.extra
                          if any(word in message for word in ('boolean', 'duplicate', '字段')) else self.fields['columnSpan'])
@@ -682,7 +613,7 @@ class EditingTools(QObject):
         if self.retainedSelection is not None:
             return
         self.clearSelection()
-        if self.selected and not self.preview.isChecked() and self.w.pageId in self.w.renderer.pages:
+        if self.selected and self.w.renderer.editing and self.w.pageId in self.w.renderer.pages:
             from .canvas_tools import Selection
             body = self.w.renderer.pages[self.w.pageId].widget()
             for card in body.findChildren(QWidget):
@@ -696,7 +627,7 @@ class EditingTools(QObject):
         self.clearSelection()
 
     def drop(self, payload, widget, point, *, preview=False):
-        if self.preview.isChecked() or not self.w.pageId:
+        if not self.w.renderer.editing or not self.w.pageId:
             raise ValueError('先创建页面并进入编辑模式')
         key, card = self.componentAt(widget)
         commands = self.commands().preview() if preview else self.commands()
@@ -761,34 +692,8 @@ class EditingTools(QObject):
         if not self.w.closed:
             self.w.refresh()
 
-    def connectJob(self):
-        address, ok = QInputDialog.getText(self.w, '只读连接', 'loopback 地址（如 127.0.0.1:50051）')
-        if not ok:
-            return
-        job, ok = QInputDialog.getText(self.w, '明确选择任务', '已有展示 Job ID（不启动检测）')
-        if ok:
-            self.w.coordinator.preview.connect(address, job)
-
-    def importInput(self):
-        from .resources import registerImage
-        document = self.w.session.document()
-        nodes = [(workflowId, node.nodeId, f'{workflow.name}/{node.displayName or node.nodeId} [{node.nodeId}]')
-                 for workflowId, workflow in document.workflows.items() for node in workflow.nodes
-                 if node.operatorId == 'vision.io.image_loader']
-        if not nodes:
-            raise ValueError('请先在流程设计中添加 ImageLoader 节点')
-        label, ok = QInputDialog.getItem(self.w, '输入资源目标', '明确选择 ImageLoader 实例',
-            [n[2] for n in nodes], 0, False)
-        if not ok:
-            return
-        workflow, node, _ = next(n for n in nodes if n[2] == label)
-        path, _ = QFileDialog.getOpenFileName(self.w, '选择本地测试图片', '', 'Images (*.png *.jpg *.jpeg *.bmp)')
-        if path:
-            registerImage(self.w.session, self.w.coordinator.directory, workflow, node, path)
-            self.w.message.setText('图片已复制为声明资源；下一次明确调试使用新快照')
-
     def eventFilter(self, obj, event):
-        if self.w.closed or not isValid(self.preview) or self.preview.isChecked():
+        if self.w.closed or not isValid(self.w.renderer):
             return False
         if obj.property('editorDecoration'):
             return False
@@ -848,6 +753,13 @@ class EditingTools(QObject):
                 self.hoverTarget = None
             return True
         key, _card = self.componentAt(obj)
+        if kind == QEvent.ContextMenu and key:
+            try:
+                self.select(key)
+                self.componentMenu.exec_(event.globalPos())
+            except ValueError as error:
+                self.w.message.setText(str(error))
+            return True
         if kind == QEvent.MouseButtonPress and event.button() == Qt.LeftButton and not key:
             try:
                 self.select(None)

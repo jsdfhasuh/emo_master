@@ -1,5 +1,5 @@
 """Grid hit testing and widget-free measurement of a proposed resize."""
-from PySide2.QtCore import QRect, QSize
+from PySide2.QtCore import QRect, QSize, Qt
 from PySide2.QtWidgets import QGridLayout, QLayoutItem, QScrollArea
 
 
@@ -96,14 +96,20 @@ def resizeBox(grid, card, columns, placement):
         # platform style's PM_ScrollBarExtent.
         verticalWidth = scroll.verticalScrollBar().sizeHint().width()
         horizontalHeight = scroll.horizontalScrollBar().sizeHint().height()
-        vertical = horizontal = False
+        verticalPolicy, horizontalPolicy = scroll.verticalScrollBarPolicy(), scroll.horizontalScrollBarPolicy()
+        # maximumViewportSize already deducts forced scrollbar lanes; reconstruct
+        # the full available area before applying either fixed or dynamic lanes.
+        vertical, horizontal = verticalPolicy == Qt.ScrollBarAlwaysOn, horizontalPolicy == Qt.ScrollBarAlwaysOn
+        available += QSize(verticalWidth if vertical else 0, horizontalHeight if horizontal else 0)
         for _ in range(3):
             width = max(minimum.width(), available.width() - (verticalWidth if vertical else 0))
             height = max(minimum.height(), available.height() - (horizontalHeight if horizontal else 0))
             if measured.hasHeightForWidth():
                 height = max(height, measured.minimumHeightForWidth(width))
-            vertical = height > available.height() - (horizontalHeight if horizontal else 0)
-            horizontal = width > available.width() - (verticalWidth if vertical else 0)
+            vertical = verticalPolicy == Qt.ScrollBarAlwaysOn or (verticalPolicy != Qt.ScrollBarAlwaysOff and
+                height > available.height() - (horizontalHeight if horizontal else 0))
+            horizontal = horizontalPolicy == Qt.ScrollBarAlwaysOn or (horizontalPolicy != Qt.ScrollBarAlwaysOff and
+                width > available.width() - (verticalWidth if vertical else 0))
             size = QSize(width, height)
     if measured.hasHeightForWidth():
         size.setHeight(max(size.height(), measured.minimumHeightForWidth(size.width())))

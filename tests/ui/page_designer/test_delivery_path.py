@@ -65,7 +65,7 @@ def testDesignerExportRelocatedStandalonePath(qtApp, tmp_path, monkeypatch):
             label = next(c for c in editor.store.snapshot().pages[editor.pageId].components if c.type == 'text')
             editor.tools.select(label.componentId)
             editor.tools.fields['text'].setText('测试项目交付 · 本地图像 · 真实 Blob / Count')
-            QTest.mouseClick(next(w for w in editor.findChildren(QPushButton) if w.text() == '应用属性 / 布局'), Qt.LeftButton)
+            QTest.mouseClick(next(w for w in editor.findChildren(QPushButton) if w.text() == '应用修改'), Qt.LeftButton)
         editor.pageList.setCurrentRow(0)
         assert window.saveProjectToDirectory(str(draft))
         presentation = window.pageCoordinator.session.document().presentation.model_dump()
@@ -74,7 +74,7 @@ def testDesignerExportRelocatedStandalonePath(qtApp, tmp_path, monkeypatch):
         assert window.pageCoordinator.session.document().presentation.model_dump() == presentation
         assert window.grab().save(str(out/'01-designer-saved.png'))
         monkeypatch.setattr(QFileDialog, 'getExistingDirectory', lambda *a, **k: str(packageDir))
-        next(a for a in window.mainToolbar.actions() if a.text() == '导出测试项目包').trigger()
+        next(a for a in window.pageCoordinator.chrome.menus['文件'].actions() if a.text() == '导出测试项目包…').trigger()
         assert not errors, errors
         package = next(packageDir.glob('*.vxpkg'))
         packageHash = hashlib.sha256(package.read_bytes()).hexdigest()

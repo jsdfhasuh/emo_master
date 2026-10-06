@@ -67,9 +67,9 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
         mark('second_chooser_entered')
         assert parent is window and not editable
         assert len(jobs) == len(items) == 2
-        assert {item.split(' · ', 1)[0] for item in items} == set(jobs)
-        assert all('COMPLETED' in item for item in items)
-        assert items[index].split(' · ', 1)[0] == window.currentJobId == jobs[-1]
+        assert {item.rsplit(' · ', 1)[-1] for item in items} == {job[:8] for job in jobs}
+        assert all('已完成' in item for item in items)
+        assert items[index].rsplit(' · ', 1)[-1] == window.currentJobId[:8] == jobs[-1][:8]
         choices.append((tuple(items), index, window.currentJobId))
         assert lifecycleCalls == {'StartJob': 2, 'StopJob': 0}
         return items[index], True
@@ -103,16 +103,16 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
             assert len(choices) == number - 1
             session, hub = preview.session, preview.hub
             sessions.append(session)
-            wait(prefix + '_image', lambda: displayedImagesReady(editor.renderer))
-            result = editor.renderer.displayed['root'].result
+            wait(prefix + '_image', lambda: displayedImagesReady(preview.observer))
+            result = preview.observer.displayed['root'].result
             assert result.identity.jobId == job and result.status == 'COMPLETE'
             assert next(source.valueJson for source in result.sources if source.sourceId == 'count') == '2'
             assert preview.backend is None and not runtime._presentationOwner.prepared
 
-            editor.tools.observer.click()
+            preview.openObserver()
             observer = preview.observer
             assert observer is not None and observer.hub is hub
-            assert hub.windows == {editor.renderer, observer}
+            assert hub.windows == {observer}
             wait(prefix + '_observer_image', lambda: displayedImagesReady(observer))
             assert observer.displayed['root'].result.identity.resultKey == result.identity.resultKey
             mark(prefix + '_freeze')
@@ -128,14 +128,15 @@ def testTwoCompletedNormalJobsChooseCurrentObserveFreezeResumeAndRetire(qtApp, t
 
             mark(prefix + '_observer_close')
             observer.close()
+            wait(prefix + '_view_closed', lambda: not preview.active())
             QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
             assert not isValid(observer) and preview.observer is None
-            assert hub.windows == {editor.renderer} and not session.stop.is_set()
+            assert not hub.windows and session.stop.is_set()
             assert window.currentJobId == job and not runtime._closed
             # Disconnect must retire another open popup as well as the session.
-            editor.tools.observer.click()
+            preview.openObserver()
             observer = preview.observer
-            assert observer is not None and observer.hub is hub
+            assert observer is not None and observer.designExamples and observer.hub is None
             mark(prefix + '_disconnect')
             preview.closeAsync()
             wait(prefix + '_disconnected', lambda: not preview.active() or preview.error is not None)

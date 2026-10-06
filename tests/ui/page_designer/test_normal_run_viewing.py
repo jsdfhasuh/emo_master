@@ -69,8 +69,8 @@ def testNormalEntrySameJobTwoPagesReconnectAndRunAgain(qtApp, tmp_path, monkeypa
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
-        waitFor(lambda: displayedImagesReady(coordinator.editor.renderer))
-        renderer = coordinator.editor.renderer
+        waitFor(lambda: displayedImagesReady(coordinator.preview.observer))
+        renderer = coordinator.preview.observer
         scope = next(iter(renderer.displayed.values()))
         assert scope.result.identity.jobId == first
         assert scope.result.identity.mode == 'runtime'
@@ -131,7 +131,7 @@ def testNormalGuiRunAdvertisedMultiSourceProfile(qtApp, tmp_path, monkeypatch, f
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
-        renderer = coordinator.editor.renderer
+        renderer = coordinator.preview.observer
         waitFor(lambda: displayedImagesReady(renderer))
         first = next(iter(renderer.displayed.values()))
         assert first.result.identity.jobId == job

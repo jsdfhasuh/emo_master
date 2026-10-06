@@ -13,14 +13,16 @@ from emo_master.core.presentation.models import Action
 
 
 def navigate(editor, pageId, route):
+    row = editor.store.snapshot().pageOrder.index(pageId)
     if route == 'list':
-        editor.pageList.setCurrentRow(editor.store.snapshot().pageOrder.index(pageId))
+        editor.pageList.setCurrentRow(row)
     elif route == 'keyboard':
-        button = editor.renderer.buttons[pageId]
-        button.setFocus()
-        QTest.keyClick(button, Qt.Key_Space)
+        editor.pageList.setFocus()
+        key = Qt.Key_Down if row > editor.pageList.currentRow() else Qt.Key_Up
+        QTest.keyClick(editor.pageList, key)
     else:
-        QTest.mouseClick(editor.renderer.buttons[pageId], Qt.LeftButton)
+        rect = editor.pageList.visualItemRect(editor.pageList.item(row))
+        QTest.mouseClick(editor.pageList.viewport(), Qt.LeftButton, pos=rect.center())
     QApplication.processEvents()
 
 
@@ -127,122 +129,103 @@ def testInvalidInputBlocksNavigationAndRetainsOriginalTarget(designer, route):  
 
 @pytest.mark.parametrize('state', [None, 'OK'])
 @pytest.mark.parametrize('route', ['top', 'action'])
-def testPreviewNavigationReturnsToVisibleEditingPage(designer, state, route):  # noqa: F811
+def testPreviewNavigationDoesNotChangeEditingPage(designer, state, route):  # noqa: F811
     coordinator, editor, original = setupPage(designer)
     first = editor.pageId
     second = editor.store.createPage('B')
     editor.refresh()
     editor.tools.fields['text'].setText('预览前保存 A')
-    editor.tools.preview.setChecked(True)
-    editor.tools.simulation.setCurrentIndex(editor.tools.simulation.findData(state))
+    preview = coordinator.preview.openObserver()
+    preview.simulation.setCurrentIndex(preview.simulation.findData(state))
     if route == 'top':
-        navigate(editor, second, 'keyboard')
+        QTest.mouseClick(preview.buttons[second], Qt.LeftButton)
     else:
-        editor.renderer.act(Action(type='navigate', pageId=second))
-    editor.tools.preview.setChecked(False)
-
-    assertCurrent(editor, second)
+        preview.act(Action(type='navigate', pageId=second))
+    assert preview.currentPageId == second
+    assertCurrent(editor, first)
     assert editor.renderer.editing
-    assert editor.tools.selected is None
     assert _component(editor.store.snapshot(), first, original).props.text == '预览前保存 A'
+    navigate(editor, second, 'list')
     assert sendDrop(editor.renderer.pages[second].widget(), {'kind': 'text'})
-    assertCurrent(editor, second)
     assert len(editor.store.snapshot().pages[first].components) == 1
     assert len(editor.store.snapshot().pages[second].components) == 1
-    assert coordinator.preview.session is None
-    assert designer.currentJobId is None
+    assert coordinator.preview.session is None and designer.currentJobId is None
 
 
-@pytest.mark.parametrize('preview', [False, True])
-def testInvalidInputBlocksPreviewModeTransition(designer, preview):  # noqa: F811
+@pytest.mark.parametrize('alreadyOpen', [False, True])
+def testInvalidInputBlocksOpeningOrRefreshingPreview(designer, alreadyOpen):  # noqa: F811
     coordinator, editor, original = setupPage(designer, 'indicator')
-    editor.tools.preview.setChecked(preview)
+    existing = coordinator.preview.openObserver() if alreadyOpen else None
     editor.tools.addExtraRow(values=('boolean', 'invalid boolean', '保留输入', 'green'))
     before = coordinator.session.payload()
-
-    editor.tools.preview.setChecked(not preview)
-
-    assert editor.tools.preview.isChecked() == preview
-    assert editor.renderer.editing == (not preview)
-    assert editor.tools.selected == original
+    with pytest.raises(ValueError):
+        coordinator.preview.openObserver()
+    assert coordinator.preview.observer is existing
+    assert editor.renderer.editing and editor.tools.selected == original
     assert editor.tools.extra.item(0, 1).text() == 'invalid boolean'
     assert coordinator.session.payload() == before
     editor.tools.extra.item(0, 1).setText('false')
-    editor.tools.preview.setChecked(not preview)
-    assert editor.tools.preview.isChecked() != preview
+    assert coordinator.preview.openObserver() is not None
     assert _component(editor.store.snapshot(), editor.pageId, original).props.indicatorStates['false'].text == '保留输入'
 
 
-def testDetailNavigationValidatesBeforePinningDisplayedResult(designer, qtApp):  # noqa: F811
+def testDetailPreviewPinsDisplayedResultAndDefersNewLayout(designer, qtApp):  # noqa: F811
     from examples.runtime_pages_p3 import LocalDemo
     from emo_master.clients.runtime.display_session import DisplaySession
     from emo_master.ui.presentation.hub import DisplayHub
     from tests.ui.presentation.test_real import until
-
     backend = LocalDemo(count=8)
     session = DisplaySession(backend.address, backend.jobId)
-    editor = hub = None
+    editor = renderer = None
     try:
         coordinator = designer.pageCoordinator
         designer.workflowController.loadPayload(backend.project.model_dump())
         coordinator.session.acceptLoaded()
         coordinator.showPages()
         editor = coordinator.editor
-        renderer = editor.renderer
+        renderer = coordinator.preview.openObserver()
         hub = DisplayHub(session)
         renderer.hub = hub
         hub.attach(renderer)
-        editor.tools.preview.setChecked(True)
         until(qtApp, lambda: bool(renderer.displayed))
         displayed = renderer.displayed['root']
         hub.timer.stop()
-        def newerResult():
-            scope = session.readSnapshot().scopes.get('root')
-            return scope and scope.result.identity.resultOrdinal > displayed.result.identity.resultOrdinal
-        until(qtApp, newerResult)
+        until(qtApp, lambda: session.readSnapshot().scopes.get('root') and
+              session.readSnapshot().scopes['root'].result.identity.resultOrdinal > displayed.result.identity.resultOrdinal)
         editor.tools.select('overview-count')
         editor.tools.fields['title'].setText('仅应用到总览页')
         editor.tools.fields['fontSize'].setValue(1)
         before = coordinator.session.payload()
         history = len(coordinator.session._undo)
-        detailButton = renderer.widgets['overview']['overview-nav'][1]
-
-        QTest.mouseClick(detailButton, Qt.LeftButton)
-
+        QTest.mouseClick(renderer.widgets['overview']['overview-nav'][1], Qt.LeftButton)
         assertCurrent(editor, 'overview')
-        assert renderer.frozen is None and renderer.frozenGeneration is None
-        assert not hub.pins and not session.pins().entries
-        assert backend.presentation.assets.stats()['lease_handles'] == 0
-        assert renderer.displayed['root'].result == displayed.result
-        assert coordinator.session.payload() == before
-        assert len(coordinator.session._undo) == history
-        assert editor.tools.selected == 'overview-count'
-        assert editor.tools.fields['fontSize'].value() == 1
-        assert editor.tools.fields['title'].text() == '仅应用到总览页'
-        assert 'fontSize' in editor.message.text()
-
-        editor.tools.fields['fontSize'].setValue(16)
-        QTest.mouseClick(detailButton, Qt.LeftButton)
-
-        assertCurrent(editor, 'detail')
+        assert renderer.currentPageId == 'detail'
         ticket = renderer.frozen
         assert ticket is not None and hub.pins[renderer] == ticket
         until(qtApp, lambda: session.pins().read(ticket).state == 'PINNED')
         assert session.pins().read(ticket).scope.result == displayed.result
         assert renderer.displayed['root'].result == displayed.result
+        assert coordinator.session.payload() == before and len(coordinator.session._undo) == history
+        originalConfig = renderer.config
+        editor.tools.fields['fontSize'].setValue(16)
+        editor.tools.commitPending()
+        editor.refresh()
+        assert renderer.config == originalConfig and renderer.pendingPresentation == editor.store.snapshot()
+        assert renderer.frozen == ticket
+        coordinator.history()
+        assert editor.store.snapshot() == originalConfig
+        assert renderer.pendingPresentation is None and renderer.frozen == ticket
+        coordinator.history(True)
+        assert renderer.pendingPresentation == editor.store.snapshot()
+        renderer.resumeLive()
+        assert renderer.frozen is None and renderer.config == editor.store.snapshot()
         item = _component(editor.store.snapshot(), 'overview', 'overview-count')
         assert item.props.title == '仅应用到总览页' and item.props.fontSize == 16
-        assert _component(editor.store.snapshot(), 'detail', 'detail-count').props.title == '本次检测数量'
-        assert len(coordinator.session._undo) == history + 1
-        assert len(backend.presentation.jobs) == 1
-        editor.tools.preview.setChecked(False)
-        assertCurrent(editor, 'detail')
-        assert renderer.config == editor.store.snapshot()
+        assert len(coordinator.session._undo) == history + 1 and len(backend.presentation.jobs) == 1
     finally:
+        if renderer is not None:
+            renderer.close()
         if editor is not None:
-            # The window borrows this explicit observer; close it before its
-            # session/backend, just as PreviewController normally does.
             editor.tools.fields['fontSize'].setValue(16)
-            editor.close()
         session.close()
         backend.close()

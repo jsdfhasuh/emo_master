@@ -165,7 +165,7 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
         hub = coordinator.preview.hub
-        renderer = coordinator.editor.renderer
+        renderer = coordinator.preview.observer
         observedSession = coordinator.preview.session
         waitFor(lambda: set(renderer.displayed) == {"a", "b"} and displayedImagesReady(renderer))
         displayed = dict(renderer.displayed)
@@ -179,8 +179,11 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
             assert displayed[scope].result.status == "COMPLETE", jobFailureDetails(runtime, job, result=displayed[scope].result)
             assertScopeWidgets(renderer, "overview", scope, displayed[scope])
             assert renderer.widgets["overview"][f"overview-{scope}-judge"][1].text() == "NG"
-        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
-        floating = coordinator.preview.observer
+        from emo_master.ui.presentation.renderer import RuntimePages
+        floating = RuntimePages(renderer.config, hub=hub)
+        floating.navigate(renderer.currentPageId)
+        floating.show()
+        qtApp.processEvents()
         assert floating is not None and floating.hub is hub
         assert floating.displayed == displayed
         hub.timer.stop()  # Deliberately hold both GUI commits while the real backend advances.
@@ -197,8 +200,7 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
         frozen = renderer.frozen
         # Reopening the existing popup must not refresh the source canvas or
         # replace its committed NG detail with the background's newer OK.
-        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
-        assert coordinator.preview.observer is floating and renderer.frozen == frozen
+        assert coordinator.preview.openObserver() is renderer and renderer.frozen == frozen
         assertScopeWidgets(renderer, "detail", "a", displayed["a"])
         clickDetail(floating, "b")
         pins = observedSession.pins()
@@ -224,8 +226,10 @@ def testNormalTwoScopeOverviewButtonsPinGuiNgDespiteNewerBackgroundOk(qtApp, tmp
         waitFor(lambda: pins.read(frozen).state == 'PINNED')
         retire(floating)
         floating = None
-        QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
-        floating = coordinator.preview.observer
+        floating = RuntimePages(renderer.config, hub=hub)
+        floating.navigate(renderer.currentPageId)
+        floating.show()
+        qtApp.processEvents()
         assert renderer.frozen == frozen and hub.pins == {renderer: frozen}
         assert floating.frozen is None and floating.currentPageId == renderer.currentPageId
         assert floating.config == renderer.config
@@ -278,12 +282,11 @@ def testSimulationAndNormalObserverWindowsHaveNoExecutionDeviceOrCounterEffects(
         coordinator = window.pageCoordinator
         coordinator.showPages()
         beforeCounters = runtime.sqliteStore.listGlobalCounters(document.project.projectId)
-        tools = coordinator.editor.tools
-        QTest.mouseClick(tools.preview, Qt.LeftButton)
+        view = coordinator.preview.openObserver()
         for mode in ("OK", "NG", "WAITING", "ERROR", None):
-            tools.simulation.setCurrentIndex(tools.simulation.findData(mode))
+            view.simulation.setCurrentIndex(view.simulation.findData(mode))
             qtApp.processEvents()
-            assert coordinator.editor.renderer.simulationState == mode
+            assert view.simulationState == mode
         assert not runtime.jobRepository.all() and calls == []
         # Exactly one explicitly requested start establishes a real captured Job.
         monkeypatch.setattr(runtime, "StartJob", start)
@@ -298,26 +301,27 @@ def testSimulationAndNormalObserverWindowsHaveNoExecutionDeviceOrCounterEffects(
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error)
         assert coordinator.preview.error is None
         observedSession = coordinator.preview.session
-        waitFor(lambda: displayedImagesReady(coordinator.editor.renderer))
+        waitFor(lambda: displayedImagesReady(view))
         decoded = observedSession.stats["decoded"]
         conversions = coordinator.preview.hub.conversions
         threadOwners = tuple(observedSession.threads)
         assert decoded == 1
         for _ in range(10):
-            QTest.mouseClick(coordinator.editor.tools.observer, Qt.LeftButton)
-            floating = coordinator.preview.observer
+            floating = coordinator.preview.openObserver()
             assert floating is not None and floating.hub is coordinator.preview.hub
             assert floating.displayed
-            retire(floating)
+            coordinator.showFlow()
+            assert not floating.isVisible()
+            coordinator.showPages()
             assert len(coordinator.preview.hub.windows) == 1
             assert coordinator.preview.session is observedSession
             assert tuple(observedSession.threads) == threadOwners
             assert observedSession.stats["decoded"] == decoded
             assert coordinator.preview.hub.conversions == conversions
-        coordinator.editor.renderer.hide()
+        view.hide()
         coordinator.preview.hub.lastToken = None
         coordinator.preview.hub.tick()
-        assert not coordinator.editor.renderer.displayed
+        assert not view.displayed
         assert observedSession.stats["decoded"] == decoded
         assert coordinator.preview.hub.conversions == conversions
         coordinator.preview.closeAsync()

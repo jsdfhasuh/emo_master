@@ -104,14 +104,14 @@ def testOfflineStatesDoNotTouchRuntimeOrDirtyDraft(designer):  # noqa: F811
     editor.refresh()
     coordinator.session.markSaved()
     history = len(coordinator.session._undo)
-    editor.tools.preview.setChecked(True)
+    preview = coordinator.preview.openObserver()
     for state, text in [('OK', '模拟合格'), ('NG', '模拟不合格'), ('WAITING', '等待触发'), ('ERROR', 'NODE_FAILED')]:
-        editor.tools.simulation.setCurrentIndex(editor.tools.simulation.findData(state))
-        assert text in editor.renderer.widgets[editor.pageId][key][1].text()
-        assert '离线模拟' in editor.renderer.banner.text()
-        assert not editor.renderer.displayed
-    editor.tools.preview.setChecked(False)
-    assert 'NODE_FAILED' not in editor.renderer.widgets[editor.pageId][key][1].text()
+        preview.simulation.setCurrentIndex(preview.simulation.findData(state))
+        assert text in preview.widgets[editor.pageId][key][1].text()
+        assert '模拟状态' in preview.banner.text()
+        assert not preview.displayed
+    preview.simulation.setCurrentIndex(0)
+    assert 'NODE_FAILED' not in preview.widgets[editor.pageId][key][1].text()
     assert not coordinator.session.dirty and len(coordinator.session._undo) == history
     assert coordinator.preview.session is None and coordinator.preview.backend is None
     assert designer.currentJobId is None

@@ -176,11 +176,11 @@ def main():
             evidence['saveReopen'] = True
             c.showPages()
             e = c.editor
-            e.tools.preview.setChecked(True)
-            e.renderer.widgets[overview][nav][1].click()
+            preview = c.preview.openObserver()
+            preview.widgets[overview][nav][1].click()
             settle(app)
-            assert e.pageId == second
-            assert window.grab().save(str(args.output/'detail.png'))
+            assert preview.currentPageId == second
+            assert preview.grab().save(str(args.output/'detail.png'))
             evidence['navigation'] = True
             evidence['imageComponent'] = image
             evidence['noJob'] = window.currentJobId is None and c.preview.backend is None

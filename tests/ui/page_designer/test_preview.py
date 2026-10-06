@@ -38,13 +38,18 @@ def testDraftOnSameRuntimeReloadObserveAndAsyncExit(qtApp, tmp_path, monkeypatch
         window.show()
         c = window.pageCoordinator
         c.showPages()
+        c.showFlow()
         preview.startDebug()
+        waitFor(lambda: not preview.busy)
+        assert preview.session is None
+        c.showPages()
+        preview.watchCurrent()
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None
         backend = preview.backend
         assert backend.runtime is runtime
-        waitFor(lambda: bool(c.editor.renderer.displayed))
-        scope = next(iter(c.editor.renderer.displayed.values()))
+        waitFor(lambda: bool(preview.observer.displayed))
+        scope = next(iter(preview.observer.displayed.values()))
         assert scope.result.status == 'COMPLETE'
         assert len(scope.images) == 1
         assert next(s.valueJson for s in scope.result.sources if s.sourceId == 'count') == '2'
@@ -114,8 +119,8 @@ def testBorrowedJobClosingDesignerLeavesRuntimeAndOtherObserver(qtApp, tmp_path,
         window.show()
         preview.connect(backend.address, job)
         waitFor(lambda: preview.hub is not None)
-        waitFor(lambda: bool(window.pageCoordinator.editor.renderer.displayed))
-        oldRenderer = window.pageCoordinator.editor.renderer
+        waitFor(lambda: bool(preview.observer.displayed))
+        oldRenderer = preview.observer
         key = next(iter(oldRenderer.displayed.values())).result.identity.resultKey
         waitFor(lambda: bool(other.readSnapshot().scopes))
         assert next(iter(other.readSnapshot().scopes.values())).result.identity.resultKey == key

@@ -227,7 +227,7 @@ class RuntimePages(QWidget):
 
     def setDesignExamples(self, enabled):
         assertGuiThread()
-        if enabled and (not self.editorHost or self.hub or self.captureCoverage is not None):
+        if enabled and (not (self.editorHost or getattr(self, 'allowsDesignExamples', False)) or self.hub or self.captureCoverage is not None):
             raise ValueError('设计示例仅供未连接任务的编辑器使用')
         from . import design_examples
         if not enabled and self.designExamples:
@@ -421,7 +421,7 @@ class RuntimePages(QWidget):
                 if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
                     note = ('来源: ' + str(source.port)[:32] if source else
-                            '来源缺失' if component.bindings else '未绑定 · 拖入流程输出')
+                            '来源缺失' if component.bindings else '未选择来源 · 拖入流程结果')
                     badge = QLabel(note)
                     badge.setObjectName('bindingHint')
                     badge.setWordWrap(True)
@@ -570,7 +570,7 @@ class RuntimePages(QWidget):
                 view.runtimeInstanceId != 'offline-simulation' or view.jobId != 'offline-simulation'):
             self.simulationState = None
         self.lastView = view
-        self.status.setText(f"{view.connection} · {view.detail or '连接健康，等待触发'}")
+        self.status.setText(self.displayMessage(f"{view.connection} · {view.detail or '连接健康，等待触发'}"))
         from emo_master.ui.presentation.job_status import jobStatusText
         # Execution remains live even when business values below use a pin.
         self.jobStatus.setText(jobStatusText(getattr(view, 'job', None)))
@@ -609,6 +609,8 @@ class RuntimePages(QWidget):
                 scope, value, error = self._value(component, view)
                 if view.connection != "CONNECTED":
                     value, error, scope = None, view.connection + ": " + view.detail, None
+                widget.setToolTip(error)
+                error = self.displayMessage(error)
                 if scope:
                     shown[scope.result.identity.resultScopeId] = scope
                 if isinstance(widget, ImageView):
@@ -673,6 +675,10 @@ class RuntimePages(QWidget):
         if self.hub and not self.detached:
             self.hub.updateImageDemand()
             self.submit(self.hub.session.readSnapshot())
+
+    def displayMessage(self, message):
+        """Hosts may simplify diagnostics without changing values or identity."""
+        return message
 
     def hideEvent(self, event):
         self.displayed.clear()

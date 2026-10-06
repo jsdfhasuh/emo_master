@@ -77,8 +77,15 @@ class Palette(QListWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
-        columns = 2 if self.viewport().width() >= 220 else 1
-        self.setGridSize(QSize(max(96, (self.viewport().width()-8)//columns), 96))
+        # A grid based on the current viewport feeds scrollbar visibility back
+        # into item layout. Qt can then alternate forever between one and two
+        # columns. Reserve the scrollbar width even while it is hidden, so the
+        # grid depends only on the panel size, not the previous item layout.
+        width = self.maximumViewportSize().width() - self.verticalScrollBar().sizeHint().width()
+        columns = 2 if width >= 220 else 1
+        size = QSize(max(96, (width-8)//columns), 96)
+        if size != self.gridSize():
+            self.setGridSize(size)
 
     def search(self, text):
         for row in range(self.count()):

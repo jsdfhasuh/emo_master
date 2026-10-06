@@ -1,7 +1,7 @@
 """Page management around the shared production renderer."""
 from PySide2.QtWidgets import (
     QWidget, QHBoxLayout, QVBoxLayout, QListWidget, QPushButton, QInputDialog,
-    QLabel, QMessageBox, QSplitter, QTabWidget, QToolButton, QMenu, QToolBar,
+    QLabel, QMessageBox, QSplitter, QTabWidget, QToolButton, QMenu,
 )
 from PySide2.QtCore import Qt
 from shiboken2 import isValid
@@ -54,6 +54,8 @@ class EditorPages(RuntimePages):
         self.reloading = True
         try:
             super().reload(presentation)
+            for button in self.buttons.values():
+                button.hide()
         finally:
             self.reloading = False
 
@@ -66,6 +68,8 @@ class PageWorkspace(QWidget):
         self.store = self.session.presentation
         self.pageId = None
         self.closed = False
+        self.compact = False
+        self.expandedSizes = None
         self.root = QHBoxLayout(self)
         self.splitter = QSplitter(Qt.Horizontal)
         self.root.addWidget(self.splitter)
@@ -74,54 +78,65 @@ class PageWorkspace(QWidget):
         sidebar = QVBoxLayout(self.leftPanel)
         sidebar.setContentsMargins(0, 0, 0, 0)
         self.splitter.addWidget(self.leftPanel)
-        self.libraryTabs = QTabWidget()
-        sidebar.addWidget(self.libraryTabs, 3)
-        sidebar.addWidget(QLabel('页面 · 默认首页标 ★'))
-        self.pageList = QListWidget()
-        self.pageList.setMinimumHeight(80)
-        self.pageList.currentRowChanged.connect(self.choosePage)
-        sidebar.addWidget(self.pageList, 2)
-        commands = QHBoxLayout()
-        sidebar.addLayout(commands)
-        new = QPushButton('新建页面')
+        header = QHBoxLayout()
+        heading = QLabel('页面列表')
+        heading.setObjectName('panelTitle')
+        heading.setToolTip('最终展示界面的页面，例如检测总览和结果详情')
+        header.addWidget(heading, 1)
+        new = QToolButton()
+        new.setText('新建')
+        new.setToolTip('新建页面')
         new.clicked.connect(lambda: self.run(self.newPage))
-        commands.addWidget(new)
+        header.addWidget(new)
         more = QToolButton()
-        more.setText('页面操作 ▾')
+        more.setText('更多')
         more.setPopupMode(QToolButton.InstantPopup)
         menu = QMenu(more)
         for title, command in [('重命名', self.renamePage), ('复制页面', self.copyPage),
                 ('上移', lambda: self.movePage(-1)), ('下移', lambda: self.movePage(1)),
-                ('设为首页', self.defaultPage), ('删除页面', self.deletePage),
-                ('撤销', lambda: coordinator.history()), ('重做', lambda: coordinator.history(True))]:
+                ('设为首页', self.defaultPage), ('删除页面', self.deletePage)]:
             action = menu.addAction(title)
             action.triggered.connect(lambda _checked=False, fn=command: self.run(fn))
         more.setMenu(menu)
-        commands.addWidget(more)
+        header.addWidget(more)
+        sidebar.addLayout(header)
+        self.pageList = QListWidget()
+        self.pageList.setObjectName('pageList')
+        self.pageList.currentRowChanged.connect(self.choosePage)
+        sidebar.addWidget(self.pageList)
+        self.libraryTabs = QTabWidget()
+        self.libraryTabs.setObjectName('pageLibraryTabs')
+        sidebar.addWidget(self.libraryTabs, 1)
         self.centerPanel = QWidget()
         self.centerPanel.setMinimumWidth(280)
         self.centerLayout = QVBoxLayout(self.centerPanel)
         self.centerLayout.setContentsMargins(0, 0, 0, 0)
-        self.toolbar = QToolBar()
-        self.toolbar.setMovable(False)
-        self.centerLayout.addWidget(self.toolbar)
-        viewButton = QToolButton()
-        viewButton.setText('视图 ▾')
-        viewButton.setPopupMode(QToolButton.InstantPopup)
-        self.viewMenu = QMenu(viewButton)
-        viewButton.setMenu(self.viewMenu)
-        self.toolbar.addWidget(viewButton)
-        for title, index in [('组件栏', 0), ('属性栏', 2)]:
-            action = self.viewMenu.addAction(title)
-            action.triggered.connect(lambda _checked=False, i=index: self.togglePanel(i))
         self.splitter.addWidget(self.centerPanel)
         self.renderer = EditorPages(self, self.store.snapshot(), label='模拟布局预览 · 不运行算子、不写生产状态')
         self.renderer.editing = True
         self.centerLayout.addWidget(self.renderer, 1)
         self.renderer.setEditorHost()
-        self.message = QLabel('编辑模式：控件只选择，不执行运行动作')
+        self.empty = QWidget()
+        emptyLayout = QVBoxLayout(self.empty)
+        emptyLayout.addStretch()
+        hint = QLabel('添加页面，开始设计检测结果的展示界面')
+        hint.setAlignment(Qt.AlignCenter)
+        hint.setWordWrap(True)
+        emptyLayout.addWidget(hint)
+        create = QPushButton('新建第一个页面')
+        create.clicked.connect(lambda: self.run(self.newPage))
+        emptyLayout.addWidget(create, 0, Qt.AlignCenter)
+        emptyLayout.addStretch()
+        self.centerLayout.addWidget(self.empty, 1)
+        self.renderer.fitButton.setParent(self.centerPanel)
+        self.renderer.fitButton.setText('适应画布')
+        canvasTools = QHBoxLayout()
+        canvasTools.addStretch()
+        canvasTools.addWidget(self.renderer.fitButton)
+        self.centerLayout.addLayout(canvasTools)
+        self.message = QLabel('拖入组件开始排版；选择组件设置属性')
         self.message.setWordWrap(True)
-        sidebar.addWidget(self.message)
+        self.centerLayout.addWidget(self.message)
         self.observation = QLabel('页面只观察明确选择的任务；打开、切页和关闭不会启动检测')
         self.observation.setWordWrap(True)
         sidebar.addWidget(self.observation)
@@ -134,9 +149,6 @@ class PageWorkspace(QWidget):
             self.detailsLayout.addWidget(widget)
         self.centerLayout.addWidget(self.details)
         self.details.hide()
-        detailsButton = self.viewMenu.addAction('任务详情')
-        detailsButton.setCheckable(True)
-        detailsButton.toggled.connect(self.details.setVisible)
         from .tools import EditingTools
         self.tools = EditingTools(self, sidebar)
         self.splitter.setStretchFactor(1, 1)
@@ -155,8 +167,31 @@ class PageWorkspace(QWidget):
     def togglePanel(self, index):
         sizes = self.splitter.sizes()
         sizes[index] = (260 if index == 0 else 340) if sizes[index] == 0 else 0
+        if self.compact and sizes[index]:
+            sizes[2 if index == 0 else 0] = 0
         self.splitter.setSizes(sizes)
         self.savePanelSizes()
+        self.coordinator.chrome.update()
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not hasattr(self, 'tools'):
+            return
+        compact = self.width() < 800
+        if compact != self.compact:
+            self.compact = compact
+            if compact:
+                self.expandedSizes = self.splitter.sizes()
+                self.splitter.setSizes([0, max(280, self.width() - 280), 260])
+            elif self.expandedSizes:
+                self.splitter.setSizes(self.expandedSizes)
+            self.coordinator.chrome.update()
+        self.resizePageList()
+
+    def resizePageList(self):
+        rowHeight = max(28, self.pageList.sizeHintForRow(0))
+        rows = max(1, min(6, self.pageList.count(), max(1, self.height() // (3 * rowHeight))))
+        self.pageList.setFixedHeight(rowHeight * rows + 4)
 
     def run(self, command):
         try:
@@ -164,7 +199,9 @@ class PageWorkspace(QWidget):
             command()
             self.refresh()
         except (ValueError, KeyError) as error:
-            self.message.setText(str(error))
+            from .property_panel import editorMessage
+            self.message.setText(editorMessage(str(error)))
+            self.message.setToolTip(str(error))
 
     def openObserver(self):
         # Unlike an edit command this must not refresh the source canvas:
@@ -182,11 +219,15 @@ class PageWorkspace(QWidget):
         self.pageList.blockSignals(True)
         self.pageList.clear()
         for key in p.pageOrder:
-            self.pageList.addItem(('★ ' if key == p.defaultPageId else '') + p.pages[key].name)
+            self.pageList.addItem(('首页 · ' if key == p.defaultPageId else '') + p.pages[key].name)
             self.pageList.item(self.pageList.count()-1).setData(Qt.UserRole, key)
         if self.pageId:
             self.pageList.setCurrentRow(p.pageOrder.index(self.pageId))
         self.pageList.blockSignals(False)
+        self.resizePageList()
+        self.empty.setVisible(not p.pages)
+        self.renderer.setVisible(bool(p.pages))
+        self.renderer.fitButton.setVisible(bool(p.pages))
         self.renderer.reload(p)
         self.coordinator.preview.refreshObserver(p)
         if self.pageId:
@@ -194,6 +235,7 @@ class PageWorkspace(QWidget):
         if hasattr(self, 'tools'):
             self.tools.refresh()
         self.coordinator.preview.refreshCoverage()
+        self.coordinator.chrome.update()
 
     def choosePage(self, row):
         item = self.pageList.item(row)

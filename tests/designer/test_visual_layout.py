@@ -312,8 +312,9 @@ def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
         extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
         assert extension is not None and extension.isVisible()
         assert window.startButton.isVisible()
-        assert not window.openLogsButton.isVisible()
-        assert window._toolbarActions["打开日志"] in window.mainToolbar.actions()
+        assert window._toolbarActions["打开日志"] not in window.mainToolbar.actions()
+        assert window._toolbarActions["打开日志"] in window.pageCoordinator.chrome.menus['运行'].actions()
+        assert window.loadButton.toolButtonStyle() == Qt.ToolButtonIconOnly
     finally:
         window.close()
 

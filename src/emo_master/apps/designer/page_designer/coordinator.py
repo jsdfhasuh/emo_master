@@ -3,9 +3,17 @@ import hashlib
 from copy import deepcopy
 from pathlib import Path
 
-from PySide2.QtWidgets import QAction, QMessageBox, QStackedWidget
+from PySide2.QtCore import QSize
+from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame
 
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+
+
+class WorkspaceStack(QStackedWidget):
+    def minimumSizeHint(self):
+        # Inactive workspaces must not impose their panel minimums on the active
+        # one. Small screens use panel toggles and the flow scroll surface.
+        return QSize(480, 180)
 
 
 class PageCoordinator:
@@ -23,28 +31,26 @@ class PageCoordinator:
         initialPayload['project'] = deepcopy(window.workflowStore.project)
         self.session = ProjectEditSession(initialPayload,
             workflows=window.workflowStore, enablePresentation=False)
-        self.stack = QStackedWidget()
+        self.stack = WorkspaceStack()
         window.takeCentralWidget()
-        self.stack.addWidget(flowWidget)
+        flowScroll = QScrollArea()
+        flowScroll.setFrameShape(QFrame.NoFrame)
+        flowScroll.setWidgetResizable(True)
+        flowScroll.setWidget(flowWidget)
+        self.stack.addWidget(flowScroll)
         window.setCentralWidget(self.stack)
         window.projectController.editCoordinator = self
         window.flowScene.editCompleted = self.sync
-        from .delivery import exportDialog
-        for title, handler, shortcut in [('流程设计', self.showFlow, ''),
-                ('导出测试项目包', lambda: exportDialog(self), ''),
-                ('页面设计', self.showPages, ''), ('撤销项目编辑', lambda: self.history(False), 'Ctrl+Z'),
-                ('重做项目编辑', lambda: self.history(True), 'Ctrl+Shift+Z')]:
-            action = QAction(title, window)
-            action.triggered.connect(handler)
-            if shortcut:
-                action.setShortcut(shortcut)
-            window.mainToolbar.addAction(action)
+        from .chrome import WorkspaceChrome
+        self.chrome = WorkspaceChrome(self)
 
     def sync(self):
         if self.editor:
             self.editor.tools.commitPending()
         self.window.workflowController.captureActiveWorkflow()
         self.session.checkpoint()
+        if hasattr(self, 'chrome'):
+            self.chrome.update()
 
     def _canSync(self):
         try:
@@ -52,6 +58,7 @@ class PageCoordinator:
             return True
         except ValueError as error:
             self.preview.message('请先修正未提交的页面输入：' + str(error))
+            self.chrome.update()
             return False
 
     def pageActive(self):
@@ -61,6 +68,9 @@ class PageCoordinator:
         if not self._canSync():
             return
         self.stack.setCurrentIndex(0)
+        if self.preview.observer is not None:
+            self.preview.observer.hide()
+        self.chrome.update()
 
     def showPages(self):
         if not self._canSync():
@@ -70,14 +80,17 @@ class PageCoordinator:
                 '此项目将采用 2.2 格式。保存时保留 project.json.bak；旧版本需使用备份。继续？',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
+                self.chrome.update()
                 return
             self.session.enablePresentation()
         if self.editor is None:
             from .workspace import PageWorkspace
             self.editor = PageWorkspace(self)
             self.stack.addWidget(self.editor)
-        self.editor.refresh()
+        if self.editor.renderer.config != self.session.presentation.snapshot():
+            self.editor.refresh()
         self.stack.setCurrentWidget(self.editor)
+        self.chrome.update()
 
     def history(self, redo=False):
         if self.window.isJobRunning:
@@ -93,6 +106,33 @@ class PageCoordinator:
                     self.showFlow()
                 else:
                     self.editor.refresh()
+        self.chrome.update()
+
+    def importInput(self):
+        from .resources import registerImage
+        self.sync()
+        document = self.session.document()
+        if self.directory is None:
+            raise ValueError('请先保存项目，再选择测试图片')
+        if document.resources is None:
+            raise ValueError('当前项目尚未启用图片测试所需的页面与资源配置，请先启用页面设计并保存项目')
+        nodes = [(workflowId, node.nodeId, f'{workflow.name}/{node.displayName or node.operatorId}')
+                 for workflowId, workflow in document.workflows.items() for node in workflow.nodes
+                 if node.operatorId == 'vision.io.image_loader']
+        if not nodes:
+            raise ValueError('请先在流程中添加图片输入节点')
+        # Names are user-defined and need not be unique. Keep exact node identity
+        # in the selection while using friendly, unambiguous display labels.
+        labels = [f'{index + 1}. {item[2]}' for index, item in enumerate(nodes)]
+        label, ok = QInputDialog.getItem(self.window, '选择测试图片', '图片输入节点', labels, 0, False)
+        if not ok:
+            return
+        workflow, node, _ = nodes[labels.index(label)]
+        path, _ = QFileDialog.getOpenFileName(self.window, '选择测试图片', '', 'Images (*.png *.jpg *.jpeg *.bmp)')
+        if path:
+            registerImage(self.session, self.directory, workflow, node, path)
+            self.preview.message('测试图片已加入项目；下一次开始测试时使用')
+            self.chrome.update()
 
     def confirmLeave(self):
         if not self.confirmDraft():

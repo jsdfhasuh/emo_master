@@ -16,7 +16,7 @@ def sampleImage():
     painter.setBrush(QColor('#b7e4cd'))
     painter.drawEllipse(QRect(187, 48, 68, 68))
     painter.setPen(QColor('#334155'))
-    painter.drawText(QRect(0, 138, 320, 30), Qt.AlignCenter, '设计示例 · 非检测图像')
+    painter.drawText(QRect(0, 138, 320, 30), Qt.AlignCenter, '示例数据 · 非检测图像')
     painter.end()
     return image
 
@@ -28,7 +28,7 @@ def populate(renderer):
         if isinstance(widget, ImageView):
             if renderer._designImage.isNull():
                 renderer._designImage = sampleImage()
-            widget.setImage(renderer._designImage, '', '设计示例')
+            widget.setImage(renderer._designImage, '', '示例数据')
         elif isinstance(widget, CollectionView):
             columns = props.columns or [TableColumn(title='序号', fieldPath=['index']),
                                         TableColumn(title='示例值', fieldPath=['value'])]
@@ -46,7 +46,7 @@ def populate(renderer):
                         current.setdefault(column.fieldPath[-1], index + 1)
                 rows.append(row)
             widget.model.replace(rows, '')
-            widget.message.setText('设计示例 · 3 行；真实表格按已配置列显示')
+            widget.message.setText('示例数据 · 3 行；真实表格按已配置列显示')
         elif component.type == 'number':
             widget.setText(f'{128.5:.{props.decimals}f}' + props.unit)
         elif component.type == 'indicator':
@@ -54,12 +54,12 @@ def populate(renderer):
             widget.setText((style.text if style else '● OK') + ' · 示例')
             widget.setStyleSheet(appearanceStyle(props) + 'color:' + COLORS[style.color if style else 'green'] + ';')
         elif component.type == 'runtime_status':
-            widget.setText('设计示例 · 客户端连接状态')
+            widget.setText('示例数据 · 客户端连接状态')
         elif component.type == 'text' and (component.bindings or not props.text):
             widget.setText(props.text or '示例文字 · 检测信息')
     renderer.displayed.clear()
-    renderer.banner.setText('设计示例 · 非检测结果 · 不运行算子、不读写生产状态')
-    renderer.identity.setText('设计示例没有检测身份')
+    renderer.banner.setText('示例数据 · 非检测结果')
+    renderer.identity.setText('示例数据没有检测身份')
 
 
 def clear(renderer):
@@ -76,5 +76,5 @@ def clear(renderer):
                 widget.setText(component.props.text if component.type == 'text' and not component.bindings
                                else '已绑定 · 等待明确任务结果' if component.bindings else '未绑定')
     renderer._designImage = QImage()
-    renderer.banner.setText('编辑布局 · 无设计示例 · 等待明确选择任务')
+    renderer.banner.setText('编辑布局 · 无示例数据 · 等待明确选择任务')
     renderer.identity.setText('尚无已显示结果')

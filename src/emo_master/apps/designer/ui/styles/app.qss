@@ -42,6 +42,15 @@ QPushButton#sideCategoryButtonActive { background: #edf3ff; border-color: #c5d7f
 QPushButton#sidebarToggleButton { background: transparent; padding: 0; border-color: transparent; }
 QPushButton#sidebarToggleButton:hover { background: #e7edf7; }
 QTabWidget#workflowTabs::pane { border: none; background: transparent; }
+QWidget#pagePropertyPanel { background: #ffffff; }
+QWidget#pagePropertyPanel QScrollArea { border: none; background: #ffffff; }
+QGroupBox#propertyGroup { border: none; border-top: 1px solid #edf0f4; margin-top: 20px; padding-top: 8px; }
+QGroupBox#propertyGroup::title { subcontrol-origin: margin; subcontrol-position: top left; color: #626b78; }
+QTabWidget#pageLibraryTabs::pane { border: none; background: #ffffff; }
+QTabWidget#pageLibraryTabs QTabBar::tab { background: transparent; border: none; border-bottom: 2px solid transparent; padding: 7px 12px; }
+QTabWidget#pageLibraryTabs QTabBar::tab:selected { background: #ffffff; border-bottom-color: #2563eb; }
+QListWidget#pageList::item { padding: 5px 8px; }
+QToolButton#workspaceSelector { font-weight: 600; padding: 6px 14px; }
 QTabWidget#workflowTabs QTabBar::tab {
   background: transparent; border: none; border-bottom: 2px solid transparent;
   padding: 7px 12px; margin-right: 2px; color: #626b78; font-weight: 400;

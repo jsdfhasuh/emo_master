@@ -3,7 +3,6 @@ from dataclasses import asdict
 from pathlib import Path
 from tests.runtime.runtime_test_utils import jobFailureDetails
 
-from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -59,24 +58,19 @@ def testNormalRunTwoPagesShareImageNumberDecisionAndRestart(qtApp, tmp_path, mon
         coordinator.preview.watchCurrent()
         waitFor(lambda: coordinator.preview.hub is not None or coordinator.preview.error is not None)
         assert coordinator.preview.error is None
-        waitFor(lambda: displayedImagesReady(editor.renderer))
-        first = next(iter(editor.renderer.displayed.values()))
+        waitFor(lambda: displayedImagesReady(coordinator.preview.observer))
+        first = next(iter(coordinator.preview.observer.displayed.values()))
         assert first.result.identity.jobId == firstJob
         assert first.result.identity.mode == 'runtime'
         assert first.result.status == 'COMPLETE', jobFailureDetails(runtime, firstJob, result=first.result)
         assert len(first.images) == 1
         values = {source.sourceId: source.valueJson for source in first.result.sources if source.valueJson is not None}
         assert values == {'count': '2', 'judge': 'true'}
-        editor.renderer.navigate(secondPage)
-        assert editor.renderer.currentPageId == secondPage
-        assert next(iter(editor.renderer.displayed.values())).result.identity.resultKey == first.result.identity.resultKey
-        assert editor.tools.preview.isChecked()
-        editor.tools.preview.setChecked(False)
-        assert editor.renderer.editing
-        assert editor.pageId == editor.renderer.currentPageId == secondPage
-        assert editor.pageList.currentItem().data(Qt.UserRole) == secondPage
-        assert editor.tools._loadedPage == secondPage and editor.tools.selected is None
-        assert next(iter(editor.renderer.displayed.values())).result.identity.resultKey == first.result.identity.resultKey
+        coordinator.preview.observer.navigate(secondPage)
+        assert coordinator.preview.observer.currentPageId == secondPage
+        assert next(iter(coordinator.preview.observer.displayed.values())).result.identity.resultKey == first.result.identity.resultKey
+        assert editor.renderer.editing and editor.renderer.hub is None
+        assert editor.pageId != secondPage
         assert not coordinator.session.dirty
         # A second observer and disconnect cannot create or stop a job.
         observer = DisplaySession(client.displayAddress(), firstJob)
@@ -127,7 +121,6 @@ def testActiveNormalObserverDisconnectStopRetireAndExplicitRestart(qtApp, tmp_pa
         waitFor(lambda: window.operatorCatalogController.state == 'ready')
         window.pageCoordinator.showPages()
         preview = window.pageCoordinator.preview
-        editor = window.pageCoordinator.editor
         window.startJob()
         waitFor(lambda: window.currentJobId is not None)
         firstJob = window.currentJobId
@@ -135,8 +128,8 @@ def testActiveNormalObserverDisconnectStopRetireAndExplicitRestart(qtApp, tmp_pa
         preview.watchCurrent()
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None
-        waitFor(lambda: bool(editor.renderer.displayed))
-        assert next(iter(editor.renderer.displayed.values())).result.identity.jobId == firstJob
+        waitFor(lambda: bool(preview.observer.displayed))
+        assert next(iter(preview.observer.displayed.values())).result.identity.jobId == firstJob
         assert runtime.jobRepository.get(firstJob).status == 'RUNNING'
         preview.closeAsync()
         waitFor(lambda: not preview.active())

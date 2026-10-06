@@ -124,7 +124,8 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch):
     window = MainWindow(Client())
     coordinator = window.pageCoordinator
     assert coordinator is not None
-    assert any(action.text() == '页面设计' for action in window.mainToolbar.actions())
+    assert window.pageCoordinator.chrome.selector.text() == '当前：流程设计'
+    assert [a.text() for a in window.pageCoordinator.chrome.workspaceActions] == ['流程设计', '页面设计']
     assert coordinator.session.document().schemaVersion == '2.1'
     coordinator.showPages()
     assert coordinator.editor is None
@@ -150,7 +151,7 @@ def testCurrentSelectionFiltersProjectAndShowsStatusChoice(designer, monkeypatch
     assert preview.session.jobId == 'current'
     assert choices[0][1] == 1
     assert all('foreign' not in item for item in choices[0][0])
-    assert all('COMPLETED' in item and '正常运行' in item for item in choices[0][0])
+    assert all('已完成' in item and '正常运行' in item for item in choices[0][0])
     assert client.calls == ['capabilities', 'address', ('list', document.project.projectId)]
     assert preview.backend is None
     # Choosing a different observer must never grant the run controller Stop ownership.
@@ -177,11 +178,11 @@ def testUncapturedJobUsesStatusOnlySharedSession(designer):
     assert preview.session.projectId == document.project.projectId
     assert preview.backend is None
     editor = window.pageCoordinator.editor
-    assert 'SOURCE_NOT_CAPTURED' in editor.observation.text()
-    assert 'NOT_CAPTURED' in editor.renderer.widgets['overview']['overview-count'][1].text()
-    assert '下一次明确启动' in editor.renderer.status.text()
+    assert 'SOURCE_NOT_CAPTURED' in preview.observer.jobStatus.text()
+    assert '本次运行未采集所需数据' in preview.observer.widgets['overview']['overview-count'][1].text()
+    assert preview.observer.lastView.connection == 'NOT_CAPTURED'
     editor.choosePage(1)
-    editor.tools.observer.click()
+    preview.openObserver()
     assert preview.observer.hub is preview.hub
     assert '无页面采集数据' in preview.observer.jobStatus.text()
     assert len(Session.instances) == 1
@@ -205,7 +206,7 @@ def testNoGlobalLastJobFallback(designer):
     preview = window.pageCoordinator.preview
     preview.watchCurrent()
     waitFor(lambda: preview.error is not None)
-    assert '当前工程没有可观看任务' in preview.error
+    assert '尚未运行' in preview.error
     assert preview.session is None
 
 
@@ -254,59 +255,53 @@ def selectJob(designer, *, job='current', capture=True, released=False):
     return window.pageCoordinator, preview
 
 
-def testObserverButtonSharesSessionAndCountsHiddenEmbedded(designer):
+def testPreviewReusesOneSessionHidesWithWorkspaceAndClosesViewing(designer):
     coordinator, preview = selectJob(designer)
     editor = coordinator.editor
-    hub, session = preview.hub, preview.session
-    editor.tools.observer.click()
-    observer = preview.observer
-    assert observer.isWindow() and observer.isVisible() and observer.parent() is coordinator.window
-    assert not observer.editing
-    assert observer.hub is hub and hub.session is session
-    assert hub.windows == {editor.renderer, observer}
-    assert observer.config == editor.renderer.config and observer.config is not editor.renderer.config
-    assert len(Session.instances) == 1
+    observer, hub, session = preview.observer, preview.hub, preview.session
+    assert observer.isWindow() and observer.isVisible()
+    assert not observer.editing and editor.renderer.editing
+    assert hub.windows == {observer} and editor.renderer.hub is None
+    assert observer.config == editor.renderer.config
     coordinator.showFlow()
-    assert not editor.renderer.isVisible() and observer.isVisible()
-    assert len(hub.windows) == 2
-    editor.tools.observer.click()
-    assert preview.observer is observer and preview.session is session
-    assert len(Session.instances) == 1
+    assert not observer.isVisible() and not editor.isVisible()
+    coordinator.showPages()
+    assert not observer.isVisible()
+    assert preview.openObserver() is observer
+    assert preview.session is session and len(Session.instances) == 1
     observer.close()
-    assert hub.windows == {editor.renderer} and not session.closed
-    assert observer.detached and observer.hub is None and observer.lastView is None
+    waitFor(lambda: not preview.active())
+    assert session.closed and not hub.windows
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
     assert not isValid(observer) and preview.observer is None
-    editor.tools.observer.click()
-    assert preview.observer is not observer and len(hub.windows) == 2
+    reopened = preview.openObserver()
+    assert reopened.designExamples and reopened.hub is None
     assert len(Session.instances) == 1
 
 
 def testObserverOpeningRejectsInvalidPendingFormWithoutRefresh(designer, monkeypatch):
     coordinator, preview = selectJob(designer)
-    editor = coordinator.editor
+    editor, observer = coordinator.editor, preview.observer
     before = (editor.pageId, editor.renderer.config, editor.renderer.lastView, len(coordinator.session._undo))
-    original = editor.tools.commitPending
     def invalid():
         raise ValueError('invalid pending input')
     monkeypatch.setattr(editor.tools, 'commitPending', invalid)
-    editor.tools.observer.click()
-    assert preview.observer is None and preview.hub.windows == {editor.renderer}
-    assert 'invalid pending input' in editor.message.text()
+    with pytest.raises(ValueError, match='invalid pending input'):
+        preview.openObserver()
+    assert preview.observer is observer and preview.hub.windows == {observer}
     assert (editor.pageId, editor.renderer.config, editor.renderer.lastView, len(coordinator.session._undo)) == before
-    monkeypatch.setattr(editor.tools, 'commitPending', original)
 
 
 def testObserverRetiresOnDisconnectAndNeverBecomesEditor(designer):
     coordinator, preview = selectJob(designer)
     editor = coordinator.editor
-    editor.tools.observer.click()
+    preview.openObserver()
     observer, hub, session = preview.observer, preview.hub, preview.session
     preview.closeAsync()
     assert observer.detached and observer.hub is None
     assert not observer.isVisible() and not hub.windows
     assert not observer.displayed and observer.lastView is None
-    assert editor.renderer.hub is None and editor.renderer.lastView.job is None
+    assert editor.renderer.hub is None and editor.renderer.lastView is None
     assert 'RUNNING' not in editor.renderer.jobStatus.text()
     waitFor(lambda: not preview.active())
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
@@ -314,27 +309,25 @@ def testObserverRetiresOnDisconnectAndNeverBecomesEditor(designer):
     assert session.closed and editor.renderer.isVisible()
 
 
-def testObserverDirectDestroyAndJobSwitchRetireOldWindow(designer):
+def testObserverDirectDestroyAndJobSwitchReuseWindowWithoutLeakingSession(designer):
     coordinator, preview = selectJob(designer, job='first')
-    editor = coordinator.editor
-    editor.tools.observer.click()
-    observer = preview.observer
+    observer, session = preview.observer, preview.session
     observer.deleteLater()
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-    assert not isValid(observer) and preview.observer is None
-    assert preview.hub.windows == {editor.renderer}
-    editor.tools.observer.click()
-    observer, previous = preview.observer, preview.session
+    waitFor(lambda: not preview.active())
+    assert not isValid(observer) and preview.observer is None and session.closed
+    observer = preview.openObserver()
     _, client, document = designer
     client.jobs = [metadata(document, 'second')]
     preview.watchCurrent()
+    waitFor(lambda: preview.session is not None and not preview.busy)
+    previous = preview.session
+    client.jobs = [metadata(document, 'third')]
+    preview.watchCurrent()
     waitFor(lambda: preview.session is not None and preview.session is not previous and not preview.busy)
-    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-    assert not isValid(observer) and previous.closed and preview.observer is None
-    editor.tools.observer.click()
-    assert preview.observer.hub is preview.hub
-    assert preview.observer.lastView.jobId == 'second'
-    assert preview.hub.windows == {editor.renderer, preview.observer}
+    assert preview.observer is observer and previous.closed
+    assert observer.lastView.jobId == 'third'
+    assert preview.hub.windows == {observer}
 
 
 def testReleasedJobStatusAndUnavailableAreNeverSelectionStatus(designer):
@@ -343,58 +336,63 @@ def testReleasedJobStatusAndUnavailableAreNeverSelectionStatus(designer):
     assert not session.readResults
     session.job = replace(session.job, status='FAILED', resourcesReleased=True)
     preview.poll()
-    assert 'FAILED' in coordinator.editor.observation.text()
-    assert '任务资源已释放' in coordinator.editor.observation.text()
-    assert 'COMPLETED' not in coordinator.editor.observation.text()
-    coordinator.editor.tools.observer.click()
+    assert 'FAILED' in preview.observer.jobStatus.text()
+    assert '任务资源已释放' in preview.observer.jobStatus.text()
+    assert 'COMPLETED' not in preview.observer.jobStatus.text()
+    preview.openObserver()
     assert preview.observer.hub is preview.hub
     assert 'FAILED' in preview.observer.jobStatus.text()
     session.job = replace(session.job, status='', availability='UNAVAILABLE', detail='GetJob timeout')
     preview.poll()
     preview.hub.tick()
-    assert '执行状态不可用' in coordinator.editor.observation.text()
-    assert 'FAILED' not in coordinator.editor.observation.text()
+    assert '执行状态不可用' in preview.observer.jobStatus.text()
+    assert 'FAILED' not in preview.observer.jobStatus.text()
     assert '执行状态不可用' in preview.observer.jobStatus.text()
     assert 'FAILED' not in preview.observer.jobStatus.text()
 
 
 def testObserverConstructionAndAttachFailuresRetirePartialNativeWindows(designer, monkeypatch):
     from emo_master.apps.designer.page_designer.workspace import ObserverPages
-    coordinator, preview = selectJob(designer)
+    from emo_master.ui.presentation.hub import DisplayHub
+    window, client, document = designer
+    coordinator = window.pageCoordinator
+    preview = coordinator.preview
     original = ObserverPages._build
     def failBuild(self, _page):
         raise ValueError('construction failed after native allocation')
     monkeypatch.setattr(ObserverPages, '_build', failBuild)
     with pytest.raises(ValueError, match='construction failed'):
         preview.openObserver()
-    assert preview.observer is None
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-    assert not coordinator.window.findChildren(ObserverPages)
-    assert preview.hub.windows == {coordinator.editor.renderer}
+    assert preview.observer is None and not window.findChildren(ObserverPages)
     monkeypatch.setattr(ObserverPages, '_build', original)
-    attach = preview.hub.attach
-    def failAttach(window):
-        attach(window)
+    attach = DisplayHub.attach
+    def failAttach(hub, view):
+        attach(hub, view)
         raise ValueError('attach acknowledgement failed')
-    monkeypatch.setattr(preview.hub, 'attach', failAttach)
-    with pytest.raises(ValueError, match='attach acknowledgement failed'):
-        preview.openObserver()
-    assert preview.hub.windows == {coordinator.editor.renderer}
+    monkeypatch.setattr(DisplayHub, 'attach', failAttach)
+    client.jobs = [metadata(document)]
+    preview.watchCurrent()
+    waitFor(lambda: preview.error is not None)
+    assert 'attach acknowledgement failed' in preview.error
     QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
-    assert preview.observer is None and not coordinator.window.findChildren(ObserverPages)
+    assert preview.observer is None and not preview.hub.windows
+    assert not window.findChildren(ObserverPages)
     assert len(Session.instances) == 1 and not preview.session.closed
+    preview.stopViewing()
+    waitFor(lambda: not preview.active())
+    assert Session.instances[0].closed
 
 
-def testObserverCannotExceedHubLimitWhenAnotherWindowIsHidden(designer):
+def testPreviewReuseDoesNotAllocateAnotherHubWindow(designer):
     from emo_master.ui.presentation.renderer import RuntimePages
     coordinator, preview = selectJob(designer)
     extra = RuntimePages(coordinator.editor.renderer.config, hub=preview.hub)
     try:
         assert not extra.isVisible() and len(preview.hub.windows) == 2
-        coordinator.editor.tools.observer.click()
-        assert preview.observer is None and len(preview.hub.windows) == 2
-        assert '最多两个共享窗口' in coordinator.editor.message.text()
-        assert len(Session.instances) == 1
+        observer = preview.observer
+        assert preview.openObserver() is observer
+        assert len(preview.hub.windows) == 2 and len(Session.instances) == 1
     finally:
         extra.close()
         extra.deleteLater()
@@ -402,7 +400,7 @@ def testObserverCannotExceedHubLimitWhenAnotherWindowIsHidden(designer):
 
 def testDisconnectFailureKeepsOwnerRetryableButRetiresPopup(designer, monkeypatch):
     coordinator, preview = selectJob(designer)
-    coordinator.editor.tools.observer.click()
+    preview.openObserver()
     observer, session = preview.observer, preview.session
     close = session.close
     def failClose():
@@ -414,9 +412,9 @@ def testDisconnectFailureKeepsOwnerRetryableButRetiresPopup(designer, monkeypatc
     assert not isValid(observer) and preview.observer is None
     assert preview.session is session and preview.active() and not preview.closing
     assert preview.error == 'session cleanup pending'
-    assert coordinator.editor.renderer.lastView.job is None
+    assert coordinator.editor.renderer.lastView is None
     preview.poll()
-    assert 'RUNNING' not in coordinator.editor.observation.text()
+    assert preview.observer is None
     assert 'RUNNING' not in coordinator.editor.renderer.jobStatus.text()
     monkeypatch.setattr(session, 'close', close)
     preview.closeAsync()
@@ -424,25 +422,22 @@ def testDisconnectFailureKeepsOwnerRetryableButRetiresPopup(designer, monkeypatc
     assert session.closed
 
 
-def testObserverRequiresSelectionAndCopiesDisplayedConfiguration(designer):
+def testPreviewStartsWithSamplesAndCommitsFormBeforeOpening(designer):
     window, _client, _document = designer
-    editor = window.pageCoordinator.editor
-    editor.tools.observer.click()
-    assert not Session.instances and window.pageCoordinator.preview.observer is None
-    assert '请先观看当前工程任务' in editor.message.text()
-    coordinator, preview = selectJob(designer)
+    coordinator = window.pageCoordinator
+    editor, preview = coordinator.editor, coordinator.preview
+    observer = preview.openObserver()
+    assert not Session.instances and observer.designExamples
     editor.tools.select('overview-count')
-    editor.tools.fields['title'].setText('已提交但尚未重画的新标题')
+    editor.tools.fields['title'].setText('已经提交的新标题')
     rendered = editor.renderer.config
-    editor.tools.observer.click()
-    observer = preview.observer
-    assert observer.config == rendered and editor.renderer.config is rendered
-    assert rendered != editor.store.snapshot()
-    assert editor.tools.fields['title'].text() == '已提交但尚未重画的新标题'
+    assert preview.openObserver() is observer
+    assert observer.config == editor.store.snapshot()
+    assert observer.config != rendered
+    assert editor.tools.fields['title'].text() == '已经提交的新标题'
     editor.refresh()
     assert observer.config == editor.renderer.config == editor.store.snapshot()
-    assert observer.config != rendered
-    assert observer.hub is preview.hub and len(Session.instances) == 1
+    assert observer.hub is None and not Session.instances
 
 
 def testAdvancedModernConnectionFiltersProjectAndSupportsUncapturedJob(designer, monkeypatch):
@@ -458,5 +453,5 @@ def testAdvancedModernConnectionFiltersProjectAndSupportsUncapturedJob(designer,
     waitFor(lambda: preview.hub is not None or preview.error)
     assert preview.error is None and requests == [document.project.projectId]
     assert len(Session.instances) == 1 and not preview.session.readResults
-    window.pageCoordinator.editor.tools.observer.click()
+    preview.openObserver()
     assert preview.observer.hub is preview.hub

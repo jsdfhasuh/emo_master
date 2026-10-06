@@ -8,7 +8,7 @@ import time
 from PySide2.QtCore import Qt, QPointF, QCoreApplication, QEvent
 from PySide2.QtGui import QDragEnterEvent, QDropEvent
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QApplication, QPushButton, QInputDialog, QMessageBox, QFileDialog, QMenu
+from PySide2.QtWidgets import QApplication, QPushButton, QToolButton, QInputDialog, QMessageBox, QFileDialog, QMenu
 
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -21,13 +21,17 @@ from test_preview import waitFor
 
 
 def click(root, text):
-    button = next((w for w in root.findChildren(QPushButton) if w.text() == text and not w.isHidden()), None)
+    QApplication.processEvents()
+    button = next((w for w in root.findChildren(QPushButton) + root.findChildren(QToolButton) if w.text() == text and not w.isHidden()), None)
     if button is not None:
         QTest.mouseClick(button, Qt.LeftButton)
     else:
         # Page commands and explicit task operations now live in native menus.
-        menu, action = next((menu, action) for menu in root.findChildren(QMenu)
-                            for action in menu.actions() if action.text() == text)
+        candidates = [(menu, action) for menu in root.findChildren(QMenu)
+                      for action in menu.actions() if action.text() == text]
+        assert candidates, (text, [(w.text(), w.isHidden(), w.isEnabled()) for w in root.findChildren(QToolButton)],
+                            root.statusBar().currentMessage() if hasattr(root, 'statusBar') else '')
+        menu, action = candidates[0]
         menu.popup(root.mapToGlobal(root.rect().center()))
         QApplication.processEvents()
         QTest.mouseClick(menu, Qt.LeftButton, pos=menu.actionGeometry(action).center())
@@ -88,10 +92,10 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         waitFor(lambda: window.operatorCatalogController.state == 'ready')
         assert window.saveProjectToDirectory(str(root))
         assert json.loads((root/'project.json').read_text())['schemaVersion'] == '2.1'
-        next(a for a in window.mainToolbar.actions() if a.text() == '页面设计').trigger()
+        window.pageCoordinator.chrome.workspaceActions[1].trigger()
         editor = window.pageCoordinator.editor
         monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('运行总览', True))
-        click(editor, '新建页面')
+        click(editor, '新建')
         overview = editor.pageId
         image = add(editor, 'image')
         shot('01-component-drop')
@@ -99,8 +103,8 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         text = add(editor, 'text')
         editor.tools.select(text)
         editor.tools.fields['text'].setText('本地图像 · 当前草稿 · 正式 Blob / Count 输出')
-        click(editor, '应用属性 / 布局')
-        monkeypatch.setattr(QInputDialog, 'getItem', lambda parent, title, label, items, *a, **k: (items[0], True))
+        click(editor, '应用修改')
+        monkeypatch.setattr(QInputDialog, 'getItem', lambda parent, title, label, items, index=0, *a, **k: (items[index], True))
         for key, node, port in [(image, 'blob', 'overlay'), (number, 'count', 'count')]:
             index = next(i for i, choice in enumerate(editor.tools.choices) if choice.source.nodeId == node and choice.source.port == port)
             widget = editor.renderer.widgets[overview][key][1]
@@ -117,15 +121,16 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(overview))
         editor.tools.fields['text'].setText('返回总览')
-        click(editor, '应用属性 / 布局')
+        click(editor, '应用修改')
         editor.pageList.setCurrentRow(editor.store.snapshot().pageOrder.index(overview))
         editor.tools.select(navigation)
         editor.tools.actionMode.setCurrentIndex(editor.tools.actionMode.findData('navigate'))
         editor.tools.destination.setCurrentIndex(editor.tools.destination.findData(detail))
         editor.tools.fields['text'].setText('检测详情')
-        click(editor, '应用属性 / 布局')
+        click(editor, '应用修改')
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *a, **k: (str(root/'input.png'), ''))
-        click(editor, '登记本地输入图片')
+        window.pageCoordinator.showFlow()
+        click(window, '选择测试图片')
         assert window.saveProjectToDirectory(str(root))
         before = window.pageCoordinator.session.document().presentation.model_dump()
         copy = tmp_path/'saved-as'
@@ -138,14 +143,22 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert window.saveProjectToDirectory(str(copy))
         assert json.loads((copy/'project.json').read_text())['presentation'] == before
         shot('03-saved-reopened')
-        click(editor, '交互预览')
-        assert '设计示例 · 非检测结果' in editor.renderer.banner.text()
+        click(window, '预览页面')
+        view = preview.observer
+        assert '示例数据 · 非检测结果' in editor.renderer.banner.text()
         assert preview.session is None
-        click(editor, '明确开始隔离草稿调试')
+        window.pageCoordinator.showFlow()
+        click(window, '开始测试')
+        waitFor(lambda: not preview.busy)
+        assert preview.session is None
+        window.pageCoordinator.showPages()
+        click(window, '预览页面')
+        view = preview.observer
+        click(view, '查看运行结果')
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None, preview.error
-        waitFor(lambda: bool(editor.renderer.displayed))
-        scope = next(iter(editor.renderer.displayed.values()))
+        waitFor(lambda: bool(view.displayed))
+        scope = next(iter(view.displayed.values()))
         assert scope.result.status == 'COMPLETE', scope.result
         count = next(s.valueJson for s in scope.result.sources if s.valueJson is not None)
         assert count == '2'
@@ -153,12 +166,12 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         records['results'].append({'key': scope.result.identity.resultKey, 'job': scope.result.identity.jobId, 'count': count,
                                   'image_sha': next(s.image.sha256 for s in scope.result.sources if s.image)})
         shot('04-real-overview')
-        records['gui_submission_and_paint'] = list(editor.renderer.records)
-        navWidget = editor.renderer.widgets[overview][navigation][1]
+        records['gui_submission_and_paint'] = list(view.records)
+        navWidget = view.widgets[overview][navigation][1]
         QTest.mouseClick(navWidget, Qt.LeftButton)
         QApplication.processEvents()
-        assert editor.renderer.currentPageId == detail
-        assert next(iter(editor.renderer.displayed.values())).result.identity.resultKey == scope.result.identity.resultKey
+        assert view.currentPageId == detail
+        assert next(iter(view.displayed.values())).result.identity.resultKey == scope.result.identity.resultKey
         shot('05-real-detail')
         session = preview.session
         baselineUndo = len(window.pageCoordinator.session._undo)
@@ -173,7 +186,8 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         records['hub'] = preview.hub.stats()
         records['session_stats'] = session.stats
         # Explicit stop, then register a different actual input and start a new snapshot.
-        click(editor, '停止自有调试 / 断开观察')
+        window.pageCoordinator.showFlow()
+        click(window, '停止测试')
         waitFor(lambda: not preview.active())
         import cv2
         pixels = cv2.imread(str(root/'input.png'))
@@ -181,12 +195,24 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         changed = tmp_path/'changed.png'
         assert cv2.imwrite(str(changed), pixels)
         monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *a, **k: (str(changed), ''))
-        click(editor, '登记本地输入图片')
-        click(editor, '明确开始隔离草稿调试')
+        window.pageCoordinator.showFlow()
+        click(window, '选择测试图片')
+        window.pageCoordinator.showFlow()
+        click(window, '开始测试')
+        waitFor(lambda: not preview.busy)
+        assert preview.session is None
+        window.pageCoordinator.showPages()
+        click(window, '预览页面')
+        view = preview.observer
+        click(view, '查看运行结果')
         waitFor(lambda: preview.hub is not None or preview.error is not None)
         assert preview.error is None, preview.error
-        waitFor(lambda: bool(editor.renderer.displayed))
-        second = next(iter(editor.renderer.displayed.values()))
+        try:
+            waitFor(lambda: bool(view.displayed))
+        except AssertionError as error:
+            raise AssertionError((preview.error, view.currentPageId, view.isVisible(), view.status.text(),
+                view.captureCoverage, preview.session.readSnapshot(), preview.backend.jobId)) from error
+        second = next(iter(view.displayed.values()))
         secondCount = next(s.valueJson for s in second.result.sources if s.valueJson is not None)
         assert secondCount == '3'
         assert second.result.identity.jobId != scope.result.identity.jobId
@@ -195,7 +221,8 @@ def testCompleteDesignerUserPath(qtApp, tmp_path, monkeypatch):
         assert window.saveProjectToDirectory(str(copy))
         if out:
             (out/'two-pages.json').write_text(editor.store.snapshot().model_dump_json(indent=2), encoding='utf-8')
-        click(editor, '停止自有调试 / 断开观察')
+        window.pageCoordinator.showFlow()
+        click(window, '停止测试')
         waitFor(lambda: not preview.active())
         assert not runtime._closed
         assert window.loadProjectDirectory(str(copy))

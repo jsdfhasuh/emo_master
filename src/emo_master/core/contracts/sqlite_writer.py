@@ -158,8 +158,13 @@ def toStorage(value: Any, storage: str, *, checkFile: bool = True) -> Any:
     if value is None:
         return None
     if storage == "JSON":
-        result = json.dumps(jsonValue(value), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
-        if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+        payload = jsonValue(value)
+        try:
+            result = json.dumps(payload, ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+            size = len(result.encode("utf-8"))
+        except (UnicodeError, ValueError, TypeError, OverflowError) as error:
+            raise SqliteWriterError("E_SQLITE_VALUE", "完整 JSON 无法序列化或编码为 UTF-8：" + str(error)) from error
+        if size > MAX_RECORD_BYTES:
             raise SqliteWriterError("E_SQLITE_LIMIT", "序列化记录超过 1 MiB")
         return result
     if storage == "BOOLEAN" and type(value) is bool:

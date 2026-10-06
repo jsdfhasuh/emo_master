@@ -183,6 +183,10 @@ class WorkflowRunner:
                         node, nodeOutputs, nodeContext
                     )
                     self._publishArtifacts(node, nodeOutputs, nodeContext)
+                    for binding in workflow.outgoingBindings.get(nodeId, ()):
+                        if binding.fromPort in nodeOutputs:
+                            boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
+                                nodeOutputs[binding.fromPort], binding, nodeContext)
                     cancellation.raise_if_cancelled()
                 except Exception as err:
                     code = getattr(err, "code", "E_EXEC_FAILED")
@@ -222,10 +226,6 @@ class WorkflowRunner:
                     outputs.update(nodeInput)
                     outputs.update(nodeOutputs)
                 self._route(nodeId, nodeOutputs, workflow.outgoingEdges, nodeInputs)
-                for binding in workflow.outgoingBindings.get(nodeId, ()):
-                    if binding.fromPort in nodeOutputs:
-                        boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
-                            nodeOutputs[binding.fromPort], binding, nodeContext)
                 cancellation.raise_if_cancelled()
                 payload = {
                     "status": "COMPLETED",

@@ -32,6 +32,9 @@ workflowRunId、nodeId、nodeRunId、iterationPath、timestampUtc、writeId。
 编译后 `parameterBindings` 与连线共同排序/查环，按稳定节点 ID 和端口检查类型。
 Runner 每个流程调用创建独立投递表，只转换已声明输出，记录来源 workflowRunId/nodeRunId。
 结构化结果通过正式 toPayload 和完整 JSON 转换，拒绝 ndarray/任意对象、非有限值和截断。
+JSON 编码及序列化错误统一为 E_SQLITE_VALUE，保留映射行，由写库节点的 stop/continue
+策略生成真实失败回执；不在来源节点投递时逃逸。意外的绑定投递异常仍使来源节点失败，
+并完成 node.failed 收尾，不留下仅有 node.started 的执行记录。
 复制参数深拷贝；流程导入通过 nodeIdMap 重绑。名称变化不影响 ID，来源删除保留失效引用供修复。
 
 INTEGER 使用 SQLite 有符号 64 位；REAL 必须有限且整数转实数无损；BOOLEAN 按 0/1，

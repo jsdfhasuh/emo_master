@@ -1,0 +1,29 @@
+"""Record the actual source and preserve raw output for every validation run."""
+from pathlib import Path
+import importlib.util
+import json
+import os
+import subprocess
+import sys
+import time
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+spec = importlib.util.spec_from_file_location('identity', root / 'scripts/sqlite_writer_validate.py')
+identity = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(identity)
+output = root / 'docs/testing/designer-shortcuts-2026-10-06' / sys.argv[1]
+output.mkdir(parents=True, exist_ok=False)
+(output / 'candidate.json').write_text(json.dumps(identity.candidate(), ensure_ascii=False, indent=2), encoding='utf-8')
+command = [sys.executable, *sys.argv[2:]]
+env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONPATH': str(root / 'src'),
+       'QT_QPA_PLATFORM': 'offscreen', 'HUARAY_CAMERA_SMOKE': '0',
+       'PYTEST_ADDOPTS': '--ignore=manual_test_workspace'}
+begin = time.monotonic()
+with (output / 'raw.log').open('wb') as log:
+    result = subprocess.run(command, cwd=root, env=env, stdout=log, stderr=subprocess.STDOUT)
+record = {'command': command, 'cwd': str(root), 'exitCode': result.returncode,
+          'seconds': time.monotonic() - begin}
+(output / 'result.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+print(json.dumps(record, ensure_ascii=False))
+print((output / 'raw.log').read_text(encoding='utf-8')[-9500:])
+raise SystemExit(result.returncode)

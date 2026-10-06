@@ -1,0 +1,131 @@
+"""Visible native key verification on isolated UI test nodes, without a Runtime."""
+from pathlib import Path
+import json
+import os
+import sys
+import tempfile
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+sys.path[:0] = [str(root / 'src'), str(root)]
+os.environ['QT_QPA_PLATFORM'] = 'windows'
+os.environ['HUARAY_CAMERA_SMOKE'] = '0'
+import emo_master  # noqa: F401
+from PySide2.QtCore import QCoreApplication, QEvent, QPointF, QSettings, Qt
+from PySide2.QtGui import QContextMenuEvent
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QApplication, QMessageBox
+from emo_master.apps.designer.main import applyDesignerStyle
+from tests.designer.test_node_context_menu import Client, PAYLOAD, actions
+from tests.qt_widget_owner import OwnedDesignerWindows
+
+tag = sys.argv[1] if len(sys.argv) > 1 else 'native'
+assert tag.replace('-', '').isalnum()
+output = root / 'docs/testing/designer-shortcuts-2026-10-06' / tag
+output.mkdir(exist_ok=False)
+with tempfile.TemporaryDirectory(prefix='emo-native-shortcuts-') as temporary:
+    QSettings.setDefaultFormat(QSettings.IniFormat)
+    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, temporary)
+    app = QApplication([])
+    applyDesignerStyle(app)
+    question = QMessageBox.question
+    QMessageBox.question = lambda parent, title, *args, **kwargs: (
+        QMessageBox.Discard if title == '项目有未保存修改' else
+        QMessageBox.Yes if title == '启用页面设计' else question(parent, title, *args, **kwargs))
+    client = Client()
+    with OwnedDesignerWindows(app) as owner:
+        window = owner(client)
+        window.operatorCatalogController.refreshOperators(window._classifyOperator)
+        for name in ('计数算子（快捷键测试，未执行检测）', '第二测试节点'):
+            window.addNodeFromOperatorPayload({**PAYLOAD, 'displayName': name})
+        first = next(key for key, value in window.flowModel.nodes.items() if value.kind == 'operator')
+        window.pageCoordinator.sync()
+        window.resize(1280, 720)
+        window.show()
+        window.activateWindow()
+        app.processEvents()
+        assert app.activeWindow() is window
+        window.flowScene.setNodeSelected(first)
+        item = window.flowScene._nodeItems[first]
+        window.flowView.centerOn(item)
+        point = window.flowView.mapFromScene(item.mapToScene(QPointF(55, 18)))
+        viewport = window.flowView.viewport()
+        app.sendEvent(viewport, QContextMenuEvent(QContextMenuEvent.Mouse, point, viewport.mapToGlobal(point)))
+        app.processEvents()
+        menu = window.nodeContextMenu.menu
+        assert menu.isVisible()
+        assert menu.grab().save(str(output / 'node-shortcuts.png'))
+        assert window.grab().save(str(output / 'flow-shortcuts.png'))
+        labels = {key: action.text() for key, action in actions(menu).items()}
+        QTest.keyClick(menu, Qt.Key_Escape)
+
+        def press(key, modifiers=Qt.NoModifier):
+            window.activateWindow()
+            window.flowView.setFocus()
+            app.processEvents()
+            QTest.keyClick(window.flowView, key, modifiers)
+            app.processEvents()
+
+        before = set(window.flowModel.nodes)
+        depth = len(window.pageCoordinator.session._undo)
+        press(Qt.Key_D, Qt.ControlModifier)
+        copied, = set(window.flowModel.nodes) - before
+        assert len(window.pageCoordinator.session._undo) == depth + 1
+        press(Qt.Key_Z, Qt.ControlModifier)
+        assert set(window.flowModel.nodes) == before
+        press(Qt.Key_Y, Qt.ControlModifier)
+        assert set(window.flowModel.nodes) == before | {copied}
+        window.flowScene.setNodeSelected(copied)
+        press(Qt.Key_Delete)
+        assert set(window.flowModel.nodes) == before
+        press(Qt.Key_Z, Qt.ControlModifier)
+        assert set(window.flowModel.nodes) == before | {copied}
+        directory = Path(temporary) / '中文 快捷键项目'
+        assert window.saveProjectToDirectory(str(directory))
+        window.flowScene.setNodeSelected(first)
+        press(Qt.Key_D, Qt.ControlModifier)
+        savedNodes = set(window.flowModel.nodes)
+        press(Qt.Key_S, Qt.ControlModifier)
+        assert not window.pageCoordinator.session.dirty
+        secondClient = Client()
+        second = owner(secondClient)
+        assert second.loadProjectDirectory(str(directory))
+        assert set(second.flowModel.nodes) == savedNodes
+        second.close()
+        window.activateWindow()
+        app.processEvents()
+        window._setIsJobRunning(True)
+        protected = window.pageCoordinator.session.payload()
+        press(Qt.Key_Backspace)
+        press(Qt.Key_D, Qt.ControlModifier)
+        assert window.pageCoordinator.session.payload() == protected
+        window._setIsJobRunning(False)
+
+        window.pageCoordinator.showPages()
+        editor = window.pageCoordinator.editor
+        editor.pageId = editor.store.createPage('快捷键设计示例')
+        component = editor.tools.commands().add(editor.pageId, 'text', 0, 0)
+        editor.refresh()
+        editor.tools.select(component)
+        field = editor.tools.fields['text']
+        field.setText('页面复制与删除复用统一撤销')
+        editor.tools.commitPending()
+        card = editor.renderer.widgets[editor.pageId][component][1].parentWidget()
+        QTest.mouseClick(card, Qt.LeftButton)
+        app.processEvents()
+        assert window.designerActions.keyboardAllowed('copy')
+        QTest.keyClick(app.focusWidget(), Qt.Key_D, Qt.ControlModifier)
+        app.processEvents()
+        assert len(editor.store.snapshot().pages[editor.pageId].components) == 2
+        assert window.grab().save(str(output / 'page-shortcuts.png'))
+        report = {'platform': app.platformName(), 'windowLogicalSize': [window.width(), window.height()],
+                  'devicePixelRatio': window.devicePixelRatioF(),
+                  'screenLogicalDpi': window.screen().logicalDotsPerInch(),
+                  'menuLabels': labels, 'copyUndoRedoDelete': 'PASS', 'saveReopen': 'PASS',
+                  'runningKeysGuarded': 'PASS', 'pageMouseFocusAndCopy': 'PASS',
+                  'starts': client.starts + secondClient.starts, 'stops': client.stops + secondClient.stops,
+                  'fixture': 'Native Qt test nodes; no actual Runtime or detection Job'}
+        assert report['starts'] == report['stops'] == 0
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    report['windowAndWorkersRetired'] = True
+    (output / 'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(json.dumps(report, ensure_ascii=False))

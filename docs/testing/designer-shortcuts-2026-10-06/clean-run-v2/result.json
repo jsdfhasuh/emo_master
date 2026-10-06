@@ -1,0 +1,20 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_designer_shortcuts.py",
+    "tests/designer/test_shortcut_guards.py",
+    "tests/designer/test_node_context_menu.py",
+    "tests/designer/test_delete_shortcut.py",
+    "tests/designer/test_flow_scene_interactions.py",
+    "tests/designer/test_main_window_project_save_load.py",
+    "tests/ui/page_designer/test_pending_inputs.py",
+    "tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\designer-shortcuts-20261006-202344-625093\\actions-candidate-v2",
+  "exitCode": 1,
+  "seconds": 21.108999999938533,
+  "identity": "../clean-candidate-v2.json"
+}

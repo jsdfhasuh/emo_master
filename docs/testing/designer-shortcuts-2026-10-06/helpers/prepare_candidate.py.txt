@@ -1,0 +1,95 @@
+"""Stage this batch in a separate index and test its tree without dirty UI work."""
+from pathlib import Path
+import difflib
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import zipfile
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+backup = Path(__file__).parent
+main = 'src/emo_master/apps/designer/ui/main_window.py'
+paths = [main, 'src/emo_master/apps/designer/ui/node_context_menu.py',
+         'src/emo_master/apps/designer/ui/designer_actions.py',
+         'tests/designer/test_designer_shortcuts.py']
+tag = sys.argv[1]
+assert tag.isalnum()
+index = backup / ('index-actions-' + tag)
+assert not index.exists()
+env = {**os.environ, 'GIT_INDEX_FILE': str(index)}
+
+def git(*args, data=None, **kwargs):
+    return subprocess.check_output(['git', *args], input=data, cwd=root, env=env, **kwargs)
+
+assert git('branch', '--show-current').strip() == b'agent/runtime-workflow-architecture-v1'
+head = git('rev-parse', 'HEAD').decode().strip()
+assert head == '4a6331d827cadf335851dd4ba56e5796d720c7ce'
+before = (backup / 'phase2-before' / main).read_bytes()
+after = (root / main).read_bytes()
+
+def project(source):
+    newline = b'\r\n' if b'\r\n' in source else b'\n'
+    text = source.decode().replace('\r\n', '\n')
+    anchors = [
+        ('            self.pageCoordinator = PageCoordinator(self, rootWidget)\n',
+         '            from emo_master.apps.designer.ui.designer_actions import DesignerActions\n'
+         '            self.designerActions = DesignerActions(self)\n'),
+        ('        self.isJobRunning = isRunning\n',
+         "        actions = getattr(self, 'designerActions', None)\n"
+         '        if actions is not None:\n            actions.refresh()\n'),
+        ('    def handleDeleteShortcut(self) -> None:\n',
+         "        actions = getattr(self, 'designerActions', None)\n"
+         "        if actions is not None:\n            actions.invoke('delete')\n            return\n"),
+        (('            coordinator.chrome.update()\n' if '            coordinator.chrome.update()\n' in text
+          else '        self._updateRunBlockedHint(canRun)\n'),
+         "        actions = getattr(self, 'designerActions', None)\n"
+         '        if actions is not None:\n            actions.refresh()\n'),
+    ]
+    for anchor, addition in anchors:
+        assert text.count(anchor) == 1, anchor
+        text = text.replace(anchor, anchor + addition, 1)
+    return text.replace('\n', newline.decode()).encode()
+
+assert project(before) == after, 'Unexpected worktree edits in this batch'
+base = git('show', 'HEAD:' + main)
+projected = project(base)
+patch = ''.join(difflib.unified_diff(base.decode().splitlines(keepends=True),
+    projected.decode().splitlines(keepends=True), fromfile='a/' + main, tofile='b/' + main, n=3)).encode()
+(backup / 'main_window-actions-clean.patch').write_bytes(patch)
+git('read-tree', 'HEAD')
+git('apply', '--cached', '--unidiff-zero', data=patch)
+git('add', '--', *paths[1:])
+git('diff', '--cached', '--check')
+print(git('diff', '--cached', '--stat').decode())
+print(git('diff', '--cached', '--', main).decode())
+tree = git('write-tree').decode().strip()
+archive = backup / ('actions-candidate-' + tag + '.zip')
+assert not archive.exists()
+git('archive', '--format=zip', '--output=' + str(archive), tree)
+candidate = backup / ('actions-candidate-' + tag)
+candidate.mkdir(exist_ok=False)
+with zipfile.ZipFile(archive) as zipped:
+    for entry in zipped.infolist():
+        assert (candidate / entry.filename).resolve().is_relative_to(candidate.resolve())
+    zipped.extractall(candidate)
+taskHashes = {}
+for relative in paths + ['src/emo_master/apps/designer/ui/action_state.py',
+                        'tests/designer/test_shortcut_guards.py']:
+    value = (candidate / relative).read_bytes()
+    blob = git('show', tree + ':' + relative)
+    assert value.replace(b'\r\n', b'\n') == blob.replace(b'\r\n', b'\n'), relative
+    taskHashes[relative] = {'archiveSha256': hashlib.sha256(value).hexdigest(),
+                            'gitBlobSha256': hashlib.sha256(blob).hexdigest()}
+files = {str(p.relative_to(candidate)).replace('\\', '/'): hashlib.sha256(p.read_bytes()).hexdigest()
+         for folder in ('src', 'tests', 'proto', 'scripts') for p in (candidate / folder).rglob('*')
+         if p.is_file() and p.suffix in {'.py', '.proto', '.json', '.ui'} and '__pycache__' not in p.parts}
+report = {'baseHead': head, 'candidateTree': tree, 'originalDirtyOverlay': False,
+          'sourceRoot': str(candidate), 'sourceHashes': files,
+          'sourceDigest': hashlib.sha256(json.dumps(files, sort_keys=True).encode()).hexdigest(),
+          'taskHashes': taskHashes, 'batchPaths': paths, 'python': sys.version}
+output = root / ('docs/testing/designer-shortcuts-2026-10-06/clean-candidate-' + tag + '.json')
+assert not output.exists()
+output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+print('candidateTree:', tree)

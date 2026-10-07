@@ -149,16 +149,18 @@ def _checkWindow(root, duration, restarts, report):
             retained = len(owner.runtime.eventStore.read(job))
             if retained > project.runtime.eventRetentionPerJob:
                 raise RuntimeError("terminal diagnostic retention exceeded")
-            sessions.append(dict(jobId=job, pid=pid, cycles=completed, retainedEvents=retained, stopCode=terminal.errorCode))
+            sessions.append(dict(jobId=job, pid=pid, cycles=completed, retainedEvents=retained,
+                stopCode=terminal.errorCode, workerRetired=True))
             if index < restarts:
                 window.startDetection()
                 _wait(app, lambda: window.error or owner.jobId != job)
-        return dict(sessions=sessions, screenshot=str(screenshot), qtPlatform=app.platformName(), packageRoundTrip="PASS")
     finally:
         window.close()
         _wait(app, lambda: window.done)
         if window.controller and not window.controller.closed:
             raise RuntimeError("Runtime did not close")
+    return dict(sessions=sessions, screenshot=str(screenshot), qtPlatform=app.platformName(),
+                packageRoundTrip="PASS", runtimeClosed=True)
 
 
 def runValidationCommand(arguments) -> int:

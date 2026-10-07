@@ -21,6 +21,7 @@ jobs:
     outputs:
       release_tag: ${{ steps.version.outputs.tag }}
       source_sha: ${{ steps.version.outputs.sha }}
+      packager_sha: ${{ steps.version.outputs.packager_sha }}
     env:
       QT_QPA_PLATFORM: offscreen
       PYTHONUTF8: '1'
@@ -28,6 +29,13 @@ jobs:
       - uses: actions/checkout@v7
         with:
           ref: ${{ inputs.source_ref }}
+          persist-credentials: false
+      - name: Resolve the requested packager checkout
+        uses: actions/checkout@v7
+        with:
+          repository: jsdfhasuh/python_build_scripts
+          ref: ${{ inputs.packager_ref }}
+          path: .runtime-packager
           persist-credentials: false
       - uses: actions/setup-python@v6
         with:
@@ -43,23 +51,33 @@ jobs:
           $version = python -c "import emo_master; print(emo_master.__version__)"
           if ($LASTEXITCODE -ne 0) { throw 'Cannot read source version' }
           $sha = git rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source SHA' }
+          $packagerSha = git -C .runtime-packager rev-parse HEAD
+          if ($LASTEXITCODE -ne 0) { throw 'Cannot resolve packager SHA' }
+          New-Item -ItemType Directory -Path runtime-evidence -Force | Out-Null
+          [ordered]@{source_commit = $sha.Trim(); packager_commit = $packagerSha.Trim();
+            published = $false; fieldAcceptance = 'NOT_RUN'} |
+            ConvertTo-Json | Set-Content -LiteralPath runtime-evidence/checkouts.json -Encoding utf8
           Add-Content $env:GITHUB_OUTPUT "tag=v$($version.Trim())"
           Add-Content $env:GITHUB_OUTPUT "sha=$sha"
+          Add-Content $env:GITHUB_OUTPUT "packager_sha=$($packagerSha.Trim())"
       - name: Runtime source regression
-        run: >-
-          python -m pytest tests/core/test_runtime_directory.py tests/core/test_runtime_package.py
-          tests/runtime/test_production_continuous.py tests/runtime/test_production_boundaries.py
-          tests/ui/operator_view/test_production_window.py tests/runtime/test_operator_lifecycle.py
-          tests/runtime/test_worker_heartbeat_finalization.py tests/runtime/test_heartbeat_liveness.py
-          tests/test_windows_package_entry.py
-          tests/test_package_bootstrap.py tests/test_operator_runtime_validation.py -q
+        shell: pwsh
+        run: ./scripts/validate_runtime_source.ps1
+      - name: Upload Runtime source evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: operator-runtime-source-evidence
+          path: runtime-evidence/**
+          if-no-files-found: warn
   package:
     needs: validate
-    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@fe4921772287cb5d2f5946283f5a4122f5067f89
+    uses: jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@29b375fcd368b1f88be14b3356fe182b8e4e02e0
     with:
       target: emo-master-runtime
       source_ref: ${{ needs.validate.outputs.source_sha }}
-      packager_ref: ${{ inputs.packager_ref }}
+      packager_ref: ${{ needs.validate.outputs.packager_sha }}
       release_tag: ${{ needs.validate.outputs.release_tag }}
       release_repo: ${{ github.repository }}
       publish_release: false
@@ -81,16 +99,13 @@ jobs:
         env:
           RELEASE_TAG: ${{ needs.validate.outputs.release_tag }}
           SOURCE_SHA: ${{ needs.validate.outputs.source_sha }}
+          PACKAGER_SHA: ${{ needs.validate.outputs.packager_sha }}
         run: |
-          $archive = "release-assets/emo-master-runtime-windows-$env:RELEASE_TAG.zip"
-          $manifest = Get-Content -LiteralPath 'release-assets/manifest.json' -Raw | ConvertFrom-Json
-          $hash = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash.ToLowerInvariant()
-          if ($manifest.sha256 -ne $hash -or $manifest.source_commit -ne $env:SOURCE_SHA) {
-            throw 'Runtime artifact hash or source identity mismatch'
-          }
-          ./scripts/verify_runtime_package.ps1 -Archive "release-assets/emo-master-runtime-windows-$env:RELEASE_TAG.zip" -ReportPath 'archive-check/self-test.json'
+          ./scripts/verify_runtime_artifacts.ps1 -ArtifactDirectory release-assets `
+            -ReleaseTag $env:RELEASE_TAG -SourceCommit $env:SOURCE_SHA -PackagerCommit $env:PACKAGER_SHA
       - uses: actions/upload-artifact@v4
+        if: ${{ always() }}
         with:
           name: operator-runtime-archive-acceptance
-          path: archive-check/*
-          if-no-files-found: error
+          path: release-assets/archive-check/**
+          if-no-files-found: warn

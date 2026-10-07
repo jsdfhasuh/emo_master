@@ -36,14 +36,21 @@ In the application repository, run **Build Operator Runtime** and supply:
 
 The workflow resolves the application ref to its commit, reads the source version,
 runs focused Runtime regression, and calls the existing central Windows workflow.
-The reusable workflow interface is pinned to `fe4921772287cb5d2f5946283f5a4122f5067f89`;
+The reusable workflow interface is pinned to `29b375fcd368b1f88be14b3356fe182b8e4e02e0`;
 the supplied packager ref determines the build scripts/configuration actually checked out.
+Both requested refs are resolved to full checkout SHAs before the reusable call.
+The central Runtime build records those SHAs, its workflow identity and run URL in
+`runtime-build.json`. Source JUnit, build transcripts and process reports are
+uploaded even when acceptance fails. The same central manual entry can run this
+chain before the app workflow is integrated into the default branch.
 
 This workflow always uses `publish_release: false`. It uploads the portable ZIP,
 manifest and frozen self-test evidence as Actions artifacts, not a public Release.
 The central workflow also accepts `target=emo-master-runtime`. Its `auto` policy
 builds only; publication requires explicit `true` and existing Master provenance
 checks. Do not publish a private engineering project as a Runtime release asset.
+Local Runtime publishers also default to build-only; `-Publish` is required for
+their explicit publication path. This does not change the Designer publisher.
 
 The Runtime ZIP uses deflate so Windows Explorer and `Expand-Archive` can extract
 it. Other targets retain their existing compression policy. Keep the complete
@@ -65,6 +72,10 @@ modules. Its synthetic project checks CPU ONNX, plugins, SQLite migrations, nati
 worker spawning, continuous cycles, project-package export/install, custom pages
 with nonblank image pixels, repeated normal stops/restarts, and exit.
 This uses no real camera, PLC or private model and does not prove field acceptance.
+The cloud Runtime-only gate additionally checks manifest/source/packager identities,
+ZIP and extracted-EXE hashes, then performs a native Windows Qt 60-second run with
+10 restarts. Reports record worker retirement, Runtime closure, exit codes and raw
+stdout/stderr. A GitHub-hosted runner is not clean-machine or field acceptance.
 
 The EXE also accepts `--self-test --result-json <new-report-path>`. Reports/workspaces
 must be new paths. Self-tests never use the operator's remembered engineering project.

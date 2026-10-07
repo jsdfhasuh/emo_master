@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -195,8 +196,9 @@ def testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings(tmp_pat
     assert (root / "project.json.bak").exists()
     launcher = script.parent.parent / "start_runtime.cmd"
     result = subprocess.run(["cmd", "/c", str(launcher), str(root), "--check", "--data-root", str(tmp_path / "check")],
-                            cwd=tmp_path, capture_output=True, text=True, timeout=30)
-    assert result.returncode == 0, result.stderr
+                            cwd=tmp_path, env=dict(os.environ, EMO_MASTER_PYTHON=sys.executable),
+                            capture_output=True, text=True, timeout=30)
+    assert result.returncode == 0, result.stdout + result.stderr
     assert "no Job started" in result.stdout
 
 

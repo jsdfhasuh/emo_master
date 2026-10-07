@@ -1,0 +1,105 @@
+{
+  "status": "PASS",
+  "checkedAt": "2026-10-07T09:58:08.1894250+08:00",
+  "runId": 37559011805,
+  "source_commit": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "packager_commit": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "workflow_sha": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "publish_requested": false,
+  "archiveSha256": "5187a5c1e0b428efa7d2c40886c7bdd9c2e75d2e79893f79f8b59c145c1c774a",
+  "archiveSize": 124132917,
+  "executableSha256": "90fce6dc51b06c8e70a299cb887fddee9e0717c65b5615963147e8c377b78a36",
+  "executableSize": 4860261,
+  "sourceTests": 109,
+  "sourceTestSeconds": "74.967",
+  "checks": [
+    {
+      "report": "runtime-self-test.json",
+      "frozen": true,
+      "designerModules": [],
+      "provider": "CPUExecutionProvider",
+      "durationSeconds": 1.0,
+      "restarts": 2,
+      "qtPlatform": "offscreen",
+      "sessionCount": 3,
+      "cycleCounts": [
+        11,
+        4,
+        4
+      ],
+      "pids": [
+        8308,
+        1568,
+        8792
+      ],
+      "exitCode": 0,
+      "workerRetired": true,
+      "runtimeClosed": true
+    },
+    {
+      "report": "archive-check/archive.json",
+      "frozen": true,
+      "designerModules": [],
+      "provider": "CPUExecutionProvider",
+      "durationSeconds": 1.0,
+      "restarts": 2,
+      "qtPlatform": "offscreen",
+      "sessionCount": 3,
+      "cycleCounts": [
+        11,
+        4,
+        4
+      ],
+      "pids": [
+        3608,
+        1572,
+        5508
+      ],
+      "exitCode": 0,
+      "workerRetired": true,
+      "runtimeClosed": true
+    },
+    {
+      "report": "archive-check/native.json",
+      "frozen": true,
+      "designerModules": [],
+      "provider": "CPUExecutionProvider",
+      "durationSeconds": 60.0,
+      "restarts": 10,
+      "qtPlatform": "windows",
+      "sessionCount": 11,
+      "cycleCounts": [
+        712,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4
+      ],
+      "pids": [
+        6832,
+        2308,
+        6688,
+        7696,
+        6428,
+        9716,
+        7116,
+        2024,
+        9056,
+        8428,
+        10172
+      ],
+      "exitCode": 0,
+      "workerRetired": true,
+      "runtimeClosed": true
+    }
+  ],
+  "cleanMachine": "NOT_RUN",
+  "cameraPlc": "NOT_RUN",
+  "fieldAcceptance": "NOT_RUN"
+}

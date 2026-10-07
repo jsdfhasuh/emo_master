@@ -1,0 +1,37 @@
+...........................................F............................ [ 66%]
+.....................................                                    [100%]
+================================== FAILURES ===================================
+____ testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings _____
+
+tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/testSourceLauncherAndConfigura0')
+
+    def testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings(tmp_path):
+        root = tmp_path / "project"
+        document = productionProject(root)
+        # Device fields remain opaque project values, not strings interpreted as paths.
+        document.devices.bindings["camera"] = {"serial": "12345", "address": "192.168.1.10"}
+        saveDocument(root, document)
+        script = Path(__file__).resolve().parents[2] / "scripts/configure_runtime_project.py"
+        command = [sys.executable, str(script), str(root), "--auto-start", "--mode", "continuous",
+                   "--cycle-interval-ms", "250"]
+        result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0, result.stderr
+        payload = json.loads((root / "project.json").read_text(encoding="utf-8"))
+        assert payload["production"] == dict(autoStart=True, mode="continuous", cycleIntervalMs=250, inputs={})
+        assert payload["devices"] == document.devices.model_dump()
+        assert payload["workflows"] == document.model_dump()["workflows"]
+        assert (root / "project.json.bak").exists()
+        launcher = script.parent.parent / "start_runtime.cmd"
+        result = subprocess.run(["cmd", "/c", str(launcher), str(root), "--check", "--data-root", str(tmp_path / "check")],
+                                cwd=tmp_path, capture_output=True, text=True, timeout=30)
+>       assert result.returncode == 0, result.stderr
+E       AssertionError: 
+E       assert 1 == 0
+E        +  where 1 = CompletedProcess(args=['cmd', '/c', 'D:\\a\\python_build_scripts\\python_build_scripts\\source\\start_runtime.cmd', 'C...s\\emo_master\\python.exe"\nSet EMO_MASTER_PYTHON to the existing Python 3.10 environment\'s python.exe.\n', stderr='').returncode
+
+tests\runtime\test_production_boundaries.py:199: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_production_boundaries.py::testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings - AssertionError: 
+assert 1 == 0
+ +  where 1 = CompletedProcess(args=['cmd', '/c', 'D:\\a\\python_build_scripts\\python_build_scripts\\source\\start_runtime.cmd', 'C...s\\emo_master\\python.exe"\nSet EMO_MASTER_PYTHON to the existing Python 3.10 environment\'s python.exe.\n', stderr='').returncode
+1 failed, 108 passed in 68.98s (0:01:08)

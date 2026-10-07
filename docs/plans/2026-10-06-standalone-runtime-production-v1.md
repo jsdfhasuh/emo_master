@@ -87,11 +87,11 @@ Runtime 接受工程目录或 project.json。首次选择工程，成功加载�
 | D1 工程目录加载 | 最小 production 模型、旧工程兼容、路径解析、配置保存 | SOURCE_PASS；中文/空格目录移动与不同 CWD 的真实 spawn 读写通过，2.3 保存与旧工程兼容通过 |
 | D2 独立入口和页面 | 单程序 Runtime + 操作员窗口，选择/记住工程、自定义页面、单次启停 | SOURCE_PASS；源码独立导入、自动启动、启停退出及 Windows 原生 Qt 冒烟通过 |
 | D3 连续检测 | 会话内复用、周期身份、间隔/取消、正常错误收尾 | SOURCE_PASS；一个 Job 多周期、NG 继续、图像/数值/判定身份、取消和故障收尾通过 |
-| D4 独立冻结交付 | 集中打包目标、BuildOnly Action、便携 EXE/ZIP、DLL/Qt/ONNX/spawn | LOCAL_FROZEN_PASS；最终 EXE 和 ZIP 解压独立验证通过，Action 接入已实现；云端实跑与干净 Windows 机器 NOT_RUN |
+| D4 独立冻结交付 | 集中打包目标、BuildOnly Action、便携 EXE/ZIP、DLL/Qt/ONNX/spawn | CLOUD_FROZEN_PASS；2026-10-07 固定源码/打包器 SHA 的非发布 Windows 构建、ZIP 哈希/解压、真实 spawn 和原生 Qt 短测通过；干净 Windows 机器 NOT_RUN |
 | D5 工程包与更新 | 收集声明资源/文件输入、清单校验、停机切换和保留输出 | SOFTWARE_PASS；工程包/更新 12 项、操作员窗口 8 项及冻结导入通过；普通失败恢复通过，断电/进程中断恢复 NOT_RUN |
 | D6 可靠性与现场 | 可复现资源测量、取消/重启、目标工况长测和设备异常 | SYNTHETIC_PASS；最终冻结原生 Qt 首段 60 秒、10 次重启共 11 会话正常退休；实际设备/模型、节拍、磁盘耗尽和长期现场验收 NOT_RUN |
 
-本批交付 D1-D5 的软件闭环，以及 D6 的可复现合成测量入口和已执行短测。没有私有真实工程时使用明确标注的本地图像/类型化输出夹具证明软件行为，不把夹具称为用户工程验收。D4 云端/干净机器、D5 中断恢复和 D6 实际工况验收分列，不能宣布长期生产验收完成。
+本批交付 D1-D5 的软件闭环，以及 D6 的可复现合成测量入口和已执行短测。没有私有真实工程时使用明确标注的本地图像/类型化输出夹具证明软件行为，不把夹具称为用户工程验收。D4 云端已通过、干净机器仍 NOT_RUN；D5 中断恢复和 D6 实际工况验收分列，不能宣布长期生产验收完成。
 
 ## 本批实施记录
 
@@ -114,6 +114,15 @@ Runtime 接受工程目录或 project.json。首次选择工程，成功加载�
 - 仅可选的诊断心跳包在队列满时跳过，业务事件仍保留背压，业务输出和计数不丢弃。新增 11 个回归案例，并纳入 Runtime Action 的心跳存活回归；不扩建防御性框架。
 - 相关源码大回归 1286 passed、1 skipped，Action 对应集合本地运行 105 passed；身份测试 10 次独立进程运行全部通过。Ruff、Mypy（331 源文件）及打包仓 27 项专项通过；跳过项为当前环境不支持符号链接，不计为通过，未重跑全仓 Designer CI。
 - 已重新 clean build 并生成新的便携 ZIP；冻结 gate、ZIP 解压验收、修正模块打包字节码比对通过，ZIP 内 EXE 与 dist 哈希一致。新候选原生 Qt 首段 60 秒加 10 次重启，共 11 个会话均 E_CANCELLED 且 worker 实际退休。证据和新产物哈希见 [审查修正与复验](../testing/runtime-review-fixes-2026-10-06.md)，历史报告和旧 ZIP 保留。云端、干净机器、实际设备/模型及长期现场验收仍为 NOT_RUN；未提交、推送或公开发布。
+
+## 2026-10-07 云端打包链路
+
+- 已提交推送集中打包目标、Runtime 默认不发布保护及对应测试；应用工作流解析完整源码/打包器 SHA、固定可复用工作流版本，并在失败时保留 JUnit、构建记录、原始 stdout/stderr 和执行报告。未重复已合并的 PR #2，未改 Designer 打包目标或发布行为。
+- 实际使用集中仓默认分支已有入口，明确 `source_ref=88ae05a55ed03e2eb9ab84928fe8af9f2870505c`、`packager_ref=29b375fcd368b1f88be14b3356fe182b8e4e02e0` 和 `publish_release=false`。成功运行 [37559011805](https://github.com/jsdfhasuh/python_build_scripts/actions/runs/37559011805) 的 workflow SHA 也为该打包器提交。应用入口尚未进入默认分支，直接手动 dispatch 和 main 集成 NOT_RUN。
+- 首轮云端失败真实上传了失败证据；仅修正测试对开发机默认 Conda 路径的依赖，不改变生产启动器或降低断言。重跑源码集合 109 passed；打包仓全量 367 项执行、366 passed、1 symlink skip，不把跳过计为通过。
+- 云端 dist EXE、ZIP 解压离屏验收和原生 Qt 验收全部通过。原生首段 60 秒完成 712 个连续周期，10 次重启共 11 个实际 worker 会话，全部 E_CANCELLED、资源退休且 Runtime 正常关闭。下载后独立核对 manifest、ZIP/EXE 哈希，本机再次解压原生短测首段 1101 周期，共 11 个会话正常停止退出，候选 Runtime 无残留进程。
+- 原始失败/成功日志和报告已纳入 Git，完整证据与可下载 artifact 见 [云端 Windows 构建验收](../testing/runtime-cloud-2026-10-07.md)。未创建 tag、发布或覆盖 Release；执行前后远端 tag、Release 正文及资产元数据一致。上述 2026-10-06 的未提交/云端 NOT_RUN 记录是历史批次状态，不代表本次云端结果。
+- 干净目标机器、相机/PLC、私有真实工程和模型、节拍、长期稳定性、磁盘耗尽、设备异常及断电恢复仍为 NOT_RUN。云端 runner 和合成短测不等于正式长期现场验收。
 
 ## 验收清单
 

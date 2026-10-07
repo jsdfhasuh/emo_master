@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "source_commit": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "packager_commit": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "archiveAcceptance": "PASS",
+  "nativeAcceptance": "PASS",
+  "cleanWindows": "NOT_RUN",
+  "fieldAcceptance": "NOT_RUN",
+  "archiveSha256": "5187a5c1e0b428efa7d2c40886c7bdd9c2e75d2e79893f79f8b59c145c1c774a",
+  "archiveSize": 124132917,
+  "workflow_sha": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "executableSha256": "90fce6dc51b06c8e70a299cb887fddee9e0717c65b5615963147e8c377b78a36",
+  "executableMember": "EmoMasterRuntime/EmoMasterRuntime.exe"
+}

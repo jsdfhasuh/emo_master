@@ -138,13 +138,32 @@ record the real project/model, resolution, triggers, expected output count, cycl
 budget, run duration, repeated starts/stops, device disconnect/recovery, disk-full
 behavior and resource limits. Do not substitute this fixture for those tests.
 
-## Local Verification Record
+## Verified Cloud Candidate
+
+The [2026-10-07 cloud acceptance record](testing/runtime-cloud-2026-10-07.md)
+documents the successful nonpublishing Windows run, the retained failed first run,
+raw reports/logs, independently downloaded ZIP/EXE hashes and local extracted-EXE
+verification. The exact built source is `88ae05a55ed03e2eb9ab84928fe8af9f2870505c`;
+the packager and executed workflow are `29b375fcd368b1f88be14b3356fe182b8e4e02e0`.
+
+[Download the Actions artifact](https://github.com/jsdfhasuh/python_build_scripts/actions/runs/37559011805/artifacts/11455793477).
+It contains `emo-master-runtime-windows-v0.6.1.zip`, manifest and acceptance evidence.
+This is not a Release asset. The legacy manifest's generated Release URL does not
+mean publication occurred. Keep the complete `EmoMasterRuntime` directory and use
+`EmoMasterRuntime.exe <project-directory>` with a separately supplied project.
+
+Cloud and local native Qt synthetic 60-second runs with ten restarts passed.
+Clean-machine, real camera/PLC/project/model and long-term field acceptance remain
+`NOT_RUN`. Application-default-branch integration/direct app-wrapper dispatch also
+remain `NOT_RUN`; the tested central manual entry is available now.
+
+## Historical Local Verification
 
 See [2026-10-06 frozen/delivery validation](testing/runtime-delivery-2026-10-06.md).
 The subsequent [review fixes and rebuilt candidate](testing/runtime-review-fixes-2026-10-06.md)
 record bounded-queue liveness, failed project switching and cross-channel identity
 regressions, plus the replacement EXE/ZIP hashes and frozen acceptance.
-The local ZIP is a private build-only candidate from an uncommitted working tree.
+That 2026-10-06 local ZIP is a private build-only candidate from an uncommitted working tree.
 Its legacy manifest records the reference HEAD, not the entire dirty source state;
 the separate candidate record captures changed file hashes. Download URLs generated
 by the legacy manifest do not mean assets have been uploaded or a Release exists.

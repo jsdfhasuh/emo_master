@@ -1,0 +1,25 @@
+{
+  "total_count": 1,
+  "artifacts": [
+    {
+      "id": 11455793477,
+      "node_id": "MDg6QXJ0aWZhY3QxMTQ1NTc5MzQ3Nw==",
+      "name": "windows-release-emo-master-runtime-v0.6.1",
+      "size_in_bytes": 123655552,
+      "url": "https://api.github.com/repos/jsdfhasuh/python_build_scripts/actions/artifacts/11455793477",
+      "archive_download_url": "https://api.github.com/repos/jsdfhasuh/python_build_scripts/actions/artifacts/11455793477/zip",
+      "expired": false,
+      "digest": "sha256:11119e64a7eb7c5fd614994cb813189e40034f61c05df08b518e1be9f4407f2e",
+      "created_at": "2026-10-07T01:55:36Z",
+      "updated_at": "2026-10-07T01:55:36Z",
+      "expires_at": "2027-01-05T01:49:46Z",
+      "workflow_run": {
+        "id": 37559011805,
+        "repository_id": 1284528638,
+        "head_repository_id": 1284528638,
+        "head_branch": "master",
+        "head_sha": "29b375fcd368b1f88be14b3356fe182b8e4e02e0"
+      }
+    }
+  ]
+}

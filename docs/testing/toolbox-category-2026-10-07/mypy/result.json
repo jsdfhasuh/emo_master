@@ -1,0 +1,19 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "mypy",
+    "--config-file",
+    "mypy.ini",
+    "src"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 1.1090000001713634,
+  "outerWatchdogSeconds": 90,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\category-highlight-20261007-092430-369788\\category-test-runtime"
+}

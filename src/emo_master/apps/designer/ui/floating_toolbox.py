@@ -114,7 +114,7 @@ class FloatingToolbox(QFrame):
             QTabWidget#floatingToolboxTabs QTabBar::tab:hover {
                 background: #f0f4fa;
             }
-            QPushButton#sideCategoryButton, QPushButton#sideCategoryButtonActive {
+            QPushButton#sideCategoryButton {
                 padding: 3px 6px; min-height: 20px;
             }
         ''')

@@ -3563,13 +3563,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setChecked = getattr(button, "setChecked", None)
             if callable(setChecked):
                 setChecked(currentName == categoryName)
-            setObjectName = getattr(button, "setObjectName", None)
-            if callable(setObjectName):
-                setObjectName(
-                    "sideCategoryButtonActive"
-                    if currentName == categoryName
-                    else "sideCategoryButton"
-                )
         self._refreshBubbleOperators()
 
     def toggleCategoryDrawer(self, categoryName: str) -> None:

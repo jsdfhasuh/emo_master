@@ -37,8 +37,8 @@ QPushButton:disabled, QPushButton#primaryButton:disabled,
 QToolButton#primaryButton:disabled, QToolButton#dangerButton:disabled {
   background: #f1f2f4; border-color: #e1e4e9; color: #9299a4;
 }
-QPushButton#sideCategoryButton, QPushButton#sideCategoryButtonActive { text-align: left; padding: 7px 6px; }
-QPushButton#sideCategoryButtonActive { background: #edf3ff; border-color: #c5d7fc; color: #1748b5; }
+QPushButton#sideCategoryButton { text-align: left; padding: 7px 6px; }
+QPushButton#sideCategoryButton:checked { background: #edf3ff; border-color: #c5d7fc; color: #1748b5; }
 QPushButton#sidebarToggleButton { background: transparent; padding: 0; border-color: transparent; }
 QPushButton#sidebarToggleButton:hover { background: #e7edf7; }
 QTabWidget#workflowTabs::pane { border: none; background: transparent; }

@@ -1,7 +1,6 @@
 from emo_master.apps.designer.page_designer.commands import draftCommand
 from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
-import json
 from pathlib import Path
 from typing import Any, Callable, cast
 from uuid import uuid4
@@ -19,6 +18,7 @@ from emo_master.apps.designer.controllers import (
 from emo_master.apps.designer.state.workflow_store import (
     WorkflowStore,
     defaultNodePosition,
+    portTypes,
 )
 from emo_master.apps.designer.state.workflow_package import (
     WORKFLOW_PACKAGE_EXTENSION,
@@ -45,6 +45,7 @@ from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
 from emo_master.apps.designer.ui.workflow_package_preview_dialog import (
     WorkflowPackagePreviewDialog,
 )
+from emo_master.apps.designer.ui.workflow_interface_dialog import WorkflowInterfaceDialog
 
 try:
     from PySide2.QtCore import QPointF, QSettings, QSize, QTimer, Qt
@@ -2318,19 +2319,42 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         workflowId: str,
         inputs: dict[str, object] | None = None,
         outputs: dict[str, object] | None = None,
+        *,
+        initialTab: str = "inputs",
     ) -> None:
+        if not flowEditAllowed(self):
+            return
         try:
             workflow = self.workflowStore.get(workflowId)
         except KeyError:
             self.appendRuntimeLog("ERROR", f"工作流接口设置失败：{workflowId} 不存在")
             return
-        if inputs is None:
-            inputs = self._promptInterfaceMap("输入接口", workflow.inputs)
-        if inputs is None:
-            return
-        if outputs is None:
-            outputs = self._promptInterfaceMap("输出接口", workflow.outputs)
-        if outputs is None:
+        if inputs is None or outputs is None:
+            availableTypes: set[str] = set()
+            for definition in self.operatorCatalog:
+                for direction in ("inputPorts", "outputPorts"):
+                    ports = definition.get(direction, {})
+                    if isinstance(ports, dict):
+                        availableTypes.update(portTypes(ports).values())
+            dialog = WorkflowInterfaceDialog(
+                workflow.name,
+                workflow.inputs if inputs is None else inputs,
+                workflow.outputs if outputs is None else outputs,
+                initialTab=initialTab,
+                availableTypes=availableTypes,
+                parent=self,
+            )
+            try:
+                selection = dialog.execInterface()
+            finally:
+                deleteLater = getattr(dialog, "deleteLater", None)
+                if callable(deleteLater):
+                    deleteLater()
+            if selection is None or not flowEditAllowed(self):
+                return
+            inputs, outputs = selection
+        if (list(inputs.items()) == list(workflow.inputs.items())
+                and list(outputs.items()) == list(workflow.outputs.items())):
             return
         try:
             refreshReport = self.workflowController.setWorkflowInterface(
@@ -2345,28 +2369,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("WARN", message.replace("\n", " | "))
             QMessageBox.warning(self, "工作流引用已更新", message)
         self._refreshWorkflowTabs()
-
-    def _promptInterfaceMap(
-        self, label: str, current: dict[str, object]
-    ) -> dict[str, object] | None:
-        text, accepted = QInputDialog.getText(
-            self,
-            "设置工作流接口",
-            f"{label} JSON",
-            QLineEdit.Normal,
-            json.dumps(current, ensure_ascii=True),
-        )
-        if not accepted:
-            return None
-        try:
-            parsed = json.loads(str(text))
-        except json.JSONDecodeError as err:
-            self.appendRuntimeLog("ERROR", f"{label} JSON 无效：{err}")
-            return None
-        if not isinstance(parsed, dict):
-            self.appendRuntimeLog("ERROR", f"{label} 必须是 JSON 对象")
-            return None
-        return parsed
 
     @draftCommand
     def addSubflowNode(
@@ -3729,6 +3731,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         node = self.flowModel.nodes.get(nodeId)
         if node is None:
             self.appendRuntimeLog("ERROR", "未找到所选节点")
+            return
+
+        if node.kind in {"workflow_input", "workflow_output"}:
+            self.editWorkflowInterfaceFor(
+                self.activeWorkflowId,
+                initialTab="inputs" if node.kind == "workflow_input" else "outputs",
+            )
             return
 
         if node.kind == "operator" and not self._requireOperatorCatalog():

@@ -1,0 +1,15 @@
+{
+  "status": "PASS",
+  "base": "6aa57f3e21fd207a65047f532feb92a3b82de1ae",
+  "files": {
+    "src/emo_master/apps/designer/ui/main_window.py": "686dc2707285f008cced0202157b5a31021672a2e94c9d97b779823deecf210c",
+    "src/emo_master/apps/designer/ui/flow_scene.py": "9104fb5ff42d1d780e9d294f9c9d3ff8d8111fd35b764f342d2c70853ce484d8",
+    "src/emo_master/apps/designer/ui/workflow_interface_dialog.py": "1e1ce2d4a9a5fb1277a93440db43b3230458f3a779f7ac0bab54ced83ab85a54",
+    "src/emo_master/apps/designer/state/project_edit_session.py": "5ce369f66bc306efcc10305002e0e89d4e0fe05b4adecb54e79c910ebe91048f",
+    "tests/designer/test_workflow_interface_dialog.py": "329385f9c764ff9092c8d669b3c49a2bc5d03c9b8cf994214258aa45c6647209",
+    "tests/designer/test_main_window_workflow_tabs.py": "e27558dc5c0d809a7085a5b3895f6b8e766b7de97e31428254d61034fdac1a4c",
+    "tests/core/presentation/test_workflow_interface_order.py": "c650def6e55b8f603dae1d34026e659ee5d1554114e81d7c7dd0e6f7191f362e",
+    "scripts/validate_workflow_interface.py": "99ce6cb8c62f05d6d56543aa01bc18ea36013987956e9131dd2594ebabdb2bfa"
+  },
+  "notes": "Every staged source/test blob exactly matches the independently tested task-only candidate."
+}

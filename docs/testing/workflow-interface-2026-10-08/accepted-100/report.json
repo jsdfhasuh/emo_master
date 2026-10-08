@@ -1,0 +1,89 @@
+{
+  "platform": "windows",
+  "scale": "1",
+  "runtimeCalls": 0,
+  "font": "Microsoft YaHei UI",
+  "cases": [
+    {
+      "case": "inputs",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "inputs-700.png"
+    },
+    {
+      "case": "inputs",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "inputs-640.png"
+    },
+    {
+      "case": "outputs",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "outputs-700.png"
+    },
+    {
+      "case": "outputs",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "outputs-640.png"
+    },
+    {
+      "case": "empty",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "empty-700.png"
+    },
+    {
+      "case": "empty",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "empty-640.png"
+    },
+    {
+      "case": "many",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "many-700.png"
+    },
+    {
+      "case": "many",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "many-640.png"
+    },
+    {
+      "case": "validation",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "validation-700.png"
+    },
+    {
+      "case": "validation",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.0,
+      "clippedLabels": [],
+      "screenshot": "validation-640.png"
+    }
+  ],
+  "status": "PASS"
+}

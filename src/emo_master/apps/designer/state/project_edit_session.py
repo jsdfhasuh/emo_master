@@ -12,6 +12,19 @@ from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
 
 
+def _draftSignature(payload: dict[str, object]) -> str:
+    workflows = payload["workflows"]
+    assert isinstance(workflows, dict)
+    # JSON object equality/canonicalization ignores key order, but interface
+    # order is visible on the canvas. Track it only in the editor signature;
+    # do not add fields to the saved project or treat other map order as edits.
+    interfaceOrder = {
+        workflowId: {side: list(workflow[side]) for side in ("inputs", "outputs")}
+        for workflowId, workflow in workflows.items()
+    }
+    return json.dumps((payload, interfaceOrder), sort_keys=True, ensure_ascii=True)
+
+
 class ProjectEditSession:
     """One Qt-free draft and atomic save boundary, with bounded whole-project undo.
 
@@ -56,7 +69,7 @@ class ProjectEditSession:
     def checkpoint(self) -> None:
         """Commit a completed legacy canvas command to the same history."""
         current = self.payload()
-        if current != self._checkpoint:
+        if _draftSignature(current) != _draftSignature(self._checkpoint):
             self.document()
             self._undo.append(self._checkpoint)
             del self._undo[:-self.historyLimit]
@@ -81,7 +94,7 @@ class ProjectEditSession:
         assert isinstance(metadata, dict)
         metadata.pop("revision", None)
         metadata.pop("updatedAt", None)
-        return json.dumps(payload, sort_keys=True, ensure_ascii=True)
+        return _draftSignature(payload)
 
     @property
     def dirty(self) -> bool:
@@ -96,7 +109,7 @@ class ProjectEditSession:
         try:
             yield
             self.document()  # structure, not publish validity; drafts may be unbound
-            if self.payload() != before:
+            if _draftSignature(self.payload()) != _draftSignature(before):
                 self._undo.append(before)
                 del self._undo[:-self.historyLimit]
                 self._redo.clear()

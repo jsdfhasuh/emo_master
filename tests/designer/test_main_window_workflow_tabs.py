@@ -143,24 +143,15 @@ def testWorkflowTabContextMenuActionsTargetClickedWorkflow(monkeypatch) -> None:
     assert window.workflowStore.get(bodyWorkflowId).name == "Renamed Body"
     assert window.getActiveWorkflowId() == "main"
 
-    interfaceResponses = iter(
-        [
-            ('{"image":"image"}', True),
-            ('{"edges":"image"}', True),
-        ]
-    )
-
     class InterfaceDialogStub:
-        @staticmethod
-        def getText(parent, title: str, label: str, echo=0, current: str = ""):
-            _ = parent
-            _ = title
-            _ = label
-            _ = echo
-            _ = current
-            return next(interfaceResponses)
+        def __init__(self, workflowName, inputs, outputs, **kwargs):
+            assert workflowName == "Renamed Body"
+            assert inputs == outputs == {}
 
-    monkeypatch.setattr(mainWindowModule, "QInputDialog", InterfaceDialogStub)
+        def execInterface(self):
+            return {"image": "image"}, {"edges": "image"}
+
+    monkeypatch.setattr(mainWindowModule, "WorkflowInterfaceDialog", InterfaceDialogStub)
     menu = window._buildWorkflowTabContextMenu(1)
     assert menu is not None
     _menuActionsByText(menu)["设置工作流接口"].trigger()

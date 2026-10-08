@@ -1,0 +1,16 @@
+{
+  "status": "PASS",
+  "unrelatedFilesChecked": 830,
+  "mismatches": [],
+  "taskFiles": [
+    "scripts/validate_workflow_interface.py",
+    "src/emo_master/apps/designer/state/project_edit_session.py",
+    "src/emo_master/apps/designer/ui/flow_scene.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/workflow_interface_dialog.py",
+    "tests/core/presentation/test_workflow_interface_order.py",
+    "tests/designer/test_main_window_workflow_tabs.py",
+    "tests/designer/test_workflow_interface_dialog.py"
+  ],
+  "baseline": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-interface-pre-repair-zkrhxm9n"
+}

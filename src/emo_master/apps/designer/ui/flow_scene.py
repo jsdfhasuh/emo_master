@@ -41,6 +41,7 @@ OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
 try:
     from PySide2.QtCore import QPointF, QRectF, Qt, QTimer
+    from shiboken2 import isValid
     from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPen, QTransform
     from emo_master.apps.designer.ui.theme import uiFont
     from emo_master.apps.designer.ui.icon_map import operatorIcon
@@ -83,10 +84,14 @@ try:
             titleText = QGraphicsSimpleTextItem(title, self)
             titleText.setFont(self.titleFont)
             titleText.setBrush(QColor("#20242b"))
-            titleText.setToolTip(model.title)
+            tooltip = model.title
+            if model.kind in {"workflow_input", "workflow_output"}:
+                side = "输入" if model.kind == "workflow_input" else "输出"
+                tooltip += f"\n双击配置工作流{side}接口"
+            titleText.setToolTip(tooltip)
             titleText.setPos(44.0, 10.0)
             titleText.setAcceptedMouseButtons(Qt.NoButton)
-            self.setToolTip(model.title)
+            self.setToolTip(tooltip)
             if getattr(model, 'operatorId', '') == 'vision.io.sqlite_writer':
                 self._sqliteSummary = QGraphicsSimpleTextItem('未配置目标 · 0 个映射', self)
                 self._sqliteSummary.setFont(self.bodyFont)
@@ -184,7 +189,19 @@ try:
                 self._sceneRef, "handleNodeDoubleClick", None
             )
             if handleNodeDoubleClick is not None:
-                handleNodeDoubleClick(self.model.nodeId)
+                if self.model.kind in {"workflow_input", "workflow_output"}:
+                    # Leave the native item event before a modal can replace it.
+                    # Its release may go to the modal, so end the canvas grab.
+                    nodeId = self.model.nodeId
+                    def openInterface() -> None:
+                        if not isValid(self) or self.scene() is not self._sceneRef:
+                            return
+                        if self._sceneRef.mouseGrabberItem() is self:
+                            self.ungrabMouse()
+                        handleNodeDoubleClick(nodeId)
+                    QTimer.singleShot(0, openInterface)
+                else:
+                    handleNodeDoubleClick(self.model.nodeId)
             super().mouseDoubleClickEvent(event)
 
     class _PortItem(QGraphicsEllipseItem):

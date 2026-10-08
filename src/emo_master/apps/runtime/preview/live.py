@@ -337,11 +337,18 @@ class LivePreviewManager:
                 errors.append(error)
         return errors
 
-    def closeAll(self) -> list[str]:
+    def closeAll(self, timeoutSeconds: float | None = None) -> list[str]:
         with self._lock:
             self._failures.clear()
             sessionIds = list(self._sessions)
-        return [error for sessionId in sessionIds if (error := self.close(sessionId))]
+        deadline = time.monotonic() + max(0.0, timeoutSeconds) if timeoutSeconds is not None else None
+        errors = []
+        for sessionId in sessionIds:
+            remaining = max(0.0, deadline - time.monotonic()) if deadline is not None else 3.0
+            error = self.close(sessionId, remaining)
+            if error:
+                errors.append(error)
+        return errors
 
 
 def _previewImage(image: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:

@@ -100,6 +100,8 @@ class RuntimeClientError(RuntimeError):
 
 
 class RuntimeServiceProtocol(Protocol):
+    def OpenDraftOperatorPreviewSession(self, request, context): ...
+
     def ListOperators(self, request, context): ...
 
     def ListRejectedOperators(self, request, context): ...
@@ -655,6 +657,32 @@ class RuntimeClient:
                 params_json=json.dumps(params, ensure_ascii=True),
             ),
         )
+
+    def openDraftOperatorPreviewSession(
+        self, projectId: str, workflowId: str, nodeId: str, operatorId: str,
+        params: dict[str, object], projectPayload: dict[str, object],
+    ) -> object:
+        from emo_master.apps.runtime.preview.draft import MAX_DRAFT_PREVIEW_BYTES
+        if not callable(getattr(self.runtimeService, "OpenDraftOperatorPreviewSession", None)):
+            raise RuntimeClientError(
+                "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+            )
+        request = runtime_pb2.OpenOperatorPreviewSessionRequest(
+            project_id=projectId, workflow_id=workflowId, node_id=nodeId, operator_id=operatorId,
+            params_json=json.dumps(params, ensure_ascii=False, allow_nan=False),
+            project_json=json.dumps(projectPayload, ensure_ascii=False, allow_nan=False),
+        )
+        if request.ByteSize() > MAX_DRAFT_PREVIEW_BYTES:
+            raise RuntimeClientError("E_PREVIEW_CONTEXT_INVALID", "相机预览草稿请求不得超过 768 KiB")
+        try:
+            return self._call("OpenDraftOperatorPreviewSession", request)
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" not in error.code:
+                raise
+            raise RuntimeClientError(
+                "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+            ) from error
+
 
     def streamOperatorPreviewFrames(self, sessionId: str) -> Iterable[object]:
         stream = self._call(

@@ -1,0 +1,59 @@
+.........................F.......                                        [100%]
+================================== FAILURES ===================================
+_____________ testNormalJobClosesDraftSessionFromDifferentProject _____________
+
+runtime = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F02501B640>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1326/testNormalJobClosesDraftSessio0')
+
+    def testNormalJobClosesDraftSessionFromDifferentProject(runtime, tmp_path):
+        from tests.runtime.test_global_counter_grpc import _writeCounterProject
+        from tests.runtime.runtime_test_utils import waitForTerminal
+
+        root = _writeCounterProject(tmp_path, "normal-project")
+        assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None).ok
+        preview = runtime.OpenDraftOperatorPreviewSession(draftRequest(), None)
+        assert preview.ok, preview.message
+        started = runtime.StartJob(pb.StartJobRequest(project_id="normal-project", workflow_id="main",
+                                                     inputs_json='{"increment":1}'), None)
+        assert started.ok, started.message
+        assert runtime.livePreviewManager._sessions == {}
+        assert _FakeLiveCamera.instances[-1].disposed == 1
+        terminal = waitForTerminal(runtime, started.job_id)
+>       assert terminal.status == "COMPLETED", terminal.message
+E       AssertionError: workflow inputs have invalid types: increment
+E       assert 'FAILED' == 'COMPLETED'
+E
+E         - COMPLETED
+E         + FAILED
+
+tests\runtime\test_draft_live_preview.py:247: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-cd12e932-b4eb-4282-90ea-9d7e3628145e:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 87, in runJobProcess
+
+    runner.run(spec.workflowId, inputs, context, token)
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 95, in run
+
+    result = self._runWorkflow(
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 141, in _runWorkflow
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs have invalid types: increment
+
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_draft_live_preview.py::testNormalJobClosesDraftSessionFromDifferentProject
+1 failed, 32 passed in 8.96s

@@ -31,12 +31,14 @@ class OperatorEditorManager:
         cacheRoot: Path | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
+        getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.applyParams = applyParams
         self.appendLog = appendLog
         self.getCurrentJobId = getCurrentJobId or (lambda: None)
         self.getSqliteDraft = getSqliteDraft
+        self.getPreviewProject = getPreviewProject
         self._trustStore = EditorTrustStore(settingsStore)
         self._assetCache = EditorAssetCache(cacheRoot)
         self._windows: dict[EditorKey, OperatorWorkspaceWindow] = {}
@@ -81,6 +83,7 @@ class OperatorEditorManager:
             workflowOptions=workflowOptions,
             getCurrentJobId=self.getCurrentJobId,
             getSqliteDraft=self.getSqliteDraft,
+            getPreviewProject=self.getPreviewProject,
         )
 
         customRoot = None

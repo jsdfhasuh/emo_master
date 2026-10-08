@@ -1,0 +1,55 @@
+.........................F......                                         [100%]
+================================== FAILURES ===================================
+_____________ testNormalJobClosesDraftSessionFromDifferentProject _____________
+
+runtime = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001EA0C2B0FA0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1325/testNormalJobClosesDraftSessio0')
+
+    def testNormalJobClosesDraftSessionFromDifferentProject(runtime, tmp_path):
+        from tests.runtime.test_global_counter_grpc import _writeCounterProject
+        from tests.runtime.runtime_test_utils import waitForTerminal
+
+        root = _writeCounterProject(tmp_path, "normal-project")
+        assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(root)), None).ok
+        preview = runtime.OpenDraftOperatorPreviewSession(draftRequest(), None)
+        assert preview.ok, preview.message
+        started = runtime.StartJob(pb.StartJobRequest(project_id="normal-project", workflow_id="main"), None)
+        assert started.ok, started.message
+        assert runtime.livePreviewManager._sessions == {}
+        assert _FakeLiveCamera.instances[-1].disposed == 1
+>       assert waitForTerminal(runtime, started.job_id) == "COMPLETED"
+E       assert ok: true\nstatus: "FAILED"\nerror_code: "E_INPUT_MISSING"\nmessage: "workflow inputs are missing: increment"\nproject_id: ...64\naccepted_at_ms: 1791451149363\nstarted_at_ms: 1791451150339\nended_at_ms: 1791451150345\nlegacy_snapshot_policy: "ALL"\n == 'COMPLETED'
+E        +  where ok: true\nstatus: "FAILED"\nerror_code: "E_INPUT_MISSING"\nmessage: "workflow inputs are missing: increment"\nproject_id: ...64\naccepted_at_ms: 1791451149363\nstarted_at_ms: 1791451150339\nended_at_ms: 1791451150345\nlegacy_snapshot_policy: "ALL"\n = <function waitForTerminal at 0x000001EA34C75E10>(<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001EA0C2B0FA0>, '6c29e0e0-bd6d-4e05-8062-62807be34833')
+E        +    where '6c29e0e0-bd6d-4e05-8062-62807be34833' = ok: true\njob_id: "6c29e0e0-bd6d-4e05-8062-62807be34833"\nmessage: "job accepted"\nstatus: "ACCEPTED"\nruntime_instance_id: "f1596835-3bd4-4dfc-ac94-b450c6270fb3"\nlegacy_snapshot_policy: "ALL"\n.job_id
+
+tests\runtime\test_draft_live_preview.py:245: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-6c29e0e0-bd6d-4e05-8062-62807be34833:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 87, in runJobProcess
+
+    runner.run(spec.workflowId, inputs, context, token)
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 95, in run
+
+    result = self._runWorkflow(
+
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 135, in _runWorkflow
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: increment
+
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_draft_live_preview.py::testNormalJobClosesDraftSessionFromDifferentProject
+1 failed, 31 passed in 6.39s

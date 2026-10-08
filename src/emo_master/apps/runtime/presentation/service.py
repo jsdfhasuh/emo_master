@@ -27,6 +27,15 @@ def _guardMutation(method):
     return guarded
 
 
+def _devicePreviewAdmission(method):
+    @wraps(method)
+    def guarded(self, *args, **kwargs):
+        with self.runtime._previewJobLock:
+            return method(self, *args, **kwargs)
+    return guarded
+
+
+
 class PresentationService:
     supportsNormalCapture = True
 
@@ -98,6 +107,7 @@ class PresentationService:
             self.prepared[record.snapshot.snapshotId] = record
             return record
 
+    @_devicePreviewAdmission
     @_guardMutation
     def start(self, preparedId, *, capture=True, measure=False):
         with self.lock:
@@ -110,6 +120,9 @@ class PresentationService:
             snapshot = prepared.snapshot
             from emo_master.core.project.models import ProjectDocument
             document = ProjectDocument.model_validate_json(prepared.projectPath.read_text(encoding="utf-8"))
+            errors = self.runtime.livePreviewManager.closeAll(timeoutSeconds=3.0)
+            if errors:
+                raise RuntimeError("E_PREVIEW_RELEASE_FAILED: " + "; ".join(errors))
             job = self.runtime.jobManager.createJob(snapshot.projectId, document.project.revision, document.entryWorkflowId)
             job.executionMode = snapshot.mode
             config = self._attach(job.jobId, prepared.sourceJson,

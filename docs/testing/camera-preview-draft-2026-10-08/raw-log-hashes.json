@@ -1,0 +1,13 @@
+{
+  "baseline-tests.txt": "00a19341bdb7638446bd94e5323af87b04b9aeef646464a3cb249d218fbcb159",
+  "current-worktree-two-failures.txt": "76cd05acd3fdae444de923665089b3a23f56a1fc5efc28837a8b7f4cd530cd8d",
+  "focused-final-initial.txt": "19096684ef51d266e8987acbdaf8455d3e5b1bf915296b628992487187b36668",
+  "focused-final.txt": "27233e0518879d6a29e4697526297ce76bae7e9dbf8aa07935fbd0c490a3114a",
+  "focused-intermediate.txt": "8db7c686eab7660cd7b3f4bea0ef752fbbf7b6bab90904acaf84f803afdbb001",
+  "full-ci.txt": "c93506cbcb90999a68909ffe10b5b501ee0945bbbfcbfacf1b56b39bb668287a",
+  "pre-fix-five-failures.txt": "e9aca131e47b388e7c06566074b1ca9900aebe369e94ad15d5638365f79fe595",
+  "pre-fix-unrelated-failures.txt": "45142690e896e1b20f54118f8506f30b854f503be4ced2e42b0307e8e80d6886",
+  "regression-before-fix.txt": "314c4531b803bc7738cd4cd2e4821e1021920e2f46ee90bd68d7fca51da898d8",
+  "scoped-candidate-ci.txt": "512b5c4762ae5884da192018183025023dac92b76972114f1db3ec731e21a24b",
+  "scoped-candidate-tests.txt": "72eb8c13384f4bbd85ae86202a74853563ca195ef1abc9df5640b675f3584466"
+}

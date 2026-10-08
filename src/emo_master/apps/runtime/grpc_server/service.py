@@ -33,6 +33,7 @@ from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
 from emo_master.apps.runtime.preview.executor import PurePreviewExecutor, parsePreviewParams
 from emo_master.apps.runtime.preview.live import LivePreviewManager
+from emo_master.apps.runtime.preview.draft import draftPreviewProjectId
 from emo_master.apps.runtime.preview.store import PreviewAssetStore
 from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
@@ -56,6 +57,7 @@ def _withProjectStateLock(method: Any) -> Any:
         with self._projectStateLock:
             if self._closing and method.__name__ in {
                 "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession",
+                "OpenDraftOperatorPreviewSession",
                 "OpenRunInspectionSession", "RenewRunInspectionSession"
             }:
                 raise RuntimeError("E_RUNTIME_CLOSING")
@@ -198,19 +200,14 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
         _ = context
-        if self.loadedProjectId:
-            with self._previewJobLock:
-                cleanupErrors = self.livePreviewManager.closeProject(
-                    self.loadedProjectId, timeoutSeconds=3.0
-                )
-            if cleanupErrors:
-                return runtime_pb2.LoadProjectReply(
-                    ok=False,
-                    status="FAILED",
-                    message=(
-                        "E_PREVIEW_RELEASE_FAILED: " + "; ".join(cleanupErrors)
-                    ),
-                )
+        # A draft preview can exist before any formal project has been loaded.
+        with self._previewJobLock:
+            cleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
+        if cleanupErrors:
+            return runtime_pb2.LoadProjectReply(
+                ok=False, status="FAILED",
+                message="E_PREVIEW_RELEASE_FAILED: " + "; ".join(cleanupErrors),
+            )
         projectPathRaw = str(getattr(request, "project_path", ""))
         projectFile = self._resolveProjectFile(Path(projectPathRaw))
         if projectFile is None:
@@ -426,10 +423,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error))
 
         with self._previewJobLock:
-            previewCleanupErrors = self.livePreviewManager.closeProject(
-                document.project.projectId,
-                timeoutSeconds=3.0,
-            )
+            previewCleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
             if previewCleanupErrors:
                 return runtime_pb2.StartJobReply(
                     ok=False,
@@ -1041,6 +1035,45 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return runtime_pb2.OpenOperatorPreviewSessionReply(
             ok=True, session_id=sessionId, message="ok"
         )
+
+    @_withProjectStateLock
+    def OpenDraftOperatorPreviewSession(self, request, context):  # type: ignore[override]
+        projectId, error = draftPreviewProjectId(request)
+        if projectId is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=error or "当前草稿无效"
+            )
+        params, error = parsePreviewParams(str(getattr(request, "params_json", "")))
+        if params is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PARAM_INVALID", message=error or "预览参数无效"
+            )
+        isActive = getattr(context, "is_active", lambda: True)
+        with self._previewJobLock:
+            if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+                   for record in self.jobRepository.all()):
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_RESOURCE_BUSY", message="Runtime 任务仍占用设备，请等待任务及资源释放后再预览"
+                )
+            if not isActive():
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_CANCELLED", message="相机预览请求已取消"
+                )
+            sessionId, error = self.livePreviewManager.open(
+                str(request.operator_id), projectId, str(request.workflow_id), str(request.node_id), params,
+            )
+            if sessionId is not None and not isActive():
+                error = self.livePreviewManager.close(sessionId)
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_PREVIEW_RELEASE_FAILED" if error else "E_CANCELLED",
+                    message=error or "相机预览请求已取消，设备已释放",
+                )
+        if sessionId is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PREVIEW_SESSION_OPEN_FAILED", message=error or "相机预览打开失败"
+            )
+        return runtime_pb2.OpenOperatorPreviewSessionReply(ok=True, session_id=sessionId, message="ok")
+
 
     def StreamOperatorPreviewFrames(self, request, context):  # type: ignore[override]
         sessionId = str(getattr(request, "session_id", ""))

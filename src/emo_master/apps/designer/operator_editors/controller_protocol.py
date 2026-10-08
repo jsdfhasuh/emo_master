@@ -57,6 +57,7 @@ class EditorContext:
         workflowOptions: list[str] | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
+        getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
     ) -> None:
         self.key = key
         self.operatorId = operatorId
@@ -67,6 +68,7 @@ class EditorContext:
         self._runtimeClient = runtimeClient
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
+        self._getPreviewProject = getPreviewProject
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self._appendLog = appendLog
@@ -197,13 +199,20 @@ class EditorContext:
             raise EditorContextError(
                 "E_PREVIEW_UNSUPPORTED", "operator does not allow live preview"
             )
-        reply = self._runtimeMethod("openOperatorPreviewSession")(
-            self.key.projectId,
-            self.key.workflowId,
-            self.key.nodeId,
-            self.operatorId,
-            dict(params),
-        )
+        if self._getPreviewProject is not None:
+            method = getattr(self._runtimeClient, "openDraftOperatorPreviewSession", None)
+            if not callable(method):
+                raise EditorContextError(
+                    "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+                )
+            projectPayload = self._getPreviewProject(self.key)
+            reply = method(self.key.projectId, self.key.workflowId, self.key.nodeId,
+                           self.operatorId, dict(params), projectPayload)
+        else:
+            reply = self._runtimeMethod("openOperatorPreviewSession")(
+                self.key.projectId, self.key.workflowId, self.key.nodeId,
+                self.operatorId, dict(params),
+            )
         self._requireOk(reply, "E_PREVIEW_SESSION_OPEN_FAILED")
         sessionId = str(getattr(reply, "session_id", ""))
         if not sessionId:

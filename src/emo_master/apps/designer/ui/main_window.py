@@ -1312,6 +1312,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             appendLog=self.appendEditorLog,
             getCurrentJobId=lambda: self.currentJobId,
             getSqliteDraft=self._sqliteEditorDraft,
+            getPreviewProject=self._livePreviewProject,
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,
@@ -3853,6 +3854,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return True
         self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
         return False
+
+    def _livePreviewProject(self, key: EditorKey) -> dict[str, object]:
+        from emo_master.apps.designer.operator_editors import EditorContextError
+        if key.projectId != self._currentProjectId():
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "预览窗口所属工程已关闭，请重新打开节点配置")
+        # Capture every canvas edit, even if it has never been saved or loaded
+        # into Runtime. Do not commit editor parameters, save files, or start Jobs.
+        self.workflowController.captureActiveWorkflow()
+        payload = self.workflowStore.toPayload()
+        # toPayload is save-oriented and proposes a new revision/timestamp.
+        # Merely inspecting a draft must not invent a persisted revision.
+        from copy import deepcopy
+        payload["project"] = deepcopy(self.workflowStore.project)
+        return payload
+
 
     def _currentProjectId(self) -> str:
         projectId = self.workflowStore.project.get("projectId", "")

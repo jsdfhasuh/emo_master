@@ -288,6 +288,8 @@ message OpenOperatorPreviewSessionRequest {
   string node_id = 3;
   string operator_id = 4;
   string params_json = 5;
+  // Required only by OpenDraftOperatorPreviewSession; never replaces the loaded project.
+  string project_json = 6;
 }
 
 message OpenOperatorPreviewSessionReply {
@@ -426,6 +428,7 @@ service RuntimeService {
   rpc RunOperatorPreview(RunOperatorPreviewRequest) returns (RunOperatorPreviewReply);
   rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
   rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc OpenDraftOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
   rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);
   rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);

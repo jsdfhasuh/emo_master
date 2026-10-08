@@ -221,7 +221,7 @@ class AioRuntimeServer:
             category = {"StreamJobEvents": "events", "Subscribe": "display",
                         "StreamOperatorPreviewFrames": "camera", "StreamPreviewAsset": "asset", "ReadAsset": "asset",
                         "Prepare": "bulk", "LoadProject": "bulk", "RunOperatorPreview": "bulk",
-                        "OpenOperatorPreviewSession": "bulk", "InspectSqliteTarget": "sqlite",
+                        "OpenOperatorPreviewSession": "bulk", "OpenDraftOperatorPreviewSession": "bulk", "InspectSqliteTarget": "sqlite",
                         "InitializeSqliteTarget": "sqlite"}.get(name, "control")
             handler = getattr(implementation, name)
             if method.client_streaming:

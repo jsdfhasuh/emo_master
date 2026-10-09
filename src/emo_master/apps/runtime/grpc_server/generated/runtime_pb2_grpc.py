@@ -34,6 +34,41 @@ class RuntimeServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.ListGlobalVariables = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListGlobalVariables',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.GetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.SetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/SetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.ResetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.OpenPlcDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenPlcDebugSession',
+                request_serializer=runtime__pb2.OpenPlcDebugSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
+        self.ExecutePlcDebugCommand = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ExecutePlcDebugCommand',
+                request_serializer=runtime__pb2.ExecutePlcDebugCommandRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
+        self.ClosePlcDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ClosePlcDebugSession',
+                request_serializer=runtime__pb2.ClosePlcDebugSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
         self.InspectSqliteTarget = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/InspectSqliteTarget',
                 request_serializer=runtime__pb2.InspectSqliteTargetRequest.SerializeToString,
@@ -139,6 +174,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
                 response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
                 _registered_method=True)
+        self.OpenDraftOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenDraftOperatorPreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
         self.StreamOperatorPreviewFrames = channel.unary_stream(
                 '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
                 request_serializer=runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
@@ -183,6 +223,48 @@ class RuntimeServiceStub(object):
 
 class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def ListGlobalVariables(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenPlcDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecutePlcDebugCommand(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ClosePlcDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def InspectSqliteTarget(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -310,6 +392,12 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def OpenDraftOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def StreamOperatorPreviewFrames(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -361,6 +449,41 @@ class RuntimeServiceServicer(object):
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'ListGlobalVariables': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGlobalVariables,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'GetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'SetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'ResetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'OpenPlcDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenPlcDebugSession,
+                    request_deserializer=runtime__pb2.OpenPlcDebugSessionRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
+            'ExecutePlcDebugCommand': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecutePlcDebugCommand,
+                    request_deserializer=runtime__pb2.ExecutePlcDebugCommandRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
+            'ClosePlcDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClosePlcDebugSession,
+                    request_deserializer=runtime__pb2.ClosePlcDebugSessionRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
             'InspectSqliteTarget': grpc.unary_unary_rpc_method_handler(
                     servicer.InspectSqliteTarget,
                     request_deserializer=runtime__pb2.InspectSqliteTargetRequest.FromString,
@@ -466,6 +589,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
                     response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
             ),
+            'OpenDraftOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenDraftOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
             'StreamOperatorPreviewFrames': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamOperatorPreviewFrames,
                     request_deserializer=runtime__pb2.StreamOperatorPreviewFramesRequest.FromString,
@@ -516,6 +644,195 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class RuntimeService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def ListGlobalVariables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListGlobalVariables',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/SetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenPlcDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenPlcDebugSession',
+            runtime__pb2.OpenPlcDebugSessionRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecutePlcDebugCommand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ExecutePlcDebugCommand',
+            runtime__pb2.ExecutePlcDebugCommandRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ClosePlcDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ClosePlcDebugSession',
+            runtime__pb2.ClosePlcDebugSessionRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def InspectSqliteTarget(request,
@@ -1072,6 +1389,33 @@ class RuntimeService(object):
             request,
             target,
             '/emo_master.runtime.RuntimeService/OpenOperatorPreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenDraftOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenDraftOperatorPreviewSession',
             runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
             runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
             options,

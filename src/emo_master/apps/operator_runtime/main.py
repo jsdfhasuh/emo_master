@@ -100,7 +100,8 @@ class OperatorWindow(QWidget):
     def chooseProject(self):
         if self.closing or self._deferCommand(self.chooseProject) or not self.state["canLoad"]:
             return
-        path, _filter = QFileDialog.getOpenFileName(self, "选择工程", self.projectPath, "Project (project.json)")
+        from emo_master.core.project.files import PROJECT_OPEN_FILTER
+        path, _filter = QFileDialog.getOpenFileName(self, "打开项目", self.projectPath, PROJECT_OPEN_FILTER)
         if path:
             self.loadProject(path)
 
@@ -238,7 +239,7 @@ class OperatorWindow(QWidget):
             return
         if kind in {"loaded", "started"} and self.controller.document:
             document = self.controller.document
-            self.projectPath = str(Path(self.controller.runtime.loadedProjectPath) / "project.json")
+            self.projectPath = self.controller.runtime.loadedProjectFile
             self.projectLabel.setText(document.project.name)
             self.projectLabel.setToolTip(self.projectPath)
             self.preferences.setValue("projectPath", self.projectPath)
@@ -280,7 +281,7 @@ def main(arguments=None):
         from emo_master.apps.operator_runtime.validation import runValidationCommand
         return runValidationCommand(arguments)
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("project", nargs="?", type=Path, help="Project directory or project.json")
+    parser.add_argument("project", nargs="?", type=Path, help="Project directory, .emoproj, or legacy project.json")
     parser.add_argument("--data-root", type=Path, help="Runtime internal data, not business outputs")
     parser.add_argument("--check", action="store_true", help="Validate project without starting detection")
     actions = parser.add_mutually_exclusive_group()

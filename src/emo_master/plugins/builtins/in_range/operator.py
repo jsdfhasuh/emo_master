@@ -26,15 +26,18 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "colorSpace": {
+            "title": "颜色空间",
             "type": "string",
             "enum": list(_SPACES),
             "default": "BGR",
         },
         "lower": {
+            "title": "颜色下限",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
         },
         "upper": {
+            "title": "颜色上限",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
         },

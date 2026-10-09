@@ -30,23 +30,27 @@
     "type": "object",
     "properties": {
       "thresholdLow": {
+        "title": "低阈值",
         "type": "integer",
         "minimum": 0,
         "maximum": 255,
         "default": 50
       },
       "thresholdHigh": {
+        "title": "高阈值",
         "type": "integer",
         "minimum": 0,
         "maximum": 255,
         "default": 150
       },
       "apertureSize": {
+        "title": "Sobel 孔径大小",
         "type": "integer",
         "enum": [3, 5, 7],
         "default": 3
       },
       "l2Gradient": {
+        "title": "使用 L2 梯度",
         "type": "boolean",
         "default": false
       }

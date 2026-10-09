@@ -6,6 +6,7 @@ from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, sourceType
 from emo_master.core.presentation.models import Component, DataSource, ResultScope, Presentation, walkComponents
 from emo_master.apps.designer.state.presentation_store import _component
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
 ACCEPTED = {'number': {'integer', 'number'}, 'text': {'integer', 'number', 'boolean', 'string', 'json'},
@@ -61,12 +62,18 @@ def outputChoices(document, manifests, *, onUnsupported=None):
         from emo_master.core.presentation.models import CallStep
         for node in document.workflows[workflowId].nodes:
             targets = [('subflow', node.targetWorkflowId)] if node.kind == 'subflow' else (
-                [('loop_body', node.loop.get('bodyWorkflowId')), ('loop_condition', node.loop.get('conditionWorkflowId'))]
+                [('loop_body' if field == 'bodyWorkflowId' else 'loop_condition', node.loop.get(field))
+                 for field in loopWorkflowReferenceFields(node.loop)]
                 if node.kind == 'loop' else [])
             for relation, target in targets:
                 if target in document.workflows:
                     visit(target, [*path, CallStep(nodeId=node.nodeId, relation=relation)], {*ancestors, workflowId})
     visit(document.entryWorkflowId, [], set())
+    for key, variable in document.globalVariables.items():
+        choices.append(Choice(f"全局变量 / {variable.name} ({variable.type})",
+            DataSource(kind="global_variable", resultScopeId="scope", variableId=key, expectedType=variable.type),
+            ResultScope(entryWorkflowId=document.entryWorkflowId, scopeWorkflowId=document.entryWorkflowId),
+            "任务结果结束时的值快照；运行当前值可在全局变量窗口查看"))
     return choices
 
 
@@ -144,7 +151,7 @@ class PageCommands:
 
     def bind(self, pageId, componentId, choice):
         document = self.session.document()
-        actual = sourceType(choice.source, buildOutputCatalog(document, self.manifests))
+        actual = sourceType(choice.source, buildOutputCatalog(document, self.manifests), document.globalVariables)
         item = _component(document.presentation, pageId, componentId)
         if actual not in ACCEPTED.get(item.type, set()):
             raise ValueError(f'类型不兼容：{actual} → {item.type}')

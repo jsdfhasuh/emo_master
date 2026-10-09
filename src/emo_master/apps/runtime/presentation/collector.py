@@ -82,6 +82,8 @@ class ResultCollector:
                 continue
             frozenSources = {}
             for key, source in item["sources"].items():
+                if source["kind"] not in {"node_output", "workflow_output"}:
+                    continue
                 if (source["kind"] == "workflow_output") != workflow:
                     continue
                 if not workflow and source["nodeId"] != context.callerNodeId:
@@ -192,6 +194,22 @@ class ResultCollector:
             if address[0] != context.workflowRunId:
                 continue
             item = self.open.pop(address)
+            for sourceId, source in item["sources"].items():
+                if source["kind"] not in {"global_variable", "global_counter"}:
+                    continue
+                try:
+                    if source["kind"] == "global_variable":
+                        value = self.globalVariables.get(source["variableId"])
+                    else:
+                        value = self.globalCounters.apply(source["name"])
+                        value = getattr(value, "value", value)
+                    frozen = freezeValue(value)
+                    if item["bytes"] + len(frozen.encode()) > 1024 * 1024:
+                        raise ValueError("variable capture budget exceeded")
+                    item["bytes"] += len(frozen.encode())
+                    item["values"][sourceId] = {"sourceId": sourceId, "state": "AVAILABLE", "valueJson": frozen}
+                except (ValueError, AttributeError, KeyError):
+                    item["values"][sourceId] = unavailable(sourceId, "VARIABLE_UNAVAILABLE")
             code = {"COMPLETED": "SOURCE_MISSING", "FAILED": "NODE_FAILED", "CANCELLED": "EXECUTION_CANCELLED"}[terminal]
             values = [dict(item["values"].get(key, unavailable(key, code))) for key in item["expected"]]
             key = item["identity"]["resultKey"]

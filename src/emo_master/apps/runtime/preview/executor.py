@@ -65,6 +65,7 @@ class PurePreviewExecutor:
         nodeId: str = "",
         timeoutSeconds: float = 5.0,
         requestId: str = "",
+        globalVariables=None,
     ) -> PreviewExecutionResult:
         descriptor = self.operatorRegistry.get(operatorId)
         if not isinstance(descriptor, PluginDescriptor):
@@ -111,6 +112,7 @@ class PurePreviewExecutor:
                 workflowId,
                 nodeId,
                 cancellation,
+                globalVariables,
             )
         except RuntimeError as err:
             with self._stateLock:
@@ -157,6 +159,7 @@ class PurePreviewExecutor:
         workflowId: str,
         nodeId: str,
         cancellation: threading.Event,
+        globalVariables=None,
     ) -> PreviewExecutionResult:
         def raiseIfCancelled() -> None:
             if cancellation.is_set():
@@ -200,7 +203,8 @@ class PurePreviewExecutor:
                     )
                 return PreviewExecutionResult(False, "E_PARAM_INVALID", str(validationError))
         with tempfile.TemporaryDirectory(prefix="emo-preview-") as workspace:
-            runtimeContext = {
+            from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
+            runtimeContext: dict[str, object] = {
                 "jobId": "preview",
                 "projectId": projectId,
                 "workflowId": workflowId,
@@ -213,6 +217,7 @@ class PurePreviewExecutor:
                 "isCancellationRequested": cancellation.is_set(),
                 "raiseIfCancellationRequested": raiseIfCancelled,
                 "isPreview": True,
+                "globalVariables": globalVariables or ReadOnlyVariables({}),
                 "logger": previewLogger,
             }
             raiseIfCancelled()

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 from emo_master.plugins.builtins.huaray_camera.operator import DEFAULTS, PARAM_SCHEMA
-from emo_master.plugins.builtins.huaray_camera.parameter_form import CameraParameterForm, FIELD_LABELS
+from emo_master.plugins.builtins.huaray_camera.parameter_form import CameraParameterForm
 from PySide2.QtWidgets import QComboBox, QLabel
 
 
@@ -11,11 +11,13 @@ def testCameraLabelsAreChineseAndValuesRemainCompatible() -> None:
     values = dict(DEFAULTS, ipAddress="192.168.125.28", triggerMode="freeRun", retryCount=0)
     form.setSchema(PARAM_SCHEMA, values)
     assert form.getValues() == values
-    assert set(FIELD_LABELS) == set(DEFAULTS)
+    assert set(PARAM_SCHEMA["properties"]) == set(DEFAULTS)
     for name, control in form._controls.items():
         label = form._layout.labelForField(control)
         assert isinstance(label, QLabel)
-        assert label.text() == FIELD_LABELS[name]
+        assert label.text() == PARAM_SCHEMA["properties"][name]["title"]
+        assert f"参数键：{name}" in label.toolTip()
+        assert label.toolTip() == control.toolTip()
     selection = form._controls["selectionMode"]
     assert isinstance(selection, QComboBox)
     assert selection.currentText() == "按 IP 地址"

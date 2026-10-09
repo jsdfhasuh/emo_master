@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.core.contracts.port_types import matchesPortType
-from emo_master.core.workflow.loop_contracts import CURRENT_LOOP_CONTRACT_VERSION
+from emo_master.core.workflow.loop_contracts import CURRENT_LOOP_CONTRACT_VERSION, whileConditionMode
 
 if TYPE_CHECKING:
     from emo_master.apps.runtime.workflow.runner import WorkflowResult, WorkflowRunner
@@ -269,36 +269,44 @@ class LoopRunner:
         state = {name: inputs[name] for name in node.inputPorts}
         metrics: dict[str, object] = {}
         diagnostics: dict[str, object] = {}
-        conditionWorkflowId = str(node.loop["conditionWorkflowId"])
+        booleanCondition = whileConditionMode(node.loop) == "boolean"
+        variableCondition = whileConditionMode(node.loop) == "globalVariable"
+        conditionWorkflowId = None if booleanCondition or variableCondition else str(node.loop["conditionWorkflowId"])
         bodyWorkflowId = str(node.loop["bodyWorkflowId"])
         conditionWorkflow = self.workflowRunner.compiledProject.workflows[
             conditionWorkflowId
-        ]
+        ] if conditionWorkflowId is not None else None
         bodyWorkflow = self.workflowRunner.compiledProject.workflows[bodyWorkflowId]
         for index in range(maximum):
             self._check(cancellation, timeoutMs, startedAt)
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
-            conditionContext = context.childWorkflow(
-                conditionWorkflowId, node.nodeId, "loop_condition"
-            ).forIteration(index)
-            conditionInputs = {
-                name: state[name]
-                for name in conditionWorkflow.inputs
-                if name in state
-            }
-            conditionResult = self.workflowRunner.run(
-                conditionWorkflowId,
-                conditionInputs,
-                conditionContext,
-                cancellation,
-            )
-            metrics.update(conditionResult.metrics)
-            diagnostics.update(conditionResult.diagnostics)
-            condition = conditionResult.outputs.get("continue")
+            if variableCondition:
+                condition = self.workflowRunner.globalVariables.get(str(node.loop["conditionVariableId"]))
+            elif booleanCondition:
+                condition = state.get(str(node.loop["conditionPort"]))
+            else:
+                conditionContext = context.childWorkflow(
+                    conditionWorkflowId, node.nodeId, "loop_condition"
+                ).forIteration(index)
+                conditionInputs = {
+                    name: state[name]
+                    for name in conditionWorkflow.inputs
+                    if name in state
+                }
+                conditionResult = self.workflowRunner.run(
+                    conditionWorkflowId,
+                    conditionInputs,
+                    conditionContext,
+                    cancellation,
+                )
+                metrics.update(conditionResult.metrics)
+                diagnostics.update(conditionResult.diagnostics)
+                condition = conditionResult.outputs.get("continue")
             if not isinstance(condition, bool):
                 raise LoopExecutionError(
-                    "E_INPUT_TYPE", "While condition must return continue:boolean"
+                    "E_INPUT_TYPE", "While condition must be a boolean value" if booleanCondition or variableCondition
+                    else "While condition must return continue:boolean"
                 )
             if not condition:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)

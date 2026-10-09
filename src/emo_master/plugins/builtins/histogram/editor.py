@@ -7,6 +7,7 @@ from PySide2.QtCore import QPointF, Qt
 from PySide2.QtGui import QColor, QPainter, QPainterPath, QPen
 from PySide2.QtWidgets import QComboBox, QLabel, QSpinBox, QWidget
 
+from emo_master.apps.designer.ui.param_form import applyParameterLabel
 from emo_master.plugins.builtins._editor_support import (
     PurePreviewControllerBase,
     requiredChild,
@@ -92,6 +93,13 @@ class HistogramEditorController(PurePreviewControllerBase):
         self.normalizationCombo = requiredChild(
             rootWidget, QComboBox, "normalizationCombo"
         )
+        for name, labelName, control in (
+            ("bins", "binsLabel", self.binsSpin),
+            ("normalization", "normalizationLabel", self.normalizationCombo),
+        ):
+            applyParameterLabel(
+                requiredChild(rootWidget, QLabel, labelName), control, name, context.paramSchema,
+            )
         self.sourceImageLabel = requiredChild(
             rootWidget, QLabel, "sourceImageLabel"
         )

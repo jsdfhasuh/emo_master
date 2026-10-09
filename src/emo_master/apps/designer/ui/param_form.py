@@ -1,9 +1,26 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from copy import deepcopy
 import json
+from typing import Any
 
 from emo_master.apps.designer.state.schema_utils import applySchemaDefaults
+
+
+def parameterTitle(name: str, schema: dict[str, object]) -> str:
+    title = schema.get("title")
+    return title.strip() if isinstance(title, str) and title.strip() else name
+
+
+def parameterToolTip(name: str, schema: dict[str, object], hint: str = "") -> str:
+    parts = [parameterTitle(name, schema)]
+    description = schema.get("description")
+    for detail in (description, hint):
+        if isinstance(detail, str) and detail.strip() and detail.strip() not in parts:
+            parts.append(detail.strip())
+    parts.append(f"参数键：{name}")
+    return "\n".join(parts)
 
 
 @dataclass(frozen=True)
@@ -51,9 +68,10 @@ def getFieldDefinitions(paramSchema: dict[str, object]) -> list[FieldDefinition]
 
 
 try:
-    from PySide2.QtCore import Qt
+    from PySide2.QtCore import Qt, QTimer, Signal
     from PySide2.QtWidgets import (
         QCheckBox,
+        QApplication,
         QComboBox,
         QDoubleSpinBox,
         QFileDialog,
@@ -64,21 +82,94 @@ try:
         QLineEdit,
         QPushButton,
         QSpinBox,
+        QStyle,
+        QStyleOptionComboBox,
         QTextEdit,
         QWidget,
     )
 
+    class _WorkflowComboBox(QComboBox):
+        workflowOpenRequested: Any = Signal(str)
+
+        def __init__(self):
+            super().__init__()
+            self._popupTimer = QTimer(self)
+            self._popupTimer.setSingleShot(True)
+            self._popupTimer.timeout.connect(self.showPopup)
+
+        def _overName(self, event):
+            option = QStyleOptionComboBox()
+            self.initStyleOption(option)
+            return self.style().subControlRect(
+                QStyle.CC_ComboBox, option, QStyle.SC_ComboBoxEditField, self,
+            ).contains(event.pos())
+
+        def mousePressEvent(self, event):
+            self._popupTimer.stop()
+            if event.button() == Qt.LeftButton and self._overName(event):
+                self.setFocus(Qt.MouseFocusReason)
+                # Let a second click reach the name before a popup grabs the mouse.
+                self._popupTimer.start(QApplication.doubleClickInterval())
+                event.accept()
+                return
+            super().mousePressEvent(event)
+
+        def mouseReleaseEvent(self, event):
+            if event.button() == Qt.LeftButton and self._overName(event):
+                event.accept()
+                return
+            super().mouseReleaseEvent(event)
+
+        def mouseDoubleClickEvent(self, event):
+            self._popupTimer.stop()
+            if event.button() == Qt.LeftButton and self._overName(event):
+                workflowId = self.currentData()
+                if isinstance(workflowId, str) and workflowId:
+                    self.workflowOpenRequested.emit(workflowId)
+                event.accept()
+                return
+            super().mouseDoubleClickEvent(event)
+
+        def showPopup(self):
+            self._popupTimer.stop()
+            super().showPopup()
+
+        def hideEvent(self, event):
+            self._popupTimer.stop()
+            super().hideEvent(event)
+
+        def focusOutEvent(self, event):
+            self._popupTimer.stop()
+            super().focusOutEvent(event)
+
+    def applyParameterLabel(
+        label: QLabel, control: QWidget, name: str,
+        paramSchema: dict[str, object], hint: str = "",
+    ) -> None:
+        properties = paramSchema.get("properties", {})
+        rawField = properties.get(name, {}) if isinstance(properties, dict) else {}
+        fieldSchema = rawField if isinstance(rawField, dict) else {}
+        required = paramSchema.get("required", [])
+        suffix = " *" if isinstance(required, list) and name in required else ""
+        label.setTextFormat(Qt.PlainText)
+        label.setText(parameterTitle(name, fieldSchema) + suffix)
+        label.setWordWrap(True)
+        tip = parameterToolTip(name, fieldSchema, hint)
+        label.setToolTip(tip)
+        control.setToolTip(tip)
+
+
     class _FilePickerControl(QWidget):
         def __init__(self, fileMode: str, filterText: str, initialPath: str) -> None:
             super().__init__()
-            self._fileMode = fileMode if fileMode in ("open", "save") else "open"
+            self._fileMode = fileMode if fileMode in ("open", "save", "directory") else "open"
             self._filterText = filterText if filterText != "" else "所有文件 (*.*)"
             self._lineEdit = QLineEdit()
             self._lineEdit.setText(initialPath)
             from emo_master.apps.designer.ui.icon_map import icon
             self._browseButton = QPushButton()
             self._browseButton.setIcon(icon("folder-open"))
-            self._browseButton.setToolTip("选择文件")
+            self._browseButton.setToolTip("选择文件夹" if self._fileMode == "directory" else "选择文件")
             self._browseButton.setFixedWidth(34)
             self._browseButton.clicked.connect(self._onBrowseClicked)
 
@@ -93,7 +184,11 @@ try:
 
         def _onBrowseClicked(self) -> None:
             currentPath = self._lineEdit.text().strip()
-            if self._fileMode == "save":
+            if self._fileMode == "directory":
+                selectedPath = QFileDialog.getExistingDirectory(
+                    self, "选择图片文件夹", currentPath
+                )
+            elif self._fileMode == "save":
                 selectedPath, _ = QFileDialog.getSaveFileName(
                     self, "选择输出文件", currentPath, self._filterText
                 )
@@ -104,7 +199,26 @@ try:
             if selectedPath != "":
                 self._lineEdit.setText(selectedPath)
 
+    class _OptionalFieldControl(QWidget):
+        """Keep an absent parameter distinct from a present empty value."""
+
+        def __init__(self, control: QWidget, present: bool) -> None:
+            super().__init__()
+            self.valueControl = control
+            self.enabledCheckBox = QCheckBox("启用")
+            self.enabledCheckBox.setToolTip("未启用时不参与匹配；启用且匹配值为空时，匹配空字符串")
+            self.enabledCheckBox.setChecked(present)
+            control.setEnabled(present)
+            self.enabledCheckBox.toggled.connect(control.setEnabled)
+            layout = QHBoxLayout()
+            layout.setContentsMargins(0, 0, 0, 0)
+            layout.addWidget(self.enabledCheckBox)
+            layout.addWidget(control, 1)
+            self.setLayout(layout)
+
     class SchemaParamForm(QWidget):
+        workflowOpenRequested: Any = Signal(str)
+
         def __init__(self) -> None:
             super().__init__()
             self._layout = QFormLayout()
@@ -115,9 +229,12 @@ try:
             self._layout.setVerticalSpacing(10)
             self.setLayout(self._layout)
             self._controls: dict[str, QWidget] = {}
+            self._fieldContainers: dict[str, QWidget] = {}
+            self._variableSources: dict[str, QComboBox] = {}
             self._fieldsByName: dict[str, FieldDefinition] = {}
             self._nestedFormsByControlId: dict[int, SchemaParamForm] = {}
             self._rawSchema: dict[str, object] = {}
+            self._suppliedFields: set[str] = set()
             self._workflowOptions: list[str] = []
 
         def setWorkflowOptions(self, options: list[str]) -> None:
@@ -128,8 +245,11 @@ try:
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]
         ) -> None:
-            self._rawSchema = dict(paramSchema)
+            self._rawSchema = deepcopy(paramSchema)
+            self._suppliedFields = set(values)
             self._controls = {}
+            self._fieldContainers = {}
+            self._variableSources = {}
             self._fieldsByName = {}
             self._nestedFormsByControlId = {}
             while self._layout.rowCount() > 0:
@@ -141,24 +261,127 @@ try:
             )
 
             for field in getFieldDefinitions(paramSchema):
-                labelText = field.name + (" *" if field.required else "")
                 control = self._createControl(field, valuesWithDefaults)
+                if field.schema.get("xOptionalPresence") and not field.required:
+                    control = _OptionalFieldControl(control, field.name in values)
                 self._controls[field.name] = control
                 self._fieldsByName[field.name] = field
                 from emo_master.apps.designer.ui.widgets import WrapLabel
-                label = WrapLabel(labelText)
-                label.setToolTip(labelText)
+                label = WrapLabel()
+                applyParameterLabel(label, control, field.name, paramSchema)
+                if isinstance(control, _WorkflowComboBox):
+                    control.setToolTip(control.toolTip() + "\n双击名称打开工作流；单击选择工作流")
                 self._layout.addRow(label, control)
+                if field.schema.get("xHidden"):
+                    label.hide()
+                    control.hide()
 
             if len(self._controls) == 0:
                 tip = QLabel("No schema fields")
                 tip.setAlignment(Qt.AlignLeft)
                 self._layout.addRow(tip)
+            if "xForEachInputs" in self._rawSchema or "xWhileBooleanPorts" in self._rawSchema or any(
+                    "xEnabledWhen" in field.schema or "xVisibleWhen" in field.schema or "xRequiredWhen" in field.schema
+                    for field in self._fieldsByName.values()):
+                for control in self._controls.values():
+                    if isinstance(control, QComboBox):
+                        control.currentIndexChanged.connect(self._updateDependentFields)
+            self._updateDependentFields()
+
+        def _updateDependentFields(self, *_args) -> None:
+            values = self.getValues()
+            for name, field in self._fieldsByName.items():
+                requirement = field.schema.get("xRequiredWhen")
+                if isinstance(requirement, dict):
+                    required = all(values.get(key) in allowed for key, allowed in requirement.items())
+                    requiredLabel = self._layout.labelForField(self._fieldContainers.get(name, self._controls[name]))
+                    if isinstance(requiredLabel, QLabel):
+                        requiredLabel.setText(parameterTitle(name, field.schema) + (" *" if required else ""))
+                visibility = field.schema.get("xVisibleWhen")
+                if isinstance(visibility, dict) and not field.schema.get("xHidden"):
+                    visible = all(values.get(key) in allowed for key, allowed in visibility.items())
+                    control = self._controls[name]
+                    self._fieldContainers.get(name, control).setVisible(visible)
+                    rowLabel = self._layout.labelForField(self._fieldContainers.get(name, control))
+                    if rowLabel is not None:
+                        rowLabel.setVisible(visible)
+                condition = field.schema.get("xEnabledWhen")
+                if isinstance(condition, dict):
+                    enabled = all(values.get(key) in allowed for key, allowed in condition.items())
+                    source = self._variableSources.get(name)
+                    if source is not None:
+                        source.setEnabled(enabled)
+                    self._controls[name].setEnabled(enabled and not (source and source.currentData()))
+            portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
+            combo = self._controls.get("conditionPort")
+            if isinstance(portsByWorkflow, dict) and isinstance(combo, QComboBox):
+                options = portsByWorkflow.get(values.get("bodyWorkflowId"), [])
+                selected = values.get("conditionPort")
+                combo.blockSignals(True)
+                combo.clear()
+                for port in options:
+                    combo.addItem(f"{port} : boolean", port)
+                if selected not in options:
+                    combo.addItem(f"端口已失效：{selected}" if selected else "请选择布尔端口", selected)
+                self._setComboValue(combo, selected)
+                combo.blockSignals(False)
+            inputsByWorkflow = self._rawSchema.get("xForEachInputs")
+            if not isinstance(inputsByWorkflow, dict):
+                return
+            from emo_master.core.contracts.port_types import normalizePortType
+            inputs = inputsByWorkflow.get(values.get("bodyWorkflowId"), {})
+            for name in ("itemInputPort", "indexInputPort"):
+                combo = self._controls.get(name)
+                if not isinstance(combo, QComboBox):
+                    continue
+                options = list(inputs) if name == "itemInputPort" else [
+                    "", *[port for port, spec in inputs.items() if normalizePortType(spec) == "integer"]]
+                selected = values.get(name)
+                combo.blockSignals(True)
+                combo.clear()
+                for port in options:
+                    combo.addItem(port or "不传入索引", port)
+                if selected not in options:
+                    label = (f"端口已失效：{selected}" if selected else
+                             "无输入端口" if not inputs and name == "itemInputPort" else "请选择端口")
+                    combo.addItem(label, selected)
+                self._setComboValue(combo, selected)
+                combo.blockSignals(False)
+
+        def validationMessage(self) -> str:
+            portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
+            values = self.getValues()
+            if isinstance(portsByWorkflow, dict) and values.get("conditionMode") == "boolean":
+                if values.get("bodyWorkflowId") not in portsByWorkflow:
+                    return "循环体工作流不存在，请重新选择"
+                if values.get("conditionPort") not in portsByWorkflow[values.get("bodyWorkflowId")]:
+                    return "继续条件端口已失效，请选择循环体同名输入/输出的布尔端口"
+            inputsByWorkflow = self._rawSchema.get("xForEachInputs")
+            if not isinstance(inputsByWorkflow, dict):
+                return ""
+            from emo_master.core.contracts.port_types import normalizePortType
+            values = self.getValues()
+            if values.get("bodyWorkflowId") not in inputsByWorkflow:
+                return "循环体工作流不存在，请重新选择"
+            inputs = inputsByWorkflow.get(values.get("bodyWorkflowId"), {})
+            item = values.get("itemInputPort")
+            index = values.get("indexInputPort")
+            if (inputs or item) and item not in inputs:
+                return "元素输入端口已失效，请选择当前循环体的输入端口"
+            if index and (index not in inputs or normalizePortType(inputs[index]) != "integer"):
+                return "索引输入端口已失效，请选择整数端口或不传入索引"
+            if index and index == item:
+                return "元素输入端口和索引输入端口不能相同，请选择不同端口或不传入索引"
+            return ""
 
         def getValues(self) -> dict[str, object]:
             values: dict[str, object] = {}
             for fieldName, control in self._controls.items():
                 field = self._fieldsByName.get(fieldName)
+                if field and field.schema.get("xHidden") and fieldName not in self._suppliedFields:
+                    continue
+                if isinstance(control, _OptionalFieldControl) and not control.enabledCheckBox.isChecked():
+                    continue
                 values[fieldName] = self._readControlValue(control, field)
             return values
 
@@ -181,7 +404,8 @@ try:
                         initialPath=initialPath,
                     )
                 if widgetType in {"workflow-select", "workflow_select"}:
-                    combo = QComboBox()
+                    combo = _WorkflowComboBox()
+                    combo.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
                     rawOptions = field.schema.get("xOptions", self._workflowOptions)
                     options = (
                         [option for option in rawOptions if isinstance(option, str)]
@@ -190,15 +414,24 @@ try:
                     )
                     if isinstance(selectedValue, str) and selectedValue not in options:
                         options.append(selectedValue)
+                    labels = field.schema.get("xOptionLabels")
                     for option in options:
-                        combo.addItem(option, option)
+                        label = labels.get(option) if isinstance(labels, dict) else option
+                        if not isinstance(label, str) or not label.strip():
+                            label = f"未找到工作流 ({option})" if option else "未设置"
+                        combo.addItem(label, option)
+                        combo.setItemData(combo.count() - 1, f"{label}\n工作流 ID：{option}", Qt.ToolTipRole)
                     self._setComboValue(combo, selectedValue)
                     return combo
 
-            if len(field.enumValues) > 0:
+            if len(field.enumValues) > 0 or field.schema.get("xWidget") == "port-select":
                 combo = QComboBox()
+                labels = field.schema.get("xOptionLabels", {})
+                labels = labels if isinstance(labels, dict) else {}
                 for enumOption in field.enumValues:
-                    combo.addItem(str(enumOption), enumOption)
+                    combo.addItem(str(labels.get(str(enumOption), enumOption)), enumOption)
+                if field.schema.get("xWidget") == "port-select" and selectedValue not in field.enumValues:
+                    combo.addItem(str(selectedValue or "请选择端口"), selectedValue)
                 self._setComboValue(combo, selectedValue)
                 return combo
 
@@ -234,6 +467,7 @@ try:
                 if isinstance(rawProperties, dict) and len(rawProperties) > 0:
                     groupBox = QGroupBox()
                     nestedForm = SchemaParamForm()
+                    nestedForm.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
                     nestedValue = (
                         selectedValue if isinstance(selectedValue, dict) else {}
                     )
@@ -274,6 +508,8 @@ try:
             self, control: QWidget, field: FieldDefinition | None
         ) -> object:
             _ = field
+            if isinstance(control, _OptionalFieldControl):
+                return self._readControlValue(control.valueControl, field)
             if isinstance(control, QCheckBox):
                 return control.isChecked()
             if isinstance(control, QSpinBox):

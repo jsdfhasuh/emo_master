@@ -80,8 +80,9 @@ _ALL_KEYS = sorted(set().union(*_KEYS_BY_KIND.values()))
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "key": {"type": "string", "enum": _ALL_KEYS, "default": "area"},
+        "key": {"title": "排序字段", "type": "string", "enum": _ALL_KEYS, "default": "area"},
         "direction": {
+            "title": "排序方向",
             "type": "string",
             "enum": ["ascending", "descending"],
             "default": "descending",

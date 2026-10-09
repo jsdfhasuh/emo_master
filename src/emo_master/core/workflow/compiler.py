@@ -7,11 +7,13 @@ from typing import Callable, cast
 
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
+from emo_master.core.project.resources import ResourceBinding, SiteBinding
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
 from emo_master.core.workflow.loop_contracts import (
     LoopContract,
     deriveLoopContract,
+    loopWorkflowReferenceFields,
 )
 from emo_master.core.workflow.models import (
     CompiledEdge,
@@ -22,6 +24,9 @@ from emo_master.core.workflow.models import (
 )
 from emo_master.core.workflow.validation import validateProjectDocument
 from emo_master.core.workflow.parameter_bindings import compileBindings
+from emo_master.core.project.global_variables import (
+    VariableError, variablePorts, validateBindings, resolveParams, validateEffectiveParams,
+)
 
 
 class WorkflowCompiler:
@@ -47,6 +52,24 @@ class WorkflowCompiler:
         if issues:
             raise WorkflowCompileError(issues)
 
+        for workflowId, workflow in document.workflows.items():
+            for node in workflow.nodes:
+                try:
+                    resourceBindings: list[ResourceBinding | SiteBinding] = (
+                        [*document.resources.parameterBindings, *document.resources.siteBindings] if document.resources else [])
+                    occupied = [binding.target.parameterPath for binding in resourceBindings
+                        if binding.target.workflowId == workflowId and binding.target.nodeId == node.nodeId]
+                    schema = _operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))
+                    if node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
+                        occupied.append(["variableId"])
+                    validateBindings(node.globalVariableBindings, document.globalVariables, schema, occupied=occupied)
+                    variablePorts(node.operatorId, node.params, document.globalVariables)
+                except (VariableError, ValueError) as error:
+                    issues.append(ValidationIssue(getattr(error, "code", "E_VARIABLE_BINDING"), str(error),
+                                                  document.project.projectId, workflowId, node.nodeId))
+        if issues:
+            raise WorkflowCompileError(issues)
+
         compiledWorkflows: dict[str, CompiledWorkflow] = {}
         for workflowId in document.workflowOrder:
             compiledWorkflows[workflowId] = self._compileWorkflow(
@@ -64,6 +87,7 @@ class WorkflowCompiler:
             workflowCallGraph=freezeMapping(callGraph),
             runtime=freezeMapping(document.runtime.model_dump(mode="python")),
             pluginRootPaths=tuple(pluginRootPaths),
+            globalVariables=freezeMapping({key: value.model_dump() for key, value in document.globalVariables.items()}),
         )
 
     def _compileWorkflow(
@@ -99,6 +123,8 @@ class WorkflowCompiler:
                 params=freezeMapping(deepcopy(node.params)),
                 targetWorkflowId=node.targetWorkflowId,
                 loop=freezeMapping(loopConfig),
+                globalVariableBindings=tuple(freezeMapping(binding.model_dump()) for binding in node.globalVariableBindings),
+                paramSchema=freezeMapping(_operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))),
             )
             nodes.append(compiled)
             nodeById[node.nodeId] = compiled
@@ -204,6 +230,9 @@ class WorkflowCompiler:
             if target is not None:
                 return _interfacePorts(target.inputs), _interfacePorts(target.outputs)
         if node.kind == "operator" and node.operatorId:
+            dynamicPorts = variablePorts(node.operatorId, node.params, document.globalVariables)
+            if dynamicPorts is not None:
+                return dynamicPorts
             metadata = _operatorMetadata(self.operatorRegistry.get(node.operatorId))
             if metadata is not None:
                 return metadata[0], metadata[1]
@@ -221,7 +250,8 @@ class WorkflowCompiler:
         self, document: ProjectDocument, node: WorkflowNode
     ) -> LoopContract:
         bodyWorkflowId = node.loop.get("bodyWorkflowId")
-        conditionWorkflowId = node.loop.get("conditionWorkflowId")
+        conditionWorkflowId = (node.loop.get("conditionWorkflowId")
+                               if "conditionWorkflowId" in loopWorkflowReferenceFields(node.loop) else None)
         body = (
             document.workflows.get(bodyWorkflowId)
             if isinstance(bodyWorkflowId, str)
@@ -238,6 +268,7 @@ class WorkflowCompiler:
             body.outputs if body is not None else {},
             condition.inputs if condition is not None else {},
             condition.outputs if condition is not None else {},
+            document.globalVariables,
         )
 
     def _validateOperator(
@@ -260,16 +291,20 @@ class WorkflowCompiler:
         if operatorClass is None:
             return []
         validate = getattr(operatorClass, "validateParams", None)
-        if not callable(validate):
-            return []
         try:
+            params = resolveParams(node.params, node.globalVariableBindings,
+                                   {key: value.initialValue for key, value in document.globalVariables.items()})
+            if node.globalVariableBindings:
+                params = validateEffectiveParams(params, node.globalVariableBindings, _operatorParamSchema(registered))
+            if not callable(validate):
+                return []
             validator = cast(Callable[..., object], validate)
-            result = validator(node.params)
+            result = validator(params)
         except TypeError:
             try:
                 validator = cast(Callable[..., object], validate)
                 operatorFactory = cast(Callable[[], object], operatorClass)
-                result = validator(operatorFactory(), node.params)
+                result = validator(operatorFactory(), params)
             except Exception as err:
                 return [
                     ValidationIssue(
@@ -312,7 +347,7 @@ class WorkflowCompiler:
                 if node.kind == "subflow" and node.targetWorkflowId:
                     targets.append(node.targetWorkflowId)
                 elif node.kind == "loop":
-                    for field in ("bodyWorkflowId", "conditionWorkflowId"):
+                    for field in loopWorkflowReferenceFields(node.loop):
                         target = node.loop.get(field)
                         if isinstance(target, str) and target:
                             targets.append(target)
@@ -379,6 +414,12 @@ def _operatorMetadata(
 def _operatorClass(value: object) -> object | None:
     operatorClass = getattr(value, "operatorClass", None)
     return operatorClass if operatorClass is not None else value
+
+
+def _operatorParamSchema(value):
+    metadata = getattr(value, "manifest", None) or getattr(value, "meta", value)
+    schema = getattr(metadata, "paramSchema", {})
+    return deepcopy(dict(schema)) if isinstance(schema, Mapping) else {}
 
 
 def _topological_order(

@@ -9,6 +9,7 @@ import time
 
 from emo_master import __version__
 from emo_master.apps.runtime.context.global_counters import ProjectGlobalCounters
+from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
 from emo_master.apps.runtime.context.sqlite_store import SqliteStore
 from emo_master.apps.runtime.workflow.cancellation import CancellationRequested, CancellationToken
 from emo_master.apps.runtime.workflow.context import RunContext
@@ -66,6 +67,12 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             if spec.runtimeDbPath and spec.projectId
             else None
         )
+        globalVariables = None
+        if spec.runtimeDbPath and spec.projectId:
+            globalVariables = ProjectGlobalVariables(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId,
+                                                     document.globalVariables, spec.jobId)
+            globalVariables.synchronize()
+            globalVariables.initializeJob()
         runner = WorkflowRunner(
             compiledProject=compiled,
             operatorRegistry=registry,
@@ -75,6 +82,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
                 jobId=spec.jobId, projectRevision=document.project.revision)
                 if normalizeLegacySnapshotPolicy(spec.legacySnapshotPolicy) == "ALL" else None),
             globalCounters=globalCounters,
+            globalVariables=globalVariables,
             resultCollector=_collector(spec, eventQueue),
             retainOperators=spec.continuous,
         )

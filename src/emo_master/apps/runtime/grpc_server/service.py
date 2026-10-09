@@ -33,8 +33,10 @@ from emo_master.apps.runtime.jobs.repository import JobRepository
 from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
 from emo_master.apps.runtime.preview.executor import PurePreviewExecutor, parsePreviewParams
 from emo_master.apps.runtime.preview.live import LivePreviewManager
+from emo_master.apps.runtime.preview.draft import draftPreviewProjectId
 from emo_master.apps.runtime.preview.store import PreviewAssetStore
 from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
+from emo_master.apps.runtime.preview.plc_debug import PLC_OPERATORS, PlcDebugManager, parseParams as parsePlcDebugParams
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
@@ -56,6 +58,7 @@ def _withProjectStateLock(method: Any) -> Any:
         with self._projectStateLock:
             if self._closing and method.__name__ in {
                 "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession",
+                "OpenDraftOperatorPreviewSession",
                 "OpenRunInspectionSession", "RenewRunInspectionSession"
             }:
                 raise RuntimeError("E_RUNTIME_CLOSING")
@@ -178,11 +181,13 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.jobSupervisor.retirementRepairFactory = self._retirementRepair
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
         self.loadedProjectPath: str | None = None
+        self.loadedProjectFile: str | None = None
         self.loadedProjectId: str = ""
         self.loadedDocument: ProjectDocument | None = None
         self.loadedPayload: dict[str, object] | None = None
         self.jobMessages: dict[str, str] = {}
         self.runtimeInstanceId = str(uuid4())
+        self.plcDebugManager = PlcDebugManager(self.runtimeInstanceId)
         # Never evict a request and then treat a delayed retry as a fresh run.
         # Bounded admission is reset only by a new Runtime generation.
         self._startRequests: dict[str, tuple[str, object]] = {}
@@ -198,27 +203,25 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
         _ = context
-        if self.loadedProjectId:
-            with self._previewJobLock:
-                cleanupErrors = self.livePreviewManager.closeProject(
-                    self.loadedProjectId, timeoutSeconds=3.0
-                )
-            if cleanupErrors:
-                return runtime_pb2.LoadProjectReply(
-                    ok=False,
-                    status="FAILED",
-                    message=(
-                        "E_PREVIEW_RELEASE_FAILED: " + "; ".join(cleanupErrors)
-                    ),
-                )
+        # A draft preview can exist before any formal project has been loaded.
+        with self._previewJobLock:
+            cleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
+            cleanupErrors.extend(self.plcDebugManager.closeSessions())
+        if cleanupErrors:
+            return runtime_pb2.LoadProjectReply(
+                ok=False, status="FAILED",
+                message="E_PREVIEW_RELEASE_FAILED: " + "; ".join(cleanupErrors),
+            )
         projectPathRaw = str(getattr(request, "project_path", ""))
-        projectFile = self._resolveProjectFile(Path(projectPathRaw))
-        if projectFile is None:
-            self._clearLoadedProject("project.json not found; please load project folder")
+        from emo_master.core.project.files import resolveProjectFile
+        try:
+            projectFile = resolveProjectFile(Path(projectPathRaw))
+        except (OSError, ValueError) as err:
+            self._clearLoadedProject(str(err))
             return runtime_pb2.LoadProjectReply(
                 ok=False,
                 status="FAILED",
-                message="project.json not found; please load project folder",
+                message=str(err),
             )
         try:
             rawPayload = json.loads(projectFile.read_text(encoding="utf-8"))
@@ -235,6 +238,12 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 document,
                 pluginRootPaths=self.pluginRootPaths,
             )
+            if any(record.projectId == document.project.projectId and not record.isTerminal
+                   for record in self.jobRepository.all()):
+                if self.loadedDocument is None or self.loadedDocument.globalVariables != document.globalVariables:
+                    raise ValueError("E_VARIABLE_DEFINITION_BUSY: variable definitions cannot change during a job")
+            from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
+            ProjectGlobalVariables(self.sqliteStore, document.project.projectId, document.globalVariables).synchronize()
         except WorkflowCompileError as err:
             self._clearLoadedProject(str(err))
             return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message=str(err))
@@ -245,11 +254,13 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             )
 
         self.loadedProjectPath = str(projectFile.parent)
+        self.loadedProjectFile = str(projectFile)
         self.loadedPayload = document.model_dump(mode="json")
         self.loadedDocument = document
         self.loadedProjectId = document.project.projectId
         self._loadedProjectPreviewKey = self.previewAssetStore.projectKey(
-            self.loadedProjectPath, self.loadedProjectId
+            self.loadedProjectFile if projectFile.suffix.lower() == ".emoproj" else self.loadedProjectPath,
+            self.loadedProjectId,
         )
         self.eventStore.retentionPerJob = document.runtime.eventRetentionPerJob
         if self.productionMode:
@@ -262,6 +273,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def sqliteProtectedPaths(self):
         """One owner-defined boundary for management, normal runs and preparation."""
         paths = (self.sqliteStore.dbPath, self.workspaceRoot, self.previewAssetStore.root)
+        if self.loadedProjectFile:
+            paths = (*paths, Path(self.loadedProjectFile))
         owner = getattr(self, "_presentationOwner", None)
         return (*paths, owner.root) if owner is not None else paths
 
@@ -421,15 +434,14 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 presentation.checkNormalAdmission()
                 from emo_master.apps.runtime.presentation.normal_capture import freezeNormalCapture
                 capture = freezeNormalCapture(document, self.pluginScanResult.activeOperators,
-                    Path(self.loadedProjectPath), workflowId)
+                    Path(self.loadedProjectPath), workflowId,
+                    counterNames=frozenset(record.name for record in self.sqliteStore.listGlobalCounters(document.project.projectId)))
             except (ValueError, OSError) as error:
                 return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error))
 
         with self._previewJobLock:
-            previewCleanupErrors = self.livePreviewManager.closeProject(
-                document.project.projectId,
-                timeoutSeconds=3.0,
-            )
+            previewCleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
+            previewCleanupErrors.extend(self.plcDebugManager.closeSessions())
             if previewCleanupErrors:
                 return runtime_pb2.StartJobReply(
                     ok=False,
@@ -749,7 +761,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 if self.loadedDocument is None or not self._projectMatches(str(request.project_id)):
                     raise ValueError("E_PROJECT_NOT_LOADED: requested project copy is not loaded")
                 references = (self.loadedProjectId, self.loadedProjectPath,
-                              str(Path(self.loadedProjectPath or "") / "project.json"))
+                              self.loadedProjectFile)
                 sessionId = self.runInspectionStore.open(self._loadedProjectPreviewKey,
                     (self._inspectionReference(value) for value in references if value))
             else:
@@ -952,6 +964,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             return runtime_pb2.RunOperatorPreviewReply(
                 ok=False, code="E_PARAM_INVALID", message=parseError or "invalid parameters"
             )
+        try:
+            params, variableSnapshot = self._previewVariableParams(request, params)
+        except (ValueError, KeyError, StopIteration) as error:
+            return runtime_pb2.RunOperatorPreviewReply(ok=False, code=getattr(error, "code", "E_VARIABLE_BINDING"), message=str(error))
         requestId = str(getattr(request, "request_id", "")) or str(uuid4())
         addCallback = getattr(context, "add_callback", None)
         if callable(addCallback):
@@ -965,6 +981,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             workflowId=workflowId,
             nodeId=nodeId,
             requestId=requestId,
+            globalVariables=variableSnapshot,
         )
         return runtime_pb2.RunOperatorPreviewReply(
             ok=result.ok,
@@ -998,6 +1015,54 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             message="cancel requested" if cancelled else "request is not active",
         )
 
+    def OpenPlcDebugSession(self, request, context):  # type: ignore[override]
+        self.jobSupervisor.assertMutationAllowed()
+        try:
+            params = parsePlcDebugParams(str(request.params_json))
+            if not request.request_id or len(request.request_id) > 128:
+                raise ValueError("request_id is required (max 128 characters)")
+            with self._projectStateLock:
+                if self._closing:
+                    return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure("E_RUNTIME_CLOSING", "Runtime is closing")))
+                # Debug parameters are a draft, not a workflow invocation. New
+                # unsaved PLC nodes may debug without saving or reloading a project.
+                validProject = bool(self.loadedDocument is not None and self.loadedProjectId and request.project_id == self.loadedProjectId)
+                validOperator = request.operator_id in PLC_OPERATORS and request.operator_id in self.pluginScanResult.activeOperators
+                validAttribution = all(0 < len(value) <= 256 for value in (request.workflow_id, request.node_id))
+                if not validProject or not validOperator or not validAttribution:
+                    return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
+                        "E_PLC_CONTEXT_INVALID", "PLC debug requires the current loaded project, a registered PLC operator and bounded draft node identity")))
+                with self._previewJobLock:
+                    if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+                           for record in self.jobRepository.all()):
+                        return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
+                            "E_RESOURCE_BUSY", "a Runtime job is active")))
+                    session = self.plcDebugManager.reserve(self.loadedProjectId, params,
+                                                           workflowId=request.workflow_id, nodeId=request.node_id)
+            # TCP connect never owns the global project/admission locks.
+            return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.connect(session, context)))
+        except (ValueError, TypeError) as error:
+            return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure("E_PARAM_INVALID", str(error))))
+        except RuntimeError as error:
+            return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure("E_RESOURCE_BUSY", str(error))))
+
+    def ExecutePlcDebugCommand(self, request, context):  # type: ignore[override]
+        self.jobSupervisor.assertMutationAllowed()
+        try:
+            params = parsePlcDebugParams(str(request.params_json))
+        except (ValueError, TypeError) as error:
+            return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure("E_PARAM_INVALID", str(error))))
+        return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.execute(
+            request.session_id, request.runtime_instance_id, request.command, params, request.request_id, context)))
+
+    def ClosePlcDebugSession(self, request, context):  # type: ignore[override]
+        if request.runtime_instance_id != self.runtimeInstanceId:
+            return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure("E_PLC_CONTEXT_INVALID", "Runtime instance changed")))
+        error = self.plcDebugManager.close(request.session_id)
+        return runtime_pb2.PlcDebugReply(ok=error is None, session_id=request.session_id,
+                                        runtime_instance_id=self.runtimeInstanceId, state="closed",
+                                        code="E_PLC_RELEASE_FAILED" if error else "", message=error or "PLC debug session closed")
+
     @_withProjectStateLock
     def OpenOperatorPreviewSession(self, request, context):  # type: ignore[override]
         _ = context
@@ -1017,6 +1082,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             return runtime_pb2.OpenOperatorPreviewSessionReply(
                 ok=False, code="E_PARAM_INVALID", message=parseError or "invalid parameters"
             )
+        try:
+            params, variableSnapshot = self._previewVariableParams(request, params)
+        except (ValueError, KeyError, StopIteration) as failure:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code=getattr(failure, "code", "E_VARIABLE_BINDING"), message=str(failure))
         with self._previewJobLock:
             if any(
                 record.projectId == self.loadedProjectId and not record.isTerminal
@@ -1033,6 +1102,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 workflowId,
                 nodeId,
                 params,
+                globalVariables=variableSnapshot,
             )
         if sessionId is None:
             return runtime_pb2.OpenOperatorPreviewSessionReply(
@@ -1041,6 +1111,69 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return runtime_pb2.OpenOperatorPreviewSessionReply(
             ok=True, session_id=sessionId, message="ok"
         )
+
+    @_withProjectStateLock
+    def OpenDraftOperatorPreviewSession(self, request, context):  # type: ignore[override]
+        projectId, error = draftPreviewProjectId(request)
+        if projectId is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=error or "当前草稿无效"
+            )
+        params, error = parsePreviewParams(str(getattr(request, "params_json", "")))
+        if params is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PARAM_INVALID", message=error or "预览参数无效"
+            )
+        try:
+            params, variableSnapshot = self._previewVariableParams(request, params)
+        except (ValueError, KeyError, StopIteration) as failure:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code=getattr(failure, "code", "E_VARIABLE_BINDING"), message=str(failure))
+        isActive = getattr(context, "is_active", lambda: True)
+        with self._previewJobLock:
+            if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+                   for record in self.jobRepository.all()):
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_RESOURCE_BUSY", message="Runtime 任务仍占用设备，请等待任务及资源释放后再预览"
+                )
+            if not isActive():
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_CANCELLED", message="相机预览请求已取消"
+                )
+            sessionId, error = self.livePreviewManager.open(
+                str(request.operator_id), projectId, str(request.workflow_id), str(request.node_id), params,
+                globalVariables=variableSnapshot,
+            )
+            if sessionId is not None and not isActive():
+                error = self.livePreviewManager.close(sessionId)
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_PREVIEW_RELEASE_FAILED" if error else "E_CANCELLED",
+                    message=error or "相机预览请求已取消，设备已释放",
+                )
+        if sessionId is None:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PREVIEW_SESSION_OPEN_FAILED", message=error or "相机预览打开失败"
+            )
+        return runtime_pb2.OpenOperatorPreviewSessionReply(ok=True, session_id=sessionId, message="ok")
+
+    def _previewVariableParams(self, request, params):
+        from emo_master.apps.runtime.preview.global_variables import previewParameters
+        from emo_master.core.project.global_variables import VariableError
+        document = self.loadedDocument
+        if getattr(request, "project_json", ""):
+            projectId, error = draftPreviewProjectId(request)
+            if not projectId:
+                raise ValueError(error)
+            document = ProjectDocument.model_validate(migrateProjectPayload(json.loads(request.project_json)))
+        if document is None or document.project.projectId != request.project_id:
+            raise ValueError("preview project mismatch")
+        jobId = getattr(request, "job_id", "")
+        if jobId:
+            job = self.jobRepository.get(jobId)
+            if job is None or job.projectId != document.project.projectId:
+                raise VariableError("E_VARIABLE_JOB_UNKNOWN", "preview job does not belong to this project")
+        descriptor = self.pluginScanResult.activeOperators.get(request.operator_id)
+        schema = descriptor.manifest.paramSchema if descriptor else {}
+        return previewParameters(self.sqliteStore, document, request.workflow_id, request.node_id, params, schema, jobId, withSnapshot=True)
 
     def StreamOperatorPreviewFrames(self, request, context):  # type: ignore[override]
         sessionId = str(getattr(request, "session_id", ""))
@@ -1104,6 +1237,72 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 )
             )
         return runtime_pb2.ListWorkflowsReply(workflows=workflows)
+
+    @_withProjectStateLock
+    def ListGlobalVariables(self, request, context):
+        return self._globalVariableRequest(request, "list")
+
+    @_withProjectStateLock
+    def GetGlobalVariable(self, request, context):
+        return self._globalVariableRequest(request, "get")
+
+    @_withProjectStateLock
+    def SetGlobalVariable(self, request, context):
+        return self._globalVariableRequest(request, "set")
+
+    @_withProjectStateLock
+    def ResetGlobalVariable(self, request, context):
+        return self._globalVariableRequest(request, "reset")
+
+    def _globalVariableRequest(self, request, operation):
+        from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables, legacyDefinitions
+        from emo_master.core.project.global_variables import VariableError
+        error = self._globalCounterProjectError(request.project_id)
+        if error:
+            return runtime_pb2.GlobalVariablesReply(ok=False, code=error[0], message=error[1])
+        try:
+            variableDefinitions = {**legacyDefinitions(self.sqliteStore, self.loadedProjectId),
+                                   **self.loadedDocument.globalVariables}
+            selected = variableDefinitions.get(request.variable_id)
+            selected = selected.model_dump() if hasattr(selected, "model_dump") else selected or {}
+            needsJob = selected.get("lifetime") == "job" and selected.get("kind") != "constant"
+            if request.job_id and (operation == "list" or needsJob):
+                job = self.jobRepository.get(request.job_id)
+                if job is None or job.projectId != self.loadedProjectId:
+                    raise VariableError("E_VARIABLE_JOB_UNKNOWN", "job does not belong to the loaded project")
+                if operation in {"set", "reset"} and job.isTerminal and selected.get("lifetime") == "job" and selected.get("kind") != "constant":
+                    raise VariableError("E_VARIABLE_JOB_ENDED", "job has ended")
+            accessor = ProjectGlobalVariables(self.sqliteStore, self.loadedProjectId, variableDefinitions, request.job_id)
+            if operation in {"set", "reset"}:
+                if not request.HasField("expected_revision"):
+                    raise VariableError("E_VARIABLE_REVISION_REQUIRED", "refresh and supply the expected value revision")
+                if operation == "set":
+                    accessor.set(request.variable_id, json.loads(request.value_json), request.expected_revision)
+                else:
+                    accessor.reset(request.variable_id, request.expected_revision)
+            keys = list(accessor.definitions) if operation == "list" else [request.variable_id]
+            rows = []
+            for key in keys:
+                definition = accessor._definition(key)
+                row = {"variableId": key, **definition.model_dump(), "state": "current"}
+                if definition.kind == "variable" and definition.lifetime == "job" and not request.job_id:
+                    if operation != "list":
+                        raise VariableError("E_VARIABLE_JOB_REQUIRED", "select a job for this variable")
+                    row.update(value=None, revision=None, updatedAtMs=None, state="initial")
+                else:
+                    try:
+                        row.update(accessor.records([key])[key].toDict())
+                    except VariableError as missing:
+                        if operation != "list" or missing.code != "E_VARIABLE_NOT_INITIALIZED":
+                            raise
+                        row.update(value=None, revision=None, updatedAtMs=None, state="not_initialized")
+                rows.append(row)
+            jobs = [{"jobId": record.jobId, "ended": record.isTerminal}
+                    for record in self.jobRepository.all() if record.projectId == self.loadedProjectId]
+            return runtime_pb2.GlobalVariablesReply(ok=True, variables_json=json.dumps(rows, ensure_ascii=False, allow_nan=False),
+                                                   jobs_json=json.dumps(jobs))
+        except Exception as failure:
+            return runtime_pb2.GlobalVariablesReply(ok=False, code=getattr(failure, "code", "E_VARIABLE_STATE"), message=str(failure))
 
     @_withProjectStateLock
     def ListGlobalCounters(self, request, context):  # type: ignore[override]
@@ -1234,6 +1433,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             presentation.beginClosing()
         self._maintenanceStop.set()
         errors = list(self.livePreviewManager.closeAll())
+        errors.extend(self.plcDebugManager.closeAll())
         self._closeStep("preview-producers", self.previewExecutor.close)
         self._closeStep("sqlite-management", self.sqliteManagement.close, retryable=True)
         deadline = time.monotonic() + 2.0
@@ -1465,13 +1665,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return Path(__file__).resolve().parents[3] / "plugins"
 
     def _resolveProjectFile(self, projectPath: Path) -> Path | None:
-        if projectPath.is_file() and projectPath.name.lower() == "project.json":
-            return projectPath
-        if projectPath.is_dir():
-            candidate = projectPath / "project.json"
-            if candidate.exists() and candidate.is_file():
-                return candidate
-        return None
+        from emo_master.core.project.files import resolveProjectFile
+        try:
+            return resolveProjectFile(projectPath)
+        except (OSError, ValueError):
+            return None
 
     def _projectMatches(self, requested: str) -> bool:
         if requested == "":
@@ -1479,7 +1677,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         return requested in {
             self.loadedProjectId,
             self.loadedProjectPath or "",
-            str(Path(self.loadedProjectPath or "") / "project.json"),
+            self.loadedProjectFile or "",
         }
 
     def _globalCounterProjectError(self, requested: str) -> tuple[str, str] | None:
@@ -1514,7 +1712,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     def _clearLoadedProject(self, message: str) -> None:
         if self.loadedProjectId:
             self.livePreviewManager.closeProject(self.loadedProjectId)
+            self.plcDebugManager.closeProject(self.loadedProjectId)
         self.loadedProjectPath = None
+        self.loadedProjectFile = None
         self.loadedProjectId = ""
         self._loadedProjectPreviewKey = ""
         self.loadedDocument = None

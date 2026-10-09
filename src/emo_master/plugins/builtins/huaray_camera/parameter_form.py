@@ -2,36 +2,7 @@ from __future__ import annotations
 
 from PySide2.QtWidgets import QComboBox, QFormLayout, QLabel, QSpinBox
 
-from emo_master.apps.designer.ui.param_form import SchemaParamForm
-
-
-FIELD_LABELS = {
-    "selectionMode": "连接方式",
-    "ipAddress": "相机 IP 地址",
-    "cameraKey": "设备唯一标识",
-    "userId": "用户自定义名称",
-    "deviceIndex": "设备索引",
-    "triggerMode": "触发模式",
-    "triggerSource": "触发输入线",
-    "triggerActivation": "触发边沿",
-    "captureTimeoutMs": "取图超时（毫秒）",
-    "retryCount": "异常重试次数",
-    "retryDelayMs": "重试间隔（毫秒）",
-    "outputColor": "输出颜色",
-    "demosaic": "去马赛克算法",
-    "pixelFormat": "相机像素格式",
-    "exposureMode": "曝光设置",
-    "exposureUs": "曝光时间（微秒）",
-    "gainMode": "增益设置",
-    "gainRaw": "增益值",
-    "frameRateMode": "帧率设置",
-    "frameRate": "采集帧率（帧/秒）",
-    "roiMode": "采集区域",
-    "width": "图像宽度（像素）",
-    "height": "图像高度（像素）",
-    "offsetX": "水平偏移（像素）",
-    "offsetY": "垂直偏移（像素）",
-}
+from emo_master.apps.designer.ui.param_form import SchemaParamForm, applyParameterLabel
 
 GROUPS = (
     ("连接设置", ("selectionMode", "ipAddress", "cameraKey", "userId", "deviceIndex")),
@@ -109,11 +80,8 @@ class CameraParameterForm(SchemaParamForm):
         for name, control in self._controls.items():
             label = self._layout.labelForField(control)
             if isinstance(label, QLabel):
-                label.setText(FIELD_LABELS.get(name, name))
-                label.setWordWrap(True)
+                applyParameterLabel(label, control, name, paramSchema, FIELD_HINTS.get(name, ""))
             control.setObjectName(name)
-            hint = FIELD_HINTS.get(name, FIELD_LABELS.get(name, name))
-            control.setToolTip(f"{hint}\n参数键：{name}")
             if isinstance(control, QComboBox):
                 for index in range(control.count()):
                     value = str(control.itemData(index))

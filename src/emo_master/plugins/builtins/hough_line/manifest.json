@@ -17,11 +17,11 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "rho": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-      "thetaDegrees": {"type": "number", "exclusiveMinimum": 0.0, "maximum": 180.0, "default": 1.0},
-      "threshold": {"type": "integer", "minimum": 1, "default": 50},
-      "minLineLength": {"type": "number", "minimum": 0.0, "default": 0.0},
-      "maxLineGap": {"type": "number", "minimum": 0.0, "default": 0.0}
+      "rho": {"title": "距离分辨率（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+      "thetaDegrees": {"title": "角度分辨率（度）", "type": "number", "exclusiveMinimum": 0.0, "maximum": 180.0, "default": 1.0},
+      "threshold": {"title": "阈值", "type": "integer", "minimum": 1, "default": 50},
+      "minLineLength": {"title": "最小线段长度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
+      "maxLineGap": {"title": "最大线段间隙（像素）", "type": "number", "minimum": 0.0, "default": 0.0}
     }
   },
   "minCoreVersion": "0.3.0",

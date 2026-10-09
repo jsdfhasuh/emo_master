@@ -23,6 +23,12 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         service.close()
 
     operatorIds = {operator.operator_id for operator in activeReply.operators}
+    blur = next(operator for operator in activeReply.operators
+                if operator.operator_id == "vision.preprocess.blur")
+    properties = json.loads(blur.param_schema_json)["properties"]
+    assert properties["kernelSize"]["title"] == "卷积核大小"
+    assert properties["kernelSize"]["default"] == 5
+    assert properties["mode"]["enum"] == ["gaussian", "median", "bilateral"]
     assert {
         "communication.plc.slmp_read",
         "communication.plc.slmp_write",
@@ -47,6 +53,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.geometry.coordinate_calculator",
         "vision.inference.yolo",
         "vision.io.image_loader",
+        "vision.io.image_batch_loader",
         "vision.io.image_saver",
         "vision.io.huaray_camera",
         "vision.io.coordinate_reader",
@@ -74,7 +81,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.state.counter",
         "vision.value.number",
     } <= operatorIds
-    assert len(operatorIds) == 50
+    assert len(operatorIds) == 53
     assert list(rejectedReply.rejected) == []
 
 

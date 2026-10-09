@@ -44,14 +44,15 @@ class OperatorMeta:
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "drawBBoxes": {"type": "boolean", "default": True},
-        "drawContours": {"type": "boolean", "default": True},
-        "drawCentroids": {"type": "boolean", "default": True},
-        "drawLabels": {"type": "boolean", "default": True},
-        "drawRoi": {"type": "boolean", "default": True},
-        "thickness": {"type": "integer", "minimum": 1, "default": 2},
-        "fontScale": {"type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
+        "drawBBoxes": {"title": "绘制包围框", "type": "boolean", "default": True},
+        "drawContours": {"title": "绘制轮廓", "type": "boolean", "default": True},
+        "drawCentroids": {"title": "绘制质心", "type": "boolean", "default": True},
+        "drawLabels": {"title": "绘制标签", "type": "boolean", "default": True},
+        "drawRoi": {"title": "绘制 ROI", "type": "boolean", "default": True},
+        "thickness": {"title": "线条宽度（像素）", "type": "integer", "minimum": 1, "default": 2},
+        "fontScale": {"title": "字体缩放比例", "type": "number", "exclusiveMinimum": 0.0, "default": 0.5},
         "blobColor": {
+            "title": "连通域颜色",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
             "minItems": 3,
@@ -59,6 +60,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": [0, 255, 0],
         },
         "detectionColor": {
+            "title": "检测框颜色",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
             "minItems": 3,
@@ -66,6 +68,7 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": [0, 165, 255],
         },
         "roiColor": {
+            "title": "ROI 颜色",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
             "minItems": 3,

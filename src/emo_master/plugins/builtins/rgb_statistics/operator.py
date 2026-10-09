@@ -42,9 +42,9 @@ class OperatorMeta:
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "ddof": {"type": "integer", "enum": [0, 1], "default": 0},
-        "clipRoi": {"type": "boolean", "default": True},
-        "emitMask": {"type": "boolean", "default": False},
+        "ddof": {"title": "标准差自由度修正值", "type": "integer", "enum": [0, 1], "default": 0},
+        "clipRoi": {"title": "裁剪 ROI 到图像边界", "type": "boolean", "default": True},
+        "emitMask": {"title": "输出掩膜", "type": "boolean", "default": False},
     },
 }
 

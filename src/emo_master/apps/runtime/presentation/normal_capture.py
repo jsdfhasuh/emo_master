@@ -21,12 +21,12 @@ class NormalCapture:
     limitsJson: str
 
 
-def freezeNormalCapture(document, registry, resourceRoot, workflowId):
+def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset()):
     if document.presentation is None:
         raise ValueError("presentation must be explicitly enabled and saved")
     if workflowId != document.entryWorkflowId:
         raise ValueError("normal presentation capture requires the project entry workflow")
-    issues = validateBindings(document, {key: value.manifest for key, value in registry.items()})
+    issues = validateBindings(document, {key: value.manifest for key, value in registry.items()}, counterNames=counterNames)
     if issues:
         raise ValueError("; ".join(f"{issue.path}: {issue.message}" for issue in issues))
     if document.resources is not None:
@@ -43,6 +43,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId):
     limits = normalCaptureLimits(presentation)
     for sourceId, source in sources.items():
         scope = scopes[source["resultScopeId"]]
+        if source["kind"] in {"global_variable", "global_counter"}:
+            continue
         if source["kind"] == "runtime_status":
             raise ValueError(
                 f"{sourceId}: runtime_status is not a captured workflow output; "
@@ -54,6 +56,8 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId):
                 or source["callPath"] != scope["callPath"]):
             raise ValueError(f"{sourceId}: output must belong to its explicit invocation scope")
     execution = {"projectId": document.project.projectId,
+                 **({"globalVariables": {key: value.model_dump() for key, value in document.globalVariables.items()}}
+                    if document.schemaVersion == "2.4" else {}),
                  "workflowId": workflowId,
                  "workflows": {key: value.model_dump() for key, value in document.workflows.items()},
                  "plugins": {node.operatorId: registry[node.operatorId].manifest.version

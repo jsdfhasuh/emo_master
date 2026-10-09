@@ -26,13 +26,15 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "mode": {
+            "title": "选择模式",
             "type": "string",
             "enum": ["first", "last", "index", "topK"],
             "default": "first",
         },
-        "index": {"type": "integer", "minimum": 0, "default": 0},
-        "count": {"type": "integer", "minimum": 1, "default": 1},
+        "index": {"title": "元素索引", "type": "integer", "minimum": 0, "default": 0},
+        "count": {"title": "数量", "type": "integer", "minimum": 1, "default": 1},
         "onOutOfRange": {
+            "title": "索引越界处理",
             "type": "string",
             "enum": ["empty", "error"],
             "default": "empty",

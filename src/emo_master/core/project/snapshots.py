@@ -247,6 +247,14 @@ def freezeProjectSnapshot(
         _setPath(canonicalParams[key], target.parameterPath, {"siteField": siteBinding.field})
 
     for key, params in resolvedParams.items():
+        from emo_master.core.project.global_variables import resolveParams, validateBindings as validateVariableBindings
+        node = next(node for node in project.workflows[key[0]].nodes if node.nodeId == key[1])
+        occupiedBindings: list[ResourceBinding | SiteBinding] = [*project.resources.parameterBindings, *project.resources.siteBindings]
+        occupied = [b.target.parameterPath for b in occupiedBindings
+                    if (b.target.workflowId, b.target.nodeId) == key]
+        validateVariableBindings(node.globalVariableBindings, project.globalVariables, schemas[key], occupied=occupied)
+        params = resolveParams(params, node.globalVariableBindings,
+                               {vid: var.initialValue for vid, var in project.globalVariables.items()})
         resolvedParams[key] = _parameters(params, schemas[key], "/".join(key))
         canonicalParams[key] = deepcopy(resolvedParams[key])
         # Reject undeclared known file parameters; never retain a developer path fallback.
@@ -286,6 +294,8 @@ def freezeProjectSnapshot(
                                   "nodes": nodes, "edges": [e.model_dump() for e in workflow.edges]}
     capture = captureDefinition(project.presentation)
     execution = {"entry": project.entryWorkflowId, "workflows": algorithms, "plugins": versions,
+                 **({"globalVariables": {key: value.model_dump() for key, value in project.globalVariables.items()}}
+                    if project.schemaVersion == "2.4" else {}),
                  "resources": {key: item.model_dump(exclude={"path"})
                                for key, item in project.resources.items.items()
                                if item.purpose in {"input_image", "model"}}}

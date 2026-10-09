@@ -16,6 +16,8 @@ class CompiledNode:
     params: Mapping[str, object]
     targetWorkflowId: str | None = None
     loop: Mapping[str, object] = MappingProxyType({})
+    globalVariableBindings: tuple[Mapping[str, object], ...] = ()
+    paramSchema: Mapping[str, object] = MappingProxyType({})
 
 
 @dataclass(frozen=True)
@@ -51,6 +53,7 @@ class CompiledProject:
     workflowCallGraph: Mapping[str, tuple[str, ...]]
     runtime: Mapping[str, object]
     pluginRootPaths: tuple[str, ...] = ()
+    globalVariables: Mapping[str, object] = MappingProxyType({})
 
 
 def freezeMapping(value: Mapping[str, Any]) -> Mapping[str, Any]:

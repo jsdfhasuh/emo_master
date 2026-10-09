@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass, replace
+from dataclasses import dataclass, field, replace
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
@@ -21,6 +21,9 @@ class FlowNodeViewModel:
     outputPorts: dict[str, str]
     operatorId: str = ""
     kind: str = "operator"
+    summaryLines: tuple[tuple[str, str | None], ...] = ()
+    outputPortLabels: dict[str, str] = field(default_factory=dict)
+    inputPortLabels: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -55,6 +58,23 @@ try:
         QGraphicsSceneMouseEvent,
         QGraphicsSimpleTextItem,
     )
+
+    class _WorkflowReferenceText(QGraphicsSimpleTextItem):
+        def __init__(self, text, parent, workflowId, scene):
+            super().__init__(text, parent)
+            self.workflowId = workflowId
+            self.sceneRef = scene
+            self.setCursor(Qt.PointingHandCursor)
+
+        def mousePressEvent(self, event):
+            event.accept()
+
+        def mouseDoubleClickEvent(self, event):
+            if event.button() == Qt.LeftButton and self.sceneRef.workflowOpenHandler:
+                # Navigation replaces the current scene; wait until this event returns.
+                handler, workflowId = self.sceneRef.workflowOpenHandler, self.workflowId
+                QTimer.singleShot(0, lambda: handler(workflowId))
+            event.accept()
 
     class _NodeItem(QGraphicsRectItem):
         def __init__(self, model: FlowNodeViewModel, scene: object) -> None:
@@ -98,11 +118,22 @@ try:
                 self._sqliteSummary.setBrush(QColor('#b45309'))
                 self._sqliteSummary.setPos(16, self.geometry.header - metrics.height() - 6)
                 self._sqliteSummary.setAcceptedMouseButtons(Qt.NoButton)
-            if variant == "if":
+            for index, (text, workflowId) in enumerate(model.summaryLines):
+                shown = metrics.elidedText(text, Qt.ElideRight, self.geometry.width - 32)
+                if workflowId:
+                    summary = _WorkflowReferenceText(shown, self, workflowId, scene)
+                else:
+                    summary = QGraphicsSimpleTextItem(shown, self)
+                    summary.setAcceptedMouseButtons(Qt.NoButton)
+                summary.setFont(self.bodyFont)
+                summary.setBrush(QColor("#2563eb" if workflowId else "#626b78"))
+                summary.setToolTip(text + (f"\n工作流 ID：{workflowId}\n双击打开工作流" if workflowId else ""))
+                summary.setPos(16, 14 + metrics.height() + index * (metrics.height() + 4))
+            if variant == "if" and not model.summaryLines:
                 branchText = QGraphicsSimpleTextItem("条件分支", self)
                 branchText.setFont(self.bodyFont)
                 branchText.setPos(16.0, 14.0 + metrics.height())
-            elif variant == "switch":
+            elif variant == "switch" and not model.summaryLines:
                 branchText = QGraphicsSimpleTextItem("多路分支", self)
                 branchText.setFont(self.bodyFont)
                 branchText.setPos(16.0, 14.0 + metrics.height())
@@ -348,6 +379,8 @@ try:
             self._routeTimer.setSingleShot(True)
             self._routeTimer.timeout.connect(self.refreshAllRoutes)
             self._nodeItems: dict[str, _NodeItem] = {}
+            self.presentationProvider: Callable[[FlowNodeViewModel], FlowNodeViewModel] | None = None
+            self.workflowOpenHandler: Callable[[str], None] | None = None
             self._bindingItems: list[QGraphicsPathItem] = []
             self._bindingTarget = None
             self._bindingSources = ()
@@ -450,6 +483,13 @@ try:
             return self.itemAt(QPointF(float(x), float(y)), QTransform())
 
         def addFlowNode(self, model: FlowNodeViewModel) -> None:
+            if not isinstance(model, FlowNodeViewModel):
+                model = FlowNodeViewModel(
+                    model.nodeId, model.title, model.x, model.y, model.inputPorts, model.outputPorts,
+                    getattr(model, "operatorId", ""), getattr(model, "kind", "operator"),
+                )
+            if self.presentationProvider is not None:
+                model = self.presentationProvider(model)
             nodeItem = _NodeItem(model, self)
             self.addItem(nodeItem)
             self._nodeItems[model.nodeId] = nodeItem
@@ -465,14 +505,48 @@ try:
                     portItem.setParentItem(nodeItem)
                     portItem.setToolTip(f"{portName}: {portType}")
                     available = geometry.inputWidth if direction == "input" else geometry.outputWidth
-                    label = QGraphicsSimpleTextItem(metrics.elidedText(portName, Qt.ElideRight, available), nodeItem)
+                    labels = model.outputPortLabels if direction == "output" else model.inputPortLabels
+                    displayName = labels.get(portName, portName)
+                    label = QGraphicsSimpleTextItem(metrics.elidedText(displayName, Qt.ElideRight, available), nodeItem)
                     label.setFont(nodeItem.bodyFont)
                     label.setBrush(QColor("#475569"))
-                    label.setToolTip(f"{portName}: {portType}")
+                    label.setToolTip(f"{displayName}\n{portName}: {portType}")
+                    if direction == "input" and portName in model.inputPortLabels:
+                        tip = label.toolTip() + "\n初始值来自此连线；后续每轮判断循环体回传的同名布尔值"
+                        label.setToolTip(tip)
+                        portItem.setToolTip(tip)
                     rect = label.boundingRect()
                     labelX = 28.0 if direction == "input" else geometry.width - 28.0 - rect.width()
                     label.setPos(labelX, centerY - rect.height() / 2)
                     self._portItems[(model.nodeId, direction, portName)] = portItem
+            self._scheduleRoutes()
+
+        def refreshPresentations(self) -> None:
+            if self.presentationProvider is None:
+                return
+            previous = self.blockSignals(True)
+            try:
+                for nodeId, old in list(self._nodeItems.items()):
+                    model = self.presentationProvider(old.model)
+                    if model == old.model:
+                        continue
+                    model = replace(model, x=old.pos().x(), y=old.pos().y())
+                    selected, state = old.isSelected(), old._runtimeState
+                    if self._iconProvider is not None:
+                        self._iconProvider.unbind(old)
+                    self.removeItem(old)
+                    self.addFlowNode(model)
+                    item = self._nodeItems[nodeId]
+                    item.setSelected(selected)
+                    item.setRuntimeState(state)
+                    item._bindingSource = old._bindingSource
+                    for edge in self._edgeItems.values():
+                        if edge.edge.fromNodeId == nodeId:
+                            edge.sourcePort = self._portItems[(nodeId, "output", edge.edge.fromPort)]
+                        if edge.edge.toNodeId == nodeId:
+                            edge.targetPort = self._portItems[(nodeId, "input", edge.edge.toPort)]
+            finally:
+                self.blockSignals(previous)
             self._scheduleRoutes()
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:

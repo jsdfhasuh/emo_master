@@ -26,13 +26,13 @@ _MODES = ("gaussian", "median", "bilateral")
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "mode": {"type": "string", "enum": list(_MODES), "default": "gaussian"},
-        "kernelSize": {"type": "integer", "minimum": 3, "default": 5},
-        "sigmaX": {"type": "number", "minimum": 0.0, "default": 0.0},
-        "sigmaY": {"type": "number", "minimum": 0.0, "default": 0.0},
-        "diameter": {"type": "integer", "minimum": 1, "default": 9},
-        "sigmaColor": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
-        "sigmaSpace": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
+        "mode": {"title": "滤波模式", "type": "string", "enum": list(_MODES), "default": "gaussian"},
+        "kernelSize": {"title": "卷积核大小", "type": "integer", "minimum": 3, "default": 5},
+        "sigmaX": {"title": "水平方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
+        "sigmaY": {"title": "垂直方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
+        "diameter": {"title": "滤波邻域直径（像素）", "type": "integer", "minimum": 1, "default": 9},
+        "sigmaColor": {"title": "颜色空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
+        "sigmaSpace": {"title": "坐标空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
     },
 }
 

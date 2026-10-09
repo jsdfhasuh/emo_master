@@ -64,18 +64,21 @@ class RotateOperator:
         "type": "object",
         "properties": {
             "angleDegrees": {
+                "title": "旋转角度（度）",
                 "type": "number",
                 "minimum": -180.0,
                 "exclusiveMaximum": 180.0,
                 "default": 0.0,
             },
-            "expand": {"type": "boolean", "default": True},
+            "expand": {"title": "扩展输出画布", "type": "boolean", "default": True},
             "interpolation": {
+                "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 255,
@@ -157,6 +160,7 @@ class FlipOperator:
         "type": "object",
         "properties": {
             "mode": {
+                "title": "翻转方式",
                 "type": "string",
                 "enum": ["horizontal", "vertical", "both"],
                 "default": "horizontal",
@@ -246,16 +250,18 @@ class AffineOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "srcPoints": {"type": "array", "minItems": 3, "maxItems": 3},
-            "dstPoints": {"type": "array", "minItems": 3, "maxItems": 3},
-            "outputWidth": {"type": "integer", "minimum": 0, "default": 0},
-            "outputHeight": {"type": "integer", "minimum": 0, "default": 0},
+            "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 3, "maxItems": 3},
+            "dstPoints": {"title": "目标坐标点", "type": "array", "minItems": 3, "maxItems": 3},
+            "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 0, "default": 0},
+            "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 0, "default": 0},
             "interpolation": {
+                "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 255,
@@ -327,15 +333,17 @@ class PerspectiveOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "srcPoints": {"type": "array", "minItems": 4, "maxItems": 4},
-            "outputWidth": {"type": "integer", "minimum": 2},
-            "outputHeight": {"type": "integer", "minimum": 2},
+            "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 4, "maxItems": 4},
+            "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 2},
+            "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 2},
             "interpolation": {
+                "title": "插值方式",
                 "type": "string",
                 "enum": ["nearest", "linear", "cubic"],
                 "default": "linear",
             },
             "padValue": {
+                "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 255,

@@ -144,9 +144,10 @@ def testOpenAndSaveKeysUseExistingDialogsAndSaveActualProject(canvas, monkeypatc
     press(window, Qt.Key_O, Qt.ControlModifier)
     assert dialogs == ['open']
     directory = tmp_path / '中文 快捷键项目'
-    monkeypatch.setattr(QFileDialog, 'getExistingDirectory', lambda *args: str(directory))
+    projectFile = directory / '快捷键项目.emoproj'
+    monkeypatch.setattr(QFileDialog, 'getSaveFileName', lambda *args: (str(projectFile), ''))
     press(window, Qt.Key_S, Qt.ControlModifier)
-    payload = json.loads((directory / 'project.json').read_text(encoding='utf-8'))
+    payload = json.loads(projectFile.read_text(encoding='utf-8'))
     assert payload['workflows']['main']['nodes']
     assert not window.pageCoordinator.session.dirty
 

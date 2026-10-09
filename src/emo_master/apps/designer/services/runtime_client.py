@@ -99,7 +99,41 @@ class RuntimeClientError(RuntimeError):
         super().__init__(message)
 
 
+class _PlcCallContext(DisplayCallContext):
+    """Also interrupt embedded socket owners when the editor cancels an RPC."""
+    def __init__(self) -> None:
+        super().__init__()
+        self._callbacks: list = []
+        self.dispatched = False
+
+    def markDispatched(self) -> None:
+        self.check()
+        self.dispatched = True
+
+    def add_callback(self, callback) -> bool:
+        with self._lock:
+            if not self.is_active():
+                return False
+            self._callbacks.append(callback)
+            return True
+
+    def cancel(self) -> None:
+        super().cancel()
+        with self._lock:
+            callbacks, self._callbacks = self._callbacks, []
+        for callback in callbacks:
+            callback()
+
+
 class RuntimeServiceProtocol(Protocol):
+    def OpenDraftOperatorPreviewSession(self, request, context): ...
+
+    def OpenPlcDebugSession(self, request, context): ...
+
+    def ExecutePlcDebugCommand(self, request, context): ...
+
+    def ClosePlcDebugSession(self, request, context): ...
+
     def ListOperators(self, request, context): ...
 
     def ListRejectedOperators(self, request, context): ...
@@ -361,7 +395,7 @@ class RuntimeClient:
         ), timeoutMs, cancellationToken, owner)
 
     def _displayCall(self, methodName: str, request: object, timeoutMs: int,
-                     token: DisplayCallContext | None, owner: str):
+                     token: DisplayCallContext | None, owner: str, *, preserveCompleted=None):
         context = token or DisplayCallContext()
         with self._displayLock:
             if self._closed or self._closing or owner in self._closedDisplayOwners:
@@ -371,6 +405,9 @@ class RuntimeClient:
             context.start(timeoutMs)
             method = getattr(self.runtimeService, methodName)
             future = getattr(method, "future", None)
+            markDispatched = getattr(context, "markDispatched", None)
+            if callable(markDispatched):
+                markDispatched()
             if callable(future):
                 call = future(request, timeout=context.time_remaining(), wait_for_ready=False)
                 context.attach(call)
@@ -381,7 +418,8 @@ class RuntimeClient:
                     reply = method(request, timeout=context.time_remaining())
                 else:
                     reply = method(request, context)
-            context.check()
+            if preserveCompleted is None or not preserveCompleted(reply):
+                context.check()
             return reply
         except Exception as err:
             try:
@@ -617,6 +655,7 @@ class RuntimeClient:
         params: dict[str, object],
         imageAssetId: str,
         requestId: str = "",
+        *, projectPayload=None, jobId: str = "",
     ) -> object:
         return self._call(
             "RunOperatorPreview",
@@ -628,6 +667,8 @@ class RuntimeClient:
                 params_json=json.dumps(params, ensure_ascii=True),
                 image_asset_id=imageAssetId,
                 request_id=requestId,
+                project_json=json.dumps(projectPayload, ensure_ascii=False) if projectPayload else "",
+                job_id=jobId,
             ),
         )
 
@@ -656,6 +697,33 @@ class RuntimeClient:
             ),
         )
 
+    def openDraftOperatorPreviewSession(
+        self, projectId: str, workflowId: str, nodeId: str, operatorId: str,
+        params: dict[str, object], projectPayload: dict[str, object],
+        *, jobId: str = "",
+    ) -> object:
+        from emo_master.apps.runtime.preview.draft import MAX_DRAFT_PREVIEW_BYTES
+        if not callable(getattr(self.runtimeService, "OpenDraftOperatorPreviewSession", None)):
+            raise RuntimeClientError(
+                "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+            )
+        request = runtime_pb2.OpenOperatorPreviewSessionRequest(
+            project_id=projectId, workflow_id=workflowId, node_id=nodeId, operator_id=operatorId,
+            params_json=json.dumps(params, ensure_ascii=False, allow_nan=False),
+            project_json=json.dumps(projectPayload, ensure_ascii=False, allow_nan=False),
+            job_id=jobId,
+        )
+        if request.ByteSize() > MAX_DRAFT_PREVIEW_BYTES:
+            raise RuntimeClientError("E_PREVIEW_CONTEXT_INVALID", "相机预览草稿请求不得超过 768 KiB")
+        try:
+            return self._call("OpenDraftOperatorPreviewSession", request)
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" not in error.code:
+                raise
+            raise RuntimeClientError(
+                "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+            ) from error
+
     def streamOperatorPreviewFrames(self, sessionId: str) -> Iterable[object]:
         stream = self._call(
             "StreamOperatorPreviewFrames",
@@ -669,6 +737,71 @@ class RuntimeClient:
             "CloseOperatorPreviewSession",
             runtime_pb2.CloseOperatorPreviewSessionRequest(session_id=sessionId),
         )
+
+    def openPlcDebugSession(self, projectId: str, workflowId: str, nodeId: str,
+                            operatorId: str, params: dict[str, object], requestId: str,
+                            cancellation=None) -> object:
+        request = runtime_pb2.OpenPlcDebugSessionRequest(
+            project_id=projectId, workflow_id=workflowId, node_id=nodeId, operator_id=operatorId,
+            params_json=json.dumps(params, allow_nan=False), request_id=requestId,
+        )
+        connectTimeout = params.get("connectTimeoutMs", 2000)
+        if isinstance(connectTimeout, bool) or not isinstance(connectTimeout, int):
+            raise ValueError("connectTimeoutMs must be an integer")
+        timeout = max(self.deadlineMs, connectTimeout + 2000)
+        return self._plcCall("OpenPlcDebugSession", request, min(timeout, 65000), cancellation)
+
+    def executePlcDebugCommand(self, sessionId: str, runtimeInstanceId: str, command: str,
+                               params: dict[str, object], requestId: str, cancellation=None) -> object:
+        request = runtime_pb2.ExecutePlcDebugCommandRequest(
+            session_id=sessionId, runtime_instance_id=runtimeInstanceId, command=command,
+            params_json=json.dumps(params, allow_nan=False), request_id=requestId,
+        )
+        return self._plcCall("ExecutePlcDebugCommand", request,
+                             125000 if command in {"read", "write"} else 5000, cancellation)
+
+    def closePlcDebugSession(self, sessionId: str, runtimeInstanceId: str, cancellation=None) -> object:
+        return self._plcCall("ClosePlcDebugSession", runtime_pb2.ClosePlcDebugSessionRequest(
+            session_id=sessionId, runtime_instance_id=runtimeInstanceId), 5000, cancellation)
+
+    def _plcCall(self, methodName: str, request, timeoutMs: int, cancellation):
+        if not callable(getattr(self.runtimeService, methodName, None)):
+            raise RuntimeClientError("E_PLC_UNSUPPORTED", "当前 Runtime 不支持 PLC 运行调试")
+        token, finished = _PlcCallContext(), threading.Event()
+        token.start(timeoutMs)
+
+        def watch():
+            while not finished.wait(0.02):
+                if (cancellation is not None and cancellation.is_set()) or not token.is_active():
+                    token.cancel()
+                    return
+        monitor = threading.Thread(target=watch, name="plc-debug-cancellation", daemon=True)
+        monitor.start()
+        try:
+            if cancellation is not None and cancellation.is_set():
+                token.cancel()
+            preserve = None
+            if methodName == "ExecutePlcDebugCommand" and request.command == "write":
+                def completedWrite(reply):
+                    try:
+                        result = json.loads(str(getattr(reply, "result_json", "{}")))
+                        return result.get("receipt", {}).get("outcome") in {"confirmed", "rejected", "unknown"}
+                    except (ValueError, AttributeError):
+                        return False
+                preserve = completedWrite
+            return self._displayCall(methodName, request, timeoutMs, token, "plc-debug", preserveCompleted=preserve)
+        except (RuntimeClientError, NotImplementedError) as error:
+            code = getattr(error, "code", "")
+            if "UNIMPLEMENTED" in code or isinstance(error, NotImplementedError):
+                raise RuntimeClientError("E_PLC_UNSUPPORTED", "当前 Runtime 不支持 PLC 运行调试") from error
+            if methodName == "ExecutePlcDebugCommand" and request.command == "write":
+                if not token.dispatched:
+                    raise RuntimeClientError("E_PLC_CANCELLED", "写入请求已取消，未下发至 Runtime") from error
+                raise RuntimeClientError("E_PLC_WRITE_UNKNOWN", "写入结果未知，未自动重试；" + str(error)) from error
+            raise
+        finally:
+            finished.set()
+            monitor.join(timeout=0.2)
 
     def listRejectedOperators(self) -> list[object]:
         reply = self._call("ListRejectedOperators", runtime_pb2.ListRejectedOperatorsRequest())
@@ -690,6 +823,35 @@ class RuntimeClient:
                 )
             )
         return result
+
+    def _variableCall(self, operation, projectId, variableId="", jobId="", value=None, revision=None):
+        request = runtime_pb2.GlobalVariablesRequest(project_id=projectId, variable_id=variableId, job_id=jobId)
+        if operation == "SetGlobalVariable":
+            request.value_json = json.dumps(value, ensure_ascii=False, allow_nan=False)
+        if revision is not None:
+            request.expected_revision = revision
+        reply = self._call(operation, request)
+        if not reply.ok:
+            raise RuntimeClientError(reply.code, reply.message)
+        return json.loads(reply.variables_json)
+
+    def listGlobalVariables(self, projectId, jobId=""):
+        return self._variableCall("ListGlobalVariables", projectId, jobId=jobId)
+
+    def globalVariableState(self, projectId, jobId=""):
+        reply = self._call("ListGlobalVariables", runtime_pb2.GlobalVariablesRequest(project_id=projectId, job_id=jobId))
+        if not reply.ok:
+            raise RuntimeClientError(reply.code, reply.message)
+        return {"variables": json.loads(reply.variables_json), "jobs": json.loads(reply.jobs_json or "[]")}
+
+    def getGlobalVariable(self, projectId, variableId, jobId=""):
+        return self._variableCall("GetGlobalVariable", projectId, variableId, jobId)[0]
+
+    def setGlobalVariable(self, projectId, variableId, value, revision, jobId=""):
+        return self._variableCall("SetGlobalVariable", projectId, variableId, jobId, value, revision)[0]
+
+    def resetGlobalVariable(self, projectId, variableId, revision, jobId=""):
+        return self._variableCall("ResetGlobalVariable", projectId, variableId, jobId, revision=revision)[0]
 
     def listGlobalCounters(self, projectId: str) -> list[GlobalCounterInfo]:
         reply = self._call(

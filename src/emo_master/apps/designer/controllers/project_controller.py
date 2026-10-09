@@ -12,6 +12,7 @@ from emo_master.apps.designer.state.project_store import (
 from emo_master.apps.designer.state.workflow_store import defaultNodePosition
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeViewModel
 from emo_master.core.project.migration import utc_now_iso
+from emo_master.core.project.files import projectFileForSave, resolveProjectFile
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
 
@@ -42,6 +43,7 @@ class ProjectController:
         self.updateRuntimeJobState = updateRuntimeJobState
         self.workflowController = workflowController
         self.editCoordinator = None
+        self.currentProjectFile: Path | None = None
         self._fallbackProjectMetadata: dict[str, object] = {
             "projectId": str(uuid4()),
             "name": "project",
@@ -76,9 +78,7 @@ class ProjectController:
             if pathObj.exists() and not pathObj.is_file():
                 continue
             if projectName == "":
-                projectName = (
-                    pathObj.parent.name if pathObj.parent.name != "" else "project"
-                )
+                projectName = pathObj.stem if pathObj.suffix.lower() == ".emoproj" else (pathObj.parent.name or "project")
             result.append(
                 {"projectName": projectName, "projectPath": pathObj.as_posix()}
             )
@@ -96,11 +96,8 @@ class ProjectController:
             for item in self.getRecentProjects()
             if item.get("projectPath") != normalized
         ]
-        projectName = (
-            Path(normalized).parent.name
-            if Path(normalized).parent.name != ""
-            else "project"
-        )
+        pathObj = Path(normalized)
+        projectName = pathObj.stem if pathObj.suffix.lower() == ".emoproj" else (pathObj.parent.name or "project")
         updated = [{"projectName": projectName, "projectPath": normalized}, *current][
             :10
         ]
@@ -145,28 +142,31 @@ class ProjectController:
     def loadProjectDirectory(
         self, projectDirPath: str
     ) -> tuple[bool, str | None, Path | None]:
-        projectDir = Path(projectDirPath)
         if self.editCoordinator is not None and not self.editCoordinator.confirmLeave():
             return False, None, None
         try:
-            payload = loadProject(projectDir)
-        except ValueError as err:
+            projectFile = resolveProjectFile(Path(projectDirPath))
+            projectDir = projectFile.parent
+            payload = loadProject(projectFile)
+        except (OSError, ValueError) as err:
             self.appendLog("ERROR", f"加载项目失败：{err}")
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3'}:
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
-            loaded, runtimePath = True, str(projectDir)
-            payload = self.editCoordinator.normalizeDraft(payload)
+            loaded, runtimePath = True, str(projectFile)
             self.appendLog('INFO', '2.2 草稿已打开；明确启动本地调试时物化资源和编译')
         else:
             loaded, runtimePath = self.loadProjectFromPath(
-                str(projectDir),
+                str(projectFile),
                 successMessagePrefix="项目已加载",
                 failedMessagePrefix="加载项目失败",
             )
         if not loaded:
             return False, None, None
+        if self.editCoordinator is not None:
+            # Minimal projects of any version may omit registered operator metadata.
+            payload = self.editCoordinator.normalizeDraft(payload)
         self._captureFallbackProjectMetadata(payload)
         if self.workflowController is not None:
             if self.editCoordinator is not None:
@@ -177,21 +177,26 @@ class ProjectController:
             self._restoreProjectPayload(payload)
         if self.editCoordinator is not None:
             self.editCoordinator.loaded(projectDir)
-        self.recordRecentProject(str(projectDir / "project.json"))
-        self.appendLog("INFO", f"项目已加载：{projectDir / 'project.json'}")
+        self.currentProjectFile = projectFile
+        self.recordRecentProject(str(projectFile))
+        self.appendLog("INFO", f"项目已加载：{projectFile}")
         return True, runtimePath, projectDir
 
     def saveProjectToDirectory(
         self, projectDirPath: str, projectName: str, loadedProjectPath: str | None
     ) -> tuple[bool, Path | None]:
-        projectDir = Path(projectDirPath)
         try:
+            selected = Path(projectDirPath)
+            if self.currentProjectFile is not None and selected == self.currentProjectFile.parent:
+                selected = self.currentProjectFile
+            projectFile = projectFileForSave(selected)
+            projectDir = projectFile.parent
             if self.editCoordinator is not None:
                 self.editCoordinator.sync()
                 self.editCoordinator.copyResources(projectDir)
-            createProjectSkeleton(projectDir, projectName)
+            createProjectSkeleton(projectFile, projectName)
             payload = self._buildProjectPayload(projectName, loadedProjectPath)
-            saveProject(projectDir, payload)
+            saveProject(projectFile, payload)
         except Exception as err:
             self.appendLog("ERROR", f"项目保存失败：{err}")
             return False, None
@@ -201,16 +206,16 @@ class ProjectController:
             self._captureFallbackProjectMetadata(payload)
         if self.editCoordinator is not None:
             self.editCoordinator.saved(projectDir)
-        self.appendLog("INFO", f"项目已保存：{projectDir / 'project.json'}")
+        self.currentProjectFile = projectFile
+        self.recordRecentProject(str(projectFile))
+        self.appendLog("INFO", f"项目已保存：{projectFile}")
         return True, projectDir
 
     def resolveProjectDirectory(self, selectedPath: str) -> Path | None:
-        pathObj = Path(selectedPath)
-        if pathObj.is_dir() and (pathObj / "project.json").exists():
-            return pathObj
-        if pathObj.is_file() and pathObj.name.lower() == "project.json":
-            return pathObj.parent
-        return None
+        try:
+            return resolveProjectFile(Path(selectedPath)).parent
+        except (OSError, ValueError):
+            return None
 
     def handleStartupProjectEntry(
         self,
@@ -252,19 +257,20 @@ class ProjectController:
             projectDir = self.resolveProjectDirectory(selectedPath)
             if projectDir is None:
                 return False, None, None
-            return self.loadProjectDirectory(str(projectDir))
+            return self.loadProjectDirectory(selectedPath)
         if action == "new_blank":
-            selectedDir = chooseProjectDirectory("为新建空白项目选择文件夹")
+            selectedDir = chooseProjectDirectory("新建项目")
             if selectedDir != "":
-                projectDir = Path(selectedDir)
+                selected = Path(selectedDir)
+                projectName = selected.stem if selected.suffix.lower() == ".emoproj" else selected.name
                 saved, savedProjectDir = self.saveProjectToDirectory(
-                    selectedDir, projectDir.name or "project", None
+                    selectedDir, projectName or "project", None
                 )
                 if not saved or savedProjectDir is None:
                     return False, None, None
                 self.appendLog("INFO", f"空白项目已初始化：{selectedDir}")
                 loaded, runtimePath = self.loadProjectFromPath(
-                    str(savedProjectDir),
+                    str(self.currentProjectFile or savedProjectDir),
                     successMessagePrefix="空白项目已加载",
                     failedMessagePrefix="加载空白项目失败",
                 )

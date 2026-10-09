@@ -21,9 +21,12 @@ def testSqliteStoreCreatesTables(tmp_path: Path) -> None:
     "jobEvents",
     "pluginDiagnostics",
     "deviceBindings",
-    "globalCounters",
+    "variableDefinitions",
+    "variableValues",
+    "globalCountersLegacy",
   }
   assert expected.issubset(tableNames)
+  assert connection.execute("SELECT type FROM sqlite_master WHERE name='globalCounters'").fetchone()[0] == "view"
 
 
 def testSqliteStoreCanPersistJobAndEvent(tmp_path: Path) -> None:

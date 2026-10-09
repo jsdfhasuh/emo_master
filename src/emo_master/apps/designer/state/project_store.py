@@ -10,6 +10,7 @@ from uuid import uuid4
 
 from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.files import projectFileForSave, resolveProjectFile
 
 
 class ProjectPayload(dict[str, object]):
@@ -50,11 +51,12 @@ class ProjectPayload(dict[str, object]):
 
 
 def createProjectSkeleton(projectDir: Path, projectName: str) -> None:
+    projectFile = projectFileForSave(projectDir)
+    projectDir = projectFile.parent
     projectDir.mkdir(parents=True, exist_ok=True)
     (projectDir / "assets").mkdir(parents=True, exist_ok=True)
     (projectDir / "outputs").mkdir(parents=True, exist_ok=True)
 
-    projectFile = projectDir / "project.json"
     if projectFile.exists():
         return
     now = utc_now_iso()
@@ -95,20 +97,19 @@ def createProjectSkeleton(projectDir: Path, projectName: str) -> None:
 
 
 def saveProject(projectDir: Path, payload: dict[str, object]) -> None:
+    projectFile = projectFileForSave(projectDir)
+    projectDir = projectFile.parent
     projectDir.mkdir(parents=True, exist_ok=True)
     (projectDir / "assets").mkdir(parents=True, exist_ok=True)
     (projectDir / "outputs").mkdir(parents=True, exist_ok=True)
     canonical = migrateProjectPayload(payload)
     document = ProjectDocument.model_validate(canonical)
     normalized = cast(dict[str, object], document.model_dump(mode="json"))
-    projectFile = projectDir / "project.json"
     _writeProjectFile(projectFile, normalized, backup=projectFile.exists())
 
 
 def loadProject(projectDir: Path) -> ProjectPayload:
-    projectFile = projectDir / "project.json"
-    if not projectFile.exists() or not projectFile.is_file():
-        raise ValueError("project.json not found")
+    projectFile = resolveProjectFile(projectDir)
     try:
         rawText = projectFile.read_text(encoding="utf-8")
         parsed = json.loads(rawText)

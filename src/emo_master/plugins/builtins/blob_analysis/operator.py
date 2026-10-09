@@ -34,18 +34,19 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "threshold": {
+            "title": "阈值",
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
             "default": 127,
         },
-        "invert": {"type": "boolean", "default": False},
-        "useOtsu": {"type": "boolean", "default": False},
-        "connectivity": {"type": "integer", "enum": [4, 8], "default": 8},
-        "minArea": {"type": "integer", "minimum": 1, "default": 1},
-        "maxArea": {"type": "integer", "minimum": 0, "default": 0},
-        "includeContour": {"type": "boolean", "default": True},
-        "drawOverlay": {"type": "boolean", "default": False},
+        "invert": {"title": "反转掩膜", "type": "boolean", "default": False},
+        "useOtsu": {"title": "使用大津法阈值", "type": "boolean", "default": False},
+        "connectivity": {"title": "连通方式", "type": "integer", "enum": [4, 8], "default": 8},
+        "minArea": {"title": "最小面积", "type": "integer", "minimum": 1, "default": 1},
+        "maxArea": {"title": "最大面积", "type": "integer", "minimum": 0, "default": 0},
+        "includeContour": {"title": "包含轮廓", "type": "boolean", "default": True},
+        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": False},
     },
 }
 

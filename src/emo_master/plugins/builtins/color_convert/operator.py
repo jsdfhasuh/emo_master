@@ -26,11 +26,13 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "sourceSpace": {
+            "title": "源颜色空间",
             "type": "string",
             "enum": list(_SPACES),
             "default": "BGR",
         },
         "targetSpace": {
+            "title": "目标颜色空间",
             "type": "string",
             "enum": list(_SPACES),
             "default": "GRAY",

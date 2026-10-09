@@ -8,6 +8,8 @@ from emo_master.core.project.migration import migrateProjectPayload, utc_now_iso
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.contracts.port_types import normalizePortType
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
+from emo_master.apps.designer.state.workflow_transfers import workflowTransfers
 
 
 _WORKFLOW_RELATION_LABELS = {
@@ -94,6 +96,8 @@ class WorkflowStore:
         )
         if document.production is not None:
             self.projectExtensions["production"] = document.production.model_dump()
+        if document.schemaVersion == "2.4":
+            self.projectExtensions["globalVariables"] = {key: value.model_dump() for key, value in document.globalVariables.items()}
         self.workflowOrder = list(document.workflowOrder)
         self.entryWorkflowId = document.entryWorkflowId
         self.activeWorkflowId = self.entryWorkflowId
@@ -248,10 +252,9 @@ class WorkflowStore:
                 if node.get("targetWorkflowId") == workflowId:
                     references.append(sourceId)
                 loop = node.get("loop")
-                if isinstance(loop, dict) and workflowId in {
-                    loop.get("bodyWorkflowId"),
-                    loop.get("conditionWorkflowId"),
-                }:
+                if isinstance(loop, dict) and any(
+                    loop.get(field) == workflowId for field in loopWorkflowReferenceFields(loop)
+                ):
                     references.append(sourceId)
         return sorted(set(references))
 
@@ -270,6 +273,9 @@ class WorkflowStore:
                 if isinstance(targetWorkflowId, str) and targetWorkflowId != ""
                 else None
             )
+            source = self.workflows[sourceWorkflowId]
+            node = next(item for item in source.nodes if isinstance(item, dict)
+                        and item.get("nodeId", "") == sourceNodeId)
             references.append(
                 {
                     "sourceWorkflowId": sourceWorkflowId,
@@ -277,6 +283,12 @@ class WorkflowStore:
                     "relation": relation,
                     "relationLabel": _WORKFLOW_RELATION_LABELS[relation],
                     "targetWorkflowId": target,
+                    "sourceNodeName": node.get("displayName") or sourceNodeId,
+                    "dataTransfers": workflowTransfers(
+                        source, self.workflows[target], node, relation, self.workflows,
+                    ) if target in self.workflows and relation != "loop-condition" else [],
+                    "dataTransferNote": ("当前循环模式不执行条件工作流"
+                                         if relation == "loop-condition" else "未声明输入 / 输出接口"),
                 }
             )
 
@@ -320,11 +332,11 @@ class WorkflowStore:
                     bodyRelation,
                     loop.get("bodyWorkflowId"),
                 )
-                if mode == "while" or "conditionWorkflowId" in loop:
+                if "conditionWorkflowId" in loopWorkflowReferenceFields(loop):
                     appendReference(
                         sourceWorkflowId,
                         sourceNodeId,
-                        "while-condition" if mode == "while" else "loop-condition",
+                        "while-condition",
                         loop.get("conditionWorkflowId"),
                     )
         return references
@@ -416,13 +428,14 @@ class WorkflowStore:
                     "sourceWorkflowId": sourceWorkflowId,
                     "sourceNodeId": sourceNodeId,
                     "status": "missing",
+                    "sourceNodeName": reference.get("sourceNodeName"),
                     "exists": False,
                     "isEntry": False,
                     "isReachable": False,
                     "isUnreferenced": False,
                     "children": [],
                 }
-            return workflowEntry(
+            entry = workflowEntry(
                 targetWorkflowId,
                 relation,
                 relationLabel,
@@ -430,6 +443,10 @@ class WorkflowStore:
                 sourceNodeId,
                 path,
             )
+            entry["sourceNodeName"] = reference.get("sourceNodeName")
+            entry["dataTransfers"] = reference.get("dataTransfers", [])
+            entry["dataTransferNote"] = reference.get("dataTransferNote", "")
+            return entry
 
         tree: list[dict[str, object]] = []
         if self.entryWorkflowId in self.workflows:
@@ -495,7 +512,7 @@ class WorkflowStore:
         tree.append(
             {
                 "itemType": "group",
-                "label": "未使用工作流（入口不可达）",
+                "label": "入口未调用的工作流",
                 "count": len(unreachableIds),
                 "workflowIds": list(unreachableIds),
                 "children": unusedRoots,
@@ -550,7 +567,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": ("2.3" if "production" in self.projectExtensions
+            "schemaVersion": ("2.4" if "globalVariables" in self.projectExtensions
+                              else "2.3" if "production" in self.projectExtensions
                               else "2.2" if self.projectExtensions else "2.1"),
             **deepcopy(self.projectExtensions),
             "project": project,

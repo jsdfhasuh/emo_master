@@ -22,7 +22,7 @@ class EmptyOperator:
     paramSchema={
       "type": "object",
       "properties": {
-        "enabled": {"type": "boolean", "default": True}
+        "enabled": {"title": "启用", "type": "boolean", "default": True}
       },
       "required": []
     }

@@ -165,7 +165,7 @@ class FloatingToolbox(QFrame):
         self.libraryScroll.setMinimumSize(0, 0)
         self.tabs.addTab(self.libraryScroll, '算子')
         for title, container, tree in (
-            ('依赖', window.dependencyTreeContainer, window.workflowDependencyTree),
+            ('关系', window.dependencyTreeContainer, window.workflowDependencyTree),
             ('节点', window.nodeListContainer, window.nodeListWidget),
         ):
             tree.setMinimumHeight(60)
@@ -235,6 +235,8 @@ class FloatingToolbox(QFrame):
     def _refreshLibrary(self, *_args) -> None:
         if self._expanded and self.tabs.currentIndex() == 0:
             self.owner._refreshBubbleOperators()
+        elif self._expanded and self.tabs.currentIndex() == 1:
+            self.owner.refreshWorkflowDependencyTree()
 
     def visibleCanvasRect(self) -> QRect:
         """Account for ancestor scroll clipping, without using occlusion regions."""

@@ -238,10 +238,14 @@ def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts(ownedFlowScene) -
 
     assert model.nodes["repeat"].inputPorts == {"image": "image"}
     assert model.nodes["repeat"].outputPorts == {"edges": "image"}
+    assert model.nodes["foreach"].loop["itemInputPort"] == "value"
+    assert model.nodes["foreach"].inputPorts == {"items": "list<json>"}
+    assert model.nodes["foreach"].outputPorts == {"result": "list<json>"}
+    assert any("ForEach item input does not exist" in message for message in report)
+    controller.configureLoopNode("foreach", {**model.nodes["foreach"].loop, "itemInputPort": "image"})
     assert model.nodes["foreach"].inputPorts == {"items": "list<image>"}
     assert model.nodes["foreach"].outputPorts == {"edges": "list<image>"}
     assert model.nodes["foreach"].loop["itemInputPort"] == "image"
-    assert report == []
 
 
 def testWorkflowStoreRejectsInconsistentWorkflowOrder() -> None:

@@ -19,12 +19,12 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "srcPoints": {"type": "array", "minItems": 3, "maxItems": 3},
-      "dstPoints": {"type": "array", "minItems": 3, "maxItems": 3},
-      "outputWidth": {"type": "integer", "minimum": 0, "default": 0},
-      "outputHeight": {"type": "integer", "minimum": 0, "default": 0},
-      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
-      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 3, "maxItems": 3},
+      "dstPoints": {"title": "目标坐标点", "type": "array", "minItems": 3, "maxItems": 3},
+      "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "interpolation": {"title": "插值方式", "type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
+      "padValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
     },
     "required": ["srcPoints", "dstPoints"]
   },

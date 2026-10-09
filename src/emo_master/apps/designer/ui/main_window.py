@@ -38,7 +38,6 @@ from emo_master.apps.designer.ui.log_dialog import (
     StructuredLogEntry,
 )
 from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
-from emo_master.apps.designer.ui.global_counters_dialog import GlobalCountersDialog
 from emo_master.apps.designer.ui.icon_map import getOperatorGlyph
 from emo_master.apps.designer.ui.operator_bubble import OperatorBubble
 from emo_master.apps.designer.ui.runtime_panel import RuntimePanelState
@@ -80,6 +79,7 @@ try:
     from emo_master.apps.designer.ui.icon_map import icon
     from emo_master.apps.designer.ui.widgets import ElidedLabel, PreviewLabel, WorkflowTabs, WrapLabel, scrollContent
     from emo_master.apps.designer.ui.theme import fitWindowToScreen
+    from emo_master.apps.designer.ui.workflow_relationship_tree import WorkflowRelationshipTree
 
     _nativeQt = True
     _userRole = int(Qt.UserRole)
@@ -896,14 +896,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         setDependencySpacing = getattr(dependencyLayout, "setSpacing", None)
         if callable(setDependencySpacing):
             setDependencySpacing(6)
-        self.dependencyTreeTitle = QLabel("工作流依赖")
+        self.dependencyTreeTitle = QLabel("工作流调用与数据传递")
         setDependencyTitleName = getattr(
             self.dependencyTreeTitle, "setObjectName", None
         )
         if callable(setDependencyTitleName):
             setDependencyTitleName("panelTitle")
         dependencyLayout.addWidget(self.dependencyTreeTitle)
-        self.workflowDependencyTree = QTreeWidget()
+        self.workflowDependencyTree = WorkflowRelationshipTree() if _nativeQt else QTreeWidget()
         setDependencyTreeName = getattr(
             self.workflowDependencyTree, "setObjectName", None
         )
@@ -1002,6 +1002,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setConnectionErrorHandler):
             setConnectionErrorHandler(self.onConnectionError)
         self.flowScene.setNodeDoubleClickHandler(self.openNodeParamDialog)
+        if _nativeQt:
+            self.flowScene.presentationProvider = self._controlFlowPresentation
+            self.flowScene.workflowOpenHandler = self.activateWorkflow
         self.flowScene.setCanvasClickHandler(self.collapseOperatorBubble)
         self.flowScene.setOperatorDropHandler(self.addNodeFromOperatorDrop)
         self.flowView = DesignerGraphicsView(self.flowScene)
@@ -1313,6 +1316,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             appendLog=self.appendEditorLog,
             getCurrentJobId=lambda: self.currentJobId,
             getSqliteDraft=self._sqliteEditorDraft,
+            getPreviewProject=self._livePreviewProject,
         )
         self.layoutController = LayoutController(
             mainSplitter=self.mainSplitter,
@@ -1423,41 +1427,53 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.showStartupProjectEntry()
 
     def loadProject(self) -> None:
+        from emo_master.core.project.files import PROJECT_OPEN_FILTER
         selectedPath, _ = QFileDialog.getOpenFileName(
-            self, "选择项目文件(project.json)", "", "项目文件 (project.json)"
+            self, "打开项目", "", PROJECT_OPEN_FILTER
         )
         if selectedPath == "":
             self.appendRuntimeLog("INFO", "已取消加载项目")
             return
         if not self.loadProjectSelection(selectedPath):
-            self.appendRuntimeLog("ERROR", "请选择有效的 project.json")
+            self.appendRuntimeLog("ERROR", "无法打开项目，请检查项目文件及加载错误信息")
 
     def saveProjectAction(self) -> None:
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return
-        if (
-            self.currentProjectDir is not None
-            and (self.currentProjectDir / "project.json").exists()
-        ):
-            ok, projectDir = self.projectController.saveProjectToDirectory(
-                str(self.currentProjectDir),
-                self.currentProjectDir.name or "project",
-                self.loadedProjectPath,
-            )
-            if ok:
-                self.currentProjectDir = cast(Path | None, projectDir)
+        currentFile = self.projectController.currentProjectFile
+        if currentFile is not None:
+            self.saveProjectToDirectory(str(currentFile))
             return
-        selectedDir = self._chooseProjectDirectory("选择项目文件夹")
-        if selectedDir == "":
+        self.saveProjectAsAction()
+
+    def saveProjectAsAction(self) -> None:
+        if self.isJobRunning:
+            self.appendRuntimeLog("WARN", "请结束当前任务后再将项目另存为其他文件")
+            return
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            return
+        selectedFile = self._chooseProjectFile("项目另存为")
+        if selectedFile == "":
             self.appendRuntimeLog("INFO", "已取消保存项目")
             return
-        ok, projectDir = self.projectController.saveProjectToDirectory(
-            selectedDir,
-            Path(selectedDir).name or "project",
-            self.loadedProjectPath,
-        )
-        if ok:
-            self.currentProjectDir = cast(Path | None, projectDir)
+        self.saveProjectToDirectory(selectedFile)
+
+    def _chooseProjectFile(self, title: str) -> str:
+        from emo_master.core.project.files import PROJECT_SAVE_FILTER, PROJECT_SUFFIX
+        current = self.projectController.currentProjectFile
+        initial = str(current.with_suffix(PROJECT_SUFFIX)) if current else "未命名项目.emoproj"
+        selected, _ = QFileDialog.getSaveFileName(self, title, initial, PROJECT_SAVE_FILTER)
+        if not selected:
+            return ""
+        if Path(selected).suffix.lower() != PROJECT_SUFFIX:
+            selected += PROJECT_SUFFIX
+            # Qt only confirmed the typed name, not the automatically completed name.
+            if Path(selected).exists() and QMessageBox.question(
+                self, "覆盖项目", f"文件已存在：{selected}\n是否覆盖？",
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No,
+            ) != QMessageBox.Yes:
+                return ""
+        return str(selected)
 
     def _chooseProjectDirectory(self, title: str) -> str:
         defaultDir = (
@@ -1466,12 +1482,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return str(QFileDialog.getExistingDirectory(self, title, defaultDir))
 
     def loadProjectSelection(self, selectedPath: str) -> bool:
-        projectDir = cast(
-            Path | None, self.projectController.resolveProjectDirectory(selectedPath)
-        )
-        if projectDir is None:
-            return False
-        return self.loadProjectDirectory(str(projectDir))
+        return self.loadProjectDirectory(selectedPath)
 
     def getRecentProjects(self) -> list[dict[str, str]]:
         return cast(list[dict[str, str]], self.projectController.getRecentProjects())
@@ -1491,14 +1502,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def saveProjectToDirectory(self, projectDirPath: str) -> bool:
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return False
-        projectName = (
-            Path(projectDirPath).name if Path(projectDirPath).name != "" else "project"
-        )
+        selected = Path(projectDirPath)
+        projectName = selected.stem if selected.suffix.lower() == ".emoproj" else (selected.name or "project")
+        if self.projectController.currentProjectFile == selected:
+            projectName = str(self.workflowStore.project.get("name", projectName))
         ok, projectDir = self.projectController.saveProjectToDirectory(
             projectDirPath, projectName, self.loadedProjectPath
         )
         if ok:
             self.currentProjectDir = projectDir
+            self.loadedProjectPath = str(self.projectController.currentProjectFile)
+            self.refreshRecentProjectsMenu()
+            self.updateToolbarState()
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str) -> bool:
@@ -1534,7 +1549,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if counterDialog is not None:
             bindProject = getattr(counterDialog, "bindProject", None)
             if callable(bindProject):
-                bindProject(loadedProjectPath or "")
+                bindProject((loadedProjectPath or "") if self._globalCountersDialogFactory else self._currentProjectId())
         self.activeWorkflowId = self.workflowController.activeWorkflowId
         self._restoreActiveWorkflowRuntimeState()
         self._refreshWorkflowTabs()
@@ -1547,6 +1562,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return self._projectInstanceToken, self.workflowController.activeWorkflowId
 
     def refreshSidebarNodeList(self) -> None:
+        if _nativeQt:
+            self.flowScene.refreshPresentations()
         if self.operatorIconProvider is not None:
             for item in self._sidebarIconItems:
                 self.operatorIconProvider.unbind(item)
@@ -1600,6 +1617,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         treeWidget = getattr(self, "workflowDependencyTree", None)
         if treeWidget is None:
             return
+        viewState = treeWidget.captureViewState() if _nativeQt else None
         clearMethod = getattr(treeWidget, "clear", None)
         if callable(clearMethod):
             clearMethod()
@@ -1608,9 +1626,49 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             addTopLevelItem = getattr(treeWidget, "addTopLevelItem", None)
             if callable(addTopLevelItem):
                 addTopLevelItem(item)
-        expandAll = getattr(treeWidget, "expandAll", None)
-        if callable(expandAll):
-            expandAll()
+        if _nativeQt:
+            treeWidget.restoreViewState(viewState)
+
+    def _workflowDependencyCallEntries(self, children):
+        """Group references by call site without changing the workflow model."""
+        result = []
+        calls = {}
+        for child in children:
+            if not isinstance(child, dict):
+                continue
+            sourceId = child.get("sourceNodeId")
+            if not sourceId:
+                result.append(child)
+                continue
+            key = (child.get("sourceWorkflowId"), sourceId)
+            if key not in calls:
+                relation = str(child.get("relation", ""))
+                mode = relation.split("-", 1)[0]
+                label = {"subflow": "子工作流调用节点", "while": "While 循环控制节点",
+                         "repeat": "Repeat 计次循环节点", "foreach": "ForEach 逐项循环节点"}.get(
+                             mode, "循环控制节点")
+                source = self.workflowStore.workflows.get(child.get("sourceWorkflowId"))
+                calls[key] = {
+                    "itemType": "call", "name": child.get("sourceNodeName") or sourceId,
+                    "workflowId": child.get("sourceWorkflowId"), "sourceNodeId": sourceId,
+                    "sourceWorkflowName": source.name if source else child.get("sourceWorkflowId"),
+                    "relation": mode, "relationLabel": label, "children": [],
+                }
+                from emo_master.core.workflow.loop_contracts import whileConditionMode
+                rawNode = next((node for node in source.nodes if node.get("nodeId") == sourceId), {}) if source else {}
+                loop = rawNode.get("loop", {})
+                if mode == "while" and isinstance(loop, dict) and whileConditionMode(loop) == "boolean":
+                    calls[key]["conditionPort"] = loop.get("conditionPort")
+                elif mode == "while" and isinstance(loop, dict) and whileConditionMode(loop) == "globalVariable":
+                    variableId = loop.get("conditionVariableId")
+                    variable = self._globalVariableDefinitions().get(variableId, {})
+                    calls[key]["conditionPort"] = f"全局变量 {variable.get('name', variableId)}（每轮读取）"
+                result.append(calls[key])
+            calls[key]["children"].append(child)
+        for call in calls.values():
+            # The model keeps lossless reference order; the UI shows execution order.
+            call["children"].sort(key=lambda child: child.get("relation") != "while-condition")
+        return result
 
     def _buildWorkflowDependencyTreeItem(
         self, entry: dict[str, object]
@@ -1628,46 +1686,90 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     "itemType": itemType,
                     "workflowId": workflowId,
                     "status": status,
+                    "sourceNodeId": entry.get("sourceNodeId"),
+                    "relation": entry.get("relation"),
                 },
             )
         setToolTip = getattr(item, "setToolTip", None)
         if callable(setToolTip):
             setToolTip(0, self._workflowDependencyItemToolTip(entry))
+        if _nativeQt:
+            self.workflowDependencyTree.styleItem(item, entry)
         rawChildren = entry.get("children", [])
         children = rawChildren if isinstance(rawChildren, list) else []
         addChild = getattr(item, "addChild", None)
         if callable(addChild):
+            if itemType == "call" and "conditionPort" in entry:
+                conditionItem = QTreeWidgetItem([
+                    f"继续条件：{entry['conditionPort']} : boolean\n"
+                    "每轮判断当前布尔值；true 继续，false 结束"])
+                conditionItem.setData(0, USER_ROLE, {"itemType": "control", "relation": "boolean-condition"})
+                if _nativeQt:
+                    self.workflowDependencyTree.styleItem(conditionItem, {"itemType": "control"})
+                addChild(conditionItem)
+            if itemType != "call":
+                children = self._workflowDependencyCallEntries(children)
             for child in children:
                 if isinstance(child, dict):
                     addChild(self._buildWorkflowDependencyTreeItem(child))
+            if itemType == "call" and entry.get("relation") == "while":
+                exitItem = QTreeWidgetItem([f"条件为假 → 返回 {entry['sourceWorkflowName']}"])
+                exitItem.setData(0, USER_ROLE, {"itemType": "control", "relation": "exit"})
+                if _nativeQt:
+                    self.workflowDependencyTree.styleItem(exitItem, {"itemType": "control"})
+                addChild(exitItem)
+            transfers = entry.get("dataTransfers", [])
+            if isinstance(transfers, list):
+                dataGroup = None
+                if "dataTransfers" in entry:
+                    dataGroup = QTreeWidgetItem([f"数据传递 ({len(transfers)})"])
+                    dataGroup.setData(0, USER_ROLE, {"itemType": "data"})
+                    if _nativeQt:
+                        self.workflowDependencyTree.styleItem(dataGroup, {"itemType": "data"})
+                    addChild(dataGroup)
+                    if not transfers:
+                        dataGroup.addChild(QTreeWidgetItem([
+                            str(entry.get("dataTransferNote", "未声明输入 / 输出接口"))]))
+                for direction, title in (("input", "输入数据"), ("output", "输出数据")):
+                    rows = [row for row in transfers if isinstance(row, dict)
+                            and row.get("direction") == direction]
+                    if not rows:
+                        continue
+                    group = QTreeWidgetItem([f"{title} ({len(rows)})"])
+                    group.setData(0, USER_ROLE, {"itemType": "ports", "relation": direction})
+                    for row in rows:
+                        route = f"{row['source']}\n→ {row['target']}"
+                        detail = f"{row['port']} : {row['portType']}"
+                        note = str(row.get("note", ""))
+                        label = f"{detail}\n{route}" + (f"\n{note}" if note else "")
+                        transferItem = QTreeWidgetItem([label])
+                        transferItem.setToolTip(0, label)
+                        group.addChild(transferItem)
+                    if dataGroup is not None:
+                        dataGroup.addChild(group)
         return item
 
     def _workflowDependencyItemText(self, entry: dict[str, object]) -> str:
         if entry.get("itemType") == "group":
             count = entry.get("count", 0)
-            return f"{entry.get('label', '未使用工作流')} ({count})"
+            return f"{entry.get('label', '入口未调用的工作流')} ({count})"
+
+        if entry.get("itemType") == "call":
+            return f"{entry['name']}\n{entry['relationLabel']}"
 
         name = str(entry.get("name", "未设置"))
         relation = str(entry.get("relation", ""))
-        relationLabel = str(entry.get("relationLabel", ""))
-        text = (
-            f"{relationLabel} → {name}"
-            if relation
-            not in {
-                "entry",
-                "unreachable-root",
-            }
-            else name
-        )
-        if relation == "entry":
-            text = f"★ {text}"
+        role = {"subflow": "被调用工作流", "while-condition": "条件来源 · 输出 continue:boolean",
+                "while-body": "循环体 · 条件为真时执行", "repeat-body": "循环体 · 按次数执行",
+                "foreach-body": "循环体 · 逐项执行", "loop-body": "循环体",
+                "loop-condition": "条件引用 · 当前模式不执行"}.get(relation, "")
 
         badges: list[str] = []
         workflowId = entry.get("workflowId")
         if bool(entry.get("isEntry", False)):
             badges.append("入口")
         if workflowId == self.activeWorkflowId and bool(entry.get("exists", False)):
-            badges.append("当前")
+            badges.append("正在编辑")
         status = entry.get("status")
         if status == "cycle":
             badges.append("循环引用")
@@ -1677,22 +1779,32 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             badges.append(
                 "未被引用" if bool(entry.get("isUnreferenced", False)) else "入口不可达"
             )
-        return f"{text} [{' · '.join(badges)}]" if badges else text
+        subtitle = " · ".join([part for part in (role, *badges) if part])
+        return f"{name}\n{subtitle}" if subtitle else name
 
     def _workflowDependencyItemToolTip(self, entry: dict[str, object]) -> str:
         if entry.get("itemType") == "group":
             return "这些工作流无法从入口工作流到达。"
+        if entry.get("itemType") == "call":
+            return (f"{entry['relationLabel']}：{entry['name']}\n"
+                    f"所属工作流：{entry['sourceWorkflowName']}\n"
+                    f"节点 ID：{entry['sourceNodeId']}\n点击定位调用节点")
         workflowId = entry.get("workflowId")
-        lines = [f"工作流：{workflowId or '未设置'}"]
+        lines = [f"工作流名称：{entry.get('name', '未设置')}",
+                 f"工作流 ID：{workflowId or '未设置'}"]
         relationLabel = entry.get("relationLabel")
         if relationLabel not in {None, "", "入口", "入口不可达"}:
             lines.append(f"引用类型：{relationLabel}")
         sourceNodeId = entry.get("sourceNodeId")
         if isinstance(sourceNodeId, str) and sourceNodeId:
+            sourceId = entry.get("sourceWorkflowId")
+            source = self.workflowStore.workflows.get(sourceId) if isinstance(sourceId, str) else None
+            if source:
+                lines.append(f"调用方：{source.name} / {entry.get('sourceNodeName') or sourceNodeId}")
             lines.append(f"来源节点：{sourceNodeId}")
         status = entry.get("status")
         if status == "cycle":
-            lines.append("此引用返回当前依赖路径中的上级工作流。")
+            lines.append("此引用返回当前调用路径中的上级工作流。")
         elif status == "missing":
             lines.append("引用目标不存在或尚未配置。")
         return "\n".join(lines)
@@ -1746,6 +1858,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         fileMenu = addMenu("文件")
         self._addMenuAction(fileMenu, "打开项目", self.loadProject)
         self._addMenuAction(fileMenu, "保存项目", self.saveProjectAction)
+        self._addMenuAction(fileMenu, "项目另存为…", self.saveProjectAsAction)
         addSubMenu = getattr(fileMenu, "addMenu", None)
         recentMenu = (
             addSubMenu("最近项目") if callable(addSubMenu) else QMenu("最近项目")
@@ -1756,7 +1869,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         runMenu = addMenu("运行")
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
-        self._addMenuAction(runMenu, "全局计数器…", self.openGlobalCountersDialog)
+        self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -1793,19 +1906,24 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def openGlobalCountersDialog(self) -> object | None:
         if not self.loadedProjectPath:
-            QMessageBox.warning(self, "全局计数器", "请先加载项目")
+            QMessageBox.warning(self, "全局变量", "请先加载项目")
             return None
         dialog = self._globalCountersDialog
         if dialog is None:
+            from emo_master.apps.designer.ui.global_variables_dialog import GlobalVariablesDialog
             dialog = (
                 self._globalCountersDialogFactory()
                 if self._globalCountersDialogFactory is not None
-                else GlobalCountersDialog(self.runtimeClient, self)
+                else GlobalVariablesDialog(
+                    self.runtimeClient, self._globalVariableDefinitions,
+                    self._editGlobalVariableDefinitions, lambda: self.isJobRunning,
+                    lambda: self.currentJobId, self,
+                )
             )
             self._globalCountersDialog = dialog
         showForProject = getattr(dialog, "showForProject", None)
         if callable(showForProject):
-            showForProject(self.loadedProjectPath)
+            showForProject(self.loadedProjectPath if self._globalCountersDialogFactory else self._currentProjectId())
         else:
             bindProject = getattr(dialog, "bindProject", None)
             if callable(bindProject):
@@ -1814,6 +1932,22 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if callable(show):
                 show()
         return dialog
+
+    def _globalVariableDefinitions(self):
+        from copy import deepcopy
+        return deepcopy(self.workflowStore.projectExtensions.get("globalVariables", {}))
+
+    @draftCommand
+    def _editGlobalVariableDefinitions(self, values):
+        from emo_master.apps.designer.state.global_variables import editDefinitions
+        if self.isJobRunning:
+            raise ValueError("任务运行期间不能修改变量定义")
+        self.workflowController.captureActiveWorkflow()
+        editDefinitions(self.workflowStore, values)
+        self.workflowController._refreshWorkflowReferences()
+        self.workflowController._renderActive()
+        self._refreshWorkflowEditorSchemas()
+        self.updateToolbarState()
 
     def setNextRunLegacySnapshotPolicy(self, policy: str) -> None:
         from emo_master.core.contracts.legacy_snapshots import normalizeLegacySnapshotPolicy
@@ -1941,6 +2075,44 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 blockSignals(previousBlock)
             self._workflowTabsUpdating = False
         self.refreshWorkflowDependencyTree()
+        if _nativeQt:
+            self.flowScene.refreshPresentations()
+            if not getattr(self, "_workflowSchemaRefreshPending", False):
+                self._workflowSchemaRefreshPending = True
+                QTimer.singleShot(0, self._refreshWorkflowEditorSchemas)
+
+    def _refreshWorkflowEditorSchemas(self) -> None:
+        self._workflowSchemaRefreshPending = False
+        self.operatorEditorManager.refreshVariableDefinitions(self._currentProjectId())
+        from types import SimpleNamespace
+
+        def schemaForNode(workflowId, nodeId):
+            workflow = self.workflowStore.workflows.get(workflowId)
+            if workflow is None:
+                return None
+            raw = next((item for item in workflow.nodes if item.get("nodeId") == nodeId), {})
+            if raw.get("kind") not in {"loop", "subflow"}:
+                return None
+            return self._nodeEditorSchema(SimpleNamespace(
+                kind=raw["kind"], loop=raw.get("loop", {})), workflowId)
+
+        self.operatorEditorManager.refreshWorkflowSchemas(self._currentProjectId(), schemaForNode)
+
+    def _controlFlowPresentation(self, model):
+        from dataclasses import replace
+        from emo_master.apps.designer.ui.control_flow_presentation import controlFlowDetails
+        node = self.flowModel.nodes.get(model.nodeId)
+        if node is None:
+            return model
+        lines, outputs = controlFlowDetails(node, self.workflowStore.workflows, self._globalVariableDefinitions())
+        inputs = {}
+        from emo_master.core.workflow.loop_contracts import whileConditionMode
+        if node.kind == "loop" and node.loop.get("mode") == "while" and whileConditionMode(node.loop) == "boolean":
+            port = node.loop.get("conditionPort")
+            if isinstance(port, str):
+                inputs[port] = f"初始条件 ({port})"
+                outputs[port] = f"最终条件 ({port})"
+        return replace(model, summaryLines=lines, outputPortLabels=outputs, inputPortLabels=inputs)
 
     def _onWorkflowTabChanged(self, index: int) -> None:
         if getattr(self, "_workflowTabsUpdating", False):
@@ -2438,17 +2610,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     ) -> str | None:
         targets = self._otherWorkflowIds()
         if config is None:
-            if len(targets) < 2:
+            if not targets:
                 self.appendRuntimeLog(
-                    "WARN", "While 需要独立的 condition 和 body 工作流"
+                    "WARN", "请先创建 While 的循环体工作流；不需要独立条件工作流"
                 )
                 return None
             config = self._findCompatibleWhileConfig(targets)
             if config is None:
                 self.appendRuntimeLog(
                     "WARN",
-                    "没有兼容的 While 工作流：Body 输入/输出必须同名同类型，"
-                    "Condition 必须输出 continue:boolean",
+                    "没有兼容的 While 循环体：状态输入/输出必须同名同类型，"
+                    "并提供一个布尔状态端口作为继续条件",
                 )
                 return None
         return self._addLoopNode(config, "While", sceneX=sceneX, sceneY=sceneY)
@@ -2456,14 +2628,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _findCompatibleWhileConfig(
         self, workflowIds: list[str]
     ) -> dict[str, object] | None:
+        for variableId, variable in self._globalVariableDefinitions().items():
+            if variable["type"] != "boolean":
+                continue
+            for bodyWorkflowId in workflowIds:
+                candidate: dict[str, object] = dict(contractVersion=2, mode="while", conditionMode="globalVariable",
+                                 conditionVariableId=variableId, bodyWorkflowId=bodyWorkflowId,
+                                 maxIterations=100, timeoutMs=30000)
+                if not self.workflowController.previewLoopContract(candidate).issues:
+                    return candidate
         for bodyWorkflowId in workflowIds:
-            for conditionWorkflowId in workflowIds:
-                if bodyWorkflowId == conditionWorkflowId:
+            body = self.workflowStore.get(bodyWorkflowId)
+            for conditionPort, portType in portTypes(body.inputs).items():
+                if portType != "boolean":
                     continue
-                candidate: dict[str, object] = {
+                candidate = {
                     "contractVersion": 2,
                     "mode": "while",
-                    "conditionWorkflowId": conditionWorkflowId,
+                    "conditionMode": "boolean",
+                    "conditionPort": conditionPort,
                     "bodyWorkflowId": bodyWorkflowId,
                     "maxIterations": 100,
                     "timeoutMs": 30000,
@@ -2757,7 +2940,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if not callable(getData):
             return
         payload = getData(column, USER_ROLE)
-        if not isinstance(payload, dict) or payload.get("itemType") != "workflow":
+        if not isinstance(payload, dict) or payload.get("itemType") not in {"workflow", "call"}:
             return
         workflowId = payload.get("workflowId")
         if (
@@ -2766,6 +2949,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         ):
             return
         self.activateWorkflow(workflowId)
+        if payload.get("itemType") == "call":
+            nodeId = payload.get("sourceNodeId")
+            if isinstance(nodeId, str) and nodeId in self.flowModel.nodes:
+                self.navigateToNodeFromSidebar(nodeId)
 
     def selectNodeFromSidebar(self, item) -> None:
         getData = getattr(item, "data", None)
@@ -2901,12 +3088,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.updateToolbarState()
 
     def _resolveProjectDirectory(self, selectedPath: str) -> Path | None:
-        pathObj = Path(selectedPath)
-        if pathObj.is_dir() and (pathObj / "project.json").exists():
-            return pathObj
-        if pathObj.is_file() and pathObj.name.lower() == "project.json":
-            return pathObj.parent
-        return None
+        return self.projectController.resolveProjectDirectory(selectedPath)
 
     def loadProjectFromPath(
         self,
@@ -2931,7 +3113,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.handleStartupProjectEntry(
                 self,
-                self._chooseProjectDirectory,
+                self._chooseProjectFile,
                 self._projectEntryDialogFactory,
             )
         )
@@ -2960,10 +3142,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _syncRuntimeProjectBeforeRun(self) -> bool:
         if self.currentProjectDir is None:
             return True
-        if not self.saveProjectToDirectory(str(self.currentProjectDir)):
+        target = self.projectController.currentProjectFile or self.currentProjectDir
+        if not self.saveProjectToDirectory(str(target)):
             return False
         return self.loadProjectFromPath(
-            str(self.currentProjectDir),
+            str(target),
             successMessagePrefix="项目已同步",
             failedMessagePrefix="项目同步失败",
         )
@@ -3157,6 +3340,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             toPort=edge.toPort,
         )
         self.flowScene.renderEdge(edgeViewModel)
+        self.refreshWorkflowDependencyTree()
         self.appendRuntimeLog(
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
@@ -3188,6 +3372,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             "INFO",
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
+        self.refreshWorkflowDependencyTree()
         return edgeViewModel
 
     def validateGraph(self) -> None:
@@ -3761,13 +3946,37 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             operatorDefinition=self._operatorDefinition(node.operatorId),
             workflowOptions=self._otherWorkflowIds(),
             parent=self,
+            variableDefinitions=self._globalVariableDefinitions if node.kind == "operator" else None,
+            variableBindings=node.globalVariableBindings if node.kind == "operator" else None,
+            applyConfiguration=self._applyEditorConfiguration if node.kind == "operator" else None,
         )
         # Kept as an alias for integrations that still inspect the last opened
         # parameter window. Ownership and uniqueness now live in the manager.
         self.nodeParamDialog = cast(NodeParamDialog, window)
+        openRequested = getattr(window, "workflowOpenRequested", None)
+        if _nativeQt and openRequested is not None and not getattr(window, "_workflowNavigationConnected", False):
+            openRequested.connect(
+                lambda workflowId: self._openWorkflowFromEditor(window, workflowId)
+            )
+            setattr(window, "_workflowNavigationConnected", True)
         if self.operatorIconProvider is not None and node.kind == "operator":
             self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
                                            context=(*self._iconContext(), nodeId))
+
+    def _openWorkflowFromEditor(self, editor, workflowId: str) -> None:
+        if editor.key.projectId != self._currentProjectId():
+            editor.setError("无法打开：配置窗口不属于当前项目")
+            return
+        if workflowId not in self.workflowStore.workflows:
+            editor.setError(f"无法打开：工作流不存在 ({workflowId})")
+            return
+        self.activateWorkflow(workflowId)
+        if self.activeWorkflowId == workflowId:
+            # Keep the editor and its draft available when the caller is reopened.
+            editor.hide()
+            self.raise_()
+            self.activateWindow()
+            self.flowView.setFocus()
 
     @draftCommand
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
@@ -3799,6 +4008,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.flowScene.setNodeSelected(nodeId)
             self.refreshSidebarNodeList()
             self.onNodeSelectionChanged()
+        elif node.operatorId == "vision.io.sqlite_writer":
+            self.refreshWorkflowDependencyTree()
+        if _nativeQt:
+            self.flowScene.refreshPresentations()
         self.appendRuntimeLog("INFO", f"参数已更新：{nodeId}")
         self.updateToolbarState()
         self._refreshRuntimePanelView()
@@ -3836,6 +4049,41 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return workflowId
 
     @draftCommand
+    def _applyEditorConfiguration(self, key, params, bindings):
+        from emo_master.apps.designer.state.global_variables import enableVariables
+        from emo_master.core.project.global_variables import definitions, validateBindings, resolveParams, validateEffectiveParams, variablePorts
+        if self.isJobRunning or key.projectId != self._currentProjectId():
+            return False
+        self.workflowController.captureActiveWorkflow()
+        workflow = self.workflowStore.get(key.workflowId)
+        raw = next((item for item in workflow.nodes if item["nodeId"] == key.nodeId), None)
+        if raw is None:
+            return False
+        schema = self._operatorDefinition(raw.get("operatorId")).get("paramSchema", raw.get("paramSchema", {}))
+        variables = definitions(self._globalVariableDefinitions())
+        resources = self.workflowStore.projectExtensions.get("resources", {})
+        occupied = [b["target"]["parameterPath"] for b in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
+                    if b["target"]["workflowId"] == key.workflowId and b["target"]["nodeId"] == key.nodeId]
+        if raw.get("operatorId") in {"vision.state.variable_read", "vision.state.variable_write"}:
+            occupied.append(["variableId"])
+        validateBindings(bindings, variables, schema, occupied=occupied)
+        if bindings:
+            validateEffectiveParams(resolveParams(params, bindings, {vid: value.initialValue for vid, value in variables.items()}), bindings, schema)
+        variablePorts(raw.get("operatorId"), params, variables)
+        if bindings:
+            enableVariables(self.workflowStore)
+        if not self._applyEditorParams(key, params):
+            return False
+        if key.workflowId == self.activeWorkflowId:
+            self.flowModel.nodes[key.nodeId].globalVariableBindings = bindings
+            self.workflowController.captureActiveWorkflow()
+            self.workflowController._refreshWorkflowReferences()
+            self.workflowController._renderActive()
+        else:
+            raw["globalVariableBindings"] = bindings
+        return True
+
+    @draftCommand
     def _applyEditorParams(
         self, key: EditorKey, params: dict[str, object]
     ) -> bool:
@@ -3863,6 +4111,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.appendRuntimeLog("ERROR", "参数应用失败：节点不存在")
         return False
 
+    def _livePreviewProject(self, key: EditorKey) -> dict[str, object]:
+        from emo_master.apps.designer.operator_editors import EditorContextError
+        if key.projectId != self._currentProjectId():
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "预览窗口所属工程已关闭，请重新打开节点配置")
+        # Capture every canvas edit, even if it has never been saved or loaded
+        # into Runtime. Do not commit editor parameters, save files, or start Jobs.
+        self.workflowController.captureActiveWorkflow()
+        payload = self.workflowStore.toPayload()
+        # toPayload is save-oriented and proposes a new revision/timestamp.
+        # Merely inspecting a draft must not invent a persisted revision.
+        from copy import deepcopy
+        payload["project"] = deepcopy(self.workflowStore.project)
+        return payload
+
     def _currentProjectId(self) -> str:
         projectId = self.workflowStore.project.get("projectId", "")
         return str(projectId) if projectId is not None else ""
@@ -3873,39 +4135,121 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 return dict(definition)
         return {}
 
-    def _nodeEditorSchema(self, node) -> dict[str, object]:
-        options = self._otherWorkflowIds()
+    def _nodeEditorSchema(self, node, sourceWorkflowId=None) -> dict[str, object]:
+        sourceWorkflowId = sourceWorkflowId or self.activeWorkflowId
+        options = [key for key in self.workflowStore.workflows if key != sourceWorkflowId]
+        names = {workflowId: workflow.name for workflowId, workflow in self.workflowStore.workflows.items()}
+        from collections import Counter
+        nameCounts = Counter(names.values())
         workflowSelect = {
             "type": "string",
             "xWidget": "workflow-select",
             "xOptions": options,
+            "xOptionLabels": {
+                workflowId: name if nameCounts[name] == 1 else f"{name} ({workflowId})"
+                for workflowId, name in names.items()
+            },
         }
         if node.kind == "subflow":
             return {
                 "type": "object",
-                "properties": {"targetWorkflowId": workflowSelect},
+                "properties": {"targetWorkflowId": {**workflowSelect, "title": "目标工作流"}},
                 "required": ["targetWorkflowId"],
             }
+        if node.kind == "operator":
+            from copy import deepcopy
+            from emo_master.apps.designer.state.schema_utils import mergeParameterTitles
+            catalogSchema = self._operatorDefinition(node.operatorId).get("paramSchema", {})
+            catalogSchema = catalogSchema if isinstance(catalogSchema, dict) else {}
+            # Remote catalogs may arrive after a minimal project was opened.
+            schema = (deepcopy(catalogSchema) if not node.paramSchema else
+                      mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
+                choices = {key: value for key, value in self._globalVariableDefinitions().items()
+                           if node.operatorId.endswith("read") or value["kind"] != "constant"}
+                cast(dict, schema["properties"])["variableId"] = {
+                    "type": "string", "title": "全局变量", "enum": list(choices),
+                    "xOptionLabels": {key: f'{value["name"]} ({value["type"]})' for key, value in choices.items()},
+                }
+            elif node.operatorId == "vision.flow.if":
+                operatorProperties = schema.get("properties", {})
+                if isinstance(operatorProperties, dict):
+                    if "mode" in operatorProperties:
+                        operatorProperties["mode"]["xOptionLabels"] = {
+                            "bool": "真假判断", "equals": "等于", "not_equals": "不等于"}
+                    if "compareValue" in operatorProperties:
+                        operatorProperties["compareValue"]["xEnabledWhen"] = {"mode": ["equals", "not_equals"]}
+            elif node.operatorId == "vision.flow.switch":
+                operatorProperties = schema.get("properties", {})
+                if isinstance(operatorProperties, dict):
+                    for index in range(4):
+                        field = operatorProperties.get(f"case{index}Value")
+                        if isinstance(field, dict):
+                            field["xOptionalPresence"] = True
+            from emo_master.core.project.global_variables import scalarFields
+            resources = getattr(self.workflowStore, "projectExtensions", {}).get("resources", {})
+            resources = resources if isinstance(resources, dict) else {}
+            occupied = [tuple(binding["target"]["parameterPath"])
+                        for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
+                        if binding["target"]["workflowId"] == sourceWorkflowId and binding["target"]["nodeId"] == getattr(node, "nodeId", None)]
+            for path, field in scalarFields(schema):
+                if any(path[:len(other)] == other or other[:len(path)] == path for other in occupied):
+                    field["xGlobalVariableBindingDisabled"] = True
+            return schema
         if node.kind != "loop":
             return node.paramSchema
         mode = node.loop.get("mode")
         modeValue = mode if isinstance(mode, str) else "repeat"
         properties: dict[str, object] = {
-            "mode": {"type": "string", "enum": [modeValue]},
-            "bodyWorkflowId": workflowSelect,
-            "repeatCount": {"type": "integer", "minimum": 0},
+            "mode": {"type": "string", "enum": [modeValue], "title": "循环模式",
+                     "xOptionLabels": {"repeat": "计次循环", "foreach": "逐项循环", "while": "条件循环"}},
+            "bodyWorkflowId": {**workflowSelect, "title": "循环体工作流"},
+            "repeatCount": {"type": "integer", "minimum": 0, "title": "重复次数", "xHidden": modeValue != "repeat"},
             "maxIterations": {
                 "type": "integer",
                 "minimum": 1 if modeValue == "while" else 0,
+                "title": "最大迭代次数",
             },
-            "timeoutMs": {"type": "integer", "minimum": 0},
-            "conditionWorkflowId": workflowSelect,
+            "timeoutMs": {"type": "integer", "minimum": 0, "title": "超时（毫秒）"},
+            "conditionWorkflowId": {**workflowSelect, "title": "布尔条件来源工作流（兼容）",
+                "description": "每轮读取此工作流的 continue:boolean 输出；true 继续，false 结束。",
+                "xRequiredWhen": {"conditionMode": ["workflow"]},
+                "xHidden": modeValue != "while", "xVisibleWhen": {"conditionMode": ["workflow"]}},
         }
         required = ["mode", "bodyWorkflowId", "maxIterations", "timeoutMs"]
         if modeValue == "repeat":
             required.append("repeatCount")
         elif modeValue == "while":
-            required.append("conditionWorkflowId")
+            from emo_master.core.workflow.loop_contracts import whileConditionMode
+            booleanPorts = {
+                key: [name for name, spec in portTypes(workflow.inputs).items()
+                      if spec == "boolean" and portTypes(workflow.outputs).get(name) == "boolean"]
+                for key, workflow in self.workflowStore.workflows.items()
+            }
+            properties["conditionMode"] = {
+                "type": "string", "enum": ["boolean", "globalVariable", "workflow"], "title": "条件来源",
+                "default": whileConditionMode(node.loop),
+                "xOptionLabels": {"boolean": "布尔状态端口", "globalVariable": "全局布尔变量 / 常量", "workflow": "条件工作流（旧项目兼容）"},
+            }
+            choices = {key: value for key, value in self._globalVariableDefinitions().items() if value["type"] == "boolean"}
+            properties["conditionVariableId"] = {
+                "type": "string", "enum": list(choices), "title": "每轮读取的布尔变量",
+                "xOptionLabels": {key: value["name"] for key, value in choices.items()},
+                "xVisibleWhen": {"conditionMode": ["globalVariable"]},
+                "xRequiredWhen": {"conditionMode": ["globalVariable"]},
+            }
+            properties["conditionPort"] = {
+                "type": "string", "enum": booleanPorts.get(node.loop.get("bodyWorkflowId"), []),
+                "title": "继续条件端口（布尔值）", "xWidget": "port-select",
+                "description": "初始值由 While 输入连线提供；以后使用循环体回传的同名布尔值。每轮执行前判断：true 继续，false 结束。",
+                "xRequiredWhen": {"conditionMode": ["boolean"]},
+                "xVisibleWhen": {"conditionMode": ["boolean"]},
+            }
+            required.append("conditionMode")
+            properties = {key: properties[key] for key in (
+                "mode", "conditionMode", "conditionPort", "conditionVariableId", "conditionWorkflowId",
+                "bodyWorkflowId", "maxIterations", "timeoutMs", "repeatCount",
+            )}
         elif modeValue == "foreach":
             bodyWorkflowId = node.loop.get("bodyWorkflowId")
             body = (
@@ -3923,12 +4267,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             properties["itemInputPort"] = {
                 "type": "string",
                 "enum": inputNames,
+                "title": "元素输入端口",
+                "xWidget": "port-select",
             }
             properties["indexInputPort"] = {
                 "type": "string",
                 "enum": ["", *integerInputs],
                 "default": "",
+                "title": "索引输入端口",
+                "xWidget": "port-select",
             }
             if inputNames:
                 required.append("itemInputPort")
-        return {"type": "object", "properties": properties, "required": required}
+        schema = {"type": "object", "properties": properties, "required": required}
+        if modeValue == "foreach":
+            schema["xForEachInputs"] = {
+                key: workflow.inputs for key, workflow in self.workflowStore.workflows.items()
+            }
+        elif modeValue == "while":
+            schema["xWhileBooleanPorts"] = booleanPorts
+        return schema

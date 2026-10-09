@@ -23,12 +23,12 @@ class OperatorMeta:
 
 
 PARAM_SCHEMA: dict[str, Any] = {"type": "object", "properties": {
-    "configVersion": {"type": "integer", "default": 1},
-    "databasePath": {"type": "string", "default": ""},
-    "debugDatabasePath": {"type": "string"},
-    "table": {"type": "string", "default": "records"},
-    "mappings": {"type": "array", "items": {"type": "object"}, "default": []},
-    "failurePolicy": {"type": "string", "enum": ["stop", "continue"], "default": "stop"}}}
+    "configVersion": {"title": "配置版本", "type": "integer", "default": 1},
+    "databasePath": {"title": "SQLite 文件", "type": "string", "default": ""},
+    "debugDatabasePath": {"title": "专用测试库（可选）", "type": "string"},
+    "table": {"title": "目标表", "type": "string", "default": "records"},
+    "mappings": {"title": "字段映射", "type": "array", "items": {"type": "object"}, "default": []},
+    "failurePolicy": {"title": "失败策略", "type": "string", "enum": ["stop", "continue"], "default": "stop"}}}
 
 
 class SqliteWriterOperator:

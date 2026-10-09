@@ -14,6 +14,19 @@ LEGACY_LOOP_CONTRACT_VERSION = 1
 CURRENT_LOOP_CONTRACT_VERSION = 2
 
 
+def whileConditionMode(config: Mapping[str, object]) -> str:
+    """Missing mode retains the condition-workflow contract of saved projects."""
+    value = config.get("conditionMode", "workflow")
+    return value if isinstance(value, str) else ""
+
+
+def loopWorkflowReferenceFields(config: Mapping[str, object]) -> tuple[str, ...]:
+    """Only executable references participate in calls, deletion, and packaging."""
+    if config.get("mode") == "while" and whileConditionMode(config) == "workflow":
+        return ("bodyWorkflowId", "conditionWorkflowId")
+    return ("bodyWorkflowId",)
+
+
 @dataclass(frozen=True)
 class LoopContractIssue:
     code: str
@@ -45,6 +58,7 @@ def deriveLoopContract(
     bodyOutputs: Mapping[str, object],
     conditionInputs: Mapping[str, object] | None = None,
     conditionOutputs: Mapping[str, object] | None = None,
+    variableDefinitions: Mapping[str, object] | None = None,
 ) -> LoopContract:
     normalizedConfig = dict(config)
     issues: list[LoopContractIssue] = []
@@ -118,6 +132,12 @@ def deriveLoopContract(
         )
 
     if version == LEGACY_LOOP_CONTRACT_VERSION:
+        if mode == "while" and whileConditionMode(config) != "workflow":
+            issues.append(LoopContractIssue(
+                "E_LOOP_CONDITION_MODE_UNSUPPORTED",
+                "Boolean While conditions require loop contractVersion=2",
+                "loop.conditionMode",
+            ))
         if mode == "foreach":
             return LoopContract(
                 mode,
@@ -150,6 +170,7 @@ def deriveLoopContract(
         interfacePortTypes(conditionInputs or {}),
         interfacePortTypes(conditionOutputs or {}),
         issues,
+        variableDefinitions,
     )
 
 
@@ -166,8 +187,6 @@ def _deriveForEachV2(
             itemPort = "item"
         elif bodyInputs:
             itemPort = next(iter(bodyInputs))
-    if itemPort is not None and itemPort not in bodyInputs and len(bodyInputs) == 1:
-        itemPort = next(iter(bodyInputs))
     if itemPort is not None:
         config["itemInputPort"] = itemPort
         if itemPort not in bodyInputs:
@@ -206,6 +225,12 @@ def _deriveForEachV2(
                     "loop.indexInputPort",
                 )
             )
+        if indexPort == itemPort:
+            issues.append(LoopContractIssue(
+                "E_LOOP_INPUT_PORT_COLLISION",
+                "ForEach item and index inputs must use different ports",
+                "loop.indexInputPort",
+            ))
 
     itemType = bodyInputs.get(itemPort, "any") if itemPort is not None else "any"
     publicInputs: dict[str, str] = {"items": listPortType(itemType)}
@@ -243,6 +268,7 @@ def _deriveWhileV2(
     conditionInputs: dict[str, str],
     conditionOutputs: dict[str, str],
     issues: list[LoopContractIssue],
+    variableDefinitions: Mapping[str, object] | None = None,
 ) -> LoopContract:
     for name, inputType in bodyInputs.items():
         outputType = bodyOutputs.get(name)
@@ -275,6 +301,68 @@ def _deriveWhileV2(
                     "loop.bodyWorkflowId",
                 )
             )
+    conditionMode = whileConditionMode(config)
+    if conditionMode == "boolean":
+        config.pop("conditionWorkflowId", None)
+        conditionPort = config.get("conditionPort")
+        if not isinstance(conditionPort, str) or conditionPort not in bodyInputs:
+            issues.append(LoopContractIssue(
+                "E_LOOP_CONDITION_PORT_UNKNOWN",
+                "While conditionPort must name a body state input/output port",
+                "loop.conditionPort",
+            ))
+        elif bodyInputs[conditionPort] != "boolean" or bodyOutputs.get(conditionPort) != "boolean":
+            issues.append(LoopContractIssue(
+                "E_LOOP_CONDITION_PORT_TYPE",
+                "While condition state input and output must both have type boolean",
+                "loop.conditionPort",
+            ))
+    elif conditionMode == "globalVariable":
+        from emo_master.core.project.global_variables import definitions
+        variables = definitions(variableDefinitions or {})
+        variableId = config.get("conditionVariableId")
+        definition = variables.get(variableId) if isinstance(variableId, str) else None
+        config.pop("conditionWorkflowId", None)
+        config.pop("conditionPort", None)
+        if definition is None or definition.type != "boolean":
+            issues.append(LoopContractIssue(
+                "E_LOOP_CONDITION_VARIABLE", "While condition must reference a declared boolean variable",
+                "loop.conditionVariableId",
+            ))
+    elif conditionMode != "workflow":
+        issues.append(LoopContractIssue(
+            "E_LOOP_CONDITION_MODE_INVALID",
+                "While conditionMode must be boolean, globalVariable or workflow",
+            "loop.conditionMode",
+        ))
+    else:
+        config.pop("conditionPort", None)
+        _validateWhileConditionWorkflow(bodyInputs, conditionInputs, conditionOutputs, issues)
+    maximum = config.get("maxIterations")
+    if maximum == 0:
+        issues.append(
+            LoopContractIssue(
+                "E_LOOP_LIMIT_INVALID",
+                "While maxIterations must be at least 1",
+                "loop.maxIterations",
+            )
+        )
+    return LoopContract(
+        "while",
+        CURRENT_LOOP_CONTRACT_VERSION,
+        bodyInputs,
+        bodyOutputs,
+        config,
+        tuple(issues),
+    )
+
+
+def _validateWhileConditionWorkflow(
+    bodyInputs: dict[str, str],
+    conditionInputs: dict[str, str],
+    conditionOutputs: dict[str, str],
+    issues: list[LoopContractIssue],
+) -> None:
     for name, conditionType in conditionInputs.items():
         stateType = bodyInputs.get(name)
         if stateType is None:
@@ -301,23 +389,6 @@ def _deriveWhileV2(
                 "loop.conditionWorkflowId",
             )
         )
-    maximum = config.get("maxIterations")
-    if maximum == 0:
-        issues.append(
-            LoopContractIssue(
-                "E_LOOP_LIMIT_INVALID",
-                "While maxIterations must be at least 1",
-                "loop.maxIterations",
-            )
-        )
-    return LoopContract(
-        "while",
-        CURRENT_LOOP_CONTRACT_VERSION,
-        bodyInputs,
-        bodyOutputs,
-        config,
-        tuple(issues),
-    )
 
 
 def _validateRepeatZero(

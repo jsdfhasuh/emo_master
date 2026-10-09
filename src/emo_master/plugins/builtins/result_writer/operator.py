@@ -86,12 +86,13 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "format": {
+            "title": "输出格式",
             "type": "string",
             "enum": ["json", "jsonl", "csv"],
             "default": "json",
         },
-        "relativePath": {"type": "string", "default": "results/result"},
-        "overwrite": {"type": "boolean", "default": False},
+        "relativePath": {"title": "相对输出路径", "type": "string", "default": "results/result"},
+        "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": False},
     },
 }
 

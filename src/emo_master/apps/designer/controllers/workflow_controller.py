@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from pathlib import Path
-from typing import Callable, Collection
+from typing import Callable, Collection, cast
 
 from emo_master.apps.designer.state.flow_graph_model import FlowGraphModel
 from emo_master.apps.designer.state.workflow_package import (
@@ -23,7 +23,7 @@ from emo_master.apps.designer.state.workflow_store import (
 )
 from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeViewModel
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
-from emo_master.core.workflow.loop_contracts import LoopContract, deriveLoopContract
+from emo_master.core.workflow.loop_contracts import LoopContract, deriveLoopContract, loopWorkflowReferenceFields, whileConditionMode
 
 
 class WorkflowController:
@@ -146,7 +146,7 @@ class WorkflowController:
         """Use the existing import ID remap for a full reachable workflow copy."""
         store = self._capturedWorkflowStoreCopy()
         document = buildWorkflowPackage(store, workflowId)
-        result = importWorkflowPackage(store, document)
+        result = importWorkflowPackage(store, document, reuseVariableIds=True)
         replaceWorkflowStoreState(self.workflowStore, store)
         self._refreshWorkflowReferences()
         self._renderActive()
@@ -242,7 +242,7 @@ class WorkflowController:
                 or repeatCount < 0
             ):
                 raise ValueError("repeatCount must be a non-negative integer")
-        if mode == "while":
+        if mode == "while" and whileConditionMode(config) == "workflow":
             conditionWorkflowId = config.get("conditionWorkflowId")
             if (
                 not isinstance(conditionWorkflowId, str)
@@ -257,6 +257,8 @@ class WorkflowController:
             normalizedConfig.pop("repeatCount", None)
         if mode != "while":
             normalizedConfig.pop("conditionWorkflowId", None)
+            normalizedConfig.pop("conditionMode", None)
+            normalizedConfig.pop("conditionPort", None)
         contract = self._loopContract(normalizedConfig)
         if contract.issues:
             raise ValueError("; ".join(issue.message for issue in contract.issues))
@@ -296,6 +298,15 @@ class WorkflowController:
         for workflow in self.workflowStore.workflows.values():
             for node in workflow.nodes:
                 kind = node.get("kind")
+                if kind == "operator":
+                    from emo_master.core.project.global_variables import definitions, variablePorts, VariableError
+                    try:
+                        ports = variablePorts(node.get("operatorId"), node.get("params", {}),
+                                              definitions(cast(dict, self.workflowStore.projectExtensions.get("globalVariables", {}))))
+                        if ports is not None:
+                            node["inputPorts"], node["outputPorts"] = portTypes(ports[0]), portTypes(ports[1])
+                    except VariableError:
+                        pass
                 if kind == "subflow":
                     referencedId = node.get("targetWorkflowId")
                     if not isinstance(referencedId, str):
@@ -315,10 +326,7 @@ class WorkflowController:
                     continue
                 referencedIds = {
                     value
-                    for value in (
-                        loop.get("bodyWorkflowId"),
-                        loop.get("conditionWorkflowId"),
-                    )
+                    for value in (loop.get(field) for field in loopWorkflowReferenceFields(loop))
                     if isinstance(value, str)
                 }
                 if targetWorkflowId is not None and targetWorkflowId not in referencedIds:
@@ -327,15 +335,19 @@ class WorkflowController:
                     contract = self._loopContract(loop)
                 except (KeyError, ValueError):
                     continue
+                nodeId = node.get("nodeId")
+                if contract.issues:
+                    if isinstance(nodeId, str):
+                        report.extend(
+                            f"{workflow.workflowId}.{nodeId}: {issue.message}"
+                            for issue in contract.issues
+                        )
+                    # Keep the last configured contract and its connections until
+                    # the user explicitly repairs an invalid body mapping.
+                    continue
                 node["loop"] = deepcopy(contract.normalizedConfig)
                 node["inputPorts"] = dict(contract.inputPorts)
                 node["outputPorts"] = dict(contract.outputPorts)
-                nodeId = node.get("nodeId")
-                if contract.issues and isinstance(nodeId, str):
-                    report.extend(
-                        f"{workflow.workflowId}.{nodeId}: {issue.message}"
-                        for issue in contract.issues
-                    )
             report.extend(self._pruneWorkflowEdges(workflow))
         return report
 
@@ -344,7 +356,8 @@ class WorkflowController:
         if not isinstance(bodyWorkflowId, str):
             raise ValueError("bodyWorkflowId must reference an existing workflow")
         body = self.workflowStore.get(bodyWorkflowId)
-        conditionWorkflowId = config.get("conditionWorkflowId")
+        conditionWorkflowId = (config.get("conditionWorkflowId")
+                               if "conditionWorkflowId" in loopWorkflowReferenceFields(config) else None)
         condition = (
             self.workflowStore.get(conditionWorkflowId)
             if isinstance(conditionWorkflowId, str)
@@ -356,6 +369,7 @@ class WorkflowController:
             body.outputs,
             condition.inputs if condition is not None else {},
             condition.outputs if condition is not None else {},
+            cast(dict, self.workflowStore.projectExtensions.get("globalVariables", {})),
         )
 
     def previewLoopContract(self, config: dict[str, object]) -> LoopContract:

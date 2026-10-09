@@ -254,6 +254,8 @@ message RunOperatorPreviewRequest {
   string params_json = 5;
   string image_asset_id = 6;
   string request_id = 7;
+  string project_json = 8;
+  string job_id = 9;
 }
 
 message PreviewOutputAsset {
@@ -288,6 +290,9 @@ message OpenOperatorPreviewSessionRequest {
   string node_id = 3;
   string operator_id = 4;
   string params_json = 5;
+  // Required only by OpenDraftOperatorPreviewSession; never replaces the loaded project.
+  string project_json = 6;
+  string job_id = 7;
 }
 
 message OpenOperatorPreviewSessionReply {
@@ -404,7 +409,30 @@ message ResetGlobalCounterReply {
   GlobalCounterInfo counter = 4;
 }
 
+message GlobalVariablesRequest {
+  string project_id = 1;
+  string job_id = 2;
+  string variable_id = 3;
+  string value_json = 4;
+  optional int64 expected_revision = 5;
+}
+
+message GlobalVariablesReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string variables_json = 4;
+  string jobs_json = 5;
+}
+
 service RuntimeService {
+  rpc ListGlobalVariables(GlobalVariablesRequest) returns (GlobalVariablesReply);
+  rpc GetGlobalVariable(GlobalVariablesRequest) returns (GlobalVariablesReply);
+  rpc SetGlobalVariable(GlobalVariablesRequest) returns (GlobalVariablesReply);
+  rpc ResetGlobalVariable(GlobalVariablesRequest) returns (GlobalVariablesReply);
+  rpc OpenPlcDebugSession(OpenPlcDebugSessionRequest) returns (PlcDebugReply);
+  rpc ExecutePlcDebugCommand(ExecutePlcDebugCommandRequest) returns (PlcDebugReply);
+  rpc ClosePlcDebugSession(ClosePlcDebugSessionRequest) returns (PlcDebugReply);
   rpc InspectSqliteTarget (InspectSqliteTargetRequest) returns (SqliteTargetReply);
   rpc InitializeSqliteTarget (InitializeSqliteTargetRequest) returns (SqliteTargetReply);
   rpc OpenRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
@@ -426,6 +454,7 @@ service RuntimeService {
   rpc RunOperatorPreview(RunOperatorPreviewRequest) returns (RunOperatorPreviewReply);
   rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
   rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc OpenDraftOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
   rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);
   rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);
@@ -434,6 +463,43 @@ service RuntimeService {
   rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
   rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
   rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
+}
+
+message OpenPlcDebugSessionRequest {
+  string project_id = 1;
+  string workflow_id = 2;
+  string node_id = 3;
+  string operator_id = 4;
+  string params_json = 5;
+  string request_id = 6;
+}
+
+message ExecutePlcDebugCommandRequest {
+  string session_id = 1;
+  string runtime_instance_id = 2;
+  string request_id = 3;
+  string command = 4;
+  string params_json = 5;
+}
+
+message ClosePlcDebugSessionRequest {
+  string session_id = 1;
+  string runtime_instance_id = 2;
+}
+
+message PlcDebugReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string session_id = 4;
+  string runtime_instance_id = 5;
+  string state = 6;
+  bool write_enabled = 7;
+  string result_json = 8;
+  double elapsed_ms = 9;
+  int64 timestamp_ms = 10;
+  int32 ttl_ms = 11;
+  uint64 write_lock_generation = 12;
 }
 
 message SqliteColumnPlan {

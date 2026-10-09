@@ -28,11 +28,13 @@
     "type": "object",
     "properties": {
       "sourceSpace": {
+        "title": "源颜色空间",
         "type": "string",
         "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
         "default": "BGR"
       },
       "targetSpace": {
+        "title": "目标颜色空间",
         "type": "string",
         "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
         "default": "GRAY"

@@ -20,8 +20,8 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "bins": {"type": "integer", "minimum": 1, "maximum": 256, "default": 256},
-      "normalization": {"type": "string", "enum": ["counts", "probability"], "default": "counts"}
+      "bins": {"title": "直方图区间数", "type": "integer", "minimum": 1, "maximum": 256, "default": 256},
+      "normalization": {"title": "归一化方式", "type": "string", "enum": ["counts", "probability"], "default": "counts"}
     }
   },
   "minCoreVersion": "0.3.0",

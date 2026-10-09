@@ -7,6 +7,8 @@ from typing import Any
 
 from emo_master.core.plugin.models import PluginDescriptor
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.files import projectFiles
+from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
 
 
@@ -18,7 +20,7 @@ def prepareRuntimeProject(
     prepared = document.model_copy(deep=True)
     nodes = {(wid, node.nodeId): node for wid, workflow in prepared.workflows.items()
              for node in workflow.nodes}
-    inputs = {root / "project.json"}
+    inputs = {root / "project.json", *projectFiles(root)}
     if prepared.resources is not None:
         resources = verifyResources(prepared, root)
         inputs.update(Path(path).resolve() for path in resources.values())
@@ -55,6 +57,9 @@ def prepareRuntimeProject(
         descriptor = registry.get(node.operatorId or "")
         if descriptor is None:
             raise ValueError(f"operator missing: {node.operatorId}")
+        # Reject unsupported file substitution before inspecting dormant literal
+        # paths, including at export/install time (before any package is written).
+        validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)
         _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, f"{wid}/{nid}")
     protected = [path.resolve() for path in (*inputs, *protectedPaths)]
     for output in outputs:
@@ -74,6 +79,10 @@ def _resolveFiles(value, schema, root, inputs, outputs, location):
         if mode == "open":
             if not path.is_file():
                 raise ValueError(f"{location}: input file not found: {path}")
+            inputs.add(path)
+        elif mode == "directory":
+            if not path.is_dir():
+                raise ValueError(f"{location}: input directory not found: {path}")
             inputs.add(path)
         elif mode == "save":
             outputs.append(path)

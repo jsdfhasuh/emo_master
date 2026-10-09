@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import Annotated, Literal
 import json
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator, model_serializer
 
 
 Id = Annotated[str, Field(min_length=1, max_length=160, pattern=r"^\S+$")]
@@ -31,7 +31,7 @@ class ResultScope(Model):
 class DataSource(Model):
     """Value object: stores return detached copies; rebind replaces the reference."""
 
-    kind: Literal["node_output", "workflow_output", "global_counter", "runtime_status"]
+    kind: Literal["node_output", "workflow_output", "global_counter", "global_variable", "runtime_status"]
     resultScopeId: Id
     workflowId: Id | None = None
     callPath: list[CallStep] = Field(default_factory=list, max_length=32)
@@ -40,10 +40,25 @@ class DataSource(Model):
     fieldPath: list[Id] = Field(default_factory=list, max_length=16)
     expectedType: ValueType
     name: Id | None = None
+    variableId: Id | None = None
     ruleVersion: Literal["1.0"] = "1.0"
+
+    @model_serializer(mode="wrap")
+    def serializeAddress(self, handler):
+        payload = handler(self)
+        if self.kind != "global_variable":
+            payload.pop("variableId", None)
+        return payload
 
     @model_validator(mode="after")
     def checkAddress(self) -> DataSource:
+        if self.kind == "global_variable":
+            if (not self.variableId or self.workflowId or self.nodeId or self.port or self.callPath
+                    or self.fieldPath or self.name):
+                raise ValueError("global variable requires only variableId, not an output/name address")
+            return self
+        if self.variableId is not None:
+            raise ValueError("only global_variable accepts variableId")
         if self.kind in {"node_output", "workflow_output"}:
             if not self.workflowId or not self.port or self.name is not None:
                 raise ValueError("output source requires workflowId/port, forbids name")

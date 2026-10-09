@@ -19,14 +19,14 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "method": {"type": "string", "enum": ["sqdiff", "sqdiffNormed", "ccorr", "ccorrNormed", "ccoeff", "ccoeffNormed"], "default": "ccoeffNormed"},
-      "colorMode": {"type": "string", "enum": ["gray", "native"], "default": "gray"},
-      "thresholdMode": {"type": "string", "enum": ["quality", "raw"], "default": "quality"},
-      "threshold": {"type": "number", "default": 0.8},
-      "peakKernelSize": {"type": "integer", "minimum": 1, "maximum": 31, "default": 3},
-      "nmsIouThreshold": {"type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.3},
-      "maxMatches": {"type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
-      "label": {"type": "string", "default": "template"}
+      "method": {"title": "匹配方法", "type": "string", "enum": ["sqdiff", "sqdiffNormed", "ccorr", "ccorrNormed", "ccoeff", "ccoeffNormed"], "default": "ccoeffNormed"},
+      "colorMode": {"title": "颜色模式", "type": "string", "enum": ["gray", "native"], "default": "gray"},
+      "thresholdMode": {"title": "阈值模式", "type": "string", "enum": ["quality", "raw"], "default": "quality"},
+      "threshold": {"title": "阈值", "type": "number", "default": 0.8},
+      "peakKernelSize": {"title": "峰值搜索核大小", "type": "integer", "minimum": 1, "maximum": 31, "default": 3},
+      "nmsIouThreshold": {"title": "非极大值抑制 IoU 阈值", "type": "number", "minimum": 0.0, "maximum": 1.0, "default": 0.3},
+      "maxMatches": {"title": "最大匹配数量", "type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
+      "label": {"title": "匹配标签", "type": "string", "default": "template"}
     }
   },
   "minCoreVersion": "0.3.0",

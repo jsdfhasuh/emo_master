@@ -27,8 +27,8 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "key": {"type": "string", "enum": ["angle", "area", "bboxHeight", "bboxWidth", "bboxX", "bboxY", "centerX", "centerY", "centroidX", "centroidY", "circularity", "classId", "confidence", "depth", "diameter", "endX", "endY", "id", "isHole", "label", "length", "minRectAngle", "minRectHeight", "minRectWidth", "perimeter", "quality", "radius", "rawScore", "sourceId", "sourceType", "startX", "startY"], "default": "area"},
-      "direction": {"type": "string", "enum": ["ascending", "descending"], "default": "descending"}
+      "key": {"title": "排序字段", "type": "string", "enum": ["angle", "area", "bboxHeight", "bboxWidth", "bboxX", "bboxY", "centerX", "centerY", "centroidX", "centroidY", "circularity", "classId", "confidence", "depth", "diameter", "endX", "endY", "id", "isHole", "label", "length", "minRectAngle", "minRectHeight", "minRectWidth", "perimeter", "quality", "radius", "rawScore", "sourceId", "sourceType", "startX", "startY"], "default": "area"},
+      "direction": {"title": "排序方向", "type": "string", "enum": ["ascending", "descending"], "default": "descending"}
     }
   },
   "minCoreVersion": "0.3.0",

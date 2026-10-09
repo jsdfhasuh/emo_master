@@ -1,0 +1,402 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "image-batch-boolean-while-example",
+    "name": "图片批处理 · 布尔 While",
+    "revision": 1,
+    "createdAt": "2026-10-08T00:00:00Z",
+    "updatedAt": "2026-10-08T08:55:57Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "body"
+  ],
+  "workflows": {
+    "main": {
+      "name": "主工作流",
+      "inputs": {},
+      "outputs": {
+        "hasNext": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "one",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "Number",
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "params": {
+            "value": 1
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "initial",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "初始继续条件（1 == 1）",
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "params": {
+            "operator": "eq",
+            "rightValue": 1
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "while",
+          "kind": "loop",
+          "operatorId": "",
+          "displayName": "While 图片循环",
+          "inputPorts": {
+            "hasNext": "boolean"
+          },
+          "outputPorts": {
+            "hasNext": "boolean"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {
+            "contractVersion": 2,
+            "mode": "while",
+            "bodyWorkflowId": "body",
+            "maxIterations": 10000,
+            "timeoutMs": 0,
+            "conditionMode": "boolean",
+            "conditionPort": "hasNext"
+          }
+        },
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "hasNext": "boolean"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "one",
+          "fromPort": "value",
+          "toNode": "initial",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "initial",
+          "fromPort": "result",
+          "toNode": "while",
+          "toPort": "hasNext"
+        },
+        {
+          "fromNode": "while",
+          "fromPort": "hasNext",
+          "toNode": "output",
+          "toPort": "hasNext"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 20.0,
+            "y": 252.0
+          },
+          "one": {
+            "x": 20,
+            "y": 120
+          },
+          "initial": {
+            "x": 330,
+            "y": 120
+          },
+          "while": {
+            "x": 750,
+            "y": 120
+          },
+          "output": {
+            "x": 1190,
+            "y": 120
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "读取并处理一张图片",
+      "inputs": {
+        "hasNext": "boolean"
+      },
+      "outputs": {
+        "hasNext": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "load",
+          "kind": "operator",
+          "operatorId": "vision.io.image_batch_loader",
+          "displayName": "图片批量导入",
+          "inputPorts": {
+            "reset": "boolean"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d",
+            "imagePath": "string",
+            "index": "integer",
+            "total": "integer",
+            "hasNext": "boolean"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "folderPath": {
+                "title": "图片文件夹",
+                "type": "string",
+                "default": "",
+                "xWidget": "file",
+                "xFileMode": "directory"
+              },
+              "colorMode": {
+                "title": "颜色模式",
+                "type": "string",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "default": "color"
+              },
+              "recursive": {
+                "title": "包含子文件夹",
+                "type": "boolean",
+                "default": false
+              }
+            },
+            "required": [
+              "folderPath"
+            ]
+          },
+          "params": {
+            "folderPath": "images",
+            "colorMode": "color",
+            "recursive": false
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "blur",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.blur",
+          "displayName": "Blur / Denoise",
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "滤波模式",
+                "type": "string",
+                "enum": [
+                  "gaussian",
+                  "median",
+                  "bilateral"
+                ],
+                "default": "gaussian"
+              },
+              "kernelSize": {
+                "title": "卷积核大小",
+                "type": "integer",
+                "minimum": 3,
+                "default": 5
+              },
+              "sigmaX": {
+                "title": "水平方向标准差",
+                "type": "number",
+                "minimum": 0.0,
+                "default": 0.0
+              },
+              "sigmaY": {
+                "title": "垂直方向标准差",
+                "type": "number",
+                "minimum": 0.0,
+                "default": 0.0
+              },
+              "diameter": {
+                "title": "滤波邻域直径（像素）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 9
+              },
+              "sigmaColor": {
+                "title": "颜色空间标准差",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 75.0
+              },
+              "sigmaSpace": {
+                "title": "坐标空间标准差",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 75.0
+              }
+            }
+          },
+          "params": {
+            "mode": "gaussian",
+            "kernelSize": 3
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {
+            "hasNext": "boolean"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "hasNext": "boolean"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "load",
+          "fromPort": "image",
+          "toNode": "blur",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "frame",
+          "toNode": "blur",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "hasNext",
+          "toNode": "output",
+          "toPort": "hasNext"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40.0,
+            "y": 40.0
+          },
+          "load": {
+            "x": 40.0,
+            "y": 200.0
+          },
+          "blur": {
+            "x": 380.0,
+            "y": 200.0
+          },
+          "output": {
+            "x": 720.0,
+            "y": 40.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {}
+  }
+}

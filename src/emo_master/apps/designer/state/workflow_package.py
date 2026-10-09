@@ -5,10 +5,12 @@ from dataclasses import dataclass
 import json
 import os
 from pathlib import Path
-from typing import Collection, Literal
+from typing import Collection, Literal, cast
 from uuid import uuid4
 
-from pydantic import Field, model_validator
+from pydantic import Field, model_validator, model_serializer
+from emo_master.core.project.global_variables import VariableDefinition
+from emo_master.apps.designer.state.global_variables import referencedVariables, enableVariables
 
 from emo_master.apps.designer.state.workflow_store import (
     WorkflowState,
@@ -21,6 +23,7 @@ from emo_master.core.project.models import (
     WorkflowDefinition,
 )
 from emo_master.core.workflow.validation import validateProjectDocument
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields, whileConditionMode
 
 
 WORKFLOW_PACKAGE_TYPE = "emo-master.workflow"
@@ -29,15 +32,25 @@ WORKFLOW_PACKAGE_EXTENSION = ".emowf.json"
 
 
 class WorkflowPackageDocument(StrictModel):
-    schemaVersion: Literal["1.0"] = "1.0"
+    schemaVersion: Literal["1.0", "1.1"] = "1.0"
     packageType: Literal["emo-master.workflow"] = "emo-master.workflow"
     rootWorkflowId: str
     workflowOrder: list[str]
     workflows: dict[str, WorkflowDefinition]
     requiredOperators: list[str] = Field(default_factory=list)
+    globalVariables: dict[str, VariableDefinition] = Field(default_factory=dict)
+
+    @model_serializer(mode="wrap")
+    def serializeVersion(self, handler):
+        payload = handler(self)
+        if self.schemaVersion == "1.0":
+            payload.pop("globalVariables", None)
+        return payload
 
     @model_validator(mode="after")
     def validateWorkflowIndex(self) -> "WorkflowPackageDocument":
+        if self.globalVariables and self.schemaVersion != "1.1":
+            raise ValueError("variables require workflow package 1.1")
         workflowIds = set(self.workflows)
         if not workflowIds:
             raise ValueError("workflow package must contain at least one workflow")
@@ -143,6 +156,9 @@ def buildWorkflowPackage(
         for workflowId in workflowOrder
     }
     document = WorkflowPackageDocument(
+        schemaVersion="1.1" if "globalVariables" in sourceStore.projectExtensions else "1.0",
+        globalVariables={key: value for key, value in cast(dict, sourceStore.projectExtensions.get("globalVariables", {})).items()
+                         if key in referencedVariables({"workflows": {wid: wf.model_dump() for wid, wf in workflows.items()}})},
         rootWorkflowId=rootWorkflowId,
         workflowOrder=workflowOrder,
         workflows=workflows,
@@ -198,6 +214,7 @@ def previewWorkflowPackageImport(
     availableOperatorIds: Collection[str] | None = None,
 ) -> WorkflowPackageImportPreview:
     _validateWorkflowPackage(document)
+    _checkVariableConflicts(store, document)
     workingStore = deepcopy(store)
     workflowIdMap = _allocateImportedWorkflowIds(workingStore, document)
     return _buildImportPreview(
@@ -211,9 +228,19 @@ def importWorkflowPackage(
     store: WorkflowStore,
     document: WorkflowPackageDocument,
     insertIntoWorkflowId: str | None = None,
+    *, reuseVariableIds: bool = False,
 ) -> WorkflowPackageImportResult:
     _validateWorkflowPackage(document)
+    if not reuseVariableIds:
+        _checkVariableConflicts(store, document)
+    elif any(cast(dict, store.projectExtensions.get("globalVariables", {})).get(key) != value.model_dump()
+             for key, value in document.globalVariables.items()):
+        raise ValueError("only identical in-project variable definitions may be reused by workflow copy")
     workingStore = deepcopy(store)
+    if document.schemaVersion == "1.1":
+        enableVariables(workingStore)
+        cast(dict, workingStore.projectExtensions["globalVariables"]).update(
+            {key: value.model_dump() for key, value in document.globalVariables.items()})
     workflowIdMap = _allocateImportedWorkflowIds(workingStore, document)
 
     for sourceWorkflowId in document.workflowOrder:
@@ -237,6 +264,8 @@ def importWorkflowPackage(
     else:
         workingStore.setActiveWorkflow(mappedRootWorkflowId)
     mappedDocument = WorkflowPackageDocument(
+        schemaVersion=document.schemaVersion,
+        globalVariables=document.globalVariables,
         rootWorkflowId=mappedRootWorkflowId,
         workflowOrder=[workflowIdMap[item] for item in document.workflowOrder],
         workflows={
@@ -371,7 +400,7 @@ def _packageDependencyPreviews(
                 node.loop.get("bodyWorkflowId"),
                 f"{modeLabel} · Body",
             )
-            if mode == "while":
+            if mode == "while" and whileConditionMode(node.loop) == "workflow":
                 appendDependency(
                     sourceWorkflowId,
                     node.loop.get("conditionWorkflowId"),
@@ -449,6 +478,14 @@ def _definitionFromState(workflow: WorkflowState) -> WorkflowDefinition:
     )
 
 
+def _checkVariableConflicts(store, document):
+    existing = store.projectExtensions.get("globalVariables", {})
+    names = {value["name"] for value in existing.values()}
+    for key, value in document.globalVariables.items():
+        if key in existing or value.name in names:
+            raise ValueError(f"全局变量导入冲突：{value.name} ({key})；请显式重映射 ID / 名称后再导入，不自动合并")
+
+
 def _validateWorkflowPackage(document: WorkflowPackageDocument) -> None:
     expectedOperators = _requiredOperatorIds(document.workflows)
     if document.requiredOperators != expectedOperators:
@@ -458,7 +495,9 @@ def _validateWorkflowPackage(document: WorkflowPackageDocument) -> None:
         )
     projectDocument = ProjectDocument.model_validate(
         {
-            "schemaVersion": "2.1",
+            "schemaVersion": "2.4" if document.schemaVersion == "1.1" else "2.1",
+            **({"globalVariables": document.globalVariables, "presentation": {}, "resources": {}, "production": {}}
+               if document.schemaVersion == "1.1" else {}),
             "project": {
                 "projectId": "workflow-package-validation",
                 "name": "Workflow Package",
@@ -478,6 +517,9 @@ def _validateWorkflowPackage(document: WorkflowPackageDocument) -> None:
         }
     )
     issues = validateProjectDocument(projectDocument)
+    missing = referencedVariables(projectDocument.model_dump()) - set(document.globalVariables)
+    if missing:
+        raise ValueError(f"workflow package has missing global variables: {sorted(missing)}")
     if issues:
         details = "; ".join(f"{issue.code}: {issue.message}" for issue in issues)
         raise ValueError(f"invalid workflow package: {details}")
@@ -537,7 +579,7 @@ def _populateImportedWorkflow(
             )
         if sourceNode.kind == "loop":
             loop = deepcopy(sourceNode.loop)
-            for fieldName in ("bodyWorkflowId", "conditionWorkflowId"):
+            for fieldName in loopWorkflowReferenceFields(loop):
                 if fieldName not in loop:
                     continue
                 loop[fieldName] = _mappedWorkflowId(

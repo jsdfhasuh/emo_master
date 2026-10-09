@@ -89,6 +89,18 @@ def testBuiltinCameraRoiAndHistogramUiControllersLoad(tmp_path: Path) -> None:
             assert controller.__class__.__module__.startswith(
                 "emo_master.plugins.builtins."
             )
+            from PySide2.QtWidgets import QLabel
+            if hasattr(controller, "controls"):
+                controls = controller.controls
+            elif hasattr(controller, "binsSpin"):
+                controls = {"bins": controller.binsSpin, "normalization": controller.normalizationCombo}
+            else:
+                controls = controller.form._controls
+            for name, control in controls.items():
+                title = manifest["paramSchema"]["properties"][name]["title"]
+                assert f"参数键：{name}" in control.toolTip()
+                assert any(label.text() == title and f"参数键：{name}" in label.toolTip()
+                           for label in window.findChildren(QLabel)), name
         assert manager.count() == 3
     finally:
         manager.closeAll()

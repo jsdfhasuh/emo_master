@@ -30,6 +30,12 @@ def validateBindings(
     if presentation is None:
         return []
     issues: list[Issue] = []
+    counterNames = counterNames | frozenset(
+        value.legacyCounterName for value in project.globalVariables.values() if value.legacyCounterName
+    ) | frozenset(
+        str(node.params["name"]) for workflow in project.workflows.values() for node in workflow.nodes
+        if node.operatorId == "vision.state.counter" and isinstance(node.params.get("name"), str)
+    )
     entries = buildOutputCatalog(project, manifests)
 
     def report(path: str, message: str, code: str = "binding_invalid") -> None:
@@ -68,7 +74,7 @@ def validateBindings(
                     raise ValueError("repeated loop output requires its own iteration scope")
             if source.kind == "global_counter" and source.name not in counterNames:
                 raise ValueError("counter name is not declared by Runtime")
-            actual = sourceType(source, entries)
+            actual = sourceType(source, entries, project.globalVariables)
             if actual != source.expectedType and (actual, source.expectedType) != ("integer", "number"):
                 raise ValueError(f"expected {source.expectedType}, output is {actual}")
         except ValueError as error:

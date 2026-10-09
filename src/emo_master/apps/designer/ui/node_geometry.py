@@ -20,18 +20,24 @@ def measureNode(model, textWidth: Callable[[str], float] | None = None,
                 lineHeight: float = 18.0) -> NodeGeometry:
     measure = textWidth or (lambda value: sum(14 if ord(c) > 127 else 7 for c in value))
     titleMeasure = titleWidth or measure
-    left = max((measure(name) for name in model.inputPorts), default=0.0)
-    right = max((measure(name) for name in model.outputPorts), default=0.0)
+    inputLabels = getattr(model, "inputPortLabels", {})
+    left = max((measure(inputLabels.get(name, name)) for name in model.inputPorts), default=0.0)
+    labels = getattr(model, "outputPortLabels", {})
+    right = max((measure(labels.get(name, name)) for name in model.outputPorts), default=0.0)
     both = bool(model.inputPorts and model.outputPorts)
     portWidth = left + right + (76 if both else 56)
-    width = min(420.0, max(260.0, math.ceil(titleMeasure(model.title)) + 32, portWidth))
+    summaryLines = getattr(model, "summaryLines", ())
+    summaryWidth = max((measure(text) + 32 for text, _target in summaryLines), default=0)
+    width = min(420.0, max(260.0, math.ceil(titleMeasure(model.title)) + 32, portWidth, summaryWidth))
     rowHeight = max(26.0, math.ceil(lineHeight) + 8)
     header = max(40.0, math.ceil(lineHeight) + 20)
     operatorId = getattr(model, "operatorId", "")
     implicitBranch = operatorId == "" and set(model.outputPorts) in (
         {"true", "false"}, {"case0", "case1", "case2", "case3", "default"},
     )
-    if operatorId in {"vision.flow.if", "vision.flow.switch"} or implicitBranch:
+    if summaryLines:
+        header += len(summaryLines) * (math.ceil(lineHeight) + 4)
+    elif operatorId in {"vision.flow.if", "vision.flow.switch"} or implicitBranch:
         header += math.ceil(lineHeight) + 4
     if operatorId == 'vision.io.sqlite_writer':
         header += math.ceil(lineHeight) + 6

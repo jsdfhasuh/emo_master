@@ -21,11 +21,12 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "operator": {
+            "title": "比较运算符",
             "type": "string",
             "enum": ["eq", "ne", "lt", "lte", "gt", "gte"],
             "default": "gte",
         },
-        "rightValue": {"type": "number", "default": 0.0},
+        "rightValue": {"title": "右侧比较值", "type": "number", "default": 0.0},
     },
 }
 

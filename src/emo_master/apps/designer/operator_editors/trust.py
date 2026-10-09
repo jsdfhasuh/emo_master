@@ -10,6 +10,7 @@ _TRUSTED_BUILTIN_CONTROLLERS = frozenset(
         "emo_master.plugins.builtins.roi.editor:RoiEditorController",
         "emo_master.plugins.builtins.histogram.editor:HistogramEditorController",
         "emo_master.plugins.builtins.sqlite_writer.editor:SqliteWriterEditorController",
+        "emo_master.plugins.builtins._plc_editor:PlcEditorController",
     }
 )
 

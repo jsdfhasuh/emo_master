@@ -17,12 +17,12 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "dp": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-      "minDist": {"type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
-      "param1": {"type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
-      "param2": {"type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
-      "minRadius": {"type": "integer", "minimum": 0, "default": 0},
-      "maxRadius": {"type": "integer", "minimum": 0, "default": 0}
+      "dp": {"title": "累加器分辨率反比", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+      "minDist": {"title": "最小圆心距离（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
+      "param1": {"title": "Canny 高阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
+      "param2": {"title": "圆心累加器阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
+      "minRadius": {"title": "最小半径（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "maxRadius": {"title": "最大半径（像素）", "type": "integer", "minimum": 0, "default": 0}
     }
   },
   "minCoreVersion": "0.3.0",

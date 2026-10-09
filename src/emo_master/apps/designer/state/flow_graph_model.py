@@ -1,4 +1,5 @@
 from dataclasses import dataclass, field
+from copy import deepcopy
 from uuid import uuid4
 
 from emo_master.apps.designer.state.schema_utils import collectSchemaErrors
@@ -18,6 +19,7 @@ class FlowNode:
     kind: str = "operator"
     targetWorkflowId: str | None = None
     loop: dict[str, object] = field(default_factory=dict)
+    globalVariableBindings: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -229,6 +231,7 @@ class FlowGraphModel:
                     "kind": node.kind,
                     "targetWorkflowId": node.targetWorkflowId,
                     "loop": dict(node.loop),
+                    **({"globalVariableBindings": deepcopy(node.globalVariableBindings)} if node.globalVariableBindings else {}),
                 }
                 for node in self.nodes.values()
             ],
@@ -299,6 +302,7 @@ class FlowGraphModel:
                     kind=kind,
                     targetWorkflowId=targetWorkflowId,
                     loop=dict(loop),
+                    globalVariableBindings=deepcopy(item.get("globalVariableBindings", [])),
                 )
 
         regularNodes = {

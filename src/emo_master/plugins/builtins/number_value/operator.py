@@ -18,7 +18,7 @@ class OperatorMeta:
 
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
-    "properties": {"value": {"type": "number", "default": 0.0}},
+    "properties": {"value": {"title": "数值", "type": "number", "default": 0.0}},
 }
 
 

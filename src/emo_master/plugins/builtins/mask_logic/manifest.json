@@ -35,6 +35,7 @@
     "type": "object",
     "properties": {
       "operation": {
+        "title": "操作类型",
         "type": "string",
         "enum": ["and", "or", "xor", "not", "subtract"],
         "default": "and"

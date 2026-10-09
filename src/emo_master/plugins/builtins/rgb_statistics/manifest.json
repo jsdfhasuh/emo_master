@@ -46,15 +46,18 @@
     "type": "object",
     "properties": {
       "ddof": {
+        "title": "标准差自由度修正值",
         "type": "integer",
         "enum": [0, 1],
         "default": 0
       },
       "clipRoi": {
+        "title": "裁剪 ROI 到图像边界",
         "type": "boolean",
         "default": true
       },
       "emitMask": {
+        "title": "输出掩膜",
         "type": "boolean",
         "default": false
       }

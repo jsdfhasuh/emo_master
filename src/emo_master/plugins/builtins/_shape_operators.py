@@ -44,11 +44,13 @@ class ContourExtractionOperator:
         "type": "object",
         "properties": {
             "retrievalMode": {
+                "title": "轮廓检索模式",
                 "type": "string",
                 "enum": ["external", "list", "ccomp", "tree"],
                 "default": "tree",
             },
             "approximation": {
+                "title": "轮廓近似方式",
                 "type": "string",
                 "enum": ["none", "simple"],
                 "default": "simple",

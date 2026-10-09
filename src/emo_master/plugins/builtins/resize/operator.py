@@ -35,15 +35,17 @@ _INTERPOLATIONS = {
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "width": {"type": "integer", "minimum": 1},
-        "height": {"type": "integer", "minimum": 1},
-        "mode": {"type": "string", "enum": list(_MODES), "default": "stretch"},
+        "width": {"title": "宽度（像素）", "type": "integer", "minimum": 1},
+        "height": {"title": "高度（像素）", "type": "integer", "minimum": 1},
+        "mode": {"title": "缩放模式", "type": "string", "enum": list(_MODES), "default": "stretch"},
         "interpolation": {
+            "title": "插值方式",
             "type": "string",
             "enum": list(_INTERPOLATIONS),
             "default": "linear",
         },
         "padValue": {
+            "title": "填充值",
             "type": "integer",
             "minimum": 0,
             "maximum": 255,

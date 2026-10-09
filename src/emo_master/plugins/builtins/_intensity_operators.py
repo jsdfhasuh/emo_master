@@ -69,8 +69,9 @@ class HistogramOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "bins": {"type": "integer", "minimum": 1, "maximum": 256, "default": 256},
+            "bins": {"title": "直方图区间数", "type": "integer", "minimum": 1, "maximum": 256, "default": 256},
             "normalization": {
+                "title": "归一化方式",
                 "type": "string",
                 "enum": ["counts", "probability"],
                 "default": "counts",
@@ -245,14 +246,16 @@ class ClaheOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "clipLimit": {"type": "number", "exclusiveMinimum": 0.0, "default": 2.0},
+            "clipLimit": {"title": "对比度限制", "type": "number", "exclusiveMinimum": 0.0, "default": 2.0},
             "tileGridWidth": {
+                "title": "分块列数",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 64,
                 "default": 8,
             },
             "tileGridHeight": {
+                "title": "分块行数",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 64,

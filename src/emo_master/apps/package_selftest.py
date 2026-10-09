@@ -169,7 +169,8 @@ def _checkMigrations() -> dict[str, object]:
                 )
         finally:
             connection.close()
-    if versions != [1, 2, 3, 4]:
+    # v5 is transactional Python migration (legacy table -> typed state + view).
+    if versions != [1, 2, 3, 4, 5]:
         raise RuntimeError(f"unexpected migration versions: {versions}")
     return {
         "files": list(_EXPECTED_MIGRATIONS),

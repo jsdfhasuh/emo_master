@@ -77,7 +77,7 @@ class PageCoordinator:
             return
         if self.session.document().presentation is None:
             answer = QMessageBox.question(self.window, '启用页面设计',
-                '此项目将采用 2.2 格式。保存时保留 project.json.bak；旧版本需使用备份。继续？',
+                '此项目将采用 2.2 格式。保存时保留原项目文件的 .bak 备份；旧版本需使用备份。继续？',
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
                 self.chrome.update()
@@ -197,11 +197,13 @@ class PageCoordinator:
             for node in workflow['nodes']:
                 manifest = manifests.get(node.get('operatorId'))
                 if manifest:
+                    if not node.get('displayName'):
+                        node['displayName'] = manifest.displayName
                     for field in ('inputPorts', 'outputPorts'):
                         if not node.get(field):
                             node[field] = {key: normalizePortType(spec) for key, spec in getattr(manifest, field).items()}
                     if not node.get('paramSchema'):
-                        node['paramSchema'] = manifest.paramSchema
+                        node['paramSchema'] = deepcopy(manifest.paramSchema)
         return result
 
     def copyResources(self, directory):

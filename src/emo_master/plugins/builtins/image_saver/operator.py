@@ -29,13 +29,14 @@ class ImageSaverOperator:
             "type": "object",
             "properties": {
                 "outputPath": {
+                    "title": "输出路径",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
                     "xFileMode": "save",
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
-                "overwrite": {"type": "boolean", "default": True},
+                "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": True},
             },
             "required": ["outputPath"],
         },

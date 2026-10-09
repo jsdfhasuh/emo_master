@@ -19,7 +19,7 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "mode": {"type": "string", "enum": ["horizontal", "vertical", "both"], "default": "horizontal"}
+      "mode": {"title": "翻转方式", "type": "string", "enum": ["horizontal", "vertical", "both"], "default": "horizontal"}
     }
   },
   "minCoreVersion": "0.3.0",

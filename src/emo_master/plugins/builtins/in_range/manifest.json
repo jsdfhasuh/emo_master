@@ -28,15 +28,18 @@
     "type": "object",
     "properties": {
       "colorSpace": {
+        "title": "颜色空间",
         "type": "string",
         "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
         "default": "BGR"
       },
       "lower": {
+        "title": "颜色下限",
         "type": "array",
         "items": {"type": "integer", "minimum": 0, "maximum": 255}
       },
       "upper": {
+        "title": "颜色上限",
         "type": "array",
         "items": {"type": "integer", "minimum": 0, "maximum": 255}
       }

@@ -17,7 +17,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rp
 from emo_master.apps.runtime.presentation.rpc import DisplayRpc
 
 
-LIMITS = {"control": 4, "events": 2, "display": 2, "camera": 1, "asset": 2, "bulk": 2, "sqlite": 2}
+LIMITS = {"control": 4, "events": 2, "display": 2, "camera": 1, "asset": 2, "bulk": 2, "sqlite": 2, "plc": 2}
 
 
 class RpcAbort(Exception):
@@ -221,10 +221,14 @@ class AioRuntimeServer:
             category = {"StreamJobEvents": "events", "Subscribe": "display",
                         "StreamOperatorPreviewFrames": "camera", "StreamPreviewAsset": "asset", "ReadAsset": "asset",
                         "Prepare": "bulk", "LoadProject": "bulk", "RunOperatorPreview": "bulk",
-                        "OpenOperatorPreviewSession": "bulk", "InspectSqliteTarget": "sqlite",
+                        "OpenOperatorPreviewSession": "bulk", "OpenDraftOperatorPreviewSession": "bulk",
+                        "InspectSqliteTarget": "sqlite",
+                        "OpenPlcDebugSession": "plc",
                         "InitializeSqliteTarget": "sqlite"}.get(name, "control")
             handler = getattr(implementation, name)
-            if method.client_streaming:
+            if name == "ExecutePlcDebugCommand":
+                wrapper = self._plcCommand(handler)
+            elif method.client_streaming:
                 wrapper = self._upload(handler)
             elif method.server_streaming:
                 wrapper = self._stream(handler, category)
@@ -232,6 +236,14 @@ class AioRuntimeServer:
                 wrapper = self._unary(handler, category)
             setattr(adapter, name, wrapper)
         return adapter
+
+    def _plcCommand(self, handler):
+        data = self._unary(handler, "plc")
+        control = self._unary(handler, "control")
+
+        async def call(request, context):
+            return await (data if request.command in {"read", "write"} else control)(request, context)
+        return call
 
     async def _start(self):
         self.server = grpc.aio.server(options=[("grpc.so_reuseport", 0),

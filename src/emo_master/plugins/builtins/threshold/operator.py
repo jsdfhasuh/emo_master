@@ -34,19 +34,21 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "mode": {
+            "title": "阈值模式",
             "type": "string",
             "enum": list(_MODES),
             "default": "fixed",
         },
         "threshold": {
+            "title": "阈值",
             "type": "integer",
             "minimum": 0,
             "maximum": 255,
             "default": 127,
         },
-        "invert": {"type": "boolean", "default": False},
-        "blockSize": {"type": "integer", "minimum": 3, "default": 11},
-        "constant": {"type": "number", "default": 2.0},
+        "invert": {"title": "反向阈值", "type": "boolean", "default": False},
+        "blockSize": {"title": "自适应邻域大小", "type": "integer", "minimum": 3, "default": 11},
+        "constant": {"title": "自适应阈值偏移量", "type": "number", "default": 2.0},
     },
 }
 

@@ -89,9 +89,9 @@ class AddWeightedOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "alpha": {"type": "number", "default": 0.5},
-            "beta": {"type": "number", "default": 0.5},
-            "gamma": {"type": "number", "default": 0.0},
+            "alpha": {"title": "第一幅图像权重", "type": "number", "default": 0.5},
+            "beta": {"title": "第二幅图像权重", "type": "number", "default": 0.5},
+            "gamma": {"title": "加权偏移量", "type": "number", "default": 0.0},
         },
     }
     meta = OperatorMeta(
@@ -134,8 +134,9 @@ class ApplyMaskOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "invert": {"type": "boolean", "default": False},
+            "invert": {"title": "反转掩膜", "type": "boolean", "default": False},
             "fillValue": {
+                "title": "填充值",
                 "type": "integer",
                 "minimum": 0,
                 "maximum": 255,

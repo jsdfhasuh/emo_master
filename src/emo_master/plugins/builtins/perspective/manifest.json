@@ -19,11 +19,11 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "srcPoints": {"type": "array", "minItems": 4, "maxItems": 4},
-      "outputWidth": {"type": "integer", "minimum": 2},
-      "outputHeight": {"type": "integer", "minimum": 2},
-      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
-      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "srcPoints": {"title": "源坐标点", "type": "array", "minItems": 4, "maxItems": 4},
+      "outputWidth": {"title": "输出宽度（像素）", "type": "integer", "minimum": 2},
+      "outputHeight": {"title": "输出高度（像素）", "type": "integer", "minimum": 2},
+      "interpolation": {"title": "插值方式", "type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
+      "padValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
     },
     "required": ["srcPoints", "outputWidth", "outputHeight"]
   },

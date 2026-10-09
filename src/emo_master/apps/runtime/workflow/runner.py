@@ -10,6 +10,7 @@ from emo_master.apps.runtime.events.operator_logger import (
     OperatorLogManager,
 )
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
+from emo_master.apps.runtime.workflow.branch_activity import BranchActivity
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.core.contracts.port_types import (
     isPortRequired,
@@ -55,6 +56,7 @@ class WorkflowRunner:
         globalCounters: object | None = None,
         resultCollector: Any = None,
         retainOperators: bool = False,
+        globalVariables: object | None = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -63,7 +65,16 @@ class WorkflowRunner:
         self.artifactStore = artifactStore
         self.previewSnapshotStore = previewSnapshotStore
         self.globalCounters = globalCounters
+        from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
+        from emo_master.core.project.global_variables import definitions
+        self.globalVariables = globalVariables if globalVariables is not None else ReadOnlyVariables({
+            key: value.initialValue for key, value in definitions(getattr(compiledProject, "globalVariables", {})).items()
+            if value.kind == "constant"
+        })
         self.resultCollector = resultCollector
+        if resultCollector is not None:
+            resultCollector.globalVariables = self.globalVariables
+            resultCollector.globalCounters = self.globalCounters
         self.retainOperators = retainOperators
         self.captureErrors = 0
         self._operatorLogManager = OperatorLogManager(
@@ -129,6 +140,7 @@ class WorkflowRunner:
         nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
         # Invocation-local deliveries. A child/iteration never inherits this map.
         boundValues: dict[str, dict[int, object]] = {}
+        branchActivity = BranchActivity(workflow)
         supplied = dict(inputs or {})
         missingInputs = _missingKeys(workflow.inputs, supplied)
         if missingInputs:
@@ -151,7 +163,8 @@ class WorkflowRunner:
                 node = workflow.nodeById[nodeId]
                 nodeContext = context.forNode(node.nodeId)
                 nodeInput = dict(nodeInputs.get(nodeId, {}))
-                if (
+                blockedBranches = branchActivity.blockingBranches(node)
+                if blockedBranches or (
                     node.inputPorts
                     and not nodeInput
                     and _shouldSkipNodeWithoutInputs(
@@ -160,12 +173,15 @@ class WorkflowRunner:
                         hasIncomingEdges=bool(workflow.incomingEdges.get(nodeId)),
                     )
                 ):
+                    branchActivity.skipped(node, blockedBranches)
                     self.publish(
                         "node.skipped",
                         nodeContext,
                         f"node skipped: {node.nodeId}",
                         payload={"status": "SKIPPED", "ioSummary": startInspection(nodeInput),
-                                 "code": "E_INPUT_NOT_PRODUCED", "message": "upstream did not produce input"},
+                                 "code": "E_BRANCH_NOT_SELECTED" if blockedBranches else "E_INPUT_NOT_PRODUCED",
+                                 "message": "upstream branch was not selected" if blockedBranches else "upstream did not produce input",
+                                 "blockedByBranches": sorted(blockedBranches)},
                     )
                     continue
                 inspection = startInspection(nodeInput)
@@ -227,6 +243,7 @@ class WorkflowRunner:
                 if node.kind == "workflow_output":
                     outputs.update(nodeInput)
                     outputs.update(nodeOutputs)
+                branchActivity.completed(node, nodeOutputs)
                 self._route(nodeId, nodeOutputs, workflow.outgoingEdges, nodeInputs)
                 cancellation.raise_if_cancelled()
                 payload = {
@@ -329,6 +346,17 @@ class WorkflowRunner:
         operator = self._operatorForNode(node, context, cancellation)
         if operator is None or not hasattr(operator, "executeNode"):
             raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
+        params = dict(node.params)
+        if node.globalVariableBindings:
+            from emo_master.core.project.global_variables import resolveParams, validateEffectiveParams
+            values = self.globalVariables.readMany([binding["variableId"] for binding in node.globalVariableBindings])
+            params = resolveParams(params, node.globalVariableBindings, values)
+            params = validateEffectiveParams(params, node.globalVariableBindings, node.paramSchema)
+            validator = getattr(operator, "validateParams", None)
+            error = validator(params) if callable(validator) else None
+            if isinstance(error, dict):
+                raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
+                                             str(error.get("message", "invalid bound parameters")), node.nodeId)
         logger = self._operatorLogManager.createLogger(
             context,
             str(node.operatorId or ""),
@@ -348,6 +376,7 @@ class WorkflowRunner:
             "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
             "logger": logger,
             "globalCounters": self.globalCounters,
+            "globalVariables": self.globalVariables,
             "mappedOutputs": dict(boundValues or {}),
         }
         if node.operatorId == "vision.io.sqlite_writer":
@@ -357,7 +386,7 @@ class WorkflowRunner:
             runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
                 event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
         try:
-            result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
+            result = operator.executeNode(nodeInput, params, runtimeContext)
         except Exception as err:
             loggingDiagnostics = logger.close()
             if loggingDiagnostics:
@@ -432,6 +461,7 @@ class WorkflowRunner:
                 "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
                 "logger": lifecycleLogger,
                 "globalCounters": self.globalCounters,
+                "globalVariables": self.globalVariables,
             }
             try:
                 init(initContext)

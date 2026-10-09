@@ -27,17 +27,19 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "operation": {
+            "title": "操作类型",
             "type": "string",
             "enum": list(_OPERATIONS),
             "default": "open",
         },
         "kernelShape": {
+            "title": "结构元素形状",
             "type": "string",
             "enum": list(_KERNEL_SHAPES),
             "default": "rect",
         },
-        "kernelSize": {"type": "integer", "minimum": 1, "default": 3},
-        "iterations": {"type": "integer", "minimum": 1, "default": 1},
+        "kernelSize": {"title": "结构元素大小", "type": "integer", "minimum": 1, "default": 3},
+        "iterations": {"title": "迭代次数", "type": "integer", "minimum": 1, "default": 1},
     },
 }
 

@@ -85,6 +85,8 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
             if len(members) > 16:
                 raise ValueError("source budget exceeded")
             for source in members:
+                if source["kind"] in {"global_variable", "global_counter"}:
+                    continue
                 if (source["kind"] not in {"node_output", "workflow_output"}
                         or source["workflowId"] != scope["scopeWorkflowId"]
                         or source["callPath"] != scope["callPath"]):

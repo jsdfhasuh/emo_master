@@ -29,6 +29,7 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "operation": {
+            "title": "操作类型",
             "type": "string",
             "enum": list(_OPERATIONS),
             "default": "and",

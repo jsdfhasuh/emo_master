@@ -212,7 +212,7 @@ def testStartupOpenProjectRefreshesWorkflowTabs(tmp_path: Path) -> None:
     assert window.workflowTabs.tabText(1) == "Body"
 
 
-def testStartupNewBlankPromptsDirectoryAndSaves(tmp_path: Path) -> None:
+def testStartupNewBlankPromptsFileAndSaves(tmp_path: Path) -> None:
     ensureQApp()
     projectDir = tmp_path / "blank_project"
     window = MainWindow(
@@ -220,9 +220,10 @@ def testStartupNewBlankPromptsDirectoryAndSaves(tmp_path: Path) -> None:
         showStartupEntry=True,
         projectEntryDialogFactory=lambda: EntryDialogStub("new_blank", ""),
     )
-    window._chooseProjectDirectory = lambda title: str(projectDir)  # type: ignore[method-assign]
+    window._chooseProjectFile = lambda title: str(projectDir / "blank.emoproj")  # type: ignore[method-assign]
     assert window.showStartupProjectEntry() is True
-    assert (projectDir / "project.json").exists()
+    assert (projectDir / "blank.emoproj").exists()
+    assert not (projectDir / "project.json").exists()
     assert window.currentProjectDir == projectDir
 
 
@@ -233,7 +234,7 @@ def testStartupNewBlankCancelDirectoryReturnsFalse() -> None:
         showStartupEntry=True,
         projectEntryDialogFactory=lambda: EntryDialogStub("new_blank", ""),
     )
-    window._chooseProjectDirectory = lambda title: ""  # type: ignore[method-assign]
+    window._chooseProjectFile = lambda title: ""  # type: ignore[method-assign]
     assert window.showStartupProjectEntry() is False
 
 
@@ -253,7 +254,7 @@ def testStartupNewBlankStopsWhenSaveFails(tmp_path: Path) -> None:
         showStartupEntry=True,
         projectEntryDialogFactory=lambda: EntryDialogStub("new_blank", ""),
     )
-    window._chooseProjectDirectory = lambda title: str(projectDir)  # type: ignore[method-assign]
+    window._chooseProjectFile = lambda title: str(projectDir / "blank.emoproj")  # type: ignore[method-assign]
     window.projectController.saveProjectToDirectory = (  # type: ignore[method-assign]
         lambda *args, **kwargs: (False, None)
     )

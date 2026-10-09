@@ -36,24 +36,29 @@
     "type": "object",
     "properties": {
       "width": {
+        "title": "宽度（像素）",
         "type": "integer",
         "minimum": 1
       },
       "height": {
+        "title": "高度（像素）",
         "type": "integer",
         "minimum": 1
       },
       "mode": {
+        "title": "缩放模式",
         "type": "string",
         "enum": ["stretch", "fit", "letterbox"],
         "default": "stretch"
       },
       "interpolation": {
+        "title": "插值方式",
         "type": "string",
         "enum": ["nearest", "linear", "area", "cubic"],
         "default": "linear"
       },
       "padValue": {
+        "title": "填充值",
         "type": "integer",
         "minimum": 0,
         "maximum": 255,

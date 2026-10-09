@@ -28,16 +28,17 @@
     "type": "object",
     "properties": {
       "mode": {
+        "title": "滤波模式",
         "type": "string",
         "enum": ["gaussian", "median", "bilateral"],
         "default": "gaussian"
       },
-      "kernelSize": {"type": "integer", "minimum": 3, "default": 5},
-      "sigmaX": {"type": "number", "minimum": 0.0, "default": 0.0},
-      "sigmaY": {"type": "number", "minimum": 0.0, "default": 0.0},
-      "diameter": {"type": "integer", "minimum": 1, "default": 9},
-      "sigmaColor": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
-      "sigmaSpace": {"type": "number", "exclusiveMinimum": 0.0, "default": 75.0}
+      "kernelSize": {"title": "卷积核大小", "type": "integer", "minimum": 3, "default": 5},
+      "sigmaX": {"title": "水平方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
+      "sigmaY": {"title": "垂直方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
+      "diameter": {"title": "滤波邻域直径（像素）", "type": "integer", "minimum": 1, "default": 9},
+      "sigmaColor": {"title": "颜色空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
+      "sigmaSpace": {"title": "坐标空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0}
     }
   },
   "minCoreVersion": "0.2.0",

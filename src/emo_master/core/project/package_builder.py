@@ -58,18 +58,18 @@ def buildPageTestPackage(document, projectDir: Path, outputDir: Path, registry=N
 
 
 def buildPackage(projectDir: Path, outputDir: Path) -> Path:
+    from emo_master.core.project.files import resolveProjectFile
     if not projectDir.exists():
         raise FileNotFoundError(f"project directory not found: {projectDir}")
-    projectFile = projectDir / "project.json"
-    if not projectFile.exists():
-        raise FileNotFoundError(f"project.json not found: {projectFile}")
+    projectFile = resolveProjectFile(projectDir)
+    projectDir = projectFile.parent
     parsed = json.loads(projectFile.read_text(encoding="utf-8"))
     if not isinstance(parsed, dict):
         raise ValueError("project.json must contain an object")
     payload = ProjectDocument.model_validate(migrateProjectPayload(parsed)).model_dump(
         mode="json"
     )
-    if payload["schemaVersion"] in {"2.2", "2.3"}:
+    if payload["schemaVersion"] in {"2.2", "2.3", "2.4"}:
         raise ValueError("project 2.2 package publication requires the P5 resource/presentation pipeline")
     projectJsonBytes = (
         json.dumps(payload, ensure_ascii=True, indent=2) + "\n"
@@ -101,7 +101,7 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
 
     with zipfile.ZipFile(packagePath, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for filePath in projectDir.rglob("*"):
-            if filePath.is_file() and not _databaseFile(filePath, projectDir, payload):
+            if filePath.is_file() and filePath.suffix.lower() != ".emoproj" and not _databaseFile(filePath, projectDir, payload):
                 relativePath = filePath.relative_to(projectDir).as_posix()
                 if relativePath in {
                     "project.json",
@@ -122,7 +122,7 @@ def buildPackage(projectDir: Path, outputDir: Path) -> Path:
 def _collectChecksums(projectDir: Path, projectJsonBytes: bytes, payload=None) -> dict[str, str]:
     checksums: dict[str, str] = {}
     for filePath in projectDir.rglob("*"):
-        if filePath.is_file() and not _databaseFile(filePath, projectDir, payload or {}):
+        if filePath.is_file() and filePath.suffix.lower() != ".emoproj" and not _databaseFile(filePath, projectDir, payload or {}):
             relativePath = filePath.relative_to(projectDir).as_posix()
             if relativePath in {
                 "project.json",

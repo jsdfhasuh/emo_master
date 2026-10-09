@@ -82,8 +82,10 @@ class ProductionRuntime:
         if self.projectOwner is None:
             raise ValueError("load the destination project before updating")
         root = self.projectOwner.root
-        installRuntimePackage(package, root, owner=self.projectOwner, registry=self.runtime.pluginScanResult.activeOperators)
-        return self.load(root)
+        projectFile = self.runtime.loadedProjectFile
+        installRuntimePackage(package, root, owner=self.projectOwner,
+            registry=self.runtime.pluginScanResult.activeOperators, projectFile=projectFile)
+        return self.load(projectFile or root)
 
     def start(self):
         if self.document is None:

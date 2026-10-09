@@ -57,6 +57,10 @@ class EditorContext:
         workflowOptions: list[str] | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
+        getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
+        variableDefinitions=None,
+        variableBindings=None,
+        applyConfiguration=None,
     ) -> None:
         self.key = key
         self.operatorId = operatorId
@@ -67,8 +71,13 @@ class EditorContext:
         self._runtimeClient = runtimeClient
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
+        self._getPreviewProject = getPreviewProject
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
+        self.variableDefinitions = variableDefinitions
+        self.variableBindings = list(variableBindings or [])
+        self.applyConfiguration = applyConfiguration
+        self.collectVariableBindings = lambda: self.variableBindings
         self._appendLog = appendLog
         self._markDirty: Callable[[], None] = lambda: None
         self._setStatus: Callable[[str], None] = lambda _message: None
@@ -176,6 +185,9 @@ class EditorContext:
             raise EditorContextError(
                 "E_PREVIEW_UNSUPPORTED", "operator does not allow pure preview"
             )
+        options = {}
+        if self.variableDefinitions is not None and self._getPreviewProject is not None:
+            options = {"projectPayload": self._variablePreviewProject(), "jobId": self.currentJobId()}
         return self._runtimeMethod("runOperatorPreview")(
             self.key.projectId,
             self.key.workflowId,
@@ -184,7 +196,19 @@ class EditorContext:
             dict(params),
             imageAssetId,
             requestId,
+            **options,
         )
+
+    def _variablePreviewProject(self):
+        from copy import deepcopy
+        payload = deepcopy(self._getPreviewProject(self.key))
+        node = next(item for item in payload["workflows"][self.key.workflowId]["nodes"] if item["nodeId"] == self.key.nodeId)
+        bindings = self.collectVariableBindings()
+        if bindings:
+            node["globalVariableBindings"] = bindings
+        else:
+            node.pop("globalVariableBindings", None)
+        return payload
 
     def cancelPurePreview(self, requestId: str) -> None:
         if not requestId:
@@ -197,13 +221,21 @@ class EditorContext:
             raise EditorContextError(
                 "E_PREVIEW_UNSUPPORTED", "operator does not allow live preview"
             )
-        reply = self._runtimeMethod("openOperatorPreviewSession")(
-            self.key.projectId,
-            self.key.workflowId,
-            self.key.nodeId,
-            self.operatorId,
-            dict(params),
-        )
+        if self._getPreviewProject is not None:
+            method = getattr(self._runtimeClient, "openDraftOperatorPreviewSession", None)
+            if not callable(method):
+                raise EditorContextError(
+                    "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
+                )
+            projectPayload = self._variablePreviewProject() if self.variableDefinitions is not None else self._getPreviewProject(self.key)
+            reply = method(self.key.projectId, self.key.workflowId, self.key.nodeId,
+                           self.operatorId, dict(params), projectPayload,
+                           **({"jobId": self.currentJobId()} if self.variableDefinitions is not None else {}))
+        else:
+            reply = self._runtimeMethod("openOperatorPreviewSession")(
+                self.key.projectId, self.key.workflowId, self.key.nodeId,
+                self.operatorId, dict(params),
+            )
         self._requireOk(reply, "E_PREVIEW_SESSION_OPEN_FAILED")
         sessionId = str(getattr(reply, "session_id", ""))
         if not sessionId:
@@ -218,6 +250,29 @@ class EditorContext:
     def closeLivePreview(self, sessionId: str) -> None:
         reply = self._runtimeMethod("closeOperatorPreviewSession")(sessionId)
         self._requireOk(reply, "E_PREVIEW_RELEASE_FAILED")
+
+    def plcDebugLocation(self) -> str:
+        return str(getattr(self._runtimeClient, "_runtimeTarget", "")) or "本机内嵌 Runtime"
+
+    def openPlcDebugSession(self, params: dict[str, object], requestId: str, cancellation=None) -> object:
+        return self._plcDebugMethod("openPlcDebugSession")(
+            self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+            dict(params), requestId, cancellation=cancellation)
+
+    def executePlcDebugCommand(self, sessionId: str, runtimeInstanceId: str, command: str,
+                               params: dict[str, object], requestId: str, cancellation=None) -> object:
+        return self._plcDebugMethod("executePlcDebugCommand")(
+            sessionId, runtimeInstanceId, command, dict(params), requestId, cancellation=cancellation)
+
+    def closePlcDebugSession(self, sessionId: str, runtimeInstanceId: str, cancellation=None) -> object:
+        return self._plcDebugMethod("closePlcDebugSession")(
+            sessionId, runtimeInstanceId, cancellation=cancellation)
+
+    def _plcDebugMethod(self, name: str):
+        method = getattr(self._runtimeClient, name, None)
+        if self.operatorId not in {"communication.plc.slmp_read", "communication.plc.slmp_write"} or not callable(method):
+            raise EditorContextError("E_PLC_UNSUPPORTED", "当前 Runtime 不支持 PLC 运行调试")
+        return method
 
     def _runtimeMethod(self, name: str):
         method = getattr(self._runtimeClient, name, None)

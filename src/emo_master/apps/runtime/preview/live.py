@@ -35,6 +35,7 @@ class _LiveSession:
         operator: Any,
         params: dict[str, object],
         onTerminated: Callable[["_LiveSession"], None],
+        globalVariables=None,
     ) -> None:
         self.sessionId = sessionId
         self.projectId = projectId
@@ -42,6 +43,8 @@ class _LiveSession:
         self.nodeId = nodeId
         self.operator = operator
         self.params = params
+        from emo_master.apps.runtime.context.global_variables import ReadOnlyVariables
+        self.globalVariables = globalVariables or ReadOnlyVariables({})
         self.onTerminated = onTerminated
         self.stopEvent = threading.Event()
         self.condition = threading.Condition()
@@ -195,6 +198,7 @@ class _LiveSession:
             "isCancellationRequested": self.stopEvent.is_set(),
             "raiseIfCancellationRequested": raiseIfCancelled,
             "isPreview": True,
+            "globalVariables": self.globalVariables,
             "logger": self.logger,
         }
 
@@ -219,6 +223,7 @@ class LivePreviewManager:
         workflowId: str,
         nodeId: str,
         params: dict[str, object],
+        *, globalVariables=None,
     ) -> tuple[str | None, str | None]:
         descriptor = self.operatorRegistry.get(operatorId)
         if not isinstance(descriptor, PluginDescriptor):
@@ -246,6 +251,7 @@ class LivePreviewManager:
             operator,
             previewParams,
             self._sessionTerminated,
+            globalVariables,
         )
         with self._lock:
             self._sessions[sessionId] = session
@@ -337,11 +343,18 @@ class LivePreviewManager:
                 errors.append(error)
         return errors
 
-    def closeAll(self) -> list[str]:
+    def closeAll(self, timeoutSeconds: float | None = None) -> list[str]:
         with self._lock:
             self._failures.clear()
             sessionIds = list(self._sessions)
-        return [error for sessionId in sessionIds if (error := self.close(sessionId))]
+        deadline = time.monotonic() + max(0.0, timeoutSeconds) if timeoutSeconds is not None else None
+        errors = []
+        for sessionId in sessionIds:
+            remaining = max(0.0, deadline - time.monotonic()) if deadline is not None else 3.0
+            error = self.close(sessionId, remaining)
+            if error:
+                errors.append(error)
+        return errors
 
 
 def _previewImage(image: np.ndarray[Any, Any]) -> np.ndarray[Any, Any]:

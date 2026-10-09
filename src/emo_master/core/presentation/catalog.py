@@ -8,6 +8,7 @@ from emo_master.core.contracts.port_types import JSON_PAYLOAD_PORT_TYPES, normal
 from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.presentation.models import CallStep, DataSource
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
 @dataclass(frozen=True)
@@ -68,6 +69,13 @@ def buildOutputCatalog(
                 continue
             manifest = manifests.get(node.operatorId or "")
             ports = manifest.outputPorts if manifest else node.outputPorts
+            from emo_master.core.project.global_variables import variablePorts
+            try:
+                variable = variablePorts(node.operatorId, node.params, project.globalVariables)
+                if variable:
+                    ports = variable[1]
+            except ValueError:
+                pass
             for port in sorted(set(ports) | set(node.outputPorts)):
                 issues: list[Issue] = []
                 path = f"workflows.{workflowId}.nodes.{node.nodeId}.outputPorts.{port}"
@@ -108,6 +116,8 @@ def resolveCallPath(project: ProjectDocument, entry: str, path: list[CallStep]) 
             target = node.targetWorkflowId
         elif step.relation.startswith("loop_") and node.kind == "loop":
             key = "bodyWorkflowId" if step.relation == "loop_body" else "conditionWorkflowId"
+            if key not in loopWorkflowReferenceFields(node.loop):
+                raise ValueError("call relation is not executable in this loop mode")
             target = node.loop.get(key)
         else:
             raise ValueError("call relation does not match node kind")
@@ -117,7 +127,12 @@ def resolveCallPath(project: ProjectDocument, entry: str, path: list[CallStep]) 
     return current
 
 
-def sourceType(source: DataSource, entries: list[OutputEntry]) -> str:
+def sourceType(source: DataSource, entries: list[OutputEntry], variables=None) -> str:
+    if source.kind == "global_variable":
+        definition = (variables or {}).get(source.variableId)
+        if definition is None:
+            raise ValueError("global variable is missing")
+        return definition.type
     if source.kind == "runtime_status":
         if source.name not in {"job_state", "connection_state"}:
             raise ValueError("unknown runtime status")

@@ -180,11 +180,12 @@ try:
             return self._recentEmptyStateText
 
         def _onOpenProject(self) -> None:
+            from emo_master.core.project.files import PROJECT_OPEN_FILTER
             selectedPath, _ = QFileDialog.getOpenFileName(
                 self,
-                "选择项目文件(project.json)",
+                "打开项目",
                 "",
-                "项目文件 (project.json)",
+                PROJECT_OPEN_FILTER,
             )
             if selectedPath == "":
                 return

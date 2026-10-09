@@ -9,11 +9,8 @@ import time
 
 from emo_master.apps.runtime.context.global_counters import (
     E_COUNTER_BUSY,
-    E_COUNTER_VALUE_RANGE,
-    MAX_GLOBAL_COUNTER_VALUE,
     GlobalCounterError,
     GlobalCounterRecord,
-    validateGlobalCounterName,
     validateGlobalCounterValue,
 )
 from emo_master.apps.runtime.events.models import RuntimeEvent
@@ -122,6 +119,14 @@ class SqliteStore:
                         (_utcNow(),),
                     )
                 connection.commit()
+                if 5 not in applied:
+                    from emo_master.apps.runtime.context.global_variables import migrateVariables
+                    connection.execute("BEGIN IMMEDIATE")
+                    migrateVariables(connection)
+                    connection.execute(
+                        "INSERT INTO schemaMigrations(version, appliedAt) VALUES (5, ?)", (_utcNow(),)
+                    )
+                    connection.commit()
         finally:
             connection.close()
 
@@ -469,57 +474,8 @@ class SqliteStore:
         increment: bool = False,
         reset: bool = False,
     ) -> GlobalCounterRecord:
-        counterName = validateGlobalCounterName(name)
-        connection: sqlite3.Connection | None = None
-        try:
-            connection = self._connect()
-            connection.execute("BEGIN IMMEDIATE")
-            row = connection.execute(
-                "SELECT value, updatedAtMs FROM globalCounters "
-                "WHERE projectId = ? AND name = ?",
-                (projectId, counterName),
-            ).fetchone()
-            now = _timestampMs()
-            if row is None:
-                value = 0 if reset or not increment else 1
-                connection.execute(
-                    "INSERT INTO globalCounters(projectId, name, value, updatedAtMs) "
-                    "VALUES (?, ?, ?, ?)",
-                    (projectId, counterName, value, now),
-                )
-                updatedAtMs = now
-            else:
-                currentValue = int(row[0])
-                updatedAtMs = int(row[1])
-                if reset:
-                    value = 0
-                elif increment:
-                    if currentValue >= MAX_GLOBAL_COUNTER_VALUE:
-                        raise GlobalCounterError(
-                            E_COUNTER_VALUE_RANGE,
-                            "counter increment would exceed the signed int64 maximum",
-                        )
-                    value = currentValue + 1
-                else:
-                    value = currentValue
-                if reset or increment:
-                    connection.execute(
-                        "UPDATE globalCounters SET value = ?, updatedAtMs = ? "
-                        "WHERE projectId = ? AND name = ?",
-                        (value, now, projectId, counterName),
-                    )
-                    updatedAtMs = now
-            connection.commit()
-            return GlobalCounterRecord(counterName, value, updatedAtMs)
-        except GlobalCounterError:
-            _rollbackQuietly(connection)
-            raise
-        except sqlite3.OperationalError as err:
-            _rollbackQuietly(connection)
-            raise _mapCounterOperationalError(err) from err
-        finally:
-            if connection is not None:
-                connection.close()
+        from emo_master.apps.runtime.context.global_variables import counterOperation
+        return counterOperation(self, projectId, name, increment=increment, reset=reset)
 
     def getGlobalCounter(self, projectId: str, name: str) -> GlobalCounterRecord:
         return self.applyGlobalCounter(projectId, name)
@@ -545,31 +501,9 @@ class SqliteStore:
         name: str,
         value: int,
     ) -> GlobalCounterRecord:
-        counterName = validateGlobalCounterName(name)
-        counterValue = validateGlobalCounterValue(value)
-        connection: sqlite3.Connection | None = None
-        try:
-            connection = self._connect()
-            connection.execute("BEGIN IMMEDIATE")
-            updatedAtMs = _timestampMs()
-            connection.execute(
-                """
-                INSERT INTO globalCounters(projectId, name, value, updatedAtMs)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(projectId, name) DO UPDATE SET
-                  value = excluded.value,
-                  updatedAtMs = excluded.updatedAtMs
-                """,
-                (projectId, counterName, counterValue, updatedAtMs),
-            )
-            connection.commit()
-            return GlobalCounterRecord(counterName, counterValue, updatedAtMs)
-        except sqlite3.OperationalError as err:
-            _rollbackQuietly(connection)
-            raise _mapCounterOperationalError(err) from err
-        finally:
-            if connection is not None:
-                connection.close()
+        from emo_master.apps.runtime.context.global_variables import counterOperation
+        validateGlobalCounterValue(value)
+        return counterOperation(self, projectId, name, value=value)
 
     def resetGlobalCounter(self, projectId: str, name: str) -> GlobalCounterRecord:
         return self.setGlobalCounter(projectId, name, 0)

@@ -64,40 +64,46 @@ class TemplateMatchingOperator:
         "type": "object",
         "properties": {
             "method": {
+                "title": "匹配方法",
                 "type": "string",
                 "enum": list(_METHODS),
                 "default": "ccoeffNormed",
             },
             "colorMode": {
+                "title": "颜色模式",
                 "type": "string",
                 "enum": ["gray", "native"],
                 "default": "gray",
             },
             "thresholdMode": {
+                "title": "阈值模式",
                 "type": "string",
                 "enum": ["quality", "raw"],
                 "default": "quality",
             },
-            "threshold": {"type": "number", "default": 0.8},
+            "threshold": {"title": "阈值", "type": "number", "default": 0.8},
             "peakKernelSize": {
+                "title": "峰值搜索核大小",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 31,
                 "default": 3,
             },
             "nmsIouThreshold": {
+                "title": "非极大值抑制 IoU 阈值",
                 "type": "number",
                 "minimum": 0.0,
                 "maximum": 1.0,
                 "default": 0.3,
             },
             "maxMatches": {
+                "title": "最大匹配数量",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 10000,
                 "default": 100,
             },
-            "label": {"type": "string", "default": "template"},
+            "label": {"title": "匹配标签", "type": "string", "default": "template"},
         },
     }
     meta = OperatorMeta(
@@ -307,16 +313,17 @@ class HoughLineOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "rho": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+            "rho": {"title": "距离分辨率（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
             "thetaDegrees": {
+                "title": "角度分辨率（度）",
                 "type": "number",
                 "exclusiveMinimum": 0.0,
                 "maximum": 180.0,
                 "default": 1.0,
             },
-            "threshold": {"type": "integer", "minimum": 1, "default": 50},
-            "minLineLength": {"type": "number", "minimum": 0.0, "default": 0.0},
-            "maxLineGap": {"type": "number", "minimum": 0.0, "default": 0.0},
+            "threshold": {"title": "阈值", "type": "integer", "minimum": 1, "default": 50},
+            "minLineLength": {"title": "最小线段长度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
+            "maxLineGap": {"title": "最大线段间隙（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
         },
     }
     meta = OperatorMeta(
@@ -439,12 +446,12 @@ class HoughCircleOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "dp": {"type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
-            "minDist": {"type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
-            "param1": {"type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
-            "param2": {"type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
-            "minRadius": {"type": "integer", "minimum": 0, "default": 0},
-            "maxRadius": {"type": "integer", "minimum": 0, "default": 0},
+            "dp": {"title": "累加器分辨率反比", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0},
+            "minDist": {"title": "最小圆心距离（像素）", "type": "number", "exclusiveMinimum": 0.0, "default": 20.0},
+            "param1": {"title": "Canny 高阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 100.0},
+            "param2": {"title": "圆心累加器阈值", "type": "number", "exclusiveMinimum": 0.0, "default": 30.0},
+            "minRadius": {"title": "最小半径（像素）", "type": "integer", "minimum": 0, "default": 0},
+            "maxRadius": {"title": "最大半径（像素）", "type": "integer", "minimum": 0, "default": 0},
         },
     }
     meta = OperatorMeta(

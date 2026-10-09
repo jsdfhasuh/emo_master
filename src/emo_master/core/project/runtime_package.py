@@ -16,6 +16,7 @@ from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.delivery_store import DirectoryOwner
 from emo_master.core.project.migration import loadProjectPayload, migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.files import projectFiles, resolveProjectFile
 from emo_master.core.project.runtime_directory import prepareRuntimeProject
 from emo_master.core.project.snapshots import _inside, canonicalJson
 from emo_master.core.project.test_delivery import packagePath, readJson, trustedRegistry
@@ -70,13 +71,12 @@ def _operators(document, registry):
 
 def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None) -> Path:
     registry = trustedRegistry() if registry is None else registry
-    root = Path(projectDir).resolve(strict=True)
-    if root.is_file():
-        root = root.parent
+    projectFile = resolveProjectFile(Path(projectDir).resolve(strict=True))
+    root = projectFile.parent
     outputDir = Path(outputDir).resolve()
     if outputDir.is_relative_to(root):
         raise ValueError("package output must be outside the engineering project")
-    document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(root / "project.json"), enableProduction=True))
+    document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(projectFile), enableProduction=True))
     prepared = _validate(document, root, registry)
     assert document.resources is not None
     sources = {item.path: _inside(root, item.path) for item in document.resources.items.values()}
@@ -169,7 +169,7 @@ def _extract(package, stage, registry):
         if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
             raise ValueError("runtime package metadata limit")
         manifest = readJson(archive.read("manifest.json"))
-        if manifest.get("format") != FORMAT or manifest.get("projectSchema") != "2.3":
+        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4"}:
             raise ValueError("unsupported runtime package format")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):
@@ -190,7 +190,7 @@ def _extract(package, stage, registry):
         return document, manifest
 
 
-def installRuntimePackage(package: Path, destination: Path, *, registry=None, owner=None) -> ProjectDocument:
+def installRuntimePackage(package: Path, destination: Path, *, registry=None, owner=None, projectFile=None) -> ProjectDocument:
     """Normal failures restore replaced assets; crashes leave the sibling backup for repair."""
     registry = trustedRegistry() if registry is None else registry
     destination = Path(destination).resolve()
@@ -201,8 +201,13 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, ow
         with tempfile.TemporaryDirectory(prefix=".runtime-stage-", dir=destination.parent) as directory:
             stage = Path(directory)
             document, manifest = _extract(package, stage, registry)
-            current = destination / "project.json"
-            replaceable = {"project.json"}
+            current = (resolveProjectFile(Path(projectFile) if projectFile else destination)
+                       if projectFile or projectFiles(destination) else destination / "project.json")
+            if current.parent.resolve() != destination:
+                raise ValueError("project file must belong to the destination directory")
+            if current.name != "project.json" and current.name in manifest["files"]:
+                raise ValueError("package asset overlaps selected project file")
+            replaceable = {current.name}
             if current.exists():
                 previous = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(current)))
                 if previous.project.projectId != document.project.projectId:
@@ -234,10 +239,11 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, ow
                 # Publish configuration last. No business data or unrelated files are copied/deleted.
                 ordered = [name for name in manifest["files"] if name != "project.json"] + ["project.json"]
                 for name in ordered:
-                    target = _inside(destination, name)
-                    old = backup / name
+                    targetName = current.name if name == "project.json" else name
+                    target = _inside(destination, targetName)
+                    old = backup / targetName
                     if target.exists():
-                        if name not in replaceable:
+                        if targetName not in replaceable:
                             raise ValueError("update would overwrite an unrelated file or business output")
                         if not target.is_file() or target.stat().st_nlink > 1:
                             raise ValueError("linked or non-file update target")
@@ -245,7 +251,7 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, ow
                         shutil.copy2(target, old)
                     target.parent.mkdir(parents=True, exist_ok=True)
                     os.replace(stage / name, target)
-                    replaced.append(name)
+                    replaced.append(targetName)
             except BaseException:
                 for name in reversed(replaced):
                     old = backup / name

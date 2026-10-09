@@ -94,13 +94,12 @@ def testNewForEachNodeDerivesPortsFromBodyWorkflow() -> None:
     }
 
 
-def testNewWhileNodeSelectsCompatibleConditionAndBody() -> None:
+def testNewWhileNodeSelectsBooleanConditionFromBodyWithoutAnotherWorkflow() -> None:
     window = MainWindow(_RuntimeClientStub())
     bodyWorkflowId = window.createWorkflow("Body")
-    window.editWorkflowInterface({"count": "integer"}, {"count": "integer"})
-    conditionWorkflowId = window.createWorkflow("Condition")
     window.editWorkflowInterface(
-        {"count": "integer"}, {"continue": "boolean"}
+        {"count": "integer", "hasNext": "boolean"},
+        {"count": "integer", "hasNext": "boolean"},
     )
     _switchToMain(window)
 
@@ -110,9 +109,11 @@ def testNewWhileNodeSelectsCompatibleConditionAndBody() -> None:
     node = window.flowModel.nodes[nodeId]
     assert node.loop["contractVersion"] == 2
     assert node.loop["bodyWorkflowId"] == bodyWorkflowId
-    assert node.loop["conditionWorkflowId"] == conditionWorkflowId
-    assert node.inputPorts == {"count": "integer"}
-    assert node.outputPorts == {"count": "integer"}
+    assert node.loop["conditionMode"] == "boolean"
+    assert node.loop["conditionPort"] == "hasNext"
+    assert "conditionWorkflowId" not in node.loop
+    assert node.inputPorts == {"count": "integer", "hasNext": "boolean"}
+    assert node.outputPorts == node.inputPorts
 
 
 def testApplyingLegacyForEachConfigurationUpgradesItsContract() -> None:

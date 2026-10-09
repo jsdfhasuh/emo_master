@@ -1,3 +1,5 @@
+import pytest
+
 from emo_master.core.workflow.loop_contracts import deriveLoopContract
 
 
@@ -109,3 +111,46 @@ def testWhileRejectsBodyThatCannotFeedItsNextIteration() -> None:
         "E_LOOP_STATE_OUTPUT_MISSING",
         "E_LOOP_STATE_INPUT_MISSING",
     }
+
+
+def testBooleanWhileUsesStatePortWithoutConditionWorkflow() -> None:
+    config = {"contractVersion": 2, "mode": "while", "conditionMode": "boolean",
+              "conditionPort": "hasNext", "maxIterations": 10,
+              "conditionWorkflowId": "inactive-old-reference"}
+    contract = deriveLoopContract(config, {"hasNext": "boolean"}, {"hasNext": "boolean"})
+    assert contract.issues == ()
+    assert contract.inputPorts == contract.outputPorts == {"hasNext": "boolean"}
+    assert "conditionWorkflowId" not in contract.normalizedConfig
+    assert config["conditionWorkflowId"] == "inactive-old-reference"
+
+
+@pytest.mark.parametrize("port, inputs, outputs, code", [
+    (None, {"hasNext": "boolean"}, {"hasNext": "boolean"}, "E_LOOP_CONDITION_PORT_UNKNOWN"),
+    ("missing", {"hasNext": "boolean"}, {"hasNext": "boolean"}, "E_LOOP_CONDITION_PORT_UNKNOWN"),
+    ("hasNext", {"hasNext": "integer"}, {"hasNext": "integer"}, "E_LOOP_CONDITION_PORT_TYPE"),
+    ("hasNext", {"hasNext": "any"}, {"hasNext": "any"}, "E_LOOP_CONDITION_PORT_TYPE"),
+    ("hasNext", {"hasNext": "boolean"}, {}, "E_LOOP_CONDITION_PORT_TYPE"),
+])
+def testBooleanWhileRejectsMissingOrNonBooleanConditionPort(port, inputs, outputs, code) -> None:
+    contract = deriveLoopContract({"contractVersion": 2, "mode": "while",
+        "conditionMode": "boolean", "conditionPort": port, "maxIterations": 10}, inputs, outputs)
+    assert code in {issue.code for issue in contract.issues}
+
+
+def testBooleanWhileAcceptsBooleanPortDescriptors() -> None:
+    contract = deriveLoopContract({"contractVersion": 2, "mode": "while",
+        "conditionMode": "boolean", "conditionPort": "go", "maxIterations": 10},
+        {"go": {"type": "boolean"}}, {"go": {"type": "boolean"}})
+    assert contract.issues == ()
+
+
+def testWhileRejectsUnknownConditionMode() -> None:
+    contract = deriveLoopContract({"contractVersion": 2, "mode": "while",
+        "conditionMode": "expression", "maxIterations": 10}, {}, {})
+    assert {issue.code for issue in contract.issues} == {"E_LOOP_CONDITION_MODE_INVALID"}
+
+
+def testBooleanWhileRequiresTypedStateContract() -> None:
+    contract = deriveLoopContract({"mode": "while", "conditionMode": "boolean",
+        "conditionPort": "go", "maxIterations": 10}, {"go": "boolean"}, {"go": "boolean"})
+    assert {issue.code for issue in contract.issues} == {"E_LOOP_CONDITION_MODE_UNSUPPORTED"}

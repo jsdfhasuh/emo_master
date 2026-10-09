@@ -1,0 +1,50 @@
+{
+  "schemaVersion": "2.4",
+  "project": {"projectId": "global-variables-example", "name": "全局布尔条件与参数引用", "revision": 1,
+    "createdAt": "2026-10-09T00:00:00Z", "updatedAt": "2026-10-09T00:00:00Z"},
+  "entryWorkflowId": "main",
+  "workflowOrder": ["main", "body", "stop"],
+  "globalVariables": {
+    "always-true": {"name": "alwaysTrue", "type": "boolean", "kind": "constant", "lifetime": "persistent", "initialValue": true},
+    "run-enabled": {"name": "runEnabled", "type": "boolean", "kind": "variable", "lifetime": "job", "initialValue": true},
+    "threshold": {"name": "threshold", "type": "number", "kind": "variable", "lifetime": "persistent", "initialValue": 0.5},
+    "false-constant": {"name": "falseValue", "type": "boolean", "kind": "constant", "lifetime": "persistent", "initialValue": false}
+  },
+  "workflows": {
+    "main": {
+      "name": "主流程：运行开关控制 While", "inputs": {}, "outputs": {},
+      "nodes": [
+        {"nodeId": "input", "kind": "workflow_input"},
+        {"nodeId": "loop", "kind": "loop", "displayName": "While runEnabled",
+          "loop": {"contractVersion": 2, "mode": "while", "conditionMode": "globalVariable", "conditionVariableId": "run-enabled",
+            "bodyWorkflowId": "body", "maxIterations": 10000, "timeoutMs": 30000}},
+        {"nodeId": "output", "kind": "workflow_output"}
+      ], "edges": [], "layout": {"nodePositions": {"input": {"x": 20, "y": 40}, "loop": {"x": 240, "y": 40}, "output": {"x": 600, "y": 40}}}
+    },
+    "body": {
+      "name": "循环体：每轮重新读取阈值", "inputs": {}, "outputs": {},
+      "nodes": [
+        {"nodeId": "input", "kind": "workflow_input"},
+        {"nodeId": "number", "kind": "operator", "operatorId": "vision.value.number", "displayName": "绑定 threshold 的数值算子",
+          "params": {"value": 0}, "globalVariableBindings": [{"parameterPath": ["value"], "variableId": "threshold"}]},
+        {"nodeId": "output", "kind": "workflow_output"}
+      ], "edges": [], "layout": {"nodePositions": {"input": {"x": 20, "y": 40}, "number": {"x": 260, "y": 40}, "output": {"x": 640, "y": 40}}}
+    },
+    "stop": {
+      "name": "示例：通过显式连线写入 false", "inputs": {}, "outputs": {"value": "boolean"},
+      "nodes": [
+        {"nodeId": "input", "kind": "workflow_input"},
+        {"nodeId": "read", "kind": "operator", "operatorId": "vision.state.variable_read", "params": {"variableId": "false-constant"}},
+        {"nodeId": "write", "kind": "operator", "operatorId": "vision.state.variable_write", "params": {"variableId": "run-enabled"}},
+        {"nodeId": "output", "kind": "workflow_output"}
+      ], "edges": [
+        {"fromNode": "read", "fromPort": "value", "toNode": "write", "toPort": "value"},
+        {"fromNode": "write", "fromPort": "value", "toNode": "output", "toPort": "value"}
+      ]
+    }
+  },
+  "runtime": {}, "devices": {"bindings": {}},
+  "dependencies": {"operators": ["vision.value.number", "vision.state.variable_read", "vision.state.variable_write"]},
+  "presentation": {}, "resources": {},
+  "production": {"autoStart": false, "mode": "single", "cycleIntervalMs": 100}
+}

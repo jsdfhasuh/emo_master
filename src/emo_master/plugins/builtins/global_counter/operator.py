@@ -18,7 +18,7 @@ class OperatorMeta:
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
-        "name": {"type": "string", "minLength": 1, "maxLength": 128},
+        "name": {"title": "计数器名称", "type": "string", "minLength": 1, "maxLength": 128},
     },
     "required": ["name"],
     "additionalProperties": False,

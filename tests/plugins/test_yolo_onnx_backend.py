@@ -6,6 +6,8 @@ from types import SimpleNamespace
 import numpy as np
 import pytest
 
+from emo_master.core.contracts.geometry2d import DetectionCollection
+from emo_master.plugins.builtins.yolo_inference.operator import YoloInferenceOperator
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import (
     OnnxModelError,
     OnnxYoloSession,
@@ -21,6 +23,30 @@ _TINY_YOLO_ONNX = (
     "AggBCgIIBQoCCAJCBAoAEA1yFQoFbmFtZXMSDHswOiAnc2NyZXcnfXIOCgR0YXNrEgZkZXRl"
     "Y3RyEAoHZW5kMmVuZBIFRmFsc2VyFgoEYXJncxIOeydubXMnOiBGYWxzZX0="
 )
+
+
+@pytest.mark.parametrize(
+    ("classParams", "expectedIds"),
+    [({}, [0]), ({"classes": []}, [0]), ({"classes": [0]}, [0]), ({"classes": [1]}, [])],
+    ids=["omitted", "empty", "matching-filter", "nonmatching-filter"],
+)
+def testOperatorClassFilterWithRealOnnxModel(tmp_path, classParams, expectedIds) -> None:
+    modelPath = tmp_path / "tiny.onnx"
+    modelPath.write_bytes(base64.b64decode(_TINY_YOLO_ONNX))
+    YoloInferenceOperator.clearCache()
+    try:
+        result = YoloInferenceOperator().executeNode(
+            {"image": np.zeros((4, 8, 3), dtype=np.uint8)},
+            {"modelPath": str(modelPath), **classParams},
+            {},
+        )
+        assert result["status"] == "ok"
+        detections = DetectionCollection.fromPayload(result["outputs"]["detections"])
+        assert [item.classId for item in detections.items] == expectedIds
+        assert [item.label for item in detections.items] == ["screw"] * len(expectedIds)
+        assert result["metrics"]["detectionCount"] == len(expectedIds)
+    finally:
+        YoloInferenceOperator.clearCache()
 
 
 def testOnnxSessionRunsTinyModelAndMapsLetterboxToGrayImage(tmp_path) -> None:

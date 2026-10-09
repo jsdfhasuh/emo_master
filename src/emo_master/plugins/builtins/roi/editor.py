@@ -15,6 +15,7 @@ from PySide2.QtWidgets import (
     QWidget,
 )
 
+from emo_master.apps.designer.ui.param_form import applyParameterLabel
 from emo_master.plugins.builtins._editor_support import (
     PurePreviewControllerBase,
     requiredChild,
@@ -207,6 +208,18 @@ class RoiEditorController(PurePreviewControllerBase):
             "padValue": requiredChild(rootWidget, QSpinBox, "padValueSpin"),
             "interpolation": requiredChild(rootWidget, QComboBox, "interpolationCombo"),
         }
+        labels = {
+            "roiType": "roiTypeLabel", "x": "xLabel", "y": "yLabel",
+            "width": "widthLabel", "height": "heightLabel",
+            "centerX": "centerXLabel", "centerY": "centerYLabel",
+            "angleDegrees": "angleLabel", "points": "pointsLabel",
+            "padValue": "padLabel", "interpolation": "interpolationLabel",
+        }
+        for name, labelName in labels.items():
+            applyParameterLabel(
+                requiredChild(rootWidget, QLabel, labelName), self.controls[name],
+                name, context.paramSchema,
+            )
         for name in ("x", "y", "width", "height", "centerX", "centerY"):
             control = self.controls[name]
             control.setRange(-1_000_000_000.0, 1_000_000_000.0)

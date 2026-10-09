@@ -19,8 +19,8 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "invert": {"type": "boolean", "default": false},
-      "fillValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "invert": {"title": "反转掩膜", "type": "boolean", "default": false},
+      "fillValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
     }
   },
   "minCoreVersion": "0.3.0",

@@ -39,6 +39,7 @@ class ImageLoaderOperator:
             "type": "object",
             "properties": {
                 "imagePath": {
+                    "title": "图像路径",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
@@ -46,6 +47,7 @@ class ImageLoaderOperator:
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
                 "colorMode": {
+                    "title": "颜色模式",
                     "type": "string",
                     "enum": ["color", "grayscale"],
                     "default": "color",

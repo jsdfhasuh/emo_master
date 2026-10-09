@@ -9,6 +9,7 @@ from emo_master.core.workflow.loop_contracts import (
     CURRENT_LOOP_CONTRACT_VERSION,
     deriveLoopContract,
     interfacePortTypes,
+    whileConditionMode,
 )
 
 
@@ -116,7 +117,9 @@ def validateProjectDocument(
                     )
                 for field in (
                     "bodyWorkflowId",
-                    "conditionWorkflowId" if mode == "while" else "__unused__",
+                    "conditionWorkflowId"
+                    if mode == "while" and whileConditionMode(node.loop) == "workflow"
+                    else "__unused__",
                 ):
                     if field == "__unused__":
                         continue
@@ -176,7 +179,7 @@ def validateProjectDocument(
                     )
                 if (
                     node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION
-                    and document.schemaVersion not in {"2.1", "2.2", "2.3"}
+                    and document.schemaVersion not in {"2.1", "2.2", "2.3", "2.4"}
                 ):
                     issues.append(
                         ValidationIssue(
@@ -201,7 +204,8 @@ def validateProjectDocument(
                     else None
                 )
                 if bodyWorkflow is not None and (
-                    mode != "while" or conditionWorkflow is not None
+                    mode != "while" or whileConditionMode(node.loop) != "workflow"
+                    or conditionWorkflow is not None
                 ):
                     contract = deriveLoopContract(
                         node.loop,
@@ -209,6 +213,7 @@ def validateProjectDocument(
                         bodyWorkflow.outputs,
                         conditionWorkflow.inputs if conditionWorkflow is not None else {},
                         conditionWorkflow.outputs if conditionWorkflow is not None else {},
+                        document.globalVariables,
                     )
                     for contractIssue in contract.issues:
                         if contractIssue.code == "E_LOOP_MODE_INVALID":

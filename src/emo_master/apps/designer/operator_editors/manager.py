@@ -31,12 +31,14 @@ class OperatorEditorManager:
         cacheRoot: Path | None = None,
         getCurrentJobId: Callable[[], str | None] | None = None,
         getSqliteDraft: Callable[[EditorKey], dict] | None = None,
+        getPreviewProject: Callable[[EditorKey], dict[str, object]] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.applyParams = applyParams
         self.appendLog = appendLog
         self.getCurrentJobId = getCurrentJobId or (lambda: None)
         self.getSqliteDraft = getSqliteDraft
+        self.getPreviewProject = getPreviewProject
         self._trustStore = EditorTrustStore(settingsStore)
         self._assetCache = EditorAssetCache(cacheRoot)
         self._windows: dict[EditorKey, OperatorWorkspaceWindow] = {}
@@ -54,10 +56,16 @@ class OperatorEditorManager:
         operatorDefinition: dict[str, object] | None = None,
         workflowOptions: list[str] | None = None,
         parent: object | None = None,
+        variableDefinitions=None,
+        variableBindings=None,
+        applyConfiguration=None,
     ) -> OperatorWorkspaceWindow:
         key = EditorKey(projectId, workflowId, nodeId)
         existing = self._windows.get(key)
         if existing is not None:
+            refreshSchema = getattr(existing, "refreshSchema", None)
+            if callable(refreshSchema):
+                refreshSchema(schema)
             existing.show()
             existing.raise_()
             existing.activateWindow()
@@ -81,6 +89,10 @@ class OperatorEditorManager:
             workflowOptions=workflowOptions,
             getCurrentJobId=self.getCurrentJobId,
             getSqliteDraft=self.getSqliteDraft,
+            getPreviewProject=self.getPreviewProject,
+            variableDefinitions=variableDefinitions,
+            variableBindings=variableBindings,
+            applyConfiguration=applyConfiguration,
         )
 
         customRoot = None
@@ -192,6 +204,20 @@ class OperatorEditorManager:
     def invalidatePreviewSources(self) -> None:
         for window in tuple(self._windows.values()):
             window.context.invalidatePreviewSources()
+
+    def refreshWorkflowSchemas(self, projectId, schemaForNode) -> None:
+        for key, window in tuple(self._windows.items()):
+            if key.projectId != projectId:
+                continue
+            schema = schemaForNode(key.workflowId, key.nodeId)
+            refresh = getattr(window, "refreshSchema", None)
+            if schema is not None and callable(refresh):
+                refresh(schema)
+
+    def refreshVariableDefinitions(self, projectId) -> None:
+        for key, window in tuple(self._windows.items()):
+            if key.projectId == projectId:
+                window.refreshSchema(window.context.paramSchema)
 
     def closeAll(self) -> None:
         self.invalidatePreviewSources()

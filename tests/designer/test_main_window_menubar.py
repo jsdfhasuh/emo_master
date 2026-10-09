@@ -41,7 +41,7 @@ def testMainWindowBuildsMenuBarGroups() -> None:
     assert callable(getMenuBarGroups)
     groups = getMenuBarGroups()
     assert groups == ["文件", "运行", "编辑", "视图"]
-    assert "全局计数器…" in window._menuActions
+    assert "全局变量…" in window._menuActions
 
 
 def testControlFlowNodesAreNotAddedFromFileMenu() -> None:

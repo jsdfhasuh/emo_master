@@ -19,9 +19,9 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "alpha": {"type": "number", "default": 0.5},
-      "beta": {"type": "number", "default": 0.5},
-      "gamma": {"type": "number", "default": 0.0}
+      "alpha": {"title": "第一幅图像权重", "type": "number", "default": 0.5},
+      "beta": {"title": "第二幅图像权重", "type": "number", "default": 0.5},
+      "gamma": {"title": "加权偏移量", "type": "number", "default": 0.0}
     }
   },
   "minCoreVersion": "0.3.0",

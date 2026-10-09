@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import cast
+from typing import Any, cast
 
 from emo_master.apps.designer.operator_editors.controller_protocol import (
     EditorContext,
@@ -26,7 +26,7 @@ def _validationMessage(value: object) -> str:
 
 
 try:
-    from PySide2.QtCore import Qt
+    from PySide2.QtCore import Qt, Signal
     from PySide2.QtWidgets import (
         QDialog,
         QHBoxLayout,
@@ -40,6 +40,8 @@ try:
     from emo_master.apps.designer.ui.icon_map import icon
 
     class OperatorWorkspaceWindow(QDialog):
+        workflowOpenRequested: Any = Signal(str)
+
         def __init__(
             self,
             *,
@@ -64,6 +66,9 @@ try:
             self._forceClosing = False
             self._disposed = False
             self._schemaForm: SchemaParamForm | None = None
+            self._bindingPanel = None
+            self._bindingScroll = None
+            self._loadedBindings = list(getattr(context, "variableBindings", []))
             self.setModal(False)
             self.setAttribute(Qt.WA_DeleteOnClose, True)
             self.setWindowTitle(title)
@@ -85,11 +90,22 @@ try:
                 controller.loadParams(dict(values))
             else:
                 form = SchemaParamForm()
+                form.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
                 form.setWorkflowOptions(context.workflowOptions)
                 form.setSchema(schema, values)
                 self._schemaForm = form
                 layout.addWidget(scrollContent(form), 1)
 
+            if getattr(context, "variableDefinitions", None) is not None:
+                from emo_master.apps.designer.operator_editors.variable_bindings import VariableBindingsPanel
+                self._bindingPanel = VariableBindingsPanel(context)
+                context.collectVariableBindings = self._bindingPanel.bindings
+                bindingScroll = scrollContent(self._bindingPanel)
+                self._bindingScroll = bindingScroll
+                bindingScroll.setMaximumHeight(230)
+                layout.addWidget(bindingScroll)
+                if self._schemaForm is not None and self._bindingPanel.installInline(self._schemaForm):
+                    bindingScroll.hide()
             buttons = QHBoxLayout()
             buttons.addStretch(1)
             self._applyButton = QPushButton("应用")
@@ -112,6 +128,20 @@ try:
             if self._controller is not None:
                 self._controller.onOpen()
 
+        def refreshSchema(self, schema) -> None:
+            bindingsChanged = self._bindingPanel is not None and self._bindingPanel.needsRefresh(schema)
+            schemaChanged = self.context.paramSchema != schema
+            if not schemaChanged and not bindingsChanged:
+                return
+            self.context.paramSchema = schema
+            if self._schemaForm is not None:
+                values = self.collectParams()
+                self._schemaForm.setSchema(schema, values)
+            if self._bindingPanel is not None and self._bindingScroll is not None:
+                self._bindingPanel.refresh()
+                if self._schemaForm is not None:
+                    self._bindingScroll.setVisible(not self._bindingPanel.installInline(self._schemaForm))
+
         def collectParams(self) -> dict[str, object]:
             if self._controller is not None:
                 return dict(self._controller.collectParams())
@@ -121,7 +151,8 @@ try:
 
         def isDirty(self) -> bool:
             try:
-                return self._dirtyHint or self.collectParams() != self._loadedParams
+                return (self._dirtyHint or self.collectParams() != self._loadedParams
+                        or (self._bindingPanel is not None and self._bindingPanel.bindings() != self._loadedBindings))
             except Exception:
                 return True
 
@@ -138,19 +169,29 @@ try:
 
         def applyChanges(self) -> bool:
             try:
-                if self._controller is not None:
+                bindings = self._bindingPanel.bindings() if self._bindingPanel else []
+                if self._schemaForm is not None and not bindings:
+                    validation = self._schemaForm.validationMessage()
+                    if validation:
+                        self.setError(validation)
+                        return False
+                if self._controller is not None and not bindings:
                     validation = _validationMessage(self._controller.validate())
                     if validation:
                         self.setError(validation)
                         return False
                 params = self.collectParams()
-                if not self.context.applyParams(params):
+                applied = (self.context.applyConfiguration(self.key, params, bindings)
+                           if getattr(self.context, "applyConfiguration", None) is not None else self.context.applyParams(params))
+                if not applied:
                     self.setError("参数未应用，请查看 Designer 日志")
                     return False
             except Exception as err:
                 self.setError(str(err))
                 return False
             self._loadedParams = dict(params)
+            self._loadedBindings = bindings
+            self.context.variableBindings = bindings
             self._dirtyHint = False
             self.setStatus("参数已应用")
             return True

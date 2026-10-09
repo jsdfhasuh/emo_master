@@ -4,6 +4,7 @@ from pathlib import Path
 
 from emo_master.core.project.delivery_store import DeliveryStore
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.files import resolveProjectFile
 from emo_master.core.project.package_builder import buildPageTestPackage
 
 
@@ -22,8 +23,9 @@ def main(arguments=None):
             command.add_argument('--revision', required=True)
     args = parser.parse_args(arguments)
     if args.command == 'export':
-        doc = ProjectDocument.model_validate_json((args.project/'project.json').read_text(encoding='utf-8'))
-        print(buildPageTestPackage(doc, args.project, args.output))
+        projectFile = resolveProjectFile(args.project)
+        doc = ProjectDocument.model_validate_json(projectFile.read_text(encoding='utf-8'))
+        print(buildPageTestPackage(doc, projectFile.parent, args.output))
     else:
         store = DeliveryStore(args.store)
         if args.command == 'import':

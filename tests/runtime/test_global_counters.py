@@ -41,15 +41,16 @@ def testGlobalCounterMigrationUpgradesExistingDatabase(tmp_path: Path) -> None:
     store = SqliteStore(dbPath)
     store.initialize()
     with sqlite3.connect(dbPath) as connection:
-        connection.execute("DROP TABLE globalCounters")
-        connection.execute("DELETE FROM schemaMigrations WHERE version = 4")
+        connection.execute("DROP VIEW globalCounters")
+        connection.execute("DROP TABLE globalCountersLegacy")
+        connection.execute("DELETE FROM schemaMigrations WHERE version IN (4, 5)")
         connection.commit()
 
     store.initialize()
 
     with sqlite3.connect(dbPath) as connection:
         assert connection.execute(
-            "SELECT name FROM sqlite_master WHERE type = 'table' AND name = 'globalCounters'"
+            "SELECT name FROM sqlite_master WHERE type = 'view' AND name = 'globalCounters'"
         ).fetchone() == ("globalCounters",)
 
 

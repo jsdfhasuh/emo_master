@@ -112,6 +112,20 @@ def editor(retainedQtApplication, tmp_path):
         runtime.close()
 
 
+def testSqliteParameterLabelsUseSchemaAndKeepKeys(editor):
+    from PySide2.QtWidgets import QLabel
+    window, controller, _applied, _draft, _manager = editor
+    for name, control in (
+        ('databasePath', controller.path), ('table', controller.table),
+        ('debugDatabasePath', controller.testPath), ('failurePolicy', controller.failure),
+    ):
+        title = controller.context.paramSchema['properties'][name]['title']
+        assert f'参数键：{name}' in control.toolTip()
+        assert any(label.text() == title and f'参数键：{name}' in label.toolTip()
+                   for label in window.findChildren(QLabel))
+    assert '参数键：mappings' in controller.fields.toolTip()
+
+
 def testRowAddDeleteOrderFalsyConstantsTypesAndApplication(editor):
     window, controller, applied, _draft, _manager = editor
     controller._loadRows([{'column': 'zero', 'storageType': 'INTEGER', 'missing': 'error', 'source': {'kind': 'constant', 'value': 0}},

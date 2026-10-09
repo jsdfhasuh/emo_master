@@ -12,6 +12,7 @@ from .action_state import flowEditAllowed
 
 SHORTCUTS = {
     'open': ('Ctrl+O',), 'save': ('Ctrl+S',),
+    'save_as': ('Ctrl+Shift+S',),
     'undo': ('Ctrl+Z',), 'redo': ('Ctrl+Shift+Z', 'Ctrl+Y'),
     'copy': ('Ctrl+D',), 'delete': ('Delete', 'Backspace'),
     'configure': ('F2',), 'results': ('Ctrl+Return', 'Ctrl+Enter'),
@@ -41,6 +42,7 @@ class DesignerActions(QObject):
         for key, name in [('open', '加载项目'), ('save', '保存项目'), ('run', '开始运行'),
                           ('stop', '停止运行'), ('layout', '自动布局'), ('logs', '打开日志')]:
             self.adopt(key, toolbar[name])
+        self.adopt('save_as', window._menuActions['项目另存为…'])
         for key, titles in [('undo', {'撤销', '撤销项目编辑'}), ('redo', {'重做', '重做项目编辑'})]:
             action = getattr(chrome, key, None) if chrome else None
             if action is None:
@@ -131,6 +133,8 @@ class DesignerActions(QObject):
                 return '任务运行中不能撤销或重做项目'
             history = w.pageCoordinator.session._redo if key == 'redo' else w.pageCoordinator.session._undo
             return '' if history else '暂无编辑记录'
+        if key == 'save_as':
+            return '请结束当前任务后再另存项目' if w.isJobRunning else ''
         if key == 'save':
             return ''
         if key == 'open':

@@ -12,6 +12,7 @@ from PySide2.QtWidgets import (
 from shiboken2 import isValid
 
 from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
+from emo_master.apps.designer.ui.param_form import applyParameterLabel, parameterToolTip, parameterTitle
 from emo_master.apps.designer.operator_editors.sqlite_requests import requests
 from emo_master.apps.designer.operator_editors.sqlite_sources import validateDraftMappings
 from emo_master.core.contracts.port_types import normalizePortType
@@ -213,6 +214,19 @@ class SqliteWriterEditorController:
         rulesLayout = QFormLayout(rules)
         self.failure = _combo([('写入失败停止任务（默认）', 'stop'), ('继续任务，保留失败回执和 ERROR 日志', 'continue')])
         rulesLayout.addRow('失败策略', self.failure)
+        for paramLayout, rowControl, inputControl, name in (
+            (form, pathRow, self.path, 'databasePath'),
+            (form, self.table, self.table, 'table'),
+            (form, self.testPath, self.testPath, 'debugDatabasePath'),
+            (rulesLayout, self.failure, self.failure, 'failurePolicy'),
+        ):
+            applyParameterLabel(
+                paramLayout.labelForField(rowControl), inputControl, name, context.paramSchema,
+            )
+        mappingSchema = context.paramSchema.get('properties', {}).get('mappings', {})
+        fields.setTitle(parameterTitle('mappings', mappingSchema))
+        fields.setToolTip(parameterToolTip('mappings', mappingSchema))
+        self.fields.setToolTip(fields.toolTip())
         rule = WrapLabel('每次调用写一条；集合存 JSON。enabled 未连接默认启用。只有 commit 成功才返回 COMMITTED。取消不会被“继续”吞掉。')
         rule.setWordWrap(True)
         rulesLayout.addRow(rule)

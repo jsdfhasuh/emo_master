@@ -56,6 +56,7 @@ _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "modelPath": {
+            "title": "模型路径",
             "type": "string",
             "default": "",
             "xWidget": "file",
@@ -63,31 +64,36 @@ _PARAM_SCHEMA: dict[str, object] = {
             "xFilter": "YOLO ONNX 模型 (*.onnx)",
         },
         "confidence": {
+            "title": "置信度阈值",
             "type": "number",
             "minimum": 0.0,
             "maximum": 1.0,
             "default": 0.25,
         },
         "iou": {
+            "title": "非极大值抑制 IoU 阈值",
             "type": "number",
             "minimum": 0.0,
             "maximum": 1.0,
             "default": 0.45,
         },
-        "imageSize": {"type": "integer", "minimum": 1, "default": 640},
-        "maxDetections": {"type": "integer", "minimum": 1, "default": 300},
+        "imageSize": {"title": "推理图像尺寸", "type": "integer", "minimum": 1, "default": 640},
+        "maxDetections": {"title": "最大检测数量", "type": "integer", "minimum": 1, "default": 300},
         "device": {
+            "title": "推理设备",
             "type": "string",
             "enum": ["auto", "cpu"],
             "default": "auto",
         },
         "classes": {
+            "title": "检测类别（可选）",
+            "description": "留空或 [] 表示检测模型支持的全部类别；填写 [0, 1] 等类别编号时仅保留指定类别。类别名称自动从模型读取。",
             "type": "array",
             "items": {"type": "integer", "minimum": 0},
             "default": [],
         },
-        "agnosticNms": {"type": "boolean", "default": False},
-        "drawOverlay": {"type": "boolean", "default": False},
+        "agnosticNms": {"title": "不区分类别的非极大值抑制", "type": "boolean", "default": False},
+        "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": False},
     },
     "required": ["modelPath"],
 }

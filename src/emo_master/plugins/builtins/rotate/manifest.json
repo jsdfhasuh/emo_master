@@ -19,10 +19,10 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "angleDegrees": {"type": "number", "minimum": -180.0, "exclusiveMaximum": 180.0, "default": 0.0},
-      "expand": {"type": "boolean", "default": true},
-      "interpolation": {"type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
-      "padValue": {"type": "integer", "minimum": 0, "maximum": 255, "default": 0}
+      "angleDegrees": {"title": "旋转角度（度）", "type": "number", "minimum": -180.0, "exclusiveMaximum": 180.0, "default": 0.0},
+      "expand": {"title": "扩展输出画布", "type": "boolean", "default": true},
+      "interpolation": {"title": "插值方式", "type": "string", "enum": ["nearest", "linear", "cubic"], "default": "linear"},
+      "padValue": {"title": "填充值", "type": "integer", "minimum": 0, "maximum": 255, "default": 0}
     }
   },
   "minCoreVersion": "0.3.0",

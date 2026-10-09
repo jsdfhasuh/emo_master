@@ -1,0 +1,14 @@
+{
+  "operatorId": "vision.state.variable_write",
+  "displayName": "写入全局变量",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.variable_write.operator:WriteVariableOperator",
+  "category": "数值与逻辑",
+  "iconKey": "count",
+  "summary": "写入可修改的全局变量并输出写入后的值。",
+  "inputPorts": {"value": {"type": "any", "required": true, "nullable": false}},
+  "outputPorts": {"value": {"type": "any", "required": true, "nullable": false}},
+  "paramSchema": {"type": "object", "properties": {"variableId": {"type": "string", "title": "全局变量", "minLength": 1}}, "required": ["variableId"]},
+  "minCoreVersion": "0.6.0",
+  "maxCoreVersion": "1.x"
+}

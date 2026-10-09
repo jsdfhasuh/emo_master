@@ -1,0 +1,117 @@
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+All checks passed!
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+src\emo_master\apps\designer\state\run_result_history.py:39: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\state\run_result_history.py:40: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\ui\run_result_tools.py:15: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:327: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:68: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:69: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:864: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 355 source files
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+........................................................................ [  1%]
+...............s........................................................ [  3%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 10%]
+........................................................................ [ 12%]
+........................................................................ [ 14%]
+........................................................................ [ 16%]
+........................................................................ [ 18%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+........................................................................ [ 28%]
+..................................F..................................... [ 30%]
+........................................................................ [ 32%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 37%]
+.................................................................s...... [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 46%]
+........................................................................ [ 48%]
+........................................................................ [ 50%]
+........................................................................ [ 52%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 66%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+........................................................................ [ 74%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+..................................................................................................................... [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 87%]
+........................................................................ [ 89%]
+........................................................................ [ 91%]
+...........ssss......................................................s.. [ 93%]
+...................................................................... [ 95%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+......................................................                   [100%]
+================================== FAILURES ===================================
+____ testLegacyWhileShowsBooleanOutputAndCanExplicitlySwitchToBooleanMode _____
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2125276b4d0) at 0x00000212543CECA0>
+
+    def testLegacyWhileShowsBooleanOutputAndCanExplicitlySwitchToBooleanMode(designerApplication):
+        window = legacyWindow()
+        window.openNodeParamDialog("while")
+        form = window.nodeParamDialog._schemaForm
+        assert form.getValues()["conditionMode"] == "workflow"
+        assert not form._controls["conditionWorkflowId"].isHidden()
+        assert form._controls["conditionPort"].isHidden()
+        assert any("continue（布尔值）" in text for text, _ in window.flowScene._nodeItems["while"].model.summaryLines)
+        beforeEdges = deepcopy(window.flowModel.edges)
+        beforePositions = window.flowScene.getNodePositions()
+        mode = form._controls["conditionMode"]
+        mode.setCurrentIndex(mode.findData("boolean"))
+        condition = form._controls["conditionPort"]
+        condition.setCurrentIndex(condition.findData("hasNext"))
+        assert form._controls["conditionWorkflowId"].isHidden()
+        assert window.nodeParamDialog.applyChanges()
+        node = window.flowModel.nodes["while"]
+        assert node.loop["conditionMode"] == "boolean"
+        assert "conditionWorkflowId" not in node.loop
+>       assert window.flowModel.edges == beforeEdges
+E       AssertionError: assert [FlowEdge(fro...rt='hasNext')] == [FlowEdge(fro...rt='hasNext')]
+E
+E         At index 1 diff: FlowEdge(fromNode='while', fromPort='hasNext', toNode='output', toPort='hasNext') != FlowEdge(fromNode='initial', fromPort='result', toNode='while', toPort='hasNext')
+E         Right contains one more item: FlowEdge(fromNode='while', fromPort='hasNext', toNode='output', toPort='hasNext')
+E         Use -v to get more diff
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_while_boolean.py:79: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_while_boolean.py::testLegacyWhileShowsBooleanOutputAndCanExplicitlySwitchToBooleanMode
+1 failed, 3977 passed, 8 skipped, 28 subtests passed in 1068.39s (0:17:48)
+[ci-check] failed pytest with code 1

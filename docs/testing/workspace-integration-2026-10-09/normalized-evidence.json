@@ -1,0 +1,650 @@
+[
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-existing-failures.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-existing-failures.txt.raw.gz",
+    "originalSha256": "78f2217f5f20257dabb517537b38db1e52434ec6eb18791df940eb89fda1302a",
+    "normalizedSha256": "e2ab41ffbe2e9ab4149535317d617badf89951a6bd692634ea466a547cadb69c"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-final-accepted.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-final-accepted.txt.raw.gz",
+    "originalSha256": "936288a40f54470572ea989be5b1f7d198fc3b34d48ca9eb6d0ba7558ca7b8ab",
+    "normalizedSha256": "5f6cb63dd99457d7f47e65c4453f8c1ade74abc49e3fbf4898f6ad181351ad21"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-final-regressions.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-final-regressions.txt.raw.gz",
+    "originalSha256": "b455f782d3bb902d9dcc6d62e5114a91f5aa01bde1ba7f985a3f32a0b25cf089",
+    "normalizedSha256": "c170a0c47c20c762a3c89a8972dcbeb79201d1b49c9186e0dc51b469a09bd291"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-location.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-location.txt.raw.gz",
+    "originalSha256": "c61b533bb01dbf99df321e4a24a2936d1fb9d4f0db720e2bec41fb41deedd19f",
+    "normalizedSha256": "73b4c98d0dd509beb0c5952fd9104624605dffef48d2034c48ecbdeb912ef4de"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-new-regressions.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-new-regressions.txt.raw.gz",
+    "originalSha256": "1e1207779bcbf7cc96eeb7ba98a14eb4f0ef279901b658a34237bf9e891350e0",
+    "normalizedSha256": "7808e1b1263e3583e261164bf8cc61b0eaf64e37654c2c65fa1c7139fc957b04"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/baseline-page-drag.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/baseline-page-drag.txt.raw.gz",
+    "originalSha256": "80a49dfa261a7e2ad5e7885fe00669b445b9a446a1645bf34d2354726e1e2a56",
+    "normalizedSha256": "a33286c6a594617561f0e2dcac2a49e43285cbd1cba8a7c7c6e90fb2dbe961c8"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/designer-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/designer-final.txt.raw.gz",
+    "originalSha256": "a67fd487e40e7809b1bb668af6c35a286d65b69eca549f3ae6b0f521c1ec1e42",
+    "normalizedSha256": "e9c9becbc413dd8ffd345acbdd04825262831ef2abc1cfcddbea5b00ad715f98"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/designer-first.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/designer-first.txt.raw.gz",
+    "originalSha256": "89d9bb68c2afa840de30daf305f7e438bc5cb4ececf08e936466f8c7f2c9ea1c",
+    "normalizedSha256": "a6de55ecf945f9b8f77444fa818b9a9af65e362eba9ddde5eb4fd61f7b4fa95c"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/expanded-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/expanded-final.txt.raw.gz",
+    "originalSha256": "f5f0827f420fc87ebab8995a26bc9c23d9e015410540e52f3f6446541c6f6093",
+    "normalizedSha256": "7ff164434e01a5e8c948e1cb2337e5933790fe42d5c8fb052fe61d668f645ab0"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/expanded-first.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/expanded-first.txt.raw.gz",
+    "originalSha256": "462a6a7db03eea3017d9107b76d767456b16c4f7ada3078f19b7f9a62887d709",
+    "normalizedSha256": "c046f79491ee1db140d59881e903ab93e15c5140f2b12248557ec4c1576b61ca"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final-accepted.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final-accepted.txt.raw.gz",
+    "originalSha256": "581aa5bffd10e276d73cc48fe26e960ccfb6efad8f9934e611459cf037fa1a41",
+    "normalizedSha256": "95a63a08c0a970dad32cf34e4908e93887a40ed6cfe3d0d608423b52384ab9a7"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final-refs-second.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final-refs-second.txt.raw.gz",
+    "originalSha256": "0a0d1cd5598a44d607034955455a1c7403b7de68f72064b4c50722eebde8d45f",
+    "normalizedSha256": "48a04508d5692a152373686d868499f149ed9e6abffba27fcd844acbd1b80201"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final-refs.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final-refs.txt.raw.gz",
+    "originalSha256": "efd38bb5ea75ea3cd56bfe060a397546537639daa96f596376b8798ce3cb1c9b",
+    "normalizedSha256": "7487e3a2d8db565022a7dc9f6b5ec79c5d855168935d62ff1f6574aca69fe607"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final-second.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final-second.txt.raw.gz",
+    "originalSha256": "c78432704a8392ba8f0eb5c7fb38373f85295b05e35a7d8a16727c454260759c",
+    "normalizedSha256": "13ac7a2729962e2f24127ab62615d6135c2f71aeb7a2e1924874954cde17fc6e"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final-third.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final-third.txt.raw.gz",
+    "originalSha256": "4bbf2053e7585a3e5531b7b96370ae6fa6850d9c5b99e0432681faa2f5bfdd8d",
+    "normalizedSha256": "ba97b84194199bd450ebb732d4a0efb21d8412df936eeedab275d03458b78d6a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/focused-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/focused-final.txt.raw.gz",
+    "originalSha256": "8fbbf46ef2f12d4d3d83ac4ad27b0d90e3251d1bd6db8c809295dfbd18f50086",
+    "normalizedSha256": "3000831b89e2bc0be292c723005dfc783defea8e88bafc50a5dacb665a6e9baf"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/mypy-final-refs.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/mypy-final-refs.txt.raw.gz",
+    "originalSha256": "e903677c248a6ca6ac9094eed21b5350be088d014c43570c553f047d8f487a0a",
+    "normalizedSha256": "fe22d95914d7fdd98483ace256b7f2708db4be1255737e5d7cca4d16703ca242"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/mypy-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/mypy-final.txt.raw.gz",
+    "originalSha256": "99774ae94d9c061d2ee8a3c00a79bb1c6dfd2b0998f7cb389be50e19a0dc7d15",
+    "normalizedSha256": "8b88f6d12bd312c1b024b66d07a7f7619a68482ac4d64e475759b1823199faa5"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/mypy-first.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/mypy-first.txt.raw.gz",
+    "originalSha256": "99774ae94d9c061d2ee8a3c00a79bb1c6dfd2b0998f7cb389be50e19a0dc7d15",
+    "normalizedSha256": "8b88f6d12bd312c1b024b66d07a7f7619a68482ac4d64e475759b1823199faa5"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/native-100-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/native-100-final.txt.raw.gz",
+    "originalSha256": "4250c461f981a6a8da106e295f356d8ac305bbfa1df4a6eb7d2acb69e3a5ac27",
+    "normalizedSha256": "8b787352b199c90fef9195e1feccbcb1de8ee5b929ec375b2a5152a169734038"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/native-100.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/native-100.txt.raw.gz",
+    "originalSha256": "4250c461f981a6a8da106e295f356d8ac305bbfa1df4a6eb7d2acb69e3a5ac27",
+    "normalizedSha256": "8b787352b199c90fef9195e1feccbcb1de8ee5b929ec375b2a5152a169734038"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/native-150-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/native-150-final.txt.raw.gz",
+    "originalSha256": "b4c358ed20dc0bf7240c386e0dd927a26a2330467ac878122f9a75aaa1977ae1",
+    "normalizedSha256": "5e0e10d9bf7d02351b57036bc467d234cdf51b619e12300236687ca76101f47f"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/native-150.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/native-150.txt.raw.gz",
+    "originalSha256": "2893ae43846281de3791c515b30f4eb6e9d7385a6073d662dbcebe44091f9e28",
+    "normalizedSha256": "c77e9d9337353c9b54a36693f5325ef4d61fdb68c1ff0f8e09739ea141f38192"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/regressions-before.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/regressions-before.txt.raw.gz",
+    "originalSha256": "79d3737142a8c041f58f5d69a3bec93e86c8b4e3484ea51d0d0e832079fc2348",
+    "normalizedSha256": "6ab94ba6818a4128566ab5344a482e52331600722c9cd5e01c8b23d24b088089"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/regressions-first.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/regressions-first.txt.raw.gz",
+    "originalSha256": "bbccef292f1431910fa8492d986d9540a089b439bad11823e537ef33d272c5dc",
+    "normalizedSha256": "5fe27db018c4dc3f8cb72ceb7eeae4036abddb7de698297d0abe3159c0791d3c"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/regressions-second.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/regressions-second.txt.raw.gz",
+    "originalSha256": "70500e1c9e3175ee5be3a931b8a54fd738381f3758a746021956c64f2cb1c9cb",
+    "normalizedSha256": "233203ad8c3d889382c18581fe2c979fdf3d1c4b507b585b05815d734141892a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/ruff-final-refs.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/ruff-final-refs.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/ruff-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/ruff-first.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/ruff-first.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-delivery-fixture-recheck.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-delivery-fixture-recheck.txt.raw.gz",
+    "originalSha256": "5ef4fb1eee8560893ebdfa677019b98f791c15268b8e2c9401d866888c55686e",
+    "normalizedSha256": "83233045b29d7e361ffc4826f9d8bccce43519f1b85f8d1deec84241634c1b2a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-expanded-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-expanded-final.txt.raw.gz",
+    "originalSha256": "8a4d6c0074f6bfde28fe91af15631eac293304c4f913b571f24463f1333ee960",
+    "normalizedSha256": "1fd0ee50ae464edd36922f15282f9ab28f5a3beec6c88e1ff79ab530ae002b78"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-expanded.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-expanded.txt.raw.gz",
+    "originalSha256": "feeaba6438e44f1e4c8bfedc5b50f15cf46cb3e0413baafa36cd6c00cfa9a1d5",
+    "normalizedSha256": "ee0eccc5922f8276ab0214b144567d7bc23558cd4ffa961c40241122c23279b9"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-focused.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-focused.txt.raw.gz",
+    "originalSha256": "c976790fdd3e8fae4b0b4bcb33ad904f6e8c61e1e68f1cad4619be96b265be5a",
+    "normalizedSha256": "d887acbef5b1a793e8305d889801da4835ee07816cad7fe8ca106d6704006683"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-location.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-location.txt.raw.gz",
+    "originalSha256": "886d33227a75f3b04d0c1bfad9ecbf106c2a0cdda860bf7badf49163b03a823b",
+    "normalizedSha256": "70266032688d2ea83a231f81342ce9e9ce760a35f0e0ca0f173285081a991081"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-mypy.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-mypy.txt.raw.gz",
+    "originalSha256": "e903677c248a6ca6ac9094eed21b5350be088d014c43570c553f047d8f487a0a",
+    "normalizedSha256": "fe22d95914d7fdd98483ace256b7f2708db4be1255737e5d7cca4d16703ca242"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/scoped-ruff.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/scoped-ruff.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/undo-isolation.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/undo-isolation.txt.raw.gz",
+    "originalSha256": "6025c4c0efcf1c936ad6d158ed9988c3b53711b357691a91faffb54a3f7a569a",
+    "normalizedSha256": "3b925d854612427981024b8f57034c9c1fbc9ff5c5d79b142e25ba85f82b0c38"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-concurrent-failures-recheck.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-concurrent-failures-recheck.txt.raw.gz",
+    "originalSha256": "f46192d027854fcdf1c315b5be12022c2fb1c91c5451236f2877c9b42381ae17",
+    "normalizedSha256": "83c58f181ee9352728051b285dac6f20852c7bf5c8a2abe8d795c4d6a714b78f"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-designer-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-designer-final.txt.raw.gz",
+    "originalSha256": "58f0bf9954e3b99a32c25ecd631fe033dac31847583e13cced672c5c05a18de3",
+    "normalizedSha256": "8d6c9ea2465ac3020307aa27e30beaad56cec0706bbc460d2ed86908a97c9708"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-expanded-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-expanded-final.txt.raw.gz",
+    "originalSha256": "a6b7dc45fd904cdf2eef66a83f40e8cb79f6ceb12fff4739820af07d04718f24",
+    "normalizedSha256": "02951ddad656618fb0dc649bdbba64445761ae02538a1f9ee913a304f8fd436a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-mypy-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-mypy-final.txt.raw.gz",
+    "originalSha256": "5a1bb6f648f04f39c5e5f662ff1af9a84b6e32bdef4f7f295163dc3dd22d80b4",
+    "normalizedSha256": "dfb35e3ede10291bb702682bf25c64e882a17742d36f2704012c516b780060e4"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-mypy-last.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-mypy-last.txt.raw.gz",
+    "originalSha256": "6e52d6f4d90306710e022391b472e4ed96bb19b1f09ebea2ee74134758e27a67",
+    "normalizedSha256": "648d8d0f654e45a35426378b547907954742e093c17af5024e397b18bdd2f2da"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-new-regressions-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-new-regressions-final.txt.raw.gz",
+    "originalSha256": "ae8d1f5f77b9876d610911368052a410e2d8723b4648243b8fb81308cefe766f",
+    "normalizedSha256": "ad5614285619ea7120e62369ab5f50b55638c2e783767d9d5352ce351dfd10d2"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-new-regressions-last.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-new-regressions-last.txt.raw.gz",
+    "originalSha256": "c8eb576641751a659bd02cb6810052ecf86c2d07a6add82cdac9887bb51e43ff",
+    "normalizedSha256": "87c7899b76973594aed13d5d37b1372d0069b05ac851b58f586f3d5772d9f297"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-page-icons-recheck.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-page-icons-recheck.txt.raw.gz",
+    "originalSha256": "b1d409a6ea7478e1c8616a716382cc97d9c8b89b62371dee22d13a05df19a4af",
+    "normalizedSha256": "ab8b6af11d26efbd10374db88229717b6e367485eefa75e84a639e1c3ceb549a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-ruff-final.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-ruff-last.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-ruff-last.txt.raw.gz",
+    "originalSha256": "c4b640e5893c14e69b40bf4d134dae8ac6b4f1321c9d8d65e2d3721178db4d1a",
+    "normalizedSha256": "6f72d143b679cbdd56a7da084dde9032e73f27420a68ab22402e84214b6ffe8a"
+  },
+  {
+    "file": "docs/testing/control-flow-fixes-2026-10-09/workspace-undo-diagnostic.txt",
+    "raw": "docs/testing/control-flow-fixes-2026-10-09/workspace-undo-diagnostic.txt.raw.gz",
+    "originalSha256": "0fac90777c6795ff9bd236e24f58fc6bb6740af888ebaa1183e53ac0eee2c0a8",
+    "normalizedSha256": "ad7ab035d0c495d9dc5ee8b046fe9814fa51f5d1ec0f5a4ee89fb2206581309e"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/acceptance-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/acceptance-final.txt.raw.gz",
+    "originalSha256": "2809e6e21684bb8ba1367e8aa92f85e58fbf11a6eedeafe379e7159260831a3c",
+    "normalizedSha256": "035e25c92f09563cb88518d6a79372db9414cb8980cd6e927cffde4900ef0322"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/collected.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/collected.txt.raw.gz",
+    "originalSha256": "297c7b0d946b549957fc610aa826f2ac806a2ccb442c680417f2b81635f1bc5f",
+    "normalizedSha256": "e21f58bf6cfab341175149076a870a4750ab717de558a9c78994b74a67ab30a6"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/compatibility-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/compatibility-final.txt.raw.gz",
+    "originalSha256": "26719954b460484dcc75c813ac11c16045662a5f9711d553096c8d261b99d457",
+    "normalizedSha256": "8933f0cab6b59313381f86f5486fa9cc0ecc1e451101f665cd9ec9854f9d2fb9"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/expanded-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/expanded-final.txt.raw.gz",
+    "originalSha256": "f5a557390c5d4da7efc305835f7e8528398d37f37556aac3df54c93204132911",
+    "normalizedSha256": "31baaa30b65e5bef713eca9b09c1547a038448ad1836dadb81884691616aadc6"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/failures-recheck.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/failures-recheck.txt.raw.gz",
+    "originalSha256": "ebf5fdd719d342e07ff2e96b3b586dd51f14a9dc0ec8bddefc975ace2dac1608",
+    "normalizedSha256": "94d8d2a556641c9d9935159a6f0a17b4652b2fe2c64ed1ed2e04325e3bf28792"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/focused-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/focused-final.txt.raw.gz",
+    "originalSha256": "65f8a86e3271be38c6db6a5e370e8f5e10b736544ebecb8862f90ed0daaecb30",
+    "normalizedSha256": "af13ea70307ab1fdd10d8e58e308c47b1445f91d100e578b2c71ba170bc8b973"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/mypy-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/mypy-final.txt.raw.gz",
+    "originalSha256": "701aafb9901d828ba27b4cc133e656da6b005391be2b0ef0de0170d8f77312c0",
+    "normalizedSha256": "225312bce3024dc52c61376a61e0f6cf78d27a88b5022a6e77a937148a579254"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/mypy.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/mypy.txt.raw.gz",
+    "originalSha256": "50c353e5185586037837da57d31cf4b5aeea749738922d6591a94795298a81ad",
+    "normalizedSha256": "f39eb99f2df50ca0e235c1747330009d46e2ca43743880b09cde018363150604"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/native-100-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/native-100-final.txt.raw.gz",
+    "originalSha256": "0cfeae77a992dcd653c1a33944e75b87b3ed0f3ca494347c2ac7633c5ea6940a",
+    "normalizedSha256": "b32951b5ee345d3d137cea7014a2f0dd5e456855c04ce27df6fb8d38d6d8b7e8"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/native-100.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/native-100.txt.raw.gz",
+    "originalSha256": "be82a0705fefda568a7ff7aafa4f10f0e541c6c6015b222ef6e420794e5d8443",
+    "normalizedSha256": "e22ede06f05e4edb79126300bee7f13bc9ee71eb70441effb1beee7914eab938"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/native-150-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/native-150-final.txt.raw.gz",
+    "originalSha256": "8abb6341835dda323be3c1a8ba4780c7010b214c8b664539323657b1c65b2801",
+    "normalizedSha256": "fb30287e123a9bf3f57a3603ccdc4dc617e3ca76a6d226f0b69f4661b91b7276"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/native-150.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/native-150.txt.raw.gz",
+    "originalSha256": "8abb6341835dda323be3c1a8ba4780c7010b214c8b664539323657b1c65b2801",
+    "normalizedSha256": "fb30287e123a9bf3f57a3603ccdc4dc617e3ca76a6d226f0b69f4661b91b7276"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/proto-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/proto-final.txt.raw.gz",
+    "originalSha256": "07966e620b3d20f208f196f99558abe318b0eb350caa0702ffa3644ecb257014",
+    "normalizedSha256": "8bfe04f95408efbd7fd7b1961e3c331336c59b7a7e9415b75eb8fb2e7ee9e62d"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/regression.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/regression.txt.raw.gz",
+    "originalSha256": "f92b4c75a8ddf93d431e4688b7214ce638975fc9454490aac4c263d469dafea8",
+    "normalizedSha256": "36f9dfbe2c27fff701a70e83021509b9d7055fd79826adc7ec6fa0b7a468cfca"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/focused-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/focused-final.txt.raw.gz",
+    "originalSha256": "e613f308e2e65240a72576f147c30a62d9975b25c741d547dc9713b22955f4f3",
+    "normalizedSha256": "9d7babcabfa23e63a5953f9f1068d83778121297488e792a7b8c47caa49caf1b"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/mypy-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/mypy-final.txt.raw.gz",
+    "originalSha256": "93ab43f921b1cbaeeb231370abfb9cb8fd63a88c084c22616cd11e120c33c407",
+    "normalizedSha256": "07a2d0e0c15429f2aae39f55d31aab6663411ce00451b33e0cfb4165583811cf"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/native-100-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/native-100-final.txt.raw.gz",
+    "originalSha256": "6e4b06bfa500b8968bdcadfdbbeac2d61c098d8cd83a5f23692cbfbe2aed9803",
+    "normalizedSha256": "233053eede7aad3ae6f12fd305ca83c95888f0e27d0980d39701ae3a1e62a112"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/native-150-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/native-150-final.txt.raw.gz",
+    "originalSha256": "7e904ddc0d98501518443dd7316001ebeee8cbd363083feb9c1d31cf08de9e3e",
+    "normalizedSha256": "9b5d75109565584631af6f8bcf3c03c25b2a9747b4cc200def33d77e0d225549"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/regression-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/regression-final.txt.raw.gz",
+    "originalSha256": "bb108c1654c550669ca04f5473e03e6af4fbd4f9c73af9ecf03fa95c83569444",
+    "normalizedSha256": "5df3b35283a2d9a0937aad4b0b1881b48d93ace4e0daeab8b28a4d66e65d6895"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/review-fixes/ruff-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/review-fixes/ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/ruff-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/global-variables-2026-10-09/ui-recheck-final.txt",
+    "raw": "docs/testing/global-variables-2026-10-09/ui-recheck-final.txt.raw.gz",
+    "originalSha256": "6698edcfb78697e9c53b318211cd9747cd1e9e8bd73ae885b280d5a3272bb730",
+    "normalizedSha256": "0d7553bb69c364e7640026c8d29e43e3a82db84dd403ed9f166765589b3f58b7"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/ci-tests.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/ci-tests.txt.raw.gz",
+    "originalSha256": "e159afb4e70d0a4fb88aa6bbe8b6341da2b94053acfb0022144185bc7b89541c",
+    "normalizedSha256": "a8fa31b6465df8fb234f317514e65b6b6450720af1f587061217cf1030cdefe1"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/collected-tests.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/collected-tests.txt.raw.gz",
+    "originalSha256": "29d6ffd6516779100efd354f83d58cd0aa64a1914902b13c26d29ef5ee39d073",
+    "normalizedSha256": "1c91d1c9d286667703cea877fd9cda1fac63d6ebe10e07bcb454d24102d68f21"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/contracts-rpc-sqlite-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/contracts-rpc-sqlite-final.txt.raw.gz",
+    "originalSha256": "3417ed36196b91c1cce51a4af1d5a39fdbbec73dad2d8475052b1aeb964a9d29",
+    "normalizedSha256": "f84db6dfa953f91149a7563644c86d89073c559488db1eaeace38394fc4c8082"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/designer-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/designer-final.txt.raw.gz",
+    "originalSha256": "047895b5d7a753001e5aa7826c731c37dc6a90fed3bc8ae503e641028fbf850a",
+    "normalizedSha256": "fcd38f8970afdfebddf8c8e5abe8463451cdf78bb1e83f72706f28cbc80407f5"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/designer-utf8-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/designer-utf8-final.txt.raw.gz",
+    "originalSha256": "f6c399a6e8c21acf7571fd61399b63167fcd5035ee6a4a8495d52043af49264d",
+    "normalizedSha256": "594d481b92843f0b32f2c944fc6e83285da0c8b3d2e299fc135097d71f2c3fb0"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/focused-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/focused-final.txt.raw.gz",
+    "originalSha256": "3fac9d79684abab01a9f8f3c9b8bb3832fc215a18d4f0a6ea93d190f03609096",
+    "normalizedSha256": "ae85e34a11f392f71ad6999f4a126f42b407798e79b81e4269ac126ca9a96754"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/focused-preload-fixed.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/focused-preload-fixed.txt.raw.gz",
+    "originalSha256": "d9f6989e0c80c4d082acbbc89c9f5eb17d78414f813ac7db31fb1ffa504dc675",
+    "normalizedSha256": "bff1d1b2dff099db7d33e47c9ff26ac8d713b37082de450b39595f018efc17b0"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/focused-scale150.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/focused-scale150.txt.raw.gz",
+    "originalSha256": "c7b352d19cfcf9edc26ceb7a3274ec296192ce15e743e3d315df804e57109349",
+    "normalizedSha256": "9b2209b412b576ca4f0a2560d8abf2195e9683f4ed1ed3d99155ea54a8b26604"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/mypy-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/mypy-final.txt.raw.gz",
+    "originalSha256": "d56277c98829d84c4b556848ae6f0609f50b75e2d91478e6486503b2368bbf2a",
+    "normalizedSha256": "7cb904b6a3a5946e3348ec17765e16ca61e5d19a8f5bfe85f7ea14b7ff667ede"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/plc-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/plc-final.txt.raw.gz",
+    "originalSha256": "4f8cc5b0dff06cbd62be3224bea72e15d45fc722e5a88b79e7a2731c28d72e10",
+    "normalizedSha256": "a065c99d6f11cd7dc03f137857690700ef0e1464411536e25acbe36a7a96acb1"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/plc-layout-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/plc-layout-final.txt.raw.gz",
+    "originalSha256": "7a329ad9cdda20b4ca6d048a9166e14ac1cb1e6ad17b2b437c90128e2fc49f39",
+    "normalizedSha256": "640c3a9815427473f0aa8aeb00507f5f602c18c19f6fa99c253e38078c973541"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/proto-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/proto-final.txt.raw.gz",
+    "originalSha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "normalizedSha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/ruff-final.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/parameter-titles-2026-10-07/sidebar-and-rpc.txt",
+    "raw": "docs/testing/parameter-titles-2026-10-07/sidebar-and-rpc.txt.raw.gz",
+    "originalSha256": "d506ce9c6c676f4980a6593cd8a79e8649dbbf8f852ee7b6bf42f32730c393d9",
+    "normalizedSha256": "68d662c6a85c67397691a31db63087b1d850ad4867d59336ae46efd3f7f8d0c1"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/backend-final.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/backend-final.txt.raw.gz",
+    "originalSha256": "70bb28be54c9cc78cb47bc11599acd17d6f60dd876061b3fc971f97a942d3757",
+    "normalizedSha256": "270012e43c16391660dca4327b7cc0c7fe1adc513c26db439e6921b5af5b81bc"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/backend-verified.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/backend-verified.txt.raw.gz",
+    "originalSha256": "861016928e387b07ccc45200552cb70e13ad79c77f6f393a70f06b0860ac8adb",
+    "normalizedSha256": "0022a23f45fcc1b9f3a9c8decc172c809ccef7b7d84700dbb2b59977b5218938"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/ci-delivery.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/ci-delivery.txt.raw.gz",
+    "originalSha256": "9b6b8e10dd636ee5a6943dab173c792811a6114c6ee1b7f2970302f6acf3110c",
+    "normalizedSha256": "b338da8b975eb35ce82a4ee98a42594a625d4739752ea427981ed3f29067be27"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/ci-final.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/ci-final.txt.raw.gz",
+    "originalSha256": "1641b91db88518b7fff6d761d0b83f8a054a09910b04abc2887ecaed3494bfc8",
+    "normalizedSha256": "53cd54a8fd9de8d86ad07fe83a5e916933b585146dd4d784bbdee2c0662ab058"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/ci-tests-scope.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/ci-tests-scope.txt.raw.gz",
+    "originalSha256": "9eda272434d129544c9dbc07d2274532bc0f784c2064e54d6442f2f37a6d40d3",
+    "normalizedSha256": "21b8525f3761e6cde8fb87506e07514a5718b0c5ee26d4590209ce913f6ef14b"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/collection-all.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/collection-all.txt.raw.gz",
+    "originalSha256": "01b28c4226f8c47b5fe74ffa8293e5b5782c598604770ff80c667407deeeabba",
+    "normalizedSha256": "13cb1c449bebc7ba535d403f6708ec95cfc0f1b964cd3322a04a573fa313a9b7"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/collection-tests.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/collection-tests.txt.raw.gz",
+    "originalSha256": "1d375720d1e1bb442c16502cf8519f11b424e3ab04337c0c7d104a4438c918fe",
+    "normalizedSha256": "b2f25a02a378ac6abe2178b163b063b39b77754ac9116a8f479cd0e4d36efd3c"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/communication-regression-final.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/communication-regression-final.txt.raw.gz",
+    "originalSha256": "c7cebcef0bb7b57bf3707c2cbbefce7eccec4e590cb55d625fe72e728cba2cc3",
+    "normalizedSha256": "7ac9bdf3a98b51dece84401d30f97bb129b280ece7d40f0dfeea40e539cdbd98"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/editor-delivery-current.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/editor-delivery-current.txt.raw.gz",
+    "originalSha256": "c379cccb57d16564f7fd85fad06d9d0f324e04587ff527be4e3f473d1ded1458",
+    "normalizedSha256": "bfa63bce93ade03667bfb8adb91dbe09b4edab71e6582306417cd1af84e3e117"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/editor-final-fixed-layout.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/editor-final-fixed-layout.txt.raw.gz",
+    "originalSha256": "4aa2c7a779bc199caed3187f0f953580ae7daac5b8d30b15af8a6a1cb9de8abf",
+    "normalizedSha256": "7c909c8992b4955f867feeb2d3c03ea20f44ee7f34da600da801d81579ce49d8"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/editor-final.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/editor-final.txt.raw.gz",
+    "originalSha256": "3f7a8ef0905e6b239350094c05de0e1fe3e488dd746b4d73c9c819a00aca5ec9",
+    "normalizedSha256": "e35b3e836540b6fab75890be12902282203828ba96faf126d7bd69341c00beea"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/editor-layout-current.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/editor-layout-current.txt.raw.gz",
+    "originalSha256": "b656d944126b8463c9ec58df445095713efc27a660e4eaaba446204c46f5926a",
+    "normalizedSha256": "12ab3b85ab410b590c1bd311f25c2393588ed87ecfb364ceb4c07cd2bd544f3c"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/editor-verified.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/editor-verified.txt.raw.gz",
+    "originalSha256": "b2ae2955f94b8a17c77e5a993a36f7b477d1432d66291a2788ba310d460a6b66",
+    "normalizedSha256": "e8f50acbd89569f8168a2a833bfd8a734e3d10ce285a094db8a46dec2ec25a95"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/parameter-titles-followup.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/parameter-titles-followup.txt.raw.gz",
+    "originalSha256": "869f718b347c6e3e1936aa70c491fb2577f85de6725ecd4bf2efbc2d088be94e",
+    "normalizedSha256": "f9dff66f369f94817a72a5d228ff259b83a4c48e02cf261d23eef2e6c0ad40d6"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/registration-followup.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/registration-followup.txt.raw.gz",
+    "originalSha256": "cc980aae5c65ed30474c6cebc43f756068a8d47b06a6307b5264ff69eeaf0b2c",
+    "normalizedSha256": "799a2f287f36968edd230221f127e177ebe28bd7818a6ed18ee4ef17d4a5d06e"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/static-verified-font.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/static-verified-font.txt.raw.gz",
+    "originalSha256": "3880e2ee869c74ef679ee52cece51e9b70ecf4ade8e8d8ddd5bb99a4577d1b9d",
+    "normalizedSha256": "209144a274d4a20375ec94234a9e05cdee241f8af20beb3f4e0b16ab38dcc18a"
+  },
+  {
+    "file": "docs/testing/plc-debug-2026-10-07/static-verified.txt",
+    "raw": "docs/testing/plc-debug-2026-10-07/static-verified.txt.raw.gz",
+    "originalSha256": "3880e2ee869c74ef679ee52cece51e9b70ecf4ade8e8d8ddd5bb99a4577d1b9d",
+    "normalizedSha256": "209144a274d4a20375ec94234a9e05cdee241f8af20beb3f4e0b16ab38dcc18a"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/designer-final.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/designer-final.txt.raw.gz",
+    "originalSha256": "dc6cd9d7bb891eefe01308d52029f4ec47998b856c3fbd1dc2daf2eccd4bffb0",
+    "normalizedSha256": "d472bea938c3adbedb0890de4267fb5cc3884abe384c728df66e6fd18d96c129"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/designer.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/designer.txt.raw.gz",
+    "originalSha256": "e501e6e2ff17522c3162684faa1ce3cbca9d1117385988029856ac9e617b079b",
+    "normalizedSha256": "8ef403f8ab4fe6279b4ffc34e7a52a8aab1ebb133d9c7d84de76779b96013e0f"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/mypy-final.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/mypy-final.txt.raw.gz",
+    "originalSha256": "ffaef4ed215a29fb14e36907f820b248d69a31f2a9eb71ff87fe69ffa211ea91",
+    "normalizedSha256": "26a88e21271c5fed6ee1449e9aca0df7eecffe3ca0972849ee5f5f5fc0180cb4"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/mypy.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/mypy.txt.raw.gz",
+    "originalSha256": "e8805d38697836f362c74acbb696bac50f056020e7ff969ed8b42b16e3d2e268",
+    "normalizedSha256": "e7fc77f29751c58025839848e8b6513179188638fbd5a1f14f93ec06e478090a"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/ruff-final.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/ruff-final.txt.raw.gz",
+    "originalSha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+    "normalizedSha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/runtime-core-final.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/runtime-core-final.txt.raw.gz",
+    "originalSha256": "c82164b3befa2f63b774e46bebc4116b14d0d62f74e1fbd3f9134c8509dd8f66",
+    "normalizedSha256": "1e7b4e9d7307abcdfa6dafb3e7b8a2442c63f59527d825be9395b420ead44636"
+  },
+  {
+    "file": "docs/testing/while-boolean-2026-10-08/runtime-core.txt",
+    "raw": "docs/testing/while-boolean-2026-10-08/runtime-core.txt.raw.gz",
+    "originalSha256": "d13e41fe387d29c286cc753c03d202e71dce86fe472a4ef6892fd022efd51fd2",
+    "normalizedSha256": "b2a6a21e93749effa85378fa1f187b90b07a3d66ede5438c645db955bd5f43d3"
+  }
+]

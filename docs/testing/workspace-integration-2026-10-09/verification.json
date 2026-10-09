@@ -1,0 +1,83 @@
+{
+  "date": "2026-10-09",
+  "sourceCommits": [
+    "7ebac95af42c7b17ac4015c1bf60061a422c50a7",
+    "67258caa7b3f0d44492f8cffbb5ada0656382954"
+  ],
+  "initialFullCI": {
+    "status": "FAIL",
+    "snapshot": "Diagnostic run; example fixture corrected after Designer tests, while remaining tests were running.",
+    "passed": 3977,
+    "failed": 1,
+    "skipped": 8,
+    "subtestsPassed": 28,
+    "seconds": 1068.39,
+    "failure": "tests/designer/test_while_boolean.py::testLegacyWhileShowsBooleanOutputAndCanExplicitlySwitchToBooleanMode",
+    "log": "ci-initial.txt"
+  },
+  "finalFullCI": {
+    "status": "NOT_RERUN",
+    "reason": "Corrected example verified with complete Designer suite and Git-only snapshot; no final immutable full-suite PASS claim."
+  },
+  "checks": [
+    {
+      "name": "proto-drift",
+      "status": "PASS",
+      "log": "ci-initial.txt"
+    },
+    {
+      "name": "ruff src tests",
+      "status": "PASS",
+      "log": "ci-initial.txt"
+    },
+    {
+      "name": "mypy src",
+      "status": "PASS",
+      "sourceFiles": 355,
+      "log": "ci-initial.txt"
+    },
+    {
+      "name": "final Designer suite",
+      "status": "PASS",
+      "passed": 879,
+      "seconds": 115.29,
+      "log": "designer-final.txt"
+    },
+    {
+      "name": "final portable example regression",
+      "status": "PASS",
+      "passed": 54,
+      "seconds": 12.97,
+      "log": "portable-example-final.txt"
+    },
+    {
+      "name": "Git-only committed snapshot",
+      "status": "PASS",
+      "passed": 111,
+      "seconds": 19.47,
+      "log": "clean-snapshot-final.txt"
+    }
+  ],
+  "testCountsOverlap": true,
+  "sourceIntegrity": {
+    "status": "PASS",
+    "files": 857,
+    "drift": []
+  },
+  "retainedLocalArtifacts": {
+    "status": "PASS",
+    "files": 475,
+    "modified": 0,
+    "policy": "Exact local Git exclusions, not deleted or moved."
+  },
+  "backupFileCount": 1030,
+  "normalizedHistoricalLogs": 108,
+  "normalizedIntegrationLogs": 4,
+  "boundaries": {
+    "push": "NOT_RUN",
+    "packageBuild": "NOT_RUN",
+    "publish": "NOT_RUN",
+    "hardwareAcceptance": "NOT_RUN",
+    "runningDesignerOrRuntimeRestart": "NOT_RUN"
+  }
+}

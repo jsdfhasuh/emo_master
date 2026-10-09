@@ -1,0 +1,13 @@
+src\emo_master\apps\runtime\workflow\runner.py:70: error: Value of type "object" is not indexable  [index]
+src\emo_master\apps\runtime\workflow\runner.py:71: error: Value of type "object" is not indexable  [index]
+src\emo_master\core\workflow\compiler.py:57: error: "Model" has no attribute "target"  [attr-defined]
+src\emo_master\core\workflow\compiler.py:60: error: "Model" has no attribute "target"  [attr-defined]
+src\emo_master\core\workflow\compiler.py:61: error: Argument 1 to "get" of "Mapping" has incompatible type "str | None"; expected "str"  [arg-type]
+src\emo_master\core\workflow\compiler.py:126: error: Argument 1 to "get" of "Mapping" has incompatible type "str | None"; expected "str"  [arg-type]
+src\emo_master\apps\designer\state\workflow_package.py:160: error: "object" has no attribute "items"  [attr-defined]
+src\emo_master\apps\designer\state\workflow_package.py:237: error: "object" has no attribute "update"  [attr-defined]
+src\emo_master\apps\designer\controllers\workflow_controller.py:305: error: Argument 1 to "definitions" has incompatible type "object"; expected "Mapping[str, object]"  [arg-type]
+src\emo_master\apps\designer\controllers\workflow_controller.py:372: error: Argument 6 to "deriveLoopContract" has incompatible type "object"; expected "Mapping[str, object] | None"  [arg-type]
+src\emo_master\apps\designer\ui\main_window.py:2639: error: Name "candidate" already defined on line 2629  [no-redef]
+src\emo_master\apps\designer\ui\main_window.py:4154: error: Unsupported target for indexed assignment ("Any | object")  [index]
+Found 12 errors in 5 files (checked 14 source files)

@@ -1,0 +1,14 @@
+F401 [*] `emo_master.apps.designer.ui.global_counters_dialog.GlobalCountersDialog` imported but unused
+  --> src\emo_master\apps\designer\ui\main_window.py:41:64
+   |
+39 | )
+40 | from emo_master.apps.designer.ui.node_param_dialog import NodeParamDialog
+41 | from emo_master.apps.designer.ui.global_counters_dialog import GlobalCountersDialog
+   |                                                                ^^^^^^^^^^^^^^^^^^^^
+42 | from emo_master.apps.designer.ui.icon_map import getOperatorGlyph
+43 | from emo_master.apps.designer.ui.operator_bubble import OperatorBubble
+   |
+help: Remove unused import: `emo_master.apps.designer.ui.global_counters_dialog.GlobalCountersDialog`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.

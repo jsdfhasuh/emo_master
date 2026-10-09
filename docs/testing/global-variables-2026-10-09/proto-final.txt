@@ -1,0 +1,1 @@
+protobuf generation check exit=0

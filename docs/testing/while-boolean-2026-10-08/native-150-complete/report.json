@@ -1,0 +1,52 @@
+{
+  "platform": "windows",
+  "scale": "1.5",
+  "font": "Microsoft YaHei UI",
+  "runtimeCalls": 0,
+  "cases": [
+    {
+      "mode": "boolean",
+      "requestedWidth": 640,
+      "actualWidth": 640,
+      "widget": "parameters"
+    },
+    {
+      "mode": "boolean",
+      "requestedWidth": 460,
+      "actualWidth": 460,
+      "widget": "parameters"
+    },
+    {
+      "mode": "boolean",
+      "width": 308,
+      "widget": "relationships"
+    },
+    {
+      "mode": "boolean",
+      "width": 240,
+      "widget": "relationships"
+    },
+    {
+      "mode": "legacy",
+      "requestedWidth": 640,
+      "actualWidth": 640,
+      "widget": "parameters"
+    },
+    {
+      "mode": "legacy",
+      "requestedWidth": 460,
+      "actualWidth": 460,
+      "widget": "parameters"
+    },
+    {
+      "mode": "legacy",
+      "width": 308,
+      "widget": "relationships"
+    },
+    {
+      "mode": "legacy",
+      "width": 240,
+      "widget": "relationships"
+    }
+  ]
+}

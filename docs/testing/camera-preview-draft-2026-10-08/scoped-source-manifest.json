@@ -1,0 +1,66 @@
+{
+  "branch": "codex/camera-draft-preview",
+  "parent": "6aa57f3e21fd207a65047f532feb92a3b82de1ae",
+  "files": [
+    {
+      "path": "docs/camera-preview-draft.md",
+      "sha256": "a22c53042353efb64ef3af431839954a3363c523df4e251f36bc8bad85cde977"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "16e12ac05c58b02f493bbce82f3e975800e81bccc80e95cc33d248388f107903"
+    },
+    {
+      "path": "src/emo_master/apps/designer/operator_editors/controller_protocol.py",
+      "sha256": "052ff8ce545ffadc71a11cab49146b3df9247cb54b68aac5a8309c900f114d3e"
+    },
+    {
+      "path": "src/emo_master/apps/designer/operator_editors/manager.py",
+      "sha256": "d007544bd0424ba14841bef60c9d36ee758580eb5d41f07d4869cd5fd3ddcec0"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "3d7cafa0a7f6c8566195fe97ba7801583ff3cf46e1867d2db435032fbf773ff4"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "sha256": "ec4e574a7c7cdbec1786c82168e6b0ed0f259f6759b4caf341ff8634bc70c5b3"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/aio_entry.py",
+      "sha256": "04d58c4aaa4855abaa47c6267999716850ee3a35382e76c339ba739afec88d54"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "f62ae85aec18a33ea94c864db701c7774c2995bcdf4ac24f4792234fe29cbb19"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "sha256": "8ef24e686acc8f80ba35d6c14177725ce6eeaa651b10006faba175dee40bc0c4"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "9806c369b8aa9f89d6807934236fce10b91a85d0299823a5c01535563a51831e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/service.py",
+      "sha256": "7d57d676c05b3d9840fa1c5695f374c125652ce3bf349b9cf7f115043068e2ab"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/draft.py",
+      "sha256": "a5e101255607bc524861046b9cacc20d2ac10c6e172f92f53542b1d3364b1c89"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/live.py",
+      "sha256": "51a5ae47b79e87de34806bf48ddf04f59eb0f92ac413505b9377e548deef117b"
+    },
+    {
+      "path": "tests/designer/test_live_preview_draft_context.py",
+      "sha256": "4f1bf26225f2100869698e32980629b5a453201cc9f62775a531a8830a86d953"
+    },
+    {
+      "path": "tests/runtime/test_draft_live_preview.py",
+      "sha256": "76814a2b618494111f189a324885789e3db53b856afa7c11e7e50ba807ba4c91"
+    }
+  ]
+}

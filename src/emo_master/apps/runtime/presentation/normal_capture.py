@@ -10,6 +10,7 @@ from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.capture_limits import normalCaptureLimits
 from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.snapshots import canonicalJson, captureDefinition, revisionOf, verifyResources
+from emo_master.core.presentation.workflow_view import presentationForWorkflow
 
 
 @dataclass(frozen=True)
@@ -24,8 +25,6 @@ class NormalCapture:
 def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counterNames=frozenset()):
     if document.presentation is None:
         raise ValueError("presentation must be explicitly enabled and saved")
-    if workflowId != document.entryWorkflowId:
-        raise ValueError("normal presentation capture requires the project entry workflow")
     issues = validateBindings(document, {key: value.manifest for key, value in registry.items()}, counterNames=counterNames)
     if issues:
         raise ValueError("; ".join(f"{issue.path}: {issue.message}" for issue in issues))
@@ -33,7 +32,7 @@ def freezeNormalCapture(document, registry, resourceRoot, workflowId, *, counter
         # Check declared package assets, but never rewrite the original run's
         # site/file parameters or move it into the debug data namespace.
         verifyResources(document, resourceRoot)
-    presentation = document.presentation
+    presentation = presentationForWorkflow(document, workflowId)
     capture = captureDefinition(presentation)
     used = {sourceId for page in presentation.pages.values()
             for component in walkComponents(page.components)

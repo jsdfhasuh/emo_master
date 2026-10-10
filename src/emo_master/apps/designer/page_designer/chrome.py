@@ -225,8 +225,9 @@ class WorkspaceChrome(QObject):
             self.previewAction.setEnabled(bool(self.c.editor.store.snapshot().pages))
             for action, index in zip(self.pageActions[1:3], (0, 2)):
                 action.setChecked(self.c.editor.splitter.sizes()[index] > 0)
-        for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and not self.window.isJobRunning),
-                             ('停止运行', self.window.isJobRunning and self.window.currentJobId is not None)]:
+        runtime = self.window.runtimeController
+        for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),
+                             ('停止运行', runtime.canStop())]:
             self.window._toolbarActions[key].setEnabled(not pages and allowed)
         preview = self.c.preview
         self.testActions['开始测试'].setEnabled(not pages and not preview.busy and preview.backend is None)

@@ -55,7 +55,7 @@ class InspectionSession:
 
 
 class RunInspectionStore:
-    def __init__(self, assets, *, clock=time.monotonic, startMaintenance=True):
+    def __init__(self, assets, *, clock=time.monotonic, startMaintenance=True, maxSessions=2):
         self.assets = assets
         self.root = assets.root / '_inspection'
         self.root.mkdir(parents=True, exist_ok=True)
@@ -66,6 +66,7 @@ class RunInspectionStore:
         self._watches = {}
         self.clock = clock
         self.sessions: dict[str, InspectionSession] = {}
+        self.maxSessions = maxSessions
         self._pendingFiles: set[Path] = set()
         self._readers = 0
         self._stop = threading.Event()
@@ -103,8 +104,8 @@ class RunInspectionStore:
     def open(self, projectKey, projectReferences=()):
         with self._lock:
             self.expire()
-            if self._stop.is_set() or len(self.sessions) >= 2:
-                raise ValueError('E_INSPECTION_SESSION_BUDGET: Runtime accepts at most two sessions')
+            if self._stop.is_set() or (self.maxSessions is not None and len(self.sessions) >= self.maxSessions):
+                raise ValueError('E_INSPECTION_SESSION_BUDGET: inspection session admission unavailable')
             session = InspectionSession(str(uuid4()), projectKey, self.clock() + TTL_SECONDS,
                                         projectReferences=frozenset(projectReferences))
             self.sessions[session.sessionId] = session

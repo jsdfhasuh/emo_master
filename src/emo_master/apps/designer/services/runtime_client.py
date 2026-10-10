@@ -803,6 +803,26 @@ class RuntimeClient:
             finished.set()
             monitor.join(timeout=0.2)
 
+    def operatorDebugCall(self, methodName: str, request) -> object:
+        methods = {"GetOperatorDebugCapabilities", "OpenOperatorDebugSession", "GetOperatorDebugSession",
+                   "PrepareOperatorDebugInputs", "ExecuteOperatorDebugNode", "GetOperatorDebugExecution",
+                   "ReadOperatorDebugEvents", "CancelOperatorDebugExecution", "ResetOperatorDebugSession",
+                   "RenewOperatorDebugSession", "CloseOperatorDebugSession", "WriteOperatorDebugAsset", "ReadOperatorDebugAsset",
+                   "ListOperatorDebugSources", "ImportOperatorDebugSource", "CopyOperatorDebugVariables"}
+        methods.update({"GetWorkflowDebugCapabilities", "OpenWorkflowDebugSession", "GetWorkflowDebugSession",
+                        "PrepareWorkflowDebugInputs", "StartWorkflowDebug", "ControlWorkflowDebug", "GetWorkflowDebugCommand",
+                        "GetWorkflowDebugSnapshot", "ReadWorkflowDebugEvents", "WriteWorkflowDebugAsset", "ReadWorkflowDebugAsset",
+                        "RenewWorkflowDebugSession", "CloseWorkflowDebugSession"})
+        if methodName not in methods or not callable(getattr(self.runtimeService, methodName, None)):
+            raise RuntimeClientError("E_DEBUG_UNSUPPORTED", "Runtime does not support operator debugging; update Runtime")
+        try:
+            return self._call(methodName, request)
+        except (RuntimeClientError, NotImplementedError) as error:
+            if isinstance(error, NotImplementedError) or "UNIMPLEMENTED" in getattr(error, "code", ""):
+                raise RuntimeClientError("E_DEBUG_UNSUPPORTED", "Runtime does not support operator debugging; update Runtime") from error
+            # No retry or local execution fallback. The caller queries its original request ID.
+            raise
+
     def listRejectedOperators(self) -> list[object]:
         reply = self._call("ListRejectedOperators", runtime_pb2.ListRejectedOperatorsRequest())
         return list(getattr(reply, "rejected", []))

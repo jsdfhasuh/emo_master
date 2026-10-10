@@ -27,6 +27,8 @@ DEFAULTS: dict[str, object] = {
     "triggerSource": "Line1",
     "triggerActivation": "RisingEdge",
     "captureTimeoutMs": 5000,
+    "waitMode": "bounded",
+    "sequencePolicy": "off",
     "retryCount": 1,
     "retryDelayMs": 200,
     "outputColor": "bgr",
@@ -83,6 +85,17 @@ PARAM_SCHEMA: dict[str, object] = {
             "minimum": 1,
             "maximum": 60000,
             "default": 5000,
+        },
+        "waitMode": {
+            "title": "取图等待方式", "type": "string", "enum": ["bounded", "hardware"],
+            "default": "bounded", "xGlobalVariableBindingDisabled": True,
+            "xOptionLabels": {"bounded": "有界超时（兼容默认）", "hardware": "持续等待硬件触发"},
+            "description": "持续等待仅用于硬件触发且异常重试次数必须为 0；停止仍通过 100 毫秒 SDK 时间片取消。预览始终有界。",
+        },
+        "sequencePolicy": {
+            "title": "设备帧号检查", "type": "string", "enum": ["off", "contiguous"],
+            "default": "off", "xGlobalVariableBindingDisabled": True,
+            "xOptionLabels": {"off": "不检查（兼容默认）", "contiguous": "严格连续，重复或缺帧停止"},
         },
         "retryCount": {"title": "异常重试次数", "type": "integer", "minimum": 0, "maximum": 3, "default": 1},
         "retryDelayMs": {
@@ -144,7 +157,7 @@ class HuarayCameraOperator:
     meta = OperatorMeta(
         operatorId="vision.io.huaray_camera",
         displayName="Huaray IMV Camera",
-        version="1.1.1",
+        version="1.2.0",
         inputPorts={},
         outputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
@@ -165,6 +178,7 @@ class HuarayCameraOperator:
         self._apiFactory = apiFactory
         self._session: CameraSession | None = None
         self._fingerprint: tuple[object, ...] | None = None
+        self._lastBlockId: int | None = None
         self._lifecycleLogger = getOperatorLogger(None)
 
     def initOperator(self, initContext: dict[str, object]) -> None:
@@ -178,6 +192,8 @@ class HuarayCameraOperator:
 
         settings = _settings(params)
         enumFields = {
+            "waitMode": {"bounded", "hardware"},
+            "sequencePolicy": {"off", "contiguous"},
             "selectionMode": {"ip", "cameraKey", "userId", "index"},
             "triggerMode": {"hardware", "software", "freeRun"},
             "triggerSource": {"Line1", "Line2", "Line3", "Line4"},
@@ -200,8 +216,12 @@ class HuarayCameraOperator:
             },
         }
         for name, allowed in enumFields.items():
-            if settings[name] not in allowed:
+            if not isinstance(settings[name], str) or settings[name] not in allowed:
                 return _paramError(f"{name} must be one of: {', '.join(sorted(allowed))}")
+        if settings["waitMode"] == "hardware" and (settings["triggerMode"] != "hardware" or settings["retryCount"] != 0):
+            return _paramError("waitMode=hardware requires hardware trigger and retryCount=0")
+        if settings["sequencePolicy"] == "contiguous" and settings["retryCount"] != 0:
+            return _paramError("contiguous frame sequence requires retryCount=0; reconnect cannot recover cycle phase")
 
         for name, minimum, maximum in (
             ("captureTimeoutMs", 1, 60000),
@@ -260,12 +280,17 @@ class HuarayCameraOperator:
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
         _ = inputs
+        if runtimeContext.get("isPreview"):
+            params = dict(params, waitMode="bounded", sequencePolicy="off",
+                          captureTimeoutMs=min(cast(int, params.get("captureTimeoutMs", 1000)), 1000))
         logger = getOperatorLogger(runtimeContext)
         startedAt = perf_counter()
         paramError = self.validateParams(params)
         if paramError is not None:
             return {"status": "error", "error": paramError}
         settings = _settings(params)
+        if settings["waitMode"] == "hardware" and not callable(runtimeContext.get("raiseIfCancellationRequested")):
+            return {"status": "error", "error": _paramError("hardware wait requires a cancellable runtime context")}
         logger.info(
             "starting Huaray camera capture",
             payload={
@@ -276,6 +301,14 @@ class HuarayCameraOperator:
         )
         fingerprint = _sessionFingerprint(settings)
         if self._session is not None and self._fingerprint != fingerprint:
+            if (settings["waitMode"] == "hardware" or self._session.settings["waitMode"] == "hardware" or
+                    settings["sequencePolicy"] == "contiguous" or self._session.settings["sequencePolicy"] == "contiguous"):
+                cleanupError = self._dropSession()
+                error = HuarayCameraError("E_CAMERA_SESSION_CONFIG_CHANGED",
+                    "production capture configuration changed; stop and synchronize before new admission")
+                if cleanupError is not None:
+                    error.diagnostics["resourceCleanup"] = str(cleanupError)
+                return _errorResult(error)
             logger.warning("camera configuration changed; reopening device")
             cleanupError = self._dropSession()
             if cleanupError is not None:
@@ -298,11 +331,16 @@ class HuarayCameraOperator:
                     )
                 cancellationCheck = runtimeContext.get("raiseIfCancellationRequested")
                 captured = session.capture(
-                    cast(int, settings["captureTimeoutMs"]),
+                    None if settings["waitMode"] == "hardware" else cast(int, settings["captureTimeoutMs"]),
                     str(settings["outputColor"]),
                     str(settings["demosaic"]),
                     cancellationCheck if callable(cancellationCheck) else None,
                 )
+                if settings["sequencePolicy"] == "contiguous":
+                    if captured.blockId <= 0 or (self._lastBlockId is not None and captured.blockId != self._lastBlockId + 1):
+                        raise HuarayCameraError("E_CAMERA_SEQUENCE_UNCERTAIN",
+                            f"device frame sequence uncertain: previous={self._lastBlockId}, current={captured.blockId}; synchronize before restarting")
+                    self._lastBlockId = captured.blockId
                 height, width = captured.image.shape[:2]
                 space = CoordinateSpace2D(
                     reference=frameReference(runtimeContext, self.meta.operatorId),
@@ -420,6 +458,7 @@ class HuarayCameraOperator:
         session = self._session
         self._session = None
         self._fingerprint = None
+        self._lastBlockId = None
         if session is None:
             return None
         return session.close()
@@ -445,6 +484,8 @@ def _sessionFingerprint(settings: Mapping[str, object]) -> tuple[object, ...]:
         settings["selectionMode"],
         settings[{"ip": "ipAddress", "cameraKey": "cameraKey", "userId": "userId", "index": "deviceIndex"}[str(settings["selectionMode"])]],
         settings["triggerMode"],
+        settings["waitMode"],
+        settings["sequencePolicy"],
         settings["pixelFormat"],
         settings["exposureMode"],
         settings["gainMode"],

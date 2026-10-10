@@ -226,6 +226,7 @@ def testManualZoomSurvivesNodeCreationAndResize(styledApp):
 
 
 def testToolbarAndMenuShareEnabledActions(styledApp):
+    from tests.designer.runtime_state_fixture import setRunning
     window = makeWindow()
     try:
         action = window._menuActions["开始运行"]
@@ -234,14 +235,12 @@ def testToolbarAndMenuShareEnabledActions(styledApp):
         window.loadedProjectPath = "fixture/project.json"
         window.updateToolbarState()
         assert action.isEnabled()
-        window.isJobRunning = True
-        window.currentJobId = "fixture-job"
+        setRunning(window, True)
         window.updateToolbarState()
         assert not action.isEnabled()
         assert window._menuActions["停止运行"].isEnabled()
     finally:
-        window.isJobRunning = False
-        window.currentJobId = None
+        setRunning(window, False)
         window.close()
 
 

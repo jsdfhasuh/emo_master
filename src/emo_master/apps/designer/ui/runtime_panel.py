@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from emo_master.apps.designer.state.node_run_inspection import NodeRunInspection
+from emo_master.apps.designer.state.workflow_execution import WorkflowExecutionState
 
 
 @dataclass
@@ -18,6 +19,7 @@ class RuntimePanelState:
     activeJobId: str | None = None
     allowEventsWithoutActiveJob: bool = field(default=True, init=False, repr=False)
     nodeInspection: NodeRunInspection = field(default_factory=NodeRunInspection)
+    workflowExecution: WorkflowExecutionState = field(default_factory=WorkflowExecutionState)
 
     def setActiveJob(self, jobId: str | None) -> None:
         if self.activeJobId == jobId:
@@ -27,6 +29,7 @@ class RuntimePanelState:
         self.allowEventsWithoutActiveJob = not (jobId is None and hadActiveJob)
         self.nodeStatus.clear()
         self.nodeInspection.clear()
+        self.workflowExecution.clear()
         self.nodeStatusByRun.clear()
         self.iterationPathByNode.clear()
         self.nodeStatusByWorkflowRun.clear()
@@ -51,6 +54,7 @@ class RuntimePanelState:
             return
         if not self.nodeInspection.applyEvent(event):
             return
+        self.workflowExecution.applyEvent(event)
         eventType = event.get("eventType")
         nodeId = event.get("nodeId")
         message = event.get("message")
@@ -58,6 +62,8 @@ class RuntimePanelState:
         runId = workflowRunId if isinstance(workflowRunId, str) else ""
         workflowIdRaw = event.get("workflowId")
         workflowId = workflowIdRaw if isinstance(workflowIdRaw, str) else ""
+        if eventType == 'job.started' and self.jobStatus in {'IDLE', 'ACCEPTED', 'STARTING'}:
+            self.updateJob('RUNNING', str(message or '作业运行中'))
         iterationRaw = event.get("iterationPath", ())
         iterationPath = (
             tuple(item for item in iterationRaw if isinstance(item, int) and not isinstance(item, bool))
@@ -88,6 +94,13 @@ class RuntimePanelState:
                         self.nodeMetricsByWorkflowRun[key] = dict(metrics)
                     if isinstance(diagnostics, dict):
                         self.nodeDiagnosticsByWorkflowRun[key] = dict(diagnostics)
+            # Long-running While Jobs keep only a bounded diagnostic window.
+            collections: tuple[dict, ...] = (self.nodeStatus, self.nodeStatusByRun, self.iterationPathByNode,
+                    self.nodeStatusByWorkflowRun, self.iterationPathByWorkflowRun,
+                    self.nodeMetricsByWorkflowRun, self.nodeDiagnosticsByWorkflowRun)
+            for collection in collections:
+                while len(collection) > 1024:
+                    collection.pop(next(iter(collection)))
         if eventType == "artifact.created":
             payload = event.get("payload")
             artifact = payload.get("artifact") if isinstance(payload, dict) else None

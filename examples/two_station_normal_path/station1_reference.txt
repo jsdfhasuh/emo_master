@@ -1,0 +1,2 @@
+# Simulation only: reference coordinates in the demo pixel space
+100 200

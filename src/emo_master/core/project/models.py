@@ -23,7 +23,8 @@ class ProjectMetadata(StrictModel):
 
 
 class RuntimeSettings(StrictModel):
-    maxConcurrentJobs: int = Field(default=2, ge=1)
+    # None explicitly disables the admission count, not resource/ownership checks.
+    maxConcurrentJobs: int | None = Field(default=2, ge=1)
     gracefulStopTimeoutMs: int = Field(default=5000, ge=0)
     heartbeatTimeoutMs: int = Field(default=5000, ge=100)
     eventRetentionPerJob: int = Field(default=10000, ge=1)

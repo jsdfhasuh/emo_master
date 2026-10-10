@@ -82,7 +82,7 @@ def testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode(canvas, scal
     assert menu.isVisible() and QApplication.activePopupWidget() is menu
     assert window.flowModel.selectedNodeId == first
     assert scene.getSelectedNodeIds() == [first] and not scene.getSelectedEdgeKeys()
-    assert set(actions(menu)) == {'configure', 'results', 'copy', 'delete'}
+    assert set(actions(menu)) == {'configure', 'results', 'copy', 'delete', 'operator_debug'}
     assert window.pageCoordinator.session._signature() == before
     assert len(window.pageCoordinator.session._undo) == history
     assert client.starts == client.stops == 0

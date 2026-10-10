@@ -34,6 +34,8 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "communication.plc.slmp_write",
         "communication.tcp.client",
         "communication.tcp.receive_once",
+        "communication.gateway.coordinate_format",
+        "communication.gateway.ack_validate",
         "vision.analysis.contour",
         "vision.analysis.histogram",
         "vision.analysis.hough_circle",
@@ -41,6 +43,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.analysis.shape_measurement",
         "vision.analysis.template_match",
         "vision.analysis.blob",
+        "vision.analysis.minimum_enclosing_circle",
         "vision.collection.count",
         "vision.collection.filter",
         "vision.collection.select",
@@ -50,7 +53,11 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.edge.canny",
         "vision.flow.if",
         "vision.flow.switch",
+        "vision.flow.error",
         "vision.geometry.coordinate_calculator",
+        "vision.geometry.detection_bbox",
+        "vision.geometry.extract_points",
+        "vision.geometry.reframe_points",
         "vision.inference.yolo",
         "vision.io.image_loader",
         "vision.io.image_batch_loader",
@@ -81,7 +88,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.state.counter",
         "vision.value.number",
     } <= operatorIds
-    assert len(operatorIds) == 53
+    assert len(operatorIds) == 60
     assert list(rejectedReply.rejected) == []
 
 

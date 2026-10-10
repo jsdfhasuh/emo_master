@@ -161,6 +161,10 @@ class PlcDebugManager:
         self._thread = threading.Thread(target=self._expireLoop, name="plc-debug-leases", daemon=True)
         self._thread.start()
 
+    def ownsResources(self) -> bool:
+        with self._lock:
+            return bool(self._sessions)
+
     def failure(self, code: str, message: str) -> PlcDebugReply:
         return PlcDebugReply(code=code, message=message, runtime_instance_id=self.runtimeInstanceId)
 

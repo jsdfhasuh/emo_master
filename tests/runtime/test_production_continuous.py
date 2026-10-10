@@ -123,7 +123,9 @@ def testRealSpawnContinuousOneJobPathsResultsStopAndRestart(tmp_path, monkeypatc
         waitFor(lambda: bool(owner.presentation.store.latest))
         result = next(iter(owner.presentation.store.latest.values()))
         assert next(source.valueJson for source in result.sources if source.sourceId == "count") == "2"
-        assert result.identity.invocationId in {event.workflowRunId for event in cycles()}
+        # Capture and diagnostic queues are independent: preserve the exact
+        # captured invocation assertion, but await its event's persistence.
+        waitFor(lambda: result.identity.invocationId in {event.workflowRunId for event in cycles()})
         with pytest.raises(ValueError, match="stop the current"):
             owner.start()
         with pytest.raises(ValueError, match="stop the current"):

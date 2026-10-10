@@ -86,7 +86,20 @@ def testEmptyUnboundAndUnsupportedAreExplicit(qtApp,tmp_path):
     config=sampleProjectP3(tmp_path).presentation
     # Construct a valid unsupported source; never infer a fake Runtime value.
     from emo_master.core.presentation.models import DataSource
-    config.dataSources['count']=DataSource(kind='global_counter',resultScopeId='root',name='counter',expectedType='integer')
+    config.dataSources['count']=DataSource(kind='runtime_status',resultScopeId='root',name='status',expectedType='string')
     window=RuntimePages(config)
     window.submit(resultView())
     assert '不支持此来源' in window.widgets['overview']['overview-count'][1].text()
+
+
+@pytest.mark.parametrize('kind,address', [('global_counter', {'name': 'parts'}), ('global_variable', {'variableId': 'parts'})])
+def testCapturedGlobalValuesRenderWithoutReadingLiveState(qtApp, tmp_path, kind, address):
+    from emo_master.core.presentation.models import DataSource
+    config = sampleProjectP3(tmp_path).presentation
+    config.dataSources['count'] = DataSource(kind=kind, resultScopeId='root', expectedType='integer', **address)
+    window = RuntimePages(config)
+    try:
+        window.submit(resultView(count='2', capture=window.expectedCapture))
+        assert window.widgets['overview']['overview-count'][1].text() == '2 个'
+    finally:
+        window.close()

@@ -215,6 +215,8 @@ TCP_CLIENT_PARAM_SCHEMA: dict[str, object] = {
             "default": "utf-8",
         },
         "appendNewline": {"title": "追加换行", "type": "boolean", "default": False},
+        "rejectTrailingResponse": {"title": "拒绝响应帧后的残留数据", "type": "boolean", "default": False,
+                                   "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"},
         "shutdownWrite": {"title": "发送后关闭写入方向", "type": "boolean", "default": False},
         "connectTimeoutMs": {
             "title": "连接超时（毫秒）",
@@ -609,7 +611,7 @@ class TcpClientOperator:
     meta = OperatorMeta(
         operatorId="communication.tcp.client",
         displayName="TCP Client",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "message": {
                 "type": "tcpMessage",
@@ -646,6 +648,7 @@ class TcpClientOperator:
                 "text",
                 "textEncoding",
                 "appendNewline",
+                "rejectTrailingResponse",
                 "shutdownWrite",
                 "connectTimeoutMs",
                 "responseTimeoutMs",
@@ -702,6 +705,7 @@ class TcpClientOperator:
             )
         for name, booleanDefault in (
             ("appendNewline", False),
+            ("rejectTrailingResponse", False),
             ("shutdownWrite", False),
         ):
             if not isinstance(params.get(name, booleanDefault), bool):
@@ -748,6 +752,7 @@ class TcpClientOperator:
                 "requestBytes": len(outbound),
             },
         )
+        sendAttempted = False
         try:
             with openTcpClient(
                 host,
@@ -757,6 +762,9 @@ class TcpClientOperator:
                 ioTimeoutSec=cast(int, params.get("responseTimeoutMs", 2000))
                 / 1000.0,
             ) as sock:
+                # sendall can fail after a partial write. Once attempted, outcome
+                # is uncertain; never label a timeout as safe to resend.
+                sendAttempted = True
                 sendAll(sock, outbound)
                 if bool(params.get("shutdownWrite", False)):
                     try:
@@ -769,6 +777,7 @@ class TcpClientOperator:
                         framing=cast(str, params.get("responseFraming", "newline")),
                         maxBytes=cast(int, params.get("maxResponseBytes", 1048576)),
                         expectedBytes=cast(int, params.get("expectedBytes", 0)),
+                        rejectTrailing=bool(params.get("rejectTrailingResponse", False)),
                     )
                     outputs["response"] = TcpMessage.fromBytes(
                         responseBytes,
@@ -789,7 +798,11 @@ class TcpClientOperator:
                 code=getattr(exc, "code", "E_COMMUNICATION_IO"),
                 payload={"errorType": type(exc).__name__},
             )
-            return _communicationError(exc)
+            result = _communicationError(exc)
+            result["diagnostics"] = {**cast(dict, result.get("diagnostics", {})),
+                                     "executionOutcome": "uncertain" if sendAttempted else "not_sent",
+                                     "sendAttempted": sendAttempted, "automaticRetry": False}
+            return result
         latencyMs = round((perf_counter() - startedAt) * 1000.0, 3)
         logger.info(
             "TCP client operation completed",

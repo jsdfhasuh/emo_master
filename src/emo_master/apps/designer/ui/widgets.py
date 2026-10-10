@@ -1,13 +1,14 @@
 from __future__ import annotations
 
-from PySide2.QtCore import QEvent, QSize, Qt
-from PySide2.QtGui import QFontMetrics, QPixmap
+from PySide2.QtCore import QEvent, QRect, QSize, Qt
+from PySide2.QtGui import QColor, QFontMetrics, QPainter, QPixmap
 from PySide2.QtWidgets import (
-    QLabel, QScrollArea, QSizePolicy, QStackedWidget, QTabBar, QTabWidget,
+    QLabel, QScrollArea, QSizePolicy, QStackedWidget, QStyle, QTabBar, QTabWidget,
     QToolButton, QWidget,
 )
 
 from emo_master.apps.designer.ui.theme import uiFont
+from emo_master.ui.workflow_labels import WORKFLOW_RUN_STYLES
 
 
 class ElidedLabel(QLabel):
@@ -113,13 +114,59 @@ class _WorkflowTabBar(QTabBar):
         self.setExpanding(False)
         self.setUsesScrollButtons(True)
         self.setElideMode(Qt.ElideRight)
+        for button in self.findChildren(QToolButton):
+            # The global toolbar padding otherwise leaves no room for the
+            # native arrow inside Qt's narrow tab-scroll buttons.
+            button.setStyleSheet('QToolButton { padding: 0px; background: #f5f6f8; '
+                                'border: 1px solid #d8dce3; border-radius: 2px; }')
 
     def tabSizeHint(self, index):
         size = super().tabSizeHint(index)
         metrics = QFontMetrics(uiFont(bold=True))
-        size.setWidth(min(280, max(100, metrics.horizontalAdvance(self.tabText(index)) + 36)))
+        markers = [self.tabButton(index, side) for side in (QTabBar.LeftSide, QTabBar.RightSide)]
+        markerWidth = sum(marker.sizeHint().width() + 8 for marker in markers if marker is not None)
+        limit = 340 if markers[1] is not None else 280
+        parent = self.parentWidget()
+        if parent is not None:
+            arrows = 2 * self.style().pixelMetric(QStyle.PM_TabBarScrollButtonWidth)
+            limit = min(limit, max(100, parent.width() - 38 - arrows - 8))
+        size.setWidth(min(limit, max(100, metrics.horizontalAdvance(self.tabText(index)) + 36 + markerWidth)))
         size.setHeight(max(36, self.fontMetrics().height() + 16))
+        for marker in markers:
+            if marker is not None:
+                size.setHeight(max(size.height(), marker.sizeHint().height() + 12))
         return size
+
+    def paintEvent(self, event):
+        super().paintEvent(event)
+        painter = QPainter(self)
+        try:
+            for index in range(self.count()):
+                badge = self.tabButton(index, QTabBar.RightSide)
+                color = badge.property('runtimeColor') if badge is not None else None
+                if color and self.isTabVisible(index):
+                    rect = self.tabRect(index).adjusted(1, 1, -1, -1)
+                    painter.fillRect(QRect(rect.x(), rect.y(), rect.width(), 3), QColor(color))
+        finally:
+            painter.end()
+
+    def minimumTabSizeHint(self, index):
+        # Scroll the strip instead of squeezing names and badges into slivers.
+        # Long names are still elided inside tabSizeHint's bounded width.
+        return self.tabSizeHint(index)
+
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        if not self.count():
+            return
+        first = self.tabRect(0)
+        gap = (first.right() < self.width() - 1 if self.isRightToLeft() else first.left() > 0)
+        if gap and self.sizeHint().width() > self.width():
+            # Qt 5 can retain a negative scroll offset after an overflowed
+            # strip grows, leaving a blank leading area and disabled arrows.
+            # Relayout without changing selection or emitting currentChanged.
+            self.setExpanding(True)
+            self.setExpanding(False)
 
 
 class WorkflowTabs(QTabWidget):
@@ -158,6 +205,64 @@ class WorkflowTabs(QTabWidget):
         index = self.indexOf(self._addPage) if self._addPage is not None else -1
         if index >= 0:
             self.tabBarClicked.emit(index)
+
+    def setEntryMarker(self, index, role, tooltip):
+        """Keep the role visible even when Qt elides a long workflow name."""
+        bar = self.tabBar()
+        old = bar.tabButton(index, QTabBar.LeftSide)
+        if old is not None:
+            bar.setTabButton(index, QTabBar.LeftSide, None)
+            old.deleteLater()
+        if role:
+            badge = QLabel(role, bar)
+            badge.setObjectName("workflowEntryBadge")
+            badge.setTextFormat(Qt.PlainText)
+            badge.setFont(uiFont(bold=True))
+            badge.setAttribute(Qt.WA_TransparentForMouseEvents)
+            badge.setContentsMargins(6, 2, 6, 2)
+            color, background = (("#1d4ed8", "#dbeafe") if role == "默认入口"
+                                 else ("#047857", "#d1fae5"))
+            badge.setStyleSheet(f"QLabel {{ color: {color}; background: {background}; border-radius: 4px; }}")
+            badge.setAccessibleName(role)
+            badge.adjustSize()
+            bar.setTabButton(index, QTabBar.LeftSide, badge)
+        self.widget(index).setProperty('entryTooltip', tooltip)
+        self._updateTabDescription(index)
+        self._placeAddButton()
+
+    def setRuntimeStatus(self, index, status, details=''):
+        bar = self.tabBar()
+        old = bar.tabButton(index, QTabBar.RightSide)
+        previous = old.property('runtimeStatus') if old is not None else ''
+        if previous != status:
+            if old is not None:
+                bar.setTabButton(index, QTabBar.RightSide, None)
+                old.deleteLater()
+            if status in WORKFLOW_RUN_STYLES:
+                text, color, background = WORKFLOW_RUN_STYLES[status]
+                badge = QLabel(text, bar)
+                badge.setObjectName('workflowRuntimeBadge')
+                badge.setFont(uiFont(bold=True))
+                badge.setAttribute(Qt.WA_TransparentForMouseEvents)
+                badge.setContentsMargins(6, 2, 6, 2)
+                badge.setStyleSheet(f'QLabel {{ color: {color}; background: {background}; border-radius: 4px; }}')
+                badge.setProperty('runtimeStatus', status)
+                badge.setProperty('runtimeColor', color)
+                badge.adjustSize()
+                bar.setTabButton(index, QTabBar.RightSide, badge)
+            bar.update()
+            self._placeAddButton()
+        self.widget(index).setProperty('runtimeDetails', details)
+        self._updateTabDescription(index)
+
+    def _updateTabDescription(self, index):
+        page, bar = self.widget(index), self.tabBar()
+        entry = page.property('entryTooltip') or self.tabText(index)
+        details = page.property('runtimeDetails') or ''
+        self.setTabToolTip(index, entry + ('\n\n' + details if details else ''))
+        markers = [bar.tabButton(index, side) for side in (QTabBar.LeftSide, QTabBar.RightSide)]
+        labels = [marker.text() for marker in markers if marker is not None]
+        bar.setAccessibleTabName(index, ' '.join([*labels, self.tabText(index)]))
 
     def _placeAddButton(self):
         if not hasattr(self, '_addButton') or self._placingAddButton:

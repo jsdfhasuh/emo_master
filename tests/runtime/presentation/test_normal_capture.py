@@ -165,7 +165,12 @@ def testIdempotentStartLookupAndGenerationFence(channel, tmp_path):
 
 def testKnownRejectionAndCaptureQuotasDoNotExecute(channel, tmp_path):
     runtime = channel.runtime
-    load(runtime, tmp_path)
+    directory, document = normalProject(tmp_path)
+    # The project fixture defaults to four Jobs. Two is now an explicit
+    # configured limit, not a second hard-coded display admission quota.
+    document.runtime.maxConcurrentJobs = 2
+    (directory / 'project.json').write_text(document.model_dump_json(), encoding='utf-8')
+    assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None).ok
     bad = request(runtime)
     bad.workflow_id = "missing"
     assert runtime.StartJob(bad, None).status == "REJECTED"

@@ -246,7 +246,8 @@ def testFailedCellAllocationClosesExistingQueue(monkeypatch) -> None:
     closed = []
 
     class FailingContext(_FakeProcessContext):
-        def Queue(self):
+        def Queue(self, maxsize=0):
+            assert maxsize == 64
             class ClosableQueue:
                 def close(self):
                     closed.append(True)

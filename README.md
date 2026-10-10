@@ -6,7 +6,15 @@ EmoMaster 是一个参考 VisionMaster 思路实现的机器视觉流程设计�
 >
 > 本文描述 `agent/runtime-workflow-architecture-v1` 分支的代码。开发该版本时请明确切换分支，不要将本页能力视为尚未合入的 `main` 已具备的能力。
 
-## 当前检查版本（2026-10-02）
+## 联合验收交付（2026-10-10）
+
+当前分支新增单算子调试、流程断点/单步控制，以及普通工作流多 Job 运行、硬件触发等待和几何/坐标桥接能力。调试器只开放已审查的 47 个内置算子；设备、外部写入和模型资源不因支持流程暂停而自动开放。
+
+- 从 [三个可直接打开的调试范例](examples/workflow_debugger/README.md) 开始，不需要相机、PLC 或模型。
+- 联合测试按 [dot 实机验收交接](docs/testing/2026-10-10-dot-joint-acceptance.md) 分层进行；双工位夹具不是可直接投产的现场工程。
+- 本次源码验证与范围见 [联合交付记录](docs/testing/2026-10-10-joint-delivery.md)。Designer 和 Runtime 必须使用同一提交；未发布新安装包。
+
+## 历史检查版本（2026-10-02）
 
 已实现代码基准为 [`cc76cade`](https://github.com/jsdfhasuh/emo_master/commit/cc76cadec3339ee07e20da668ad4b66ae4176aa7)，后续本次说明更新不改变生产代码。R3 正常 Designer 页面设计、同 Job 观看、分页、冻结/恢复、实时任务状态和共享只读弹窗已实现；**整个计划尚未验收完成**。
 

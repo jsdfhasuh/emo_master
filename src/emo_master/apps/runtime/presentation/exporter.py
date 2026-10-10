@@ -1,4 +1,4 @@
-"""Two fixed spawn slots. Timeout never returns a slot before process death.
+"""Owned spawn slots, grown on admission. Timeout waits for process death.
 
 Only bounded descriptors travel over the Pipe. Raw input lives in preallocated
 shared memory; the child writes a bounded staging file, never a large Pipe reply.
@@ -48,24 +48,37 @@ class ExportPool:
         self.worker = worker
         self.context = multiprocessing.get_context("spawn")
         self.stop = threading.Event()
-        self.slots = []
+        self.slots: list[dict] = []
         self.errors: list[str] = []
         self.stats = {"completed": 0, "timed_out": 0, "reaped": 0, "failed": 0}
         try:
-            for index in range(2):
-                memory = SharedMemory(create=True, size=RAW_LIMIT)
-                slot: dict = {"memory": memory, "free": self.context.BoundedSemaphore(1),
-                        "queue": queue.Queue(maxsize=2), "index": index, "process": None,
-                        "connection": None, "busy": False, "pending": set(), "laneCount": 1,
-                        "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False)}
-                slot["laneFree"] = [slot["free"], self.context.BoundedSemaphore(1)]
-                self.slots.append(slot)
-                self._spawn(slot)
-                slot["thread"] = threading.Thread(target=self._run, args=(slot,), name=f"display-export-{index}")
-                slot["thread"].start()
+            for _ in range(2):
+                self.addSlot()
         except BaseException:
             self.close()
             raise
+
+    def addSlot(self):
+        """Caller holds admission lock. Existing Jobs survive allocation failure."""
+        if self.stop.is_set():
+            raise RuntimeError("export pool closing")
+        index = len(self.slots)
+        memory = SharedMemory(create=True, size=RAW_LIMIT)
+        slot: dict = {"memory": memory, "free": self.context.BoundedSemaphore(1),
+            "queue": queue.Queue(maxsize=2), "index": index, "process": None,
+            "connection": None, "busy": False, "pending": set(), "laneCount": 1,
+            "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False)}
+        slot["laneFree"] = [slot["free"], self.context.BoundedSemaphore(1)]
+        self.slots.append(slot)
+        try:
+            self._spawn(slot)
+            slot["thread"] = threading.Thread(target=self._run, args=(slot,), name=f"display-export-{index}")
+            slot["thread"].start()
+        except BaseException:
+            self._quarantine(slot)
+            # Keep a failed partial allocation owned until close proves reaping.
+            raise
+        return index
 
     def _spawn(self, slot):
         parent, child = self.context.Pipe()

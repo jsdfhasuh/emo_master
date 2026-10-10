@@ -216,6 +216,10 @@ class LivePreviewManager:
         self._failures: dict[str, tuple[str, str]] = {}
         self._lock = threading.RLock()
 
+    def ownsResources(self) -> bool:
+        with self._lock:
+            return bool(self._sessions)
+
     def open(
         self,
         operatorId: str,
@@ -235,6 +239,8 @@ class LivePreviewManager:
         validator = getattr(operator, "validateParams", None)
         previewParams = dict(params)
         previewParams["triggerMode"] = "freeRun"
+        previewParams["waitMode"] = "bounded"
+        previewParams["sequencePolicy"] = "off"
         if callable(validator):
             validation = validator(previewParams)
             if validation is not None:

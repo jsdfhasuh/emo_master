@@ -43,8 +43,8 @@ def validateBindings(
 
     for scopeId, scopeDefinition in presentation.resultScopes.items():
         try:
-            if scopeDefinition.entryWorkflowId != project.entryWorkflowId:
-                raise ValueError("scope must start at project entry workflow")
+            if scopeDefinition.entryWorkflowId not in project.workflows:
+                raise ValueError("scope must start at an existing workflow")
             if resolveCallPath(project, scopeDefinition.entryWorkflowId,
                                scopeDefinition.callPath) != scopeDefinition.scopeWorkflowId:
                 raise ValueError("scope workflow does not match call path")
@@ -85,6 +85,10 @@ def validateBindings(
                 "indicator": {"boolean", "string"}, "table": {"collection"},
                 "runtime_status": {"string"}}
     for pageId, page in presentation.pages.items():
+        roots = {presentation.resultScopes[key].entryWorkflowId for key in pageScopes(presentation, pageId)
+                 if key in presentation.resultScopes}
+        if len(roots) > 1:
+            report(f"presentation.pages.{pageId}", "a Job-bound page cannot mix different entry workflows", "scope_invalid")
         for scopeId in page.resultScopeIds:
             if scopeId not in presentation.resultScopes:
                 report(f"presentation.pages.{pageId}.resultScopeIds", "result scope missing")

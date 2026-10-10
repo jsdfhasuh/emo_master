@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from time import monotonic
+from itertools import count
 from typing import TYPE_CHECKING
 
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
@@ -38,7 +39,10 @@ class LoopRunner:
         timeoutMs = _optionalInt(config, "timeoutMs", 0)
         if maxIterations < 0 or timeoutMs < 0:
             raise LoopExecutionError("E_WORKFLOW_INVALID", "loop limits must be non-negative")
-        startedAt = monotonic()
+        unlimited = config.get("unlimited", False)
+        if not isinstance(unlimited, bool) or (unlimited and (mode != "while" or config.get("contractVersion") != CURRENT_LOOP_CONTRACT_VERSION)):
+            raise LoopExecutionError("E_WORKFLOW_INVALID", "unlimited requires While contractVersion=2")
+        startedAt = self._clock()
         self.workflowRunner.publish("loop.started", context, "loop started", payload={"mode": mode})
         try:
             if mode == "repeat":
@@ -226,11 +230,13 @@ class LoopRunner:
             metrics.update(conditionResult.metrics)
             diagnostics.update(conditionResult.diagnostics)
             condition = conditionResult.outputs.get("continue")
+            self._debugPoint("loop.condition", node, {"state": state, "condition": condition}, iterationContext)
             if not isinstance(condition, bool):
                 raise LoopExecutionError("E_INPUT_TYPE", "While condition must return bool")
             if not condition:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
                 return self.workflowRunner.result({"state": state}, metrics, diagnostics)
+            self._debugPoint("loop.body", node, {"state": state}, iterationContext)
             bodyContext = context.childWorkflow(
                 str(node.loop["bodyWorkflowId"]), node.nodeId, "loop_body"
             ).forIteration(index)
@@ -277,7 +283,7 @@ class LoopRunner:
             conditionWorkflowId
         ] if conditionWorkflowId is not None else None
         bodyWorkflow = self.workflowRunner.compiledProject.workflows[bodyWorkflowId]
-        for index in range(maximum):
+        for index in (count() if node.loop.get("unlimited", False) else range(maximum)):
             self._check(cancellation, timeoutMs, startedAt)
             iterationContext = context.forIteration(index)
             self._iterationEvent("loop.iteration.started", iterationContext, index)
@@ -303,6 +309,7 @@ class LoopRunner:
                 metrics.update(conditionResult.metrics)
                 diagnostics.update(conditionResult.diagnostics)
                 condition = conditionResult.outputs.get("continue")
+            self._debugPoint("loop.condition", node, dict(state=state, condition=condition), iterationContext)
             if not isinstance(condition, bool):
                 raise LoopExecutionError(
                     "E_INPUT_TYPE", "While condition must be a boolean value" if booleanCondition or variableCondition
@@ -311,6 +318,7 @@ class LoopRunner:
             if not condition:
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
                 return self.workflowRunner.result(state, metrics, diagnostics)
+            self._debugPoint("loop.body", node, state, iterationContext)
             bodyContext = context.childWorkflow(
                 bodyWorkflowId, node.nodeId, "loop_body"
             ).forIteration(index)
@@ -342,11 +350,22 @@ class LoopRunner:
 
     def _check(self, cancellation, timeoutMs, startedAt) -> None:
         cancellation.raise_if_cancelled()
-        if timeoutMs > 0 and (monotonic() - startedAt) * 1000.0 >= timeoutMs:
+        if timeoutMs > 0 and (self._clock() - startedAt) * 1000.0 >= timeoutMs:
             raise LoopExecutionError("E_LOOP_TIMEOUT", "loop timeout exceeded")
 
     def _iterationEvent(self, eventType, context, index) -> None:
         self.workflowRunner.publish(eventType, context, f"loop iteration {index}", payload={"iteration": index})
+        if self.workflowRunner.debugController is not None:
+            node = self.workflowRunner.compiledProject.workflows[context.workflowId].nodeById[context.callerNodeId]
+            self._debugPoint(eventType, node, {"iteration": index}, context)
+
+    def _debugPoint(self, phase, node, inputs, context):
+        if self.workflowRunner.debugController is not None:
+            self.workflowRunner.debugController.loopPoint(phase, node, inputs, context)
+
+    def _clock(self):
+        debug = self.workflowRunner.debugController
+        return debug.activeTime() if debug is not None else monotonic()
 
 
 def _requiredInt(config, key: str) -> int:

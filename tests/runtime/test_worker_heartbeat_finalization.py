@@ -40,6 +40,11 @@ def _stubComputation(monkeypatch, run):
         def __init__(self, **kwargs):
             pass
 
+        def prepareResources(self, workflowId, context, cancellation):
+            # Admission is now a required runner boundary. This fixture only
+            # isolates queue draining/liveness, not resource loading.
+            cancellation.raise_if_cancelled()
+
         def run(self, *args):
             return run()
 

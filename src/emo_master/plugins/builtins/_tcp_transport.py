@@ -65,6 +65,7 @@ def receiveFramed(
     framing: str,
     maxBytes: int,
     expectedBytes: int,
+    rejectTrailing: bool = False,
 ) -> bytes:
     if framing not in TCP_FRAMING_MODES:
         raise ValueError(f"unsupported TCP framing mode: {framing!r}")
@@ -102,6 +103,8 @@ def receiveFramed(
         if framing == "newline":
             newlineIndex = buffer.find(b"\n")
             if newlineIndex >= 0:
+                if rejectTrailing and len(buffer) != newlineIndex + 1:
+                    raise TcpFrameError("unexpected trailing bytes after the response frame")
                 message = bytes(buffer[:newlineIndex])
                 message = message[:-1] if message.endswith(b"\r") else message
                 if len(message) > maxBytes:

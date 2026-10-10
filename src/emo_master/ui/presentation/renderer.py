@@ -513,7 +513,7 @@ class RuntimePages(QWidget):
         source = self.config.dataSources.get(sourceId)
         if source is None:
             return None, None, "来源不存在"
-        if source.kind not in ("node_output", "workflow_output"):
+        if source.kind not in ("node_output", "workflow_output", "global_variable", "global_counter"):
             return None, None, "不支持此来源: " + source.kind
         if self.captureCoverage is not None:
             problem = self.captureCoverage.sourceProblem(self.config, sourceId)

@@ -1,0 +1,40 @@
+{
+  "steps": [
+    {
+      "name": "proto",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "returnCode": 0
+    },
+    {
+      "name": "ruff",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests"
+      ],
+      "returnCode": 0
+    },
+    {
+      "name": "mypy",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "--config-file",
+        "mypy.ini",
+        "--no-incremental",
+        "src"
+      ],
+      "returnCode": 0
+    }
+  ],
+  "returnCode": 0,
+  "sourceChangedDuringRun": []
+}

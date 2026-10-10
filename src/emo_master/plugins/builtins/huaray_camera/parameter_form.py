@@ -6,7 +6,7 @@ from emo_master.apps.designer.ui.param_form import SchemaParamForm, applyParamet
 
 GROUPS = (
     ("连接设置", ("selectionMode", "ipAddress", "cameraKey", "userId", "deviceIndex")),
-    ("触发与重试", ("triggerMode", "triggerSource", "triggerActivation", "captureTimeoutMs", "retryCount", "retryDelayMs")),
+    ("触发与重试", ("triggerMode", "triggerSource", "triggerActivation", "waitMode", "captureTimeoutMs", "sequencePolicy", "retryCount", "retryDelayMs")),
     ("图像输出", ("outputColor", "pixelFormat", "demosaic")),
     ("曝光、增益与帧率", ("exposureMode", "exposureUs", "gainMode", "gainRaw", "frameRateMode", "frameRate")),
     ("采集区域", ("roiMode", "width", "height", "offsetX", "offsetY")),
@@ -16,6 +16,7 @@ ENUM_LABELS = {
     "ip": "按 IP 地址", "cameraKey": "按设备唯一标识",
     "userId": "按用户自定义名称", "index": "按设备索引",
     "hardware": "硬件触发", "software": "软件触发", "freeRun": "自由采集",
+    "bounded": "有界超时（兼容默认）", "contiguous": "严格连续，重复或缺帧停止", "off": "不检查（兼容默认）",
     "Line1": "输入线 1", "Line2": "输入线 2", "Line3": "输入线 3", "Line4": "输入线 4",
     "RisingEdge": "上升沿", "FallingEdge": "下降沿",
     "bgr": "BGR 三通道", "gray": "灰度图像",
@@ -33,6 +34,7 @@ FIELD_HINTS = {
     "triggerSource": "仅硬件触发有效，需与实际接线一致。",
     "triggerActivation": "仅硬件触发有效，且需要相机支持。",
     "captureTimeoutMs": "工作流按此值等待图像；编辑器预览最多等待 1000 毫秒。",
+    "waitMode": "持续硬件等待模式必须关闭异常重试；不会自动重连或推测下一拍。",
     "retryCount": "0 表示不重试。连接或传输异常可重试，单纯取图超时不重试。",
     "retryDelayMs": "仅异常重试次数大于 0 时有效。",
     "outputColor": "输出通道格式；单色相机输出 BGR 仍是灰度内容。",
@@ -85,7 +87,8 @@ class CameraParameterForm(SchemaParamForm):
             if isinstance(control, QComboBox):
                 for index in range(control.count()):
                     value = str(control.itemData(index))
-                    control.setItemText(index, ENUM_LABELS.get(value, value))
+                    labels = properties.get(name, {}).get("xOptionLabels", {})
+                    control.setItemText(index, labels.get(value, ENUM_LABELS.get(value, value)))
                 control.currentIndexChanged.connect(self._updateEnabledFields)
             elif isinstance(control, QSpinBox) and name == "retryCount":
                 control.valueChanged.connect(self._updateEnabledFields)
@@ -102,6 +105,7 @@ class CameraParameterForm(SchemaParamForm):
             "deviceIndex": selection == "index",
             "triggerSource": values.get("triggerMode") == "hardware",
             "triggerActivation": values.get("triggerMode") == "hardware",
+            "captureTimeoutMs": values.get("waitMode", "bounded") == "bounded",
             "retryDelayMs": isinstance(retryCount, int) and retryCount > 0,
             "exposureUs": values.get("exposureMode") == "manual",
             "gainRaw": values.get("gainMode") == "manual",

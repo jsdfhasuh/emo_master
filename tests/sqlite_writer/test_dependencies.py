@@ -92,7 +92,15 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     from emo_master.core.plugin.registry import PluginRegistry
     root = Path('src/emo_master/plugins')
     legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
-    assert set(legacy.rejectedOperators) == {OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write"}
+    # The seven migration bridges intentionally require the current core too;
+    # do not lower their gates just to retain the old rejection-count fixture.
+    migrationOperators = {
+        "vision.analysis.minimum_enclosing_circle", "vision.geometry.detection_bbox",
+        "vision.geometry.extract_points", "vision.geometry.reframe_points", "vision.flow.error",
+        "communication.gateway.coordinate_format", "communication.gateway.ack_validate",
+    }
+    assert set(legacy.rejectedOperators) == {
+        OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write", *migrationOperators}
     assert legacy.rejectedOperators[OPERATOR_ID][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
     assert OPERATOR_ID not in legacy.activeOperators and 'vision.value.number' in legacy.activeOperators
     current = PluginRegistry(coreVersion=__version__).scan(root)

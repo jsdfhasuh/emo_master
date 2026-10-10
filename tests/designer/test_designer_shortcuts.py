@@ -201,6 +201,7 @@ def testRunningKeysDoNotMutateGraphOrHistory(canvas, key, modifiers):  # noqa: F
 
 
 def testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5(canvas, monkeypatch):  # noqa: F811
+    from tests.designer.runtime_state_fixture import setRunning
     window, _nodes, _client = canvas
     calls = []
     monkeypatch.setattr(window.runtimeController, 'startJob', lambda: calls.append('start'))
@@ -215,14 +216,13 @@ def testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5(canvas, monkeypat
     for _ in range(4):
         QApplication.sendEvent(surface, QKeyEvent(QEvent.KeyPress, Qt.Key_F5, Qt.NoModifier, '', True))
     assert calls == ['start']
-    window._setIsJobRunning(True)
-    window._setCurrentJobId('test-fixture-job')
+    setRunning(window, True)
     window.updateToolbarState()
     try:
         press(window, Qt.Key_F6)
         assert calls == ['start', 'stop']
     finally:
-        window._setIsJobRunning(False)
+        setRunning(window, False)
 
 
 def testLayoutFitAndLogsKeysCallExistingCommands(canvas, monkeypatch):  # noqa: F811

@@ -1,7 +1,7 @@
 {
   "operatorId": "vision.io.huaray_camera",
   "displayName": "Huaray IMV Camera",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "entry": "emo_master.plugins.builtins.huaray_camera.operator:HuarayCameraOperator",
   "category": "图像采集",
   "iconKey": "camera",
@@ -9,41 +9,265 @@
   "summary": "通过华睿 IMV SDK 直连相机，每次执行采集一帧并保留作业内连接。",
   "inputPorts": {},
   "outputPorts": {
-    "image": {"type": "image", "required": true, "nullable": false},
-    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.1"},
-    "blockId": {"type": "integer", "required": true, "nullable": false},
-    "deviceTimestamp": {"type": "integer", "required": true, "nullable": false},
-    "actualExposureUs": {"type": "number", "required": true, "nullable": false}
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.1"
+    },
+    "blockId": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "deviceTimestamp": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "actualExposureUs": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
   },
   "paramSchema": {
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "selectionMode": {"title": "连接方式", "type": "string", "enum": ["ip", "cameraKey", "userId", "index"], "default": "ip"},
-      "ipAddress": {"title": "相机 IP 地址", "type": "string", "default": "", "maxLength": 255},
-      "cameraKey": {"title": "设备唯一标识", "type": "string", "default": "", "maxLength": 255},
-      "userId": {"title": "用户自定义名称", "type": "string", "default": "", "maxLength": 255},
-      "deviceIndex": {"title": "设备索引", "type": "integer", "minimum": 0, "maximum": 99, "default": 0},
-      "triggerMode": {"title": "触发模式", "type": "string", "enum": ["hardware", "software", "freeRun"], "default": "hardware"},
-      "triggerSource": {"title": "触发输入线", "type": "string", "enum": ["Line1", "Line2", "Line3", "Line4"], "default": "Line1"},
-      "triggerActivation": {"title": "触发边沿", "type": "string", "enum": ["RisingEdge", "FallingEdge"], "default": "RisingEdge"},
-      "captureTimeoutMs": {"title": "取图超时（毫秒）", "type": "integer", "minimum": 1, "maximum": 60000, "default": 5000},
-      "retryCount": {"title": "异常重试次数", "type": "integer", "minimum": 0, "maximum": 3, "default": 1},
-      "retryDelayMs": {"title": "重试间隔（毫秒）", "type": "integer", "minimum": 0, "maximum": 5000, "default": 200},
-      "outputColor": {"title": "输出颜色", "type": "string", "enum": ["bgr", "gray"], "default": "bgr"},
-      "demosaic": {"title": "去马赛克算法", "type": "string", "enum": ["nearest", "bilinear", "edgeSensing"], "default": "bilinear"},
-      "exposureMode": {"title": "曝光设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-      "exposureUs": {"title": "曝光时间（微秒）", "type": "number", "exclusiveMinimum": 0, "default": 10000.0},
-      "gainMode": {"title": "增益设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-      "gainRaw": {"title": "增益值", "type": "number", "default": 0.0},
-      "frameRateMode": {"title": "帧率设置", "type": "string", "enum": ["keep", "manual"], "default": "keep"},
-      "frameRate": {"title": "采集帧率（帧/秒）", "type": "number", "exclusiveMinimum": 0, "default": 30.0},
-      "roiMode": {"title": "采集区域", "type": "string", "enum": ["keep", "custom", "full"], "default": "keep"},
-      "width": {"title": "图像宽度（像素）", "type": "integer", "minimum": 1, "default": 1},
-      "height": {"title": "图像高度（像素）", "type": "integer", "minimum": 1, "default": 1},
-      "offsetX": {"title": "水平偏移（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "offsetY": {"title": "垂直偏移（像素）", "type": "integer", "minimum": 0, "default": 0},
-      "pixelFormat": {"title": "相机像素格式", "type": "string", "enum": ["keep", "Mono8", "BayerGR8", "BayerRG8", "BayerGB8", "BayerBG8", "RGB8", "BGR8"], "default": "keep"}
+      "selectionMode": {
+        "title": "连接方式",
+        "type": "string",
+        "enum": [
+          "ip",
+          "cameraKey",
+          "userId",
+          "index"
+        ],
+        "default": "ip"
+      },
+      "ipAddress": {
+        "title": "相机 IP 地址",
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      },
+      "cameraKey": {
+        "title": "设备唯一标识",
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      },
+      "userId": {
+        "title": "用户自定义名称",
+        "type": "string",
+        "default": "",
+        "maxLength": 255
+      },
+      "deviceIndex": {
+        "title": "设备索引",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 99,
+        "default": 0
+      },
+      "triggerMode": {
+        "title": "触发模式",
+        "type": "string",
+        "enum": [
+          "hardware",
+          "software",
+          "freeRun"
+        ],
+        "default": "hardware"
+      },
+      "triggerSource": {
+        "title": "触发输入线",
+        "type": "string",
+        "enum": [
+          "Line1",
+          "Line2",
+          "Line3",
+          "Line4"
+        ],
+        "default": "Line1"
+      },
+      "triggerActivation": {
+        "title": "触发边沿",
+        "type": "string",
+        "enum": [
+          "RisingEdge",
+          "FallingEdge"
+        ],
+        "default": "RisingEdge"
+      },
+      "captureTimeoutMs": {
+        "title": "取图超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 5000
+      },
+      "waitMode": {
+        "title": "取图等待方式",
+        "type": "string",
+        "enum": [
+          "bounded",
+          "hardware"
+        ],
+        "default": "bounded",
+        "xGlobalVariableBindingDisabled": true,
+        "xOptionLabels": {
+          "bounded": "有界超时（兼容默认）",
+          "hardware": "持续等待硬件触发"
+        },
+        "description": "持续等待仅用于硬件触发且异常重试次数必须为 0；停止仍通过 100 毫秒 SDK 时间片取消。预览始终有界。"
+      },
+      "sequencePolicy": {
+        "title": "设备帧号检查",
+        "type": "string",
+        "enum": [
+          "off",
+          "contiguous"
+        ],
+        "default": "off",
+        "xGlobalVariableBindingDisabled": true,
+        "xOptionLabels": {
+          "off": "不检查（兼容默认）",
+          "contiguous": "严格连续，重复或缺帧停止"
+        }
+      },
+      "retryCount": {
+        "title": "异常重试次数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 3,
+        "default": 1
+      },
+      "retryDelayMs": {
+        "title": "重试间隔（毫秒）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 5000,
+        "default": 200
+      },
+      "outputColor": {
+        "title": "输出颜色",
+        "type": "string",
+        "enum": [
+          "bgr",
+          "gray"
+        ],
+        "default": "bgr"
+      },
+      "demosaic": {
+        "title": "去马赛克算法",
+        "type": "string",
+        "enum": [
+          "nearest",
+          "bilinear",
+          "edgeSensing"
+        ],
+        "default": "bilinear"
+      },
+      "exposureMode": {
+        "title": "曝光设置",
+        "type": "string",
+        "enum": [
+          "keep",
+          "manual"
+        ],
+        "default": "keep"
+      },
+      "exposureUs": {
+        "title": "曝光时间（微秒）",
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "default": 10000.0
+      },
+      "gainMode": {
+        "title": "增益设置",
+        "type": "string",
+        "enum": [
+          "keep",
+          "manual"
+        ],
+        "default": "keep"
+      },
+      "gainRaw": {
+        "title": "增益值",
+        "type": "number",
+        "default": 0.0
+      },
+      "frameRateMode": {
+        "title": "帧率设置",
+        "type": "string",
+        "enum": [
+          "keep",
+          "manual"
+        ],
+        "default": "keep"
+      },
+      "frameRate": {
+        "title": "采集帧率（帧/秒）",
+        "type": "number",
+        "exclusiveMinimum": 0,
+        "default": 30.0
+      },
+      "roiMode": {
+        "title": "采集区域",
+        "type": "string",
+        "enum": [
+          "keep",
+          "custom",
+          "full"
+        ],
+        "default": "keep"
+      },
+      "width": {
+        "title": "图像宽度（像素）",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1
+      },
+      "height": {
+        "title": "图像高度（像素）",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1
+      },
+      "offsetX": {
+        "title": "水平偏移（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "offsetY": {
+        "title": "垂直偏移（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "default": 0
+      },
+      "pixelFormat": {
+        "title": "相机像素格式",
+        "type": "string",
+        "enum": [
+          "keep",
+          "Mono8",
+          "BayerGR8",
+          "BayerRG8",
+          "BayerGB8",
+          "BayerBG8",
+          "RGB8",
+          "BGR8"
+        ],
+        "default": "keep"
+      }
     },
     "required": []
   },

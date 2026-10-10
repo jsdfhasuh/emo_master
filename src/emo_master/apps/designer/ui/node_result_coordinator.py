@@ -31,6 +31,8 @@ class NodeResultCoordinator(QObject):
         self.peakQtBytes = 0
         self.modelUpdatedNs = 0
         self.images = InspectionImages(window.runtimeClient, decodeNodeImage, self.imageReady.emit)
+        self.workflowContexts = {}
+        self.selectedWorkflow = None
         self.imageReady.connect(self._imageReady, Qt.QueuedConnection)
         for old in (getattr(window, 'nodeDetailsScroll', window.nodeStatusSection), window.previewSection):
             rightLayout.removeWidget(old)
@@ -65,6 +67,50 @@ class NodeResultCoordinator(QObject):
     def rememberDraft(self):
         self.pending = self.blueprint()
         return self.images
+
+    def _workflowContext(self, key):
+        if key not in self.workflowContexts:
+            if not self.workflowContexts:
+                history, images = self.history, self.images
+            else:
+                history = RunResultHistory()
+                images = InspectionImages(self.window.runtimeClient, decodeNodeImage,
+                    lambda generation: self.imageReady.emit(generation) if self.selectedWorkflow == key else None)
+            images.notify = lambda generation: self.imageReady.emit(generation) if self.selectedWorkflow == key else None
+            self.workflowContexts[key] = dict(history=history, images=images, pending=None)
+        return self.workflowContexts[key]
+
+    def selectWorkflow(self, key):
+        context = self._workflowContext(key)
+        if self.selectedWorkflow == key:
+            return
+        self.images.select(None)
+        self.selectedWorkflow = key
+        self.history, self.images = context['history'], context['images']
+        self.panel.history = self.history
+        self.imageSelection = None
+        self._clearImage('已切换运行任务')
+        self.refresh()
+
+    def forWorkflow(self, method, key, *args):
+        context = self._workflowContext(key)
+        history = context['history']
+        if method == 'onInspectionStarting':
+            context['pending'] = self.blueprint()
+            return context['images']
+        if method == 'onInspectionAccepted':
+            reply = args[0]
+            definitions, revision = context['pending'] or self.blueprint()
+            context['pending'] = None
+            history.accept(str(reply.job_id), definitions, int(getattr(reply, 'project_revision', 0) or revision))
+        elif method == 'onInspectionEvent':
+            history.applyEvent(args[0])
+        elif method == 'onInspectionStatus' and history.current:
+            history.current.status = str(getattr(args[0], 'status', history.current.status))
+            if self.selectedWorkflow == key:
+                self.status(args[0])
+        if self.selectedWorkflow == key:
+            self.refresh()
 
     def accepted(self, reply):
         jobId = reply if isinstance(reply, str) else str(reply.job_id)
@@ -192,6 +238,12 @@ class NodeResultCoordinator(QObject):
             self.window.openNodeParamDialog(self.window.flowModel.selectedNodeId)
 
     def reset(self):
+        for context in self.workflowContexts.values():
+            if context['images'] is not self.images:
+                context['images'].close()
+            context['history'].clear()
+        self.workflowContexts.clear()
+        self.selectedWorkflow = None
         self.images.reset()
         self._clearImage('工程已切换；历史已释放')
         self.history.clear()
@@ -205,4 +257,9 @@ class NodeResultCoordinator(QObject):
         if self.viewer:
             self.viewer.close()
         self.images.close()
+        for context in self.workflowContexts.values():
+            if context['images'] is not self.images:
+                context['images'].close()
+            context['history'].clear()
+        self.workflowContexts.clear()
         self.history.clear()

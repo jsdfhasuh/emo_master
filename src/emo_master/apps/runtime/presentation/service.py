@@ -31,6 +31,9 @@ def _devicePreviewAdmission(method):
     @wraps(method)
     def guarded(self, *args, **kwargs):
         with self.runtime._previewJobLock:
+            debug = getattr(self.runtime, "operatorDebugManager", None)
+            if debug is not None and debug.ownsResources():
+                raise RuntimeError("E_RESOURCE_BUSY: operator debug still holds Runtime resources")
             return method(self, *args, **kwargs)
     return guarded
 
@@ -112,7 +115,8 @@ class PresentationService:
         with self.lock:
             if self.closing or self.closed or getattr(self.runtime, "_closing", False):
                 raise RuntimeError("E_RUNTIME_CLOSING")
-            if len(self.jobs) >= 2:
+            limit = self.runtime.jobSupervisor.maxConcurrentJobs
+            if limit is not None and len(self.jobs) >= limit:
                 raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
             prepared = self.prepared[preparedId]
             prepared.verify()
@@ -154,7 +158,22 @@ class PresentationService:
                 raise ValueError("this test-release host does not accept normal StartJob capture")
             if self.closed:
                 raise ValueError("presentation service is closed")
-            if len(self.jobs) >= 2:
+            limit = self.runtime.jobSupervisor.maxConcurrentJobs
+            if limit is not None and len(self.jobs) >= limit:
+                # A fresh explicit Start may evict a retired display, not a
+                # running Job. Historical captures are not concurrent Jobs.
+                # release() still proves reader/export/worker retirement;
+                # failure leaves all ownership charged, never steals a slab.
+                for jobId in list(self.jobs):
+                    record = self.runtime.jobRepository.get(jobId)
+                    if record is not None and record.isTerminal:
+                        try:
+                            self.release(jobId)
+                        except ValueError:
+                            continue
+                        if len(self.jobs) < limit:
+                            break
+            if limit is not None and len(self.jobs) >= limit:
                 raise ValueError("display Job quota exceeded; explicitly release a terminal Job")
 
     @_guardMutation
@@ -191,7 +210,10 @@ class PresentationService:
                       "capturePlanRevision": capturePlanRevision, "mode": mode}}
         if needsImage and self.exporter:
             used = {slot["index"] for active in self.jobs.values() for slot in active["slots"]}
-            index = next(slot["index"] for slot in self.exporter.slots if slot["index"] not in used)
+            index = next((slot["index"] for slot in self.exporter.slots
+                          if slot["index"] not in used and not slot["quarantined"].value), None)
+            if index is None:
+                index = self.exporter.addSlot()
             laneCount = len(set(config["imageLaneBySource"].values())) or 1
             config["slots"] = self.exporter.configureLanes(index, laneCount)
         self.jobs[jobId] = config

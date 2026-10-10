@@ -86,6 +86,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             resultCollector=_collector(spec, eventQueue),
             retainOperators=spec.continuous,
         )
+        runner.prepareResources(spec.workflowId,
+            RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         if spec.continuous:
             _runContinuous(runner, spec, inputs, token, cancelEvent)

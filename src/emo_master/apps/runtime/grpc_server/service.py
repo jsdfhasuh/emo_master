@@ -37,6 +37,7 @@ from emo_master.apps.runtime.preview.draft import draftPreviewProjectId
 from emo_master.apps.runtime.preview.store import PreviewAssetStore
 from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
 from emo_master.apps.runtime.preview.plc_debug import PLC_OPERATORS, PlcDebugManager, parseParams as parsePlcDebugParams
+from emo_master.apps.runtime.operator_debug.rpc import OperatorDebugRpcMixin
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
@@ -56,6 +57,19 @@ def _withProjectStateLock(method: Any) -> Any:
     def locked(self: Any, *args: Any, **kwargs: Any) -> Any:
         self.jobSupervisor.assertMutationAllowed()
         with self._projectStateLock:
+            debugReplies = {
+                "LoadProject": runtime_pb2.LoadProjectReply,
+                "RunOperatorPreview": runtime_pb2.RunOperatorPreviewReply,
+                "OpenOperatorPreviewSession": runtime_pb2.OpenOperatorPreviewSessionReply,
+                "OpenDraftOperatorPreviewSession": runtime_pb2.OpenOperatorPreviewSessionReply,
+            }
+            if method.__name__ in debugReplies and self.operatorDebugManager.ownsResources():
+                values = dict(ok=False, message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
+                if method.__name__ == "LoadProject":
+                    values.update(status="FAILED")
+                else:
+                    values.update(code="E_RESOURCE_BUSY")
+                return debugReplies[method.__name__](**values)
             if self._closing and method.__name__ in {
                 "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession",
                 "OpenDraftOperatorPreviewSession",
@@ -67,7 +81,7 @@ def _withProjectStateLock(method: Any) -> Any:
     return locked
 
 
-class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
+class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
     @property
     def supportsLegacySnapshotPolicy(self) -> bool:
         # The opt-in normal-Run policy must not widen restricted test hosts.
@@ -78,7 +92,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self,
         dbPath: Path | None = None,
         pluginRootPaths: tuple[str, ...] | None = None,
-        maxConcurrentJobs: int = 2,
+        maxConcurrentJobs: int | None = 2,
         workspaceRoot: Path | None = None,
         logDirectory: Path | None = None,
         productionMode: bool = False,
@@ -156,7 +170,8 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.previewAssetStore = PreviewAssetStore(
             self.workspaceRoot.parent / "preview-cache"
         )
-        self.runInspectionStore = RunInspectionStore(self.previewAssetStore)
+        self.runInspectionStore = RunInspectionStore(self.previewAssetStore,
+            maxSessions=None if maxConcurrentJobs is None else max(2, maxConcurrentJobs))
         self.eventStore.addSink(self.runInspectionStore.observe)
         self.previewExecutor = PurePreviewExecutor(
             self.pluginScanResult.activeOperators,
@@ -188,6 +203,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self.jobMessages: dict[str, str] = {}
         self.runtimeInstanceId = str(uuid4())
         self.plcDebugManager = PlcDebugManager(self.runtimeInstanceId)
+        from emo_master.apps.runtime.operator_debug.contracts import trustedEntries
+        from emo_master.apps.runtime.operator_debug.manager import OperatorDebugManager
+        self.operatorDebugManager = OperatorDebugManager(self.runtimeInstanceId,
+            trustedEntries(self.pluginScanResult.activeOperators), resourceBusy=self._operatorDebugResourcesBusy,
+            sourceProvider=self._operatorDebugSources, variableProvider=self._operatorDebugVariables)
         # Never evict a request and then treat a delayed retry as a fresh run.
         # Bounded admission is reset only by a new Runtime generation.
         self._startRequests: dict[str, tuple[str, object]] = {}
@@ -203,6 +223,10 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
         _ = context
+        if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+               for record in self.jobRepository.all()):
+            return runtime_pb2.LoadProjectReply(ok=False, status="FAILED",
+                message="stop and release running Jobs before reloading the project")
         # A draft preview can exist before any formal project has been loaded.
         with self._previewJobLock:
             cleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
@@ -263,9 +287,13 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
             self.loadedProjectId,
         )
         self.eventStore.retentionPerJob = document.runtime.eventRetentionPerJob
-        if self.productionMode:
-            self.sqliteStore.jobEventRetention = document.runtime.eventRetentionPerJob
+        self.sqliteStore.jobEventRetention = document.runtime.eventRetentionPerJob
         self.jobSupervisor.maxConcurrentJobs = document.runtime.maxConcurrentJobs
+        # Designer owns one inspection lease per visited workflow (each retains
+        # its last two runs). Do not impose a hidden two-Job execution limit.
+        # Per-session and aggregate byte/reader budgets remain unchanged.
+        self.runInspectionStore.maxSessions = (None if document.runtime.maxConcurrentJobs is None
+            else max(2, len(document.workflows), document.runtime.maxConcurrentJobs))
         self.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
         self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
         return runtime_pb2.LoadProjectReply(ok=True, status="READY", message="project loaded")
@@ -384,6 +412,11 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
 
     def _startJob(self, request, context):
         _ = context
+        # Reject before inspecting production targets or preparing presentation capture.
+        with self._previewJobLock:
+            if self.operatorDebugManager.ownsResources():
+                return runtime_pb2.StartJobReply(ok=False, status="FAILED",
+                    message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
         try:
             legacyPolicy = normalizeLegacySnapshotPolicy(getattr(request, "legacy_snapshot_policy", ""))
         except ValueError as error:
@@ -440,6 +473,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                 return runtime_pb2.StartJobReply(ok=False, status="FAILED", message=str(error))
 
         with self._previewJobLock:
+            if self.operatorDebugManager.ownsResources():
+                return runtime_pb2.StartJobReply(ok=False, status="FAILED",
+                    message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
             previewCleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
             previewCleanupErrors.extend(self.plcDebugManager.closeSessions())
             if previewCleanupErrors:
@@ -1033,6 +1069,9 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                     return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
                         "E_PLC_CONTEXT_INVALID", "PLC debug requires the current loaded project, a registered PLC operator and bounded draft node identity")))
                 with self._previewJobLock:
+                    if self.operatorDebugManager.ownsResources():
+                        return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
+                            "E_RESOURCE_BUSY", "operator debug still holds Runtime resources")))
                     if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
                            for record in self.jobRepository.all()):
                         return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
@@ -1297,7 +1336,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
                             raise
                         row.update(value=None, revision=None, updatedAtMs=None, state="not_initialized")
                 rows.append(row)
-            jobs = [{"jobId": record.jobId, "ended": record.isTerminal}
+            jobs = [{"jobId": record.jobId, "ended": record.isTerminal, "workflowId": record.workflowId}
                     for record in self.jobRepository.all() if record.projectId == self.loadedProjectId]
             return runtime_pb2.GlobalVariablesReply(ok=True, variables_json=json.dumps(rows, ensure_ascii=False, allow_nan=False),
                                                    jobs_json=json.dumps(jobs))
@@ -1432,6 +1471,7 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         if presentation is not None:
             presentation.beginClosing()
         self._maintenanceStop.set()
+        self.operatorDebugManager.close()
         errors = list(self.livePreviewManager.closeAll())
         errors.extend(self.plcDebugManager.closeAll())
         self._closeStep("preview-producers", self.previewExecutor.close)
@@ -1478,6 +1518,15 @@ class RuntimeService(runtime_pb2_grpc.RuntimeServiceServicer):
         self._closeStep("sqlite", self.sqliteStore.releaseIdleConnection, retryable=True)
         self._closeStep("data-lock", self._runtimeDataLock.release)
         self._closed = True
+
+    def _operatorDebugResourcesBusy(self):
+        if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+               for record in self.jobRepository.all()):
+            return True
+        if self.livePreviewManager.ownsResources() or self.plcDebugManager.ownsResources():
+            return True
+        with self.previewExecutor._stateLock:
+            return bool(self.previewExecutor._cancellations)
 
     def _closeStep(self, name, action, *, retryable=False):
         state = self._closeStages.get(name)

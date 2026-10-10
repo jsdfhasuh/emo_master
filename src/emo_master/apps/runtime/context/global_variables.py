@@ -5,6 +5,7 @@ from dataclasses import asdict, dataclass
 import json
 import sqlite3
 import time
+import random
 
 from emo_master.core.project.global_variables import VariableDefinition, VariableError, definitions, validateValue
 
@@ -48,6 +49,32 @@ def migrateVariables(connection):
             WHERE d.legacyName IS NOT NULL AND v.scope=''""")
 
 
+def _beginWrite(connection):
+    """Bounded, jittered admission avoids starvation behind event commits.
+
+    SQLite's increasing busy sleeps can repeatedly miss short gaps between
+    durable event writes. Retry ONLY BEGIN, before reading/changing a value.
+    The transaction body and commit are executed once, never replayed.
+    """
+    timeout = connection.execute("PRAGMA busy_timeout").fetchone()[0]
+    deadline = time.monotonic() + timeout / 1000
+    connection.execute("PRAGMA busy_timeout=0")
+    try:
+        while True:
+            try:
+                connection.execute("BEGIN IMMEDIATE")
+                return
+            except sqlite3.OperationalError as error:
+                if not any(word in str(error).lower() for word in ("locked", "busy")):
+                    raise
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise VariableError("E_VARIABLE_BUSY", "global variable database is busy") from error
+                time.sleep(min(remaining, random.uniform(.001, .005)))
+    finally:
+        connection.execute(f"PRAGMA busy_timeout={int(timeout)}")
+
+
 def counterDefinition(name):
     return VariableDefinition(name=name, type="integer", kind="variable", initialValue=0,
                               lifetime="persistent", legacyCounterName=name)
@@ -67,7 +94,7 @@ class ProjectGlobalVariables:
 
     def synchronize(self):
         with self.store._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
+            _beginWrite(connection)
             legacy = {key: json.loads(raw)["name"] for key, raw in connection.execute(
                 "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=? AND legacyName IS NOT NULL",
                 (self.projectId,))}
@@ -93,7 +120,7 @@ class ProjectGlobalVariables:
         if not self.jobId:
             raise VariableError("E_VARIABLE_JOB_REQUIRED", "job ID is required")
         with self.store._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
+            _beginWrite(connection)
             for key, definition in self.definitions.items():
                 if definition.kind == "variable" and definition.lifetime == "job":
                     self._initialize(connection, key, definition, self.jobId)
@@ -144,7 +171,7 @@ class ProjectGlobalVariables:
         if definition.kind == "constant":
             raise VariableError("E_VARIABLE_READ_ONLY", "constants cannot be written")
         with self.store._connect() as connection:
-            connection.execute("BEGIN IMMEDIATE")
+            _beginWrite(connection)
             old = self._read(connection, key)
             if expectedRevision is not None and expectedRevision != old.revision:
                 raise VariableError("E_VARIABLE_CONFLICT", "value changed; refresh before setting it again")
@@ -210,7 +237,8 @@ def counterOperation(store, projectId, name, *, increment=False, reset=False, va
             record = accessor.records([key])[key]
         return GlobalCounterRecord(name, record.value, record.updatedAtMs)
     except VariableError as error:
-        raise GlobalCounterError("E_COUNTER_VALUE_RANGE" if error.code == "E_VARIABLE_TYPE" else error.code, str(error)) from error
+        code = {"E_VARIABLE_TYPE": "E_COUNTER_VALUE_RANGE", "E_VARIABLE_BUSY": "E_COUNTER_BUSY"}.get(error.code, error.code)
+        raise GlobalCounterError(code, str(error)) from error
     except sqlite3.OperationalError as error:
         raise GlobalCounterError("E_COUNTER_BUSY" if "locked" in str(error) or "busy" in str(error)
                                  else "E_RUNTIME_STATE_UNAVAILABLE", str(error)) from error

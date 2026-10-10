@@ -11,7 +11,7 @@ import time
 
 from PySide2.QtCore import QSettings, QTimer, Qt
 from PySide2.QtWidgets import (
-    QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QVBoxLayout, QWidget,
+    QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
@@ -28,6 +28,9 @@ class OperatorWindow(QWidget):
         self.preferences = preferences or QSettings("EmoMaster", "Runtime")
         self.projectPath = str(projectPath or self.preferences.value("projectPath", ""))
         self.controller = self.session = self.hub = self.pages = None
+        self.workflowSessions, self.workflowHubs, self.workflowPages, self.workflowControls = {}, {}, {}, {}
+        self.workflowTabs = None
+        self.selectedWorkflowIds = []
         self.busy = self.closing = self.done = False
         self.error = ""
         self.state = dict(state="EMPTY", canStart=False, canLoad=False, jobId="", message="")
@@ -45,9 +48,10 @@ class OperatorWindow(QWidget):
         self.openButton = self._button("选择工程", QStyle.SP_DirOpenIcon, self.chooseProject)
         self.reloadButton = self._button("重新加载", QStyle.SP_BrowserReload, self.reloadProject)
         self.updateButton = self._button("更新工程", QStyle.SP_DialogSaveButton, self.choosePackage)
+        self.targetsButton = self._button("运行目标…", QStyle.SP_FileDialogListView, self.chooseTargets)
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
-        for button in (self.openButton, self.reloadButton, self.updateButton, self.startButton, self.stopButton):
+        for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton, self.startButton, self.stopButton):
             toolbar.addWidget(button)
         layout.addLayout(toolbar)
         self.message = QLabel("正在准备 Runtime")
@@ -140,8 +144,11 @@ class OperatorWindow(QWidget):
         self.launch("loaded", load)
 
     def startDetection(self):
-        if self.closing or self._deferCommand(self.startDetection) or not self.state["canStart"]:
+        if self.closing or self._deferCommand(self.startDetection) or not self.controller.document:
             return
+        if (len(self.controller.sessions) > 1 or len(self.selectedWorkflowIds) > 1
+                or self.selectedWorkflowIds != [self.controller.document.entryWorkflowId]):
+            return self.startWorkflows()
         self._removePages()
         self.error = ""
         self.message.setText("正在启动")
@@ -160,13 +167,89 @@ class OperatorWindow(QWidget):
         if (self.closing or self._deferCommand(self.stopDetection)
                 or self.state["state"] not in {"RUNNING", "STOPPING", "FAULT"}):
             return
+        if len(self.controller.sessions) > 1:
+            return self.stopWorkflows()
         self.message.setText("正在停止")
         def stop():
             self.controller.stop()
             return self.controller.status()
         self.launch("stopped", stop)
 
+    def chooseTargets(self):
+        if self.closing or self._deferCommand(self.chooseTargets) or not self.controller.document:
+            return
+        from emo_master.ui.run_targets_dialog import RunTargetsDialog
+        dialog = RunTargetsDialog(self.controller.workflows, self.selectedWorkflowIds,
+            self.controller.document.runtime.maxConcurrentJobs, self, editLimit=False,
+            entryWorkflowId=self.controller.document.entryWorkflowId)
+        if dialog.exec_():
+            self.selectedWorkflowIds = dialog.selectedWorkflowIds()
+            self._controls()
+
+    def startWorkflows(self, workflowId=None):
+        if self.closing or self._deferCommand(lambda: self.startWorkflows(workflowId)):
+            return
+        rows = self.state.get("workflows", {})
+        keys = [key for key in ([workflowId] if workflowId else self.selectedWorkflowIds)
+                if rows.get(key, {}).get("canStart", True)]
+        if not keys:
+            return
+        for key in keys:
+            self._removeWorkflowPages(key)
+        self.error = ""
+        def start():
+            for key in keys:
+                self._closeWorkflowSession(key)
+            if workflowId is None:
+                results = self.controller.startAll(keys)
+            else:
+                try:
+                    results = {workflowId: dict(ok=True, jobId=self.controller.start(workflowId))}
+                except Exception as error:
+                    results = {workflowId: dict(ok=False, message=str(error))}
+            for key, owned in self.controller.sessions.items():
+                if key not in keys or not owned.jobId:
+                    continue
+                presentation = self.controller.presentationForWorkflow(key)
+                if presentation and presentation.pageOrder and owned.jobId in self.controller.presentation.jobs:
+                    self.workflowSessions[key] = DisplaySession(self.controller.address, owned.jobId,
+                        imageDemand=True, expectedRuntimeInstanceId=self.controller.runtime.runtimeInstanceId,
+                        projectId=self.controller.document.project.projectId)
+            state = self.controller.status()
+            state["operationErrors"] = [f"{self.controller.workflows[key].name}: {row['message']}"
+                for key, row in results.items() if not row["ok"]]
+            return state
+        self.message.setText("正在启动流程")
+        self.launch("workflowsStarted", start)
+
+    def stopWorkflows(self, workflowId=None):
+        if self.closing or self._deferCommand(lambda: self.stopWorkflows(workflowId)):
+            return
+        def stop():
+            if workflowId is None:
+                results = self.controller.stopAll()
+            else:
+                try:
+                    self.controller.stop(workflowId)
+                    results = {workflowId: dict(ok=True)}
+                except Exception as error:
+                    results = {workflowId: dict(ok=False, message=str(error))}
+            state = self.controller.status()
+            state["operationErrors"] = [f"{self.controller.workflows[key].name}: {row['message']}"
+                for key, row in results.items() if not row["ok"]]
+            return state
+        self.error = ""
+        self.message.setText("正在停止流程")
+        self.launch("workflowsStopped", stop)
+
     def _removePages(self):
+        for key in list(self.workflowPages):
+            self._removeWorkflowPages(key)
+        if self.workflowTabs:
+            self.pageLayout.removeWidget(self.workflowTabs)
+            self.workflowTabs.deleteLater()
+            self.workflowTabs = None
+            self.workflowControls.clear()
         if self.pages:
             self.pageLayout.removeWidget(self.pages)
             self.pages.close()
@@ -180,26 +263,111 @@ class OperatorWindow(QWidget):
         document = self.controller.document
         if document is None:
             return
+        if len(self.controller.sessions) > 1:
+            self._showWorkflowPages()
+            return
         self._removePages()
         if self.session:
             self.hub = DisplayHub(self.session, self)
-        self.pages = RuntimePages(document.presentation, hub=self.hub, label=document.project.name, parent=self)
+        self.pages = RuntimePages(self.controller.presentationForWorkflow(document.entryWorkflowId),
+            hub=self.hub, label=document.project.name, parent=self)
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
         self.pages.show()
 
+    def _removeWorkflowPages(self, key):
+        pages = self.workflowPages.pop(key, None)
+        if pages:
+            self.workflowControls[key]["layout"].removeWidget(pages)
+            pages.close()
+            pages.deleteLater()
+        hub = self.workflowHubs.pop(key, None)
+        if hub:
+            hub.deleteLater()
+
+    def _showWorkflowPages(self):
+        if self.workflowTabs is None:
+            if self.session:
+                self.workflowSessions[self.controller.document.entryWorkflowId] = self.session
+                self.session = None
+            if self.pages:
+                self.pageLayout.removeWidget(self.pages)
+                self.pages.close()
+                self.pages.deleteLater()
+                self.pages = None
+            if self.hub:
+                self.hub.deleteLater()
+                self.hub = None
+            self.workflowTabs = QTabWidget(self)
+            self.pageLayout.addWidget(self.workflowTabs)
+        for key in self.controller.sessions:
+            if key not in self.workflowControls:
+                workflow = self.controller.workflows[key]
+                tab = QWidget()
+                layout = QVBoxLayout(tab)
+                toolbar = QHBoxLayout()
+                label = QLabel()
+                label.setTextFormat(Qt.PlainText)
+                label.setWordWrap(True)
+                toolbar.addWidget(label, 1)
+                start = self._button("开始流程", QStyle.SP_MediaPlay, lambda checked=False, key=key: self.startWorkflows(key))
+                stop = self._button("停止流程", QStyle.SP_MediaStop, lambda checked=False, key=key: self.stopWorkflows(key))
+                toolbar.addWidget(start)
+                toolbar.addWidget(stop)
+                layout.addLayout(toolbar)
+                self.workflowControls[key] = dict(layout=layout, label=label, start=start, stop=stop)
+                self.workflowTabs.addTab(tab, workflow.name)
+        for key in self.controller.sessions:
+            workflow = self.controller.workflows[key]
+            if key in self.workflowPages:
+                continue  # Restarting the other workflow must not replace this view/hub/pins.
+            session = self.workflowSessions.get(key)
+            hub = DisplayHub(session, self) if session else None
+            if hub:
+                self.workflowHubs[key] = hub
+            pages = RuntimePages(self.controller.presentationForWorkflow(key), hub=hub,
+                                 label=workflow.name, parent=self.workflowTabs)
+            pages.banner.hide()
+            self.workflowPages[key] = pages
+            self.workflowControls[key]["layout"].addWidget(pages)
+            pages.show()
+
     def _closeSession(self):
+        for key in list(self.workflowSessions):
+            self._closeWorkflowSession(key)
         if self.session:
             self.session.close()
             self.session = None
+
+    def _closeWorkflowSession(self, key):
+        session = self.workflowSessions.get(key)
+        if session:
+            session.close()
+            del self.workflowSessions[key]
 
     def _controls(self):
         enabled = not self.busy and not self.closing and self.controller is not None
         self.openButton.setEnabled(enabled and self.state["canLoad"])
         self.reloadButton.setEnabled(enabled and self.state["canLoad"] and bool(self.projectPath))
         self.updateButton.setEnabled(enabled and self.state["canLoad"] and self.controller.document is not None)
-        self.startButton.setEnabled(enabled and self.state["canStart"])
-        self.stopButton.setEnabled(enabled and bool(self.state["jobId"]) and not self.state["canLoad"])
+        self.targetsButton.setEnabled(enabled and self.controller.document is not None)
+        self.startButton.setEnabled(enabled and self.controller.document is not None and bool(self.selectedWorkflowIds) and any(
+            self.state.get("workflows", {}).get(key, {}).get("canStart", True) for key in self.selectedWorkflowIds))
+        rows = self.state.get("workflows", {})
+        multi = len(rows) > 1
+        self.startButton.setText(f"开始（{len(self.selectedWorkflowIds)} 个流程）" if len(self.selectedWorkflowIds) > 1 else "开始")
+        self.stopButton.setText("全部停止" if multi else "停止")
+        self.stopButton.setEnabled(enabled and (any(row["jobId"] and not row["canLoad"] for row in rows.values())
+                                               if multi else bool(self.state["jobId"]) and not self.state["canLoad"]))
+        names = dict(READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
+        for key, controls in self.workflowControls.items():
+            row = rows.get(key, {})
+            controls["start"].setEnabled(enabled and row.get("canStart", False))
+            controls["stop"].setEnabled(enabled and bool(row.get("jobId")) and not row.get("canLoad", True))
+            controls["label"].setText(names.get(row.get("state"), "未加载") +
+                (f"\nJob: {row['jobId']}" if row.get("jobId") else "") +
+                (f"\n{row['message']}" if row.get("message") else ""))
+            controls["label"].setToolTip(f"流程 ID: {key}\n启动请求: {row.get('startRequestId', '')}")
 
     def _displayState(self):
         names = dict(EMPTY="未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
@@ -237,7 +405,9 @@ class OperatorWindow(QWidget):
         if self.closing:
             self.shutdown()
             return
-        if kind in {"loaded", "started"} and self.controller.document:
+        if kind == "loaded" and self.controller.document:
+            self.selectedWorkflowIds = [self.controller.document.entryWorkflowId]
+        if kind in {"loaded", "started", "workflowsStarted"} and self.controller.document:
             document = self.controller.document
             self.projectPath = self.controller.runtime.loadedProjectFile
             self.projectLabel.setText(document.project.name)
@@ -245,11 +415,15 @@ class OperatorWindow(QWidget):
             self.preferences.setValue("projectPath", self.projectPath)
             self.error = ""
             self._showPages()
+        failures = value.get("operationErrors", [])
+        if failures:
+            self.error = "\n".join(failures)
+            self.message.setText("部分流程操作失败（成功流程保持原状）：\n" + self.error)
         self._displayState()
         command, self.pendingCommand = self.pendingCommand, None
         if command:
             command()
-        elif kind == "loaded" and self.controller.settings.autoStart and self.state["canStart"]:
+        elif (kind == "loaded" and self.controller.settings.autoStart and self.state["canStart"]):
             self.startDetection()
 
     def shutdown(self):

@@ -204,6 +204,8 @@ class GlobalVariablesDialog(QDialog):
         job = self.getCurrentJobId()
         if job and self.jobs.findData(job) < 0:
             self.jobs.addItem(str(job), job)
+        if job and not self.jobs.currentData():
+            self.jobs.setCurrentIndex(self.jobs.findData(job))
         self.show()
         self.raise_()
         self.timer.start()
@@ -282,7 +284,9 @@ class GlobalVariablesDialog(QDialog):
             self.jobs.clear()
             self.jobs.addItem("未选择任务（仅显示初始值）", "")
             for job in self._jobs:
-                self.jobs.addItem(job["jobId"] + (" · 已结束" if job["ended"] else " · 运行中"), job["jobId"])
+                label = job.get("workflowId") or ""
+                self.jobs.addItem((label + " · " if label else "") + job["jobId"]
+                                 + (" · 已结束" if job["ended"] else " · 运行中"), job["jobId"])
             self.jobs.setCurrentIndex(max(0, self.jobs.findData(current)))
             self.jobs.blockSignals(False)
             if outcome.get("applied"):

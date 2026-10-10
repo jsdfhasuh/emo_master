@@ -23,7 +23,7 @@ class JobSupervisor:
         self,
         jobRepository: JobRepository,
         eventStore: EventStore,
-        maxConcurrentJobs: int = 2,
+        maxConcurrentJobs: int | None = 2,
         gracefulStopTimeoutMs: int = 5000,
         heartbeatTimeoutMs: int = 5000,
         terminalCallback: Callable[[str, str], None] | None = None,
@@ -31,7 +31,7 @@ class JobSupervisor:
     ) -> None:
         self.jobRepository = jobRepository
         self.eventStore = eventStore
-        self.maxConcurrentJobs = max(1, maxConcurrentJobs)
+        self.maxConcurrentJobs = None if maxConcurrentJobs is None else max(1, maxConcurrentJobs)
         self.gracefulStopTimeoutMs = max(0, gracefulStopTimeoutMs)
         self.heartbeatTimeoutMs = max(100, heartbeatTimeoutMs)
         self._terminalCallback = terminalCallback
@@ -67,7 +67,7 @@ class JobSupervisor:
         self.assertMutationAllowed()
         with self._lock:
             active = len(self._ownedJobs())
-            if active >= self.maxConcurrentJobs:
+            if self.maxConcurrentJobs is not None and active >= self.maxConcurrentJobs:
                 raise RuntimeError("E_MAX_CONCURRENT_JOBS: maximum concurrent jobs reached")
             if self._closing:
                 raise RuntimeError("E_RUNTIME_CLOSING")
@@ -77,7 +77,7 @@ class JobSupervisor:
             cancelEvent = self._context.Event()
             # Continuous diagnostics must backpressure the producer, not accumulate
             # an unbounded feeder backlog that outlives cancellation and retention.
-            eventQueue = self._context.Queue(maxsize=64) if spec.continuous else self._context.Queue()
+            eventQueue = self._context.Queue(maxsize=64)
             heartbeatTimeoutMs = max(100, spec.heartbeatTimeoutMs or self.heartbeatTimeoutMs)
             heartbeatIntervalMs = min(
                 max(50, spec.heartbeatIntervalMs),

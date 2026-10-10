@@ -147,7 +147,7 @@ def testInvalidRememberedProjectStillAllowsSelectionAndClosing(qtApp, tmp_path):
     try:
         waitFor(lambda: window.error and not window.busy)
         assert window.openButton.isEnabled() and not window.startButton.isEnabled()
-        assert set(button.text() for button in window.findChildren(QPushButton)) == {"选择工程", "更新工程", "重新加载", "开始", "停止"}
+        assert set(button.text() for button in window.findChildren(QPushButton)) == {"选择工程", "更新工程", "重新加载", "开始", "停止", "运行目标…"}
     finally:
         closeWindow(window)
 

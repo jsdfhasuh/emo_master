@@ -12,9 +12,9 @@ from emo_master.apps.designer.controllers import (
     LayoutController,
     OperatorCatalogController,
     ProjectController,
-    RuntimeController,
     WorkflowController,
 )
+from emo_master.apps.designer.controllers.workflow_runtime_controller import WorkflowRuntimeController
 from emo_master.apps.designer.state.workflow_store import (
     WorkflowStore,
     defaultNodePosition,
@@ -45,6 +45,10 @@ from emo_master.apps.designer.ui.workflow_package_preview_dialog import (
     WorkflowPackagePreviewDialog,
 )
 from emo_master.apps.designer.ui.workflow_interface_dialog import WorkflowInterfaceDialog
+from emo_master.ui.workflow_labels import (
+    WORKFLOW_RUN_STYLES, aggregateWorkflowStatus,
+    workflowDisplayNames, workflowEntryMarker, workflowEntryToolTip,
+)
 
 try:
     from PySide2.QtCore import QPointF, QSettings, QSize, QTimer, Qt
@@ -786,6 +790,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.legacySnapshotPolicyCombo: QComboBox | None = None
         self._allowRuntimeEventsWithoutActiveJob = True
         self.isJobRunning = False
+        self.runTargetIds: list[str] = []
         self._lastRunBlockedReason = ""
         self._addWorkflowTabIndex = -1
         self._menuActions: dict[str, QAction] = {}
@@ -1068,6 +1073,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.mainToolbar.addSeparator()
         self._addToolbarGroup("运行", [self.startButton, self.stopButton])
         if _nativeQt:
+            self.runTargetsButton = QPushButton("运行目标…")
+            self.runTargetsButton.clicked.connect(self.openRunTargetsDialog)
+            self.runningWorkflowCombo = QComboBox(self)
+            self.runningWorkflowCombo.setMinimumWidth(150)
+            self.runningWorkflowCombo.setSizeAdjustPolicy(QComboBox.AdjustToMinimumContentsLengthWithIcon)
+            self.runningWorkflowCombo.setToolTip("切换查看的工作流 / Job；停止运行只停止当前所选，运行菜单可停止全部")
+            self.runningWorkflowCombo.currentIndexChanged.connect(self._selectRunningWorkflow)
             combo = QComboBox(self)
             self.legacySnapshotPolicyCombo = combo
             combo.setObjectName("legacySnapshotPolicyCombo")
@@ -1107,6 +1119,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setTitleName):
             setTitleName("panelTitle")
         summaryLayout.addWidget(statusTitle)
+        if _nativeQt:
+            # Persistent summary controls must not disappear when workspace
+            # chrome rebuilds or overflows the main toolbar.
+            runControls = QHBoxLayout()
+            runControls.addWidget(self.runTargetsButton)
+            self.stopAllJobsButton = QPushButton("停止全部")
+            self.stopAllJobsButton.clicked.connect(self.stopAllJobs)
+            runControls.addWidget(self.stopAllJobsButton)
+            summaryLayout.addLayout(runControls)
+            summaryLayout.addWidget(self.runningWorkflowCombo)
 
         self.jobStatusCard = QLabel("作业状态：空闲")
         setStatusCardName = getattr(self.jobStatusCard, "setObjectName", None)
@@ -1281,7 +1303,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             ),
             workflowController=self.workflowController,
         )
-        self.runtimeController = RuntimeController(
+        self.runtimeController = WorkflowRuntimeController(
+            getRunTargets=lambda: self.runTargetIds,
+            getWorkflows=lambda: self.workflowStore.workflows,
+            getMaxJobs=lambda: self.workflowStore.runtime.get('maxConcurrentJobs', 2),
+            selectState=self._selectRuntimeState,
+            inspectionRouter=self.nodeResultCoordinator,
             runtimeClient=self.runtimeClient,
             runtimePanelState=self.runtimePanelState,
             appendLog=self.appendRuntimeLog,
@@ -1402,13 +1429,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.designerActions = DesignerActions(self)
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
 
-    def _capturePresentationForRun(self) -> bool | dict:
+    def _capturePresentationForRun(self, workflowId=None) -> bool | dict:
         """Explicit Run only: request capture without changing normal run semantics."""
         coordinator = self.pageCoordinator
         if coordinator is None:
             return False
         coordinator.sync()
-        presentation = coordinator.session.document().presentation
+        document = coordinator.session.document()
+        from emo_master.core.presentation.workflow_view import presentationForWorkflow
+        presentation = presentationForWorkflow(document, workflowId or document.entryWorkflowId)
         if presentation is None:
             return False
         from emo_master.core.presentation.models import walkComponents
@@ -1534,6 +1563,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _applyLoadedProjectState(
         self, loadedProjectPath: str | None, currentProjectDir: Path | None
     ) -> None:
+        self.runTargetIds = []
+        self.runtimeController.reset()
         if self.nodeResultCoordinator is not None:
             self.nodeResultCoordinator.reset()
         self._projectInstanceToken = uuid4().hex
@@ -1870,6 +1901,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
         self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
+        self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
+        self._addMenuAction(runMenu, "停止全部", self.stopAllJobs)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -2041,6 +2074,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def _refreshWorkflowTabs(self) -> None:
         labels = self.workflowController.getWorkflowTabLabels()
+        names = workflowDisplayNames(self.workflowStore.workflows)
         self._workflowTabsUpdating = True
         self._addWorkflowTabIndex = -1
         blockSignals = getattr(self.workflowTabs, "blockSignals", None)
@@ -2051,12 +2085,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         try:
             self.workflowTabs.clear()
             for label in labels:
-                title = str(label["name"])
-                if bool(label.get("isEntry", False)):
-                    title = f"{title} [入口]"
+                title = names[str(label["workflowId"])]
                 index = self.workflowTabs.addTab(QWidget(), title)
                 if callable(setTabData):
                     setTabData(index, str(label["workflowId"]))
+                self._setWorkflowEntryMarker(index, str(label["workflowId"]), title)
             addTab = getattr(self.workflowTabs, "addTab", None)
             if callable(addTab):
                 plusIndex = addTab(QWidget(), "+")
@@ -2075,11 +2108,58 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 blockSignals(previousBlock)
             self._workflowTabsUpdating = False
         self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowRuntimeMarkers()
         if _nativeQt:
             self.flowScene.refreshPresentations()
             if not getattr(self, "_workflowSchemaRefreshPending", False):
                 self._workflowSchemaRefreshPending = True
                 QTimer.singleShot(0, self._refreshWorkflowEditorSchemas)
+
+    def _setWorkflowEntryMarker(self, index, workflowId, title):
+        selected = self.runTargetIds or [self.workflowStore.entryWorkflowId]
+        role = workflowEntryMarker(workflowId, self.workflowStore.entryWorkflowId, selected)
+        tooltip = workflowEntryToolTip(title, workflowId, self.workflowStore.entryWorkflowId, selected)
+        if _nativeQt:
+            self.workflowTabs.setEntryMarker(index, role, tooltip)
+        else:
+            self.workflowTabs.setTabText(index, (f"【{role}】" if role else "") + title)
+
+    def _refreshWorkflowEntryMarkers(self):
+        # Launch selection is session-only: don't rebuild tabs, switch the
+        # editing workflow, refresh schemas, or mark the project dirty.
+        names = workflowDisplayNames(self.workflowStore.workflows)
+        for index in range(self.workflowTabs.count()):
+            key = self._workflowIdForTab(index)
+            if key in names:
+                self._setWorkflowEntryMarker(index, key, names[key])
+
+    def _refreshWorkflowRuntimeMarkers(self):
+        if not _nativeQt or not hasattr(self, 'workflowTabs'):
+            return
+        controller = getattr(self, 'runtimeController', None)
+        runs = list(controller.runs.values()) if controller is not None else []
+        names = workflowDisplayNames(self.workflowStore.workflows)
+        observations = {}
+        for run in runs:
+            state = run.state
+            statuses = state.workflowExecution.statuses(state.jobStatus)
+            if run.workflowId and run.workflowId not in statuses and state.jobStatus in WORKFLOW_RUN_STYLES:
+                statuses[run.workflowId] = state.jobStatus
+            for key, status in statuses.items():
+                text = WORKFLOW_RUN_STYLES.get(status, (status,))[0]
+                record = state.workflowExecution.workflows.get(key, {})
+                detail = f"{names.get(run.workflowId, run.workflowId) or '默认入口'} · Job {run.jobId or '待分配'}：{text}"
+                if record.get('nodeId') and status in {'RUNNING', 'WAITING_CHILD', 'STOPPING', 'FAILED'}:
+                    detail += f" · 节点 {record['nodeId']}"
+                observations.setdefault(key, []).append((status, detail))
+        for index in range(self.workflowTabs.count()):
+            key = self._workflowIdForTab(index)
+            if not key:
+                continue
+            items = observations.get(key, [])
+            status = aggregateWorkflowStatus([item[0] for item in items])
+            detail = '运行状态（各 Job）：\n' + '\n'.join(item[1] for item in items) if items else ''
+            self.workflowTabs.setRuntimeStatus(index, status, detail)
 
     def _refreshWorkflowEditorSchemas(self) -> None:
         self._workflowSchemaRefreshPending = False
@@ -2760,6 +2840,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        debug = getattr(self, "_workflowDebugWindow", None)
+        if debug is not None:
+            from shiboken2 import isValid
+            if isValid(debug) and not debug.disposed:
+                if not getattr(debug, "_closeParentAfter", False):
+                    debug._closeParentAfter = True
+                    debug.destroyed.connect(lambda: QTimer.singleShot(0, self.close))
+                debug.close()
+                event.ignore()
+                return
         if not self.operatorEditorManager.resolveSqlitePending(self):
             event.ignore()
             return
@@ -2888,6 +2978,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._nodeRuntimeStateByWorkflowRun[
                 (workflowId, workflowRunId, nodeIdRaw)
             ] = dict(info)
+            histories: tuple[dict, ...] = (self._nodeRuntimeStateByRun, self._nodeRuntimeStateByWorkflowRun)
+            for history in histories:
+                while len(history) > 1024:
+                    history.pop(next(iter(history)))
         if workflowId == self.activeWorkflowId or (
             workflowId == "" and (jobId == "" or jobId == self.currentJobId)
         ):
@@ -3136,10 +3230,84 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def startJob(self) -> None:
         self.runtimeController.startJob()
 
+    def stopAllJobs(self) -> None:
+        self.runtimeController.stopAll()
+
+    def openRunTargetsDialog(self):
+        if not _nativeQt:
+            return None
+        from emo_master.ui.run_targets_dialog import RunTargetsDialog
+        dialog = RunTargetsDialog(self.workflowStore.workflows,
+            self.runTargetIds or [self.workflowStore.entryWorkflowId],
+            self.workflowStore.runtime.get('maxConcurrentJobs', 2), self, editLimit=not self.isJobRunning,
+            entryWorkflowId=self.workflowStore.entryWorkflowId)
+        if dialog.exec_():
+            self.runTargetIds = dialog.selectedWorkflowIds()
+            self._refreshWorkflowEntryMarkers()
+            if not self.isJobRunning and dialog.maximum() != self.workflowStore.runtime.get('maxConcurrentJobs', 2):
+                self._setConcurrencyLimit(dialog.maximum())
+            self.updateToolbarState()
+        return dialog
+
+    @draftCommand
+    def _setConcurrencyLimit(self, maximum):
+        self.workflowStore.runtime['maxConcurrentJobs'] = maximum
+
+    def _selectRuntimeState(self, state, jobId):
+        self.runtimePanelState = state
+        self._resetRuntimeVisualState(clearHistory=True)
+        for (workflowId, runId, nodeId), status in state.nodeStatusByWorkflowRun.items():
+            key = (workflowId, runId, nodeId)
+            self._nodeRuntimeStateByWorkflowRun[key] = dict(status=status, jobId=jobId,
+                workflowId=workflowId, workflowRunId=runId, nodeId=nodeId,
+                iterationPath=state.iterationPathByWorkflowRun.get(key, ()))
+        self._setCurrentJobId(jobId)
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowRuntimeMarkers()
+
+    def _selectRunningWorkflow(self, _index):
+        controller = getattr(self, 'runtimeController', None)
+        if controller is not None:
+            controller.select(self.runningWorkflowCombo.currentData())
+
+    def _refreshRunningWorkflows(self):
+        self._refreshWorkflowRuntimeMarkers()
+        combo = getattr(self, 'runningWorkflowCombo', None)
+        controller = getattr(self, 'runtimeController', None)
+        if combo is None or controller is None:
+            return
+        rows = []
+        names = workflowDisplayNames(self.workflowStore.workflows)
+        for key, run in controller.runs.items():
+            if not key:
+                continue
+            name = names.get(key, key)
+            status = {'IDLE': '空闲', 'ACCEPTED': '已接受', 'STARTING': '启动中', 'RUNNING': '运行中',
+                      'STOPPING': '停止中', 'COMPLETED': '已完成', 'FAILED': '失败', 'ABORTED': '已停止',
+                      'START_UNCERTAIN': '待确认'}.get(run.state.jobStatus, run.state.jobStatus)
+            rows.append((key, f'{name} · {status}'))
+        combo.blockSignals(True)
+        if [combo.itemData(i) for i in range(combo.count())] != [key for key, _ in rows]:
+            combo.clear()
+            for key, label in rows:
+                combo.addItem(label, key)
+        else:
+            for index, (_, label) in enumerate(rows):
+                combo.setItemText(index, label)
+        combo.setCurrentIndex(combo.findData(controller.selected))
+        for index, (key, label) in enumerate(rows):
+            combo.setItemData(index, f'{label}\n流程: {key}\nJob: {controller.runs[key].jobId or "尚未启动"}', Qt.ToolTipRole)
+        if combo.currentIndex() >= 0:
+            combo.setToolTip(str(combo.currentData(Qt.ToolTipRole)) + '\n停止运行只停止当前所选；停止全部停止所有流程。')
+        combo.blockSignals(False)
+
     def stopJob(self) -> None:
         self.runtimeController.stopJob()
 
     def _syncRuntimeProjectBeforeRun(self) -> bool:
+        if self.hasActiveDebugSession():
+            self.appendRuntimeLog("WARN", "请先结束当前调试，再启动正式运行")
+            return False
         if self.currentProjectDir is None:
             return True
         target = self.projectController.currentProjectFile or self.currentProjectDir
@@ -3706,8 +3874,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def updateToolbarState(self) -> None:
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
         refreshCanvasHints(self)
-        canRun = self.loadedProjectPath is not None and not self.isJobRunning
-        canStop = self.isJobRunning and self.currentJobId is not None
+        controller = getattr(self, 'runtimeController', None)
+        canRun = self.loadedProjectPath is not None and (controller.canStart() if controller else not self.isJobRunning)
+        canStop = controller.canStop() if controller else False
+        self._refreshRunningWorkflows()
+        if _nativeQt:
+            self.runTargetsButton.setEnabled(self.loadedProjectPath is not None)
+            self.stopAllJobsButton.setEnabled(self.isJobRunning)
 
         self.startButton.setEnabled(canRun)
         self.stopButton.setEnabled(canStop)
@@ -3728,8 +3901,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         blockedReason = ""
         if self.loadedProjectPath is None:
             blockedReason = "无法运行：未加载项目，请先打开或新建项目"
-        elif self.isJobRunning:
-            blockedReason = "无法运行：当前作业仍在运行，请先停止作业"
+        elif not canRun and self.isJobRunning:
+            blockedReason = "所选运行目标均已启动；可切换查看或单独停止，不会重复启动"
 
         setToolTip = getattr(self.startButton, "setToolTip", None)
         if callable(setToolTip):
@@ -3953,6 +4126,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         # Kept as an alias for integrations that still inspect the last opened
         # parameter window. Ownership and uniqueness now live in the manager.
         self.nodeParamDialog = cast(NodeParamDialog, window)
+        bindDebug = getattr(window, "bindDebug", None)
+        if _nativeQt and node.kind == "operator" and callable(bindDebug):
+            bindDebug(lambda: self._openOperatorDebug(window))
         openRequested = getattr(window, "workflowOpenRequested", None)
         if _nativeQt and openRequested is not None and not getattr(window, "_workflowNavigationConnected", False):
             openRequested.connect(
@@ -3962,6 +4138,66 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.operatorIconProvider is not None and node.kind == "operator":
             self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
                                            context=(*self._iconContext(), nodeId))
+
+    def _openOperatorDebug(self, editor) -> None:
+        from shiboken2 import isValid
+        from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
+        node = self.flowModel.nodes.get(editor.key.nodeId)
+        def valid():
+            return (isValid(self) and isValid(editor) and not editor._disposed
+                    and not self.pageCoordinator.pageActive()
+                    and editor.key.projectId == self._currentProjectId()
+                    and editor.key.workflowId == self.activeWorkflowId
+                    and self.flowModel.nodes.get(editor.key.nodeId) is node
+                    and node is not None and node.kind == "operator")
+        if not flowEditAllowed(self) or not valid():
+            editor.setError("节点或工作区已变化，请返回流程设计重新选择")
+            return
+        debug = editor._debugWindow
+        if debug is None or not isValid(debug):
+            debug = OperatorDebugWindow(editor, valid)
+            editor._debugWindow = debug
+        debug.show()
+        debug.raise_()
+        debug.activateWindow()
+
+    def hasActiveDebugSession(self) -> bool:
+        from shiboken2 import isValid
+        windows = [getattr(self, "_workflowDebugWindow", None)]
+        windows.extend(getattr(editor, "_debugWindow", None) for editor in self.operatorEditorManager._windows.values())
+        return any(window is not None and isValid(window) and not window.disposed for window in windows)
+
+    def openWorkflowDebug(self) -> None:
+        from shiboken2 import isValid
+        from emo_master.apps.designer.ui.workflow_debug_window import WorkflowDebugWindow
+        if not flowEditAllowed(self) or (self.pageCoordinator is not None and self.pageCoordinator.pageActive()):
+            return
+        debug = getattr(self, "_workflowDebugWindow", None)
+        if debug is None or not isValid(debug):
+            projectId = self._currentProjectId()
+            workflowId = self.activeWorkflowId
+            try:
+                payload = self._livePreviewProject(EditorKey(projectId, workflowId, ""))
+                def valid():
+                    return isValid(self) and self._currentProjectId() == projectId and not self.runtimeController._closed
+                def navigate(target, node):
+                    if valid() and target in self.workflowStore.workflows:
+                        self.activateWorkflow(target)
+                        if node in self.flowModel.nodes:
+                            self.flowModel.selectNode(node)
+                            self.flowScene.setNodeSelected(node)
+                            center = self.flowScene.getNodeCenter(node)
+                            if center is not None:
+                                self.flowView.centerOn(*center)
+                debug = WorkflowDebugWindow(self.runtimeClient, payload, workflowId, self, valid=valid, navigate=navigate,
+                    currentDraft=lambda: self._livePreviewProject(EditorKey(projectId, workflowId, "")))
+                self._workflowDebugWindow = debug
+            except Exception as error:
+                self.appendRuntimeLog("ERROR", "流程调试打开失败：" + str(error))
+                return
+        debug.show()
+        debug.raise_()
+        debug.activateWindow()
 
     def _openWorkflowFromEditor(self, editor, workflowId: str) -> None:
         if editor.key.projectId != self._currentProjectId():
@@ -4066,10 +4302,35 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     if b["target"]["workflowId"] == key.workflowId and b["target"]["nodeId"] == key.nodeId]
         if raw.get("operatorId") in {"vision.state.variable_read", "vision.state.variable_write"}:
             occupied.append(["variableId"])
+        if raw.get("operatorId") == "vision.state.variable_write":
+            occupied.append(["operation"])
         validateBindings(bindings, variables, schema, occupied=occupied)
+        if raw.get("operatorId") == "vision.io.coordinate_reader" and params.get("readMode") == "session" and bindings:
+            from emo_master.core.project.global_variables import VariableError
+            raise VariableError("E_COORDINATE_SNAPSHOT_CONFIG", "会话坐标的文件和解析配置必须在准入时固定，不能使用动态变量绑定")
         if bindings:
             validateEffectiveParams(resolveParams(params, bindings, {vid: value.initialValue for vid, value in variables.items()}), bindings, schema)
-        variablePorts(raw.get("operatorId"), params, variables)
+        ports = variablePorts(raw.get("operatorId"), params, variables)
+        if ports is not None:
+            from emo_master.core.project.global_variables import VariableError
+            from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
+            from emo_master.core.contracts.port_types import normalizePortType
+            inputs, outputs = ports
+            nodes = {item["nodeId"]: item for item in workflow.nodes}
+            incompatible = []
+            for edge in workflow.edges:
+                if edge["toNode"] == key.nodeId:
+                    source = nodes.get(edge["fromNode"], {}).get("outputPorts", {}).get(edge["fromPort"])
+                    target = inputs.get(edge["toPort"])
+                elif edge["fromNode"] == key.nodeId:
+                    source = outputs.get(edge["fromPort"])
+                    target = nodes.get(edge["toNode"], {}).get("inputPorts", {}).get(edge["toPort"])
+                else:
+                    continue
+                if source is None or target is None or not arePortTypesCompatible(normalizePortType(source), normalizePortType(target)):
+                    incompatible.append(f'{edge["fromNode"]}.{edge["fromPort"]} → {edge["toNode"]}.{edge["toPort"]}')
+            if incompatible:
+                raise VariableError("E_VARIABLE_INTERFACE_CONFLICT", "操作改变端口，请先断开并重新连接不兼容的线：" + "; ".join(incompatible))
         if bindings:
             enableVariables(self.workflowStore)
         if not self._applyEditorParams(key, params):
@@ -4077,10 +4338,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if key.workflowId == self.activeWorkflowId:
             self.flowModel.nodes[key.nodeId].globalVariableBindings = bindings
             self.workflowController.captureActiveWorkflow()
-            self.workflowController._refreshWorkflowReferences()
-            self.workflowController._renderActive()
         else:
             raw["globalVariableBindings"] = bindings
+        self.workflowController._refreshWorkflowReferences()
+        if key.workflowId == self.activeWorkflowId:
+            self.workflowController._renderActive()
         return True
 
     @draftCommand
@@ -4164,6 +4426,28 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "vision.state.variable_write":
+                # Saved 1.0 nodes only carried variableId. Offer the new modes
+                # without mutating the saved node merely by opening its editor.
+                from emo_master.plugins.builtins.variable_write.operator import SCHEMA
+                cast(dict, schema.setdefault("properties", {})).update(deepcopy(cast(dict, SCHEMA["properties"])))
+            extensions = {
+                "vision.io.huaray_camera": ("waitMode", "sequencePolicy"),
+                "vision.io.coordinate_reader": ("readMode",),
+                "communication.tcp.client": ("rejectTrailingResponse",),
+            }.get(node.operatorId, ())
+            if extensions:
+                # Add only the opt-in extension fields. Opening a legacy node
+                # neither changes its saved contract nor enables the new modes.
+                if node.operatorId == "vision.io.huaray_camera":
+                    from emo_master.plugins.builtins.huaray_camera.operator import PARAM_SCHEMA as extendedSchema
+                elif node.operatorId == "vision.io.coordinate_reader":
+                    from emo_master.plugins.builtins._coordinate_operators import COORDINATE_READER_PARAM_SCHEMA as extendedSchema
+                else:
+                    from emo_master.plugins.builtins._communication_operators import TCP_CLIENT_PARAM_SCHEMA as extendedSchema
+                for fieldName in extensions:
+                    cast(dict, schema.setdefault("properties", {})).setdefault(
+                        fieldName, deepcopy(cast(dict, extendedSchema["properties"])[fieldName]))
             if node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
                 choices = {key: value for key, value in self._globalVariableDefinitions().items()
                            if node.operatorId.endswith("read") or value["kind"] != "constant"}
@@ -4209,7 +4493,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 "type": "integer",
                 "minimum": 1 if modeValue == "while" else 0,
                 "title": "最大迭代次数",
+                "xVisibleWhen": {"unlimited": [False]},
             },
+            "unlimited": {"type": "boolean", "default": False, "title": "不限制迭代次数",
+                "description": "仅 While：仍判断布尔条件、响应停止和超时。长期等待硬件触发时，将超时设为 0。",
+                "xHidden": modeValue != "while"},
             "timeoutMs": {"type": "integer", "minimum": 0, "title": "超时（毫秒）"},
             "conditionWorkflowId": {**workflowSelect, "title": "布尔条件来源工作流（兼容）",
                 "description": "每轮读取此工作流的 continue:boolean 输出；true 继续，false 结束。",
@@ -4248,7 +4536,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             required.append("conditionMode")
             properties = {key: properties[key] for key in (
                 "mode", "conditionMode", "conditionPort", "conditionVariableId", "conditionWorkflowId",
-                "bodyWorkflowId", "maxIterations", "timeoutMs", "repeatCount",
+                "bodyWorkflowId", "unlimited", "maxIterations", "timeoutMs", "repeatCount",
             )}
         elif modeValue == "foreach":
             bodyWorkflowId = node.loop.get("bodyWorkflowId")

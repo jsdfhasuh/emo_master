@@ -16,6 +16,8 @@ SHORTCUTS = {
     'undo': ('Ctrl+Z',), 'redo': ('Ctrl+Shift+Z', 'Ctrl+Y'),
     'copy': ('Ctrl+D',), 'delete': ('Delete', 'Backspace'),
     'configure': ('F2',), 'results': ('Ctrl+Return', 'Ctrl+Enter'),
+    'operator_debug': (),
+    'workflow_debug': (),
     'run': ('F5',), 'stop': ('F6',), 'layout': ('Ctrl+L',),
     'fit': ('Home',), 'logs': ('Ctrl+Shift+L',), 'preview': ('Ctrl+Shift+P',),
 }
@@ -57,10 +59,12 @@ class DesignerActions(QObject):
         self.replaceMenuAction('复制所选算子', self.actions['copy'])
         self.create('delete', '删除选中元素', self.delete)
         self.create('configure', '配置算子…', self.configure)
+        self.create('operator_debug', '算子调试…', self.debugOperator)
+        self.create('workflow_debug', '流程调试…', self.window.openWorkflowDebug)
         self.create('results', '查看节点结果', self.showResults)
         self.create('fit', '适应画布', self.fit)
         self.replaceMenuAction('聚焦画布内容', self.actions['fit'])
-        for key in ('delete', 'configure'):
+        for key in ('delete', 'configure', 'operator_debug', 'workflow_debug'):
             self.menus['编辑'].addAction(self.actions[key])
         self.menus['视图'].addAction(self.actions['results'])
         if chrome:
@@ -153,9 +157,11 @@ class DesignerActions(QObject):
         if pages:
             return '仅流程设计可用'
         if key == 'run':
-            return '' if w.loadedProjectPath is not None and not w.isJobRunning else '尚未加载项目或任务正在运行'
+            if w.hasActiveDebugSession():
+                return '请先结束当前调试'
+            return '' if w.loadedProjectPath is not None and w.runtimeController.canStart() else '尚未加载项目或所选任务正在运行'
         if key == 'stop':
-            return '' if w.isJobRunning and w.currentJobId is not None else '没有可停止的当前任务'
+            return '' if w.runtimeController.canStop() else '没有可停止的当前任务'
         if key == 'logs':
             return ''
         if key == 'results':
@@ -163,7 +169,7 @@ class DesignerActions(QObject):
             return '' if self.selectedNode() and coordinator and not coordinator.closed else '请先选择有结果面板的节点'
         if not flowEditAllowed(w):
             return '任务运行中可查看结果；请结束运行后再修改流程'
-        if key == 'layout':
+        if key in {'layout', 'workflow_debug'}:
             return ''
         node = self.selectedNode()
         if key == 'delete':
@@ -175,6 +181,8 @@ class DesignerActions(QObject):
             return '工作流输入/输出请通过工作流接口配置'
         if key == 'copy' and node.kind != 'operator':
             return '仅支持复制普通算子；控制流程请复制整个工作流'
+        if key == 'operator_debug' and node.kind != 'operator':
+            return '仅普通算子可孤立调试'
         return ''
 
     def refresh(self):
@@ -224,6 +232,12 @@ class DesignerActions(QObject):
     def configure(self):
         self.window.openNodeParamDialog(self.selectedNode().nodeId)
 
+    def debugOperator(self):
+        self.window.openNodeParamDialog(self.selectedNode().nodeId)
+        command = getattr(self.window.nodeParamDialog, 'openDebug', None)
+        if callable(command):
+            command()
+
     def preview(self):
         # Legacy workspaces report an unavailable shared Job in their message
         # area. Do not let that expected validation error escape a Qt slot.
@@ -245,7 +259,7 @@ class DesignerActions(QObject):
             self.window.focusGraphContent()
 
     def shortcutLabel(self, key):
-        return QKeySequence(SHORTCUTS[key][0]).toString(QKeySequence.NativeText)
+        return QKeySequence(SHORTCUTS[key][0]).toString(QKeySequence.NativeText) if SHORTCUTS[key] else ''
 
     def inputFocused(self):
         widget = QApplication.focusWidget()

@@ -65,6 +65,8 @@ try:
             self._dirtyHint = False
             self._forceClosing = False
             self._disposed = False
+            self._debugWindow = None
+            self._openDebug = None
             self._schemaForm: SchemaParamForm | None = None
             self._bindingPanel = None
             self._bindingScroll = None
@@ -107,6 +109,12 @@ try:
                 if self._schemaForm is not None and self._bindingPanel.installInline(self._schemaForm):
                     bindingScroll.hide()
             buttons = QHBoxLayout()
+            self._debugButton = QPushButton("算子调试")
+            self._debugButton.setIcon(icon("play"))
+            self._debugButton.setToolTip("调试当前未应用的参数")
+            self._debugButton.hide()
+            self._debugButton.clicked.connect(self.openDebug)
+            buttons.addWidget(self._debugButton)
             buttons.addStretch(1)
             self._applyButton = QPushButton("应用")
             self._applyButton.setObjectName("primaryButton")
@@ -127,6 +135,21 @@ try:
         def openController(self) -> None:
             if self._controller is not None:
                 self._controller.onOpen()
+
+        def bindDebug(self, callback) -> None:
+            self._openDebug = callback
+            self._debugButton.show()
+
+        def openDebug(self) -> None:
+            if self._openDebug is not None and not self._disposed:
+                self._openDebug()
+
+        def closeDebug(self) -> None:
+            from shiboken2 import isValid
+            if self._debugWindow is not None and isValid(self._debugWindow):
+                self._debugWindow.detach()
+                self._debugWindow.close()
+            self._debugWindow = None
 
         def refreshSchema(self, schema) -> None:
             bindingsChanged = self._bindingPanel is not None and self._bindingPanel.needsRefresh(schema)
@@ -229,6 +252,7 @@ try:
             if self._disposed:
                 return
             self._disposed = True
+            self.closeDebug()
             try:
                 if self._controller is not None:
                     self._controller.onClose()

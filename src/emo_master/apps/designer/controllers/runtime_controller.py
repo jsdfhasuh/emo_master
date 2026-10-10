@@ -401,7 +401,7 @@ class RuntimeController:
             self.appendLog("WARN", "等待运行时线程结束")
             wait(-1)
 
-    def close(self) -> None:
+    def close(self, *, closeClient: bool = True) -> None:
         """Stop the worker subscription before the Designer window closes."""
         if self._closed:
             return
@@ -442,14 +442,14 @@ class RuntimeController:
             worker.requestStop()
             self._waitForWorker(worker, 12000 if stopStarted else 2000)
             self._worker = None
-        closeClient = getattr(self.runtimeClient, "close", None)
+        closeTransport = getattr(self.runtimeClient, "close", None) if closeClient else None
         if self.onInspectionClosing:
             # Subscriptions/Start are retired, but the transport still exists
             # to release the read-only lease before closing its channel.
             self.onInspectionClosing()
-        if callable(closeClient):
+        if callable(closeTransport):
             try:
-                closeClient()
+                closeTransport()
             except Exception as error:
                 self.appendLog("ERROR", f"运行时资源尚未结束，关闭未完成；请稍候重试：{error}")
                 raise

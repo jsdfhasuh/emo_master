@@ -1,11 +1,12 @@
 from __future__ import annotations
 
 import csv
+import hashlib
 import math
 from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
-from typing import Any, cast
+from typing import Any, Protocol, cast
 
 from emo_master.core.contracts.geometry2d import (
     BBox2D,
@@ -35,7 +36,7 @@ _HEADER_MODES = frozenset({"auto", "present", "absent"})
 _INVALID_ROW_MODES = frozenset({"error", "skip"})
 _PIVOT_MODES = frozenset({"origin", "centroid", "first", "custom"})
 _CALCULATOR_MODES = frozenset(
-    {"measure", "transform", "subtract", "dot", "scalarMultiply"}
+    {"measure", "transform", "add", "subtract", "dot", "scalarMultiply"}
 )
 _PAIRING_MODES = frozenset({"strict", "broadcast"})
 _IDENTITY_AFFINE = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]
@@ -44,6 +45,12 @@ _IDENTITY_AFFINE = [1.0, 0.0, 0.0, 1.0, 0.0, 0.0]
 COORDINATE_READER_PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
+        "readMode": {
+            "title": "坐标文件读取方式", "type": "string", "enum": ["perInvocation", "session"],
+            "default": "perInvocation", "xGlobalVariableBindingDisabled": True,
+            "xOptionLabels": {"perInvocation": "每次调用读取（兼容默认）", "session": "运行准入冻结内容"},
+            "description": "会话模式在根流程开始前冻结所有可达坐标文件和解析参数。同一路径修改不会混入当前运行；停止并重新准入后更新。",
+        },
         "filePath": {
             "title": "坐标文件路径",
             "type": "string",
@@ -134,7 +141,7 @@ COORDINATE_CALCULATOR_PARAM_SCHEMA: dict[str, object] = {
         "mode": {
             "title": "计算模式",
             "type": "string",
-            "enum": ["measure", "transform", "subtract", "dot", "scalarMultiply"],
+            "enum": ["measure", "transform", "add", "subtract", "dot", "scalarMultiply"],
             "default": "transform",
         },
         "pairing": {
@@ -172,7 +179,7 @@ class CoordinateReaderOperator:
     meta = OperatorMeta(
         operatorId="vision.io.coordinate_reader",
         displayName="Coordinate Reader",
-        version="1.0.0",
+        version="1.1.0",
         inputPorts={
             "frame": {
                 "type": "bbox2d",
@@ -189,6 +196,7 @@ class CoordinateReaderOperator:
                 "schemaVersion": "1.x",
             },
             "pointCount": {"type": "integer", "required": True, "nullable": False},
+            "contentHash": {"type": "string", "required": True, "nullable": False},
             "polygon": {
                 "type": "polygon2d",
                 "required": False,
@@ -208,6 +216,7 @@ class CoordinateReaderOperator:
         if not isinstance(filePath, str) or filePath.strip() == "":
             return _paramError("filePath must be a non-empty string")
         for name, options, default in (
+            ("readMode", {"perInvocation", "session"}, "perInvocation"),
             ("fileFormat", _FILE_FORMATS, "auto"),
             ("encoding", _TEXT_ENCODINGS, "utf-8"),
             ("delimiter", _DELIMITERS, "auto"),
@@ -269,28 +278,17 @@ class CoordinateReaderOperator:
         path = _resolveCoordinatePath(
             cast(str, params["filePath"]), runtimeContext.get("workspacePath")
         )
-        if not path.exists() or not path.is_file():
-            return _error("E_INPUT_MISSING", f"coordinate file not found: {path}")
-        if path.suffix.lower() not in {".txt", ".csv"}:
-            return _error("E_PARAM_INVALID", "coordinate file must use .txt or .csv")
         try:
-            fileSize = path.stat().st_size
-        except OSError as exc:
-            return _error("E_INPUT_SHAPE", f"cannot inspect coordinate file: {exc}")
-        maxFileBytes = cast(int, params.get("maxFileBytes", 4194304))
-        if fileSize > maxFileBytes:
-            return _error(
-                "E_INPUT_SHAPE",
-                f"coordinate file exceeds maxFileBytes={maxFileBytes}",
-            )
-        try:
-            text = path.read_text(encoding=cast(str, params.get("encoding", "utf-8")))
-        except (OSError, UnicodeError) as exc:
-            return _error("E_INPUT_SHAPE", f"cannot decode coordinate file: {exc}")
-        try:
-            rows, skippedRows = _readCoordinateRows(text, path, params)
-        except (TypeError, ValueError) as exc:
-            return _error("E_INPUT_SHAPE", str(exc))
+            if params.get("readMode", "perInvocation") == "session":
+                snapshots = runtimeContext.get("coordinateSnapshots")
+                if snapshots is None:
+                    return _error("E_COORDINATE_SNAPSHOT_REQUIRED", "session coordinates require runtime resource admission")
+                content = cast(CoordinateSnapshotProvider, snapshots).get(path, params)
+            else:
+                content = loadCoordinateContent(path, params)
+        except CoordinateFileError as exc:
+            return _error(exc.code, str(exc))
+        rows, skippedRows, fileSize = content.rows, content.skippedRows, content.fileBytes
         try:
             space = _coordinateSpace(inputs, params, path)
         except PayloadValidationError as exc:
@@ -302,6 +300,7 @@ class CoordinateReaderOperator:
             outputs: dict[str, object] = {
                 "points": [point.toPayload() for point in points],
                 "pointCount": len(points),
+                "contentHash": content.sha256,
             }
             if bool(params.get("asPolygon", False)):
                 polygonPoints = _polygonPoints(points)
@@ -320,15 +319,60 @@ class CoordinateReaderOperator:
                 "pointCount": len(points),
                 "skippedRows": skippedRows,
             },
-            "diagnostics": {"text": f"Loaded {len(points)} coordinates from {path}"},
+            "diagnostics": {"text": f"Loaded {len(points)} coordinates from {path}",
+                            "contentHash": content.sha256, "readMode": params.get("readMode", "perInvocation")},
         }
+
+
+@dataclass(frozen=True)
+class CoordinateContent:
+    rows: tuple[tuple[float, float], ...]
+    skippedRows: int
+    fileBytes: int
+    sha256: str
+
+
+class CoordinateSnapshotProvider(Protocol):
+    """Reader-facing contract; avoid importing the Runtime into a builtin."""
+
+    def get(self, path: Path, params: dict[str, object]) -> CoordinateContent: ...
+
+
+class CoordinateFileError(ValueError):
+    def __init__(self, code: str, message: str):
+        self.code = code
+        super().__init__(message)
+
+
+def loadCoordinateContent(path: Path, params: dict[str, object], raw: bytes | None = None) -> CoordinateContent:
+    """Bounded immutable content; callers may share bytes between reader nodes."""
+    if path.suffix.lower() not in {".txt", ".csv"}:
+        raise CoordinateFileError("E_PARAM_INVALID", "coordinate file must use .txt or .csv")
+    maximum = cast(int, params.get("maxFileBytes", 4194304))
+    try:
+        if raw is None:
+            with path.open("rb") as stream:
+                raw = stream.read(maximum + 1)
+        if len(raw) > maximum:
+            raise CoordinateFileError("E_INPUT_SHAPE", f"coordinate file exceeds maxFileBytes={maximum}")
+        text = raw.decode(cast(str, params.get("encoding", "utf-8")))
+        rows, skipped = _readCoordinateRows(text, path, params)
+        if params.get("asPolygon", False):
+            Polygon2D(_polygonPoints(tuple(Point2D(x, y) for x, y in rows)))
+        return CoordinateContent(tuple(rows), skipped, len(raw), hashlib.sha256(raw).hexdigest())
+    except FileNotFoundError as exc:
+        raise CoordinateFileError("E_INPUT_MISSING", f"coordinate file not found: {path}") from exc
+    except (OSError, UnicodeError, TypeError, ValueError, PayloadValidationError) as exc:
+        if isinstance(exc, CoordinateFileError):
+            raise
+        raise CoordinateFileError("E_INPUT_SHAPE", f"cannot read coordinates: {exc}") from exc
 
 
 class CoordinateCalculatorOperator:
     meta = OperatorMeta(
         operatorId="vision.geometry.coordinate_calculator",
         displayName="Coordinate Calculator",
-        version="1.1.0",
+        version="1.2.0",
         inputPorts={
             "points": {
                 "type": "list<point2d>",
@@ -469,7 +513,7 @@ class CoordinateCalculatorOperator:
             return _error("E_INPUT_SHAPE", str(exc))
         mode = cast(str, params.get("mode", "transform"))
         pairing = cast(str, params.get("pairing", "strict"))
-        if mode in {"subtract", "dot"}:
+        if mode in {"add", "subtract", "dot"}:
             if "otherPoints" not in inputs:
                 return _error(
                     "E_INPUT_MISSING", f"otherPoints is required for mode={mode}"
@@ -483,7 +527,16 @@ class CoordinateCalculatorOperator:
                 return _error("E_INPUT_TYPE", str(exc))
             except (PayloadValidationError, ValueError) as exc:
                 return _error("E_INPUT_SHAPE", str(exc))
-            if mode == "subtract":
+            if mode == "add":
+                try:
+                    summed = tuple(Point2D(left.x + right.x, left.y + right.y, left.coordinateSpace)
+                                   for left, right in pairs)
+                except PayloadValidationError as exc:
+                    return _error("E_RESULT_INVALID", str(exc))
+                outputs: dict[str, object] = {
+                    "points": [point.toPayload() for point in summed], "resultCount": len(summed),
+                }
+            elif mode == "subtract":
                 try:
                     vectors = tuple(
                         Vector2D(
@@ -498,7 +551,7 @@ class CoordinateCalculatorOperator:
                 magnitudes = [math.hypot(vector.dx, vector.dy) for vector in vectors]
                 if any(not math.isfinite(value) for value in magnitudes):
                     return _error("E_RESULT_INVALID", "vector magnitude is not finite")
-                outputs: dict[str, object] = {
+                outputs = {
                     "vectors": [vector.toPayload() for vector in vectors],
                     "magnitudes": magnitudes,
                     "resultCount": len(vectors),

@@ -9,7 +9,7 @@ from emo_master.apps.runtime.presentation.collector import unavailable
 
 class ResultStore:
     metadataLimit = 8 * 1024 * 1024
-    latestLimit = 32  # Two owned Jobs, at most sixteen scopes each.
+    latestLimit = 32  # Shared display cache budget, not an execution Job limit.
 
     def __init__(self):
         self.lock = threading.RLock()

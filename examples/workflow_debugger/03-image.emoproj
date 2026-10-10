@@ -1,0 +1,299 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "debug-03-image",
+    "name": "debug-03-image",
+    "revision": 1,
+    "createdAt": "2026-10-10T00:00:00Z",
+    "updatedAt": "2026-10-10T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "process"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Image - upload sample.png",
+      "inputs": {
+        "image": "image"
+      },
+      "outputs": {
+        "mask": "image",
+        "threshold": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {
+            "image": "image"
+          }
+        },
+        {
+          "nodeId": "process",
+          "kind": "subflow",
+          "targetWorkflowId": "process",
+          "inputPorts": {
+            "image": "image"
+          },
+          "outputPorts": {
+            "mask": "image",
+            "threshold": "number"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "mask": "image",
+            "threshold": "number"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "process",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "mask",
+          "toNode": "output",
+          "toPort": "mask"
+        },
+        {
+          "fromNode": "process",
+          "fromPort": "threshold",
+          "toNode": "output",
+          "toPort": "threshold"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "process": {
+            "x": 260,
+            "y": 100
+          },
+          "output": {
+            "x": 520,
+            "y": 100
+          }
+        }
+      }
+    },
+    "process": {
+      "name": "Process - blur then threshold",
+      "inputs": {
+        "image": "image"
+      },
+      "outputs": {
+        "mask": "image",
+        "threshold": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {
+            "image": "image"
+          }
+        },
+        {
+          "nodeId": "blur",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.blur",
+          "params": {
+            "mode": "gaussian",
+            "kernelSize": 3
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "滤波模式",
+                "type": "string",
+                "enum": [
+                  "gaussian",
+                  "median",
+                  "bilateral"
+                ],
+                "default": "gaussian"
+              },
+              "kernelSize": {
+                "title": "卷积核大小",
+                "type": "integer",
+                "minimum": 3,
+                "default": 5
+              },
+              "sigmaX": {
+                "title": "水平方向标准差",
+                "type": "number",
+                "minimum": 0.0,
+                "default": 0.0
+              },
+              "sigmaY": {
+                "title": "垂直方向标准差",
+                "type": "number",
+                "minimum": 0.0,
+                "default": 0.0
+              },
+              "diameter": {
+                "title": "滤波邻域直径（像素）",
+                "type": "integer",
+                "minimum": 1,
+                "default": 9
+              },
+              "sigmaColor": {
+                "title": "颜色空间标准差",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 75.0
+              },
+              "sigmaSpace": {
+                "title": "坐标空间标准差",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 75.0
+              }
+            }
+          },
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "displayName": "blur"
+        },
+        {
+          "nodeId": "threshold",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.threshold",
+          "params": {
+            "mode": "fixed",
+            "threshold": 127
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "mode": {
+                "title": "阈值模式",
+                "type": "string",
+                "enum": [
+                  "fixed",
+                  "otsu",
+                  "triangle",
+                  "adaptiveMean",
+                  "adaptiveGaussian"
+                ],
+                "default": "fixed"
+              },
+              "threshold": {
+                "title": "阈值",
+                "type": "integer",
+                "minimum": 0,
+                "maximum": 255,
+                "default": 127
+              },
+              "invert": {
+                "title": "反向阈值",
+                "type": "boolean",
+                "default": false
+              },
+              "blockSize": {
+                "title": "自适应邻域大小",
+                "type": "integer",
+                "minimum": 3,
+                "default": 11
+              },
+              "constant": {
+                "title": "自适应阈值偏移量",
+                "type": "number",
+                "default": 2.0
+              }
+            }
+          },
+          "inputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "outputPorts": {
+            "mask": "image",
+            "threshold": "number",
+            "frame": "bbox2d"
+          },
+          "displayName": "threshold"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "mask": "image",
+            "threshold": "number"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "blur",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "blur",
+          "fromPort": "image",
+          "toNode": "threshold",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "blur",
+          "fromPort": "frame",
+          "toNode": "threshold",
+          "toPort": "frame"
+        },
+        {
+          "fromNode": "threshold",
+          "fromPort": "mask",
+          "toNode": "output",
+          "toPort": "mask"
+        },
+        {
+          "fromNode": "threshold",
+          "fromPort": "threshold",
+          "toNode": "output",
+          "toPort": "threshold"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "blur": {
+            "x": 260,
+            "y": 100
+          },
+          "threshold": {
+            "x": 520,
+            "y": 100
+          },
+          "output": {
+            "x": 780,
+            "y": 100
+          }
+        }
+      }
+    }
+  }
+}

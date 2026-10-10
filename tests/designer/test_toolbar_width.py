@@ -3,6 +3,7 @@ import pytest
 from PySide2.QtCore import Qt
 
 from tests.designer.test_visual_layout import makeWindow
+from tests.designer.runtime_state_fixture import setRunning
 
 
 def settle(app):
@@ -16,8 +17,7 @@ def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, run
     window = makeWindow()
     try:
         window.loadedProjectPath = 'toolbar-test-only'
-        window.isJobRunning = running
-        window.currentJobId = 'toolbar-test-only' if running else None
+        setRunning(window, running)
         window.updateToolbarState()
         window.show()
         settle(designerApplication)
@@ -37,8 +37,7 @@ def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, run
         assert window.startButton.isEnabled() is (not running)
         assert window.stopButton.isEnabled() is running
     finally:
-        window.isJobRunning = False
-        window.currentJobId = None
+        setRunning(window, False)
         window.close()
 
 

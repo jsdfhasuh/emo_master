@@ -426,6 +426,35 @@ message GlobalVariablesReply {
 }
 
 service RuntimeService {
+  rpc GetOperatorDebugCapabilities(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc OpenOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc PrepareOperatorDebugInputs(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ExecuteOperatorDebugNode(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetOperatorDebugExecution(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ReadOperatorDebugEvents(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc CancelOperatorDebugExecution(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ResetOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc RenewOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc CloseOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc WriteOperatorDebugAsset(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ReadOperatorDebugAsset(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ListOperatorDebugSources(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ImportOperatorDebugSource(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc CopyOperatorDebugVariables(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetWorkflowDebugCapabilities(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc OpenWorkflowDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetWorkflowDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc PrepareWorkflowDebugInputs(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc StartWorkflowDebug(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ControlWorkflowDebug(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetWorkflowDebugCommand(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc GetWorkflowDebugSnapshot(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ReadWorkflowDebugEvents(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc WriteWorkflowDebugAsset(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc ReadWorkflowDebugAsset(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc RenewWorkflowDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
+  rpc CloseWorkflowDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
   rpc ListGlobalVariables(GlobalVariablesRequest) returns (GlobalVariablesReply);
   rpc GetGlobalVariable(GlobalVariablesRequest) returns (GlobalVariablesReply);
   rpc SetGlobalVariable(GlobalVariablesRequest) returns (GlobalVariablesReply);
@@ -463,6 +492,53 @@ service RuntimeService {
   rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
   rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
   rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
+}
+
+// Isolated operator debugging protocol v1. Never starts a production Job.
+message OperatorDebugOutputRef { string execution_id = 1; string port = 2; }
+message OperatorDebugValue {
+  oneof value { string inline_json = 1; string asset_ref = 2; OperatorDebugOutputRef output_ref = 3; }
+}
+message OperatorDebugRequest {
+  string runtime_instance_id = 1;
+  string session_id = 2;
+  uint64 generation = 3;
+  string request_id = 4;
+  string open_request_id = 5;
+  string project_json = 6;
+  string project_id = 7;
+  string workflow_id = 8;
+  string node_id = 9;
+  string operator_id = 10;
+  string resource_root = 11;
+  map<string, OperatorDebugValue> inputs = 12;
+  string input_set_id = 13;
+  string params_json = 14;
+  uint32 timeout_ms = 15;
+  string execution_id = 16;
+  uint64 after_sequence = 17;
+  uint32 limit = 18;
+  string asset_id = 19;
+  uint64 offset = 20;
+  uint64 total_bytes = 21;
+  bytes content = 22;
+  string mime_type = 23;
+  string sha256 = 24;
+  string provenance_json = 25;
+  string control_json = 26;
+}
+message OperatorDebugReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string runtime_instance_id = 4;
+  string session_id = 5;
+  uint64 generation = 6;
+  string state = 7;
+  string execution_id = 8;
+  string input_set_id = 9;
+  string snapshot_json = 10;
+  bytes content = 11;
 }
 
 message OpenPlcDebugSessionRequest {

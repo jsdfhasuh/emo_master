@@ -68,7 +68,8 @@ def getFieldDefinitions(paramSchema: dict[str, object]) -> list[FieldDefinition]
 
 
 try:
-    from PySide2.QtCore import Qt, QTimer, Signal
+    from PySide2.QtCore import Qt, QTimer, Signal, QRegularExpression
+    from PySide2.QtGui import QRegularExpressionValidator
     from PySide2.QtWidgets import (
         QCheckBox,
         QApplication,
@@ -87,6 +88,24 @@ try:
         QTextEdit,
         QWidget,
     )
+
+    class _IntegerValueControl(QLineEdit):
+        """Exact integer input for schemas wider than Qt's signed int32 spin box.
+
+        Keep incomplete/invalid text intact so validation can report it instead
+        of silently coercing, rounding or replacing the user's draft with zero.
+        """
+
+        def __init__(self, value: object) -> None:
+            super().__init__("" if value is None else str(value))
+            self.setValidator(QRegularExpressionValidator(QRegularExpression("-?[0-9]+"), self))
+
+        def value(self) -> object:
+            value = self.text()
+            try:
+                return int(value) if value and value.lstrip("-").isdigit() and value.count("-") <= 1 else value
+            except ValueError:
+                return value
 
     class _WorkflowComboBox(QComboBox):
         workflowOpenRequested: Any = Signal(str)
@@ -349,6 +368,25 @@ try:
                 combo.blockSignals(False)
 
         def validationMessage(self) -> str:
+            for name, control in self._controls.items():
+                field = self._fieldsByName[name]
+                if not control.isEnabled():
+                    continue
+                valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
+                if isinstance(valueControl, _IntegerValueControl):
+                    value = valueControl.value()
+                    title = parameterTitle(name, field.schema)
+                    if not isinstance(value, int) or isinstance(value, bool):
+                        return f"{title}：请输入完整整数"
+                    if field.minimum is not None and value < field.minimum:
+                        return f"{title}：不能小于 {field.minimum}"
+                    if field.maximum is not None and value > field.maximum:
+                        return f"{title}：不能大于 {field.maximum}"
+                nested = self._nestedFormsByControlId.get(id(valueControl))
+                if nested is not None:
+                    message = nested.validationMessage()
+                    if message:
+                        return message
             portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
             values = self.getValues()
             if isinstance(portsByWorkflow, dict) and values.get("conditionMode") == "boolean":
@@ -441,6 +479,10 @@ try:
                 return checkbox
 
             if field.fieldType == "integer":
+                if (any(bound is not None and not -2147483648 <= bound <= 2147483647
+                        for bound in (field.minimum, field.maximum)) or
+                        isinstance(selectedValue, int) and not -2147483648 <= selectedValue <= 2147483647):
+                    return _IntegerValueControl(selectedValue)
                 spin = QSpinBox()
                 spin.setRange(-2147483648, 2147483647)
                 if isinstance(field.minimum, (int, float)):
@@ -518,6 +560,8 @@ try:
                 return float(control.value())
             if isinstance(control, QComboBox):
                 return control.currentData()
+            if isinstance(control, _IntegerValueControl):
+                return control.value()
             if isinstance(control, QLineEdit):
                 return control.text()
             if isinstance(control, _FilePickerControl):

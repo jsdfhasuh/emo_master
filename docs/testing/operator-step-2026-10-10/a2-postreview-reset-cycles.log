@@ -1,0 +1,11 @@
+{"attempt": 1, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 2, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 3, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 4, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 5, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 6, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 7, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 8, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 9, "result": "PASS", "graceSeconds": 3.0}
+{"attempt": 10, "result": "PASS", "graceSeconds": 3.0}
+10 reset/dedup/generation/clean-close cycles PASS

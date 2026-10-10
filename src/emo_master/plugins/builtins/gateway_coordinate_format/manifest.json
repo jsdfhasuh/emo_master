@@ -1,0 +1,81 @@
+{
+  "operatorId": "communication.gateway.coordinate_format",
+  "displayName": "网关正常坐标报文",
+  "version": "1.0.0",
+  "inputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "message": {
+      "type": "tcpMessage",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "text": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    },
+    "expectedAck": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "channel": {
+        "title": "网关输入通道",
+        "type": "string",
+        "enum": [
+          "plc",
+          "robot"
+        ],
+        "default": "robot",
+        "xGlobalVariableBindingDisabled": true,
+        "xOptionLabels": {
+          "plc": "PLC 正常坐标",
+          "robot": "机器人正常坐标"
+        }
+      },
+      "plcRounding": {
+        "title": "PLC 整数规则",
+        "type": "string",
+        "default": "requireInteger",
+        "enum": [
+          "requireInteger",
+          "halfAwayFromZero",
+          "towardZero",
+          "floor",
+          "ceil"
+        ],
+        "xEnabledWhen": {
+          "channel": [
+            "plc"
+          ]
+        },
+        "xOptionLabels": {
+          "requireInteger": "拒绝非整数",
+          "halfAwayFromZero": "半值向远离零方向舍入",
+          "towardZero": "向零截断",
+          "floor": "向下取整",
+          "ceil": "向上取整"
+        }
+      }
+    }
+  },
+  "entry": "emo_master.plugins.builtins._gateway_coordinates:GatewayCoordinateFormatOperator",
+  "category": "通信",
+  "summary": "生成正常坐标双引号报文，不加换行或 EY；一个事务一个坐标对。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

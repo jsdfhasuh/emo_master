@@ -62,7 +62,12 @@ class WorkflowCompiler:
                     schema = _operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))
                     if node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
                         occupied.append(["variableId"])
+                    if node.operatorId == "vision.state.variable_write":
+                        occupied.append(["operation"])
                     validateBindings(node.globalVariableBindings, document.globalVariables, schema, occupied=occupied)
+                    if (node.operatorId == "vision.io.coordinate_reader" and node.params.get("readMode") == "session"
+                            and node.globalVariableBindings):
+                        raise VariableError("E_COORDINATE_SNAPSHOT_CONFIG", "session coordinate reader configuration must be static")
                     variablePorts(node.operatorId, node.params, document.globalVariables)
                 except (VariableError, ValueError) as error:
                     issues.append(ValidationIssue(getattr(error, "code", "E_VARIABLE_BINDING"), str(error),
@@ -174,6 +179,13 @@ class WorkflowCompiler:
                     )
             incoming[edge.toNode].append(edge)
             outgoing[edge.fromNode].append(edge)
+        for compiledNode in nodes:
+            if (compiledNode.operatorId == "vision.state.variable_write"
+                    and compiledNode.params.get("operation", "set") != "set"
+                    and not any(edge.toPort == "after" for edge in incoming.get(compiledNode.nodeId, ()))):
+                issues.append(ValidationIssue(
+                    "E_VARIABLE_DEPENDENCY_REQUIRED", "increment/reset requires an incoming after dependency",
+                    projectId=document.project.projectId, workflowId=workflowId, nodeId=compiledNode.nodeId))
         for nodeId, nodeEdges in incoming.items():
             ports = [edge.toPort for edge in nodeEdges]
             if len(ports) != len(set(ports)):

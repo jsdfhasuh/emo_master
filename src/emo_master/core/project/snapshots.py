@@ -292,7 +292,8 @@ def freezeProjectSnapshot(
             nodes.append(graphNode)
         algorithms[workflowId] = {"inputs": workflow.inputs, "outputs": workflow.outputs,
                                   "nodes": nodes, "edges": [e.model_dump() for e in workflow.edges]}
-    capture = captureDefinition(project.presentation)
+    from emo_master.core.presentation.workflow_view import presentationForWorkflow
+    capture = captureDefinition(presentationForWorkflow(project, project.entryWorkflowId))
     execution = {"entry": project.entryWorkflowId, "workflows": algorithms, "plugins": versions,
                  **({"globalVariables": {key: value.model_dump() for key, value in project.globalVariables.items()}}
                     if project.schemaVersion == "2.4" else {}),

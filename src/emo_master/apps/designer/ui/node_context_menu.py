@@ -69,6 +69,8 @@ class NodeContextMenu(QObject):
             return '工作流输入/输出请通过工作流接口配置，不能复制或删除'
         if key == 'copy' and node.kind != 'operator':
             return '仅支持复制普通算子；控制流程请复制整个工作流'
+        if key == 'operator_debug':
+            return '调试入口尚未就绪'
         return ''
 
     def buildMenu(self, nodeId):
@@ -86,6 +88,7 @@ class NodeContextMenu(QObject):
         section = self.menu.addSection(QFontMetrics(self.menu.font()).elidedText(title, Qt.ElideRight, 280))
         section.setToolTip(title)
         entries = (('configure', '配置算子…'), ('results', '查看节点结果'),
+                   ('operator_debug', '算子调试…'),
                    ('copy', '复制算子'), ('delete', '删除算子'))
         for key, text in entries:
             if key == 'copy':

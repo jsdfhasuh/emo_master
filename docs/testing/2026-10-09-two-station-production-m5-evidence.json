@@ -1,0 +1,1032 @@
+{
+  "recordedAt": "2026-10-09T20:28:25.485547+08:00",
+  "layer": "source-and-native-offscreen-qt-with-actual-spawned-jobs-and-external-boundary-simulation",
+  "baseHead": "61a42bf3ab181c3b2339f0425edfb40a60d0ec7b",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "committed": false,
+  "workspaceDisplay": "C:/Users/jsdfhasuh/my_scripts/emo_master",
+  "workspaceResolved": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "interpreter": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "environment": {
+    "PYTHONPATH": "src",
+    "PYTHONUTF8": "1",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "offscreen"
+  },
+  "gitStatusAtRecordBeforeCreatingThisFile": [
+    " M proto/runtime.proto",
+    " M src/emo_master/apps/designer/state/global_variables.py",
+    " M src/emo_master/apps/designer/state/workflow_store.py",
+    " M src/emo_master/apps/designer/ui/global_variables_dialog.py",
+    " M src/emo_master/apps/designer/ui/main_window.py",
+    " M src/emo_master/apps/designer/ui/param_form.py",
+    " M src/emo_master/apps/operator_runtime/controller.py",
+    " M src/emo_master/apps/operator_runtime/main.py",
+    " M src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+    " M src/emo_master/apps/runtime/grpc_server/service.py",
+    " M src/emo_master/apps/runtime/jobs/worker_main.py",
+    " M src/emo_master/apps/runtime/presentation/normal_capture.py",
+    " M src/emo_master/apps/runtime/presentation/service.py",
+    " M src/emo_master/apps/runtime/preview/live.py",
+    " M src/emo_master/apps/runtime/workflow/runner.py",
+    " M src/emo_master/core/presentation/validation.py",
+    " M src/emo_master/core/project/global_variables.py",
+    " M src/emo_master/core/project/models.py",
+    " M src/emo_master/core/project/snapshots.py",
+    " M src/emo_master/core/workflow/compiler.py",
+    " M src/emo_master/plugins/builtins/_communication_operators.py",
+    " M src/emo_master/plugins/builtins/_coordinate_operators.py",
+    " M src/emo_master/plugins/builtins/_huaray_imv.py",
+    " M src/emo_master/plugins/builtins/_tcp_transport.py",
+    " M src/emo_master/plugins/builtins/coordinate_calculator/manifest.json",
+    " M src/emo_master/plugins/builtins/coordinate_reader/manifest.json",
+    " M src/emo_master/plugins/builtins/huaray_camera/manifest.json",
+    " M src/emo_master/plugins/builtins/huaray_camera/operator.py",
+    " M src/emo_master/plugins/builtins/huaray_camera/parameter_form.py",
+    " M src/emo_master/plugins/builtins/tcp_client/manifest.json",
+    " M src/emo_master/plugins/builtins/variable_write/manifest.json",
+    " M src/emo_master/plugins/builtins/variable_write/operator.py",
+    " M tests/core/plugin/test_builtin_parameter_titles.py",
+    " M tests/runtime/test_operator_registration.py",
+    " M tests/runtime/test_production_continuous.py",
+    " M tests/runtime/test_worker_heartbeat_finalization.py",
+    " M tests/sqlite_writer/test_dependencies.py",
+    "?? docs/plans/2026-10-09-two-station-hardware-trigger-migration-v1.md",
+    "?? docs/testing/2026-10-09-two-station-normal-path-evidence.json",
+    "?? docs/testing/2026-10-09-two-station-normal-path-implementation.md",
+    "?? docs/testing/2026-10-09-two-station-production-m5-implementation.md",
+    "?? examples/hardware_trigger_normal_fixture/",
+    "?? examples/two_station_normal_path/",
+    "?? scripts/validate_production_stations_ui.py",
+    "?? src/emo_master/apps/designer/state/production.py",
+    "?? src/emo_master/apps/designer/ui/production_dialog.py",
+    "?? src/emo_master/apps/runtime/context/coordinate_snapshots.py",
+    "?? src/emo_master/apps/runtime/context/production_snapshot.py",
+    "?? src/emo_master/core/project/production.py",
+    "?? src/emo_master/plugins/builtins/_gateway_coordinates.py",
+    "?? src/emo_master/plugins/builtins/_geometry_bridges.py",
+    "?? src/emo_master/plugins/builtins/detection_bbox/",
+    "?? src/emo_master/plugins/builtins/flow_error/",
+    "?? src/emo_master/plugins/builtins/gateway_ack_validate/",
+    "?? src/emo_master/plugins/builtins/gateway_coordinate_format/",
+    "?? src/emo_master/plugins/builtins/geometry_points/",
+    "?? src/emo_master/plugins/builtins/minimum_enclosing_circle/",
+    "?? src/emo_master/plugins/builtins/points_reframe/",
+    "?? tests/core/test_hardware_normal_fixture_package.py",
+    "?? tests/core/test_production_station_contract.py",
+    "?? tests/designer/test_production_settings_dialog.py",
+    "?? tests/designer/test_variable_write_modes_ui.py",
+    "?? tests/plugins/test_camera_hardware_wait.py",
+    "?? tests/plugins/test_gateway_coordinates.py",
+    "?? tests/plugins/test_geometry_bridges.py",
+    "?? tests/plugins/test_variable_write_modes.py",
+    "?? tests/runtime/station_camera_boundary.py",
+    "?? tests/runtime/test_coordinate_snapshot_worker_admission.py",
+    "?? tests/runtime/test_coordinate_snapshots.py",
+    "?? tests/runtime/test_hardware_trigger_normal_chain.py",
+    "?? tests/runtime/test_production_stations.py",
+    "?? tests/runtime/test_spawned_hardware_stations.py",
+    "?? tests/runtime/test_two_shot_variable_control.py",
+    "?? tests/runtime/two_station_fixture.py",
+    "?? tests/ui/operator_view/test_production_station_window.py"
+  ],
+  "sourceIdentityNotes": [
+    "Base commit plus dirty tracked diff and new/changed file hashes; no commit or release created.",
+    "This final manifest does not identify the earlier broad-run snapshot. Its earlier hashes were not recorded.",
+    "Final pytest/native code and tests were not changed afterward; only docs, README, and evidence were updated.",
+    "Historical normal-path evidence left untouched. Its hashes identify its own earlier snapshot, not the final code."
+  ],
+  "trackedDiff": {
+    "path": "build/m5_validation/tracked-diff-final.patch",
+    "size": 226155,
+    "sha256": "86039b51c9d0012e6d3cc7eaa695d91a228cf1b9167d0961fedc9a0a18f15131"
+  },
+  "sourceExampleAndTestFiles": {
+    "examples/hardware_trigger_normal_fixture/README.md": {
+      "size": 11506,
+      "sha256": "f8822c9df67208abce1415dd26b787db5b70883562d2271f95a3142c29f69352"
+    },
+    "examples/hardware_trigger_normal_fixture/build_project.py": {
+      "size": 14861,
+      "sha256": "975525987ed27a7f863b16035953dedaed66b0dbb2ae683b1171777c4600cbb1"
+    },
+    "examples/hardware_trigger_normal_fixture/project.json": {
+      "size": 284774,
+      "sha256": "e16c359f586b9faf43380ed40f6cdc08c10b71a88ce73a3be28d3e2304eab6ac"
+    },
+    "examples/hardware_trigger_normal_fixture/station1_reference.txt": {
+      "size": 6,
+      "sha256": "8b3a3ad9552da324931fb27537e3151951d3641d00b8fb322de4a2b0580d353d"
+    },
+    "examples/hardware_trigger_normal_fixture/station2_reference.txt": {
+      "size": 7,
+      "sha256": "ba8132e61864fd1f96221f8c6da9ba553a3fb4f6852a4a8f9bf9080de9b18287"
+    },
+    "examples/two_station_normal_path/project.json": {
+      "size": 27739,
+      "sha256": "b3bb8727d7f7dc7dd56867c2e5bc31a05ed7255bf4aead1e1f19bef25d5f9196"
+    },
+    "examples/two_station_normal_path/run_simulation.py": {
+      "size": 4223,
+      "sha256": "29585798142f00861a885fe2009da5576c5b7fae38fe052be7c8f1542299a44a"
+    },
+    "examples/two_station_normal_path/station1_reference.txt": {
+      "size": 73,
+      "sha256": "25358f59c6d43212c3b3016f0311fcc35524969f48462a64c037bd3049b0f0bf"
+    },
+    "examples/two_station_normal_path/station2_reference.txt": {
+      "size": 73,
+      "sha256": "2a82f697aae5e4a30a62355ee7d76fdd9c9cfe247901717f45be55eb097ac2d1"
+    },
+    "proto/runtime.proto": {
+      "size": 18025,
+      "sha256": "582077479687c94fcfc430ab65d7183750ed45d8150fc732ff14ba8371e39842"
+    },
+    "scripts/gen_proto.py": {
+      "size": 2524,
+      "sha256": "3bbe5bb61f1b41e70d2c388d57d27475435fbfacf45f2c2df5e203c738039cee"
+    },
+    "scripts/validate_production_stations_ui.py": {
+      "size": 4858,
+      "sha256": "f590093494327a69e9bb75ad7ce962a605e7891104903dbaba7a45d3888a0cb1"
+    },
+    "src/emo_master/apps/designer/state/global_variables.py": {
+      "size": 2681,
+      "sha256": "15d1c8dc108b63220f5ed883fd2724806e4632d9aaf426ad7bd35b7b90082a03"
+    },
+    "src/emo_master/apps/designer/state/production.py": {
+      "size": 1536,
+      "sha256": "084eb0b925215bea9d9bbdae1ae3cd5d7291c3b4aa8b43b075aa14f2e04d9527"
+    },
+    "src/emo_master/apps/designer/state/workflow_store.py": {
+      "size": 34370,
+      "sha256": "12aa364a1f35627a62946a5b0710e82464c114f6d00076d5179a730199a3c64d"
+    },
+    "src/emo_master/apps/designer/ui/global_variables_dialog.py": {
+      "size": 20049,
+      "sha256": "d2fbdc8b180ff2b62dec6106891c0f2ebdaf1f87a2e62d4351836a2b87909754"
+    },
+    "src/emo_master/apps/designer/ui/main_window.py": {
+      "size": 193084,
+      "sha256": "abbc442cf45dd4ffaf87b88098d9ef4fb45881dc2749fc451ae74859511ace78"
+    },
+    "src/emo_master/apps/designer/ui/param_form.py": {
+      "size": 29681,
+      "sha256": "49dedca1547e88d47a7bbbbad4e97e8b74c7861ceb5f46740967cf147334dd1b"
+    },
+    "src/emo_master/apps/designer/ui/production_dialog.py": {
+      "size": 10206,
+      "sha256": "441a9731637d6216e37641002469be6231532b07f8fce1f0f81ec8c0f850b736"
+    },
+    "src/emo_master/apps/operator_runtime/controller.py": {
+      "size": 15612,
+      "sha256": "6200353244b3dad917d52064bebd10b8654ebb478cdee28d2952b850854fab37"
+    },
+    "src/emo_master/apps/operator_runtime/main.py": {
+      "size": 21715,
+      "sha256": "744012882a3c42e1a8895e6259bec1f9fc5d6ea9dea6eff39b8cb5e1c9d6a72c"
+    },
+    "src/emo_master/apps/runtime/context/coordinate_snapshots.py": {
+      "size": 3656,
+      "sha256": "608b4c0d40adddd39e093630f94881fa05408a154f464cafe20cb375b00c55f4"
+    },
+    "src/emo_master/apps/runtime/context/production_snapshot.py": {
+      "size": 4026,
+      "sha256": "b44b1fe5065bbcf0ec847a9fa21b6cc0a1849d0c4fdf0cec6d5774dd869fdaf1"
+    },
+    "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py": {
+      "size": 39236,
+      "sha256": "b98aa5b6f9efa0bb0c04f58d859b8f55a94c545957e24b4cc876e7e2822fa085"
+    },
+    "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py": {
+      "size": 89957,
+      "sha256": "8520ab65888e77f78bae3db92cfaac81b0266ebfd964f340dd0d42bf4725e3b3"
+    },
+    "src/emo_master/apps/runtime/grpc_server/service.py": {
+      "size": 95205,
+      "sha256": "20f6308a94c934e8bf8cf07ccb9404b3586e656b6b12d610c587a458d541d12e"
+    },
+    "src/emo_master/apps/runtime/jobs/worker_main.py": {
+      "size": 10490,
+      "sha256": "11a8b2adbbd37ed7dcd3b0edde9a6b50b60c1e79a3e6b7ba4753cb6272ef322e"
+    },
+    "src/emo_master/apps/runtime/presentation/normal_capture.py": {
+      "size": 3940,
+      "sha256": "ddae847a8df2d8a66d35f6fc1f17a7a136cfb6861b96ef1e129a501409197d48"
+    },
+    "src/emo_master/apps/runtime/presentation/service.py": {
+      "size": 26684,
+      "sha256": "64e2f62a3b83075a442c6dc8a219642ef237b6abbb8ec4e2820143c59a5383ce"
+    },
+    "src/emo_master/apps/runtime/preview/live.py": {
+      "size": 15707,
+      "sha256": "10bb2acf327735d6120bf032d6518929a9f5730e76b9c568a68401f1c28bb3f2"
+    },
+    "src/emo_master/apps/runtime/workflow/runner.py": {
+      "size": 36399,
+      "sha256": "1645aa637eb93f7741119cfeef2f82951dbcaecf331347a3fe1a689006ff9d57"
+    },
+    "src/emo_master/core/presentation/validation.py": {
+      "size": 7669,
+      "sha256": "2d0570973defd64e0f97701a3dcdb21a9520220beae73de3ca30ec50d72e6da2"
+    },
+    "src/emo_master/core/project/global_variables.py": {
+      "size": 8915,
+      "sha256": "0784ade0c3c376ac92172a3e1e79910943de36f1c43dda5a040169d1b0f8fe43"
+    },
+    "src/emo_master/core/project/models.py": {
+      "size": 11565,
+      "sha256": "96a969bb77247e78fd36f87e94bec2291ef0c8fbbf2a5049d89d664888f8cb20"
+    },
+    "src/emo_master/core/project/production.py": {
+      "size": 7290,
+      "sha256": "a072eb2a731695ed207aaa817276e700fae11d6f03af4b4db116c95ddaca15a8"
+    },
+    "src/emo_master/core/project/snapshots.py": {
+      "size": 18292,
+      "sha256": "8bf840083fc9292ae9a9b590d2b64ae94d60c9e76ec4fbf8fbc005847cadb49a"
+    },
+    "src/emo_master/core/workflow/compiler.py": {
+      "size": 20965,
+      "sha256": "47ffbf07010b24443396e9e46f849be0d1b0cc7a9fea2e251ac95c159401e4fe"
+    },
+    "src/emo_master/plugins/builtins/_communication_operators.py": {
+      "size": 45065,
+      "sha256": "979a59680af8d351c90cb13a4dbd232785ffc9f34ce8283e416f43a729a9cc03"
+    },
+    "src/emo_master/plugins/builtins/_coordinate_operators.py": {
+      "size": 36385,
+      "sha256": "b2ab420b20f75c5e15a999fb7966b53de1644017f3f7fb69dc785cb9846eafc5"
+    },
+    "src/emo_master/plugins/builtins/_gateway_coordinates.py": {
+      "size": 7309,
+      "sha256": "43918056d919f9aceeacfa94d9cf2ced27b852e906b476b24c101adfc15fc4d8"
+    },
+    "src/emo_master/plugins/builtins/_geometry_bridges.py": {
+      "size": 9832,
+      "sha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74"
+    },
+    "src/emo_master/plugins/builtins/_huaray_imv.py": {
+      "size": 43819,
+      "sha256": "8ad9a2f2c2c5846f2e7aab37cca97a582de805f8cf7c9cba879c831be519431c"
+    },
+    "src/emo_master/plugins/builtins/_tcp_transport.py": {
+      "size": 8366,
+      "sha256": "52695e4d057d3ed108d44f05a28d51b40d854caf03305dd3964d4458f349691e"
+    },
+    "src/emo_master/plugins/builtins/coordinate_calculator/manifest.json": {
+      "size": 3405,
+      "sha256": "8fe6f070fcfd53caaf6c0ad0a495719130729f7483f5954502cd592e154fac25"
+    },
+    "src/emo_master/plugins/builtins/coordinate_reader/manifest.json": {
+      "size": 4911,
+      "sha256": "25d9015f8cb5ceeddba224da6f7d787914de8b9385c7ccd2049479db4c3f7944"
+    },
+    "src/emo_master/plugins/builtins/detection_bbox/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/detection_bbox/manifest.json": {
+      "size": 872,
+      "sha256": "d3e9a30c6f8787c27b93a4ea6545d1529271fa1ddbe37646d30b9a7d239beea9"
+    },
+    "src/emo_master/plugins/builtins/flow_error/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/flow_error/manifest.json": {
+      "size": 1003,
+      "sha256": "fc3fda877680f4a94ba999d8aa6ea4ce6a372802741e34e50cd898b8b89d643d"
+    },
+    "src/emo_master/plugins/builtins/flow_error/operator.py": {
+      "size": 1655,
+      "sha256": "11a2b06c30373260b1442308d01e03b37d11f46f3cffdab7aa78509f43bcf770"
+    },
+    "src/emo_master/plugins/builtins/gateway_ack_validate/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/gateway_ack_validate/manifest.json": {
+      "size": 1344,
+      "sha256": "0a6763ae12055ac7001aeaceae2718f04fda0ba3e8091c4e85cf7dd13964d7e3"
+    },
+    "src/emo_master/plugins/builtins/gateway_coordinate_format/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/gateway_coordinate_format/manifest.json": {
+      "size": 2094,
+      "sha256": "4467b02ce6c6b89e0d6480d192987f07261a0a99f6b775911ab83675439eebc6"
+    },
+    "src/emo_master/plugins/builtins/geometry_points/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/geometry_points/manifest.json": {
+      "size": 1846,
+      "sha256": "6892c410d93c677ded4a4f2ff117d339b01c1e834920f3e3b9334f458d9f2ed3"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/manifest.json": {
+      "size": 7074,
+      "sha256": "6634e89adc199d3668f3728d60f29d08849774163f558da6b5dbbcaea1870da0"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/operator.py": {
+      "size": 23854,
+      "sha256": "9095d3cf787e3381343f35b935eb439da681dd63047346c888ec9e5c9d188822"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/parameter_form.py": {
+      "size": 7027,
+      "sha256": "2769ce196a46b3499b376902aafc3c570f1e6738cda1b514687eea265b40dd5d"
+    },
+    "src/emo_master/plugins/builtins/minimum_enclosing_circle/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/minimum_enclosing_circle/manifest.json": {
+      "size": 983,
+      "sha256": "ae0161c2bb7fc5e8b2aef5cd9e8e90112beb1072b535a9262bbbabbdebb09401"
+    },
+    "src/emo_master/plugins/builtins/points_reframe/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/points_reframe/manifest.json": {
+      "size": 986,
+      "sha256": "3b7c4f9e099bda729b23d7ac3da6d5c6b8ebaabd9310a7c43992b2f8f864a70f"
+    },
+    "src/emo_master/plugins/builtins/tcp_client/manifest.json": {
+      "size": 4206,
+      "sha256": "3601fe4f4b90851f7d3789aabc1e0c1032a0dbdbde4b4049004084186000aedc"
+    },
+    "src/emo_master/plugins/builtins/variable_write/manifest.json": {
+      "size": 1261,
+      "sha256": "f72b6753908d058e4ac0f2b2a68cfa86d829ef930ec75dbe27b418654b3e8aa0"
+    },
+    "src/emo_master/plugins/builtins/variable_write/operator.py": {
+      "size": 3110,
+      "sha256": "112cc73837023929495822e0a3d121e9ef63cb1e8ffdfb782f6237b51fda5111"
+    },
+    "tests/core/plugin/test_builtin_parameter_titles.py": {
+      "size": 1058,
+      "sha256": "3ae1f9f07fd701c499743deb72a29d6dd311ff82e070769d355a763fc22cfbdb"
+    },
+    "tests/core/plugin/test_icon_resources.py": {
+      "size": 7137,
+      "sha256": "46a4bcf0e01e3ef4f675b0cf55b4e98d9cab7c56d965dc8c0b5e43109e2fdfb9"
+    },
+    "tests/core/test_hardware_normal_fixture_package.py": {
+      "size": 5560,
+      "sha256": "3ded193a9f9607f99708eed59ed7d4b6f498415850169f1d332458d072541ae6"
+    },
+    "tests/core/test_production_station_contract.py": {
+      "size": 6504,
+      "sha256": "03c3a90a72917baf72330ba08a4496d33bb1d0ace733d6cf5f0ff209cb31b744"
+    },
+    "tests/designer/test_global_variable_review_fixes.py": {
+      "size": 12593,
+      "sha256": "b756ad6a77b118a9ccb78be282ae1adf3917d8b92462a14bc9ff70e04b111773"
+    },
+    "tests/designer/test_global_variables_ui.py": {
+      "size": 5746,
+      "sha256": "c1f1f176887d3d667c215c5263cdb5a45c50a87d731e7236041e37c76949465f"
+    },
+    "tests/designer/test_production_settings_dialog.py": {
+      "size": 5415,
+      "sha256": "a3ba77ed24055ebde02af174a310b77756379bf02447ebfd046aea1e1d3ee2b6"
+    },
+    "tests/designer/test_variable_write_modes_ui.py": {
+      "size": 8132,
+      "sha256": "248de0a8152bfb734227a4745059952599ca24309f2c034350433222d9f4ec2e"
+    },
+    "tests/plugins/test_camera_hardware_wait.py": {
+      "size": 3817,
+      "sha256": "09b8e1f002ed57f48bbdf411ab16cdc268491e459b52fb9fb8dde9336ea9c3e7"
+    },
+    "tests/plugins/test_gateway_coordinates.py": {
+      "size": 4748,
+      "sha256": "7fbae7d3ff4f840764781a4ed1446a81918fb6ab4998cdbf3ce78e0862834420"
+    },
+    "tests/plugins/test_geometry_bridges.py": {
+      "size": 5100,
+      "sha256": "3fefa75c3884b0b1069c5182ad4f857f7f94ac8b42f949b4e7592d71ee5d8498"
+    },
+    "tests/plugins/test_variable_write_modes.py": {
+      "size": 3702,
+      "sha256": "d54eb019bf8f34caaa6c24ca71343d8298ce8cb13e4b633df905e3f14081d2fa"
+    },
+    "tests/proto/test_proto_generation.py": {
+      "size": 1690,
+      "sha256": "3e8f413037393b8c7a62799d2b00b318ce682f32adc2fbd12a0c2da778f53f06"
+    },
+    "tests/runtime/production_fixture.py": {
+      "size": 1555,
+      "sha256": "ee4b88a4c3e6eccb3112e67db20bbce319f7d7f9723e1eae15f5b1bf9b5503e1"
+    },
+    "tests/runtime/station_camera_boundary.py": {
+      "size": 3034,
+      "sha256": "1ec8d0c438b6f5e7af66cd8c7695aafdc28ba87fe940d1e947e2694014918531"
+    },
+    "tests/runtime/test_coordinate_snapshot_worker_admission.py": {
+      "size": 2137,
+      "sha256": "783560e8dbdcbbba97ff3e929665919f464531a1aaa599c20ee2a9338f7e3923"
+    },
+    "tests/runtime/test_coordinate_snapshots.py": {
+      "size": 5426,
+      "sha256": "ae084d77da0c2e22d776ae75b1f56c1f858b58b3b9162c710debcae8447a3fbd"
+    },
+    "tests/runtime/test_global_variables.py": {
+      "size": 8093,
+      "sha256": "1ab809f2aa3789b0bd654e1498e48f93345298856106dad67e050a9f005bd12e"
+    },
+    "tests/runtime/test_hardware_trigger_normal_chain.py": {
+      "size": 11921,
+      "sha256": "5f2de696bbf28979f0bcb623d5c25939d8dc3007ec3a15165d83f716af4cc6a7"
+    },
+    "tests/runtime/test_operator_registration.py": {
+      "size": 5311,
+      "sha256": "dc778beb4dc903ba28341836fd0aee17dff12d6a6810583eec4419a45f24078b"
+    },
+    "tests/runtime/test_production_boundaries.py": {
+      "size": 12256,
+      "sha256": "10b6660c9e18483d71ba8afff720aae9bd2aca43c3c11b75af0c3d49fac3d08e"
+    },
+    "tests/runtime/test_production_continuous.py": {
+      "size": 9732,
+      "sha256": "eff65cbd4a715f10bcb9f0a16a69c900ff44b99190fc656da4db918a907abe31"
+    },
+    "tests/runtime/test_production_stations.py": {
+      "size": 12627,
+      "sha256": "5d4a32e34fe2591da47c2ba3378c1bbbe8360b7a416b3ba9cd1b2b3474772f3c"
+    },
+    "tests/runtime/test_spawned_hardware_stations.py": {
+      "size": 9486,
+      "sha256": "e146d8e6e312c2e5487792c3ee1ecd9ca8c2010cc4f014ee99f168abd4ed7bf8"
+    },
+    "tests/runtime/test_two_shot_variable_control.py": {
+      "size": 5113,
+      "sha256": "d19f7263a1ef6febdcd474c5e919c2c2f9ad5440ee3fde4b1f094b99a3109160"
+    },
+    "tests/runtime/test_worker_heartbeat_finalization.py": {
+      "size": 11945,
+      "sha256": "22d6db0933fd82497d2ffd64372d475967dd3ed114a72fadf4452d7364151320"
+    },
+    "tests/runtime/two_station_fixture.py": {
+      "size": 2374,
+      "sha256": "01f87a5d411b629e9b4de28bdce0a960b2e9af1cd133300f4f4ff8329b6426f3"
+    },
+    "tests/sqlite_writer/test_dependencies.py": {
+      "size": 8766,
+      "sha256": "2c15aa866ed78ab86af69c79974017d5ae3c40c3e3de39bbd081d6405c0240e4"
+    },
+    "tests/ui/operator_view/test_production_station_window.py": {
+      "size": 4167,
+      "sha256": "bd0f301bbe8fb0f9eb6d11322941bcecc0469d1f995b868fb68e11e18330c9c0"
+    },
+    "tests/ui/operator_view/test_production_window.py": {
+      "size": 11233,
+      "sha256": "3e6a43b6067bfec5258edd74eeb696fa2ed1ec158b8da1cae209c34c568ad3af"
+    }
+  },
+  "documentFiles": {
+    "docs/plans/2026-10-09-two-station-hardware-trigger-migration-v1.md": {
+      "size": 47093,
+      "sha256": "1ffc8497e4e26b513a4aca3d9a976883eb4af4575df482fd4ad1459569e30ff5"
+    },
+    "docs/testing/2026-10-09-two-station-production-m5-implementation.md": {
+      "size": 16975,
+      "sha256": "e70b8ff33960a1e0aa8f7047dfd19f573ba81806819da75a803bbe1d482d6ba5"
+    }
+  },
+  "historicalRecordFiles": {
+    "docs/testing/2026-10-09-two-station-normal-path-implementation.md": {
+      "size": 10500,
+      "sha256": "e25bb029da7ffbc564f184c10f1889cb16f190f3c7d5a62728a55f3e1bdc1049"
+    },
+    "docs/testing/2026-10-09-two-station-normal-path-evidence.json": {
+      "size": 14034,
+      "sha256": "b013fc1908a84957cea6433d4687b6b068e5564d8c571f311011a4aad4834236"
+    }
+  },
+  "logs": {
+    "build/m5_validation/broad-01.log": {
+      "size": 3447,
+      "sha256": "8bce1c7931bb3e365ec4043185c26f0fb5877273379f02694f8c33062adc70b6"
+    },
+    "build/m5_validation/debug-isolation-rerun-01.log": {
+      "size": 100,
+      "sha256": "072266801237614b52838b481c48632256369a1ce31a971f4b230b1b9ae17000"
+    },
+    "build/m5_validation/diff-check-final-01.log": {
+      "size": 4008,
+      "sha256": "311683326aad418f81ee65f089089e8f618965be64001b533b44c0923c694007"
+    },
+    "build/m5_validation/diff-check-final-02.log": {
+      "size": 24,
+      "sha256": "0a3f6daa2cbb1bcf242f4f6e9a7938cbf168d84a7bcfc432c433d6cad2c1bbba"
+    },
+    "build/m5_validation/final-focused-02.log": {
+      "size": 107,
+      "sha256": "44d842b22211e16c087b8a4e17441ce9d9dea26d0e30e5e3c67eb34441852c60"
+    },
+    "build/m5_validation/final-focused-03.log": {
+      "size": 2661,
+      "sha256": "246da529116c42dad4bb0bde37e4d6cfe6503b12f6afeb907ca5390f45eca1d2"
+    },
+    "build/m5_validation/final-focused-04.log": {
+      "size": 511,
+      "sha256": "7989add7221573b11c9ce8a07cebf855597a6c870ef23b536070ff276deb1e44"
+    },
+    "build/m5_validation/final-focused.log": {
+      "size": 5027,
+      "sha256": "07f9fed61de72cbae75082c614caf8bcc841c609055fc705806fb0335d6a95fa"
+    },
+    "build/m5_validation/mypy-final-01.log": {
+      "size": 44,
+      "sha256": "d9a5631f7d87a741fbecc3236286d1792d22d349ff13846d71cdc9217307bb76"
+    },
+    "build/m5_validation/native-ui-02.log": {
+      "size": 70,
+      "sha256": "9051dce729e133be05d03ff47381801d5246e1b5c899c342f0ce8127042e034e"
+    },
+    "build/m5_validation/native-ui-current.log": {
+      "size": 93,
+      "sha256": "9ba73d0a2b08aa0c9f9a1f682b79a1b6ab618c892992166bb907732f3e909284"
+    },
+    "build/m5_validation/native-ui-final.log": {
+      "size": 70,
+      "sha256": "9051dce729e133be05d03ff47381801d5246e1b5c899c342f0ce8127042e034e"
+    },
+    "build/m5_validation/native-ui.log": {
+      "size": 461,
+      "sha256": "f70c2b63c86a70d580c0ff5c4b36c5f598b50e7efb368e3d53d8ec18896c5aee"
+    },
+    "build/m5_validation/proto-check-final-02.log": {
+      "size": 25,
+      "sha256": "03888d5abf062383c756d935c43600f304e6a830b4d10d9fea2d456677ed2b99"
+    },
+    "build/m5_validation/ruff-final-01.log": {
+      "size": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    "build/m5_validation/ruff-final-02.log": {
+      "size": 48,
+      "sha256": "3f660587647a8a25b21bcf14df058b0172181c9a171ea64e1b5c997e23af7ef0"
+    }
+  },
+  "validationRuns": [
+    {
+      "id": "broad-before-final-fixes",
+      "status": "PASS",
+      "passed": 2953,
+      "skipped": 1,
+      "seconds": 949.5,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "tests/core",
+        "tests/runtime",
+        "tests/designer",
+        "tests/ui",
+        "tests/proto"
+      ],
+      "log": "build/m5_validation/broad-01.log",
+      "sourceSnapshot": "before-last-variable-ui-protection-and-test-boundary-fixes",
+      "notes": "Earlier exact worktree hashes were not recorded. Do not attribute this broad result to the final source manifest."
+    },
+    {
+      "id": "focused-initial",
+      "status": "FAIL",
+      "failed": 2,
+      "passed": 83,
+      "seconds": 91.43,
+      "log": "build/m5_validation/final-focused.log",
+      "notes": "Default Job selection and independent capture/diagnostic persistence race. Original failure retained."
+    },
+    {
+      "id": "focused-invalid-command",
+      "status": "NOT_RUN",
+      "exitCode": 4,
+      "log": "build/m5_validation/final-focused-02.log",
+      "notes": "Nonexistent tests/runtime/test_global_variables_rpc.py; no tests collected."
+    },
+    {
+      "id": "focused-before-debug-fixture-fix",
+      "status": "FAIL",
+      "failed": 1,
+      "passed": 190,
+      "skipped": 1,
+      "seconds": 94.65,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rs",
+        "tests/core/test_production_station_contract.py",
+        "tests/runtime/test_production_stations.py",
+        "tests/runtime/test_spawned_hardware_stations.py",
+        "tests/designer/test_production_settings_dialog.py",
+        "tests/ui/operator_view/test_production_station_window.py",
+        "tests/runtime/test_production_continuous.py",
+        "tests/runtime/test_production_boundaries.py",
+        "tests/ui/operator_view/test_production_window.py",
+        "tests/designer/test_global_variables_ui.py",
+        "tests/designer/test_global_variable_review_fixes.py",
+        "tests/core/test_hardware_normal_fixture_package.py",
+        "tests/runtime/test_hardware_trigger_normal_chain.py",
+        "tests/runtime/test_global_variables.py",
+        "tests/core/plugin/test_icon_resources.py"
+      ],
+      "log": "build/m5_validation/final-focused-03.log",
+      "notes": "New debug isolation fixture lacked literal imagePath. Production validation not relaxed."
+    },
+    {
+      "id": "debug-isolation-exact-rerun",
+      "status": "PASS",
+      "passed": 1,
+      "seconds": 6.36,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rs",
+        "tests/runtime/test_production_stations.py::testDebugJobCanEditItsOwnShotValueWithoutResettingOtherJob"
+      ],
+      "log": "build/m5_validation/debug-isolation-rerun-01.log",
+      "sourceSnapshot": "final-code-and-tests"
+    },
+    {
+      "id": "focused-final",
+      "status": "PASS",
+      "passed": 195,
+      "skipped": 1,
+      "seconds": 94.5,
+      "exitCode": 0,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rs",
+        "tests/core/test_production_station_contract.py",
+        "tests/runtime/test_production_stations.py",
+        "tests/runtime/test_spawned_hardware_stations.py",
+        "tests/designer/test_production_settings_dialog.py",
+        "tests/ui/operator_view/test_production_station_window.py",
+        "tests/runtime/test_production_continuous.py",
+        "tests/runtime/test_production_boundaries.py",
+        "tests/ui/operator_view/test_production_window.py",
+        "tests/designer/test_global_variables_ui.py",
+        "tests/designer/test_global_variable_review_fixes.py",
+        "tests/core/test_hardware_normal_fixture_package.py",
+        "tests/runtime/test_hardware_trigger_normal_chain.py",
+        "tests/runtime/test_global_variables.py",
+        "tests/core/plugin/test_icon_resources.py",
+        "tests/proto"
+      ],
+      "log": "build/m5_validation/final-focused-04.log",
+      "sourceSnapshot": "final-code-and-tests",
+      "skippedReason": "testSymlinkCannotEscapeRoot: symlinks unavailable in this environment",
+      "notes": "Overlaps broad and exact rerun. Do not sum counts."
+    },
+    {
+      "id": "ruff-final",
+      "status": "PASS",
+      "exitCode": 0,
+      "files": 65,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "examples/hardware_trigger_normal_fixture/build_project.py",
+        "examples/two_station_normal_path/run_simulation.py",
+        "scripts/validate_production_stations_ui.py",
+        "src/emo_master/apps/designer/state/global_variables.py",
+        "src/emo_master/apps/designer/state/production.py",
+        "src/emo_master/apps/designer/state/workflow_store.py",
+        "src/emo_master/apps/designer/ui/global_variables_dialog.py",
+        "src/emo_master/apps/designer/ui/main_window.py",
+        "src/emo_master/apps/designer/ui/param_form.py",
+        "src/emo_master/apps/designer/ui/production_dialog.py",
+        "src/emo_master/apps/operator_runtime/controller.py",
+        "src/emo_master/apps/operator_runtime/main.py",
+        "src/emo_master/apps/runtime/context/coordinate_snapshots.py",
+        "src/emo_master/apps/runtime/context/production_snapshot.py",
+        "src/emo_master/apps/runtime/grpc_server/service.py",
+        "src/emo_master/apps/runtime/jobs/worker_main.py",
+        "src/emo_master/apps/runtime/presentation/normal_capture.py",
+        "src/emo_master/apps/runtime/presentation/service.py",
+        "src/emo_master/apps/runtime/preview/live.py",
+        "src/emo_master/apps/runtime/workflow/runner.py",
+        "src/emo_master/core/presentation/validation.py",
+        "src/emo_master/core/project/global_variables.py",
+        "src/emo_master/core/project/models.py",
+        "src/emo_master/core/project/production.py",
+        "src/emo_master/core/project/snapshots.py",
+        "src/emo_master/core/workflow/compiler.py",
+        "src/emo_master/plugins/builtins/_communication_operators.py",
+        "src/emo_master/plugins/builtins/_coordinate_operators.py",
+        "src/emo_master/plugins/builtins/_gateway_coordinates.py",
+        "src/emo_master/plugins/builtins/_geometry_bridges.py",
+        "src/emo_master/plugins/builtins/_huaray_imv.py",
+        "src/emo_master/plugins/builtins/_tcp_transport.py",
+        "src/emo_master/plugins/builtins/detection_bbox/__init__.py",
+        "src/emo_master/plugins/builtins/flow_error/__init__.py",
+        "src/emo_master/plugins/builtins/flow_error/operator.py",
+        "src/emo_master/plugins/builtins/gateway_ack_validate/__init__.py",
+        "src/emo_master/plugins/builtins/gateway_coordinate_format/__init__.py",
+        "src/emo_master/plugins/builtins/geometry_points/__init__.py",
+        "src/emo_master/plugins/builtins/huaray_camera/operator.py",
+        "src/emo_master/plugins/builtins/huaray_camera/parameter_form.py",
+        "src/emo_master/plugins/builtins/minimum_enclosing_circle/__init__.py",
+        "src/emo_master/plugins/builtins/points_reframe/__init__.py",
+        "src/emo_master/plugins/builtins/variable_write/operator.py",
+        "tests/core/plugin/test_builtin_parameter_titles.py",
+        "tests/core/test_hardware_normal_fixture_package.py",
+        "tests/core/test_production_station_contract.py",
+        "tests/designer/test_production_settings_dialog.py",
+        "tests/designer/test_variable_write_modes_ui.py",
+        "tests/plugins/test_camera_hardware_wait.py",
+        "tests/plugins/test_gateway_coordinates.py",
+        "tests/plugins/test_geometry_bridges.py",
+        "tests/plugins/test_variable_write_modes.py",
+        "tests/runtime/station_camera_boundary.py",
+        "tests/runtime/test_coordinate_snapshot_worker_admission.py",
+        "tests/runtime/test_coordinate_snapshots.py",
+        "tests/runtime/test_hardware_trigger_normal_chain.py",
+        "tests/runtime/test_operator_registration.py",
+        "tests/runtime/test_production_continuous.py",
+        "tests/runtime/test_production_stations.py",
+        "tests/runtime/test_spawned_hardware_stations.py",
+        "tests/runtime/test_two_shot_variable_control.py",
+        "tests/runtime/test_worker_heartbeat_finalization.py",
+        "tests/runtime/two_station_fixture.py",
+        "tests/sqlite_writer/test_dependencies.py",
+        "tests/ui/operator_view/test_production_station_window.py"
+      ],
+      "log": "build/m5_validation/ruff-final-02.log",
+      "sourceSnapshot": "final-code-and-tests"
+    },
+    {
+      "id": "mypy-final",
+      "status": "PASS",
+      "exitCode": 0,
+      "files": 4,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "--follow-imports=silent",
+        "src/emo_master/core/project/production.py",
+        "src/emo_master/apps/runtime/context/production_snapshot.py",
+        "src/emo_master/apps/operator_runtime/controller.py",
+        "src/emo_master/apps/designer/state/production.py"
+      ],
+      "log": "build/m5_validation/mypy-final-01.log",
+      "sourceSnapshot": "final-code-and-tests",
+      "notes": "Four selected sources, not whole-repository type checking."
+    },
+    {
+      "id": "proto-drift-final",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "log": "build/m5_validation/proto-check-final-02.log",
+      "sourceSnapshot": "final-code-and-tests"
+    },
+    {
+      "id": "whitespace-final",
+      "status": "PASS",
+      "exitCode": 0,
+      "command": [
+        "git",
+        "-c",
+        "core.safecrlf=false",
+        "diff",
+        "--check"
+      ],
+      "log": "build/m5_validation/diff-check-final-02.log"
+    },
+    {
+      "id": "native-ui-initial",
+      "status": "FAIL",
+      "log": "build/m5_validation/native-ui.log",
+      "notes": "Script tests import missing repository sys.path; corrected without changing product checks."
+    },
+    {
+      "id": "native-ui-final",
+      "status": "PASS",
+      "exitCode": 0,
+      "images": 5,
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/validate_production_stations_ui.py",
+        "--output",
+        "build/m5_validation/native-ui-current"
+      ],
+      "log": "build/m5_validation/native-ui-current.log",
+      "sourceSnapshot": "final-code-and-tests",
+      "notes": "Native offscreen Qt, Microsoft YaHei, synthetic image project. All five images reviewed, no observed text truncation. Not physical/device/package acceptance."
+    }
+  ],
+  "nativeUi": {
+    "report": "build/m5_validation/native-ui-current/ui-evidence.json",
+    "reportDigest": {
+      "size": 2604,
+      "sha256": "abdacabe5aac34bfdfc50298a669cff754fab173d67d0d531eb08f5083776626"
+    },
+    "font": "Microsoft YaHei",
+    "cases": [
+      {
+        "image": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\m5_validation\\native-ui-current\\operator-1060-s1.png",
+        "width": 1060,
+        "height": 800,
+        "station": "s1",
+        "jobId": "bd20841c-810b-404c-9ed5-9fc12cbf73d2",
+        "pageIds": [
+          "main"
+        ],
+        "displayedSourceIds": [
+          "count",
+          "image"
+        ]
+      },
+      {
+        "image": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\m5_validation\\native-ui-current\\operator-1060-s2.png",
+        "width": 1060,
+        "height": 800,
+        "station": "s2",
+        "jobId": "8cb95704-40eb-4911-93b8-e87d4cab4cc1",
+        "pageIds": [
+          "second"
+        ],
+        "displayedSourceIds": [
+          "count-second",
+          "image-second"
+        ]
+      },
+      {
+        "image": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\m5_validation\\native-ui-current\\operator-1280-s1.png",
+        "width": 1280,
+        "height": 800,
+        "station": "s1",
+        "jobId": "2bf1b756-e4ff-4f83-b3b5-12c1d370dd33",
+        "pageIds": [
+          "main"
+        ],
+        "displayedSourceIds": [
+          "count",
+          "image"
+        ]
+      },
+      {
+        "image": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\m5_validation\\native-ui-current\\operator-1280-s2.png",
+        "width": 1280,
+        "height": 800,
+        "station": "s2",
+        "jobId": "60a704d3-edb6-4bb5-932e-62ff6cd63952",
+        "pageIds": [
+          "second"
+        ],
+        "displayedSourceIds": [
+          "count-second",
+          "image-second"
+        ]
+      },
+      {
+        "image": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\m5_validation\\native-ui-current\\station-configuration.png",
+        "stableStationIds": [
+          "s1",
+          "s2"
+        ],
+        "labels": [
+          "显式保存后启用工位配置（最多两个）。设备、PLC、模型和网关仍在各自算子中配置。\n每页只能归属一个工位；每个硬件工位启动前必须确认外部首拍同步，自动启动不能绕过确认。",
+          "启动策略",
+          "运行模式",
+          "帧间调用间隔（毫秒）",
+          "稳定 ID（改名不变）",
+          "s1",
+          "名称",
+          "入口工作流",
+          "状态",
+          "展示页面",
+          "运行中禁止人工改写的变量",
+          "入口输入",
+          ""
+        ]
+      }
+    ],
+    "imageFiles": {
+      "build/m5_validation/native-ui-current/operator-1060-s1.png": {
+        "size": 53772,
+        "sha256": "e7d99e78f97ec809cf5084b237181b9a269894ff086b2fd98eb6574baada18f9"
+      },
+      "build/m5_validation/native-ui-current/operator-1060-s2.png": {
+        "size": 54609,
+        "sha256": "33eb557461017a5eff611d6bf9a34f647e7bd9172abd3fbd9e6f7a8e6b4e7f5d"
+      },
+      "build/m5_validation/native-ui-current/operator-1280-s1.png": {
+        "size": 54560,
+        "sha256": "b8b812f31234c0ad180f203fbca6f54d558942763bb6de648a18490457b43dc5"
+      },
+      "build/m5_validation/native-ui-current/operator-1280-s2.png": {
+        "size": 55840,
+        "sha256": "c22fab5b6f90cadebd518a0e8564c1ac492531e7913dd280e2f7535ea6356fb3"
+      },
+      "build/m5_validation/native-ui-current/station-configuration.png": {
+        "size": 71265,
+        "sha256": "e5e1eec0b395c38a781e43507d9e0dd9ec0735ea2c45faa278dbd378c1ece8de"
+      }
+    },
+    "visualReview": "All five final images reviewed: Chinese labels and long station/status text readable, no observed clipping at recorded dimensions.",
+    "fixtureValueNote": "Displayed 2 in the UI fixture is Blob count, not hardware shot-count evidence."
+  },
+  "spawnedHardwareSimulation": {
+    "test": "tests/runtime/test_spawned_hardware_stations.py::testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob",
+    "verifiedIn": "focused-final",
+    "workerProcesses": "actual spawned independent workers",
+    "simulatedBoundaries": [
+      "IMV SDK file-arrival frames",
+      "ONNX detection backend",
+      "loopback SLMP peer",
+      "loopback gateway ACK peers"
+    ],
+    "realExecution": [
+      "WorkflowRunner",
+      "camera wait and cancellation",
+      "YOLO operator",
+      "image and geometry operators",
+      "job global variables and Switch",
+      "SLMP read",
+      "coordinate formatting",
+      "TCP exchange",
+      "ACK validation",
+      "normal capture"
+    ],
+    "station1WhileUntriggered": {
+      "rootCompleted": 0,
+      "plcReads": 0,
+      "shotCountAdvancement": 0
+    },
+    "station2FourFrames": {
+      "shot": [
+        1,
+        2,
+        1,
+        2
+      ],
+      "endCount": [
+        1,
+        0,
+        1,
+        0
+      ],
+      "plcSamples": [
+        201,
+        202,
+        203,
+        204
+      ],
+      "plcMessages": 2,
+      "robotMessages": 2
+    },
+    "restart": "station1 independently stopped/restarted while station2 remains running; worker and simulated SDK destroyed; display quota stays two",
+    "guaranteesNotProven": [
+      "physical trigger origin",
+      "camera armed",
+      "real FIFO capacity/overflow",
+      "real-model and original-algorithm equivalence",
+      "exactly-once device motion"
+    ]
+  },
+  "projectCompatibility": {
+    "optionalStationsSchema": "2.4",
+    "newProjectVersion": false,
+    "emptyStationsSerialized": false,
+    "oldProjectOpenOrCancelAutoMigration": false,
+    "maxStations": 2,
+    "hiddenShotState": false,
+    "dedicatedTwoShotNode": false,
+    "startSync": "explicit caller confirmation required for declared hardware station; not a physical-ready acknowledgment",
+    "reloadPolicy": "all stations stopped and resources released; one load-owned input version; no station hot update"
+  },
+  "remaining": {
+    "m5OriginalFourPathEquivalence": "PARTIAL: U01-U05 not confirmed",
+    "m6PreparedCoordinatePurposeAndExplicitRootSelection": "NOT_IMPLEMENTED: production prepared bypass rejected; multi-root prepare rejected",
+    "actualModelsAndSiteInputs": "NOT_RUN",
+    "physicalSyncCameraBufferAndCycleTiming": "NOT_RUN",
+    "realDevices": "NOT_RUN",
+    "frozenPackageAndDeployment": "NOT_RUN",
+    "businessNg": "DEFERRED_BY_SCOPE"
+  },
+  "countPolicy": "Do not sum overlapping broad/focused/exact rerun results, or combine earlier normal-path evidence with this batch."
+}

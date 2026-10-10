@@ -1,20 +1,23 @@
 from __future__ import annotations
 
 import json
-from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Any, Callable, Mapping
 
 from emo_master.apps.runtime.events.operator_logger import (
-    OperatorLogger,
     OperatorLogManager,
 )
+from emo_master.apps.runtime.execution.operator_executor import (
+    OperatorExecutor,
+    invalidTypes as _invalidTypes,
+    missingRequiredKeys as _missingRequiredKeys,
+)
+from emo_master.apps.runtime.execution.errors import WorkflowExecutionError as WorkflowExecutionError
 from emo_master.apps.runtime.workflow.cancellation import CancellationToken
 from emo_master.apps.runtime.workflow.branch_activity import BranchActivity
 from emo_master.apps.runtime.workflow.context import RunContext
 from emo_master.core.contracts.port_types import (
     isPortRequired,
-    matchesPortSpec,
 )
 from emo_master.core.workflow.models import CompiledProject
 from emo_master.core.contracts.run_inspection import finishInspection, startInspection
@@ -26,22 +29,6 @@ class WorkflowResult:
     outputs: dict[str, object]
     metrics: dict[str, object] = field(default_factory=dict)
     diagnostics: dict[str, object] = field(default_factory=dict)
-
-
-class WorkflowExecutionError(RuntimeError):
-    def __init__(
-        self,
-        code: str,
-        message: str,
-        nodeId: str = "",
-        metrics: Mapping[str, object] | None = None,
-        diagnostics: Mapping[str, object] | None = None,
-    ) -> None:
-        self.code = code
-        self.nodeId = nodeId
-        self.metrics = dict(metrics or {})
-        self.diagnostics = dict(diagnostics or {})
-        super().__init__(message)
 
 
 class WorkflowRunner:
@@ -57,6 +44,7 @@ class WorkflowRunner:
         resultCollector: Any = None,
         retainOperators: bool = False,
         globalVariables: object | None = None,
+        debugController: Any = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -81,9 +69,21 @@ class WorkflowRunner:
             self.publish if eventPublisher is not None else None
         )
         self._runDepth = 0
-        self._lifecycleOperators: dict[tuple[str, str], object] = {}
-        self._lifecycleOrder: list[tuple[str, str]] = []
-        self._lifecycleLoggers: dict[tuple[str, str], OperatorLogger] = {}
+        self.debugController = debugController
+        from emo_master.apps.runtime.context.coordinate_snapshots import CoordinateSnapshots
+        self.coordinateSnapshots = CoordinateSnapshots()
+        self.operatorExecutor = OperatorExecutor(
+            operatorRegistry,
+            eventPublisher=self.publish,
+            globalVariables=self.globalVariables,
+            globalCounters=self.globalCounters,
+            coordinateSnapshots=self.coordinateSnapshots,
+            logManager=self._operatorLogManager,
+        )
+        # Preserve the existing lifecycle inspection hooks while ownership moves.
+        self._lifecycleOperators = self.operatorExecutor._lifecycleOperators
+        self._lifecycleOrder = self.operatorExecutor._lifecycleOrder
+        self._lifecycleLoggers = self.operatorExecutor._lifecycleLoggers
         from emo_master.apps.runtime.workflow.loop_runner import LoopRunner
         from emo_master.apps.runtime.workflow.subflow_runner import SubflowRunner
 
@@ -103,6 +103,8 @@ class WorkflowRunner:
             self._capture("begin", context)
         terminal = "FAILED"
         try:
+            if isRootCall:
+                self.prepareResources(workflowId, context, cancellation)
             result = self._runWorkflow(
                 workflowId,
                 inputs,
@@ -122,6 +124,16 @@ class WorkflowRunner:
             if self.resultCollector is not None:
                 self._capture("end", context, terminal)
             self._runDepth -= 1
+
+    def prepareResources(self, workflowId, context, cancellation):
+        """Freeze explicitly requested resources before the first device node."""
+        from emo_master.plugins.builtins._coordinate_operators import CoordinateFileError
+        if workflowId not in self.compiledProject.workflows:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        try:
+            self.coordinateSnapshots.prepare(self.compiledProject, workflowId, context, cancellation)
+        except CoordinateFileError as exc:
+            raise WorkflowExecutionError(exc.code, str(exc)) from exc
 
     def _runWorkflow(
         self,
@@ -189,11 +201,15 @@ class WorkflowRunner:
                              payload={"ioSummary": inspection})
                 nodeDiagnostics = {}
                 try:
+                    if self.debugController is not None:
+                        self.debugController.before(node, nodeInput, nodeContext)
                     nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
                         node, nodeInput, supplied, nodeContext, cancellation,
                         boundValues.get(nodeId, {})
                     )
                     self._validateNodeOutputs(node, nodeOutputs)
+                    if self.debugController is not None:
+                        self.debugController.after(node, nodeInput, nodeOutputs, nodeContext)
                     if self.resultCollector is not None:
                         self._capture("observe", node, nodeInput, nodeOutputs)
                         self._capture("output", nodeContext, nodeOutputs)
@@ -207,20 +223,14 @@ class WorkflowRunner:
                                 nodeOutputs[binding.fromPort], binding, nodeContext)
                     cancellation.raise_if_cancelled()
                 except Exception as err:
+                    if self.debugController is not None:
+                        self.debugController.failed(node, nodeInput, nodeContext, err)
                     code = getattr(err, "code", "E_EXEC_FAILED")
                     if isinstance(err, WorkflowExecutionError):
                         code = err.code
-                    failedDiagnostics = getattr(err, "diagnostics", {})
-                    if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
-                        # Cancellation after a returned commit does not undo the
-                        # external write. Preserve only this invocation's receipt;
-                        # the node and task still retain their failure/cancel state.
-                        from emo_master.core.contracts.sqlite_writer import receiptSummary
-                        identity = {"jobId": nodeContext.jobId, "workflowId": nodeContext.workflowId,
-                                    "workflowRunId": nodeContext.workflowRunId, "nodeId": node.nodeId,
-                                    "nodeRunId": nodeContext.nodeRunId}
-                        if receiptSummary(nodeDiagnostics["sqliteReceipt"], identity) is not None:
-                            failedDiagnostics = {**failedDiagnostics, "sqliteReceipt": nodeDiagnostics["sqliteReceipt"]}
+                    failedDiagnostics = self.operatorExecutor.failureDiagnostics(
+                        node, nodeContext, nodeDiagnostics, err
+                    )
                     failedPayload = {
                         "status": "FAILED",
                         "code": str(code),
@@ -309,26 +319,6 @@ class WorkflowRunner:
             raise
 
     def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
-        if node.kind == "operator":
-            missingInputs = _missingRequiredKeys(
-                node.inputPorts,
-                nodeInput,
-                defaultRequired=False,
-                descriptorDefaultRequired=True,
-            )
-            if missingInputs:
-                raise WorkflowExecutionError(
-                    "E_INPUT_MISSING",
-                    f"node inputs are missing: {', '.join(missingInputs)}",
-                    node.nodeId,
-                )
-            invalidInputs = _invalidTypes(node.inputPorts, nodeInput)
-            if invalidInputs:
-                raise WorkflowExecutionError(
-                    "E_INPUT_TYPE",
-                    f"node inputs have invalid types: {', '.join(invalidInputs)}",
-                    node.nodeId,
-                )
         if node.kind == "workflow_input":
             return {
                 key: supplied[key]
@@ -343,253 +333,23 @@ class WorkflowRunner:
         if node.kind == "loop":
             result = self.loopRunner.run(node, nodeInput, context, cancellation)
             return result.outputs, result.metrics, result.diagnostics
-        operator = self._operatorForNode(node, context, cancellation)
-        if operator is None or not hasattr(operator, "executeNode"):
-            raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
-        params = dict(node.params)
-        if node.globalVariableBindings:
-            from emo_master.core.project.global_variables import resolveParams, validateEffectiveParams
-            values = self.globalVariables.readMany([binding["variableId"] for binding in node.globalVariableBindings])
-            params = resolveParams(params, node.globalVariableBindings, values)
-            params = validateEffectiveParams(params, node.globalVariableBindings, node.paramSchema)
-            validator = getattr(operator, "validateParams", None)
-            error = validator(params) if callable(validator) else None
-            if isinstance(error, dict):
-                raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
-                                             str(error.get("message", "invalid bound parameters")), node.nodeId)
-        logger = self._operatorLogManager.createLogger(
-            context,
-            str(node.operatorId or ""),
-            "execute",
-        )
-        runtimeContext = {
-            "jobId": context.jobId,
-            "projectId": context.projectId,
-            "workflowId": context.workflowId,
-            "workflowRunId": context.workflowRunId,
-            "parentWorkflowRunId": context.parentWorkflowRunId,
-            "nodeId": node.nodeId,
-            "nodeRunId": context.nodeRunId,
-            "iterationPath": list(context.iterationPath),
-            "workspacePath": context.workspacePath,
-            "isCancellationRequested": cancellation.isCancellationRequested,
-            "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
-            "logger": logger,
-            "globalCounters": self.globalCounters,
-            "globalVariables": self.globalVariables,
-            "mappedOutputs": dict(boundValues or {}),
-        }
-        if node.operatorId == "vision.io.sqlite_writer":
-            from emo_master.apps.runtime.business_sqlite.backend import insert
-            runtimeContext["sqliteInsert"] = insert
-            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
-            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
-                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
-        try:
-            result = operator.executeNode(nodeInput, params, runtimeContext)
-        except Exception as err:
-            loggingDiagnostics = logger.close()
-            if loggingDiagnostics:
-                _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
-            raise
-        loggingDiagnostics = logger.close()
-        if not isinstance(result, dict) or result.get("status") != "ok":
-            error = result.get("error", {}) if isinstance(result, dict) else {}
-            code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
-            message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
-            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
-            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
-            normalizedDiagnostics = (
-                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
-            )
-            if loggingDiagnostics:
-                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
-            raise WorkflowExecutionError(
-                str(code),
-                str(message),
-                node.nodeId,
-                failedMetrics if isinstance(failedMetrics, dict) else {},
-                normalizedDiagnostics,
-            )
-        rawOutputs = result.get("outputs", {})
-        if not isinstance(rawOutputs, dict):
-            raise WorkflowExecutionError(
-                "E_OUTPUT_TYPE",
-                f"node outputs must be an object: {node.nodeId}",
-                node.nodeId,
-            )
-        outputs = rawOutputs
-        metrics = result.get("metrics", {})
-        diagnostics = result.get("diagnostics", {})
-        normalizedDiagnostics = diagnostics if isinstance(diagnostics, dict) else {}
-        if loggingDiagnostics:
-            normalizedDiagnostics = dict(normalizedDiagnostics)
-            normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
-        return outputs, metrics if isinstance(metrics, dict) else {}, normalizedDiagnostics
-
-    def _operatorForNode(self, node, context, cancellation) -> object | None:
-        operatorClass = _operatorClass(node.operatorId, self.operatorRegistry)
-        if operatorClass is None:
-            return None
-        if not isinstance(operatorClass, type) or not _hasLifecycle(operatorClass):
-            return _buildOperator(node.operatorId, self.operatorRegistry)
-
-        key = (context.workflowId, node.nodeId)
-        cached = self._lifecycleOperators.get(key)
-        if cached is not None:
-            return cached
-
-        operator = operatorClass()
-        lifecycleLogger = self._operatorLogManager.createLogger(
-            context,
-            str(node.operatorId or ""),
-            "lifecycle",
-        )
-        init = getattr(operator, "initOperator", None)
-        if callable(init):
-            initContext = {
-                "jobId": context.jobId,
-                "projectId": context.projectId,
-                "workflowId": context.workflowId,
-                "workflowRunId": context.workflowRunId,
-                "parentWorkflowRunId": context.parentWorkflowRunId,
-                "nodeId": node.nodeId,
-                "nodeRunId": context.nodeRunId,
-                "iterationPath": list(context.iterationPath),
-                "workspacePath": context.workspacePath,
-                "isCancellationRequested": cancellation.isCancellationRequested,
-                "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
-                "logger": lifecycleLogger,
-                "globalCounters": self.globalCounters,
-                "globalVariables": self.globalVariables,
-            }
-            try:
-                init(initContext)
-            except Exception as err:
-                dispose = getattr(operator, "disposeOperator", None)
-                if callable(dispose):
-                    try:
-                        dispose()
-                    except Exception as cleanupErr:
-                        cleanupError = WorkflowExecutionError(
-                            "E_RESOURCE_CLEANUP_FAILED",
-                            f"operator cleanup after initialization failed: {cleanupErr}",
-                            node.nodeId,
-                        )
-                        self._attachCleanupDiagnostics(err, cleanupError)
-                        self._publishCleanupFailure(context, cleanupError)
-                lifecycleLogger.close()
-                raise
-        self._lifecycleOperators[key] = operator
-        self._lifecycleOrder.append(key)
-        self._lifecycleLoggers[key] = lifecycleLogger
-        return operator
+        return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
 
     def disposeOperators(self) -> WorkflowExecutionError | None:
-        cleanupErrors: list[str] = []
-        failedNodeIds: list[str] = []
-        for key in reversed(self._lifecycleOrder):
-            operator = self._lifecycleOperators.get(key)
-            if operator is None:
-                continue
-            dispose = getattr(operator, "disposeOperator", None)
-            try:
-                if callable(dispose):
-                    dispose()
-            except Exception as err:
-                failedNodeIds.append(key[1])
-                cleanupErrors.append(f"{key[0]}/{key[1]}: {err}")
-            finally:
-                logger = self._lifecycleLoggers.get(key)
-                if logger is not None:
-                    logger.close()
-        self._lifecycleOperators.clear()
-        self._lifecycleOrder.clear()
-        self._lifecycleLoggers.clear()
-        if not cleanupErrors:
-            return None
-        return WorkflowExecutionError(
-            "E_RESOURCE_CLEANUP_FAILED",
-            "operator resource cleanup failed: " + "; ".join(cleanupErrors),
-            failedNodeIds[0] if failedNodeIds else "",
-            diagnostics={"cleanupErrors": cleanupErrors},
-        )
+        return self.operatorExecutor.disposeOperators()
 
     def closeSession(self, context: RunContext, primaryError: Exception | None = None) -> None:
-        """The retained-session owner calls this once before its Job terminal."""
-        cleanupError = self.disposeOperators()
-        self._operatorLogManager.finalize()
-        if cleanupError is not None:
-            self._publishCleanupFailure(context, cleanupError)
-            if primaryError is None or getattr(primaryError, "code", "") == "E_CANCELLED":
-                # A requested stop is not a successful release if disposal fails.
-                raise cleanupError from primaryError
-            self._attachCleanupDiagnostics(primaryError, cleanupError)
+        self.operatorExecutor.closeSession(context, primaryError)
 
     @staticmethod
-    def _attachCleanupDiagnostics(
-        primaryError: Exception,
-        cleanupError: WorkflowExecutionError,
-    ) -> None:
-        diagnostics = getattr(primaryError, "diagnostics", None)
-        if not isinstance(diagnostics, dict):
-            diagnostics = {}
-            try:
-                setattr(primaryError, "diagnostics", diagnostics)
-            except (AttributeError, TypeError):
-                return
-        diagnostics["resourceCleanup"] = {
-            "code": cleanupError.code,
-            "message": str(cleanupError),
-            **cleanupError.diagnostics,
-        }
+    def _attachCleanupDiagnostics(primaryError: Exception, cleanupError: WorkflowExecutionError) -> None:
+        OperatorExecutor._attachCleanupDiagnostics(primaryError, cleanupError)
 
-    def _publishCleanupFailure(
-        self,
-        context: RunContext,
-        cleanupError: WorkflowExecutionError,
-    ) -> None:
-        self.publish(
-            "resource.cleanup.failed",
-            context,
-            str(cleanupError),
-            level="ERROR",
-            code=cleanupError.code,
-            payload={
-                "status": "FAILED",
-                "code": cleanupError.code,
-                "message": str(cleanupError),
-            },
-        )
+    def _publishCleanupFailure(self, context: RunContext, cleanupError: WorkflowExecutionError) -> None:
+        self.operatorExecutor._publishCleanupFailure(context, cleanupError)
 
     def _validateNodeOutputs(self, node, outputs: Mapping[object, object]) -> None:
-        outputInterface = (
-            node.inputPorts if node.kind == "workflow_output" else node.outputPorts
-        )
-        undeclared = _undeclaredKeys(outputInterface, outputs)
-        if undeclared:
-            raise WorkflowExecutionError(
-                "E_OUTPUT_UNDECLARED",
-                f"node returned undeclared outputs: {', '.join(undeclared)}",
-                node.nodeId,
-            )
-        if node.kind == "operator":
-            missingOutputs = _missingRequiredKeys(
-                node.outputPorts, outputs, defaultRequired=False
-            )
-            if missingOutputs:
-                raise WorkflowExecutionError(
-                    "E_OUTPUT_MISSING",
-                    f"node outputs are missing: {', '.join(missingOutputs)}",
-                    node.nodeId,
-                )
-        invalidOutputs = _invalidTypes(outputInterface, outputs)
-        if invalidOutputs:
-            raise WorkflowExecutionError(
-                "E_OUTPUT_TYPE",
-                f"node outputs have invalid types: {', '.join(invalidOutputs)}",
-                node.nodeId,
-            )
+        self.operatorExecutor.validateOutputs(node, outputs)
 
     def _publishArtifacts(self, node, outputs, context) -> None:
         if node.kind != "operator":
@@ -676,38 +436,6 @@ class WorkflowRunner:
         )
 
 
-def _buildOperator(operatorId: str | None, registry: Mapping[str, object]) -> object | None:
-    if not operatorId:
-        return None
-    value = registry.get(operatorId)
-    if value is None:
-        return None
-    operatorClass = getattr(value, "operatorClass", None)
-    if operatorClass is not None:
-        value = operatorClass
-    if isinstance(value, type):
-        return value()
-    return value
-
-
-def _operatorClass(
-    operatorId: str | None,
-    registry: Mapping[str, object],
-) -> object | None:
-    if not operatorId:
-        return None
-    value = registry.get(operatorId)
-    if value is None:
-        return None
-    return getattr(value, "operatorClass", value)
-
-
-def _hasLifecycle(value: type) -> bool:
-    return callable(getattr(value, "initOperator", None)) or callable(
-        getattr(value, "disposeOperator", None)
-    )
-
-
 def _jsonSafe(value: object) -> object:
     try:
         json.dumps(value)
@@ -720,55 +448,8 @@ def _jsonSafe(value: object) -> object:
         return str(value)
 
 
-def _attachOperatorLoggingDiagnostics(
-    error: Exception,
-    loggingDiagnostics: Mapping[str, object],
-) -> None:
-    diagnostics = getattr(error, "diagnostics", None)
-    if not isinstance(diagnostics, dict):
-        diagnostics = {}
-        try:
-            setattr(error, "diagnostics", diagnostics)
-        except (AttributeError, TypeError):
-            return
-    diagnostics["operatorLogging"] = dict(loggingDiagnostics)
-
-
 def _missingKeys(interface: Mapping[str, object], values: Mapping[str, object]) -> list[str]:
     return _missingRequiredKeys(interface, values, defaultRequired=True)
-
-
-def _missingRequiredKeys(
-    interface: Mapping[str, object],
-    values: Mapping[Any, object],
-    *,
-    defaultRequired: bool,
-    descriptorDefaultRequired: bool | None = None,
-) -> list[str]:
-    return sorted(
-        key
-        for key, portSpec in interface.items()
-        if key not in values
-        and isPortRequired(
-            portSpec,
-            default=(
-                descriptorDefaultRequired
-                if descriptorDefaultRequired is not None
-                and isinstance(portSpec, Mapping)
-                else defaultRequired
-            ),
-        )
-    )
-
-
-def _invalidTypes(
-    interface: Mapping[str, object], values: Mapping[Any, object]
-) -> list[str]:
-    return sorted(
-        key
-        for key, expectedType in interface.items()
-        if key in values and not matchesPortSpec(values[key], expectedType)
-    )
 
 
 def _shouldSkipNodeWithoutInputs(
@@ -789,16 +470,6 @@ def _shouldSkipNodeWithoutInputs(
     if hasIncomingEdges:
         return True
     return any(not isinstance(portSpec, Mapping) for portSpec in inputPorts.values())
-
-
-def _undeclaredKeys(
-    interface: Mapping[str, object], values: Mapping[object, object]
-) -> list[str]:
-    return sorted(
-        key if isinstance(key, str) else repr(key)
-        for key in values
-        if not isinstance(key, str) or key not in interface
-    )
 
 
 def _branchName(operatorId: str | None, outputs: Mapping[str, object]) -> str:

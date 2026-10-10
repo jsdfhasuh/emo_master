@@ -84,6 +84,10 @@ def deriveLoopContract(
     else:
         version = versionValue
     normalizedConfig["contractVersion"] = version
+    unlimited = config.get("unlimited", False)
+    if not isinstance(unlimited, bool) or (unlimited and (mode != "while" or version != CURRENT_LOOP_CONTRACT_VERSION)):
+        issues.append(LoopContractIssue("E_LOOP_LIMIT_MODE_INVALID",
+            "unlimited must be boolean and is supported only by While contractVersion=2", "loop.unlimited"))
 
     inputs = interfacePortTypes(bodyInputs)
     outputs = interfacePortTypes(bodyOutputs)

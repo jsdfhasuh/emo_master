@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="4" time="52.877" timestamp="2026-10-10T01:42:38.480945+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_operator_debug_acceptance" name="testSpawnedMutationCannotChangeFrozenInputAndFailedSerializationRemovesOutputs" file="tests\runtime\test_operator_debug_acceptance.py" line="24" time="0.920" /><testcase classname="tests.runtime.test_operator_debug_acceptance" name="testGrpcMultipartAssetExceedsUnaryLimitAndExpiresAfterReset" file="tests\runtime\test_operator_debug_acceptance.py" line="46" time="2.186" /><testcase classname="tests.runtime.test_operator_debug_acceptance" name="testThousandExecutionsAndFiftyRetirements" file="tests\runtime\test_operator_debug_acceptance.py" line="76" time="47.018"><failure message="emo_master.apps.runtime.operator_debug.contracts.DebugError: debug session is closing or expired">tests\runtime\test_operator_debug_acceptance.py:105: in testThousandExecutionsAndFiftyRetirements
+    accepted = execute(manager, identity, inputId, requestId=f"execute-{index}")
+tests\runtime\test_operator_debug_sessions.py:53: in execute
+    return manager.call("execute", dict(identity, requestId=requestId, inputSetId=inputSetId,
+src\emo_master\apps\runtime\operator_debug\manager.py:138: in call
+    return self._call(action, request)
+src\emo_master\apps\runtime\operator_debug\manager.py:161: in _call
+    session = self._session(request, active=action in {"prepare", "execute", "reset", "renew", "upload", "import", "copyVariables"})
+src\emo_master\apps\runtime\operator_debug\manager.py:103: in _session
+    fail("E_DEBUG_SESSION_EXPIRED", "debug session is closing or expired")
+src\emo_master\apps\runtime\operator_debug\contracts.py:39: in fail
+    raise DebugError(code, message)
+E   emo_master.apps.runtime.operator_debug.contracts.DebugError: debug session is closing or expired</failure></testcase><testcase classname="tests.runtime.test_operator_debug_acceptance" name="testResetCannotReuseAnOldExecutionOutput" file="tests\runtime\test_operator_debug_acceptance.py" line="132" time="1.654" /></testsuite></testsuites>

@@ -766,7 +766,7 @@ class CameraSession:
 
     def capture(
         self,
-        timeoutMs: int,
+        timeoutMs: int | None,
         outputColor: str,
         demosaic: str,
         raiseIfCancelled: Callable[[], object] | None = None,
@@ -791,11 +791,15 @@ class CameraSession:
                 "TriggerSoftware",
             )
 
-        deadline = monotonic() + timeoutMs / 1000.0
+        if timeoutMs is None and self.settings["triggerMode"] != "hardware":
+            raise HuarayCameraError("E_CAMERA_CONFIG_FAILED", "unbounded wait requires hardware trigger")
+        if timeoutMs is None and not callable(raiseIfCancelled):
+            raise HuarayCameraError("E_CAMERA_CONFIG_FAILED", "unbounded wait requires cancellation support")
+        deadline = None if timeoutMs is None else monotonic() + timeoutMs / 1000.0
         frame: object | None = None
         while frame is None:
             checkCancellation()
-            remainingMs = math.ceil((deadline - monotonic()) * 1000.0)
+            remainingMs = 100 if deadline is None else math.ceil((deadline - monotonic()) * 1000.0)
             if remainingMs <= 0:
                 raise HuarayCameraError(
                     "E_CAMERA_TIMEOUT",
@@ -817,11 +821,14 @@ class CameraSession:
                 f"IMV_GetFrame failed with SDK code {result}",
                 "IMV_GetFrame",
             )
+            if candidate is None:
+                raise HuarayCameraError("E_CAMERA_FRAME_INVALID", "IMV_GetFrame returned no frame")
             frame = candidate
 
         primaryError: Exception | None = None
         captured: CapturedFrame | None = None
         try:
+            checkCancellation()
             info = getattr(frame, "frameInfo", None)
             if info is None:
                 raise HuarayCameraError(

@@ -93,6 +93,8 @@ def isFileParameter(spec: Mapping) -> bool:
 
 
 def _checkBindableField(spec, path):
+    if spec.get("xGlobalVariableBindingDisabled"):
+        raise VariableError("E_VARIABLE_BINDING_STATIC", f"{'.'.join(path)} requires a fixed value")
     if isFileParameter(spec):
         raise VariableError(
             "E_VARIABLE_FILE_BINDING",
@@ -134,6 +136,15 @@ def validateBindings(bindings, variables, schema, *, occupied=()):
             raise VariableError("E_VARIABLE_TYPE", f"variable type does not match {'.'.join(path)}")
 
 
+def variableWriteOperation(params):
+    operation = params.get("operation", "set")
+    if not isinstance(operation, str) or operation not in {"set", "increment", "reset"}:
+        raise VariableError("E_PARAM_INVALID", "operation must be set, increment or reset")
+    if operation == "increment":
+        validateValue(params.get("delta", 1), "integer")
+    return operation
+
+
 def variablePorts(operatorId, params, variables):
     if operatorId not in {READ_VARIABLE, WRITE_VARIABLE}:
         return None
@@ -144,7 +155,14 @@ def variablePorts(operatorId, params, variables):
     if operatorId == WRITE_VARIABLE and definition.kind == "constant":
         raise VariableError("E_VARIABLE_READ_ONLY", "constants cannot be written")
     port = {"type": definition.type, "required": True, "nullable": False}
-    return ({"value": dict(port)} if operatorId == WRITE_VARIABLE else {}, {"value": dict(port)})
+    inputs = {}
+    if operatorId == WRITE_VARIABLE:
+        operation = variableWriteOperation(params)
+        if operation == "increment" and definition.type != "integer":
+            raise VariableError("E_VARIABLE_TYPE", "increment requires an integer variable")
+        inputs = ({"value": dict(port)} if operation == "set" else
+                  {"after": {"type": "any", "required": True, "nullable": False}})
+    return inputs, {"value": dict(port)}
 
 
 def validateBoundValues(params, bindings, schema):

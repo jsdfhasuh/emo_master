@@ -383,6 +383,7 @@ class PreviewController(QObject):
         return observer
 
     def refreshObserver(self, presentation):
+        presentation = self._jobPresentation(presentation)
         observer = self.observer
         if observer is None or not isValid(observer) or observer.detached:
             return
@@ -393,6 +394,14 @@ class PreviewController(QObject):
                                             if observer.config != presentation else None)
         elif observer.config != presentation:
             observer.reload(presentation)
+
+    def _jobPresentation(self, presentation):
+        document = self.coordinator.session.document()
+        root = getattr(self.selectedJob, 'workflow_id', '')
+        if root not in document.workflows:
+            return presentation
+        from emo_master.core.presentation.workflow_view import presentationForWorkflow
+        return presentationForWorkflow(document.model_copy(update={'presentation': presentation}), root)
 
     def refreshJobStatus(self):
         from emo_master.ui.presentation.job_status import jobStatusText
@@ -425,7 +434,7 @@ class PreviewController(QObject):
             self.refreshJobStatus()
             return
         document = self.coordinator.session.document()
-        presentation = document.presentation
+        presentation = self._jobPresentation(document.presentation)
         missing = []
         if self.coverage and presentation:
             used = {key for page in presentation.pages.values() for component in walkComponents(page.components)
@@ -490,6 +499,7 @@ class PreviewController(QObject):
         self.hub = DisplayHub(self.session, self) if self.session is not None else None
         observer = self.observer
         if observer is not None and isValid(observer):
+            self.refreshObserver(self.coordinator.session.presentation.snapshot())
             observer.setDesignExamples(False)
             observer.setSource(True)
             observer.hub = self.hub

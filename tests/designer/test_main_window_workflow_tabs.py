@@ -118,7 +118,13 @@ def testWorkflowTabContextMenuSetsSelectedTabAsEntry() -> None:
     assert window.workflowStore.entryWorkflowId == bodyWorkflowId
     assert window.getActiveWorkflowId() == "main"
     assert window.workflowTabs.tabText(0) == "Main"
-    assert window.workflowTabs.tabText(1) == "Body [入口]"
+    if mainWindowModule._nativeQt:
+        from PySide2.QtWidgets import QTabBar
+        assert window.workflowTabs.tabText(1) == "Body"
+        assert tabBar.tabButton(0, QTabBar.LeftSide) is None
+        assert tabBar.tabButton(1, QTabBar.LeftSide).text() == "默认入口"
+    else:
+        assert window.workflowTabs.tabText(1) == "【默认入口】Body"
     assert window._buildWorkflowTabContextMenu(2) is None
     entryMenu = window._buildWorkflowTabContextMenu(1)
     assert entryMenu is not None

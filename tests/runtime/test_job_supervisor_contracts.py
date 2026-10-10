@@ -277,8 +277,9 @@ class _FakeProcessContext:
     def Event(self):
         return Event()
 
-    def Queue(self):
-        return queue.Queue()
+    def Queue(self, maxsize=0):
+        assert maxsize == 64
+        return queue.Queue(maxsize=maxsize)
 
     def Value(self, *args, **kwargs):
         return multiprocessing.get_context("spawn").Value(*args, **kwargs)
@@ -511,7 +512,7 @@ def testFailedStartDoesNotJoinLiveBridgeOrReleaseItsOwners(monkeypatch) -> None:
     supervisor.maxConcurrentJobs = 1
     eventQueue = _ClosableQueue()
     context = _FakeProcessContext(process)
-    monkeypatch.setattr(context, "Queue", lambda: eventQueue)
+    monkeypatch.setattr(context, "Queue", lambda maxsize=0: eventQueue)
     supervisor._context = context
     finalizerEntered = Event()
     bridgeStopped = supervisor.bridgeStopped

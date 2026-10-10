@@ -17,7 +17,7 @@ def testAllBuiltinParameterTitlesSurviveRegistration():
     root = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins"
     scan = PluginRegistry("0.6.1").scan(root)
     assert not scan.rejectedOperators
-    assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 53
+    assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 60
     fieldCount = 0
     for operatorId, descriptor in scan.activeOperators.items():
         for name, field in _fields(descriptor.manifest.paramSchema):

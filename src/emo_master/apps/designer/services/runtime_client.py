@@ -522,6 +522,7 @@ class RuntimeClient:
         data: bytes,
         filename: str = "",
         projectId: str = "",
+        *, draftSessionId: str = "",
     ) -> object:
         uploadId = f"upload-{threading.get_ident()}"
 
@@ -532,6 +533,7 @@ class RuntimeClient:
                     filename=filename if offset == 0 else "",
                     content=data[offset : offset + 256 * 1024],
                     project_id=projectId,
+                    draft_session_id=draftSessionId,
                 )
 
         return self._call("UploadPreviewImage", chunks())
@@ -629,12 +631,14 @@ class RuntimeClient:
         self,
         assetId: str,
         projectId: str = "",
+        *, draftSessionId: str = "",
     ) -> tuple[bytes, str]:
         chunks = self._call(
             "StreamPreviewAsset",
             runtime_pb2.GetPreviewAssetRequest(
                 asset_id=assetId,
                 project_id=projectId,
+                draft_session_id=draftSessionId,
             ),
             useDeadline=False,
         )
@@ -655,7 +659,7 @@ class RuntimeClient:
         params: dict[str, object],
         imageAssetId: str,
         requestId: str = "",
-        *, projectPayload=None, jobId: str = "",
+        *, projectPayload=None, jobId: str = "", draftSessionId: str = "",
     ) -> object:
         return self._call(
             "RunOperatorPreview",
@@ -669,8 +673,31 @@ class RuntimeClient:
                 request_id=requestId,
                 project_json=json.dumps(projectPayload, ensure_ascii=False) if projectPayload else "",
                 job_id=jobId,
+                draft_session_id=draftSessionId,
             ),
         )
+
+    def openDraftPurePreviewSession(self, projectId, workflowId, nodeId, operatorId, projectPayload):
+        from emo_master.apps.runtime.preview.draft import MAX_DRAFT_PREVIEW_BYTES
+        method = "OpenDraftPurePreviewSession"
+        unsupported = "当前 Runtime 不支持草稿本地图片预览，请更新并重启 Runtime；无需运行或保存工程"
+        if not callable(getattr(self.runtimeService, method, None)):
+            raise RuntimeClientError("E_PREVIEW_UNSUPPORTED", unsupported)
+        request = runtime_pb2.OpenOperatorPreviewSessionRequest(project_id=projectId,
+            workflow_id=workflowId, node_id=nodeId, operator_id=operatorId,
+            project_json=json.dumps(projectPayload, ensure_ascii=False, allow_nan=False))
+        if request.ByteSize() > MAX_DRAFT_PREVIEW_BYTES:
+            raise RuntimeClientError("E_PREVIEW_CONTEXT_INVALID", "纯预览草稿请求不得超过 768 KiB")
+        try:
+            return self._call(method, request)
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" not in error.code:
+                raise
+            raise RuntimeClientError("E_PREVIEW_UNSUPPORTED", unsupported) from error
+
+    def closeDraftPurePreviewSession(self, sessionId):
+        return self._call("CloseDraftPurePreviewSession",
+            runtime_pb2.CloseOperatorPreviewSessionRequest(session_id=sessionId))
 
     def cancelOperatorPreview(self, requestId: str) -> object:
         return self._call(

@@ -32,6 +32,10 @@ _SNAPSHOT_TYPES = {
 }
 
 
+class PreviewTransientCleanupPending(OSError):
+    """Only tracked private files remain; retrying their unlink is safe."""
+
+
 def _ioPath(path: Path) -> Path:
     """Use Win32 extended paths only inside the private preview file store."""
     if os.name != "nt":
@@ -186,6 +190,9 @@ class PreviewAssetStore:
         self._assets: dict[str, PreviewAsset] = {}
         self._lock = threading.RLock()
         self._pendingCleanup: set[Path] = set()
+        # Interrupted/deferred transient deletion stays charged by preventing
+        # further allocations until those private files are actually removed.
+        self._pendingTransientCleanup: set[Path] = set(self.transientRoot.iterdir())
         self._cleanupScanRequired = True
         self.inspectionUsage = lambda projectKey=None: 0
         self._loadPersistentAssets()
@@ -320,9 +327,17 @@ class PreviewAssetStore:
         if not ok:
             raise ValueError("failed to encode preview image")
         with self._lock:
+            if not _retirePaths(self._pendingTransientCleanup):
+                raise OSError("preview transient cleanup pending; new allocation refused")
             assetId = f"transient-{uuid4()}"
             path = self.transientRoot / f"{assetId}.png"
-            _atomicBytes(path, encoded.tobytes())
+            try:
+                _atomicBytes(path, encoded.tobytes())
+            except OSError:
+                self._pendingTransientCleanup.add(path)
+                self._pendingTransientCleanup.update(self.transientRoot.glob(f".{path.name}.*.tmp"))
+                _retirePaths(self._pendingTransientCleanup)
+                raise
             height, width = image.shape[:2]
             asset = PreviewAsset(
                 assetId=assetId,
@@ -458,12 +473,15 @@ class PreviewAssetStore:
             if asset is None or asset.path.parent != self.transientRoot:
                 return
             self._assets.pop(assetId, None)
-            _unlink(asset.path)
+            self._pendingTransientCleanup.add(asset.path)
+            _retirePaths(self._pendingTransientCleanup)
 
     def close(self) -> None:
         with self._lock:
             for assetId in list(self._assets):
                 self.removeTransient(assetId)
+            if not _retirePaths(self._pendingTransientCleanup):
+                raise PreviewTransientCleanupPending("preview transient cleanup pending")
 
     def _loadPersistentAssets(self) -> None:
         with self._lock:

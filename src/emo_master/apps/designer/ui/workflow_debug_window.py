@@ -16,6 +16,7 @@ from emo_master.apps.runtime.operator_debug.assets import VALUE_BYTES, decode
 from emo_master.apps.runtime.operator_debug.contracts import digest, parse
 from emo_master.core.contracts.port_types import normalizePortType
 from .debug_values import InputRow, ValueTree, tool
+from .debug_artifact_tools import DebugActionFeedback, DebugArtifactTools
 from .operator_debug_window import Completion
 from .param_form import SchemaParamForm
 from .widgets import PreviewLabel, WrapLabel, scrollContent
@@ -60,6 +61,9 @@ class WorkflowDebugWindow(QDialog):
         layout = QVBoxLayout(self)
         self.status = WrapLabel("连接 Runtime")
         layout.addWidget(self.status)
+        self.actionFeedback = DebugActionFeedback(self)
+        self.actionStatus = self.actionFeedback.label
+        layout.addWidget(self.actionStatus)
         self.position = WrapLabel("启动快照 " + digest(payload)[:12])
         layout.addWidget(self.position)
         bar = QHBoxLayout()
@@ -92,7 +96,6 @@ class WorkflowDebugWindow(QDialog):
             label = QLabel(port + " : " + normalizePortType(spec))
             label.setWordWrap(True)
             form.addRow(label, row)
-        from .debug_artifact_tools import DebugArtifactTools
         self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.payload['project']['projectId'], workflowId=self.workflowId),
             self.fixtureParameters, self.exportSelection)
         form.addRow(self.artifacts.panel)
@@ -203,7 +206,8 @@ class WorkflowDebugWindow(QDialog):
         return True
 
     def refresh(self):
-        idle = not self.busy and not self.refreshPending and not self.closing and not self.connection.uncertain
+        idle = (not self.busy and not self.refreshPending and not self.closing
+                and not self.connection.uncertain and self.artifacts.pendingInput is None)
         current = self.current is not None and self.current.get("pauseSequence") == self.pauseSequence
         paused = idle and self.state == "PAUSED" and current and not self.session.get("flow", {}).get("trialRunning")
         self.startButton.setEnabled(idle and self.state == "READY")
@@ -238,7 +242,7 @@ class WorkflowDebugWindow(QDialog):
             problems = disabledOutputConflicts(self.payload, [self.workflowId])
             if problems:
                 first = problems[0]
-                self.error(ValueError(first['message'] + ' 当前调试使用固定快照；修正参数后请结束并重新打开调试。'))
+                self.error(ValueError(first['message'] + ' 当前调试使用固定快照；修正参数后请结束并重新打开调试。'), action="start")
                 self.navigate(first['workflowId'], first['nodeId'])
                 return
             values = {key: row.wire() for key, row in self.rows.items() if row.wire() is not None}
@@ -247,7 +251,7 @@ class WorkflowDebugWindow(QDialog):
             if not self.submit("start", lambda: self.connection.start(values, breakpoints=breakpoints)):
                 self.pendingBreakpoints = None
         except Exception as error:
-            self.error(error)
+            self.error(error, action="start")
 
     def command(self, action, **fields):
         sequence = self.pauseSequence
@@ -289,23 +293,42 @@ class WorkflowDebugWindow(QDialog):
         form = SchemaParamForm()
         form.setSchema(operator["paramSchema"], self.current["params"])
         layout.addWidget(scrollContent(form), 1)
+        validation = WrapLabel("")
+        validation.setObjectName("trialValidation")
+        validation.hide()
+        layout.addWidget(validation)
+        params = None
+
+        def acceptParams():
+            nonlocal params
+            try:
+                message = form.validationMessage()
+                if message:
+                    raise ValueError(message)
+                params = deepcopy(form.getValues())
+            except Exception as error:
+                validation.setText("参数未通过检查：" + str(error))
+                validation.show()
+                return
+            dialog.accept()
+
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
-        buttons.accepted.connect(dialog.accept)
+        buttons.accepted.connect(acceptParams)
         buttons.rejected.connect(dialog.reject)
         layout.addWidget(buttons)
         sequence = self.pauseSequence
         self.timer.stop()
         answer = dialog.exec_()
-        if not self.closing:
+        if not self.closing and not self.disposed:
             self.timer.start(250)
-        if answer == QDialog.Accepted:
+        if answer == QDialog.Accepted and params is not None and not self.closing and not self.disposed:
             try:
-                params = form.getValues()
                 self.submit("command", lambda: self.connection.control("trial", sequence, params=params))
             except Exception as error:
-                self.error(error)
+                self.error(error, action="command")
 
     def file(self, port):
+        context = self.artifacts.inputContext()
         path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", "PNG / JSON (*.png *.json)")
         if not path:
             return
@@ -316,7 +339,7 @@ class WorkflowDebugWindow(QDialog):
             mime = "image/png" if file.suffix.lower() == ".png" else "application/json"
             decode(raw, mime)
             return self.connection.upload(raw, mime, dict(kind="upload", filename=file.name))
-        self.submit("file:" + port, upload)
+        self.artifacts.submitInput("file:" + port, upload, context, path)
 
     def poll(self):
         if self.closing or self.disposed:
@@ -334,9 +357,12 @@ class WorkflowDebugWindow(QDialog):
             sequence = self.sequence
             self.submit("poll", lambda: self.connection.flowSnapshot(sequence))
 
-    def error(self, error):
+    def error(self, error, *, action=None):
         message = str(getattr(error, "code", "E_DEBUG_INPUT")) + ": " + str(error)
-        setSummaryLabel(self.status, message)
+        if action is None:
+            setSummaryLabel(self.status, message)
+        else:
+            self.actionFeedback.failure(action, message)
         self.logs.appendPlainText(message)
 
     def completed(self, name, value, error):
@@ -350,9 +376,10 @@ class WorkflowDebugWindow(QDialog):
             self.beginClose()
             return
         if error is not None:
+            self.artifacts.activeInputs.pop(name, None)
             if name in {'start', 'command'}:
                 self.pendingBreakpoints = None
-            self.error(error)
+            self.error(error, action=None if name in {"open", "poll", "close"} else name)
             if name == "open":
                 self.state = "FAULTED"
             if name == "close":
@@ -360,12 +387,14 @@ class WorkflowDebugWindow(QDialog):
                 self.closeSent = False
                 self.timer.start(250)
         elif name in {'start', 'command'}:
+            self.actionFeedback.success(name)
             if self.pendingBreakpoints is not None:
                 self.appliedBreakpoints = self.pendingBreakpoints
                 self.pendingBreakpoints = None
         elif name == "open":
             self.capability = value["capability"]
             self.state = value["session"]["state"]
+            self.status.setText(self.state)
         elif name == "poll":
             # A poll queued before a command must not release its ACK/state guard.
             if not self.busy:
@@ -432,12 +461,15 @@ class WorkflowDebugWindow(QDialog):
                 else:
                     self.data.setValue(parse(value["content"].decode(), VALUE_BYTES))
         elif name.startswith("file:"):
-            self.rows[name[5:]].setReference(value, value["assetRef"])
+            try:
+                self.artifacts.completeFile(name, value)
+            except Exception as failure:
+                self.error(failure, action=name)
         elif name.startswith('artifact:'):
             try:
                 self.artifacts.completed(name, value)
             except Exception as failure:
-                self.error(failure)
+                self.error(failure, action=name)
         elif name == "close":
             self.disposed = True
             self.pool.shutdown(wait=False)
@@ -455,6 +487,8 @@ class WorkflowDebugWindow(QDialog):
         self.drain()
 
     def drain(self):
+        self.artifacts.drainInputs()
+        self.refresh()
         if self.busy or self.polling or self.refreshPending or self.closing or self.disposed:
             return
         if self.pendingSnapshot:

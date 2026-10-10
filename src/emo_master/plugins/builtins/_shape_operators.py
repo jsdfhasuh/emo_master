@@ -48,12 +48,21 @@ class ContourExtractionOperator:
                 "type": "string",
                 "enum": ["external", "list", "ccomp", "tree"],
                 "default": "tree",
+                "xOptionLabels": {
+                    "external": "仅外部轮廓",
+                    "list": "全部轮廓（不建层级）",
+                    "ccomp": "两级层级",
+                    "tree": "完整树形层级",
+                },
+                "description": "选择轮廓保留范围及父子层级结构。",
             },
             "approximation": {
                 "title": "轮廓近似方式",
                 "type": "string",
                 "enum": ["none", "simple"],
                 "default": "simple",
+                "xOptionLabels": {"none": "保留全部轮廓点", "simple": "压缩直线段"},
+                "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。",
             },
         },
     }

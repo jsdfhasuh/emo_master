@@ -1,6 +1,7 @@
 from emo_master.apps.designer.page_designer.commands import draftCommand
 from emo_master.apps.designer.ui.action_state import flowEditAllowed
 from datetime import datetime
+from dataclasses import replace
 from pathlib import Path
 from typing import Any, Callable, cast
 from uuid import uuid4
@@ -721,6 +722,16 @@ def _settingBool(value: object, default: bool) -> bool:
     return default
 
 
+def _runtimeLogProjectPath(path: Path | None) -> Path | None:
+    """Identity checks must never prevent saving to a recoverable location."""
+    if path is None:
+        return None
+    try:
+        return path.resolve()
+    except (OSError, RuntimeError):
+        return None
+
+
 class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def __init__(
         self,
@@ -774,6 +785,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.logDialog: RuntimeLogDock | None = None
         self.logBuffer: list[str] = []
         self.logEntries: list[StructuredLogEntry] = []
+        self._runtimeLogProjectToken = uuid4().hex
+        self._runtimeLogJobProjects: dict[str, tuple[str, str]] = {}
         self.operatorCatalog: list[dict[str, object]] = []
         self.recentOperatorIds: list[str] = []
         self.maxRecentOperators = 6
@@ -1272,6 +1285,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.logDock = RuntimeLogDock(
             self,
             onClear=self._clearRuntimeLogCache,
+            onNavigate=self.navigateToRuntimeLogEntry,
             maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
         )
         self.logDialog = self.logDock
@@ -1324,6 +1338,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
             appendEvent=self.appendRuntimeEvent,
+            onJobAccepted=self._rememberRuntimeLogJob,
             getLegacySnapshotPolicy=lambda: self.nextRunLegacySnapshotPolicy,
             invalidatePreviewSources=lambda: self.operatorEditorManager.invalidatePreviewSources(),
             deliveryContext=self if _nativeQt else None,
@@ -1567,6 +1582,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return False
         selected = Path(projectDirPath)
+        previousFile = self.projectController.currentProjectFile
+        previousPath = _runtimeLogProjectPath(previousFile)
         projectName = selected.stem if selected.suffix.lower() == ".emoproj" else (selected.name or "project")
         if self.projectController.currentProjectFile == selected:
             projectName = str(self.workflowStore.project.get("name", projectName))
@@ -1576,6 +1593,13 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if ok:
             self.currentProjectDir = projectDir
             self.loadedProjectPath = str(self.projectController.currentProjectFile)
+            currentFile = self.projectController.currentProjectFile
+            currentPath = _runtimeLogProjectPath(currentFile)
+            if previousPath is None or currentPath is None or currentPath != previousPath:
+                # Save As can preserve projectId and node IDs in a different
+                # file. Retire only log provenance, not editor/icon sessions.
+                self._runtimeLogProjectToken = uuid4().hex
+                self._runtimeLogJobProjects.clear()
             self.refreshRecentProjectsMenu()
             self.updateToolbarState()
         elif self.pageCoordinator is not None and _nativeQt:
@@ -1612,6 +1636,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.nodeResultCoordinator is not None:
             self.nodeResultCoordinator.reset()
         self._projectInstanceToken = uuid4().hex
+        self._runtimeLogProjectToken = uuid4().hex
+        self._runtimeLogJobProjects.clear()
         self.operatorEditorManager.closeAll()
         self.nodeParamDialog = None
         self.activeParamNodeId = None
@@ -3126,6 +3152,32 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 centerOn(nodeCenter[0], nodeCenter[1])
         self.onNodeSelectionChanged()
 
+    def navigateToRuntimeLogEntry(self, entry: StructuredLogEntry) -> str:
+        """Inspect a node only when the log has verified project provenance."""
+        if not entry.nodeId:
+            return "此日志未提供节点关联，无法定位。请查看错误详情与相关节点日志。"
+        if not entry.projectId:
+            return "此日志缺少工程身份，无法安全定位节点。请查看详情或重新运行。"
+        if entry.projectId != self._currentProjectId():
+            return "此日志属于其他工程，不能定位到当前工程的同名节点。请打开对应工程并重新运行。"
+        if not entry.projectInstanceToken:
+            return "无法确认此日志来自当前工程会话，未定位节点。请重新运行后查看日志。"
+        if entry.projectInstanceToken != self._runtimeLogProjectToken:
+            return "此日志来自工程切换、重开或另存为前的历史会话，未定位节点。请重新运行后查看日志。"
+        workflow = self.workflowStore.workflows.get(entry.workflowId)
+        if workflow is None:
+            return "日志未关联有效工作流，或该工作流已删除，无法定位节点。"
+        nodeExists = (
+            entry.nodeId in self.flowModel.nodes
+            if entry.workflowId == self.activeWorkflowId
+            else any(node.get("nodeId") == entry.nodeId for node in workflow.nodes)
+        )
+        if not nodeExists:
+            return "日志对应节点在当前工作流中已不存在，无法定位。请查看日志详情。"
+        self.activateWorkflow(entry.workflowId)
+        self.navigateToNodeFromSidebar(entry.nodeId)
+        return f"已定位到工作流“{workflow.name}”的节点 {entry.nodeId}。"
+
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
         if hasattr(self, "workflowController"):
             return self.workflowController.buildPayload(projectName)
@@ -3882,6 +3934,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.logDock = RuntimeLogDock(
                 self,
                 onClear=self._clearRuntimeLogCache,
+                onNavigate=self.navigateToRuntimeLogEntry,
                 maximumEntries=DEFAULT_MAX_LOG_ENTRIES,
             )
             self.logDialog = self.logDock
@@ -3921,8 +3974,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.logDock is not None:
             self.logDock.appendEntry(entry)
 
+    def _rememberRuntimeLogJob(self, reply: object) -> None:
+        jobId = str(getattr(reply, "job_id", ""))
+        if not jobId:
+            return
+        self._runtimeLogJobProjects[jobId] = (
+            self._currentProjectId(), self._runtimeLogProjectToken,
+        )
+        while len(self._runtimeLogJobProjects) > DEFAULT_MAX_LOG_ENTRIES:
+            self._runtimeLogJobProjects.pop(next(iter(self._runtimeLogJobProjects)))
+
     def appendRuntimeEvent(self, event: dict[str, object]) -> None:
         entry = StructuredLogEntry.fromRuntimeEvent(event)
+        identity = self._runtimeLogJobProjects.get(entry.jobId)
+        if identity is not None:
+            projectId, token = identity
+            if not entry.projectId or entry.projectId == projectId:
+                entry = replace(entry, projectId=projectId, projectInstanceToken=token)
         self._storeRuntimeLogEntry(entry, entry.displayLine())
         if self.logDock is not None:
             self.logDock.appendEntry(entry)

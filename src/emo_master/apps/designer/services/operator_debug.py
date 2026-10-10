@@ -25,6 +25,7 @@ class DebugConnection:
         self.renewer = None
         self.leaseError = ""
         self.uncertain = False
+        self.executionPhase = "idle"
 
     def attached(self):
         return self.origin.runtimeService is self.service
@@ -93,6 +94,7 @@ class DebugConnection:
     def execute(self, params, inputs):
         if self.uncertain:
             raise RuntimeClientError("E_DEBUG_UNCERTAIN", "End this session before another execution")
+        self.executionPhase = "preparing"
         wire = {}
         for port, value in inputs.items():
             if "inline" in value:
@@ -104,19 +106,28 @@ class DebugConnection:
                     execution_id=value["executionId"], port=value["port"]))
         raw = encode(params)
         prepared = self.mutation("PrepareOperatorDebugInputs", params_json=raw, inputs=wire)
+        inputSetId = prepared["inputSetId"]
         requestId = uuid4().hex
+        self.executionPhase = "submitted"
         try:
-            return self.call("ExecuteOperatorDebugNode", request_id=requestId,
-                input_set_id=prepared["inputSetId"], params_json=raw)
-        except Exception as error:
-            # Explicit validation rejection has no accepted side effect to reconcile.
-            if isinstance(error, RuntimeClientError) and error.code.startswith("E_"):
-                raise
+            result = self.call("ExecuteOperatorDebugNode", request_id=requestId,
+                input_set_id=inputSetId, params_json=raw)
+            if not result.get("executionId"):
+                raise ValueError("Execution acknowledgement has no identity")
+        except Exception:
+            # Even an E_* reply can follow Worker dispatch if Runtime fails while
+            # recording acceptance. Reconcile once by the original request ID;
+            # neither a missing ledger entry nor a transport failure permits replay.
             try:
-                return self.call("GetOperatorDebugExecution", request_id=requestId)
+                result = self.call("GetOperatorDebugExecution", request_id=requestId)
+                if not result.get("executionId") or result.get("requestId") != requestId:
+                    raise ValueError("Execution lookup identity does not match the submitted request")
             except Exception as lookup:
                 self.uncertain = True
+                self.executionPhase = "unknown"
                 raise RuntimeClientError("E_DEBUG_UNCERTAIN", "Execution acknowledgement lost; request " + requestId) from lookup
+        self.executionPhase = "accepted"
+        return result
 
     def download(self, assetId):
         chunks, offset, metadata = [], 0, None

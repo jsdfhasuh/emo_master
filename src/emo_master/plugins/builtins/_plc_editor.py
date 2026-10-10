@@ -30,7 +30,6 @@ from PySide2.QtWidgets import (
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
-    QTextEdit,
     QToolButton,
     QVBoxLayout,
     QWidget,
@@ -503,13 +502,9 @@ class PlcEditorController:
         return deepcopy(self.paramForm.getValues())
 
     def validate(self) -> object:
-        # SchemaParamForm intentionally tolerates malformed array JSON; Apply must not.
-        for fieldName, control in self.paramForm._controls.items():
-            if isinstance(control, QTextEdit):
-                try:
-                    json.loads(control.toPlainText() or "[]")
-                except json.JSONDecodeError as error:
-                    return {"message": f"{fieldName}: {error}"}
+        message = self.paramForm.validationMessage()
+        if message:
+            return {"code": "E_PARAM_INVALID", "message": message}
         operator = (PlcSlmpWriteOperator() if self.context.operatorId.endswith("slmp_write")
                     else PlcSlmpReadOperator())
         return operator.validateParams(self.collectParams())
@@ -551,7 +546,12 @@ class PlcEditorController:
         if self._active():
             self._refreshLocation()
             if not self._debugInitialized:
-                self._applyDraft(self.collectParams())
+                try:
+                    draft = self.collectParams()
+                except ValueError as error:
+                    self._setStatus(str(error), error=True)
+                    return
+                self._applyDraft(draft)
             self._refreshControls()
             return
         self._pausePolling()
@@ -577,7 +577,11 @@ class PlcEditorController:
     def reloadParameters(self) -> None:
         if self._disposed:
             return
-        draft = self.collectParams()
+        try:
+            draft = self.collectParams()
+        except ValueError as error:
+            self._setStatus(str(error), error=True)
+            return
         self._resetSession("正在重新加载参数")
         self._pendingDraft = self._generation, draft
         self._maybeReload()

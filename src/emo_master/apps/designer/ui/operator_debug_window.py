@@ -17,6 +17,7 @@ from emo_master.apps.runtime.operator_debug.data import companionPort
 from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.global_variables import definitions, variablePorts
 from .debug_values import InputRow, ValueTree, tool
+from .debug_artifact_tools import DebugActionFeedback, DebugArtifactTools
 from .icon_map import icon
 from .widgets import PreviewLabel, WrapLabel, scrollContent
 
@@ -42,6 +43,7 @@ class OperatorDebugWindow(QDialog):
         self.disposed = False
         self.state = "STARTING"
         self.executionId = ""
+        self.executionStatus = ""
         self.sequence = 0
         self.records = []
         self.rows = {}
@@ -59,6 +61,9 @@ class OperatorDebugWindow(QDialog):
         layout = QVBoxLayout(self)
         self.status = WrapLabel("连接 Runtime…")
         layout.addWidget(self.status)
+        self.actionFeedback = DebugActionFeedback(self)
+        self.actionStatus = self.actionFeedback.label
+        layout.addWidget(self.actionStatus)
         toolbar = QHBoxLayout()
         self.run = QPushButton("单步执行")
         self.run.setIcon(icon("play"))
@@ -78,7 +83,10 @@ class OperatorDebugWindow(QDialog):
         self.tabs = QTabWidget()
         layout.addWidget(self.tabs, 1)
         self.inputBody = QWidget()
-        self.inputForm = QFormLayout(self.inputBody)
+        inputLayout = QVBoxLayout(self.inputBody)
+        self.inputForm = QFormLayout()
+        inputLayout.addLayout(self.inputForm)
+        inputLayout.addStretch()
         self.inputForm.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
         self.inputForm.setRowWrapPolicy(QFormLayout.WrapLongRows)
         self.tabs.addTab(scrollContent(self.inputBody), "输入")
@@ -91,10 +99,12 @@ class OperatorDebugWindow(QDialog):
         self.outputPorts = QComboBox()
         self.outputPorts.currentIndexChanged.connect(self.showOutput)
         resultBar.addWidget(self.outputPorts, 1)
-        from .debug_artifact_tools import DebugArtifactTools
         self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.editor.key.projectId,
             workflowId=self.editor.key.workflowId, nodeId=self.editor.key.nodeId, operatorId=self.editor.context.operatorId),
             self.editor.collectParams, self.exportSelection)
+        # Static tools belong to the input page even before open finishes or
+        # when the operator has no input ports. Dynamic rows never own them.
+        inputLayout.insertWidget(0, self.artifacts.panel)
         resultBar.addWidget(self.artifacts.export)
         resultBar.addWidget(self.artifacts.raw)
         resultLayout.addLayout(resultBar)
@@ -149,14 +159,19 @@ class OperatorDebugWindow(QDialog):
         self.refreshControls()
         return True
 
-    def error(self, error):
+    def error(self, error, *, action=None):
         from .debug_errors import explainDebugError
         code = getattr(error, 'code', 'E_DEBUG_INPUT')
-        self.status.setText(f"{code}: " + explainDebugError(code, str(error), self.editor.context.operatorId))
-        self.logs.appendPlainText(self.status.text())
+        message = f"{code}: " + explainDebugError(code, str(error), self.editor.context.operatorId)
+        if action is None:
+            self.status.setText(message)
+        else:
+            self.actionFeedback.failure(action, message)
+        self.logs.appendPlainText(message)
 
     def refreshControls(self):
-        ready = self.state == "READY" and not self.busy and not self.closing and not self.connection.uncertain
+        ready = (self.state == "READY" and not self.busy and not self.closing
+                 and not self.connection.uncertain and self.artifacts.pendingInput is None)
         self.run.setEnabled(ready)
         self.reset.setEnabled(ready)
         self.copyVariables.setEnabled(ready)
@@ -180,13 +195,8 @@ class OperatorDebugWindow(QDialog):
         if {key: row.portType for key, row in self.rows.items()} == {key: normalizePortType(value) for key, value in ports.items()}:
             return
         while self.inputForm.rowCount():
-            # The portable-input toolbar is owned separately from dynamic rows.
-            if self.inputForm.itemAt(0).widget() is self.artifacts.panel:
-                self.inputForm.takeRow(0)
-                continue
             self.inputForm.removeRow(0)
         self.rows = {}
-        self.inputForm.addRow(self.artifacts.panel)
         for port, spec in ports.items():
             row = InputRow(normalizePortType(spec))
             self.rows[port] = row
@@ -214,15 +224,17 @@ class OperatorDebugWindow(QDialog):
             params, inputs = deepcopy(self.editor.collectParams()), self.inputValues()
             self.fingerprint = self.configuration(params, inputs)
             self.executionId = ""
-            self.pixmap = None
-            self.image.clear()
-            self.outputTree.clear()
-            self.resultLabel.setText("本次执行中；历史结果保留原参数身份")
-            self.submit("execute", lambda: self.connection.execute(params, inputs))
+            self.executionStatus = "正在准备输入并提交本次执行"
+            self.updateResultLabel()
+            if not self.submit("execute", lambda: self.connection.execute(params, inputs)):
+                raise ValueError("当前有操作处理中，请稍后重试")
         except Exception as error:
-            self.error(error)
+            self.executionStatus = "本次未启动执行"
+            self.updateResultLabel()
+            self.error(error, action="execute")
 
     def selectFile(self, port):
+        context = self.artifacts.inputContext()
         path, _ = QFileDialog.getOpenFileName(self, "选择完整输入", "", "PNG / JSON (*.png *.json)")
         if not path:
             return
@@ -235,7 +247,7 @@ class OperatorDebugWindow(QDialog):
             mime = "image/png" if file.suffix.lower() == ".png" else "application/json"
             decode(raw, mime)
             return self.connection.upload(raw, mime, dict(kind="upload", filename=file.name))
-        self.submit("file:" + port, upload)
+        self.artifacts.submitInput("file:" + port, upload, context, path)
 
     def selectSource(self, port, offset=0):
         def listing():
@@ -316,6 +328,8 @@ class OperatorDebugWindow(QDialog):
         if not self.reset.isEnabled():
             return
         self.executionId = ""
+        self.executionStatus = ""
+        self.resultLabel.clear()
         self.records.clear()
         self.versions.clear()
         self.outputPorts.clear()
@@ -346,10 +360,11 @@ class OperatorDebugWindow(QDialog):
             try:
                 stale = self.configuration(self.editor.collectParams(), self.inputValues()) != self.records[0].get("configuration")
                 self.versions.setToolTip("结果对应旧配置" if stale else "结果对应当前配置")
-                if stale and self.versions.currentIndex() == 0:
+                if stale and self.versions.currentIndex() == 0 and not self.executionStatus:
                     self.resultLabel.setText("结果对应旧配置 / " + self.records[0]["status"])
             except Exception:
-                self.resultLabel.setText("结果对应旧配置 / 输入尚未完成")
+                if not self.executionStatus:
+                    self.resultLabel.setText("结果对应旧配置 / 输入尚未完成")
         executionId, sequence = self.executionId, self.sequence
         self.submit("poll", lambda: self.connection.snapshot(executionId, sequence))
 
@@ -370,7 +385,14 @@ class OperatorDebugWindow(QDialog):
             self.drainOutput()
             return
         if error is not None:
-            self.error(error)
+            self.artifacts.activeInputs.pop(name, None)
+            self.error(error, action=None if name in {"open", "poll", "close"} else name)
+            if name == "execute":
+                unstarted = self.connection.executionPhase == "preparing" and not self.connection.uncertain
+                if not unstarted:
+                    self.connection.uncertain = True
+                self.executionStatus = ("本次未启动执行" if unstarted else "执行状态未知；请结束会话，勿重复执行")
+                self.updateResultLabel()
             if name == "open":
                 self.state = "FAULTED"
             if name == "close":
@@ -382,10 +404,14 @@ class OperatorDebugWindow(QDialog):
         if name == "open":
             self.capability = value["capability"]
             self.state = value["session"]["state"]
+            self.status.setText(self.state)
             self.buildInputs()
         elif name == "execute":
             self.executionId = value["executionId"]
             self.state = "RUNNING"
+            self.executionStatus = "本次执行已接受，等待结果"
+            self.actionFeedback.success(name)
+            self.updateResultLabel()
         elif name == "poll":
             self.state = value["session"]["state"]
             self.status.setText(f"{self.state} | 缓存 {value['session']['cacheBytes']//1024} KiB | {value['session'].get('message', '')}")
@@ -406,6 +432,7 @@ class OperatorDebugWindow(QDialog):
             result = value["result"]
             if result and result["status"] != "RUNNING":
                 self.executionId = ""
+                self.executionStatus = ""
                 self.records.insert(0, dict(result, configuration=self.fingerprint))
                 del self.records[2:]
                 self.versions.blockSignals(True)
@@ -416,12 +443,19 @@ class OperatorDebugWindow(QDialog):
                 self.showResult()
                 self.tabs.setCurrentIndex(1)
         elif name.startswith("file:"):
-            self.rows[name[5:]].setReference(value, value["assetRef"])
+            try:
+                self.artifacts.completeFile(name, value)
+            except Exception as failure:
+                self.error(failure, action=name)
         elif name.startswith("sources:"):
+            self.actionFeedback.success(name)
             self.sourceDialog(name[8:], value)
         elif name.startswith("import:"):
             for port, asset in value.items():
                 self.rows[port].setReference({"assetRef": asset["assetId"]}, str(asset["provenance"]))
+            self.actionFeedback.success(name)
+        elif name in {"copy", "cancel", "reset"}:
+            self.actionFeedback.success(name)
         elif name.startswith("download:"):
             if self.outputPorts.currentData() == name[9:]:
                 if value["asset"]["mime"] == "image/png":
@@ -434,7 +468,7 @@ class OperatorDebugWindow(QDialog):
             try:
                 self.artifacts.completed(name, value)
             except Exception as failure:
-                self.error(failure)
+                self.error(failure, action=name)
         elif name == "close":
             self.disposed = True
             self.pool.shutdown(wait=False)
@@ -446,6 +480,8 @@ class OperatorDebugWindow(QDialog):
         self.drainOutput()
 
     def drainOutput(self):
+        self.artifacts.drainInputs()
+        self.refreshControls()
         if self.pendingAsset and not self.busy and not self.closing and not self.disposed:
             assetId, self.pendingAsset = self.pendingAsset, ""
             if self.outputPorts.currentData() == assetId:
@@ -460,14 +496,24 @@ class OperatorDebugWindow(QDialog):
         self.outputTree.clear()
         if 0 <= index < len(self.records):
             record = self.records[index]
-            self.resultLabel.setText(f"{record['status']} | {record.get('elapsedMs', 0):.1f} ms | {record.get('code', '')} {record.get('message', '')}")
             self.details.setValue(record)
             for port in record.get("outputs", {}):
                 self.outputPorts.addItem(port, "")
             for port, asset in record.get("outputAssets", {}).items():
                 self.outputPorts.addItem(port, asset["assetId"])
+        self.updateResultLabel()
         self.outputPorts.blockSignals(False)
         self.showOutput()
+
+    def updateResultLabel(self):
+        index = self.versions.currentIndex()
+        text = self.executionStatus
+        if 0 <= index < len(self.records):
+            record = self.records[index]
+            if text:
+                text += "；下方保留历史结果 / "
+            text += f"{record['status']} | {record.get('elapsedMs', 0):.1f} ms | {record.get('code', '')} {record.get('message', '')}"
+        self.resultLabel.setText(text)
 
     def exportSelection(self):
         index, port = self.versions.currentIndex(), self.outputPorts.currentText()

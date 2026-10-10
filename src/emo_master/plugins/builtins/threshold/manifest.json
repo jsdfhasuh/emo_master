@@ -50,30 +50,66 @@
           "adaptiveMean",
           "adaptiveGaussian"
         ],
-        "default": "fixed"
+        "default": "fixed",
+        "xOptionLabels": {
+          "fixed": "固定阈值",
+          "otsu": "大津法（自动阈值）",
+          "triangle": "三角法（自动阈值）",
+          "adaptiveMean": "自适应均值",
+          "adaptiveGaussian": "自适应高斯"
+        },
+        "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。"
       },
       "threshold": {
         "title": "阈值",
         "type": "integer",
-        "minimum": 0,
-        "maximum": 255,
-        "default": 127
+        "default": 127,
+        "xMinimum": 0,
+        "xMaximum": 255,
+        "xEnabledWhen": {
+          "mode": [
+            "fixed"
+          ]
+        },
+        "xUnit": "灰度级",
+        "xExample": 127,
+        "description": "仅固定阈值模式生效，填写 0～255 的整数。"
       },
       "invert": {
         "title": "反向阈值",
         "type": "boolean",
-        "default": false
+        "default": false,
+        "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。"
       },
       "blockSize": {
         "title": "自适应邻域大小",
         "type": "integer",
-        "minimum": 3,
-        "default": 11
+        "default": 11,
+        "xMinimum": 3,
+        "xOdd": true,
+        "xEnabledWhen": {
+          "mode": [
+            "adaptiveMean",
+            "adaptiveGaussian"
+          ]
+        },
+        "xUnit": "像素",
+        "xExample": 11,
+        "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。"
       },
       "constant": {
         "title": "自适应阈值偏移量",
         "type": "number",
-        "default": 2.0
+        "default": 2.0,
+        "xEnabledWhen": {
+          "mode": [
+            "adaptiveMean",
+            "adaptiveGaussian"
+          ]
+        },
+        "xUnit": "灰度级",
+        "xExample": 2.0,
+        "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。"
       }
     }
   },

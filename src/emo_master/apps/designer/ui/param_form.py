@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from copy import deepcopy
 import json
+import math
+import re
 from typing import Any
 
 from emo_master.apps.designer.state.schema_utils import applySchemaDefaults
@@ -13,14 +15,108 @@ def parameterTitle(name: str, schema: dict[str, object]) -> str:
     return title.strip() if isinstance(title, str) and title.strip() else name
 
 
+def _parameterErrorTitle(name: str, schema: dict[str, object]) -> str:
+    """Keep a readable title and stable field key together in error messages."""
+    title = parameterTitle(name, schema)
+    return f"{title} ({name})" if title != name else name
+
+
 def parameterToolTip(name: str, schema: dict[str, object], hint: str = "") -> str:
     parts = [parameterTitle(name, schema)]
     description = schema.get("description")
     for detail in (description, hint):
         if isinstance(detail, str) and detail.strip() and detail.strip() not in parts:
             parts.append(detail.strip())
+    for key, fallback, text in (("minimum", "xMinimum", "最小值 ≥"), ("maximum", "xMaximum", "最大值 ≤"),
+                                ("exclusiveMinimum", "exclusiveMinimum", "必须 >"), ("exclusiveMaximum", "exclusiveMaximum", "必须 <")):
+        bound = schema.get(key, schema.get(fallback))
+        if isinstance(bound, (int, float)) and not isinstance(bound, bool):
+            parts.append(f"{text} {bound}")
+    if schema.get("xOdd"):
+        parts.append("必须为奇数")
+    if schema.get("xUnit"):
+        parts.append(f"单位：{schema['xUnit']}")
+    if "xExample" in schema:
+        parts.append(f"示例：{schema['xExample']}")
+    if schema.get("type") == "number":
+        parts.append("支持小数和科学计数法，按双精度数值保存")
     parts.append(f"参数键：{name}")
     return "\n".join(parts)
+
+
+def _finiteJsonError(value: object, path: str) -> str:
+    if isinstance(value, float) and not math.isfinite(value):
+        return f"{path}：请输入有限数值，不能使用 NaN 或 Infinity"
+    if isinstance(value, list):
+        children = ((f"{path}[{index}]", item) for index, item in enumerate(value))
+    elif isinstance(value, dict):
+        children = ((f"{path}.{key}", item) for key, item in value.items())
+    else:
+        return ""
+    for childPath, item in children:
+        message = _finiteJsonError(item, childPath)
+        if message:
+            return message
+    return ""
+
+
+def _valueError(value: object, schema: dict[str, object], path: str) -> str:
+    kind = schema.get("type")
+    valid = {"string": isinstance(value, str), "boolean": isinstance(value, bool),
+             "integer": isinstance(value, int) and not isinstance(value, bool),
+             "number": isinstance(value, (int, float)) and not isinstance(value, bool),
+             "array": isinstance(value, list), "object": isinstance(value, dict)}
+    titles = {"string": "文本", "boolean": "布尔值", "integer": "完整整数", "number": "有效数值", "array": "JSON 数组", "object": "JSON 对象"}
+    if isinstance(kind, str) and kind in valid and not valid[kind]:
+        return f"{path}：请输入{titles[kind]}"
+    message = _finiteJsonError(value, path)
+    if message:
+        return message
+    options = schema.get("enum")
+    if isinstance(options, list) and value not in options:
+        return f"{path}：请选择有效选项"
+    if isinstance(value, (int, float)) and not isinstance(value, bool):
+        for key, fallback, compare, message in (
+            ("minimum", "xMinimum", lambda a, b: a < b, "不能小于"),
+            ("maximum", "xMaximum", lambda a, b: a > b, "不能大于"),
+            ("exclusiveMinimum", "exclusiveMinimum", lambda a, b: a <= b, "必须大于"),
+            ("exclusiveMaximum", "exclusiveMaximum", lambda a, b: a >= b, "必须小于"),
+        ):
+            bound = schema.get(key, schema.get(fallback))
+            if isinstance(bound, (int, float)) and not isinstance(bound, bool) and compare(value, bound):
+                return f"{path}：{message} {bound}"
+        if schema.get("xOdd") and value % 2 != 1:
+            return f"{path}：必须为奇数"
+    if isinstance(value, list):
+        for key, compare, message in (("minItems", lambda a, b: a < b, "至少需要"), ("maxItems", lambda a, b: a > b, "最多允许")):
+            limit = schema.get(key)
+            if isinstance(limit, int) and compare(len(value), limit):
+                return f"{path}：{message} {limit} 项"
+        items = schema.get("items")
+        for index, item in enumerate(value):
+            itemSchema = items if isinstance(items, dict) else items[index] if isinstance(items, list) and index < len(items) else {}
+            if isinstance(itemSchema, dict):
+                message = _valueError(item, itemSchema, f"{path}[{index}]")
+                if message:
+                    return message
+    if isinstance(value, dict):
+        required = schema.get("required", [])
+        if isinstance(required, list):
+            for key in required:
+                if isinstance(key, str) and key not in value:
+                    return f"{path}.{key}：缺少必填项"
+        properties = schema.get("properties", {})
+        if isinstance(properties, dict):
+            for key, item in value.items():
+                itemSchema = properties.get(key)
+                if itemSchema is None and schema.get("additionalProperties") is False:
+                    return f"{path}.{key}：不支持此字段"
+                if isinstance(itemSchema, dict):
+                    message = _valueError(item, itemSchema, f"{path}.{key}")
+                    if message:
+                        return message
+    # Incomplete resource/variable drafts remain savable; execution validates strings.
+    return ""
 
 
 @dataclass(frozen=True)
@@ -106,6 +202,26 @@ try:
                 return int(value) if value and value.lstrip("-").isdigit() and value.count("-") <= 1 else value
             except ValueError:
                 return value
+
+    class _NumberValueControl(QLineEdit):
+        """Keep editable text intact; parse to Python's round-trip-safe float."""
+        valueChanged: Any = Signal(object)
+
+        def __init__(self, value: object) -> None:
+            super().__init__("" if value is None else str(value))
+            self.textChanged.connect(lambda _text: self.valueChanged.emit(self.value()))
+
+        def setValue(self, value: object) -> None:
+            self.setText(str(value))
+
+        def value(self) -> object:
+            text = self.text().strip()
+            if not re.fullmatch(r"[+-]?(?:[0-9]+(?:\.[0-9]*)?|\.[0-9]+)(?:[eE][+-]?[0-9]+)?", text):
+                return text
+            try:
+                return float(text)
+            except ValueError:
+                return text
 
     class _WorkflowComboBox(QComboBox):
         workflowOpenRequested: Any = Signal(str)
@@ -259,7 +375,11 @@ try:
         def setWorkflowOptions(self, options: list[str]) -> None:
             self._workflowOptions = [option for option in options if isinstance(option, str)]
             if self._rawSchema:
-                self.setSchema(self._rawSchema, self.getValues())
+                try:
+                    values = self.getValues()
+                except ValueError:
+                    return  # Never destroy an invalid, still-editable draft.
+                self.setSchema(self._rawSchema, values)
 
         def setSchema(
             self, paramSchema: dict[str, object], values: dict[str, object]
@@ -361,30 +481,53 @@ try:
                         control.valueControl.textChanged.connect(update)
             update()
 
+        def _dependencyValues(self) -> dict[str, object]:
+            """Best-effort values for display only, never for Apply or execution."""
+            values = {}
+            for name, control in self._controls.items():
+                try:
+                    values[name] = self._readControlValue(control, self._fieldsByName[name])
+                except ValueError:
+                    values[name] = None
+            return values
+
+        def _dynamicCondition(self, condition: object) -> bool:
+            return isinstance(condition, dict) and any(
+                self._variableSources.get(key) is not None and self._variableSources[key].currentData()
+                for key in condition)
+
+        def _conditionApplies(self, condition: object, values: dict[str, object]) -> bool:
+            if not isinstance(condition, dict) or self._dynamicCondition(condition):
+                return True
+            return all(key not in self._controls or isinstance(allowed, list) and values.get(key) in allowed
+                       for key, allowed in condition.items())
+
         def _updateDependentFields(self, *_args) -> None:
-            values = self.getValues()
+            values = self._dependencyValues()
             for name, field in self._fieldsByName.items():
+                control = self._controls[name]
+                container = self._fieldContainers.get(name, control)
                 requirement = field.schema.get("xRequiredWhen")
                 if isinstance(requirement, dict):
-                    required = all(values.get(key) in allowed for key, allowed in requirement.items())
-                    requiredLabel = self._layout.labelForField(self._fieldContainers.get(name, self._controls[name]))
+                    requiredLabel = self._layout.labelForField(container)
                     if isinstance(requiredLabel, QLabel):
-                        requiredLabel.setText(parameterTitle(name, field.schema) + (" *" if required else ""))
+                        requiredLabel.setText(parameterTitle(name, field.schema) + (" *" if self._conditionApplies(requirement, values) else ""))
                 visibility = field.schema.get("xVisibleWhen")
+                visible = self._conditionApplies(visibility, values)
                 if isinstance(visibility, dict) and not field.schema.get("xHidden"):
-                    visible = all(values.get(key) in allowed for key, allowed in visibility.items())
-                    control = self._controls[name]
-                    self._fieldContainers.get(name, control).setVisible(visible)
-                    rowLabel = self._layout.labelForField(self._fieldContainers.get(name, control))
+                    container.setVisible(visible)
+                    rowLabel = self._layout.labelForField(container)
                     if rowLabel is not None:
                         rowLabel.setVisible(visible)
                 condition = field.schema.get("xEnabledWhen")
-                if isinstance(condition, dict):
-                    enabled = all(values.get(key) in allowed for key, allowed in condition.items())
-                    source = self._variableSources.get(name)
+                source = self._variableSources.get(name)
+                if condition is not None or visibility is not None or source is not None:
+                    enabled = visible and self._conditionApplies(condition, values)
                     if source is not None:
                         source.setEnabled(enabled)
-                    self._controls[name].setEnabled(enabled and not (source and source.currentData()))
+                    control.setEnabled(enabled and not (source is not None and source.currentData()))
+                    if not control.isEnabled() and control.accessibleDescription():
+                        self._showFieldError(name, "")
             portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
             combo = self._controls.get("conditionPort")
             if isinstance(portsByWorkflow, dict) and isinstance(combo, QComboBox):
@@ -421,28 +564,70 @@ try:
                 self._setComboValue(combo, selected)
                 combo.blockSignals(False)
 
+        def _showFieldError(self, name: str, message: str) -> str:
+            control = self._controls[name]
+            control.setStyleSheet("border: 1px solid #d93025;" if message else "")
+            control.setAccessibleDescription(message)
+            control.setToolTip(parameterToolTip(name, self._fieldsByName[name].schema) + ("\n" + message if message else ""))
+            if message:
+                control.setFocus(Qt.OtherFocusReason)
+            return message
+
         def validationMessage(self) -> str:
+            for name in self._controls:
+                self._showFieldError(name, "")
             for name, control in self._controls.items():
                 field = self._fieldsByName[name]
-                if not control.isEnabled():
+                if not control.isEnabled() or field.schema.get("xHidden"):
+                    continue
+                if isinstance(control, _OptionalFieldControl) and not control.enabledCheckBox.isChecked():
                     continue
                 valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
-                if isinstance(valueControl, _IntegerValueControl):
-                    value = valueControl.value()
-                    title = parameterTitle(name, field.schema)
-                    if not isinstance(value, int) or isinstance(value, bool):
-                        return f"{title}：请输入完整整数"
-                    if field.minimum is not None and value < field.minimum:
-                        return f"{title}：不能小于 {field.minimum}"
-                    if field.maximum is not None and value > field.maximum:
-                        return f"{title}：不能大于 {field.maximum}"
                 nested = self._nestedFormsByControlId.get(id(valueControl))
                 if nested is not None:
                     message = nested.validationMessage()
                     if message:
-                        return message
+                        return self._showFieldError(name, message)
+                try:
+                    value = self._readControlValue(control, field)
+                except ValueError as error:
+                    return self._showFieldError(name, str(error))
+                schema = dict(field.schema)
+                if self._dynamicCondition(schema.get("xEnabledWhen")) or self._dynamicCondition(schema.get("xVisibleWhen")):
+                    schema = {"type": field.fieldType}
+                elif schema.get("xWidget") == "port-select":
+                    schema.pop("enum", None)  # Workflow options, not the saved enum, are authoritative.
+                message = _valueError(value, schema, _parameterErrorTitle(name, field.schema))
+                if message:
+                    return self._showFieldError(name, message)
+            try:
+                values = self.getValues()
+            except ValueError as error:
+                return str(error)
+            channelBounds = self._rawSchema.get("xChannelBounds")
+            if isinstance(channelBounds, dict):
+                selector, lower, upper = (channelBounds.get(key) for key in ("selector", "lower", "upper"))
+                if isinstance(selector, str) and isinstance(lower, str) and isinstance(upper, str) and all(
+                    key in self._controls and self._controls[key].isEnabled() for key in (selector, lower, upper)
+                ):
+                    maxima = channelBounds.get("maxima", {})
+                    bounds = maxima.get(values.get(selector)) if isinstance(maxima, dict) else None
+                    if isinstance(bounds, list):
+                        for key in (lower, upper):
+                            value = values.get(key)
+                            if isinstance(key, str) and isinstance(value, list):
+                                title = _parameterErrorTitle(key, self._fieldsByName[key].schema)
+                                if len(value) != len(bounds):
+                                    return self._showFieldError(key, f"{title}：当前颜色空间需要 {len(bounds)} 项")
+                                for index, (item, maximum) in enumerate(zip(value, bounds)):
+                                    if not isinstance(item, (int, float)) or isinstance(item, bool) or not 0 <= item <= maximum:
+                                        return self._showFieldError(key, f"{title}[{index}]：范围为 0 到 {maximum}")
+                        low, high = values.get(lower), values.get(upper)
+                        if isinstance(lower, str) and isinstance(low, list) and isinstance(high, list):
+                            for index, (a, b) in enumerate(zip(low, high)):
+                                if a > b:
+                                    return self._showFieldError(lower, f"{_parameterErrorTitle(lower, self._fieldsByName[lower].schema)}[{index}]：不能大于对应上限")
             portsByWorkflow = self._rawSchema.get("xWhileBooleanPorts")
-            values = self.getValues()
             if isinstance(portsByWorkflow, dict) and values.get("conditionMode") == "boolean":
                 if values.get("bodyWorkflowId") not in portsByWorkflow:
                     return "循环体工作流不存在，请重新选择"
@@ -452,17 +637,16 @@ try:
             if not isinstance(inputsByWorkflow, dict):
                 return ""
             from emo_master.core.contracts.port_types import normalizePortType
-            values = self.getValues()
             if values.get("bodyWorkflowId") not in inputsByWorkflow:
                 return "循环体工作流不存在，请重新选择"
             inputs = inputsByWorkflow.get(values.get("bodyWorkflowId"), {})
             item = values.get("itemInputPort")
-            index = values.get("indexInputPort")
+            indexPort = values.get("indexInputPort")
             if (inputs or item) and item not in inputs:
                 return "元素输入端口已失效，请选择当前循环体的输入端口"
-            if index and (index not in inputs or normalizePortType(inputs[index]) != "integer"):
+            if indexPort and (indexPort not in inputs or normalizePortType(inputs[indexPort]) != "integer"):
                 return "索引输入端口已失效，请选择整数端口或不传入索引"
-            if index and index == item:
+            if indexPort and indexPort == item:
                 return "元素输入端口和索引输入端口不能相同，请选择不同端口或不传入索引"
             return ""
 
@@ -474,7 +658,11 @@ try:
                     continue
                 if isinstance(control, _OptionalFieldControl) and not control.enabledCheckBox.isChecked():
                     continue
-                values[fieldName] = self._readControlValue(control, field)
+                try:
+                    values[fieldName] = self._readControlValue(control, field)
+                except ValueError as error:
+                    self._showFieldError(fieldName, str(error))
+                    raise
             return values
 
         def _createControl(
@@ -539,24 +727,12 @@ try:
                     return _IntegerValueControl(selectedValue)
                 spin = QSpinBox()
                 spin.setRange(-2147483648, 2147483647)
-                if isinstance(field.minimum, (int, float)):
-                    spin.setMinimum(int(field.minimum))
-                if isinstance(field.maximum, (int, float)):
-                    spin.setMaximum(int(field.maximum))
                 if isinstance(selectedValue, (int, float)):
                     spin.setValue(int(selectedValue))
                 return spin
 
             if field.fieldType == "number":
-                spin = QDoubleSpinBox()
-                spin.setRange(-1000000000.0, 1000000000.0)
-                if isinstance(field.minimum, (int, float)):
-                    spin.setMinimum(float(field.minimum))
-                if isinstance(field.maximum, (int, float)):
-                    spin.setMaximum(float(field.maximum))
-                if isinstance(selectedValue, (int, float)):
-                    spin.setValue(float(selectedValue))
-                return spin
+                return _NumberValueControl(selectedValue)
 
             if field.fieldType == "object":
                 rawProperties = field.schema.get("properties", {})
@@ -575,6 +751,9 @@ try:
                     return groupBox
 
                 textEditor = QTextEdit()
+                textEditor.setAcceptRichText(False)
+                textEditor.setMaximumHeight(140)
+                textEditor.setPlaceholderText('例如 [0, 255]（数组）或 {"key": 1}（对象）')
                 objectValue = selectedValue if isinstance(selectedValue, dict) else {}
                 textEditor.setPlainText(
                     json.dumps(objectValue, ensure_ascii=True, indent=2)
@@ -583,6 +762,9 @@ try:
 
             if field.fieldType == "array":
                 textEditor = QTextEdit()
+                textEditor.setAcceptRichText(False)
+                textEditor.setMaximumHeight(140)
+                textEditor.setPlaceholderText('例如 [0, 255]（数组）或 {"key": 1}（对象）')
                 arrayValue = selectedValue if isinstance(selectedValue, list) else []
                 textEditor.setPlainText(
                     json.dumps(arrayValue, ensure_ascii=True, indent=2)
@@ -614,6 +796,13 @@ try:
                 return float(control.value())
             if isinstance(control, QComboBox):
                 return control.currentData()
+            if isinstance(control, _NumberValueControl):
+                value = control.value()
+                title = _parameterErrorTitle(field.name, field.schema) if field else "数值"
+                message = _valueError(value, {"type": "number"}, title)
+                if message:
+                    raise ValueError(message)
+                return value
             if isinstance(control, _IntegerValueControl):
                 return control.value()
             if isinstance(control, QLineEdit):
@@ -626,21 +815,20 @@ try:
                     return nestedForm.getValues()
                 return {}
             if isinstance(control, QTextEdit):
-                textValue = control.toPlainText().strip()
-                if textValue == "":
-                    if field is not None and field.fieldType == "array":
-                        return []
-                    if field is not None and field.fieldType == "object":
-                        return {}
-                    return ""
+                textValue = control.toPlainText()
+                title = _parameterErrorTitle(field.name, field.schema) if field else "JSON"
+                if not textValue.strip() and field and field.fieldType == "array" and not field.required and field.schema.get("xBlankMeansEmpty"):
+                    return []
+                def rejectConstant(_value):
+                    raise ValueError(f"{title}：JSON 不能包含 NaN 或 Infinity")
                 try:
-                    return json.loads(textValue)
-                except json.JSONDecodeError:
-                    if field is not None and field.fieldType == "array":
-                        return []
-                    if field is not None and field.fieldType == "object":
-                        return {}
-                    return textValue
+                    value = json.loads(textValue, parse_constant=rejectConstant)
+                except json.JSONDecodeError as error:
+                    raise ValueError(f"{title}：JSON 格式错误（第 {error.lineno} 行，第 {error.colno} 列）；请使用双引号并检查括号、逗号") from error
+                message = _valueError(value, {"type": field.fieldType} if field else {}, title)
+                if message:
+                    raise ValueError(message)
+                return value
             return None
 
 except Exception:  # pragma: no cover

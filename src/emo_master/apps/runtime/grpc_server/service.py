@@ -34,7 +34,8 @@ from emo_master.apps.runtime.jobs.supervisor import JobSupervisor
 from emo_master.apps.runtime.preview.executor import PurePreviewExecutor, parsePreviewParams
 from emo_master.apps.runtime.preview.live import LivePreviewManager
 from emo_master.apps.runtime.preview.draft import draftPreviewProjectId
-from emo_master.apps.runtime.preview.store import PreviewAssetStore
+from emo_master.apps.runtime.preview.pure_draft import PureDraftPreviewSessions, DraftPreviewError
+from emo_master.apps.runtime.preview.store import PreviewAssetStore, PreviewTransientCleanupPending
 from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
 from emo_master.apps.runtime.preview.plc_debug import PLC_OPERATORS, PlcDebugManager, parseParams as parsePlcDebugParams
 from emo_master.apps.runtime.operator_debug.rpc import OperatorDebugRpcMixin
@@ -62,6 +63,7 @@ def _withProjectStateLock(method: Any) -> Any:
                 "RunOperatorPreview": runtime_pb2.RunOperatorPreviewReply,
                 "OpenOperatorPreviewSession": runtime_pb2.OpenOperatorPreviewSessionReply,
                 "OpenDraftOperatorPreviewSession": runtime_pb2.OpenOperatorPreviewSessionReply,
+                "OpenDraftPurePreviewSession": runtime_pb2.OpenOperatorPreviewSessionReply,
             }
             if method.__name__ in debugReplies and self.operatorDebugManager.ownsResources():
                 values = dict(ok=False, message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
@@ -72,7 +74,7 @@ def _withProjectStateLock(method: Any) -> Any:
                 return debugReplies[method.__name__](**values)
             if self._closing and method.__name__ in {
                 "LoadProject", "StartJob", "UploadPreviewImage", "RunOperatorPreview", "OpenOperatorPreviewSession",
-                "OpenDraftOperatorPreviewSession",
+                "OpenDraftOperatorPreviewSession", "OpenDraftPurePreviewSession",
                 "OpenRunInspectionSession", "RenewRunInspectionSession"
             }:
                 raise RuntimeError("E_RUNTIME_CLOSING")
@@ -177,6 +179,8 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             self.pluginScanResult.activeOperators,
             self.previewAssetStore,
         )
+        self.pureDraftPreviewSessions = PureDraftPreviewSessions(
+            self.previewAssetStore, self.pluginScanResult.activeOperators)
         self.livePreviewManager = LivePreviewManager(
             self.pluginScanResult.activeOperators,
             eventPublisher=self.eventStore.append,
@@ -236,6 +240,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 ok=False, status="FAILED",
                 message="E_PREVIEW_RELEASE_FAILED: " + "; ".join(cleanupErrors),
             )
+        self.pureDraftPreviewSessions.closeAll()
         projectPathRaw = str(getattr(request, "project_path", ""))
         from emo_master.core.project.files import resolveProjectFile
         try:
@@ -895,14 +900,42 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             legacy_snapshot_policy=policy, capture_state=state, message=message)
 
     @_withProjectStateLock
+    def OpenDraftPurePreviewSession(self, request, context):  # type: ignore[override]
+        try:
+            session = self.pureDraftPreviewSessions.open(request)
+            if not getattr(context, "is_active", lambda: True)():
+                self.pureDraftPreviewSessions.close(session.sessionId)
+                raise DraftPreviewError("纯预览会话请求已取消")
+            return runtime_pb2.OpenOperatorPreviewSessionReply(ok=True, session_id=session.sessionId, message="ok")
+        except (ValueError, TypeError, KeyError) as error:
+            return runtime_pb2.OpenOperatorPreviewSessionReply(
+                ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=str(error))
+
+    @_withProjectStateLock
+    def CloseDraftPurePreviewSession(self, request, context):  # type: ignore[override]
+        self.pureDraftPreviewSessions.close(str(request.session_id))
+        return runtime_pb2.CloseOperatorPreviewSessionReply(ok=True, message="closed")
+
+    @_withProjectStateLock
     def UploadPreviewImage(self, request_iterator, context):  # type: ignore[override]
         _ = context
         chunks: list[bytes] = []
         total = 0
         filename = ""
         requestedProjectId = ""
+        draftSessionId = ""
+        identity = None
         try:
             for chunk in request_iterator:
+                chunkIdentity = (str(getattr(chunk, "project_id", "")),
+                                 str(getattr(chunk, "draft_session_id", "")),
+                                 str(getattr(chunk, "upload_id", "")))
+                if identity is not None and chunkIdentity != identity:
+                    raise ValueError("preview upload identity changed between chunks")
+                identity = chunkIdentity
+                requestedProjectId, draftSessionId, _uploadId = identity
+                if not getattr(context, "is_active", lambda: True)():
+                    raise ValueError("preview upload cancelled")
                 data = bytes(getattr(chunk, "content", b""))
                 total += len(data)
                 if total > 64 * 1024 * 1024:
@@ -915,13 +948,21 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                     if requestedProjectId and requestedProjectId != chunkProjectId:
                         raise ValueError("preview upload project_id changed between chunks")
                     requestedProjectId = chunkProjectId
-            if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
-                raise ValueError("preview upload project is not loaded")
+            session = None
+            if draftSessionId:
+                session = self.pureDraftPreviewSessions.require(draftSessionId, requestedProjectId)
+                projectKey = session.projectKey
+            else:
+                if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
+                    raise ValueError("preview upload project is not loaded")
+                projectKey = self._loadedProjectPreviewKey
             asset = self.previewAssetStore.addUploadedImage(
                 b"".join(chunks),
                 filename,
-                projectKey=self._loadedProjectPreviewKey,
+                projectKey=projectKey,
             )
+            if session is not None:
+                self.pureDraftPreviewSessions.retain(session, [asset])
         except Exception as err:
             return runtime_pb2.PreviewAssetReply(
                 ok=False,
@@ -941,6 +982,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         assetId = str(getattr(request, "asset_id", ""))
         requestedProjectId = str(getattr(request, "project_id", ""))
         inspectionId = str(getattr(request, "inspection_session_id", ""))
+        draftSessionId = str(getattr(request, "draft_session_id", ""))
+        if draftSessionId and inspectionId:
+            raise DraftPreviewError("预览会话类型不能混用")
         if inspectionId:
             active = getattr(context, "is_active", lambda: True)
             try:
@@ -954,9 +998,18 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 raise
             return
         with self._projectStateLock:
-            if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
-                return
-            projectKey = self._loadedProjectPreviewKey
+            if draftSessionId:
+                try:
+                    session = self.pureDraftPreviewSessions.require(draftSessionId, requestedProjectId)
+                    projectKey = session.projectKey
+                except DraftPreviewError as error:
+                    if context is not None:
+                        context.abort(grpc.StatusCode.FAILED_PRECONDITION, str(error))
+                    raise
+            else:
+                if self.loadedDocument is None or not self._projectMatches(requestedProjectId):
+                    return
+                projectKey = self._loadedProjectPreviewKey
             try:
                 content, mimeType = self.previewAssetStore.readBytes(
                     assetId, projectKey=projectKey
@@ -964,6 +1017,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             except (KeyError, OSError):
                 return
         for offset in range(0, len(content), 256 * 1024):
+            if draftSessionId:
+                with self._projectStateLock:
+                    self.pureDraftPreviewSessions.require(draftSessionId, requestedProjectId)
             isActive = getattr(context, "is_active", None)
             if callable(isActive) and not isActive():
                 return
@@ -979,21 +1035,30 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         workflowId = str(getattr(request, "workflow_id", ""))
         nodeId = str(getattr(request, "node_id", ""))
         operatorId = str(getattr(request, "operator_id", ""))
-        nodeError = self._validatePreviewNode(
-            projectId, workflowId, nodeId, operatorId
-        )
-        if nodeError:
-            return runtime_pb2.RunOperatorPreviewReply(
-                ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=nodeError
-            )
+        session = None
+        draftSessionId = str(getattr(request, "draft_session_id", ""))
+        if draftSessionId:
+            try:
+                session = self.pureDraftPreviewSessions.require(draftSessionId, projectId, request)
+                if getattr(request, "job_id", ""):
+                    raise DraftPreviewError("草稿纯预览不能借用正式任务变量，请在运行结果检查中查看任务快照")
+            except (ValueError, TypeError, KeyError) as error:
+                return runtime_pb2.RunOperatorPreviewReply(ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=str(error))
+            projectKey = session.projectKey
+        else:
+            nodeError = self._validatePreviewNode(projectId, workflowId, nodeId, operatorId)
+            if nodeError:
+                return runtime_pb2.RunOperatorPreviewReply(
+                    ok=False, code="E_PREVIEW_CONTEXT_INVALID", message=nodeError)
+            projectKey = self._loadedProjectPreviewKey
         imageAssetId = str(getattr(request, "image_asset_id", ""))
         if not self.previewAssetStore.isOwnedByProject(
-            imageAssetId, self._loadedProjectPreviewKey
+            imageAssetId, projectKey
         ):
             return runtime_pb2.RunOperatorPreviewReply(
                 ok=False,
                 code="E_PREVIEW_SOURCE_NOT_FOUND",
-                message="preview image is unavailable for the loaded project",
+                message="preview image is unavailable for the current project/session",
             )
         params, parseError = parsePreviewParams(str(getattr(request, "params_json", "")))
         if params is None:
@@ -1001,7 +1066,14 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 ok=False, code="E_PARAM_INVALID", message=parseError or "invalid parameters"
             )
         try:
-            params, variableSnapshot = self._previewVariableParams(request, params)
+            if session is not None:
+                from emo_master.apps.runtime.preview.global_variables import previewParameters
+                descriptor = self.pluginScanResult.activeOperators[operatorId]
+                params, variableSnapshot = previewParameters(self.sqliteStore, session.document,
+                    workflowId, nodeId, params, descriptor.manifest.paramSchema,
+                    withSnapshot=True, initialOnly=True)
+            else:
+                params, variableSnapshot = self._previewVariableParams(request, params)
         except (ValueError, KeyError, StopIteration) as error:
             return runtime_pb2.RunOperatorPreviewReply(ok=False, code=getattr(error, "code", "E_VARIABLE_BINDING"), message=str(error))
         requestId = str(getattr(request, "request_id", "")) or str(uuid4())
@@ -1012,13 +1084,18 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             operatorId,
             params,
             imageAssetId,
-            projectId=self.loadedProjectId,
-            projectKey=self._loadedProjectPreviewKey,
+            projectId=projectId if session is not None else self.loadedProjectId,
+            projectKey=projectKey,
             workflowId=workflowId,
             nodeId=nodeId,
             requestId=requestId,
             globalVariables=variableSnapshot,
         )
+        if session is not None and result.ok:
+            try:
+                self.pureDraftPreviewSessions.retain(session, [output.asset for output in result.assets], outputs=True)
+            except DraftPreviewError as error:
+                return runtime_pb2.RunOperatorPreviewReply(ok=False, code=error.code, message=str(error))
         return runtime_pb2.RunOperatorPreviewReply(
             ok=result.ok,
             code=result.code,
@@ -1500,7 +1577,15 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             presentation.close()
         self._closeStep("inspection-sink", lambda: self.eventStore.removeSink(self.runInspectionStore.observe))
         self._closeStep("inspection-assets", self.runInspectionStore.close, retryable=True)
-        self._closeStep("preview-assets", self.previewAssetStore.close)
+        self._closeStep("pure-draft-sessions", self.pureDraftPreviewSessions.closeAll)
+        try:
+            # Only a proven pending-file unlink may retry. Unknown partial
+            # disposal keeps the original fail-closed, once-only contract.
+            self._closeStep("preview-assets", self.previewAssetStore.close,
+                retryable=self._closeStages.get("preview-assets") == "TRANSIENT_CLEANUP_PENDING")
+        except PreviewTransientCleanupPending:
+            self._closeStages["preview-assets"] = "TRANSIENT_CLEANUP_PENDING"
+            raise
         self._closeStep("event-sink", lambda: self.eventStore.removeSink(self._operationalLogSink))
         def closeWriter():
             writerError = self.operationalLogWriter.close(timeoutSeconds=3.0)

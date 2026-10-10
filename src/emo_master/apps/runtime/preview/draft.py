@@ -1,4 +1,4 @@
-"""Validate an ephemeral live-preview node without compiling or loading a Job."""
+"""Validate an ephemeral preview node without compiling or loading a Job."""
 from __future__ import annotations
 
 import json
@@ -15,7 +15,7 @@ def draftPreviewProjectId(request: object) -> tuple[str | None, str | None]:
     raw = str(getattr(request, "project_json", ""))
     params = str(getattr(request, "params_json", ""))
     if not raw or len(raw.encode("utf-8")) + len(params.encode("utf-8")) > MAX_DRAFT_PREVIEW_BYTES:
-        return None, "相机预览需要有效的当前工程草稿；请求大小不得超过 768 KiB"
+        return None, "预览需要有效的当前工程草稿；请求大小不得超过 768 KiB"
     try:
         payload = json.loads(raw)
         if not isinstance(payload, dict):

@@ -68,7 +68,7 @@ class HuarayCameraEditorController:
         return self.form.getValues() if self.form is not None else {}
 
     def validate(self) -> object:
-        return None
+        return self.form.validationMessage() if self.form is not None else None
 
     def onOpen(self) -> None:
         self.context.setStatus("相机预览待连接；预览临时使用自由采集")

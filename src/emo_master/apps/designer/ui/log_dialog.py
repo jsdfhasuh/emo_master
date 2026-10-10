@@ -28,6 +28,10 @@ class StructuredLogEntry:
     iterationPath: tuple[int, ...] = ()
     code: str = ""
     payload: dict[str, object] = field(default_factory=dict)
+    projectId: str = ""
+    # Local provenance, assigned only to events from an accepted Job. Never
+    # infer this from a node ID or from whichever project happens to be open.
+    projectInstanceToken: str = ""
 
     @classmethod
     def fromLine(cls, line: str) -> "StructuredLogEntry":
@@ -72,6 +76,7 @@ class StructuredLogEntry:
             iterationPath=iteration,
             code=str(event.get("code", "")),
             payload=dict(rawPayload) if isinstance(rawPayload, dict) else {},
+            projectId=str(event.get("projectId", "")),
         )
 
     def displayTime(self) -> str:
@@ -89,6 +94,7 @@ class StructuredLogEntry:
             "source": self.source,
             "eventType": self.eventType,
             "jobId": self.jobId,
+            "projectId": self.projectId,
             "workflowId": self.workflowId,
             "workflowRunId": self.workflowRunId,
             "nodeId": self.nodeId,
@@ -131,15 +137,18 @@ try:
             parent=None,
             *,
             onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
             maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
         ) -> None:
             super().__init__(parent)
             self.maximumEntries = max(1, int(maximumEntries))
             self._onClear = onClear
+            self._onNavigate = onNavigate
             self._entries: list[StructuredLogEntry] = []
             self._visibleEntries: list[StructuredLogEntry] = []
             self._pendingEntries: list[StructuredLogEntry] = []
             self._pendingEvicted: list[StructuredLogEntry] = []
+            self._detailEntry: StructuredLogEntry | None = None
             root = QVBoxLayout()
             filters = QGridLayout()
             self.levelFilter = _combo(("全部", "DEBUG", "INFO", "WARN", "ERROR"))
@@ -167,6 +176,16 @@ try:
             self.searchInput.setMinimumWidth(80)
             filters.addWidget(self.searchInput, 1, 4, 1, 2)
             root.addLayout(filters)
+            filterStatus = QHBoxLayout()
+            self.filterStatusLabel = QLabel()
+            self.filterStatusLabel.setObjectName("runtimeLogFilterStatus")
+            self.filterStatusLabel.setWordWrap(True)
+            self.showErrorsButton = QPushButton("清除筛选看错误")
+            self.showErrorsButton.setObjectName("runtimeLogShowErrors")
+            self.showErrorsButton.setToolTip("清除所有筛选并选中最新错误；保留日志内容")
+            filterStatus.addWidget(self.filterStatusLabel, 1)
+            filterStatus.addWidget(self.showErrorsButton)
+            root.addLayout(filterStatus)
 
             self.table = QTableWidget(0, len(self.columns))
             self.table.setObjectName("runtimeLogTable")
@@ -192,11 +211,20 @@ try:
             splitter.addWidget(self.detailViewer)
             splitter.setSizes([300, 120])
             root.addWidget(splitter)
+            self.navigationHint = QLabel("选择一条日志，可查看详情或定位节点")
+            self.navigationHint.setObjectName("runtimeLogNavigationHint")
+            self.navigationHint.setWordWrap(True)
+            root.addWidget(self.navigationHint)
             actions = QHBoxLayout()
+            self.locateButton = QPushButton("定位节点")
+            self.locateButton.setObjectName("runtimeLogLocateNode")
+            self.locateButton.setToolTip("定位到日志所属工作流中的节点（也可双击日志）")
+            self.locateButton.setEnabled(False)
             self.clearButton = QPushButton("清空视图")
             self.clearButton.setIcon(icon("trash-2"))
             actions.addWidget(self.autoScrollCheck)
             actions.addStretch(1)
+            actions.addWidget(self.locateButton)
             actions.addWidget(self.clearButton)
             root.addLayout(actions)
             self.setLayout(root)
@@ -212,11 +240,15 @@ try:
             self.searchInput.textChanged.connect(self._refreshTable)
             self.autoScrollCheck.toggled.connect(self._onAutoScrollChanged)
             self.table.currentCellChanged.connect(self._showDetails)
+            self.table.cellDoubleClicked.connect(self._navigateFromRow)
+            self.locateButton.clicked.connect(self._navigateSelected)
+            self.showErrorsButton.clicked.connect(self._showAllErrors)
             self.clearButton.clicked.connect(self._clearLogs)
             self._refreshTimer = QTimer(self)
             self._refreshTimer.setSingleShot(True)
             self._refreshTimer.setInterval(_BATCH_INTERVAL_MS)
             self._refreshTimer.timeout.connect(self._applyPendingEntries)
+            self._updateFilterStatus()
 
         def appendEntry(self, entry: StructuredLogEntry) -> None:
             self._entries.append(entry)
@@ -287,6 +319,8 @@ try:
             self.table.setRowCount(0)
             self.detailViewer.clear()
             self._refreshDynamicFilters(preserveUnknown=False)
+            self._updateFilterStatus()
+            self._showDetails(-1, 0)
             if self._onClear is not None:
                 self._onClear()
 
@@ -344,6 +378,8 @@ try:
                 self.table.setUpdatesEnabled(True)
             if self.autoScrollCheck.isChecked() and self._visibleEntries:
                 self.table.scrollToBottom()
+            self._updateFilterStatus()
+            self._showDetails(self.table.currentRow(), 0)
 
         def _refreshTable(self, *_args) -> None:
             self._refreshTimer.stop()
@@ -359,6 +395,47 @@ try:
                 self.table.setUpdatesEnabled(True)
             if self.autoScrollCheck.isChecked() and self._visibleEntries:
                 self.table.scrollToBottom()
+            self._updateFilterStatus()
+            self._showDetails(self.table.currentRow(), 0)
+
+        def _updateFilterStatus(self) -> None:
+            hiddenErrors = sum(
+                1 for entry in self._entries
+                if _isError(entry) and not self._matches(entry)
+            )
+            filtered = any(combo.currentText() != "全部" for combo in (
+                self.levelFilter, self.sourceFilter, self.jobFilter,
+                self.nodeFilter, self.eventTypeFilter,
+            )) or bool(self.searchInput.text().strip())
+            suffix = (
+                f"；当前筛选隐藏了 {hiddenErrors} 条错误"
+                if filtered else "；未设置筛选"
+            )
+            self.filterStatusLabel.setText(
+                f"显示 {len(self._visibleEntries)} / {len(self._entries)} 条日志{suffix}"
+            )
+            self.showErrorsButton.setEnabled(hiddenErrors > 0)
+
+        def _showAllErrors(self) -> None:
+            controls = (
+                self.levelFilter, self.sourceFilter, self.jobFilter,
+                self.nodeFilter, self.eventTypeFilter, self.searchInput,
+            )
+            for control in controls:
+                control.blockSignals(True)
+            try:
+                for combo in controls[:-1]:
+                    combo.setCurrentIndex(0)
+                self.searchInput.clear()
+            finally:
+                for control in controls:
+                    control.blockSignals(False)
+            self._refreshTable()
+            for row in range(len(self._visibleEntries) - 1, -1, -1):
+                if _isError(self._visibleEntries[row]):
+                    self.table.setCurrentCell(row, 0)
+                    self.table.scrollToItem(self.table.item(row, 0))
+                    break
 
         def _setTableRow(self, row: int, entry: StructuredLogEntry) -> None:
             values = (
@@ -399,12 +476,39 @@ try:
 
         def _showDetails(self, row: int, _column: int, *_args) -> None:
             if not 0 <= row < len(self._visibleEntries):
+                self._detailEntry = None
                 self.detailViewer.clear()
+                self.locateButton.setEnabled(False)
+                self.navigationHint.setText("选择一条日志，可查看详情或定位节点")
                 return
+            entry = self._visibleEntries[row]
+            if entry is self._detailEntry:
+                return
+            self._detailEntry = entry
             self.detailViewer.setPlainText(json.dumps(
-                self._visibleEntries[row].detailPayload(),
+                entry.detailPayload(),
                 ensure_ascii=False, indent=2, default=str,
             ))
+            self.locateButton.setEnabled(bool(entry.nodeId) and self._onNavigate is not None)
+            if not entry.nodeId:
+                self.navigationHint.setText("此日志未提供节点关联，无法定位。请查看错误详情与相关节点日志。")
+            elif self._onNavigate is None:
+                self.navigationHint.setText("当前日志窗口未连接流程画布，无法定位节点。")
+            else:
+                self.navigationHint.setText("点击“定位节点”或双击日志，可在所属工作流中查看节点。")
+
+        def _navigateFromRow(self, row: int, column: int) -> None:
+            self.table.setCurrentCell(row, column)
+            self._navigateSelected()
+
+        def _navigateSelected(self) -> None:
+            row = self.table.currentRow()
+            self._showDetails(row, 0)
+            if not 0 <= row < len(self._visibleEntries):
+                return
+            entry = self._visibleEntries[row]
+            if entry.nodeId and self._onNavigate is not None:
+                self.navigationHint.setText(self._onNavigate(entry))
 
         def _onAutoScrollChanged(self, enabled: bool) -> None:
             if enabled and self._visibleEntries:
@@ -417,6 +521,7 @@ try:
             parent=None,
             *,
             onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
             maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
         ) -> None:
             super().__init__("运行日志", parent)
@@ -430,6 +535,7 @@ try:
             self.view = StructuredLogView(
                 self,
                 onClear=onClear,
+                onNavigate=onNavigate,
                 maximumEntries=maximumEntries,
             )
             self.setWidget(self.view)
@@ -500,11 +606,13 @@ except Exception:  # pragma: no cover
             parent=None,
             *,
             onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
             maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
         ) -> None:
             _ = parent
             self.maximumEntries = max(1, int(maximumEntries))
             self._onClear = onClear
+            self._onNavigate = onNavigate
             self._entries: list[StructuredLogEntry] = []
             self._lines: list[str] = []
 
@@ -549,11 +657,13 @@ except Exception:  # pragma: no cover
             parent=None,
             *,
             onClear: Callable[[], None] | None = None,
+            onNavigate: Callable[[StructuredLogEntry], str] | None = None,
             maximumEntries: int = DEFAULT_MAX_LOG_ENTRIES,
         ) -> None:
             _ = parent
             self.view = StructuredLogView(
                 onClear=onClear,
+                onNavigate=onNavigate,
                 maximumEntries=maximumEntries,
             )
             self._visible = False
@@ -600,6 +710,10 @@ except Exception:  # pragma: no cover
         def __init__(self) -> None:
             super().__init__()
             self._lines = self.view._lines
+
+
+def _isError(entry: StructuredLogEntry) -> bool:
+    return entry.level == "ERROR" or entry.eventType.endswith(".failed")
 
 
 def _values(entries: list[StructuredLogEntry], fieldName: str) -> list[str]:

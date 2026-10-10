@@ -29,6 +29,9 @@ try:
       self._paramForm = SchemaParamForm()
       rootLayout.addWidget(scrollContent(self._paramForm), 1)
 
+      self._errorLabel = WrapLabel("")
+      self._errorLabel.setStyleSheet("color: #d93025;")
+      rootLayout.addWidget(self._errorLabel)
       buttonRow = QHBoxLayout()
       self._applyButton = QPushButton("应用")
       self._applyButton.setObjectName("primaryButton")
@@ -56,6 +59,7 @@ try:
     ) -> None:
       self._currentNodeId = nodeId
       self._metaLabel.setText(f"节点：{nodeId} | 算子：{operatorId}")
+      self._errorLabel.setText("")
       self._paramForm.setSchema(schema, values)
 
     def setWorkflowOptions(self, options: list[str]) -> None:
@@ -68,7 +72,17 @@ try:
         return
       if self._applyHandler is None:
         return
-      self._applyHandler(self._currentNodeId, self._paramForm.getValues())
+      try:
+        message = self._paramForm.validationMessage()
+        if message:
+          self._errorLabel.setText(message)
+          return
+        values = self._paramForm.getValues()
+      except ValueError as error:
+        self._errorLabel.setText(str(error))
+        return
+      self._errorLabel.setText("")
+      self._applyHandler(self._currentNodeId, values)
 
 except Exception:  # pragma: no cover
   class NodeParamDialog:  # type: ignore[no-redef]

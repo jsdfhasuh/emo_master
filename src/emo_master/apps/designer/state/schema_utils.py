@@ -20,7 +20,18 @@ def mergeParameterTitles(
                 title = sourceField.get("title")
                 if isinstance(title, str) and title.strip():
                     field["title"] = title.strip()
+                for key in ("description", "xOptionLabels", "xUnit", "xExample", "xMinimum", "xMaximum", "xOdd", "xBlankMeansEmpty"):
+                    if key in sourceField:
+                        field[key] = deepcopy(sourceField[key])
+                condition = sourceField.get("xEnabledWhen")
+                if isinstance(condition, dict) and all(key in properties for key in condition):
+                    field["xEnabledWhen"] = deepcopy(condition)
                 merge(field, sourceField)
+        channelBounds = source.get("xChannelBounds")
+        if isinstance(channelBounds, dict) and isinstance(properties, dict) and all(
+            channelBounds.get(key) in properties for key in ("selector", "lower", "upper")
+        ):
+            target["xChannelBounds"] = deepcopy(channelBounds)
         items = target.get("items")
         sourceItems = source.get("items")
         if isinstance(items, dict) and isinstance(sourceItems, dict):

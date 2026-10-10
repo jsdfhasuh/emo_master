@@ -246,13 +246,23 @@ class ClaheOperator:
     _PARAM_SCHEMA = {
         "type": "object",
         "properties": {
-            "clipLimit": {"title": "对比度限制", "type": "number", "exclusiveMinimum": 0.0, "default": 2.0},
+            "clipLimit": {
+                "title": "对比度限制",
+                "type": "number",
+                "exclusiveMinimum": 0.0,
+                "default": 2.0,
+                "xExample": 2.0,
+                "description": "正数对比度限制；数值越大，允许的局部对比度增强越强。",
+            },
             "tileGridWidth": {
                 "title": "分块列数",
                 "type": "integer",
                 "minimum": 1,
                 "maximum": 64,
                 "default": 8,
+                "xUnit": "列",
+                "xExample": 8,
+                "description": "图像水平方向的分块数量，范围为 1～64。",
             },
             "tileGridHeight": {
                 "title": "分块行数",
@@ -260,6 +270,9 @@ class ClaheOperator:
                 "minimum": 1,
                 "maximum": 64,
                 "default": 8,
+                "xUnit": "行",
+                "xExample": 8,
+                "description": "图像垂直方向的分块数量，范围为 1～64。",
             },
         },
     }

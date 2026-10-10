@@ -209,7 +209,7 @@ try:
         def applyChanges(self) -> bool:
             try:
                 bindings = self._bindingPanel.bindings() if self._bindingPanel else []
-                if self._schemaForm is not None and not bindings:
+                if self._schemaForm is not None:
                     validation = self._schemaForm.validationMessage()
                     if validation:
                         self.setError(validation)

@@ -36,19 +36,54 @@ _PARAM_SCHEMA: dict[str, object] = {
         "mode": {
             "title": "阈值模式",
             "type": "string",
-            "enum": list(_MODES),
+            "enum": ["fixed", "otsu", "triangle", "adaptiveMean", "adaptiveGaussian"],
             "default": "fixed",
+            "xOptionLabels": {
+                "fixed": "固定阈值",
+                "otsu": "大津法（自动阈值）",
+                "triangle": "三角法（自动阈值）",
+                "adaptiveMean": "自适应均值",
+                "adaptiveGaussian": "自适应高斯",
+            },
+            "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。",
         },
         "threshold": {
             "title": "阈值",
             "type": "integer",
-            "minimum": 0,
-            "maximum": 255,
             "default": 127,
+            "xMinimum": 0,
+            "xMaximum": 255,
+            "xEnabledWhen": {"mode": ["fixed"]},
+            "xUnit": "灰度级",
+            "xExample": 127,
+            "description": "仅固定阈值模式生效，填写 0～255 的整数。",
         },
-        "invert": {"title": "反向阈值", "type": "boolean", "default": False},
-        "blockSize": {"title": "自适应邻域大小", "type": "integer", "minimum": 3, "default": 11},
-        "constant": {"title": "自适应阈值偏移量", "type": "number", "default": 2.0},
+        "invert": {
+            "title": "反向阈值",
+            "type": "boolean",
+            "default": False,
+            "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。",
+        },
+        "blockSize": {
+            "title": "自适应邻域大小",
+            "type": "integer",
+            "default": 11,
+            "xMinimum": 3,
+            "xOdd": True,
+            "xEnabledWhen": {"mode": ["adaptiveMean", "adaptiveGaussian"]},
+            "xUnit": "像素",
+            "xExample": 11,
+            "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。",
+        },
+        "constant": {
+            "title": "自适应阈值偏移量",
+            "type": "number",
+            "default": 2.0,
+            "xEnabledWhen": {"mode": ["adaptiveMean", "adaptiveGaussian"]},
+            "xUnit": "灰度级",
+            "xExample": 2.0,
+            "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。",
+        },
     },
 }
 
@@ -86,21 +121,23 @@ class ThresholdOperator:
 
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
         mode = params.get("mode", "fixed")
-        threshold = params.get("threshold", 127)
         invert = params.get("invert", False)
-        blockSize = params.get("blockSize", 11)
-        constant = params.get("constant", 2.0)
 
         if not isinstance(mode, str) or mode not in _MODES:
             return _paramError(f"mode must be one of: {', '.join(_MODES)}")
-        if not _isInt(threshold) or not 0 <= threshold <= 255:
-            return _paramError("threshold must be an integer in [0, 255]")
         if not isinstance(invert, bool):
             return _paramError("invert must be boolean")
-        if not _isInt(blockSize) or blockSize < 3 or blockSize % 2 == 0:
-            return _paramError("blockSize must be an odd integer >= 3")
-        if not _isFiniteNumber(constant):
-            return _paramError("constant must be a finite number")
+        # These are algorithm constraints, independent of the UI's x* hints.
+        if mode == "fixed":
+            threshold = params.get("threshold", 127)
+            if not _isInt(threshold) or not 0 <= threshold <= 255:
+                return _paramError("threshold must be an integer in [0, 255]")
+        elif mode in ("adaptiveMean", "adaptiveGaussian"):
+            blockSize = params.get("blockSize", 11)
+            if not _isInt(blockSize) or blockSize < 3 or blockSize % 2 == 0:
+                return _paramError("blockSize must be an odd integer >= 3")
+            if not _isFiniteNumber(params.get("constant", 2.0)):
+                return _paramError("constant must be a finite number")
         return None
 
     def executeNode(
@@ -135,16 +172,15 @@ class ThresholdOperator:
             return {"status": "error", "error": paramError}
 
         mode = cast(str, params.get("mode", "fixed"))
-        threshold = cast(int, params.get("threshold", 127))
         invert = cast(bool, params.get("invert", False))
-        blockSize = cast(int, params.get("blockSize", 11))
-        constant = float(cast(int | float, params.get("constant", 2.0)))
 
         try:
             gray = image if image.ndim == 2 else cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             thresholdType = cv2.THRESH_BINARY_INV if invert else cv2.THRESH_BINARY
             actualThreshold: float | None
             if mode == "adaptiveMean" or mode == "adaptiveGaussian":
+                blockSize = cast(int, params.get("blockSize", 11))
+                constant = float(cast(int | float, params.get("constant", 2.0)))
                 adaptiveMethod = (
                     cv2.ADAPTIVE_THRESH_MEAN_C
                     if mode == "adaptiveMean"
@@ -161,13 +197,13 @@ class ThresholdOperator:
                 actualThreshold = None
             else:
                 automaticFlag = 0
-                thresholdValue = threshold
+                thresholdValue = 0
                 if mode == "otsu":
                     automaticFlag = cv2.THRESH_OTSU
-                    thresholdValue = 0
                 elif mode == "triangle":
                     automaticFlag = cv2.THRESH_TRIANGLE
-                    thresholdValue = 0
+                else:
+                    thresholdValue = cast(int, params.get("threshold", 127))
                 measuredThreshold, mask = cv2.threshold(
                     gray,
                     thresholdValue,
@@ -203,11 +239,12 @@ def _isInt(value: object) -> TypeGuard[int]:
 
 
 def _isFiniteNumber(value: object) -> TypeGuard[int | float]:
-    return (
-        isinstance(value, (int, float))
-        and not isinstance(value, bool)
-        and math.isfinite(float(value))
-    )
+    if not isinstance(value, (int, float)) or isinstance(value, bool):
+        return False
+    try:
+        return math.isfinite(float(value))
+    except OverflowError:
+        return False
 
 
 def _paramError(message: str) -> dict[str, str]:

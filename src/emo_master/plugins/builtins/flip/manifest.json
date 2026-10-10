@@ -19,7 +19,22 @@
   "paramSchema": {
     "type": "object",
     "properties": {
-      "mode": {"title": "翻转方式", "type": "string", "enum": ["horizontal", "vertical", "both"], "default": "horizontal"}
+      "mode": {
+        "title": "翻转方式",
+        "type": "string",
+        "enum": [
+          "horizontal",
+          "vertical",
+          "both"
+        ],
+        "default": "horizontal",
+        "xOptionLabels": {
+          "horizontal": "水平翻转",
+          "vertical": "垂直翻转",
+          "both": "水平和垂直翻转"
+        },
+        "description": "水平翻转交换左右，垂直翻转交换上下。"
+      }
     }
   },
   "minCoreVersion": "0.3.0",

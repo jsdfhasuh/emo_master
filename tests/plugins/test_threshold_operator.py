@@ -106,8 +106,14 @@ def testThresholdRejectsInvalidInputsAndParameters() -> None:
         operator.executeNode({"image": np.zeros((2, 2, 4), dtype=np.uint8)}, {}, {}),
         operator.executeNode({"image": validImage}, {"mode": "unknown"}, {}),
         operator.executeNode({"image": validImage}, {"threshold": True}, {}),
-        operator.executeNode({"image": validImage}, {"blockSize": 4}, {}),
-        operator.executeNode({"image": validImage}, {"constant": float("nan")}, {}),
+        operator.executeNode(
+            {"image": validImage}, {"mode": "adaptiveMean", "blockSize": 4}, {}
+        ),
+        operator.executeNode(
+            {"image": validImage},
+            {"mode": "adaptiveGaussian", "constant": float("nan")},
+            {},
+        ),
     ]
 
     assert [item["error"]["code"] for item in cases] == [
@@ -120,3 +126,68 @@ def testThresholdRejectsInvalidInputsAndParameters() -> None:
         "E_PARAM_INVALID",
         "E_PARAM_INVALID",
     ]
+
+
+@pytest.mark.parametrize(
+    "params",
+    [
+        {"mode": "fixed", "blockSize": 2, "constant": "unused"},
+        {"mode": "otsu", "threshold": 999, "blockSize": 2, "constant": "unused"},
+        {"mode": "triangle", "threshold": -1, "blockSize": 2, "constant": "unused"},
+        {"mode": "adaptiveMean", "threshold": 999, "blockSize": 3},
+        {"mode": "adaptiveGaussian", "threshold": -1, "blockSize": 3},
+    ],
+)
+def testThresholdOnlyUsesParametersForSelectedMode(params: dict[str, object]) -> None:
+    image = np.arange(81, dtype=np.uint8).reshape(9, 9)
+    operator = ThresholdOperator()
+
+    assert operator.validateParams(params) is None
+    result = operator.executeNode({"image": image}, params, {})
+
+    assert result["status"] == "ok"
+    assert set(np.unique(result["outputs"]["mask"])).issubset({0, 255})
+
+
+@pytest.mark.parametrize("mode", ["fixed", "otsu", "triangle"])
+def testThresholdDoesNotReadInactiveAdaptiveParameters(mode: str) -> None:
+    class Params(dict):
+        def get(self, key, default=None):
+            if key in {"blockSize", "constant"}:
+                raise AssertionError(f"inactive parameter was read: {key}")
+            if key == "threshold" and mode != "fixed":
+                raise AssertionError("automatic mode read the fixed threshold")
+            return super().get(key, default)
+
+    image = np.arange(81, dtype=np.uint8).reshape(9, 9)
+    result = ThresholdOperator().executeNode({"image": image}, Params(mode=mode), {})
+    assert result["status"] == "ok"
+
+
+@pytest.mark.parametrize("threshold", [-1, 256, 999, True, 127.5, "127"])
+def testFixedThresholdKeepsStrongRangeAndTypeValidation(threshold: object) -> None:
+    error = ThresholdOperator().validateParams({"mode": "fixed", "threshold": threshold})
+    assert error is not None and error["code"] == "E_PARAM_INVALID"
+    assert "threshold" in error["message"]
+
+
+@pytest.mark.parametrize("mode", ["adaptiveMean", "adaptiveGaussian"])
+@pytest.mark.parametrize("blockSize", [0, 1, 2, 4, True, 3.5, "3"])
+def testAdaptiveThresholdKeepsOddBlockValidation(mode: str, blockSize: object) -> None:
+    error = ThresholdOperator().validateParams({"mode": mode, "blockSize": blockSize})
+    assert error is not None and error["code"] == "E_PARAM_INVALID"
+    assert "blockSize" in error["message"]
+
+
+@pytest.mark.parametrize("mode", ["adaptiveMean", "adaptiveGaussian"])
+@pytest.mark.parametrize("constant", [float("nan"), float("inf"), -float("inf"), True, "2", 10**400])
+def testAdaptiveThresholdKeepsFiniteConstantValidation(mode: str, constant: object) -> None:
+    error = ThresholdOperator().validateParams({"mode": mode, "constant": constant})
+    assert error is not None and error["code"] == "E_PARAM_INVALID"
+    assert "constant" in error["message"]
+
+
+@pytest.mark.parametrize("params", [{"mode": []}, {"mode": "unknown"}, {"invert": 1}, {"invert": "false"}])
+def testThresholdAlwaysProtectsModeAndInvert(params: dict[str, object]) -> None:
+    error = ThresholdOperator().validateParams(params)
+    assert error is not None and error["code"] == "E_PARAM_INVALID"

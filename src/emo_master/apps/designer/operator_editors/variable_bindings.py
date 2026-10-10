@@ -96,6 +96,7 @@ class VariableBindingsPanel(QGroupBox):
             return True
         import shiboken2
         installed = 0
+        targetForms = set()
         for path, source in self.fields.items():
             target = form
             for part in path[:-1]:
@@ -122,14 +123,16 @@ class VariableBindingsPanel(QGroupBox):
             layout.addWidget(control)
             target._fieldContainers[path[-1]] = box
             target._variableSources[path[-1]] = proxy
-            control.setEnabled(not bool(proxy.currentData()))
-            def selected(index, original=source, widget=control, combo=proxy):
+            targetForms.add(target)
+            def selected(index, original=source, targetForm=target):
                 original.setCurrentIndex(index)
-                widget.setEnabled(not bool(combo.currentData()))
+                targetForm._updateDependentFields()
             proxy.currentIndexChanged.connect(selected)
             def synchronize(index, combo=proxy):
                 if shiboken2.isValid(combo):
                     combo.setCurrentIndex(index)
             source.currentIndexChanged.connect(synchronize)
             installed += 1
+        for targetForm in targetForms:
+            targetForm._updateDependentFields()
         return installed == len(self.fields)

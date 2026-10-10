@@ -95,7 +95,7 @@ class CameraParameterForm(SchemaParamForm):
         self._updateEnabledFields()
 
     def _updateEnabledFields(self, *_args: object) -> None:
-        values = self.getValues()
+        values = self._dependencyValues()
         selection = values.get("selectionMode", "ip")
         retryCount = values.get("retryCount", 0)
         enabled = {

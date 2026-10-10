@@ -5,7 +5,7 @@ from emo_master.core.project.global_variables import (
 )
 
 
-def previewParameters(store, document, workflowId, nodeId, params, schema, jobId="", *, withSnapshot=False):
+def previewParameters(store, document, workflowId, nodeId, params, schema, jobId="", *, withSnapshot=False, initialOnly=False):
     node = next(node for node in document.workflows[workflowId].nodes if node.nodeId == nodeId)
     if node.operatorId in {WRITE_VARIABLE, "vision.state.counter"}:
         raise VariableError("E_VARIABLE_PREVIEW_READ_ONLY", "preview cannot write, reset or increment variables")
@@ -16,6 +16,16 @@ def previewParameters(store, document, workflowId, nodeId, params, schema, jobId
     accessor = ProjectGlobalVariables(store, document.project.projectId, document.globalVariables, jobId)
     values = {}
     # One database read transaction freezes all referenced values together.
+    if initialOnly:
+        # Draft copies cannot inherit another loaded project's mutable values.
+        values = {key: definition.initialValue for key, definition in document.globalVariables.items()}
+    else:
+        return _storedParameters(store, document, params, schema, node, accessor, keys, withSnapshot)
+    return _resolvedParameters(params, schema, node, values, withSnapshot)
+
+
+def _storedParameters(store, document, params, schema, node, accessor, keys, withSnapshot):
+    values = {}
     with store._connect() as connection:
         connection.execute("BEGIN")
         for key in keys:
@@ -26,7 +36,11 @@ def previewParameters(store, document, workflowId, nodeId, params, schema, jobId
                 if error.code not in {"E_VARIABLE_JOB_REQUIRED", "E_VARIABLE_NOT_INITIALIZED"}:
                     raise
                 values[key] = definition.initialValue
+    return _resolvedParameters(params, schema, node, values, withSnapshot)
+
+
+def _resolvedParameters(params, schema, node, values, withSnapshot):
     snapshot = ReadOnlyVariables(values)
-    resolved = resolveParams(params, node.globalVariableBindings, snapshot.readMany(keys))
+    resolved = resolveParams(params, node.globalVariableBindings, snapshot.readMany(list(values)))
     resolved = validateEffectiveParams(resolved, node.globalVariableBindings, schema) if node.globalVariableBindings else resolved
     return (resolved, snapshot) if withSnapshot else resolved

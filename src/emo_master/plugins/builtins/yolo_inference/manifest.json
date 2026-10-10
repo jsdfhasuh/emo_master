@@ -53,32 +53,50 @@
         "type": "number",
         "minimum": 0.0,
         "maximum": 1.0,
-        "default": 0.25
+        "default": 0.25,
+        "xExample": 0.25,
+        "description": "保留置信度不低于此值的检测结果，范围为 0～1。"
       },
       "iou": {
         "title": "非极大值抑制 IoU 阈值",
         "type": "number",
         "minimum": 0.0,
         "maximum": 1.0,
-        "default": 0.45
+        "default": 0.45,
+        "xExample": 0.45,
+        "description": "非极大值抑制的交并比阈值，范围为 0～1。"
       },
       "imageSize": {
         "title": "推理图像尺寸",
         "type": "integer",
         "minimum": 1,
-        "default": 640
+        "default": 640,
+        "xUnit": "像素",
+        "xExample": 640,
+        "description": "模型输入的目标图像尺寸，填写正整数。"
       },
       "maxDetections": {
         "title": "最大检测数量",
         "type": "integer",
         "minimum": 1,
-        "default": 300
+        "default": 300,
+        "xUnit": "个",
+        "xExample": 300,
+        "description": "单次推理最多保留的检测结果数量。"
       },
       "device": {
         "title": "推理设备",
         "type": "string",
-        "enum": ["auto", "cpu"],
-        "default": "auto"
+        "enum": [
+          "auto",
+          "cpu"
+        ],
+        "default": "auto",
+        "xOptionLabels": {
+          "auto": "自动（当前使用 CPU）",
+          "cpu": "CPU"
+        },
+        "description": "当前 ONNX 推理使用 CPU 执行提供程序。"
       },
       "classes": {
         "title": "检测类别（可选）",
@@ -88,7 +106,12 @@
           "type": "integer",
           "minimum": 0
         },
-        "default": []
+        "default": [],
+        "xBlankMeansEmpty": true,
+        "xExample": [
+          0,
+          1
+        ]
       },
       "agnosticNms": {
         "title": "不区分类别的非极大值抑制",
@@ -101,7 +124,9 @@
         "default": false
       }
     },
-    "required": ["modelPath"]
+    "required": [
+      "modelPath"
+    ]
   },
   "minCoreVersion": "0.2.0",
   "maxCoreVersion": "1.x"

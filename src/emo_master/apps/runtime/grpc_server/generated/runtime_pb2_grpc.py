@@ -324,6 +324,16 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
                 response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
                 _registered_method=True)
+        self.OpenDraftPurePreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenDraftPurePreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.CloseDraftPurePreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseDraftPurePreviewSession',
+                request_serializer=runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
         self.StreamOperatorPreviewFrames = channel.unary_stream(
                 '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
                 request_serializer=runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
@@ -717,6 +727,18 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def OpenDraftPurePreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseDraftPurePreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def StreamOperatorPreviewFrames(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -1057,6 +1079,16 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.OpenDraftOperatorPreviewSession,
                     request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
                     response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'OpenDraftPurePreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenDraftPurePreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'CloseDraftPurePreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseDraftPurePreviewSession,
+                    request_deserializer=runtime__pb2.CloseOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.CloseOperatorPreviewSessionReply.SerializeToString,
             ),
             'StreamOperatorPreviewFrames': grpc.unary_stream_rpc_method_handler(
                     servicer.StreamOperatorPreviewFrames,
@@ -2665,6 +2697,60 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/OpenDraftOperatorPreviewSession',
             runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
             runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenDraftPurePreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenDraftPurePreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseDraftPurePreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseDraftPurePreviewSession',
+            runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
             options,
             channel_credentials,
             insecure,

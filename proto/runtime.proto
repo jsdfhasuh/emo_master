@@ -208,6 +208,7 @@ message PreviewUploadChunk {
   string filename = 2;
   bytes content = 3;
   string project_id = 4;
+  string draft_session_id = 5; // Pure draft previews never fall back to loaded-project ownership.
 }
 
 message PreviewAssetReply {
@@ -224,6 +225,7 @@ message GetPreviewAssetRequest {
   string asset_id = 1;
   string project_id = 2;
   string inspection_session_id = 3;
+  string draft_session_id = 4;
 }
 
 message RunInspectionSessionRequest {
@@ -256,6 +258,7 @@ message RunOperatorPreviewRequest {
   string request_id = 7;
   string project_json = 8;
   string job_id = 9;
+  string draft_session_id = 10;
 }
 
 message PreviewOutputAsset {
@@ -290,7 +293,7 @@ message OpenOperatorPreviewSessionRequest {
   string node_id = 3;
   string operator_id = 4;
   string params_json = 5;
-  // Required only by OpenDraftOperatorPreviewSession; never replaces the loaded project.
+  // Required by draft preview open RPCs; never replaces the loaded project.
   string project_json = 6;
   string job_id = 7;
 }
@@ -484,6 +487,8 @@ service RuntimeService {
   rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
   rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
   rpc OpenDraftOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc OpenDraftPurePreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc CloseDraftPurePreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);
   rpc CloseOperatorPreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc ListRejectedOperators(ListRejectedOperatorsRequest) returns (ListRejectedOperatorsReply);

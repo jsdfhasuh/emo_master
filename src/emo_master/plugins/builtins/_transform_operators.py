@@ -164,6 +164,12 @@ class FlipOperator:
                 "type": "string",
                 "enum": ["horizontal", "vertical", "both"],
                 "default": "horizontal",
+                "xOptionLabels": {
+                    "horizontal": "水平翻转",
+                    "vertical": "垂直翻转",
+                    "both": "水平和垂直翻转",
+                },
+                "description": "水平翻转交换左右，垂直翻转交换上下。",
             }
         },
     }

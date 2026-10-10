@@ -3,6 +3,8 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 import importlib
+import threading
+import time
 from typing import Protocol, runtime_checkable
 
 
@@ -72,6 +74,13 @@ class EditorContext:
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
         self._getPreviewProject = getPreviewProject
+        self._pureDraftLock = threading.RLock()
+        self._pureDraftTouched = 0.0
+        self._pureDraftSessionId = ""
+        self._pureDraftFingerprint = ""
+        self._pureDraftProject = None
+        self._pureDraftAssets: set[str] = set()
+        self._pureDraftOutputAssets: set[str] = set()
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self.variableDefinitions = variableDefinitions
@@ -136,6 +145,9 @@ class EditorContext:
 
     def listPreviewSourcesWithMetadata(self):
         from emo_master.apps.designer.services.runtime_client import PreviewSourceListing
+        if self._currentPureDraft() is not None:
+            return PreviewSourceListing(sources=(), captureState="DRAFT_LOCAL_ONLY",
+                message="草稿仅支持本地图片纯预览；不复用旧工程快照。任务图片请到运行结果检查查看。变量使用草稿初始值。")
         method = getattr(self._runtimeClient, "listNodePreviewSourcesWithMetadata", None)
         if callable(method):
             return method(self.key.projectId, self.key.workflowId, self.key.nodeId,
@@ -151,24 +163,30 @@ class EditorContext:
         return list(self.listPreviewSourcesWithMetadata().sources)
 
     def uploadPreviewImage(self, data: bytes, filename: str = "") -> str:
-        reply = self._runtimeMethod("uploadPreviewImage")(
-            data,
-            filename,
-            self.key.projectId,
-        )
+        self.prepareLocalPreview()
+        options = {"draftSessionId": self._pureDraftSessionId} if self._pureDraftSessionId else {}
+        reply = self._runtimeMethod("uploadPreviewImage")(data, filename, self.key.projectId, **options)
+        if not bool(getattr(reply, "ok", False)):
+            self.closePurePreview()
         self._requireOk(reply, "E_PREVIEW_ASSET_INVALID")
+        self._pureDraftTouched = time.monotonic()
         assetId = str(getattr(reply, "asset_id", ""))
         if not assetId:
             raise EditorContextError(
                 "E_PREVIEW_ASSET_INVALID", "Runtime did not return a preview asset"
             )
+        if self._pureDraftSessionId:
+            self._pureDraftAssets.add(assetId)
         return assetId
 
     def downloadPreviewAsset(self, assetId: str) -> tuple[bytes, str]:
-        result = self._runtimeMethod("downloadPreviewAsset")(
-            assetId,
-            self.key.projectId,
-        )
+        options = {}
+        if self._currentPureDraft() is not None:
+            self._requireCurrentPureDraft()
+            if assetId not in self._pureDraftAssets:
+                raise EditorContextError("E_PREVIEW_ASSET_INVALID", "图片不属于当前草稿预览会话，请重新选择预览图片")
+            options = {"draftSessionId": self._pureDraftSessionId}
+        result = self._runtimeMethod("downloadPreviewAsset")(assetId, self.key.projectId, **options)
         if not isinstance(result, tuple) or len(result) != 2:
             raise EditorContextError(
                 "E_PREVIEW_ASSET_INVALID", "Runtime returned an invalid preview asset"
@@ -185,6 +203,10 @@ class EditorContext:
             raise EditorContextError(
                 "E_PREVIEW_UNSUPPORTED", "operator does not allow pure preview"
             )
+        if self._currentPureDraft() is not None:
+            # Direct callers remain supported; GUI workers use preparePurePreview
+            # to capture mutable Qt/canvas state on the GUI thread first.
+            return self.preparePurePreview(params, imageAssetId, requestId)()
         options = {}
         if self.variableDefinitions is not None and self._getPreviewProject is not None:
             options = {"projectPayload": self._variablePreviewProject(), "jobId": self.currentJobId()}
@@ -198,6 +220,102 @@ class EditorContext:
             requestId,
             **options,
         )
+
+    def _currentPureDraft(self):
+        if self.previewMode != "pure" or self._getPreviewProject is None:
+            return None
+        payload = self._variablePreviewProject() if self.variableDefinitions is not None else self._getPreviewProject(self.key)
+        # A current canvas draft is authoritative even for default 2.1 projects.
+        # Only callers without a draft provider use the legacy loaded-project path.
+        from copy import deepcopy
+        return deepcopy(payload)
+
+    def prepareLocalPreview(self):
+        """Called before the file picker: unsupported Runtime never invites an upload."""
+        payload = self._currentPureDraft()
+        if payload is None:
+            return
+        from emo_master.apps.runtime.preview.pure_draft import draftFingerprint
+        fingerprint = draftFingerprint(payload)
+        if (self._pureDraftSessionId and fingerprint == self._pureDraftFingerprint
+                and time.monotonic() - self._pureDraftTouched < 290):
+            return
+        self.closePurePreview()
+        reply = self._runtimeMethod("openDraftPurePreviewSession")(
+            self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId, payload)
+        self._requireOk(reply, "E_PREVIEW_CONTEXT_INVALID")
+        sessionId = str(getattr(reply, "session_id", ""))
+        if not sessionId:
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "Runtime 未返回草稿纯预览会话")
+        with self._pureDraftLock:
+            self._pureDraftSessionId = sessionId
+            self._pureDraftFingerprint = fingerprint
+            self._pureDraftProject = payload
+            self._pureDraftTouched = time.monotonic()
+
+    def _requireCurrentPureDraft(self):
+        from emo_master.apps.runtime.preview.pure_draft import draftFingerprint
+        payload = self._currentPureDraft()
+        if (not self._pureDraftSessionId or payload is None
+                or draftFingerprint(payload) != self._pureDraftFingerprint):
+            self.closePurePreview()
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "工程草稿已变更或会话已失效，请重新选择预览图片")
+        return payload
+
+    def preparePurePreview(self, params, imageAssetId, requestId=""):
+        """Freeze draft and editor values on the UI thread, not in its worker."""
+        from copy import deepcopy
+        from functools import partial
+        payload = self._currentPureDraft()
+        if payload is None:
+            options = {}
+            if self.variableDefinitions is not None and self._getPreviewProject is not None:
+                options = {"projectPayload": self._variablePreviewProject(), "jobId": self.currentJobId()}
+            return partial(self._runtimeMethod("runOperatorPreview"),
+                self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+                deepcopy(params), imageAssetId, requestId, **options)
+        payload = self._requireCurrentPureDraft()
+        if imageAssetId not in self._pureDraftAssets:
+            raise EditorContextError("E_PREVIEW_ASSET_INVALID", "图片不属于当前草稿预览会话")
+        return partial(self._runDraftPurePreview, deepcopy(params), imageAssetId, requestId,
+                       self._pureDraftSessionId, payload)
+
+    def _runDraftPurePreview(self, params, imageAssetId, requestId, sessionId, payload):
+        reply = self._runtimeMethod("runOperatorPreview")(
+            self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+            params, imageAssetId, requestId, projectPayload=payload, draftSessionId=sessionId)
+        # The GUI discards a late reply by generation. Never adopt its assets
+        # into a replacement session even when the project/node IDs are equal.
+        with self._pureDraftLock:
+            if self._pureDraftSessionId == sessionId and bool(getattr(reply, "ok", False)):
+                self._pureDraftTouched = time.monotonic()
+                self._pureDraftAssets.difference_update(self._pureDraftOutputAssets)
+                self._pureDraftOutputAssets = {str(asset.asset_id) for asset in getattr(reply, "assets", [])}
+                self._pureDraftAssets.update(self._pureDraftOutputAssets)
+            elif self._pureDraftSessionId == sessionId and str(getattr(reply, "code", "")) == "E_PREVIEW_CONTEXT_INVALID":
+                self._pureDraftTouched = 0.0
+        return reply
+
+    def validatePurePreviewResult(self):
+        # Result delivery runs on the GUI thread and must re-check edits made
+        # after dispatch. Histogram has no image download to do this for it.
+        if self._pureDraftSessionId or self._currentPureDraft() is not None:
+            self._requireCurrentPureDraft()
+
+    def closePurePreview(self):
+        with self._pureDraftLock:
+            sessionId = self._pureDraftSessionId
+            self._pureDraftSessionId = ""
+            self._pureDraftFingerprint = ""
+            self._pureDraftProject = None
+            self._pureDraftAssets.clear()
+            self._pureDraftOutputAssets.clear()
+        if sessionId:
+            try:
+                reply = self._runtimeMethod("closeDraftPurePreviewSession")(sessionId)
+                self._requireOk(reply, "E_PREVIEW_RELEASE_FAILED")
+            except Exception as error:
+                self.log("WARN", f"纯预览会话释放失败（租约到期后失效）：{error}")
 
     def _variablePreviewProject(self):
         from copy import deepcopy

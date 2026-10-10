@@ -31,8 +31,16 @@ _PARAM_SCHEMA: dict[str, object] = {
         "operation": {
             "title": "操作类型",
             "type": "string",
-            "enum": list(_OPERATIONS),
+            "enum": ["and", "or", "xor", "not", "subtract"],
             "default": "and",
+            "xOptionLabels": {
+                "and": "交集（与）",
+                "or": "并集（或）",
+                "xor": "异或",
+                "not": "取反",
+                "subtract": "差集（A 减 B）",
+            },
+            "description": "取反仅需 maskA；其他操作需两个尺寸相同的二值掩码。",
         }
     },
 }

@@ -30,15 +30,74 @@
       "mode": {
         "title": "滤波模式",
         "type": "string",
-        "enum": ["gaussian", "median", "bilateral"],
-        "default": "gaussian"
+        "enum": [
+          "gaussian",
+          "median",
+          "bilateral"
+        ],
+        "default": "gaussian",
+        "xOptionLabels": {
+          "gaussian": "高斯滤波",
+          "median": "中值滤波",
+          "bilateral": "双边滤波"
+        },
+        "description": "高斯适合一般平滑，中值适合椒盐噪声，双边滤波可保留边缘。"
       },
-      "kernelSize": {"title": "卷积核大小", "type": "integer", "minimum": 3, "default": 5},
-      "sigmaX": {"title": "水平方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
-      "sigmaY": {"title": "垂直方向标准差", "type": "number", "minimum": 0.0, "default": 0.0},
-      "diameter": {"title": "滤波邻域直径（像素）", "type": "integer", "minimum": 1, "default": 9},
-      "sigmaColor": {"title": "颜色空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0},
-      "sigmaSpace": {"title": "坐标空间标准差", "type": "number", "exclusiveMinimum": 0.0, "default": 75.0}
+      "kernelSize": {
+        "title": "卷积核大小",
+        "type": "integer",
+        "minimum": 3,
+        "default": 5,
+        "xUnit": "像素",
+        "xOdd": true,
+        "xExample": 5,
+        "description": "卷积核边长，必须是大于等于 3 的奇数。"
+      },
+      "sigmaX": {
+        "title": "水平方向标准差",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xUnit": "像素",
+        "xExample": 0.0,
+        "description": "高斯水平方向标准差，0 表示由卷积核大小自动计算。"
+      },
+      "sigmaY": {
+        "title": "垂直方向标准差",
+        "type": "number",
+        "minimum": 0.0,
+        "default": 0.0,
+        "xUnit": "像素",
+        "xExample": 0.0,
+        "description": "高斯垂直方向标准差，0 表示与水平方向相同。"
+      },
+      "diameter": {
+        "title": "滤波邻域直径（像素）",
+        "type": "integer",
+        "minimum": 1,
+        "default": 9,
+        "xUnit": "像素",
+        "xExample": 9,
+        "description": "双边滤波邻域直径，填写大于等于 1 的整数。"
+      },
+      "sigmaColor": {
+        "title": "颜色空间标准差",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 75.0,
+        "xUnit": "颜色值",
+        "xExample": 75.0,
+        "description": "双边滤波的颜色差异标准差，必须为正数。"
+      },
+      "sigmaSpace": {
+        "title": "坐标空间标准差",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 75.0,
+        "xUnit": "像素",
+        "xExample": 75.0,
+        "description": "双边滤波的空间距离标准差，必须为正数。"
+      }
     }
   },
   "minCoreVersion": "0.2.0",

@@ -28,21 +28,45 @@ _PARAM_SCHEMA: dict[str, object] = {
         "colorSpace": {
             "title": "颜色空间",
             "type": "string",
-            "enum": list(_SPACES),
+            "enum": ["BGR", "RGB", "GRAY", "HSV", "LAB"],
             "default": "BGR",
+            "xOptionLabels": {
+                "BGR": "蓝绿红（BGR）",
+                "RGB": "红绿蓝（RGB）",
+                "GRAY": "灰度（GRAY）",
+                "HSV": "色调/饱和度/明度（HSV）",
+                "LAB": "亮度/色度（LAB）",
+            },
+            "description": "必须与输入图像已有颜色空间一致；本算子不执行颜色转换。",
         },
         "lower": {
             "title": "颜色下限",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "xExample": [0, 0, 0],
+            "description": "按通道顺序填写下限数组。灰度填 1 项，其他颜色空间填 3 项；HSV 的色调范围为 0～179，其余通道为 0～255。每项下限不得大于对应上限。",
         },
         "upper": {
             "title": "颜色上限",
             "type": "array",
             "items": {"type": "integer", "minimum": 0, "maximum": 255},
+            "xExample": [255, 255, 255],
+            "description": "按通道顺序填写上限数组。灰度示例 [255]，BGR/RGB/LAB 示例 [255, 255, 255]，HSV 示例 [179, 255, 255]。",
         },
     },
     "required": ["lower", "upper"],
+    "xChannelBounds": {
+        "selector": "colorSpace",
+        "lower": "lower",
+        "upper": "upper",
+        "maxima": {
+            "GRAY": [255],
+            "BGR": [255, 255, 255],
+            "RGB": [255, 255, 255],
+            "HSV": [179, 255, 255],
+            "LAB": [255, 255, 255],
+        },
+    },
 }
 
 

@@ -110,6 +110,9 @@ class PurePreviewControllerBase:
         if self._future is not None:
             self._future.cancel()
         self._cancelCurrentPreview()
+        closePreview = getattr(self.context, "closePurePreview", None)
+        if callable(closePreview):
+            closePreview()
         if self.sourceCombo is not None:
             self.sourceCombo.blockSignals(True)
             self.sourceCombo.clear()
@@ -199,6 +202,13 @@ class PurePreviewControllerBase:
     def _chooseLocalImage(self) -> None:
         if self.context is None or self.sourceCombo is None:
             return
+        try:
+            prepare = getattr(self.context, "prepareLocalPreview", None)
+            if callable(prepare):
+                prepare()
+        except Exception as err:
+            self.context.setError(str(err))
+            return
         filename, _ = QFileDialog.getOpenFileName(
             self.root,
             "选择预览图片",
@@ -261,12 +271,17 @@ class PurePreviewControllerBase:
             previous.cancel()
         requestId = str(uuid4())
         self._requestId = requestId
-        future = self._executor.submit(
-            self.context.runPurePreview,
-            params,
-            self.currentAssetId,
-            requestId,
-        )
+        try:
+            prepare = getattr(self.context, "preparePurePreview", None)
+            if callable(prepare):
+                invocation = prepare(params, self.currentAssetId, requestId)
+                future = self._executor.submit(invocation)
+            else:
+                future = self._executor.submit(self.context.runPurePreview, params, self.currentAssetId, requestId)
+        except Exception as error:
+            self._clearPreviewVisuals("预览已失效")
+            self.context.setError(str(error))
+            return
         self._future = future
 
         def completed(value: Future[object]) -> None:
@@ -296,6 +311,14 @@ class PurePreviewControllerBase:
             code = str(getattr(reply, "code", ""))
             message = str(getattr(reply, "message", ""))
             self.context.setError(f"{code}: {message}".strip(": "))
+            return
+        try:
+            validate = getattr(self.context, "validatePurePreviewResult", None)
+            if callable(validate):
+                validate()
+        except Exception as error:
+            self.invalidatePreviewSources()
+            self.context.setError(str(error))
             return
         rawOutputs = str(getattr(reply, "outputs_json", "{}"))
         try:
@@ -327,6 +350,9 @@ class PurePreviewControllerBase:
         if self._future is not None:
             self._future.cancel()
         self._cancelCurrentPreview()
+        closePreview = getattr(self.context, "closePurePreview", None)
+        if callable(closePreview):
+            closePreview()
         self._executor.shutdown(wait=False, cancel_futures=True)
 
     def _cancelCurrentPreview(self) -> None:

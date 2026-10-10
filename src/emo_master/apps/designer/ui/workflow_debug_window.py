@@ -41,8 +41,9 @@ class WorkflowDebugWindow(QDialog):
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="workflow-debug-ui")
         self.controls = ThreadPoolExecutor(max_workers=1, thread_name_prefix="workflow-debug-close")
         self.bridge = Completion(self)
-        self.bridge.done.connect(self.completed)
+        self.bridge.done.connect(self.completed, Qt.QueuedConnection)
         self.busy = self.closing = self.disposed = False
+        self.polling = self.refreshPending = False
         self.closeSent = False
         self.state, self.session = "STARTING", {}
         self.sequence, self.pauseSequence = 0, 0
@@ -158,8 +159,14 @@ class WorkflowDebugWindow(QDialog):
     def submit(self, name, work, control=False):
         if self.disposed or (self.busy and not control) or (self.closing and name != "close"):
             return False
-        if not control:
+        if not control and ((name == "poll" and self.polling) or (name != "poll" and self.refreshPending)):
+            return False
+        if name == "poll":
+            self.polling = True
+        elif not control:
             self.busy = True
+        if name in {"start", "command"}:
+            self.refreshPending = True
         bridge = self.bridge
         def done(future):
             try:
@@ -175,7 +182,7 @@ class WorkflowDebugWindow(QDialog):
         return True
 
     def refresh(self):
-        idle = not self.busy and not self.closing and not self.connection.uncertain
+        idle = not self.busy and not self.refreshPending and not self.closing and not self.connection.uncertain
         current = self.current is not None and self.current.get("pauseSequence") == self.pauseSequence
         paused = idle and self.state == "PAUSED" and current and not self.session.get("flow", {}).get("trialRunning")
         self.startButton.setEnabled(idle and self.state == "READY")
@@ -274,7 +281,7 @@ class WorkflowDebugWindow(QDialog):
                 self.draftChanged = digest(self.currentDraft()) != self.startupDigest
             except Exception:
                 self.draftChanged = True
-        if not self.busy and self.capability:
+        if not self.busy and not self.polling and self.capability:
             sequence = self.sequence
             self.submit("poll", lambda: self.connection.flowSnapshot(sequence))
 
@@ -286,7 +293,9 @@ class WorkflowDebugWindow(QDialog):
     def completed(self, name, value, error):
         if self.disposed:
             return
-        if name != "close":
+        if name == "poll":
+            self.polling = False
+        elif name != "close":
             self.busy = False
         if self.closing and name != "close":
             self.beginClose()
@@ -303,6 +312,9 @@ class WorkflowDebugWindow(QDialog):
             self.capability = value["capability"]
             self.state = value["session"]["state"]
         elif name == "poll":
+            # A poll queued before a command must not release its ACK/state guard.
+            if not self.busy:
+                self.refreshPending = False
             self.session, self.state = value["session"], value["session"]["state"]
             flow = self.session["flow"]
             self.status.setText(f"{self.state} | 暂停序号 {flow.get('pauseSequence', 0)} | {self.session.get('code', '')} {self.session.get('message', '')}")
@@ -336,14 +348,15 @@ class WorkflowDebugWindow(QDialog):
                 selected = self.lastOutput = flow.get("lastOutput")
             oldIds = [self.history.itemData(index) for index in range(self.history.count())]
             ids = [row["snapshotId"] for row in self.session["snapshots"]]
+            self.history.blockSignals(True)
             if oldIds != ids:
-                self.history.blockSignals(True)
                 self.history.clear()
                 for row in self.session["snapshots"]:
                     identity = row["identity"]
                     self.history.addItem(f"{identity.get('workflowId', '')} / {row['nodeId']} / {row['phase']} / {identity.get('iterationPath', [])}", row["snapshotId"])
-                self.history.setCurrentIndex(self.history.findData(selected))
-                self.history.blockSignals(False)
+            # Terminal state may arrive after its result is already in the list.
+            self.history.setCurrentIndex(self.history.findData(selected))
+            self.history.blockSignals(False)
             if selected and (not self.displayed or self.displayed["snapshotId"] != selected):
                 self.pendingSnapshot = selected
         elif name.startswith("snapshot:"):
@@ -372,6 +385,9 @@ class WorkflowDebugWindow(QDialog):
             self.close()
             return
         self.refresh()
+        if name in {"start", "command"}:
+            # Keep controls locked through ACK until a subsequent read confirms state.
+            self.poll()
         self.drain()
 
     def selectSnapshot(self, *_):
@@ -379,7 +395,7 @@ class WorkflowDebugWindow(QDialog):
         self.drain()
 
     def drain(self):
-        if self.busy or self.closing or self.disposed:
+        if self.busy or self.polling or self.refreshPending or self.closing or self.disposed:
             return
         if self.pendingSnapshot:
             key, self.pendingSnapshot = self.pendingSnapshot, ""

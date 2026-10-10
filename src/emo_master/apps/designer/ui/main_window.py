@@ -3390,6 +3390,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         sceneX: float | None = None,
         sceneY: float | None = None,
     ) -> None:
+        if not flowEditAllowed(self):
+            return
         if not isinstance(payload, dict):
             self.appendRuntimeLog("ERROR", "算子数据无效")
             return
@@ -3414,6 +3416,19 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         inputPorts = inputPortsRaw if isinstance(inputPortsRaw, dict) else {}
         outputPorts = outputPortsRaw if isinstance(outputPortsRaw, dict) else {}
         paramSchema = paramSchemaRaw if isinstance(paramSchemaRaw, dict) else {}
+        if operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
+            from emo_master.apps.designer.state.global_variables import enableVariables
+            try:
+                # Migrate the valid draft before inserting a 2.4-only node. The
+                # surrounding command records migration and insertion together.
+                self.workflowController.captureActiveWorkflow()
+                enableVariables(self.workflowStore)
+            except (TypeError, ValueError) as error:
+                message = f"无法添加变量节点，请先修正项目草稿后重试：{error}"
+                self.appendRuntimeLog("ERROR", message)
+                if _nativeQt:
+                    self.statusBar().showMessage(message, 10000)
+                return
         nodeId = self.flowModel.addNode(
             operatorId=operatorId,
             displayName=displayName,

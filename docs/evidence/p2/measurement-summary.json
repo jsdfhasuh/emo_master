@@ -1,0 +1,225 @@
+{
+  "source": "final-measure/1.log",
+  "sha256": "471ac7d8fd61f9335c1407fbb37826b1deb1ef04c2648270bca9d92d03abb307",
+  "trials": [
+    {
+      "pair": 0,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 257.7679,
+      "achieved_hz": 4.460489674607278,
+      "max_schedule_lateness_ms": 2234.008300001733,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "tail_ms": 2476.2424,
+      "rss_peak_sampled_sum": 388046848,
+      "owner_handles_first_last": [
+        486,
+        485
+      ]
+    },
+    {
+      "pair": 0,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 241.9967,
+      "achieved_hz": 4.386521962533959,
+      "max_schedule_lateness_ms": 2498.313199961558,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 1,
+          "p95_model_ms": 75.8406,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        },
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 1,
+          "p95_model_ms": 70.7396,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        }
+      ],
+      "tail_ms": 6605.9836,
+      "rss_peak_sampled_sum": 471748608,
+      "owner_handles_first_last": [
+        628,
+        615
+      ]
+    },
+    {
+      "pair": 1,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 240.9296,
+      "achieved_hz": 4.613183111405997,
+      "max_schedule_lateness_ms": 1542.3733999487013,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 2,
+          "p95_model_ms": 115.7981,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        },
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 1,
+          "p95_model_ms": 72.9867,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        }
+      ],
+      "tail_ms": 6260.1244,
+      "rss_peak_sampled_sum": 475467776,
+      "owner_handles_first_last": [
+        669,
+        700
+      ]
+    },
+    {
+      "pair": 1,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 246.4705,
+      "achieved_hz": 4.502625915907861,
+      "max_schedule_lateness_ms": 2006.4404000295326,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "tail_ms": 1905.6731,
+      "rss_peak_sampled_sum": 432664576,
+      "owner_handles_first_last": [
+        689,
+        691
+      ]
+    },
+    {
+      "pair": 2,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 251.9102,
+      "achieved_hz": 4.547567548718967,
+      "max_schedule_lateness_ms": 1790.0164000457153,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "tail_ms": 1287.2946,
+      "rss_peak_sampled_sum": 435986432,
+      "owner_handles_first_last": [
+        743,
+        737
+      ]
+    },
+    {
+      "pair": 2,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 837.9759,
+      "achieved_hz": 3.5944347243217303,
+      "max_schedule_lateness_ms": 6856.041399994865,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 2,
+          "p95_model_ms": 94.13,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        },
+        {
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 2,
+          "p95_model_ms": 91.9902,
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          }
+        }
+      ],
+      "tail_ms": 6832.6752,
+      "rss_peak_sampled_sum": 500711424,
+      "owner_handles_first_last": [
+        572,
+        611
+      ]
+    }
+  ]
+}

@@ -1,0 +1,49 @@
+...............................................F........................ [100%]
+================================== FAILURES ===================================
+___________ testDeletedSourceLocalErrorAndPendingProjectValidation ____________
+
+editor = (<emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x20579f60550) at 0x000002057D298...tput'}], ...}}, <emo_master.apps.designer.operator_editors.manager.OperatorEditorManager object at 0x000002057D189D20>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002057D18AB30>
+
+    def testDeletedSourceLocalErrorAndPendingProjectValidation(editor, monkeypatch):
+        window, controller, applied, draft, manager = editor
+        controller._loadRows([mapping(node='source', storage='INTEGER')])
+        controller._changed()
+        draft['sources'] = [n for n in draft['sources'] if n['nodeId'] != 'source']
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_a, **_k: QMessageBox.Save)
+        assert not manager.resolveSqlitePending()
+        assert controller.fields.currentRow() == 0 and not applied
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_a, **_k: QMessageBox.Cancel)
+        assert not manager.resolveSqlitePending()
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_a, **_k: QMessageBox.Discard)
+>       assert manager.resolveSqlitePending() and not window.isDirty() and not applied
+
+tests\sqlite_writer\test_editor.py:131: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.operator_editors.manager.OperatorEditorManager object at 0x000002057D189D20>
+parent = None
+
+    def resolveSqlitePending(self, parent=None) -> bool:
+        """Keep SQLite's pending validation at save/project-switch/close boundaries."""
+        from PySide2.QtWidgets import QMessageBox
+        for window in tuple(self._windows.values()):
+            if window.context.operatorId != 'vision.io.sqlite_writer' or not window.isDirty():
+                continue
+            answer = QMessageBox.question(parent or window, '未应用的 SQLite 配置',
+                'SQLite 字段映射尚未应用。应用后继续？',
+                QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel, QMessageBox.Cancel)
+            if answer == QMessageBox.Cancel:
+                return False
+            if answer == QMessageBox.Save and not window.applyChanges():
+                window.show()
+                window.raise_()
+                return False
+            if answer == QMessageBox.Discard:
+>               window.discardChanges()
+E               AttributeError: 'OperatorWorkspaceWindow' object has no attribute 'discardChanges'
+
+src\emo_master\apps\designer\operator_editors\manager.py:216: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_editor.py::testDeletedSourceLocalErrorAndPendingProjectValidation
+1 failed, 71 passed in 33.59s

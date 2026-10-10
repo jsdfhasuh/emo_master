@@ -1,0 +1,67 @@
+..........................................................F............. [100%]
+================================== FAILURES ===================================
+_______________________ testCompleteSqliteDesignerPath ________________________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000002035CD349A0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-941/testCompleteSqliteDesignerPath0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000002035CD37730>
+
+    def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
+        out = Path(os.environ['EMO_SQLITE_SCREEN_DIR']) if os.environ.get('EMO_SQLITE_SCREEN_DIR') else None
+        screenshots = {}
+        root = tmp_path / '工程 中文 空格'
+        root.mkdir()
+        blank = project(nodes=[])
+        blank['workflows']['main']['inputs'] = {}
+        saveProject(root, blank)
+        runtime = RuntimeService(dbPath=tmp_path / 'runtime-state.sqlite3', workspaceRoot=tmp_path / 'jobs')
+        server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        client = RuntimeClient(rpc.RuntimeServiceStub(channel), runtimeTarget=f'127.0.0.1:{port}')
+        records = {'platform': QApplication.platformName(), 'jobs': [], 'rows': [], 'screenSizes': [],
+                   'devicePixelRatio': QApplication.primaryScreen().devicePixelRatio()}
+        def shot(widget, name):
+            QApplication.processEvents()
+            if out:
+                path = out / (name + '.png')
+                assert widget.grab().save(str(path))
+                screenshots[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        with ownedDesignerWindow as windows:
+            window = windows(client)
+            try:
+                window.resize(1600, 900)
+                assert window.loadProjectDirectory(str(root))
+                window.show()
+                waitQt(lambda: window.operatorCatalogController.state == 'ready')
+                viewport = window.flowView.viewport()
+                sourceId = dragOperator(window, 'vision.value.number', QPoint(viewport.width() // 3, 80), monkeypatch)
+>               sourceEditor = doubleNode(window, sourceId)
+
+tests\sqlite_writer\test_user_path.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <[RuntimeError('Internal C++ object (MainWindow) already deleted.') raised in repr()] MainWindow object at 0x2035cd7fe00>
+nodeId = 'node-054b1208'
+
+    def doubleNode(window, nodeId):
+        item = window.flowScene._nodeItems[nodeId]
+        window.flowView.centerOn(item)
+        QApplication.processEvents()
+        point = window.flowView.mapFromScene(item.mapToScene(QPointF(80, 20)))
+>       assert window.flowView.viewport().rect().contains(point), (point, window.flowView.viewport().rect(), item.pos())
+E       AssertionError: (PySide2.QtCore.QPoint(-32, 60), PySide2.QtCore.QRect(0, 0, 482, 352), PySide2.QtCore.QPointF(-81.000000, -96.000000))
+E       assert False
+E        +  where False = <built-in method contains of PySide2.QtCore.QRect object at 0x000002035B8B3F00>(PySide2.QtCore.QPoint(-32, 60))
+E        +    where <built-in method contains of PySide2.QtCore.QRect object at 0x000002035B8B3F00> = PySide2.QtCore.QRect(0, 0, 482, 352).contains
+E        +      where PySide2.QtCore.QRect(0, 0, 482, 352) = <built-in method rect of PySide2.QtWidgets.QWidget object at 0x000002035BB35340>()
+E        +        where <built-in method rect of PySide2.QtWidgets.QWidget object at 0x000002035BB35340> = <PySide2.QtWidgets.QWidget(0x2035a10d0b0) at 0x000002035BB35340>.rect
+E        +          where <PySide2.QtWidgets.QWidget(0x2035a10d0b0) at 0x000002035BB35340> = <built-in method viewport of DesignerGraphicsView object at 0x000002035CD6A680>()
+E        +            where <built-in method viewport of DesignerGraphicsView object at 0x000002035CD6A680> = <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x20359942b40) at 0x000002035CD6A680>.viewport
+E        +              where <emo_master.apps.designer.ui.designer_graphics_view.DesignerGraphicsView(0x20359942b40) at 0x000002035CD6A680> = <emo_master.apps.designer.ui.main_window.MainWindow(0x203599445f0) at 0x000002035CD7FE00>.flowView
+
+tests\sqlite_writer\test_user_path.py:40: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath
+1 failed, 71 passed in 30.05s

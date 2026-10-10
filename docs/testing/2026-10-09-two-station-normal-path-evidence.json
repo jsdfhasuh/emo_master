@@ -1,0 +1,321 @@
+{
+  "recordedAt": "2026-10-09T18:39:42.588044+08:00",
+  "baseHead": "61a42bf3ab181c3b2339f0425edfb40a60d0ec7b",
+  "committed": false,
+  "interpreter": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "codeAndExampleFiles": {
+    "examples/hardware_trigger_normal_fixture/README.md": {
+      "size": 8973,
+      "sha256": "b998f7430ef56cd91d5ee2723267c4948275a6ee6e8db19ed2b4f025eb380880"
+    },
+    "examples/hardware_trigger_normal_fixture/build_project.py": {
+      "size": 13141,
+      "sha256": "67a8f253d749ad580f9d92ee9d33c605ff363696a63663775f4a47a3d02b4d92"
+    },
+    "examples/hardware_trigger_normal_fixture/project.json": {
+      "size": 274890,
+      "sha256": "2ca2aab9fe52eb9683ea66a8e63effb3ea12b9520ac1d8b3a3fa3d1e7c28d274"
+    },
+    "examples/hardware_trigger_normal_fixture/station1_reference.txt": {
+      "size": 6,
+      "sha256": "8b3a3ad9552da324931fb27537e3151951d3641d00b8fb322de4a2b0580d353d"
+    },
+    "examples/hardware_trigger_normal_fixture/station2_reference.txt": {
+      "size": 7,
+      "sha256": "ba8132e61864fd1f96221f8c6da9ba553a3fb4f6852a4a8f9bf9080de9b18287"
+    },
+    "examples/two_station_normal_path/project.json": {
+      "size": 27739,
+      "sha256": "b3bb8727d7f7dc7dd56867c2e5bc31a05ed7255bf4aead1e1f19bef25d5f9196"
+    },
+    "examples/two_station_normal_path/run_simulation.py": {
+      "size": 4223,
+      "sha256": "29585798142f00861a885fe2009da5576c5b7fae38fe052be7c8f1542299a44a"
+    },
+    "examples/two_station_normal_path/station1_reference.txt": {
+      "size": 73,
+      "sha256": "25358f59c6d43212c3b3016f0311fcc35524969f48462a64c037bd3049b0f0bf"
+    },
+    "examples/two_station_normal_path/station2_reference.txt": {
+      "size": 73,
+      "sha256": "2a82f697aae5e4a30a62355ee7d76fdd9c9cfe247901717f45be55eb097ac2d1"
+    },
+    "src/emo_master/apps/designer/ui/main_window.py": {
+      "size": 192052,
+      "sha256": "4d91acb04f67b835dcce02999e48732d42637bffb52461d641fd4620520be0c5"
+    },
+    "src/emo_master/apps/designer/ui/param_form.py": {
+      "size": 29681,
+      "sha256": "49dedca1547e88d47a7bbbbad4e97e8b74c7861ceb5f46740967cf147334dd1b"
+    },
+    "src/emo_master/apps/runtime/context/coordinate_snapshots.py": {
+      "size": 3656,
+      "sha256": "608b4c0d40adddd39e093630f94881fa05408a154f464cafe20cb375b00c55f4"
+    },
+    "src/emo_master/apps/runtime/jobs/worker_main.py": {
+      "size": 10490,
+      "sha256": "11a8b2adbbd37ed7dcd3b0edde9a6b50b60c1e79a3e6b7ba4753cb6272ef322e"
+    },
+    "src/emo_master/apps/runtime/preview/live.py": {
+      "size": 15707,
+      "sha256": "10bb2acf327735d6120bf032d6518929a9f5730e76b9c568a68401f1c28bb3f2"
+    },
+    "src/emo_master/apps/runtime/workflow/runner.py": {
+      "size": 36399,
+      "sha256": "1645aa637eb93f7741119cfeef2f82951dbcaecf331347a3fe1a689006ff9d57"
+    },
+    "src/emo_master/core/project/global_variables.py": {
+      "size": 8915,
+      "sha256": "0784ade0c3c376ac92172a3e1e79910943de36f1c43dda5a040169d1b0f8fe43"
+    },
+    "src/emo_master/core/workflow/compiler.py": {
+      "size": 20965,
+      "sha256": "47ffbf07010b24443396e9e46f849be0d1b0cc7a9fea2e251ac95c159401e4fe"
+    },
+    "src/emo_master/plugins/builtins/_communication_operators.py": {
+      "size": 45065,
+      "sha256": "979a59680af8d351c90cb13a4dbd232785ffc9f34ce8283e416f43a729a9cc03"
+    },
+    "src/emo_master/plugins/builtins/_coordinate_operators.py": {
+      "size": 36385,
+      "sha256": "b2ab420b20f75c5e15a999fb7966b53de1644017f3f7fb69dc785cb9846eafc5"
+    },
+    "src/emo_master/plugins/builtins/_gateway_coordinates.py": {
+      "size": 7309,
+      "sha256": "43918056d919f9aceeacfa94d9cf2ced27b852e906b476b24c101adfc15fc4d8"
+    },
+    "src/emo_master/plugins/builtins/_geometry_bridges.py": {
+      "size": 9832,
+      "sha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74"
+    },
+    "src/emo_master/plugins/builtins/_huaray_imv.py": {
+      "size": 43819,
+      "sha256": "8ad9a2f2c2c5846f2e7aab37cca97a582de805f8cf7c9cba879c831be519431c"
+    },
+    "src/emo_master/plugins/builtins/_tcp_transport.py": {
+      "size": 8366,
+      "sha256": "52695e4d057d3ed108d44f05a28d51b40d854caf03305dd3964d4458f349691e"
+    },
+    "src/emo_master/plugins/builtins/coordinate_calculator/manifest.json": {
+      "size": 3405,
+      "sha256": "8fe6f070fcfd53caaf6c0ad0a495719130729f7483f5954502cd592e154fac25"
+    },
+    "src/emo_master/plugins/builtins/coordinate_reader/manifest.json": {
+      "size": 4911,
+      "sha256": "25d9015f8cb5ceeddba224da6f7d787914de8b9385c7ccd2049479db4c3f7944"
+    },
+    "src/emo_master/plugins/builtins/detection_bbox/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/detection_bbox/manifest.json": {
+      "size": 872,
+      "sha256": "d3e9a30c6f8787c27b93a4ea6545d1529271fa1ddbe37646d30b9a7d239beea9"
+    },
+    "src/emo_master/plugins/builtins/flow_error/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/flow_error/manifest.json": {
+      "size": 1003,
+      "sha256": "fc3fda877680f4a94ba999d8aa6ea4ce6a372802741e34e50cd898b8b89d643d"
+    },
+    "src/emo_master/plugins/builtins/flow_error/operator.py": {
+      "size": 1655,
+      "sha256": "11a2b06c30373260b1442308d01e03b37d11f46f3cffdab7aa78509f43bcf770"
+    },
+    "src/emo_master/plugins/builtins/gateway_ack_validate/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/gateway_ack_validate/manifest.json": {
+      "size": 1344,
+      "sha256": "0a6763ae12055ac7001aeaceae2718f04fda0ba3e8091c4e85cf7dd13964d7e3"
+    },
+    "src/emo_master/plugins/builtins/gateway_coordinate_format/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/gateway_coordinate_format/manifest.json": {
+      "size": 2094,
+      "sha256": "4467b02ce6c6b89e0d6480d192987f07261a0a99f6b775911ab83675439eebc6"
+    },
+    "src/emo_master/plugins/builtins/geometry_points/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/geometry_points/manifest.json": {
+      "size": 1846,
+      "sha256": "6892c410d93c677ded4a4f2ff117d339b01c1e834920f3e3b9334f458d9f2ed3"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/manifest.json": {
+      "size": 7074,
+      "sha256": "6634e89adc199d3668f3728d60f29d08849774163f558da6b5dbbcaea1870da0"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/operator.py": {
+      "size": 23854,
+      "sha256": "9095d3cf787e3381343f35b935eb439da681dd63047346c888ec9e5c9d188822"
+    },
+    "src/emo_master/plugins/builtins/huaray_camera/parameter_form.py": {
+      "size": 7027,
+      "sha256": "2769ce196a46b3499b376902aafc3c570f1e6738cda1b514687eea265b40dd5d"
+    },
+    "src/emo_master/plugins/builtins/minimum_enclosing_circle/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/minimum_enclosing_circle/manifest.json": {
+      "size": 983,
+      "sha256": "ae0161c2bb7fc5e8b2aef5cd9e8e90112beb1072b535a9262bbbabbdebb09401"
+    },
+    "src/emo_master/plugins/builtins/points_reframe/__init__.py": {
+      "size": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "src/emo_master/plugins/builtins/points_reframe/manifest.json": {
+      "size": 986,
+      "sha256": "3b7c4f9e099bda729b23d7ac3da6d5c6b8ebaabd9310a7c43992b2f8f864a70f"
+    },
+    "src/emo_master/plugins/builtins/tcp_client/manifest.json": {
+      "size": 4206,
+      "sha256": "3601fe4f4b90851f7d3789aabc1e0c1032a0dbdbde4b4049004084186000aedc"
+    },
+    "src/emo_master/plugins/builtins/variable_write/manifest.json": {
+      "size": 1261,
+      "sha256": "f72b6753908d058e4ac0f2b2a68cfa86d829ef930ec75dbe27b418654b3e8aa0"
+    },
+    "src/emo_master/plugins/builtins/variable_write/operator.py": {
+      "size": 3110,
+      "sha256": "112cc73837023929495822e0a3d121e9ef63cb1e8ffdfb782f6237b51fda5111"
+    },
+    "tests/core/plugin/test_builtin_parameter_titles.py": {
+      "size": 1058,
+      "sha256": "3ae1f9f07fd701c499743deb72a29d6dd311ff82e070769d355a763fc22cfbdb"
+    },
+    "tests/core/test_hardware_normal_fixture_package.py": {
+      "size": 5560,
+      "sha256": "3ded193a9f9607f99708eed59ed7d4b6f498415850169f1d332458d072541ae6"
+    },
+    "tests/designer/test_variable_write_modes_ui.py": {
+      "size": 8132,
+      "sha256": "248de0a8152bfb734227a4745059952599ca24309f2c034350433222d9f4ec2e"
+    },
+    "tests/plugins/test_camera_hardware_wait.py": {
+      "size": 3817,
+      "sha256": "09b8e1f002ed57f48bbdf411ab16cdc268491e459b52fb9fb8dde9336ea9c3e7"
+    },
+    "tests/plugins/test_gateway_coordinates.py": {
+      "size": 4748,
+      "sha256": "7fbae7d3ff4f840764781a4ed1446a81918fb6ab4998cdbf3ce78e0862834420"
+    },
+    "tests/plugins/test_geometry_bridges.py": {
+      "size": 5100,
+      "sha256": "3fefa75c3884b0b1069c5182ad4f857f7f94ac8b42f949b4e7592d71ee5d8498"
+    },
+    "tests/plugins/test_variable_write_modes.py": {
+      "size": 3702,
+      "sha256": "d54eb019bf8f34caaa6c24ca71343d8298ce8cb13e4b633df905e3f14081d2fa"
+    },
+    "tests/runtime/test_coordinate_snapshot_worker_admission.py": {
+      "size": 2137,
+      "sha256": "783560e8dbdcbbba97ff3e929665919f464531a1aaa599c20ee2a9338f7e3923"
+    },
+    "tests/runtime/test_coordinate_snapshots.py": {
+      "size": 5426,
+      "sha256": "ae084d77da0c2e22d776ae75b1f56c1f858b58b3b9162c710debcae8447a3fbd"
+    },
+    "tests/runtime/test_hardware_trigger_normal_chain.py": {
+      "size": 11921,
+      "sha256": "5f2de696bbf28979f0bcb623d5c25939d8dc3007ec3a15165d83f716af4cc6a7"
+    },
+    "tests/runtime/test_operator_registration.py": {
+      "size": 5311,
+      "sha256": "dc778beb4dc903ba28341836fd0aee17dff12d6a6810583eec4419a45f24078b"
+    },
+    "tests/runtime/test_two_shot_variable_control.py": {
+      "size": 5113,
+      "sha256": "d19f7263a1ef6febdcd474c5e919c2c2f9ad5440ee3fde4b1f094b99a3109160"
+    },
+    "tests/runtime/test_worker_heartbeat_finalization.py": {
+      "size": 11945,
+      "sha256": "22d6db0933fd82497d2ffd64372d475967dd3ed114a72fadf4452d7364151320"
+    },
+    "tests/sqlite_writer/test_dependencies.py": {
+      "size": 8766,
+      "sha256": "2c15aa866ed78ab86af69c79974017d5ae3c40c3e3de39bbd081d6405c0240e4"
+    }
+  },
+  "logs": {
+    "build/two-station-focused-final.txt": {
+      "size": 182,
+      "sha256": "64492f1f224656741278eb9cc9321a2a90af7c06dcc53dc8cc19fee6b4388a12",
+      "lastNonemptyLine": "76 passed in 5.90s"
+    },
+    "build/two-station-post-typing-final.txt": {
+      "size": 182,
+      "sha256": "18bf9829ff0f19a2d637f6f5d06de2f34ca1534645b102d127faed9fa16e7db6",
+      "lastNonemptyLine": "92 passed in 8.39s"
+    },
+    "build/two-station-failed-rerun.txt": {
+      "size": 101,
+      "sha256": "d5ecfc55620d06368161db9b10cc4160d60608cf0ddd14fc9874f5ebdf346845",
+      "lastNonemptyLine": "20 passed in 4.16s"
+    },
+    "build/two-station-source-regression.txt": {
+      "size": 41707,
+      "sha256": "8d717a939088dd31d35ad775e4460a548496c5218269ac2be734bdcf0dcc04ce",
+      "lastNonemptyLine": "16 failed, 2227 passed, 2 skipped, 1 warning in 445.72s (0:07:25)"
+    },
+    "build/two-station-designer-regression.txt": {
+      "size": 1086,
+      "sha256": "d0a3551087581c05862830375e1df7a29e26a2b7a377b42542403a1a6ec074cd",
+      "lastNonemptyLine": "893 passed in 110.66s (0:01:50)"
+    },
+    "build/two-station-full-regression-final.txt": {
+      "size": 3933,
+      "sha256": "fb777cc5733802c5cdda4d7a1b5e38fba0fb16e5763e3d341836dd93f9559cce",
+      "lastNonemptyLine": "3389 passed, 2 skipped in 798.12s (0:13:18)"
+    },
+    "build/two-station-other-regression-final.txt": {
+      "size": 1419,
+      "sha256": "8adfd26828b0f99f31724de0fd397f89b62eee29e3bd9777f3b4d52e9f234d6d",
+      "lastNonemptyLine": "1 failed, 184 passed in 90.49s (0:01:30)"
+    },
+    "build/two-station-other-regression-rerun.txt": {
+      "size": 275,
+      "sha256": "0915cdd94ec4eac0bef1ae7ca7ead8fa6ba93ba3151ac4a9bc2e19c6b63bd136",
+      "lastNonemptyLine": "185 passed in 89.76s (0:01:29)"
+    },
+    "build/two-station-skip-reasons.txt": {
+      "size": 581,
+      "sha256": "6eabd310e907ac5a147d49050fad89145635f66006eceb69d97d77f0c3a3378e",
+      "lastNonemptyLine": "91 passed, 2 skipped in 4.90s"
+    },
+    "build/two-station-mypy-final.txt": {
+      "size": 44,
+      "sha256": "90377c8fd97127580c93ac5740d596c9ebc9db94dafa6560ee11fe16b4460c62",
+      "lastNonemptyLine": "Success: no issues found in 6 source files"
+    },
+    "build/two-station-ruff-final.txt": {
+      "size": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+      "lastNonemptyLine": "All checks passed!"
+    }
+  },
+  "annotationFollowup": "Broad 3389/2 run preceded annotation-only SCHEMA/Protocol cleanup; affected 92 rerun passed after cleanup.",
+  "externalBoundaries": [
+    "IMV SDK fixture",
+    "ONNX inference backend fixture",
+    "loopback SLMP peer",
+    "loopback gateway peers"
+  ],
+  "notVerified": [
+    "old field algorithms",
+    "dual production Jobs and filtered presentation",
+    "physical synchronization and cadence",
+    "real-device I/O",
+    "field package acceptance"
+  ],
+  "businessNg": "deferred"
+}

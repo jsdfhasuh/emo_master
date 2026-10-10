@@ -1,0 +1,2 @@
+# Preserve exact raw Windows logs, fixture sources and evidence hashes.
+* -text -whitespace

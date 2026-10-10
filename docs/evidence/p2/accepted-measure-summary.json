@@ -1,0 +1,399 @@
+{
+  "summary": [
+    {
+      "pair": 0,
+      "regression_percent": 90.66123685369642,
+      "complete": true,
+      "p95_model_pass": true,
+      "max_sampled_age_ms": 10250.3138,
+      "achieved_hz": 3.659001453961005,
+      "schedule_lateness_ms": 6626.039299997501,
+      "pass": false
+    },
+    {
+      "pair": 1,
+      "regression_percent": 77.52917226937981,
+      "complete": true,
+      "p95_model_pass": true,
+      "max_sampled_age_ms": 9287.3995,
+      "achieved_hz": 3.8279767442756834,
+      "schedule_lateness_ms": 5587.577799917199,
+      "pass": false
+    },
+    {
+      "pair": 2,
+      "regression_percent": 74.60711328189763,
+      "complete": true,
+      "p95_model_pass": true,
+      "max_sampled_age_ms": 6473.7862,
+      "achieved_hz": 4.058806791979294,
+      "schedule_lateness_ms": 4113.212199998088,
+      "pass": false
+    }
+  ],
+  "performance_status": "FAIL",
+  "rss_handles_steady_state": "NOT_RUN (short-window process samples retained; no soak acceptance)",
+  "clock": "same-host perf_counter_ns; scope entry/end; age includes terminal-drain tail; no missing-result denominator removal",
+  "load": "fixed seed 20260926 1920x1080x3; 5Hz; 96 runs, first 8 warmup; 3 alternating pairs; existing PreviewSnapshotWriter enabled",
+  "log_sha256": "94648c46008d92b12986ab323a828ea625f7b9c8cbd188bc3a5c6a209ae3c851",
+  "code_digest": "9cecd6f6e08abb628fa423c3594138daf0432ee870a419d999610980e926a024",
+  "trials": [
+    {
+      "pair": 0,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 258.818,
+      "achieved_hz": 4.140447087189763,
+      "max_schedule_lateness_ms": 3816.4718999760225,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "process_sample_example": {
+        "time_ns": 615647452923200,
+        "processes": {
+          "owner": {
+            "rss_bytes": 113176576,
+            "peak_rss_bytes": 113205248,
+            "handles": 488,
+            "cpu_seconds": 23.03125
+          },
+          "exporter0": {
+            "rss_bytes": 79540224,
+            "peak_rss_bytes": 79540224,
+            "handles": 371,
+            "cpu_seconds": 0.984375
+          },
+          "exporter1": {
+            "rss_bytes": 79851520,
+            "peak_rss_bytes": 79851520,
+            "handles": 371,
+            "cpu_seconds": 1.046875
+          },
+          "job": {
+            "rss_bytes": 87662592,
+            "peak_rss_bytes": 118079488,
+            "handles": 417,
+            "cpu_seconds": 25.859375
+          }
+        }
+      }
+    },
+    {
+      "pair": 0,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 493.4656,
+      "achieved_hz": 3.659001453961005,
+      "max_schedule_lateness_ms": 6626.039299997501,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 178.9166
+        },
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 174.0662
+        }
+      ],
+      "process_sample_example": {
+        "time_ns": 615689221085600,
+        "processes": {
+          "owner": {
+            "rss_bytes": 177049600,
+            "peak_rss_bytes": 215015424,
+            "handles": 615,
+            "cpu_seconds": 60.640625
+          },
+          "exporter0": {
+            "rss_bytes": 92901376,
+            "peak_rss_bytes": 105381888,
+            "handles": 371,
+            "cpu_seconds": 6.875
+          },
+          "exporter1": {
+            "rss_bytes": 79761408,
+            "peak_rss_bytes": 79761408,
+            "handles": 371,
+            "cpu_seconds": 1.015625
+          },
+          "job": {
+            "rss_bytes": 89309184,
+            "peak_rss_bytes": 118644736,
+            "handles": 451,
+            "cpu_seconds": 26.90625
+          }
+        }
+      }
+    },
+    {
+      "pair": 1,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 426.4446,
+      "achieved_hz": 3.8279767442756834,
+      "max_schedule_lateness_ms": 5587.577799917199,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 154.5328
+        },
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 163.0635
+        }
+      ],
+      "process_sample_example": {
+        "time_ns": 615729055123000,
+        "processes": {
+          "owner": {
+            "rss_bytes": 189063168,
+            "peak_rss_bytes": 219570176,
+            "handles": 696,
+            "cpu_seconds": 96.21875
+          },
+          "exporter0": {
+            "rss_bytes": 92897280,
+            "peak_rss_bytes": 105377792,
+            "handles": 371,
+            "cpu_seconds": 7.09375
+          },
+          "exporter1": {
+            "rss_bytes": 79667200,
+            "peak_rss_bytes": 79667200,
+            "handles": 371,
+            "cpu_seconds": 0.953125
+          },
+          "job": {
+            "rss_bytes": 89583616,
+            "peak_rss_bytes": 118325248,
+            "handles": 451,
+            "cpu_seconds": 26.96875
+          }
+        }
+      }
+    },
+    {
+      "pair": 1,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 240.211,
+      "achieved_hz": 4.700912950795804,
+      "max_schedule_lateness_ms": 1138.797999941744,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "process_sample_example": {
+        "time_ns": 615756762283300,
+        "processes": {
+          "owner": {
+            "rss_bytes": 145022976,
+            "peak_rss_bytes": 219570176,
+            "handles": 687,
+            "cpu_seconds": 113.421875
+          },
+          "exporter0": {
+            "rss_bytes": 79740928,
+            "peak_rss_bytes": 79740928,
+            "handles": 371,
+            "cpu_seconds": 0.96875
+          },
+          "exporter1": {
+            "rss_bytes": 79699968,
+            "peak_rss_bytes": 79699968,
+            "handles": 371,
+            "cpu_seconds": 0.90625
+          },
+          "job": {
+            "rss_bytes": 90112000,
+            "peak_rss_bytes": 117100544,
+            "handles": 453,
+            "cpu_seconds": 25.84375
+          }
+        }
+      }
+    },
+    {
+      "pair": 2,
+      "enabled": false,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 237.0467,
+      "achieved_hz": 4.742680680870142,
+      "max_schedule_lateness_ms": 963.1670999806374,
+      "export": {
+        "completed": 0,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [],
+      "process_sample_example": {
+        "time_ns": 615783620865100,
+        "processes": {
+          "owner": {
+            "rss_bytes": 149393408,
+            "peak_rss_bytes": 219570176,
+            "handles": 519,
+            "cpu_seconds": 130.578125
+          },
+          "exporter0": {
+            "rss_bytes": 79732736,
+            "peak_rss_bytes": 79732736,
+            "handles": 371,
+            "cpu_seconds": 0.921875
+          },
+          "exporter1": {
+            "rss_bytes": 79749120,
+            "peak_rss_bytes": 79749120,
+            "handles": 371,
+            "cpu_seconds": 0.8125
+          },
+          "job": {
+            "rss_bytes": 92082176,
+            "peak_rss_bytes": 119091200,
+            "handles": 453,
+            "cpu_seconds": 24.78125
+          }
+        }
+      }
+    },
+    {
+      "pair": 2,
+      "enabled": true,
+      "expected": 88,
+      "executed": 88,
+      "job_status": "COMPLETED",
+      "p95_execution_ms": 413.9004,
+      "achieved_hz": 4.058806791979294,
+      "max_schedule_lateness_ms": 4113.212199998088,
+      "export": {
+        "completed": 96,
+        "timed_out": 0,
+        "reaped": 0,
+        "failed": 0
+      },
+      "consumers": [
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 145.5097
+        },
+        {
+          "stats": {
+            "received": 96,
+            "decoded": 96,
+            "dropped": 0,
+            "read_failed": 0,
+            "resets": 1
+          },
+          "unique_received": 88,
+          "unique_decoded": 88,
+          "unique_applied": 88,
+          "p95_model_ms": 154.8722
+        }
+      ],
+      "process_sample_example": {
+        "time_ns": 615818094520900,
+        "processes": {
+          "owner": {
+            "rss_bytes": 200867840,
+            "peak_rss_bytes": 239927296,
+            "handles": 664,
+            "cpu_seconds": 161.328125
+          },
+          "exporter0": {
+            "rss_bytes": 92696576,
+            "peak_rss_bytes": 105181184,
+            "handles": 371,
+            "cpu_seconds": 6.375
+          },
+          "exporter1": {
+            "rss_bytes": 79818752,
+            "peak_rss_bytes": 79818752,
+            "handles": 371,
+            "cpu_seconds": 0.859375
+          },
+          "job": {
+            "rss_bytes": 89632768,
+            "peak_rss_bytes": 116568064,
+            "handles": 451,
+            "cpu_seconds": 25.78125
+          }
+        }
+      }
+    }
+  ]
+}

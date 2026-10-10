@@ -2,8 +2,12 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+import os
 
 import cv2
+import numpy as np
+
+from emo_master.plugins.builtins._image_frame import defaultFrame
 
 
 @dataclass(frozen=True)
@@ -11,8 +15,8 @@ class OperatorMeta:
     operatorId: str
     displayName: str
     version: str
-    inputPorts: dict[str, str]
-    outputPorts: dict[str, str]
+    inputPorts: dict[str, object]
+    outputPorts: dict[str, object]
     paramSchema: dict[str, object]
 
 
@@ -20,13 +24,22 @@ class ImageLoaderOperator:
     meta = OperatorMeta(
         operatorId="vision.io.image_loader",
         displayName="Image Loader",
-        version="1.0.0",
+        version="1.1.0",
         inputPorts={},
-        outputPorts={"image": "image"},
+        outputPorts={
+            "image": {"type": "image", "required": True, "nullable": False},
+            "frame": {
+                "type": "bbox2d",
+                "required": True,
+                "nullable": False,
+                "schemaVersion": "1.1",
+            },
+        },
         paramSchema={
             "type": "object",
             "properties": {
                 "imagePath": {
+                    "title": "图像路径",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
@@ -34,6 +47,7 @@ class ImageLoaderOperator:
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
                 "colorMode": {
+                    "title": "颜色模式",
                     "type": "string",
                     "enum": ["color", "grayscale"],
                     "default": "color",
@@ -89,7 +103,16 @@ class ImageLoaderOperator:
         readFlag = (
             cv2.IMREAD_GRAYSCALE if colorMode == "grayscale" else cv2.IMREAD_COLOR
         )
-        image = cv2.imread(str(pathObj), readFlag)
+        if os.name == 'nt' and not str(pathObj).isascii():
+            # OpenCV's Windows narrow filename API cannot open Unicode paths.
+            # Python/NumPy own the file I/O; keep the same decoder and color flag.
+            try:
+                encoded = np.fromfile(pathObj, dtype=np.uint8)
+                image = cv2.imdecode(encoded, readFlag) if encoded.size else None
+            except (OSError, cv2.error):
+                image = None
+        else:
+            image = cv2.imread(str(pathObj), readFlag)
         if image is None:
             return {
                 "status": "error",
@@ -100,9 +123,15 @@ class ImageLoaderOperator:
             }
 
         elapsedMs = (perf_counter() - startAt) * 1000.0
+        height, width = image.shape[:2]
+        frame = defaultFrame(
+            width,
+            height,
+            sourceId=str(pathObj.resolve()),
+        )
         return {
             "status": "ok",
-            "outputs": {"image": image},
+            "outputs": {"image": image, "frame": frame.toPayload()},
             "metrics": {"latencyMs": round(elapsedMs, 3)},
             "diagnostics": {"text": "Image loaded"},
         }

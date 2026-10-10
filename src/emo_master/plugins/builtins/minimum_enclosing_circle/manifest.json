@@ -1,0 +1,37 @@
+{
+  "operatorId": "vision.analysis.minimum_enclosing_circle",
+  "displayName": "最小外接圆",
+  "version": "1.0.0",
+  "inputPorts": {
+    "contours": {
+      "type": "contourCollection",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.2"
+    }
+  },
+  "outputPorts": {
+    "circles": {
+      "type": "circleCollection",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.2"
+    },
+    "circleCount": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._geometry_bridges:MinimumEnclosingCircleOperator",
+  "category": "分析",
+  "summary": "逐轮廓计算最小外接圆，保持来源和坐标空间；不是 Hough 圆或质心。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

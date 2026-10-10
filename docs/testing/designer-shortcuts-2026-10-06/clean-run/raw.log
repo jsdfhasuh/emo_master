@@ -1,0 +1,2160 @@
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF........... [ 87%]
+.FFFFEEEEF                                                               [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34177F3A0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b1520) at 0x000001E36BA71B40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a9140 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9AE400>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b1600 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9AD900>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_______ ERROR at setup of testDeleteKeyUsesSingleUndoTransaction[key0] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DCC40>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e3692605e0) at 0x000001E369D9F480>
+old = <PySide2.QtWidgets.QAction(0x1e369268100 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C57080>
+new = <PySide2.QtWidgets.QAction(0x1e369260400 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C577C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_______ ERROR at setup of testDeleteKeyUsesSingleUndoTransaction[key1] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B9D20B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4a8b20) at 0x000001E369B40740>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b2cc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369B42C80>
+new = <PySide2.QtWidgets.QAction(0x1e36a4a9100 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369B33900>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testCopyUndoAndBothRedoKeys[redoKey0-modifiers0] ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA64700>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925ee00) at 0x000001E36BBC7FC0>
+old = <PySide2.QtWidgets.QAction(0x1e3692670a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C65C80>
+new = <PySide2.QtWidgets.QAction(0x1e36925ed60 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C67D00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testCopyUndoAndBothRedoKeys[redoKey1-modifiers1] ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA64EE0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4aa500) at 0x000001E36BB52300>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b39c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB7AFC0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4aa5c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BCAA5C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+______________ ERROR at setup of testF2OpensActualExistingEditor ______________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BD22C80>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36926a100) at 0x000001E369C57FC0>
+old = <PySide2.QtWidgets.QAction(0x1e3692632e0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C57400>
+new = <PySide2.QtWidgets.QAction(0x1e36926a340 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C56680>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+__ ERROR at setup of testResultKeysReuseReadonlyZeroResultWhileRunning[key0] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B80E530>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b1520) at 0x000001E36BCAA440>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a8b40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BCA8540>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b18e0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D2E5CC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+__ ERROR at setup of testResultKeysReuseReadonlyZeroResultWhileRunning[key1] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA004C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369269fa0) at 0x000001E36B404EC0>
+old = <PySide2.QtWidgets.QAction(0x1e369263220 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B5439C0>
+new = <PySide2.QtWidgets.QAction(0x1e36926a600 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BA94800>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testOpenAndSaveKeysUseExistingDialogsAndSaveActualProject _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B83E7D0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b3bc0) at 0x000001E36BA0E700>
+old = <PySide2.QtWidgets.QAction(0x1e36a4ab220 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9AED00>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b3e00 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC2D40>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[line] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B972890>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925d260) at 0x000001E36BA94540>
+old = <PySide2.QtWidgets.QAction(0x1e3692659c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BAA7180>
+new = <PySide2.QtWidgets.QAction(0x1e36925ce00 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BA89500>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[spin] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DD9F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4a8080) at 0x000001E36BCF7FC0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b1d60 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BCF4E80>
+new = <PySide2.QtWidgets.QAction(0x1e36a4a7fe0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BE34380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key0-modifiers0] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B34EE00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36926ae40) at 0x000001E36BC3BE00>
+old = <PySide2.QtWidgets.QAction(0x1e369262f80 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BA0DB80>
+new = <PySide2.QtWidgets.QAction(0x1e36926a7e0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D2E7D00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key1-modifiers1] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B86DE40>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4aa140) at 0x000001E36B33D680>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b3780 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B33F740>
+new = <PySide2.QtWidgets.QAction(0x1e36a4aa0a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C8F2C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key2-modifiers2] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DEC80>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369267180) at 0x000001E36D2E71C0>
+old = <PySide2.QtWidgets.QAction(0x1e36925f940 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2E6C80>
+new = <PySide2.QtWidgets.QAction(0x1e3692668a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9E8EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key3-modifiers3] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34171D7E0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4ac8c0) at 0x000001E369B4E800>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b5d00 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC3A100>
+new = <PySide2.QtWidgets.QAction(0x1e36a4ac640 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C81340>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key4-modifiers4] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34171EFB0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369262180) at 0x000001E36B9C8740>
+old = <PySide2.QtWidgets.QAction(0x1e36926ae40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4F980>
+new = <PySide2.QtWidgets.QAction(0x1e369262620 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BB79940>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key5-modifiers5] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BCBB4F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b25a0) at 0x000001E36B9E9E40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a9c40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9EAE40>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b2660 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369B408C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key6-modifiers6] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BAA1600>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925d300) at 0x000001E369C8C4C0>
+old = <PySide2.QtWidgets.QAction(0x1e369265a80 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BBCFB40>
+new = <PySide2.QtWidgets.QAction(0x1e36925cfc0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B349380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5 _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B437A30>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4ab4c0) at 0x000001E369C66C40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b4940 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C8C80>
+new = <PySide2.QtWidgets.QAction(0x1e36a4ab460 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C1580>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_______ ERROR at setup of testLayoutFitAndLogsKeysCallExistingCommands ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA65030>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369266960) at 0x000001E369D9E6C0>
+old = <PySide2.QtWidgets.QAction(0x1e36925f120 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4E080>
+new = <PySide2.QtWidgets.QAction(0x1e369266d20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B349380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+______ ERROR at setup of testPageCopyDeleteUndoNeverModifyHiddenWorkflow ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B80EFE0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4ad8a0) at 0x000001E369C8F800>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b6e60 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2AB940>
+new = <PySide2.QtWidgets.QAction(0x1e36a4ad400 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C56100>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B4D7BE0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e3692657e0) at 0x000001E36BB581C0>
+old = <PySide2.QtWidgets.QAction(0x1e36925e260 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4F380>
+new = <PySide2.QtWidgets.QAction(0x1e369265ca0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369B31380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+______ ERROR at setup of testPageFlowOnlyKeysAndPreviewKeepTaskOwnership ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B5675B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4aa3c0) at 0x000001E36D2A9E40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b3300 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2AAF00>
+new = <PySide2.QtWidgets.QAction(0x1e36a4aa6c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BA949C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+____ ERROR at setup of testModalAndOtherDesignerWindowDoNotShareShortcuts _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7E8430>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925b260) at 0x000001E36BB946C0>
+old = <PySide2.QtWidgets.QAction(0x1e369264000 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB944C0>
+new = <PySide2.QtWidgets.QAction(0x1e36925b5c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C7FD00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testClickPageCardTransfersPropertyFocusBeforeCopy _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B9D0880>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b5ec0) at 0x000001E36BBC4E00>
+old = <PySide2.QtWidgets.QAction(0x1e36a4adec0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C9100>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b5a20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C57380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testPageSidebarAndTableDoNotDeleteCanvasSelection _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B822980>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925b400) at 0x000001E36BE344C0>
+old = <PySide2.QtWidgets.QAction(0x1e369263ce0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BCF5740>
+new = <PySide2.QtWidgets.QAction(0x1e36926af60 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BC72280>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+______ ERROR at setup of testPendingRefreshIsBoundedAndRetiredWithWindow ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34177D9C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b0f80) at 0x000001E36BA51E40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a8720 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C64E00>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b0fc0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D280EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+____ ERROR at setup of testCloseInProgressBlocksKeyboardAndRetainedActions ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34176DF00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925d8c0) at 0x000001E36BC85000>
+old = <PySide2.QtWidgets.QAction(0x1e3692665e0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC85A80>
+new = <PySide2.QtWidgets.QAction(0x1e36925da80 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BCA8EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testRunningDeleteKeysCannotRemoveDraftNodes[key0] _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BC944C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b6040) at 0x000001E36BB51700>
+old = <PySide2.QtWidgets.QAction(0x1e36a4ae180 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB53AC0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b5f60 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9CB8C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testRunningDeleteKeysCannotRemoveDraftNodes[key1] _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B9716C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925db80) at 0x000001E36BC71C00>
+old = <PySide2.QtWidgets.QAction(0x1e3692660e0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC722C0>
+new = <PySide2.QtWidgets.QAction(0x1e36925d760 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC2380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B4D5F30>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b61e0) at 0x000001E36D2E7FC0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4adca0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D3065C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b6880 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D2A9180>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BAA12D0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925b440) at 0x000001E36BABFF40>
+old = <PySide2.QtWidgets.QAction(0x1e369263e60 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9CAA80>
+new = <PySide2.QtWidgets.QAction(0x1e36925b0e0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC6580>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DEE30>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b5920) at 0x000001E36B9AE600>
+old = <PySide2.QtWidgets.QAction(0x1e36a4acc60 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C57780>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b5440 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369F332C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DEDD0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925b540) at 0x000001E369B4D000>
+old = <PySide2.QtWidgets.QAction(0x1e369263e40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE06CC0>
+new = <PySide2.QtWidgets.QAction(0x1e36925b420 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BB97200>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BAA28C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b3740) at 0x000001E36BABC6C0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4aaca0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4FA40>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b32a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BDF2600>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_________ ERROR at setup of testRunningConfigurationDoesNotOpenEditor _________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BCE2950>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369269ae0) at 0x000001E36BBC6680>
+old = <PySide2.QtWidgets.QAction(0x1e369262460 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB5A500>
+new = <PySide2.QtWidgets.QAction(0x1e369269d40 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BB96300>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+____________ ERROR at setup of testRunningHistoryCannotMutateDraft ____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7F1C00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4a9220) at 0x000001E36B4B1E40>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b2cc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C7CCC0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4a9340 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BC857C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B34FAC0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369260900) at 0x000001E36BAA7540>
+old = <PySide2.QtWidgets.QAction(0x1e369269200 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE02800>
+new = <PySide2.QtWidgets.QAction(0x1e369260d00 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C1380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BE3BD90>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4afe20) at 0x000001E36D304240>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b7fa0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC399C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4afb60 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BB7A600>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BCBBD30>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925b4c0) at 0x000001E36BE4C4C0>
+old = <PySide2.QtWidgets.QAction(0x1e369263840 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE4F6C0>
+new = <PySide2.QtWidgets.QAction(0x1e36925af40 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9BE540>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B436470>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b6aa0) at 0x000001E36BB501C0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4ae4c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9981C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b6860 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BE04180>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testConfigurationUsesRealExistingEditorWithoutEditingDraft _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E369B22740>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369263840) at 0x000001E36BE00FC0>
+old = <PySide2.QtWidgets.QAction(0x1e36925b720 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BD48EC0>
+new = <PySide2.QtWidgets.QAction(0x1e369263400 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BCCD900>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B972380>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b7dc0) at 0x000001E36B9E8FC0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b10c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB961C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b7bc0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B359380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+__ ERROR at setup of testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B57F6A0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369268020) at 0x000001E369C82300>
+old = <PySide2.QtWidgets.QAction(0x1e3692608c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B97E9C0>
+new = <PySide2.QtWidgets.QAction(0x1e369268180 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC6DC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[configure] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA64520>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b7720) at 0x000001E36B33F480>
+old = <PySide2.QtWidgets.QAction(0x1e36a4afc00 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BDDA300>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b6d00 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BDD8EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[copy] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BA64F10>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369260f20) at 0x000001E36BBC1E40>
+old = <PySide2.QtWidgets.QAction(0x1e369269640 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC1840>
+new = <PySide2.QtWidgets.QAction(0x1e369261060 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9E9380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[delete] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DD870>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4a9e00) at 0x000001E36BC901C0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b3400 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB953C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4a9ba0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBCFD00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B7DCD60>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e3692636a0) at 0x000001E36BC4C4C0>
+old = <PySide2.QtWidgets.QAction(0x1e36925afc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2E7E80>
+new = <PySide2.QtWidgets.QAction(0x1e369263420 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BCF6DC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34176D3F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b0ee0) at 0x000001E36BC90FC0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a7ba0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9E8F40>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b0a40 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369B321C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B436470>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369266080) at 0x000001E36BCF4540>
+old = <PySide2.QtWidgets.QAction(0x1e36925bfa0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C8640>
+new = <PySide2.QtWidgets.QAction(0x1e369266600 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BB59FC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E369B22AA0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4a99c0) at 0x000001E36BD4CF00>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b3460 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BD4E580>
+new = <PySide2.QtWidgets.QAction(0x1e36a4aa060 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BD4D340>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BD37DF0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369268500) at 0x000001E36B9AE680>
+old = <PySide2.QtWidgets.QAction(0x1e3692609c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE4E200>
+new = <PySide2.QtWidgets.QAction(0x1e369267fa0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC2C80>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[clear] ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E34171E2F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4afd80) at 0x000001E36BCC9C00>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b7aa0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36B348C80>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b0120 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B349380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[reload] ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B9655A0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925cf60) at 0x000001E36BCF7FC0>
+old = <PySide2.QtWidgets.QAction(0x1e369265dc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BCAB040>
+new = <PySide2.QtWidgets.QAction(0x1e36925d640 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BDA9080>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+__ ERROR at setup of testOldActionCannotOperateAfterContextChanges[project] ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BAA02B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b0a20) at 0x000001E36BC4C740>
+old = <PySide2.QtWidgets.QAction(0x1e36a4a7860 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4E1C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b02a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4FD00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testOldActionCannotOperateAfterContextChanges[workspace] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BD47D60>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369264400) at 0x000001E36D29FFC0>
+old = <PySide2.QtWidgets.QAction(0x1e36925c0a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB5AC00>
+new = <PySide2.QtWidgets.QAction(0x1e369264600 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BCF51C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[close] ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B53D360>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4abda0) at 0x000001E36D2D4340>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b4c40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE366C0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4ac0e0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D2C1880>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testActualMenuMouseClickCopiesOnceAndClosesPopup ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36BCE1780>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e3692676e0) at 0x000001E369C7E4C0>
+old = <PySide2.QtWidgets.QAction(0x1e36925fa40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC4C700>
+new = <PySide2.QtWidgets.QAction(0x1e369267c20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E369C7C700>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_______ ERROR at setup of testRightClickOnConnectionKeepsNodeMenuClosed _______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B4D71C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4ac580) at 0x000001E369C66700>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b5720 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D32BFC0>
+new = <PySide2.QtWidgets.QAction(0x1e36a4abae0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36D2815C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_ ERROR at setup of testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001E36B80CD90>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925e360) at 0x000001E36B9AF1C0>
+old = <PySide2.QtWidgets.QAction(0x1e369266700 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2D4840>
+new = <PySide2.QtWidgets.QAction(0x1e36925dfa0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BBC2840>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_________ ERROR at setup of testSaveCommitsVisibleUnappliedProperties _________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1e368c5bd90) at 0x000001E369B21830>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E36B970EB0>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36926ac40) at 0x000001E36D2E6600>
+old = <PySide2.QtWidgets.QAction(0x1e369263680 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E369C66700>
+new = <PySide2.QtWidgets.QAction(0x1e36926ac20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BC90EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+__ ERROR at setup of testInvalidPendingInputBlocksSaveWithoutDiscardingText ___
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1e368c5bd90) at 0x000001E369B21830>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E36B9722F0>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4abea0) at 0x000001E36B9AE600>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b4a00 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BDD2D40>
+new = <PySide2.QtWidgets.QAction(0x1e36a4abf80 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BDD0EC0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_____ ERROR at setup of testSelectingAnotherComponentCommitsPendingInput ______
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1e368c5bd90) at 0x000001E369B21830>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E36B83E830>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369269020) at 0x000001E36BB53700>
+old = <PySide2.QtWidgets.QAction(0x1e369261ae0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB51F80>
+new = <PySide2.QtWidgets.QAction(0x1e369269060 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BDD9380>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_________ ERROR at setup of testInvalidInputBlocksComponentSelection __________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1e368c5bd90) at 0x000001E369B21830>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E369B23A00>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b4f60) at 0x000001E36D2A81C0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4ad180 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BA53740>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b4b60 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BE02D40>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+================================== FAILURES ===================================
+_______________ testDeleteUsesShortcutHandlerAndNoDeleteButton ________________
+
+    def testDeleteUsesShortcutHandlerAndNoDeleteButton() -> None:
+        ensureQApp()
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_delete_shortcut.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4b6660) at 0x000001E36BCCCE00>
+old = <PySide2.QtWidgets.QAction(0x1e36a4adc60 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BC87280>
+new = <PySide2.QtWidgets.QAction(0x1e36a4b6940 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BC87D00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+________________ testMainWindowCanSaveAndLoadProjectDirectory _________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1080/testMainWindowCanSaveAndLoadPr0')
+
+    def testMainWindowCanSaveAndLoadProjectDirectory(tmp_path: Path) -> None:
+        ensureQApp()
+        saveDir = tmp_path / "demo_project"
+    
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e369263c00) at 0x000001E369C82300>
+old = <PySide2.QtWidgets.QAction(0x1e36925b720 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BE058C0>
+new = <PySide2.QtWidgets.QAction(0x1e3692638c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BE046C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_________ testSaveProjectActionOverwritesLoadedProjectWithoutChooser __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1080/testSaveProjectActionOverwrite0')
+
+    def testSaveProjectActionOverwritesLoadedProjectWithoutChooser(tmp_path: Path) -> None:
+        ensureQApp()
+        projectDir = tmp_path / "loaded_project"
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4abb60) at 0x000001E36BB5A780>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b4c80 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB58380>
+new = <PySide2.QtWidgets.QAction(0x1e36a4abca0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9BC200>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+_________________ testFailedProjectSaveDoesNotAdvanceRevision _________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1080/testFailedProjectSaveDoesNotAd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001E36B34C460>
+
+    def testFailedProjectSaveDoesNotAdvanceRevision(tmp_path: Path, monkeypatch) -> None:
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925bc40) at 0x000001E369C7E800>
+old = <PySide2.QtWidgets.QAction(0x1e369264040 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB52040>
+new = <PySide2.QtWidgets.QAction(0x1e36925bbc0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9C95C0>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+____________ testFailedProjectLoadPreservesCurrentWorkflowAndTabs _____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1080/testFailedProjectLoadPreserves0')
+
+    def testFailedProjectLoadPreservesCurrentWorkflowAndTabs(tmp_path: Path) -> None:
+        targetProjectDir = tmp_path / "target-project"
+>       targetWindow = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36a4ace20) at 0x000001E36B9AFFC0>
+old = <PySide2.QtWidgets.QAction(0x1e36a4b5be0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36BB79B40>
+new = <PySide2.QtWidgets.QAction(0x1e36a4acfa0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36B9AFD00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1e368c5bd90) at 0x000001E369B21830>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+>       window = makeWindow()
+
+tests\designer\test_visual_layout.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\designer\test_visual_layout.py:30: in makeWindow
+    window = MainWindow(SimpleNamespace(listOperators=lambda: []), settingsStore=settings)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:52: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:98: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x1e36925e5c0) at 0x000001E36BE04740>
+old = <PySide2.QtWidgets.QAction(0x1e3692668a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x000001E36D2D68C0>
+new = <PySide2.QtWidgets.QAction(0x1e36925e060 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x000001E36BE05B00>
+
+    def replaceAction(self, old, new):
+>       for menu in self.window._workspaceMenus.values():
+E       AttributeError: 'MainWindow' object has no attribute '_workspaceMenus'
+
+src\emo_master\apps\designer\ui\designer_actions.py:102: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_delete_shortcut.py::testDeleteUsesShortcutHandlerAndNoDeleteButton
+FAILED tests/designer/test_main_window_project_save_load.py::testMainWindowCanSaveAndLoadProjectDirectory
+FAILED tests/designer/test_main_window_project_save_load.py::testSaveProjectActionOverwritesLoadedProjectWithoutChooser
+FAILED tests/designer/test_main_window_project_save_load.py::testFailedProjectSaveDoesNotAdvanceRevision
+FAILED tests/designer/test_main_window_project_save_load.py::testFailedProjectLoadPreservesCurrentWorkflowAndTabs
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+ERROR tests/designer/test_designer_shortcuts.py::testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem
+ERROR tests/designer/test_designer_shortcuts.py::testDeleteKeyUsesSingleUndoTransaction[key0]
+ERROR tests/designer/test_designer_shortcuts.py::testDeleteKeyUsesSingleUndoTransaction[key1]
+ERROR tests/designer/test_designer_shortcuts.py::testCopyUndoAndBothRedoKeys[redoKey0-modifiers0]
+ERROR tests/designer/test_designer_shortcuts.py::testCopyUndoAndBothRedoKeys[redoKey1-modifiers1]
+ERROR tests/designer/test_designer_shortcuts.py::testF2OpensActualExistingEditor
+ERROR tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key0]
+ERROR tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key1]
+ERROR tests/designer/test_designer_shortcuts.py::testOpenAndSaveKeysUseExistingDialogsAndSaveActualProject
+ERROR tests/designer/test_designer_shortcuts.py::testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[line]
+ERROR tests/designer/test_designer_shortcuts.py::testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[spin]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key0-modifiers0]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key1-modifiers1]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key2-modifiers2]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key3-modifiers3]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key4-modifiers4]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key5-modifiers5]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key6-modifiers6]
+ERROR tests/designer/test_designer_shortcuts.py::testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5
+ERROR tests/designer/test_designer_shortcuts.py::testLayoutFitAndLogsKeysCallExistingCommands
+ERROR tests/designer/test_designer_shortcuts.py::testPageCopyDeleteUndoNeverModifyHiddenWorkflow
+ERROR tests/designer/test_designer_shortcuts.py::testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField
+ERROR tests/designer/test_designer_shortcuts.py::testPageFlowOnlyKeysAndPreviewKeepTaskOwnership
+ERROR tests/designer/test_designer_shortcuts.py::testModalAndOtherDesignerWindowDoNotShareShortcuts
+ERROR tests/designer/test_designer_shortcuts.py::testClickPageCardTransfersPropertyFocusBeforeCopy
+ERROR tests/designer/test_designer_shortcuts.py::testPageSidebarAndTableDoNotDeleteCanvasSelection
+ERROR tests/designer/test_designer_shortcuts.py::testPendingRefreshIsBoundedAndRetiredWithWindow
+ERROR tests/designer/test_designer_shortcuts.py::testCloseInProgressBlocksKeyboardAndRetainedActions
+ERROR tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key0]
+ERROR tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key1]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes]
+ERROR tests/designer/test_shortcut_guards.py::testRunningConfigurationDoesNotOpenEditor
+ERROR tests/designer/test_shortcut_guards.py::testRunningHistoryCannotMutateDraft
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5]
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0]
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75]
+ERROR tests/designer/test_node_context_menu.py::testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu
+ERROR tests/designer/test_node_context_menu.py::testConfigurationUsesRealExistingEditorWithoutEditingDraft
+ERROR tests/designer/test_node_context_menu.py::testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout
+ERROR tests/designer/test_node_context_menu.py::testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[configure]
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[copy]
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[delete]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop]
+ERROR tests/designer/test_node_context_menu.py::testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[clear]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[reload]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[project]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[workspace]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[close]
+ERROR tests/designer/test_node_context_menu.py::testActualMenuMouseClickCopiesOnceAndClosesPopup
+ERROR tests/designer/test_node_context_menu.py::testRightClickOnConnectionKeepsNodeMenuClosed
+ERROR tests/designer/test_node_context_menu.py::testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions
+ERROR tests/ui/page_designer/test_pending_inputs.py::testSaveCommitsVisibleUnappliedProperties
+ERROR tests/ui/page_designer/test_pending_inputs.py::testInvalidPendingInputBlocksSaveWithoutDiscardingText
+ERROR tests/ui/page_designer/test_pending_inputs.py::testSelectingAnotherComponentCommitsPendingInput
+ERROR tests/ui/page_designer/test_pending_inputs.py::testInvalidInputBlocksComponentSelection
+6 failed, 12 passed, 64 errors in 24.29s

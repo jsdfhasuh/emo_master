@@ -1,0 +1,73 @@
+......................FF                                                 [100%]
+================================== FAILURES ===================================
+____________ testRealLocalImageCountCompareAndJsonlShareInvocation ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-850/testRealLocalImageCountCompare0')
+
+    def testRealLocalImageCountCompareAndJsonlShareInvocation(tmp_path):
+        registry = {value.meta.operatorId: value for value in (
+            ImageLoaderOperator, BlobAnalysisOperator, CollectionCountOperator,
+            NumberCompareOperator, ImageSaverOperator)}
+        runner, events = execute(sampleProject(tmp_path), registry)
+        runner.run('main', {}, RunContext.root('actual-job', 'main'), CancellationToken())
+>       done = {raw['context'].nodeId: raw for raw in events if raw['eventType'] == 'node.completed'}
+
+tests\runtime\test_runner_io_summary.py:38: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = <list_iterator object at 0x0000021208EE9930>
+
+>   done = {raw['context'].nodeId: raw for raw in events if raw['eventType'] == 'node.completed'}
+E   AttributeError: 'RunContext' object has no attribute 'nodeId'
+
+tests\runtime\test_runner_io_summary.py:38: AttributeError
+_______ testRunnerFreezesInputBeforeOperatorMutationAndKeepsFailedInput _______
+
+    def testRunnerFreezesInputBeforeOperatorMutationAndKeepsFailedInput():
+        class Mutating:
+            def executeNode(self, inputs, params, context):
+                inputs['items'].clear()
+                if params.get('fail'):
+                    return {'status': 'failed', 'error': {'code': 'E_CONTROLLED', 'message': 'failed after mutation'}}
+                return {'status': 'ok', 'outputs': {'count': len(inputs['items'])}}
+        document = ProjectDocument.model_validate({
+            'schemaVersion': '2.1', 'project': {'projectId': 'mutation', 'name': 'mutation',
+                'createdAt': '2026-10-04T00:00:00Z', 'updatedAt': '2026-10-04T00:00:00Z'},
+            'entryWorkflowId': 'main', 'workflowOrder': ['main'],
+            'workflows': {'main': {'name': 'main', 'inputs': {'items': 'list'}, 'nodes': [
+                {'nodeId': 'in', 'kind': 'workflow_input'},
+                {'nodeId': 'mutate', 'operatorId': 'test.mutate', 'inputPorts': {'items': 'list'}, 'outputPorts': {'count': 'integer'}},
+            ], 'edges': [{'fromNode': 'in', 'fromPort': 'items', 'toNode': 'mutate', 'toPort': 'items'}]}},
+        })
+>       runner, events = execute(document, {'test.mutate': Mutating})
+
+tests\runtime\test_runner_io_summary.py:82: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_runner_io_summary.py:23: in execute
+    compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002120975FC10>
+project = ProjectDocument(schemaVersion='2.1', project=ProjectMetadata(projectId='mutation', name='mutation', revision=1, create...dependencies=ProjectDependencies(operators=[]), devices=ProjectDevices(bindings={}), presentation=None, resources=None)
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:47: WorkflowCompileError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_runner_io_summary.py::testRealLocalImageCountCompareAndJsonlShareInvocation
+FAILED tests/runtime/test_runner_io_summary.py::testRunnerFreezesInputBeforeOperatorMutationAndKeepsFailedInput
+2 failed, 22 passed in 5.03s

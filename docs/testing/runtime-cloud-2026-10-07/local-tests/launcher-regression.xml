@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="12" time="23.983" timestamp="2026-10-07T09:46:39.006413+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_production_boundaries" name="testProductionDiagnosticWindowKeepsMonotonicCursorAndTerminal" time="0.247" /><testcase classname="tests.runtime.test_production_boundaries" name="testOrdinarySqliteStoreDoesNotDropHistory" time="0.096" /><testcase classname="tests.runtime.test_production_boundaries" name="testOccupiedProjectSwitchKeepsPreviousDirectoryOwnership" time="2.453" /><testcase classname="tests.runtime.test_production_boundaries" name="testInvalidProjectSwitchClearsStartPermissionAndReleasesDirectories" time="0.156" /><testcase classname="tests.runtime.test_production_boundaries" name="testLoadExceptionClearsStartPermissionAndDirectoryOwnership[False]" time="0.154" /><testcase classname="tests.runtime.test_production_boundaries" name="testLoadExceptionClearsStartPermissionAndDirectoryOwnership[True]" time="0.166" /><testcase classname="tests.runtime.test_production_boundaries" name="testSlowDiagnosticPersistenceDoesNotKillContinuousSpawnedWorker" time="8.396" /><testcase classname="tests.runtime.test_production_boundaries" name="testStopDuringLongCycleWaitAndSingleDefaultForOldProject" time="3.568" /><testcase classname="tests.runtime.test_production_boundaries" name="testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings" time="0.546"><failure message="NameError: name 'os' is not defined">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1111/testSourceLauncherAndConfigura0')
+
+    def testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings(tmp_path):
+        root = tmp_path / "project"
+        document = productionProject(root)
+        # Device fields remain opaque project values, not strings interpreted as paths.
+        document.devices.bindings["camera"] = {"serial": "12345", "address": "192.168.1.10"}
+        saveDocument(root, document)
+        script = Path(__file__).resolve().parents[2] / "scripts/configure_runtime_project.py"
+        command = [sys.executable, str(script), str(root), "--auto-start", "--mode", "continuous",
+                   "--cycle-interval-ms", "250"]
+        result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=30)
+        assert result.returncode == 0, result.stderr
+        payload = json.loads((root / "project.json").read_text(encoding="utf-8"))
+        assert payload["production"] == dict(autoStart=True, mode="continuous", cycleIntervalMs=250, inputs={})
+        assert payload["devices"] == document.devices.model_dump()
+        assert payload["workflows"] == document.model_dump()["workflows"]
+        assert (root / "project.json.bak").exists()
+        launcher = script.parent.parent / "start_runtime.cmd"
+        result = subprocess.run(["cmd", "/c", str(launcher), str(root), "--check", "--data-root", str(tmp_path / "check")],
+&gt;                               cwd=tmp_path, env=dict(os.environ, EMO_MASTER_PYTHON=sys.executable),
+                                capture_output=True, text=True, timeout=30)
+E       NameError: name 'os' is not defined
+
+tests\runtime\test_production_boundaries.py:198: NameError</failure></testcase><testcase classname="tests.runtime.test_production_boundaries" name="testOutputWriteFailureIsVisibleAndDoesNotFallback" time="2.212" /><testcase classname="tests.runtime.test_production_boundaries" name="testRealSpawnMovedUnicodeProjectReadsAndWritesFromProjectRoot" time="2.262" /><testcase classname="tests.runtime.test_production_boundaries" name="testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount" time="2.432" /></testsuite></testsuites>

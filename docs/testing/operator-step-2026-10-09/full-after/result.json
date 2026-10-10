@@ -1,0 +1,18 @@
+{
+  "steps": [
+    {
+      "name": "pytest",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\testing\\operator-step-2026-10-09\\full-after\\pytest.xml"
+      ],
+      "returnCode": 2
+    }
+  ],
+  "returnCode": 1,
+  "sourceChangedDuringRun": []
+}

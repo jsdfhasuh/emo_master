@@ -1,0 +1,82 @@
+container ghost (9, 9, 734, 364) actual (9, 9, 748, 304)
+Fpending ghost (9, 9, 748, 128) actual (9, 9, 748, 317)
+Fcolumn widths 440 154 pointer delta 154 span 2
+.title (9, 28, 720, 492) card PySide2.QtCore.QSize(738, 716) child (12, 529, 714, 111)
+............................
+================================== FAILURES ===================================
+____________________ test_wrapping_container_title_resize _____________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1fa498bf080) at 0x000001FA4A83C400>
+
+    def test_wrapping_container_title_resize(designer):
+        c,e,key=setupPage(designer,'container')
+        c.session.editPresentation(lambda p:setattr(p.pages[e.pageId].layout,'columns',2))
+        e.tools.commands().add(e.pageId,'number',0,0,key)
+        e.refresh()
+        e.tools.select(key)
+        e.tools.fields['title'].setText('This container has a long descriptive title ' * 8)
+        e.tools.apply()
+        e.refresh()
+        designer.resize(1280,720)
+        settle()
+        e.tools.select(key)
+        s=e.tools.selection
+        before=c.session.payload()
+        handle=next(h for h in s.handles if h.axes=='x')
+        delta=QPoint(s.grid.width()//2,0) if hasattr(s,'grid') else QPoint(s.card.parentWidget().width()//2,0)
+        QTest.mousePress(handle,Qt.LeftButton,pos=handle.rect().center())
+        motion(handle,delta)
+        assert s.valid
+        ghost=e.tools.gridPreview.box
+        assert before==c.session.payload()
+        designer.grab().save(str(Path(__file__).with_name('title-preview.png')))
+        QTest.mouseRelease(handle,Qt.LeftButton,pos=handle.rect().center()+delta)
+        settle()
+        actual=e.tools.selection.card.geometry()
+        designer.grab().save(str(Path(__file__).with_name('title-committed.png')))
+        print('container ghost',ghost.getRect(),'actual',actual.getRect())
+>       assert abs(ghost.height()-actual.height())<=2
+E       assert 60 <= 2
+E        +  where 60 = abs((364 - 304))
+E        +    where 364 = <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4E1199C0>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4E1199C0> = PySide2.QtCore.QRect(9, 9, 734, 364).height
+E        +    and   304 = <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4B502F00>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4B502F00> = PySide2.QtCore.QRect(9, 9, 748, 304).height
+
+manual_test_workspace\page-review-round2-20261002\test_review.py:53: AssertionError
+________________ test_pending_title_is_measured_when_resizing _________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1fa4d8cc790) at 0x000001FA4911AD00>
+
+    def test_pending_title_is_measured_when_resizing(designer):
+        c,e,key=setupPage(designer,'number')
+        designer.resize(1280,720)
+        settle()
+        e.tools.select(key)
+        e.tools.fields['title'].setText('���μ������������״̬����˶�ͼ�����ֵ�Ƿ�����ͬһ�μ�⡣' * 3)
+        e.tools.fields['fontSize'].setValue(32)
+        s=e.tools.selection
+        handle=next(h for h in s.handles if h.axes=='y')
+        QTest.mousePress(handle,Qt.LeftButton,pos=handle.rect().center())
+        motion(handle,QPoint(0,64))
+        assert s.valid
+        ghost=e.tools.gridPreview.box
+        designer.grab().save(str(Path(__file__).with_name('pending-preview.png')))
+        QTest.mouseRelease(handle,Qt.LeftButton,pos=handle.rect().center()+QPoint(0,64))
+        settle()
+        actual=e.tools.selection.card.geometry()
+        designer.grab().save(str(Path(__file__).with_name('pending-committed.png')))
+        print('pending ghost',ghost.getRect(),'actual',actual.getRect())
+>       assert abs(ghost.height()-actual.height())<=2
+E       assert 189 <= 2
+E        +  where 189 = abs((128 - 317))
+E        +    where 128 = <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4E137280>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4E137280> = PySide2.QtCore.QRect(9, 9, 748, 128).height
+E        +    and   317 = <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4BB19700>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001FA4BB19700> = PySide2.QtCore.QRect(9, 9, 748, 317).height
+
+manual_test_workspace\page-review-round2-20261002\test_review.py:74: AssertionError
+=========================== short test summary info ===========================
+FAILED manual_test_workspace/page-review-round2-20261002/test_review.py::test_wrapping_container_title_resize
+FAILED manual_test_workspace/page-review-round2-20261002/test_review.py::test_pending_title_is_measured_when_resizing
+2 failed, 29 passed in 9.46s

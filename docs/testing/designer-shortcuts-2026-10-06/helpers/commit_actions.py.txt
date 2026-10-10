@@ -1,0 +1,42 @@
+"""Commit only the reviewed clean tree, retaining the user's actual index."""
+from pathlib import Path
+import json
+import os
+import subprocess
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+backup = Path(__file__).parent
+original = (backup / 'original-staged.patch').read_bytes()
+
+def real(*args, data=None):
+    return subprocess.check_output(['git', *args], cwd=root, input=data)
+
+assert real('diff', '--cached', '--binary') == original
+assert real('rev-parse', 'HEAD').strip() == b'4a6331d827cadf335851dd4ba56e5796d720c7ce'
+identityPath = root / 'docs/testing/designer-shortcuts-2026-10-06/clean-candidate-v4.json'
+identity = json.loads(identityPath.read_text(encoding='utf-8'))
+env = {**os.environ, 'GIT_INDEX_FILE': str(backup / 'index-actions-v4')}
+
+def git(*args):
+    return subprocess.check_output(['git', *args], cwd=root, env=env)
+
+assert git('write-tree').decode().strip() == identity['candidateTree']
+paths = git('diff', '--cached', '--name-only').decode().splitlines()
+assert set(paths) == set(identity['batchPaths'])
+git('diff', '--cached', '--check')
+print(git('diff', '--cached', '--stat').decode())
+print(git('commit', '-m', 'feat(designer): integrate workspace-aware keyboard actions').decode())
+head = real('rev-parse', 'HEAD').decode().strip()
+updates = []
+for line in real('ls-tree', 'HEAD', '--', *paths).splitlines():
+    metadata, path = line.split(b'\t', 1)
+    mode, kind, blob = metadata.split()
+    assert kind == b'blob'
+    updates.append(mode + b' ' + blob + b'\t' + path + b'\n')
+real('update-index', '--add', '--index-info', data=b''.join(updates))
+assert real('diff', '--cached', '--binary') == original
+assert real('rev-parse', 'HEAD^{tree}').decode().strip() == identity['candidateTree']
+print('committed:', head)
+(root / 'docs/testing/designer-shortcuts-2026-10-06/code-commit.json').write_text(
+    json.dumps({'codeCommit': head, 'codeTree': identity['candidateTree'],
+                'originalStagedPatchUnchanged': True, 'paths': paths}, indent=2), encoding='utf-8')

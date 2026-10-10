@@ -1,0 +1,194 @@
+"""Schema commands and static catalog. No Qt, execution or device access."""
+from dataclasses import dataclass
+from uuid import uuid4
+
+from emo_master.core.plugin.models import PluginManifest
+from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, sourceType
+from emo_master.core.presentation.models import Component, DataSource, ResultScope, Presentation, walkComponents
+from emo_master.apps.designer.state.presentation_store import _component
+from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
+
+
+ACCEPTED = {'number': {'integer', 'number'}, 'text': {'integer', 'number', 'boolean', 'string', 'json'},
+            'image': {'image'}, 'indicator': {'boolean', 'string'}, 'table': {'collection'}}
+
+
+def manifestsFromCatalog(catalog):
+    return {item['operatorId']: PluginManifest(operatorId=item['operatorId'],
+        displayName=item['displayName'], version=item['version'], entry='', category=item['category'],
+        iconKey=item['iconKey'], summary=item['summary'],
+        inputPorts=item.get('inputPortSpecs') or item['inputPorts'],
+        outputPorts=item.get('outputPortSpecs') or item['outputPorts'], paramSchema=item['paramSchema'],
+        minCoreVersion='', maxCoreVersion='') for item in catalog}
+
+
+@dataclass(frozen=True)
+class Choice:
+    title: str
+    source: DataSource
+    scope: ResultScope
+    hint: str
+
+
+def outputChoices(document, manifests, *, onUnsupported=None):
+    entries = buildOutputCatalog(document, manifests)
+    choices = []
+
+    def visit(workflowId, path, ancestors):
+        if workflowId in ancestors or len(path) > 32:
+            return
+        for entry in entries:
+            if entry.workflowId != workflowId:
+                continue
+            try:
+                outputType = presentationType(entry.spec)
+            except ValueError as error:
+                if onUnsupported is not None:
+                    location = '/'.join(step.nodeId + ':' + step.relation for step in path) or '入口'
+                    title = (f'{document.workflows[workflowId].name} / {entry.displayName} '
+                             f'[{entry.nodeId or "出口"}] / {entry.port} · {location}')
+                    onUnsupported(title, str(error))
+                continue
+            for field, kind in [((), outputType), *entry.fields.items()]:
+                source = DataSource(kind='node_output' if entry.nodeId else 'workflow_output',
+                    resultScopeId='scope', workflowId=workflowId, nodeId=entry.nodeId, port=entry.port,
+                    callPath=path, fieldPath=list(field), expectedType=kind)
+                location = '/'.join(step.nodeId + ':' + step.relation for step in source.callPath) or '入口'
+                choices.append(Choice(f'{document.workflows[workflowId].name} / {entry.displayName} '
+                    f'[{entry.nodeId or "出口"}] / {entry.port}{"." + ".".join(field) if field else ""} '
+                    f'({kind}) · {location}', source,
+                    ResultScope(entryWorkflowId=document.entryWorkflowId, scopeWorkflowId=workflowId, callPath=path),
+                    '; '.join([entry.hint, *(issue.message for issue in entry.issues)]).strip('; ')))
+        from emo_master.core.presentation.models import CallStep
+        for node in document.workflows[workflowId].nodes:
+            targets = [('subflow', node.targetWorkflowId)] if node.kind == 'subflow' else (
+                [('loop_body' if field == 'bodyWorkflowId' else 'loop_condition', node.loop.get(field))
+                 for field in loopWorkflowReferenceFields(node.loop)]
+                if node.kind == 'loop' else [])
+            for relation, target in targets:
+                if target in document.workflows:
+                    visit(target, [*path, CallStep(nodeId=node.nodeId, relation=relation)], {*ancestors, workflowId})
+    visit(document.entryWorkflowId, [], set())
+    for key, variable in document.globalVariables.items():
+        choices.append(Choice(f"全局变量 / {variable.name} ({variable.type})",
+            DataSource(kind="global_variable", resultScopeId="scope", variableId=key, expectedType=variable.type),
+            ResultScope(entryWorkflowId=document.entryWorkflowId, scopeWorkflowId=document.entryWorkflowId),
+            "任务结果结束时的值快照；运行当前值可在全局变量窗口查看"))
+    return choices
+
+
+class PageCommands:
+    def __init__(self, session, manifests):
+        self.session = session
+        self.manifests = manifests
+
+    def preview(self):
+        """Run the identical commands on an isolated, validated draft, without history."""
+        return PageCommands(_PreviewSession(self.session.document()), self.manifests)
+
+    def children(self, p, pageId, parentId):
+        if parentId is None:
+            return p.pages[pageId].components
+        parent = _component(p, pageId, parentId)
+        if parent.type != 'container':
+            raise ValueError('目标必须是容器')
+        return parent.children
+
+    def add(self, pageId, kind, row, column, parentId=None):
+        component = Component(componentId=str(uuid4()), type=kind,
+                              layout={'row': row, 'column': column})
+        self.session.editPresentation(lambda p: self.children(p, pageId, parentId).append(component))
+        return component.componentId
+
+    def update(self, pageId, componentId, *, props, layout, actions=None, columns=None):
+        def edit(p):
+            item = _component(p, pageId, componentId)
+            item.props = props
+            item.layout = layout
+            if actions is not None:
+                item.actions = actions
+            if columns is not None:
+                if item.type == 'container':
+                    item.grid.columns = columns
+                else:
+                    p.pages[pageId].layout.columns = columns
+        self.session.editPresentation(edit)
+
+    def move(self, pageId, componentId, row, column, parentId=None):
+        def edit(p):
+            item = _component(p, pageId, componentId)
+            if parentId in {c.componentId for c in walkComponents([item])}:
+                raise ValueError('容器不能移入自身或子树')
+            self._remove(p.pages[pageId].components, componentId)
+            item.layout.row, item.layout.column = row, column
+            self.children(p, pageId, parentId).append(item)
+        self.session.editPresentation(edit)
+
+    def _remove(self, items, key):
+        for index, item in enumerate(items):
+            if item.componentId == key:
+                items.pop(index)
+                return True
+            if self._remove(item.children, key):
+                return True
+        return False
+
+    def delete(self, pageId, componentId):
+        self.session.editPresentation(lambda p: self._remove(p.pages[pageId].components, componentId))
+
+    def copy(self, pageId, componentId):
+        copied = _component(self.session.presentation.snapshot(), pageId, componentId).model_copy(deep=True)
+        for item in walkComponents([copied]):
+            item.componentId = str(uuid4())
+        # Copy into an explicit free root row, keeping all original bindings immutable.
+        def edit(p):
+            children = p.pages[pageId].components
+            copied.layout.row = max((c.layout.row + c.layout.rowSpan for c in children), default=0)
+            copied.layout.column = 0
+            children.append(copied)
+        self.session.editPresentation(edit)
+        return copied.componentId
+
+    def bind(self, pageId, componentId, choice):
+        document = self.session.document()
+        actual = sourceType(choice.source, buildOutputCatalog(document, self.manifests), document.globalVariables)
+        item = _component(document.presentation, pageId, componentId)
+        if actual not in ACCEPTED.get(item.type, set()):
+            raise ValueError(f'类型不兼容：{actual} → {item.type}')
+        p = document.presentation
+        key = next((k for k, v in p.resultScopes.items() if v == choice.scope), None)
+        key = key or str(uuid4())
+        source = choice.source.model_copy(deep=True)
+        source.resultScopeId = key
+        # One action, one transaction, including creating the scope and source.
+        def edit(p):
+            p.resultScopes[key] = choice.scope
+            target = _component(p, pageId, componentId)
+            prop = {'image': 'image', 'table': 'rows'}.get(target.type, 'value')
+            sourceId = next((k for k, value in p.dataSources.items() if value == source), None) or str(uuid4())
+            p.dataSources[sourceId] = source
+            target.bindings[prop] = sourceId
+            # Validate the complete proposed plan inside the same transaction.
+            # A rejected third image/scope budget must roll back scope/source IDs.
+            from emo_master.core.presentation.capture_limits import normalCaptureLimits
+            normalCaptureLimits(p)
+        self.session.editPresentation(edit)
+        from emo_master.core.presentation.capture_limits import normalCaptureLimits
+        return normalCaptureLimits(self.session.presentation.snapshot())
+
+
+class _PreviewSession:
+    def __init__(self, document):
+        self._document = document.model_copy(deep=True)
+        self.presentation = self
+
+    def document(self):
+        return self._document.model_copy(deep=True)
+
+    def snapshot(self):
+        return self._document.presentation.model_copy(deep=True)
+
+    def editPresentation(self, edit):
+        proposed = self.snapshot()
+        edit(proposed)
+        self._document.presentation = Presentation.model_validate(proposed.model_dump())

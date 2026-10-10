@@ -1,0 +1,13 @@
+{
+  "mandatory": false,
+  "notes": "0.6.1",
+  "sha256": "5187a5c1e0b428efa7d2c40886c7bdd9c2e75d2e79893f79f8b59c145c1c774a",
+  "url": "https://github.com/jsdfhasuh/emo_master/releases/download/v0.6.1/emo-master-runtime-windows-v0.6.1.zip",
+  "version": "0.6.1",
+  "source_repo": "jsdfhasuh/emo_master",
+  "source_ref": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "source_commit": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "source_base_ref": "v0.6.1",
+  "source_compare_url": "https://github.com/jsdfhasuh/emo_master/compare/v0.6.1...88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "archive_compression": "zip/deflate"
+}

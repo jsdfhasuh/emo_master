@@ -1,0 +1,57 @@
+{
+  "operatorId": "vision.analysis.contour",
+  "displayName": "Contour Extraction",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._shape_operators:ContourExtractionOperator",
+  "category": "分析",
+  "iconKey": "contour",
+  "summary": "从二值 Mask 提取多边形轮廓与完整层级集合。",
+  "inputPorts": {
+    "mask": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "polygons": {"type": "list<polygon2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "contours": {"type": "contourCollection", "required": true, "nullable": false, "schemaVersion": "1.2"},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "retrievalMode": {
+        "title": "轮廓检索模式",
+        "type": "string",
+        "enum": [
+          "external",
+          "list",
+          "ccomp",
+          "tree"
+        ],
+        "default": "tree",
+        "xOptionLabels": {
+          "external": "仅外部轮廓",
+          "list": "全部轮廓（不建层级）",
+          "ccomp": "两级层级",
+          "tree": "完整树形层级"
+        },
+        "description": "选择轮廓保留范围及父子层级结构。"
+      },
+      "approximation": {
+        "title": "轮廓近似方式",
+        "type": "string",
+        "enum": [
+          "none",
+          "simple"
+        ],
+        "default": "simple",
+        "xOptionLabels": {
+          "none": "保留全部轮廓点",
+          "simple": "压缩直线段"
+        },
+        "description": "压缩直线段可减少轮廓点；保留全部点适合需要逐点信息的处理。"
+      }
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

@@ -1,0 +1,416 @@
+[
+  {
+    "file": "1280x720-scale2-tab0.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale2-tab1.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale2-tab2.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale2-tab3.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale2-tab4.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale2-tab5.png",
+    "logical": [
+      640,
+      360
+    ],
+    "actual": [
+      640,
+      360
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab0.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab1.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab2.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab3.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab4.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale2-tab5.png",
+    "logical": [
+      800,
+      450
+    ],
+    "actual": [
+      800,
+      450
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab0.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab1.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab2.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab3.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab4.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale2-tab5.png",
+    "logical": [
+      960,
+      540
+    ],
+    "actual": [
+      960,
+      540
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 22
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 32
+      }
+    ]
+  }
+]

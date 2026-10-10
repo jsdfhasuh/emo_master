@@ -16,6 +16,7 @@
     "type": "object",
     "properties": {
       "enabled": {
+        "title": "启用",
         "type": "boolean",
         "default": true
       }

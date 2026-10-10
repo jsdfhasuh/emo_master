@@ -1,0 +1,111 @@
+........................................................................ [  8%]
+........................................................................ [ 17%]
+........................................................................ [ 25%]
+...................................................FF................... [ 34%]
+........................................................................ [ 42%]
+........................................................................ [ 51%]
+........................................................................ [ 59%]
+........................................................................ [ 68%]
+........................................................................ [ 76%]
+........................................................................ [ 85%]
+........................................................................ [ 93%]
+F....F.............................................                      [100%]
+================================== FAILURES ===================================
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B9CD319420>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B9CD31BBB0>
+
+    def testEditorUsesLateCatalogWithoutMutatingSavedGraph(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        assert window.loadProjectDirectory(str(EXAMPLE))
+        assert not window.pageCoordinator.session.dirty
+        window.activateWorkflow("body")
+        node = window.flowModel.nodes["load"]
+>       assert node.paramSchema == {}
+E       AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E         Left contains 3 more items:
+E         {'properties': {'colorMode': {'default': 'color',
+E                                       'enum': ['color', 'grayscale'],
+E                                       'title': '��ɫģʽ',
+E                                       'type': 'string'},
+E                         'folderPath': {'default': '',...
+E
+E         ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests\designer\test_minimal_project_metadata.py:94: AssertionError
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B9CD319A20>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001B9CE56AEF0>
+
+    def testNormalizationPreservesSavedContractsAndOwnsFallbackSchema(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        manifest = json.loads((EXAMPLE.parents[2] / (
+            "src/emo_master/plugins/builtins/image_batch_loader/manifest.json"
+        )).read_text(encoding="utf-8"))
+        _catalog(window, [SimpleNamespace(**manifest)])
+        payload = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+        original = deepcopy(payload)
+        resolved = window.pageCoordinator.normalizeDraft(payload)
+        hydrated = resolved["workflows"]["body"]["nodes"][1]
+>       hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E       KeyError: 'folderPath'
+
+tests\designer\test_minimal_project_metadata.py:125: KeyError
+_________________ testWhileShowsCallerBeforeConditionAndBody __________________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1b9ca085dc0) at 0x000001B9CB8E4900>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1366/testWhileShowsCallerBeforeCond0')
+
+    def testWhileShowsCallerBeforeConditionAndBody(designerApplication, tmp_path):
+        window = _whileWindow()
+        for _ in range(3):
+            designerApplication.processEvents()
+        tree = window.workflowDependencyTree
+        root = tree.topLevelItem(0)
+        assert root.childCount() == 1
+        call = root.child(0)
+        assert call.text(0) == "loop\nWhile ѭ�����ƽڵ�"
+        assert "������������Main" in call.toolTip(0)
+        assert call.childCount() == 3
+        condition, body, exitItem = [call.child(i) for i in range(3)]
+>       assert condition.text(0) == "Continue While Images Remain\n���� �� ÿ�����ж�"
+E       AssertionError: assert 'Continue Whi...tinue:boolean' == 'Continue Whi...n\n���� �� ÿ�����ж�'
+E
+E           Continue While Images Remain
+E         - ���� �� ÿ�����ж�
+E         + ������Դ �� ��� continue:boolean
+
+tests\designer\test_workflow_relationship_layout.py:151: AssertionError
+__________________ testLoopEditorDisplaysNamesAndAppliesIds ___________________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1b9ca085dc0) at 0x000001B9CB8E4900>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1366/testLoopEditorDisplaysNamesAnd0')
+
+    def testLoopEditorDisplaysNamesAndAppliesIds(designerApplication, tmp_path):
+        window = _window()
+        window.openNodeParamDialog("while")
+        dialog = window.nodeParamDialog
+        form = dialog._schemaForm
+        body = form._controls["bodyWorkflowId"]
+        condition = form._controls["conditionWorkflowId"]
+        assert body.currentText() == "Load And Process One Image"
+        assert condition.currentText() == "Continue While Images Remain"
+        assert body.currentData() == "body"
+        assert condition.currentData() == "condition"
+        assert form._layout.labelForField(body).text() == "ѭ���幤���� *"
+>       assert form._layout.labelForField(condition).text() == "���������� *"
+E       AssertionError: assert '����������Դ�����������ݣ�' == '���������� *'
+E
+E         - ���������� *
+E         + ����������Դ�����������ݣ�
+
+tests\designer\test_workflow_selector_names.py:41: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+FAILED tests/designer/test_workflow_relationship_layout.py::testWhileShowsCallerBeforeConditionAndBody
+FAILED tests/designer/test_workflow_selector_names.py::testLoopEditorDisplaysNamesAndAppliesIds
+4 failed, 839 passed in 90.79s (0:01:30)

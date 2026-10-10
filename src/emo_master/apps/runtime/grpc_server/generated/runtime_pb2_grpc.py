@@ -3,7 +3,7 @@
 import grpc
 import warnings
 
-import runtime_pb2 as runtime__pb2
+from . import runtime_pb2 as runtime__pb2
 
 GRPC_GENERATED_VERSION = '1.78.0'
 GRPC_VERSION = grpc.__version__
@@ -34,6 +34,211 @@ class RuntimeServiceStub(object):
         Args:
             channel: A grpc.Channel.
         """
+        self.GetOperatorDebugCapabilities = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorDebugCapabilities',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.OpenOperatorDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenOperatorDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetOperatorDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.PrepareOperatorDebugInputs = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/PrepareOperatorDebugInputs',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ExecuteOperatorDebugNode = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ExecuteOperatorDebugNode',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetOperatorDebugExecution = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorDebugExecution',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ReadOperatorDebugEvents = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ReadOperatorDebugEvents',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.CancelOperatorDebugExecution = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CancelOperatorDebugExecution',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ResetOperatorDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetOperatorDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.RenewOperatorDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RenewOperatorDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.CloseOperatorDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseOperatorDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.WriteOperatorDebugAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/WriteOperatorDebugAsset',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ReadOperatorDebugAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ReadOperatorDebugAsset',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ListOperatorDebugSources = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListOperatorDebugSources',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ImportOperatorDebugSource = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ImportOperatorDebugSource',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.CopyOperatorDebugVariables = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CopyOperatorDebugVariables',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetWorkflowDebugCapabilities = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetWorkflowDebugCapabilities',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.OpenWorkflowDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenWorkflowDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetWorkflowDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetWorkflowDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.PrepareWorkflowDebugInputs = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/PrepareWorkflowDebugInputs',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.StartWorkflowDebug = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/StartWorkflowDebug',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ControlWorkflowDebug = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ControlWorkflowDebug',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetWorkflowDebugCommand = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetWorkflowDebugCommand',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.GetWorkflowDebugSnapshot = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetWorkflowDebugSnapshot',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ReadWorkflowDebugEvents = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ReadWorkflowDebugEvents',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.WriteWorkflowDebugAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/WriteWorkflowDebugAsset',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ReadWorkflowDebugAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ReadWorkflowDebugAsset',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.RenewWorkflowDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RenewWorkflowDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.CloseWorkflowDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseWorkflowDebugSession',
+                request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorDebugReply.FromString,
+                _registered_method=True)
+        self.ListGlobalVariables = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListGlobalVariables',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.GetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.SetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/SetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.ResetGlobalVariable = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetGlobalVariable',
+                request_serializer=runtime__pb2.GlobalVariablesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GlobalVariablesReply.FromString,
+                _registered_method=True)
+        self.OpenPlcDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenPlcDebugSession',
+                request_serializer=runtime__pb2.OpenPlcDebugSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
+        self.ExecutePlcDebugCommand = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ExecutePlcDebugCommand',
+                request_serializer=runtime__pb2.ExecutePlcDebugCommandRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
+        self.ClosePlcDebugSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ClosePlcDebugSession',
+                request_serializer=runtime__pb2.ClosePlcDebugSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PlcDebugReply.FromString,
+                _registered_method=True)
+        self.InspectSqliteTarget = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/InspectSqliteTarget',
+                request_serializer=runtime__pb2.InspectSqliteTargetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.SqliteTargetReply.FromString,
+                _registered_method=True)
+        self.InitializeSqliteTarget = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/InitializeSqliteTarget',
+                request_serializer=runtime__pb2.InitializeSqliteTargetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.SqliteTargetReply.FromString,
+                _registered_method=True)
+        self.OpenRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
+        self.RenewRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RenewRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
+        self.CloseRunInspectionSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseRunInspectionSession',
+                request_serializer=runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunInspectionSessionReply.FromString,
+                _registered_method=True)
         self.LoadProject = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/LoadProject',
                 request_serializer=runtime__pb2.LoadProjectRequest.SerializeToString,
@@ -47,6 +252,11 @@ class RuntimeServiceStub(object):
         self.StartJob = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/StartJob',
                 request_serializer=runtime__pb2.StartJobRequest.SerializeToString,
+                response_deserializer=runtime__pb2.StartJobReply.FromString,
+                _registered_method=True)
+        self.GetStartRequest = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetStartRequest',
+                request_serializer=runtime__pb2.StartRequestLookup.SerializeToString,
                 response_deserializer=runtime__pb2.StartJobReply.FromString,
                 _registered_method=True)
         self.StopJob = channel.unary_unary(
@@ -69,15 +279,351 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ListOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListOperatorsReply.FromString,
                 _registered_method=True)
+        self.GetOperatorIconAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+                request_serializer=runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetOperatorIconAssetReply.FromString,
+                _registered_method=True)
+        self.GetOperatorEditorAsset = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetOperatorEditorAsset',
+                request_serializer=runtime__pb2.GetOperatorEditorAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetOperatorEditorAssetReply.FromString,
+                _registered_method=True)
+        self.ListNodePreviewSources = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListNodePreviewSources',
+                request_serializer=runtime__pb2.ListNodePreviewSourcesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListNodePreviewSourcesReply.FromString,
+                _registered_method=True)
+        self.UploadPreviewImage = channel.stream_unary(
+                '/emo_master.runtime.RuntimeService/UploadPreviewImage',
+                request_serializer=runtime__pb2.PreviewUploadChunk.SerializeToString,
+                response_deserializer=runtime__pb2.PreviewAssetReply.FromString,
+                _registered_method=True)
+        self.StreamPreviewAsset = channel.unary_stream(
+                '/emo_master.runtime.RuntimeService/StreamPreviewAsset',
+                request_serializer=runtime__pb2.GetPreviewAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.PreviewDownloadChunk.FromString,
+                _registered_method=True)
+        self.RunOperatorPreview = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RunOperatorPreview',
+                request_serializer=runtime__pb2.RunOperatorPreviewRequest.SerializeToString,
+                response_deserializer=runtime__pb2.RunOperatorPreviewReply.FromString,
+                _registered_method=True)
+        self.CancelOperatorPreview = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CancelOperatorPreview',
+                request_serializer=runtime__pb2.CancelOperatorPreviewRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CancelOperatorPreviewReply.FromString,
+                _registered_method=True)
+        self.OpenOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenOperatorPreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.OpenDraftOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenDraftOperatorPreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.OpenDraftPurePreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/OpenDraftPurePreviewSession',
+                request_serializer=runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.CloseDraftPurePreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseDraftPurePreviewSession',
+                request_serializer=runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
+        self.StreamOperatorPreviewFrames = channel.unary_stream(
+                '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
+                request_serializer=runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
+                response_deserializer=runtime__pb2.OperatorPreviewFrame.FromString,
+                _registered_method=True)
+        self.CloseOperatorPreviewSession = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/CloseOperatorPreviewSession',
+                request_serializer=runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+                _registered_method=True)
         self.ListRejectedOperators = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/ListRejectedOperators',
                 request_serializer=runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ListRejectedOperatorsReply.FromString,
                 _registered_method=True)
+        self.ListWorkflows = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListWorkflows',
+                request_serializer=runtime__pb2.ListWorkflowsRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListWorkflowsReply.FromString,
+                _registered_method=True)
+        self.ListGlobalCounters = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+                request_serializer=runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ListGlobalCountersReply.FromString,
+                _registered_method=True)
+        self.GetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+                request_serializer=runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.GetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.SetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+                request_serializer=runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.SetGlobalCounterReply.FromString,
+                _registered_method=True)
+        self.ResetGlobalCounter = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+                request_serializer=runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ResetGlobalCounterReply.FromString,
+                _registered_method=True)
 
 
 class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
+
+    def GetOperatorDebugCapabilities(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenOperatorDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOperatorDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def PrepareOperatorDebugInputs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecuteOperatorDebugNode(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOperatorDebugExecution(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadOperatorDebugEvents(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CancelOperatorDebugExecution(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetOperatorDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RenewOperatorDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseOperatorDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def WriteOperatorDebugAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadOperatorDebugAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListOperatorDebugSources(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ImportOperatorDebugSource(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CopyOperatorDebugVariables(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetWorkflowDebugCapabilities(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenWorkflowDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetWorkflowDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def PrepareWorkflowDebugInputs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StartWorkflowDebug(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ControlWorkflowDebug(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetWorkflowDebugCommand(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetWorkflowDebugSnapshot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadWorkflowDebugEvents(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def WriteWorkflowDebugAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadWorkflowDebugAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RenewWorkflowDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseWorkflowDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListGlobalVariables(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetGlobalVariable(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenPlcDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ExecutePlcDebugCommand(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ClosePlcDebugSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def InspectSqliteTarget(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def InitializeSqliteTarget(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RenewRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseRunInspectionSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
 
     def LoadProject(self, request, context):
         """Missing associated documentation comment in .proto file."""
@@ -92,6 +638,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def StartJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetStartRequest(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -121,7 +673,115 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetOperatorIconAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetOperatorEditorAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListNodePreviewSources(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def UploadPreviewImage(self, request_iterator, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamPreviewAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RunOperatorPreview(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CancelOperatorPreview(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenDraftOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def OpenDraftPurePreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseDraftPurePreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def StreamOperatorPreviewFrames(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def CloseOperatorPreviewSession(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ListRejectedOperators(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListWorkflows(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListGlobalCounters(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def SetGlobalCounter(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ResetGlobalCounter(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -130,6 +790,211 @@ class RuntimeServiceServicer(object):
 
 def add_RuntimeServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
+            'GetOperatorDebugCapabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorDebugCapabilities,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'OpenOperatorDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenOperatorDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetOperatorDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'PrepareOperatorDebugInputs': grpc.unary_unary_rpc_method_handler(
+                    servicer.PrepareOperatorDebugInputs,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ExecuteOperatorDebugNode': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecuteOperatorDebugNode,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetOperatorDebugExecution': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorDebugExecution,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ReadOperatorDebugEvents': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadOperatorDebugEvents,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'CancelOperatorDebugExecution': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelOperatorDebugExecution,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ResetOperatorDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetOperatorDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'RenewOperatorDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.RenewOperatorDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'CloseOperatorDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseOperatorDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'WriteOperatorDebugAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.WriteOperatorDebugAsset,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ReadOperatorDebugAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadOperatorDebugAsset,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ListOperatorDebugSources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListOperatorDebugSources,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ImportOperatorDebugSource': grpc.unary_unary_rpc_method_handler(
+                    servicer.ImportOperatorDebugSource,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'CopyOperatorDebugVariables': grpc.unary_unary_rpc_method_handler(
+                    servicer.CopyOperatorDebugVariables,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetWorkflowDebugCapabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetWorkflowDebugCapabilities,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'OpenWorkflowDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenWorkflowDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetWorkflowDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetWorkflowDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'PrepareWorkflowDebugInputs': grpc.unary_unary_rpc_method_handler(
+                    servicer.PrepareWorkflowDebugInputs,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'StartWorkflowDebug': grpc.unary_unary_rpc_method_handler(
+                    servicer.StartWorkflowDebug,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ControlWorkflowDebug': grpc.unary_unary_rpc_method_handler(
+                    servicer.ControlWorkflowDebug,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetWorkflowDebugCommand': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetWorkflowDebugCommand,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'GetWorkflowDebugSnapshot': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetWorkflowDebugSnapshot,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ReadWorkflowDebugEvents': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadWorkflowDebugEvents,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'WriteWorkflowDebugAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.WriteWorkflowDebugAsset,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ReadWorkflowDebugAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadWorkflowDebugAsset,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'RenewWorkflowDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.RenewWorkflowDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'CloseWorkflowDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseWorkflowDebugSession,
+                    request_deserializer=runtime__pb2.OperatorDebugRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorDebugReply.SerializeToString,
+            ),
+            'ListGlobalVariables': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGlobalVariables,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'GetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'SetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'ResetGlobalVariable': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetGlobalVariable,
+                    request_deserializer=runtime__pb2.GlobalVariablesRequest.FromString,
+                    response_serializer=runtime__pb2.GlobalVariablesReply.SerializeToString,
+            ),
+            'OpenPlcDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenPlcDebugSession,
+                    request_deserializer=runtime__pb2.OpenPlcDebugSessionRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
+            'ExecutePlcDebugCommand': grpc.unary_unary_rpc_method_handler(
+                    servicer.ExecutePlcDebugCommand,
+                    request_deserializer=runtime__pb2.ExecutePlcDebugCommandRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
+            'ClosePlcDebugSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.ClosePlcDebugSession,
+                    request_deserializer=runtime__pb2.ClosePlcDebugSessionRequest.FromString,
+                    response_serializer=runtime__pb2.PlcDebugReply.SerializeToString,
+            ),
+            'InspectSqliteTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.InspectSqliteTarget,
+                    request_deserializer=runtime__pb2.InspectSqliteTargetRequest.FromString,
+                    response_serializer=runtime__pb2.SqliteTargetReply.SerializeToString,
+            ),
+            'InitializeSqliteTarget': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitializeSqliteTarget,
+                    request_deserializer=runtime__pb2.InitializeSqliteTargetRequest.FromString,
+                    response_serializer=runtime__pb2.SqliteTargetReply.SerializeToString,
+            ),
+            'OpenRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
+            'RenewRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.RenewRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
+            'CloseRunInspectionSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseRunInspectionSession,
+                    request_deserializer=runtime__pb2.RunInspectionSessionRequest.FromString,
+                    response_serializer=runtime__pb2.RunInspectionSessionReply.SerializeToString,
+            ),
             'LoadProject': grpc.unary_unary_rpc_method_handler(
                     servicer.LoadProject,
                     request_deserializer=runtime__pb2.LoadProjectRequest.FromString,
@@ -143,6 +1008,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
             'StartJob': grpc.unary_unary_rpc_method_handler(
                     servicer.StartJob,
                     request_deserializer=runtime__pb2.StartJobRequest.FromString,
+                    response_serializer=runtime__pb2.StartJobReply.SerializeToString,
+            ),
+            'GetStartRequest': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetStartRequest,
+                    request_deserializer=runtime__pb2.StartRequestLookup.FromString,
                     response_serializer=runtime__pb2.StartJobReply.SerializeToString,
             ),
             'StopJob': grpc.unary_unary_rpc_method_handler(
@@ -165,10 +1035,100 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=runtime__pb2.ListOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListOperatorsReply.SerializeToString,
             ),
+            'GetOperatorIconAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorIconAsset,
+                    request_deserializer=runtime__pb2.GetOperatorIconAssetRequest.FromString,
+                    response_serializer=runtime__pb2.GetOperatorIconAssetReply.SerializeToString,
+            ),
+            'GetOperatorEditorAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetOperatorEditorAsset,
+                    request_deserializer=runtime__pb2.GetOperatorEditorAssetRequest.FromString,
+                    response_serializer=runtime__pb2.GetOperatorEditorAssetReply.SerializeToString,
+            ),
+            'ListNodePreviewSources': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListNodePreviewSources,
+                    request_deserializer=runtime__pb2.ListNodePreviewSourcesRequest.FromString,
+                    response_serializer=runtime__pb2.ListNodePreviewSourcesReply.SerializeToString,
+            ),
+            'UploadPreviewImage': grpc.stream_unary_rpc_method_handler(
+                    servicer.UploadPreviewImage,
+                    request_deserializer=runtime__pb2.PreviewUploadChunk.FromString,
+                    response_serializer=runtime__pb2.PreviewAssetReply.SerializeToString,
+            ),
+            'StreamPreviewAsset': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamPreviewAsset,
+                    request_deserializer=runtime__pb2.GetPreviewAssetRequest.FromString,
+                    response_serializer=runtime__pb2.PreviewDownloadChunk.SerializeToString,
+            ),
+            'RunOperatorPreview': grpc.unary_unary_rpc_method_handler(
+                    servicer.RunOperatorPreview,
+                    request_deserializer=runtime__pb2.RunOperatorPreviewRequest.FromString,
+                    response_serializer=runtime__pb2.RunOperatorPreviewReply.SerializeToString,
+            ),
+            'CancelOperatorPreview': grpc.unary_unary_rpc_method_handler(
+                    servicer.CancelOperatorPreview,
+                    request_deserializer=runtime__pb2.CancelOperatorPreviewRequest.FromString,
+                    response_serializer=runtime__pb2.CancelOperatorPreviewReply.SerializeToString,
+            ),
+            'OpenOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'OpenDraftOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenDraftOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'OpenDraftPurePreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.OpenDraftPurePreviewSession,
+                    request_deserializer=runtime__pb2.OpenOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.OpenOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'CloseDraftPurePreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseDraftPurePreviewSession,
+                    request_deserializer=runtime__pb2.CloseOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.CloseOperatorPreviewSessionReply.SerializeToString,
+            ),
+            'StreamOperatorPreviewFrames': grpc.unary_stream_rpc_method_handler(
+                    servicer.StreamOperatorPreviewFrames,
+                    request_deserializer=runtime__pb2.StreamOperatorPreviewFramesRequest.FromString,
+                    response_serializer=runtime__pb2.OperatorPreviewFrame.SerializeToString,
+            ),
+            'CloseOperatorPreviewSession': grpc.unary_unary_rpc_method_handler(
+                    servicer.CloseOperatorPreviewSession,
+                    request_deserializer=runtime__pb2.CloseOperatorPreviewSessionRequest.FromString,
+                    response_serializer=runtime__pb2.CloseOperatorPreviewSessionReply.SerializeToString,
+            ),
             'ListRejectedOperators': grpc.unary_unary_rpc_method_handler(
                     servicer.ListRejectedOperators,
                     request_deserializer=runtime__pb2.ListRejectedOperatorsRequest.FromString,
                     response_serializer=runtime__pb2.ListRejectedOperatorsReply.SerializeToString,
+            ),
+            'ListWorkflows': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListWorkflows,
+                    request_deserializer=runtime__pb2.ListWorkflowsRequest.FromString,
+                    response_serializer=runtime__pb2.ListWorkflowsReply.SerializeToString,
+            ),
+            'ListGlobalCounters': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListGlobalCounters,
+                    request_deserializer=runtime__pb2.ListGlobalCountersRequest.FromString,
+                    response_serializer=runtime__pb2.ListGlobalCountersReply.SerializeToString,
+            ),
+            'GetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetGlobalCounter,
+                    request_deserializer=runtime__pb2.GetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.GetGlobalCounterReply.SerializeToString,
+            ),
+            'SetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.SetGlobalCounter,
+                    request_deserializer=runtime__pb2.SetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.SetGlobalCounterReply.SerializeToString,
+            ),
+            'ResetGlobalCounter': grpc.unary_unary_rpc_method_handler(
+                    servicer.ResetGlobalCounter,
+                    request_deserializer=runtime__pb2.ResetGlobalCounterRequest.FromString,
+                    response_serializer=runtime__pb2.ResetGlobalCounterReply.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -180,6 +1140,1113 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
  # This class is part of an EXPERIMENTAL API.
 class RuntimeService(object):
     """Missing associated documentation comment in .proto file."""
+
+    @staticmethod
+    def GetOperatorDebugCapabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorDebugCapabilities',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenOperatorDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenOperatorDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOperatorDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def PrepareOperatorDebugInputs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/PrepareOperatorDebugInputs',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecuteOperatorDebugNode(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ExecuteOperatorDebugNode',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOperatorDebugExecution(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorDebugExecution',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadOperatorDebugEvents(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ReadOperatorDebugEvents',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CancelOperatorDebugExecution(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CancelOperatorDebugExecution',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetOperatorDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetOperatorDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RenewOperatorDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RenewOperatorDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseOperatorDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseOperatorDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def WriteOperatorDebugAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/WriteOperatorDebugAsset',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadOperatorDebugAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ReadOperatorDebugAsset',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListOperatorDebugSources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListOperatorDebugSources',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ImportOperatorDebugSource(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ImportOperatorDebugSource',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CopyOperatorDebugVariables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CopyOperatorDebugVariables',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetWorkflowDebugCapabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetWorkflowDebugCapabilities',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenWorkflowDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenWorkflowDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetWorkflowDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetWorkflowDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def PrepareWorkflowDebugInputs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/PrepareWorkflowDebugInputs',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StartWorkflowDebug(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/StartWorkflowDebug',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ControlWorkflowDebug(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ControlWorkflowDebug',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetWorkflowDebugCommand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetWorkflowDebugCommand',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetWorkflowDebugSnapshot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetWorkflowDebugSnapshot',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadWorkflowDebugEvents(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ReadWorkflowDebugEvents',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def WriteWorkflowDebugAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/WriteWorkflowDebugAsset',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadWorkflowDebugAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ReadWorkflowDebugAsset',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RenewWorkflowDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RenewWorkflowDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseWorkflowDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseWorkflowDebugSession',
+            runtime__pb2.OperatorDebugRequest.SerializeToString,
+            runtime__pb2.OperatorDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListGlobalVariables(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListGlobalVariables',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/SetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetGlobalVariable(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetGlobalVariable',
+            runtime__pb2.GlobalVariablesRequest.SerializeToString,
+            runtime__pb2.GlobalVariablesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenPlcDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenPlcDebugSession',
+            runtime__pb2.OpenPlcDebugSessionRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ExecutePlcDebugCommand(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ExecutePlcDebugCommand',
+            runtime__pb2.ExecutePlcDebugCommandRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ClosePlcDebugSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ClosePlcDebugSession',
+            runtime__pb2.ClosePlcDebugSessionRequest.SerializeToString,
+            runtime__pb2.PlcDebugReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def InspectSqliteTarget(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/InspectSqliteTarget',
+            runtime__pb2.InspectSqliteTargetRequest.SerializeToString,
+            runtime__pb2.SqliteTargetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def InitializeSqliteTarget(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/InitializeSqliteTarget',
+            runtime__pb2.InitializeSqliteTargetRequest.SerializeToString,
+            runtime__pb2.SqliteTargetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RenewRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RenewRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseRunInspectionSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseRunInspectionSession',
+            runtime__pb2.RunInspectionSessionRequest.SerializeToString,
+            runtime__pb2.RunInspectionSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
 
     @staticmethod
     def LoadProject(request,
@@ -251,6 +2318,33 @@ class RuntimeService(object):
             target,
             '/emo_master.runtime.RuntimeService/StartJob',
             runtime__pb2.StartJobRequest.SerializeToString,
+            runtime__pb2.StartJobReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetStartRequest(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetStartRequest',
+            runtime__pb2.StartRequestLookup.SerializeToString,
             runtime__pb2.StartJobReply.FromString,
             options,
             channel_credentials,
@@ -371,6 +2465,357 @@ class RuntimeService(object):
             _registered_method=True)
 
     @staticmethod
+    def GetOperatorIconAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorIconAsset',
+            runtime__pb2.GetOperatorIconAssetRequest.SerializeToString,
+            runtime__pb2.GetOperatorIconAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetOperatorEditorAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetOperatorEditorAsset',
+            runtime__pb2.GetOperatorEditorAssetRequest.SerializeToString,
+            runtime__pb2.GetOperatorEditorAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListNodePreviewSources(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListNodePreviewSources',
+            runtime__pb2.ListNodePreviewSourcesRequest.SerializeToString,
+            runtime__pb2.ListNodePreviewSourcesReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def UploadPreviewImage(request_iterator,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.stream_unary(
+            request_iterator,
+            target,
+            '/emo_master.runtime.RuntimeService/UploadPreviewImage',
+            runtime__pb2.PreviewUploadChunk.SerializeToString,
+            runtime__pb2.PreviewAssetReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamPreviewAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/StreamPreviewAsset',
+            runtime__pb2.GetPreviewAssetRequest.SerializeToString,
+            runtime__pb2.PreviewDownloadChunk.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RunOperatorPreview(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RunOperatorPreview',
+            runtime__pb2.RunOperatorPreviewRequest.SerializeToString,
+            runtime__pb2.RunOperatorPreviewReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CancelOperatorPreview(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CancelOperatorPreview',
+            runtime__pb2.CancelOperatorPreviewRequest.SerializeToString,
+            runtime__pb2.CancelOperatorPreviewReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenOperatorPreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenDraftOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenDraftOperatorPreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def OpenDraftPurePreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/OpenDraftPurePreviewSession',
+            runtime__pb2.OpenOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.OpenOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseDraftPurePreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseDraftPurePreviewSession',
+            runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def StreamOperatorPreviewFrames(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/StreamOperatorPreviewFrames',
+            runtime__pb2.StreamOperatorPreviewFramesRequest.SerializeToString,
+            runtime__pb2.OperatorPreviewFrame.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def CloseOperatorPreviewSession(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/CloseOperatorPreviewSession',
+            runtime__pb2.CloseOperatorPreviewSessionRequest.SerializeToString,
+            runtime__pb2.CloseOperatorPreviewSessionReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
     def ListRejectedOperators(request,
             target,
             options=(),
@@ -387,6 +2832,689 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/ListRejectedOperators',
             runtime__pb2.ListRejectedOperatorsRequest.SerializeToString,
             runtime__pb2.ListRejectedOperatorsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListWorkflows(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListWorkflows',
+            runtime__pb2.ListWorkflowsRequest.SerializeToString,
+            runtime__pb2.ListWorkflowsReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListGlobalCounters(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ListGlobalCounters',
+            runtime__pb2.ListGlobalCountersRequest.SerializeToString,
+            runtime__pb2.ListGlobalCountersReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetGlobalCounter',
+            runtime__pb2.GetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.GetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/SetGlobalCounter',
+            runtime__pb2.SetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.SetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ResetGlobalCounter(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ResetGlobalCounter',
+            runtime__pb2.ResetGlobalCounterRequest.SerializeToString,
+            runtime__pb2.ResetGlobalCounterReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+
+class DisplayServiceStub(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    def __init__(self, channel):
+        """Constructor.
+
+        Args:
+            channel: A grpc.Channel.
+        """
+        self.Capabilities = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Capabilities',
+                request_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayCapabilities.FromString,
+                _registered_method=True)
+        self.Prepare = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Prepare',
+                request_serializer=runtime__pb2.DisplayPrepareRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayPrepared.FromString,
+                _registered_method=True)
+        self.Start = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Start',
+                request_serializer=runtime__pb2.DisplayStartRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJob.FromString,
+                _registered_method=True)
+        self.ListJobs = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ListJobs',
+                request_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJobs.FromString,
+                _registered_method=True)
+        self.GetJob = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/GetJob',
+                request_serializer=runtime__pb2.DisplayJobRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayJob.FromString,
+                _registered_method=True)
+        self.Snapshot = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/Snapshot',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplaySnapshot.FromString,
+                _registered_method=True)
+        self.Subscribe = channel.unary_stream(
+                '/emo_master.runtime.DisplayService/Subscribe',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplaySnapshot.FromString,
+                _registered_method=True)
+        self.ReadAsset = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReadAsset',
+                request_serializer=runtime__pb2.DisplayAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayAsset.FromString,
+                _registered_method=True)
+        self.AcquireLease = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/AcquireLease',
+                request_serializer=runtime__pb2.DisplayAssetRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayLease.FromString,
+                _registered_method=True)
+        self.ReleaseLease = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReleaseLease',
+                request_serializer=runtime__pb2.DisplayLease.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
+        self.ReleaseJob = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/ReleaseJob',
+                request_serializer=runtime__pb2.DisplayRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
+        self.DiscardPrepared = channel.unary_unary(
+                '/emo_master.runtime.DisplayService/DiscardPrepared',
+                request_serializer=runtime__pb2.DisplayStartRequest.SerializeToString,
+                response_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                _registered_method=True)
+
+
+class DisplayServiceServicer(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    def Capabilities(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Prepare(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Start(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ListJobs(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Snapshot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def Subscribe(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReadAsset(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def AcquireLease(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReleaseLease(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ReleaseJob(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def DiscardPrepared(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+
+def add_DisplayServiceServicer_to_server(servicer, server):
+    rpc_method_handlers = {
+            'Capabilities': grpc.unary_unary_rpc_method_handler(
+                    servicer.Capabilities,
+                    request_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                    response_serializer=runtime__pb2.DisplayCapabilities.SerializeToString,
+            ),
+            'Prepare': grpc.unary_unary_rpc_method_handler(
+                    servicer.Prepare,
+                    request_deserializer=runtime__pb2.DisplayPrepareRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayPrepared.SerializeToString,
+            ),
+            'Start': grpc.unary_unary_rpc_method_handler(
+                    servicer.Start,
+                    request_deserializer=runtime__pb2.DisplayStartRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayJob.SerializeToString,
+            ),
+            'ListJobs': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListJobs,
+                    request_deserializer=runtime__pb2.DisplayEmpty.FromString,
+                    response_serializer=runtime__pb2.DisplayJobs.SerializeToString,
+            ),
+            'GetJob': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetJob,
+                    request_deserializer=runtime__pb2.DisplayJobRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayJob.SerializeToString,
+            ),
+            'Snapshot': grpc.unary_unary_rpc_method_handler(
+                    servicer.Snapshot,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplaySnapshot.SerializeToString,
+            ),
+            'Subscribe': grpc.unary_stream_rpc_method_handler(
+                    servicer.Subscribe,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplaySnapshot.SerializeToString,
+            ),
+            'ReadAsset': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReadAsset,
+                    request_deserializer=runtime__pb2.DisplayAssetRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayAsset.SerializeToString,
+            ),
+            'AcquireLease': grpc.unary_unary_rpc_method_handler(
+                    servicer.AcquireLease,
+                    request_deserializer=runtime__pb2.DisplayAssetRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayLease.SerializeToString,
+            ),
+            'ReleaseLease': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReleaseLease,
+                    request_deserializer=runtime__pb2.DisplayLease.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+            'ReleaseJob': grpc.unary_unary_rpc_method_handler(
+                    servicer.ReleaseJob,
+                    request_deserializer=runtime__pb2.DisplayRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+            'DiscardPrepared': grpc.unary_unary_rpc_method_handler(
+                    servicer.DiscardPrepared,
+                    request_deserializer=runtime__pb2.DisplayStartRequest.FromString,
+                    response_serializer=runtime__pb2.DisplayEmpty.SerializeToString,
+            ),
+    }
+    generic_handler = grpc.method_handlers_generic_handler(
+            'emo_master.runtime.DisplayService', rpc_method_handlers)
+    server.add_generic_rpc_handlers((generic_handler,))
+    server.add_registered_method_handlers('emo_master.runtime.DisplayService', rpc_method_handlers)
+
+
+ # This class is part of an EXPERIMENTAL API.
+class DisplayService(object):
+    """Opt-in P2 service. Existing RuntimeService wire contract is unchanged.
+    """
+
+    @staticmethod
+    def Capabilities(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Capabilities',
+            runtime__pb2.DisplayEmpty.SerializeToString,
+            runtime__pb2.DisplayCapabilities.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Prepare(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Prepare',
+            runtime__pb2.DisplayPrepareRequest.SerializeToString,
+            runtime__pb2.DisplayPrepared.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Start(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Start',
+            runtime__pb2.DisplayStartRequest.SerializeToString,
+            runtime__pb2.DisplayJob.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListJobs(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ListJobs',
+            runtime__pb2.DisplayEmpty.SerializeToString,
+            runtime__pb2.DisplayJobs.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetJob(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/GetJob',
+            runtime__pb2.DisplayJobRequest.SerializeToString,
+            runtime__pb2.DisplayJob.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Snapshot(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Snapshot',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplaySnapshot.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def Subscribe(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_stream(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/Subscribe',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplaySnapshot.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReadAsset(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReadAsset',
+            runtime__pb2.DisplayAssetRequest.SerializeToString,
+            runtime__pb2.DisplayAsset.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def AcquireLease(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/AcquireLease',
+            runtime__pb2.DisplayAssetRequest.SerializeToString,
+            runtime__pb2.DisplayLease.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReleaseLease(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReleaseLease',
+            runtime__pb2.DisplayLease.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ReleaseJob(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/ReleaseJob',
+            runtime__pb2.DisplayRequest.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def DiscardPrepared(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.DisplayService/DiscardPrepared',
+            runtime__pb2.DisplayStartRequest.SerializeToString,
+            runtime__pb2.DisplayEmpty.FromString,
             options,
             channel_credentials,
             insecure,

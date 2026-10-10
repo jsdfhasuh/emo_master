@@ -1,0 +1,568 @@
+test_baseline_missing_metadata_fails_before_download (test_actions_release.BaselineLockTests) ... ok
+test_delta_uses_frozen_files_and_checks_returned_base_hash (test_actions_release.BaselineLockTests) ... ok
+test_local_baseline_change_fails (test_actions_release.BaselineLockTests) ... ok
+test_remote_identity_size_hash_or_asset_set_change_fails (test_actions_release.BaselineLockTests) ... ok
+test_unchanged_snapshot_returns_fixed_local_manifest (test_actions_release.BaselineLockTests) ... ok
+test_build_cannot_publish_with_only_a_read_token (test_actions_release.ExecutionTests) ... ok
+test_dry_run_and_build_share_exact_arguments (test_actions_release.ExecutionTests) ... ok
+test_app_version_and_configured_version_match_protocol_reader (test_actions_release.RequestTests) ... ok
+test_body_path_is_confined_and_existing_markdown (test_actions_release.RequestTests) ... ok
+test_build_only_accepts_read_token_without_publish_secret (test_actions_release.RequestTests) ... ok
+test_computed_version_is_not_executed (test_actions_release.RequestTests) ... ok
+test_conflicting_log_options_fail (test_actions_release.RequestTests) ... ok
+test_first_release_defaults_and_preflight (test_actions_release.RequestTests) ... ok
+test_invalid_selected_baseline_never_retries_older_release (test_actions_release.RequestTests) ... ok
+test_mandatory_fails_before_history_or_compilation (test_actions_release.RequestTests) ... ok
+test_notes_base_is_independent_of_explicit_delta_base (test_actions_release.RequestTests) ... ok
+test_protocol3_build_only_keeps_document_flags_and_public_assets (test_actions_release.RequestTests) ... ok
+test_protocol3_publish_is_allowed_without_product_acceptance (test_actions_release.RequestTests) ... ok
+test_publish_passes_document_flags (test_actions_release.RequestTests) ... ok
+test_publish_requires_token (test_actions_release.RequestTests) ... ok
+test_query_failure_does_not_build (test_actions_release.RequestTests) ... ok
+test_version_mismatch_fails_before_history_query (test_actions_release.RequestTests) ... ok
+test_auto_uses_highest_older_version_not_api_order (test_actions_release.SelectionTests) ... ok
+test_explicit_tag_never_falls_back (test_actions_release.SelectionTests) ... ok
+test_first_release_and_explicit_none (test_actions_release.SelectionTests) ... ok
+test_history_without_eligible_baseline_does_not_downgrade (test_actions_release.SelectionTests) ... ok
+test_invalid_or_ambiguous_versions_fail (test_actions_release.SelectionTests) ... ok
+test_paginated_history_filters_drafts_and_prereleases (test_actions_release.SelectionTests) ... ok
+test_query_errors_are_not_empty_history (test_actions_release.SelectionTests) ... ok
+test_copy_time_mutation_is_detected (test_actions_release.StageTests) ... ok
+test_delta_assets_include_descriptor (test_actions_release.StageTests) ... ok
+test_expected_delta_mode_cannot_stage_full_only (test_actions_release.StageTests) ... ok
+test_full_assets_and_summary_only (test_actions_release.StageTests) ... ok
+test_missing_or_modified_asset_fails_before_staging (test_actions_release.StageTests) ... ok
+test_unexpected_and_traversal_names_are_not_staged (test_actions_release.StageTests) ... ok
+test_missing_frozen_interface_fails_explicitly (test_actions_release.ValidatorTests) ... ok
+test_source_contract_and_archive_consumer_validate_baseline (test_actions_release.ValidatorTests) ... ok
+test_both_entrypoints_expose_document_and_baseline_inputs (test_actions_release.WorkflowTests) ... ok
+test_ci_uses_runtime_installer_and_profile_cache_key (test_actions_release.WorkflowTests) ... ok
+test_legacy_entry_routes_train_only_to_shared_workflow (test_actions_release.WorkflowTests) ... ok
+test_shared_preparation_and_execution_use_frozen_state (test_actions_release.WorkflowTests) ... ok
+test_7zip_shim_receives_logical_working_directory (test_archive_paths.ArchivePathTests) ... ok
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "none",
+  "baseline_lock_sha256": "",
+  "notes_release": "",
+  "previous_source_ref": "",
+  "release_title": "emo-vision-train v2.0.0",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "2.0.0",
+  "mandatory": false,
+  "changelog_all": true,
+  "publish": false,
+  "expected_asset_count": 3
+}
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "none",
+  "baseline_lock_sha256": "",
+  "notes_release": "",
+  "previous_source_ref": "",
+  "release_title": "emo-vision-train v2.0.0",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "2.0.0",
+  "mandatory": false,
+  "changelog_all": true,
+  "publish": false,
+  "expected_asset_count": 3
+}
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "v1.0.0",
+  "baseline_lock_sha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "notes_release": "v1.1.0",
+  "previous_source_ref": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+  "release_title": "emo-vision-train v2.0.0",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "2.0.0",
+  "mandatory": false,
+  "changelog_all": false,
+  "publish": false,
+  "expected_asset_count": 5
+}
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "none",
+  "baseline_lock_sha256": "",
+  "notes_release": "",
+  "previous_source_ref": "",
+  "release_title": "Title",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "Some notes",
+  "mandatory": false,
+  "changelog_all": true,
+  "publish": false,
+  "expected_asset_count": 3
+}
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "none",
+  "baseline_lock_sha256": "",
+  "notes_release": "",
+  "previous_source_ref": "",
+  "release_title": "emo-vision-train v2.0.0",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "2.0.0",
+  "mandatory": false,
+  "changelog_all": true,
+  "publish": true,
+  "expected_asset_count": 3
+}
+{
+  "source_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "packager_commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+  "release_tag": "v2.0.0",
+  "release_repo": "jsdfhasuh/emo-vision-train-release",
+  "baseline_tag": "none",
+  "baseline_lock_sha256": "",
+  "notes_release": "",
+  "previous_source_ref": "",
+  "release_title": "Title",
+  "program_name": "emo-vision-train",
+  "release_body_path": "",
+  "notes": "Some notes",
+  "mandatory": false,
+  "changelog_all": true,
+  "publish": true,
+  "expected_asset_count": 3
+}
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/2 files | elapsed 0.0s
+[ZIP 完整内容校验] completed | 100.0% | 0.0/0.0 MiB | 2/2 files | elapsed 0.0s
+[ZIP 校验后指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验后指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+test_deep_working_directory_falls_back_without_losing_long_members (test_archive_paths.ArchivePathTests) ... ok
+test_build_cli_prints_profile_commands_from_another_cwd (test_branding_build.CliTests) ... ok
+test_build_cli_reports_bad_icon_without_traceback (test_branding_build.CliTests) ... ok
+test_resolver_never_overwrites_input_configuration (test_branding_build.CliTests) ... ok
+test_resolver_outputs_valid_json_and_exact_archive_name (test_branding_build.CliTests) ... ok
+test_resolver_publication_gate_reports_unverified_rename (test_branding_build.CliTests) ... ok
+test_resolver_writes_new_private_file_only_when_requested (test_branding_build.CliTests) ... ok
+test_compiler_children_do_not_change_declared_source_resources (test_branding_build.CommandIntegrationTests) ... ok
+test_context_routes_jobs_to_isolated_directories (test_branding_build.CommandIntegrationTests) ... ok
+test_dry_run_does_not_create_outputs_or_run_commands (test_branding_build.CommandIntegrationTests) ... ok
+test_existing_config_is_not_written_by_build (test_branding_build.CommandIntegrationTests) ... ok
+test_failed_compiler_writes_no_success_receipt (test_branding_build.CommandIntegrationTests) ... ok
+test_fake_success_routes_updater_and_writes_non_reusable_receipt (test_branding_build.CommandIntegrationTests) ... ok
+test_icon_changed_during_build_invalidates_success (test_branding_build.CommandIntegrationTests) ... ok
+test_invalid_name_fails_before_build (test_branding_build.CommandIntegrationTests) ... ok
+test_missing_outputs_do_not_fall_back_to_default_dist (test_branding_build.CommandIntegrationTests) ... ok
+test_non_windows_actual_build_is_explicitly_rejected (test_branding_build.CommandIntegrationTests) ... ok
+test_protocol_caches_are_removed_before_finalize_and_record (test_branding_build.CommandIntegrationTests) ... ok
+test_specpath_override_is_rejected (test_branding_build.CommandIntegrationTests) ... ok
+test_linked_cache_is_rejected_without_touching_target (test_branding_build.ProtocolBytecodeTests) ... skipped 'Directory symlinks unavailable'
+test_missing_output_is_rejected (test_branding_build.ProtocolBytecodeTests) ... ok
+test_output_escape_and_dist_root_are_rejected (test_branding_build.ProtocolBytecodeTests) ... ok
+test_removes_copied_caches_but_preserves_runtime_files_and_backups (test_branding_build.ProtocolBytecodeTests) ... ok
+test_unexpected_cache_contents_fail_before_any_deletion (test_branding_build.ProtocolBytecodeTests) ... ok
+test_commands_do_not_mutate_target_config (test_build_baseline.DefaultBuildTests) ... ok
+test_default_loader_does_not_read_profile (test_build_baseline.DefaultBuildTests) ... ok
+test_default_specpath_remains_available (test_build_baseline.DefaultBuildTests) ... ok
+test_legacy_onefile_without_updater_is_unchanged (test_build_baseline.DefaultBuildTests) ... ok
+test_master_default_command_matches_baseline (test_build_baseline.DefaultBuildTests) ... ok
+test_runtime_collectors_keep_original_selection (test_build_baseline.DefaultBuildTests) ... ok
+test_target_configuration_semantics_are_pinned (test_build_baseline.DefaultBuildTests) ... ok
+test_vision_default_commands_match_baseline (test_build_baseline.DefaultBuildTests) ... ok
+test_asset_and_manifest_collision_fails (test_build_config.ConfigTests) ... ok
+test_asset_path_traversal_and_non_zip_fail (test_build_config.ConfigTests) ... ok
+test_asset_tag_not_required_for_exe_preview (test_build_config.ConfigTests) ... ok
+test_bad_extra_args_type_fails (test_build_config.ConfigTests) ... ok
+test_cli_values_override_profile (test_build_config.ConfigTests) ... ok
+test_context_paths_stay_separate_for_main_and_updater (test_build_config.ConfigTests) ... ok
+test_context_refuses_existing_work_directory (test_build_config.ConfigTests) ... ok
+test_duplicate_json_fields_fail (test_build_config.ConfigTests) ... ok
+test_explicit_path_macros (test_build_config.ConfigTests) ... ok
+test_fingerprint_changes_with_icon_bytes_same_path (test_build_config.ConfigTests) ... ok
+test_fingerprint_does_not_include_build_id (test_build_config.ConfigTests) ... ok
+test_icon_only_does_not_trigger_rename_check (test_build_config.ConfigTests) ... ok
+test_json_array_and_malformed_json_fail (test_build_config.ConfigTests) ... ok
+test_main_and_updater_spec_files_fail (test_build_config.ConfigTests) ... ok
+test_main_onefile_and_installer_combinations_fail (test_build_config.ConfigTests) ... ok
+test_managed_extra_options_and_abbreviations_fail (test_build_config.ConfigTests) ... ok
+test_missing_profile_fails (test_build_config.ConfigTests) ... ok
+test_name_only_and_icon_only_are_independent (test_build_config.ConfigTests) ... ok
+test_names_are_literal_not_environment_expansions (test_build_config.ConfigTests) ... ok
+test_no_profile_is_implicitly_selected (test_build_config.ConfigTests) ... ok
+test_only_supported_target_allows_branding (test_build_config.ConfigTests) ... ok
+test_original_files_are_not_modified (test_build_config.ConfigTests) ... ok
+test_profile_applies_name_icon_and_asset_template (test_build_config.ConfigTests) ... ok
+test_profile_missing_icon_can_be_overridden (test_build_config.ConfigTests) ... ok
+test_profile_relative_icon_is_packager_relative (test_build_config.ConfigTests) ... ok
+test_profile_schema_version_is_strict (test_build_config.ConfigTests) ... ok
+test_profile_target_mismatch_fails (test_build_config.ConfigTests) ... ok
+test_profile_unknown_fields_fail (test_build_config.ConfigTests) ... ok
+test_renamed_updater_publication_check_fails (test_build_config.ConfigTests) ... ok
+test_undefined_path_macros_fail (test_build_config.ConfigTests) ... ok
+test_unrelated_extra_options_are_unchanged (test_build_config.ConfigTests) ... ok
+test_unsafe_tag_in_asset_fails (test_build_config.ConfigTests) ... ok
+test_updater_must_remain_onefile (test_build_config.ConfigTests) ... ok
+test_updater_name_and_copy_target_collisions_fail (test_build_config.ConfigTests) ... ok
+test_corrupt_payload_with_valid_directory_fails (test_build_config.IconTests) ... ok
+test_dib_icon_decodes (test_build_config.IconTests) ... ok
+test_fake_extension_and_truncation_fail (test_build_config.IconTests) ... ok
+test_invalid_image_offsets_fail (test_build_config.IconTests) ... ok
+test_missing_and_directory_fail (test_build_config.IconTests) ... ok
+test_missing_decoder_gives_actionable_error (test_build_config.IconTests) ... ok
+test_multiple_dib_and_png_entries_decode (test_build_config.IconTests) ... ok
+test_png_icon_decodes (test_build_config.IconTests) ... ok
+test_second_duplicate_size_entry_is_also_decoded (test_build_config.IconTests) ... ok
+test_wrong_dimensions_fail_before_decode (test_build_config.IconTests) ... ok
+test_invalid_names (test_build_config.NameTests) ... ok
+test_utf16_length_is_checked (test_build_config.NameTests) ... ok
+test_valid_names (test_build_config.NameTests) ... ok
+test_environment_and_interpreter_flag_are_restored_on_failure (test_build_input_diagnostics.BytecodeTests) ... ok
+test_real_import_reproduces_resource_drift_and_suppression_prevents_it (test_build_input_diagnostics.BytecodeTests) ... ok
+test_changes_report_exact_files_without_weakening_the_guard (test_build_input_diagnostics.InputDiagnosticTests) ... ok
+test_local_protocol_mandatory_is_rejected_before_build_or_network (test_build_input_diagnostics.InputDiagnosticTests) ... ok
+test_runtime_profile_changes_are_included_in_packager_fingerprint (test_build_input_diagnostics.InputDiagnosticTests) ... ok
+test_tool_change_is_identified_and_rejected (test_build_input_diagnostics.InputDiagnosticTests) ... ok
+test_config_resolver_accepts_chinese_with_legacy_output_encoding (test_console_output.ConsoleOutputTests) ... ok
+test_embedding_streams_without_reconfigure_are_preserved (test_console_output.ConsoleOutputTests) ... ok
+test_redirected_ascii_streams_emit_utf8_without_losing_names (test_console_output.ConsoleOutputTests) ... ok
+test_missing_wire_name_never_writes_success_summary_or_publishes (test_delta_release.DeltaReleaseIntegrationTests) ... ok
+test_publication_without_acceptance_keeps_not_run_in_summary (test_delta_release.DeltaReleaseIntegrationTests) ... ok
+test_real_wire_fields_flow_through_summary_and_public_staging (test_delta_release.DeltaReleaseIntegrationTests) ... ok
+test_accepts_wire_name_and_existing_descriptor (test_delta_release.DeltaValidationTests) ... ok
+test_changed_zip_or_descriptor_is_rejected (test_delta_release.DeltaValidationTests) ... ok
+test_invalid_json_and_zip_metadata_are_actionable (test_delta_release.DeltaValidationTests) ... ok
+test_missing_legacy_or_unsafe_name_is_actionable (test_delta_release.DeltaValidationTests) ... ok
+test_producer_non_object_or_bad_json_never_reaches_dictionary_access (test_delta_release.DeltaValidationTests) ... ok
+test_protocol_two_and_mixed_ranges_are_rejected (test_delta_release.DeltaValidationTests) ... ok
+test_wrong_target_or_baseline_identity_fails (test_delta_release.DeltaValidationTests) ... ok
+test_split_and_native_profiles_remain_distinct (test_diagnostic_profile_layout.DiagnosticProfileTests) ... ok
+test_unknown_layout_fails_closed (test_diagnostic_profile_layout.DiagnosticProfileTests) ... ok
+test_effective_config_preserves_source_data_with_profile_and_overrides (test_kaggle_source_resources.KaggleSourceResourcesTests) ... ok
+testCreateTargetsBuiltCommit (test_master_release_provenance.MasterReleaseProvenanceTests) ... ok
+testGuardsAreScopedAndBuildOnlyIsExempt (test_master_release_provenance.MasterReleaseProvenanceTests) ... ok
+testMasterUploadCannotClobberAndChecksAllAssetsFirst (test_master_release_provenance.MasterReleaseProvenanceTests) ... ok
+testMockedPowerShellGuards (test_master_release_provenance.MasterReleaseProvenanceTests) ... ok
+testProvenanceRecheckedAfterBuild (test_master_release_provenance.MasterReleaseProvenanceTests) ... ok
+Removed 2 development bytecode files from isolated release output
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] completed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+[ZIP 校验后指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验后指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+test_change_during_verification_invalidates_the_result (test_portable_release.ArchiveTests) ... ok
+test_json_writer_never_overwrites (test_portable_release.ArchiveTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] completed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验后指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验后指纹] completed | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+test_large_member_advances_byte_progress_before_the_file_finishes (test_portable_release.ArchiveTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+test_links_are_rejected (test_portable_release.ArchiveTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+test_modified_missing_extra_and_duplicate_files_fail (test_portable_release.ArchiveTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] failed | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+test_unsafe_members_fail (test_portable_release.ArchiveTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] completed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+[ZIP 校验后指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验后指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+test_valid_lzma_zip_streams_and_matches (test_portable_release.ArchiveTests) ... ok
+test_7z_memory_failure_retries_once_with_one_thread (test_portable_release.CompressionPolicyTests) ... ok
+test_other_7z_errors_are_not_silently_retried (test_portable_release.CompressionPolicyTests) ... ok
+test_bad_source_ref_is_not_ignored (test_portable_release.PortableTests) ... ok
+test_broken_archive_has_no_success_summary (test_portable_release.PortableTests) ... ok
+test_cancelled_content_verification_never_uploads_or_marks_success (test_portable_release.PortableTests) ... ok
+test_changed_artifact_invalidates_reuse (test_portable_release.PortableTests) ... ok
+test_changed_artifact_is_still_rejected_before_upload (test_portable_release.PortableTests) ... ok
+test_changed_helper_invalidates_reuse (test_portable_release.PortableTests) ... ok
+test_changed_source_is_still_rejected_before_upload (test_portable_release.PortableTests) ... ok
+test_changed_zip_is_rejected_even_with_same_size_and_mtime (test_portable_release.PortableTests) ... ok
+test_compiler_failure_does_not_reuse_previous_dist (test_portable_release.PortableTests) ... ok
+test_dirty_helper_changes_during_compile_are_detected (test_portable_release.PortableTests) ... ok
+test_dirty_source_can_build_but_cannot_reuse (test_portable_release.PortableTests) ... ok
+test_explicit_publication_success_marks_summary (test_portable_release.PortableTests) ... ok
+test_fresh_build_creates_single_root_zip_and_public_summary_only (test_portable_release.PortableTests) ... ok
+test_local_zip_changed_during_record_recheck_is_not_finalized (test_portable_release.PortableTests) ... ok
+test_manifest_summary_collision_fails_before_build (test_portable_release.PortableTests) ... ok
+test_mode_conflicts_and_missing_record_fail_early (test_portable_release.PortableTests) ... ok
+test_new_publication_failure_keeps_summary_unpublished (test_portable_release.PortableTests) ... ok
+test_output_cannot_be_in_source_or_private_workdir (test_portable_release.PortableTests) ... ok
+test_output_must_be_new_or_empty (test_portable_release.PortableTests) ... ok
+test_preview_is_read_only (test_portable_release.PortableTests) ... ok
+test_profile_does_not_mutate_default_config (test_portable_release.PortableTests) ... ok
+test_publication_verifies_zip_contents_and_post_build_record_only_once (test_portable_release.PortableTests) ... ok
+test_record_path_traversal_is_rejected (test_portable_release.PortableTests) ... ok
+test_record_reuse_does_not_recompile_and_may_change_release_tag (test_portable_release.PortableTests) ... ok
+test_ref_at_other_commit_fails (test_portable_release.PortableTests) ... ok
+test_relocated_record_cannot_redirect_publisher (test_portable_release.PortableTests) ... ok
+test_rename_is_blocked_before_auth_build_or_output (test_portable_release.PortableTests) ... ok
+test_reused_build_gets_fresh_zip_verification_before_publication (test_portable_release.PortableTests) ... ok
+test_rewriting_summary_hash_cannot_replace_current_run_verification (test_portable_release.PortableTests) ... ok
+test_runtime_dry_run_does_not_import_heavy_dependencies (test_portable_release.PortableTests) ... ok
+test_runtime_environment_failure_prevents_compilation_and_publication (test_portable_release.PortableTests) ... ok
+test_runtime_package_failure_prevents_compression_and_publication (test_portable_release.PortableTests) ... ok
+test_runtime_validation_summary_does_not_claim_gpu_execution (test_portable_release.PortableTests) ... ok
+test_same_identity_new_build_recovers_after_customization (test_portable_release.PortableTests) ... ok
+test_same_path_different_icon_invalidates_reuse (test_portable_release.PortableTests) ... ok
+test_concurrent_summary_change_is_still_detected_after_acceptance (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_failed_or_mismatched_reports_never_publish (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_full_only_publication_without_opt_in_does_not_run_windows_gate (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_launch_pass_requires_explicit_gui_and_launch_confirmation (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_local_build_does_not_run_opted_in_publication_gate (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_opted_in_full_only_publication_requires_frozen_baseline (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_passed_transition_is_persisted_separately_with_exact_report_hash (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_public_summary_excludes_unknown_and_nested_private_report_fields (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_upload_failure_keeps_passed_acceptance_but_unpublished_summary (test_portable_windows_acceptance.WindowsAcceptanceSummaryTests) ... ok
+test_actual_submodule_state_preserves_leading_status_character (test_record_review.RecordReviewTests) ... ok
+test_nested_private_build_record_is_not_archived (test_record_review.RecordReviewTests) ... ok
+test_malformed_record_data_fails_with_actionable_error (test_record_review.RecordReviewTests) ... ok
+test_version_mismatch_is_detected_before_compilation (test_record_review.RecordReviewTests) ... ok
+test_arbitrary_output_beneath_packager_does_not_dirty_binary_provenance (test_record_review.RecordReviewTests) ... ok
+test_unversioned_source_cannot_be_called_a_proven_build (test_record_review.RecordReviewTests) ... ok
+test_missing_executable_fails_even_after_success_exit_code (test_record_review.RecordReviewTests) ... ok
+test_manifest_path_traversal_fails_before_compilation (test_record_review.RecordReviewTests) ... ok
+test_output_dotdot_cannot_bypass_source_boundary (test_record_review.RecordReviewTests) ... ok
+test_output_dotdot_cannot_bypass_private_directory_boundary (test_record_review.RecordReviewTests) ... ok
+test_invalid_schema_does_not_become_valid_via_bool_integer_coercion (test_record_review.RecordReviewTests) ... ok
+test_reparse_point_attribute_is_checked_even_without_path_is_junction (test_record_review.LinkTests) ... ok
+test_all_history_is_explicit_and_still_pins_head (test_release_content.ContentTests) ... ok
+test_base_must_be_ancestor_of_published_head (test_release_content.ContentTests) ... ok
+test_generated_body_uses_pinned_head_and_explicit_range (test_release_content.ContentTests) ... ok
+test_no_implicit_recent_commit_fallback (test_release_content.ContentTests) ... ok
+test_previous_release_uses_selected_versions_predecessor (test_release_content.ContentTests) ... ok
+test_published_source_must_match_repository_and_full_commit (test_release_content.ContentTests) ... ok
+test_empty_non_utf8_missing_directory_and_large_bodies_fail (test_release_content.BodyTests) ... ok
+test_title_validation (test_release_content.BodyTests) ... ok
+test_utf8_bom_and_line_endings_are_normalized_and_hashed (test_release_content.BodyTests) ... ok
+test_concurrent_release_edit_is_not_overwritten (test_release_content.ReleaseApiTests) ... ok
+test_download_counts_do_not_invalidate_body_preview (test_release_content.ReleaseApiTests) ... ok
+test_draft_list_errors_are_not_treated_as_a_free_tag (test_release_content.ReleaseApiTests) ... ok
+test_existing_draft_blocks_new_release_creation (test_release_content.ReleaseApiTests) ... ok
+test_existing_release_is_rejected_before_build (test_release_content.ReleaseApiTests) ... ok
+test_inaccessible_repository_is_not_a_free_tag (test_release_content.ReleaseApiTests) ... ok
+test_network_and_auth_errors_are_not_treated_as_missing_release (test_release_content.ReleaseApiTests) ... ok
+test_patch_payload_only_contains_body (test_release_content.ReleaseApiTests) ... ok
+test_successful_tag_lookup_does_not_scan_list (test_release_content.ReleaseApiTests) ... ok
+test_tag_404_finds_draft_on_later_page (test_release_content.ReleaseApiTests) ... ok
+test_notes_only_dry_run_blocks_remote_mutation (test_release_content.NotesOnlyTests) ... ok
+test_notes_only_publish_never_resolves_or_builds_application (test_release_content.NotesOnlyTests) ... ok
+test_notes_only_rejects_asset_and_manifest_overrides (test_release_content.NotesOnlyTests) ... ok
+test_notes_only_requires_explicit_publish (test_release_content.NotesOnlyTests) ... ok
+test_preview_fingerprint_and_body_hash_are_checked (test_release_content.NotesOnlyTests) ... ok
+test_unreadable_body_fails_before_compilation (test_release_content.ContentPipelineTests) ... ok
+test_invalid_base_fails_before_compilation (test_release_content.ContentPipelineTests) ... ok
+test_existing_tag_fails_before_compilation (test_release_content.ContentPipelineTests) ... ok
+test_changed_source_head_fails_before_compilation (test_release_content.ContentPipelineTests) ... ok
+test_dry_run_previews_body_without_writing_outputs (test_release_content.ContentPipelineTests) ... ok
+test_confirmed_body_is_frozen_before_compilation (test_release_content.ContentPipelineTests) ... ok
+test_byte_file_counts_and_completion_are_flushed (test_release_progress.ReleaseProgressTests) ... ok
+test_empty_totals_do_not_divide_by_zero (test_release_progress.ReleaseProgressTests) ... ok
+test_error_and_cancellation_do_not_report_completion (test_release_progress.ReleaseProgressTests) ... ok
+test_legacy_windows_encoding_does_not_break_progress (test_release_progress.ReleaseProgressTests) ... ok
+test_unknown_totals_report_heartbeat_without_fake_percent (test_release_progress.ReleaseProgressTests) ... ok
+test_configuration_and_icon_content_affect_fingerprint (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_default_does_not_bundle_branding (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_existing_file_and_directory_mappings_cannot_override_branding (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_invalid_names_and_unknown_fields_fail (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_missing_config_bad_json_and_missing_icon_fail (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_nested_windows_icon_path_preserves_bundle_destination (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_resources_are_main_only_and_identity_is_unchanged (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_runtime_icon_is_hashed_independently_of_exe_icon (test_runtime_branding.RuntimeBrandingTests) ... ok
+test_unsafe_runtime_paths_fail (test_runtime_branding.RuntimeBrandingTests) ... ok
+testCloudRuntimeRecordsBothCheckoutsAndUploadsFailures (test_runtime_target.RuntimeTargetTests) ... ok
+testFrozenGatePrecedesArchiveAndPublicationAndReusesProvenance (test_runtime_target.RuntimeTargetTests) ... ok
+testIndependentRuntimeKeepsDesignerTargetUnchanged (test_runtime_target.RuntimeTargetTests) ... ok
+testLocalRuntimeRequiresExplicitPublicationWithoutChangingOtherTargets (test_runtime_target.RuntimeTargetTests) ... ok
+testWorkflowRuntimeAutoBuildsOnly (test_runtime_target.RuntimeTargetTests) ... ok
+7-Zip memory allocation failed; retrying with one thread.
+Preparing bundled source assets: C:\Users\JSDFHA~1\AppData\Local\Temp\tmpjlmp52zq\prepare.py
+test_nonzero_script_and_escaping_path_are_rejected (test_source_assets.SourceAssetTests) ... ok
+test_preparation_failure_stops_before_compiler_and_snapshot (test_source_assets.SourceAssetTests) ... ok
+Preparing bundled source assets: C:\Users\JSDFHA~1\AppData\Local\Temp\tmpo9tbaj_v\prepare.py
+test_script_uses_build_interpreter_and_source_directory (test_source_assets.SourceAssetTests) ... ok
+test_unconfigured_products_do_not_run_preparation (test_source_assets.SourceAssetTests) ... ok
+test_broken_stderr_does_not_break_dll_initialization (test_torch_runtime_hook.TorchRuntimeHookTests) ... ok
+test_default_startup_does_not_write_logs (test_torch_runtime_hook.TorchRuntimeHookTests) ... ok
+test_explicit_debug_uses_stderr_without_opening_files (test_torch_runtime_hook.TorchRuntimeHookTests) ... ok
+test_real_subprocess_does_not_create_installation_files (test_torch_runtime_hook.TorchRuntimeHookTests) ... ok
+test_windowed_app_without_stderr_still_initializes_dlls (test_torch_runtime_hook.TorchRuntimeHookTests) ... ok
+[ZIP 校验前指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验前指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 完整内容校验] started | 0.0% | 0.0/0.0 MiB | 0/1 files | elapsed 0.0s
+[ZIP 完整内容校验] completed | 100.0% | 0.0/0.0 MiB | 1/1 files | elapsed 0.0s
+[ZIP 校验后指纹] started | 0.0% | 0.0/0.0 MiB | elapsed 0.0s
+[ZIP 校验后指纹] completed | 100.0% | 0.0/0.0 MiB | elapsed 0.0s
+test_extended_path_fallback_archive_round_trip (test_update_acceptance.AcceptanceTests) ... ok
+test_failed_and_missing_checks_are_recorded_without_blocking (test_update_acceptance.AcceptanceTests) ... ok
+test_malformed_report_is_not_treated_as_missing (test_update_acceptance.AcceptanceTests) ... ok
+test_missing_report_is_not_run_and_does_not_block (test_update_acceptance.AcceptanceTests) ... ok
+test_passed_check_still_requires_evidence (test_update_acceptance.AcceptanceTests) ... ok
+test_power_loss_not_run_cannot_be_replaced_by_process_tests (test_update_acceptance.AcceptanceTests) ... ok
+test_report_is_bound_to_build_and_evidence (test_update_acceptance.AcceptanceTests) ... ok
+test_alias_settings_and_protocol_two_are_rejected (test_update_layout.ProtocolLayoutTests) ... ok
+test_layout_requires_only_root_launcher_and_application_contents (test_update_layout.ProtocolLayoutTests) ... ok
+test_protocol_three_compiles_three_entries_without_aliases (test_update_layout.ProtocolLayoutTests) ... ok
+test_application_version_is_used_without_importing_source (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_comments_dynamic_values_and_nested_assignments_are_not_versions (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_default_file_prefers_app_version_and_supports_legacy_fallback (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_explicit_version_file_retains_legacy_precedence (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_missing_or_invalid_file_reports_its_path (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_tag_mismatch_still_rejected (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_typed_assignment_and_utf8_bom_are_supported (test_update_protocol_build.ProtocolBuildVersionTests) ... ok
+test_different_repository_is_rejected (test_update_protocol_publish.ProtocolPublishTests) ... ok
+test_digest_mismatch_retains_draft (test_update_protocol_publish.ProtocolPublishTests) ... ok
+test_draft_verification_precedes_publication_and_rechecks (test_update_protocol_publish.ProtocolPublishTests) ... ok
+test_mutated_local_assets_fail_before_remote_write (test_update_protocol_publish.ProtocolPublishTests) ... ok
+test_cpu_environment_cannot_reach_functional_import_check (test_vision_train_runtime.EnvironmentTests) ... ok
+test_functional_import_failure_is_fatal_without_requiring_a_gpu (test_vision_train_runtime.EnvironmentTests) ... ok
+test_builder_source_must_exist_as_data_even_when_imports_are_available (test_vision_train_runtime.PackageTests) ... ok
+test_complete_package_reports_no_gpu_execution_claim (test_vision_train_runtime.PackageTests) ... ok
+test_cpu_build_is_rejected_before_archive_inspection (test_vision_train_runtime.PackageTests) ... ok
+test_driver_dll_is_not_required_in_distribution (test_vision_train_runtime.PackageTests) ... ok
+test_hidden_import_must_exist_in_exe_not_just_build_environment (test_vision_train_runtime.PackageTests) ... ok
+test_missing_cudnn_component_is_fatal (test_vision_train_runtime.PackageTests) ... ok
+test_pe_dependency_check_finds_unlisted_cuda_dependency (test_vision_train_runtime.PackageTests) ... ok
+test_polars_native_binary_is_required (test_vision_train_runtime.PackageTests) ... ok
+test_source_model_is_required (test_vision_train_runtime.PackageTests) ... ok
+test_version_file_is_parsed_not_executed (test_vision_train_runtime.PackageTests) ... ok
+test_ci_overrides_are_resolved_together_without_changing_unrelated_pins (test_vision_train_runtime.RequirementsTests) ... ok
+test_gpu_install_precedes_one_combined_resolver_and_pip_check (test_vision_train_runtime.RequirementsTests) ... ok
+test_install_failure_stops_before_next_step (test_vision_train_runtime.RequirementsTests) ... ok
+test_nonzero_exit_is_fatal (test_vision_train_runtime.RequirementsTests) ... ok
+test_requirements_bom_encodings (test_vision_train_runtime.RequirementsTests) ... ok
+test_unrecognized_pip_directives_fail_instead_of_reading_wrong_relative_files (test_vision_train_runtime.RequirementsTests) ... ok
+test_all_default_tokens_are_read_only (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_all_workflows_parse_with_named_jobs (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_ci_covers_all_merged_workflows_and_safety_tests (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_diagnostics_are_manual_read_only_and_never_publish (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_production_has_no_historical_or_source_fixture_gate (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_production_preserves_first_full_only_and_incremental_inputs (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_production_release_is_manual_or_explicitly_called (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_release_checkouts_use_explicit_refs_without_persisting_tokens (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_reusable_workflow_does_not_require_permission_escalation (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_source_fixture_checks_are_preserved_as_optional_diagnostics (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_user_inputs_never_enter_inline_shell_expressions (test_workflow_safety.WorkflowSafetyTests) ... ok
+test_invalid_branding_and_conflicting_modes_fail (test_workflows_and_wizard.PowerShellTests) ... ok
+test_cancel_document_review_does_not_save_automatic_draft (test_workflows_and_wizard.WizardTests) ... ok
+test_cancel_does_not_execute_or_write (test_workflows_and_wizard.WizardTests) ... ok
+test_configured_source_version_takes_precedence (test_workflows_and_wizard.WizardTests) ... ok
+test_custom_executable_name_requires_fixed_layout (test_workflows_and_wizard.WizardTests) ... ok
+test_default_is_local_build_without_profile (test_workflows_and_wizard.WizardTests) ... ok
+test_eof_at_version_cancels_even_when_default_and_yes_are_available (test_workflows_and_wizard.WizardTests) ... ok
+test_eof_cancels_instead_of_defaulting_to_build (test_workflows_and_wizard.WizardTests) ... ok
+test_explicit_range_is_used_for_generated_preview (test_workflows_and_wizard.WizardTests) ... ok
+test_invalid_and_empty_versions_reprompt_before_confirmation (test_workflows_and_wizard.WizardTests) ... ok
+test_invalid_release_responses_leave_no_default (test_workflows_and_wizard.WizardTests) ... ok
+test_missing_source_fails_before_version_lookup (test_workflows_and_wizard.WizardTests) ... ok
+test_no_release_default_when_gh_is_missing (test_workflows_and_wizard.WizardTests) ... ok
+test_normalization_keeps_shared_release_tag_contract (test_workflows_and_wizard.WizardTests) ... ok
+test_notes_only_cancel_and_eof_do_not_publish (test_workflows_and_wizard.WizardTests) ... ok
+test_notes_only_regeneration_pins_published_source_not_current_head (test_workflows_and_wizard.WizardTests) ... ok
+test_notes_only_skips_branding_and_uses_existing_tag (test_workflows_and_wizard.WizardTests) ... ok
+test_other_target_source_root_is_not_reused (test_workflows_and_wizard.WizardTests) ... ok
+test_preview_is_forwarded_and_not_publication (test_workflows_and_wizard.WizardTests) ... ok
+test_profile_selection_is_explicit_and_not_persisted (test_workflows_and_wizard.WizardTests) ... ok
+test_publication_fields_and_frozen_markdown_reach_shared_entry (test_workflows_and_wizard.WizardTests) ... ok
+test_release_default_bumps_patch_and_excludes_drafts (test_workflows_and_wizard.WizardTests) ... ok
+test_release_lookup_failure_does_not_prevent_manual_version (test_workflows_and_wizard.WizardTests) ... ok
+test_return_to_settings_preserves_edited_body (test_workflows_and_wizard.WizardTests) ... ok
+test_reuse_requires_explicit_record (test_workflows_and_wizard.WizardTests) ... ok
+test_saved_source_root_is_reused_without_changing_state (test_workflows_and_wizard.WizardTests) ... ok
+test_source_environment_overrides_saved_state (test_workflows_and_wizard.WizardTests) ... ok
+test_source_version_does_not_require_github_lookup (test_workflows_and_wizard.WizardTests) ... ok
+test_source_version_formats (test_workflows_and_wizard.WizardTests) ... ok
+test_source_version_is_default_without_executing_source (test_workflows_and_wizard.WizardTests) ... ok
+test_unprefixed_version_is_normalized_before_summary (test_workflows_and_wizard.WizardTests) ... ok
+test_unreadable_source_version_leaves_manual_input_available (test_workflows_and_wizard.WizardTests) ... ok
+test_yes_cannot_bypass_invalid_version (test_workflows_and_wizard.WizardTests) ... ok
+test_yes_does_not_bypass_update_guard (test_workflows_and_wizard.WizardTests) ... ok
+test_yes_only_skips_final_confirmation (test_workflows_and_wizard.WizardTests) ... ok
+test_actions_upload_only_whitelisted_public_outputs (test_workflows_and_wizard.WorkflowTests) ... ok
+test_both_modes_default_to_no_publication (test_workflows_and_wizard.WorkflowTests) ... ok
+test_both_workflows_use_read_only_default_token (test_workflows_and_wizard.WorkflowTests) ... ok
+test_checkouts_use_resolved_refs_not_fixed_master (test_workflows_and_wizard.WorkflowTests) ... ok
+test_configuration_and_assets_trigger_tests_after_merge (test_workflows_and_wizard.WorkflowTests) ... ok
+test_dispatch_and_reuse_share_input_names (test_workflows_and_wizard.WorkflowTests) ... ok
+test_inputs_are_not_interpolated_directly_into_shell_code (test_workflows_and_wizard.WorkflowTests) ... ok
+test_preflight_precedes_heavy_dependency_install (test_workflows_and_wizard.WorkflowTests) ... ok
+test_ps_wrapper_retains_legacy_fallback_and_bound_switch_safety (test_workflows_and_wizard.WorkflowTests) ... ok
+test_reuse_requires_explicit_packager_ref (test_workflows_and_wizard.WorkflowTests) ... ok
+test_unit_workflow_has_no_production_source_or_release (test_workflows_and_wizard.WorkflowTests) ... ok
+
+----------------------------------------------------------------------
+Ran 367 tests in 324.828s
+
+OK (skipped=1)
+Warning: python DLL not found; the packaged app may fail to run
+Warning: python DLL not found; the packaged app may fail to run

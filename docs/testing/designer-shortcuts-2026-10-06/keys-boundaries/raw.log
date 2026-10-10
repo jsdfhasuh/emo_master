@@ -1,0 +1,25 @@
+...........................F................................             [100%]
+================================== FAILURES ===================================
+_____________ testCloseInProgressBlocksKeyboardAndRetainedActions _____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x24f71e8db60) at 0x0000024F72A1E380>, ['node-d3ec4f8d', 'node-05c1a2df'], <tests.designer.test_node_context_menu.Client object at 0x0000024F490B4B50>)
+
+    def testCloseInProgressBlocksKeyboardAndRetainedActions(canvas):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        window.runtimeController._closing = True
+        try:
+            press(window, Qt.Key_D, Qt.ControlModifier)
+            window.designerActions.invoke('copy')
+            assert window.pageCoordinator.session.payload() == before
+            assert not window.designerActions.actions['copy'].isEnabled()
+        finally:
+            window.runtimeController._closing = False
+>       dialog.close()
+E       NameError: name 'dialog' is not defined
+
+tests\designer\test_designer_shortcuts.py:389: NameError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_designer_shortcuts.py::testCloseInProgressBlocksKeyboardAndRetainedActions
+1 failed, 59 passed in 12.57s

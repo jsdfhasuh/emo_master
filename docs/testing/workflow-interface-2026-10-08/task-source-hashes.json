@@ -1,0 +1,26 @@
+[
+  {
+    "path": "src/emo_master/apps/designer/ui/workflow_interface_dialog.py",
+    "sha256": "3c9279d2f10853a98ac171b146426822ac27c2cb2839404edb8442e3f7e3e603"
+  },
+  {
+    "path": "src/emo_master/apps/designer/ui/main_window.py",
+    "sha256": "609e9342b7005f162738ad9e0d873c7be5f858ccff50ed2873f7367d6306fd33"
+  },
+  {
+    "path": "src/emo_master/apps/designer/ui/flow_scene.py",
+    "sha256": "62f1ac841e9fb991af903c6edd45d77d72ba7d4499f39382291d66833acb3e97"
+  },
+  {
+    "path": "tests/designer/test_workflow_interface_dialog.py",
+    "sha256": "8c4078c7620658e901aee3a940f1a4055b05e74fd27e79d309c46379d67af626"
+  },
+  {
+    "path": "tests/designer/test_main_window_workflow_tabs.py",
+    "sha256": "2e43c8b07d180ccdf6e228a8baee36d47bc8be89b6b6d91e77aa947025857853"
+  },
+  {
+    "path": "scripts/validate_workflow_interface.py",
+    "sha256": "a6a93cbcfc9f26226869b6727638873a0f5ce774da87e8b4e1f296a41e536c41"
+  }
+]

@@ -1,0 +1,231 @@
+FFFFFFFFF                                                                [100%]
+================================== FAILURES ===================================
+______________ testRunningDeleteKeysCannotRemoveDraftNodes[key0] ______________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efa8f3d040) at 0x000001EFAAB37980>, ['node-83354d55', 'node-82091143'], <tests.designer.test_node_context_menu.Client object at 0x000001EFAAB429B0>)
+key = PySide2.QtCore.Qt.Key.Key_Delete
+
+    @pytest.mark.parametrize('key', [Qt.Key_Delete, Qt.Key_Backspace])
+    def testRunningDeleteKeysCannotRemoveDraftNodes(canvas, key):  # noqa: F811
+        window, (first, _second), client = canvas
+        window.show()
+        window.activateWindow()
+        window.flowScene.setNodeSelected(first)
+        window.flowView.setFocus()
+        QApplication.processEvents()
+        before = window.pageCoordinator.session.payload()
+        depth = len(window.pageCoordinator.session._undo)
+        window._setIsJobRunning(True)
+        window.updateToolbarState()
+        try:
+            QTest.keyClick(window.flowView, key)
+            QApplication.processEvents()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-82091143', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-83354d55', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:26: AssertionError
+______________ testRunningDeleteKeysCannotRemoveDraftNodes[key1] ______________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efab04c740) at 0x000001EFAAB60740>, ['node-65034c83', 'node-14a33f86'], <tests.designer.test_node_context_menu.Client object at 0x000001EFAAB8AB90>)
+key = PySide2.QtCore.Qt.Key.Key_Backspace
+
+    @pytest.mark.parametrize('key', [Qt.Key_Delete, Qt.Key_Backspace])
+    def testRunningDeleteKeysCannotRemoveDraftNodes(canvas, key):  # noqa: F811
+        window, (first, _second), client = canvas
+        window.show()
+        window.activateWindow()
+        window.flowScene.setNodeSelected(first)
+        window.flowView.setFocus()
+        QApplication.processEvents()
+        before = window.pageCoordinator.session.payload()
+        depth = len(window.pageCoordinator.session._undo)
+        window._setIsJobRunning(True)
+        window.updateToolbarState()
+        try:
+            QTest.keyClick(window.flowView, key)
+            QApplication.processEvents()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-14a33f86', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-65034c83', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:26: AssertionError
+____ testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut] ____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaae342a0) at 0x000001EFABBA6E00>, ['node-8b633175', 'node-ec2910b6'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABED3FA0>)
+method = 'handleDeleteShortcut'
+
+    @pytest.mark.parametrize('method', ['handleDeleteShortcut', 'deleteSelectedElements',
+                                      'duplicateSelectedNode', 'duplicateCurrentWorkflow', 'autoLayoutNodes'])
+    def testRunningLegacyMutationEntryCannotBypassGuard(canvas, method):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        positions = window.flowScene.getNodePositions()
+        window._setIsJobRunning(True)
+        try:
+            getattr(window, method)()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-ec2910b6', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-8b633175', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:43: AssertionError
+___ testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements] ___
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaaf45530) at 0x000001EFAAB4F280>, ['node-d697bd98', 'node-5fc8316a'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABED0670>)
+method = 'deleteSelectedElements'
+
+    @pytest.mark.parametrize('method', ['handleDeleteShortcut', 'deleteSelectedElements',
+                                      'duplicateSelectedNode', 'duplicateCurrentWorkflow', 'autoLayoutNodes'])
+    def testRunningLegacyMutationEntryCannotBypassGuard(canvas, method):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        positions = window.flowScene.getNodePositions()
+        window._setIsJobRunning(True)
+        try:
+            getattr(window, method)()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-5fc8316a', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-d697bd98', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:43: AssertionError
+___ testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode] ____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaae3eb80) at 0x000001EFABEA0040>, ['node-8f64a2d9', 'node-44defc90'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABED1FF0>)
+method = 'duplicateSelectedNode'
+
+    @pytest.mark.parametrize('method', ['handleDeleteShortcut', 'deleteSelectedElements',
+                                      'duplicateSelectedNode', 'duplicateCurrentWorkflow', 'autoLayoutNodes'])
+    def testRunningLegacyMutationEntryCannotBypassGuard(canvas, method):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        positions = window.flowScene.getNodePositions()
+        window._setIsJobRunning(True)
+        try:
+            getattr(window, method)()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-8f64a2d9', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-8f64a2d9', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:43: AssertionError
+__ testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow] __
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaaf3ba50) at 0x000001EFABEDB500>, ['node-8dbaf009', 'node-1c3b3ee3'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABF12C80>)
+method = 'duplicateCurrentWorkflow'
+
+    @pytest.mark.parametrize('method', ['handleDeleteShortcut', 'deleteSelectedElements',
+                                      'duplicateSelectedNode', 'duplicateCurrentWorkflow', 'autoLayoutNodes'])
+    def testRunningLegacyMutationEntryCannotBypassGuard(canvas, method):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        positions = window.flowScene.getNodePositions()
+        window._setIsJobRunning(True)
+        try:
+            getattr(window, method)()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...main-2'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 5 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-8dbaf009', 'operatorId...eId': '__workflow_output__:main-2', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-8dbaf009', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             {'workflowOrder': ['main', 'main-...
+E             
+E             ...Full output truncated (3 lines hidden), use '-vv' to show
+
+tests\designer\test_shortcut_guards.py:43: AssertionError
+______ testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes] _______
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaae36290) at 0x000001EFABEFB1C0>, ['node-4b9ebcfb', 'node-8d1afbc5'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABCDBF70>)
+method = 'autoLayoutNodes'
+
+    @pytest.mark.parametrize('method', ['handleDeleteShortcut', 'deleteSelectedElements',
+                                      'duplicateSelectedNode', 'duplicateCurrentWorkflow', 'autoLayoutNodes'])
+    def testRunningLegacyMutationEntryCannotBypassGuard(canvas, method):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        before = window.pageCoordinator.session.payload()
+        positions = window.flowScene.getNodePositions()
+        window._setIsJobRunning(True)
+        try:
+            getattr(window, method)()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-4b9ebcfb', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-4b9ebcfb', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:43: AssertionError
+__________________ testRunningConfigurationDoesNotOpenEditor __________________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaaf43310) at 0x000001EFABC9C4C0>, ['node-74978ad4', 'node-7f45b406'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABC99D20>)
+
+    def testRunningConfigurationDoesNotOpenEditor(canvas):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window._setIsJobRunning(True)
+        try:
+            window.openNodeParamDialog(first)
+>           assert window.operatorEditorManager.count() == 0
+E           assert 1 == 0
+E            +  where 1 = count()
+E            +    where count = <emo_master.apps.designer.operator_editors.manager.OperatorEditorManager object at 0x000001EFABCD9510>.count
+E            +      where <emo_master.apps.designer.operator_editors.manager.OperatorEditorManager object at 0x000001EFABCD9510> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1efaaf43310) at 0x000001EFABC9C4C0>.operatorEditorManager
+
+tests\designer\test_shortcut_guards.py:54: AssertionError
+_____________________ testRunningHistoryCannotMutateDraft _____________________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1efaae3e3a0) at 0x000001EFABF399C0>, ['node-24ff7511', 'node-2306d834'], <tests.designer.test_node_context_menu.Client object at 0x000001EFABF101F0>)
+
+    def testRunningHistoryCannotMutateDraft(canvas):  # noqa: F811
+        window, (first, _second), _client = canvas
+        window.flowScene.setNodeSelected(first)
+        window.duplicateSelectedNode()
+        before = window.pageCoordinator.session.payload()
+        depth = len(window.pageCoordinator.session._undo)
+        window._setIsJobRunning(True)
+        try:
+            window.pageCoordinator.history()
+>           assert window.pageCoordinator.session.payload() == before
+E           AssertionError: assert {'schemaVersi...['main'], ...} == {'schemaVersi...['main'], ...}
+E             
+E             Omitting 7 identical items, use -vv to show
+E             Differing items:
+E             {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-24ff7511', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}} != {'workflows': {'main': {'name': 'Main', 'inputs': {}, 'outputs': {}, 'nodes': [{'nodeId': 'node-24ff7511', 'operatorId..., {'nodeId': '__workflow_output__', 'operatorId': '', 'displayName': 'Workflow Output', 'inputPorts': {}, ...}], ...}}}
+E             Use -v to get more diff
+
+tests\designer\test_shortcut_guards.py:68: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key0]
+FAILED tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key1]
+FAILED tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut]
+FAILED tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements]
+FAILED tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode]
+FAILED tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow]
+FAILED tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes]
+FAILED tests/designer/test_shortcut_guards.py::testRunningConfigurationDoesNotOpenEditor
+FAILED tests/designer/test_shortcut_guards.py::testRunningHistoryCannotMutateDraft
+9 failed in 2.97s

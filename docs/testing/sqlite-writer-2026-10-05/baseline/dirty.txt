@@ -1,0 +1,160 @@
+ M docs/development-guide.md
+ M docs/evidence/p4/a-first/evidence.json
+ M scripts/validate_page_editor.py
+ M src/emo_master/apps/designer/page_designer/canvas_tools.py
+ M src/emo_master/apps/designer/page_designer/coordinator.py
+ M src/emo_master/apps/designer/page_designer/grid_geometry.py
+ M src/emo_master/apps/designer/page_designer/palette.py
+ M src/emo_master/apps/designer/page_designer/preview.py
+ M src/emo_master/apps/designer/page_designer/property_panel.py
+ M src/emo_master/apps/designer/page_designer/tools.py
+ M src/emo_master/apps/designer/page_designer/workspace.py
+ M src/emo_master/apps/designer/ui/main_window.py
+ M src/emo_master/apps/designer/ui/styles/app.qss
+ M src/emo_master/ui/presentation/design_examples.py
+ M src/emo_master/ui/presentation/renderer.py
+ M tests/designer/test_visual_layout.py
+ M tests/ui/page_designer/test_current_job_viewing.py
+ M tests/ui/page_designer/test_delivery_path.py
+ M tests/ui/page_designer/test_normal_run_path.py
+ M tests/ui/page_designer/test_normal_run_viewing.py
+ M tests/ui/page_designer/test_page_navigation.py
+ M tests/ui/page_designer/test_preview.py
+ M tests/ui/page_designer/test_retained_acceptance_multiscope.py
+ M tests/ui/page_designer/test_two_job_observation.py
+ M tests/ui/page_designer/test_usable_properties.py
+ M tests/ui/page_designer/test_user_path.py
+ M tests/ui/page_designer/test_visual_editor.py
+?? docs/testing/workspace-switch-2026-10-03.md
+?? docs/testing/workspace-switch-2026-10-03/buttons-00.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-01.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-02.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-03.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-04.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-05.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-06.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-07.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-08.png
+?? docs/testing/workspace-switch-2026-10-03/buttons-09.png
+?? docs/testing/workspace-switch-2026-10-03/check-0.txt
+?? docs/testing/workspace-switch-2026-10-03/check-1.txt
+?? docs/testing/workspace-switch-2026-10-03/check-2.txt
+?? docs/testing/workspace-switch-2026-10-03/checks.json
+?? docs/testing/workspace-switch-2026-10-03/flow-buttons.png
+?? docs/testing/workspace-switch-2026-10-03/flow.png
+?? docs/testing/workspace-switch-2026-10-03/geometry-1280-200.json
+?? docs/testing/workspace-switch-2026-10-03/geometry-1600-100.json
+?? docs/testing/workspace-switch-2026-10-03/manifest.json
+?? docs/testing/workspace-switch-2026-10-03/measurements.json
+?? docs/testing/workspace-switch-2026-10-03/pages-buttons.png
+?? docs/testing/workspace-switch-2026-10-03/pages.png
+?? docs/testing/workspace-ui-2026-10-03.md
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/compact-library.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/compact-library.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/empty.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/flow.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/geometry.json
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/invalid-property.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview-many-pages.png
+?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview.png
+?? docs/testing/workspace-ui-2026-10-03/candidate.json
+?? docs/testing/workspace-ui-2026-10-03/ci-check.txt
+?? docs/testing/workspace-ui-2026-10-03/lifecycle-isolated.txt
+?? docs/testing/workspace-ui-2026-10-03/manifest.json
+?? scripts/validate_designer_workspaces.py
+?? src/emo_master/apps/designer/page_designer/chrome.py
+?? src/emo_master/apps/designer/page_designer/preview_window.py
+?? src/emo_master/apps/designer/page_designer/workspace_switch.py
+?? tests/ui/page_designer/test_palette.py
+?? tests/ui/page_designer/test_workspace_modes.py
+?? tests/ui/page_designer/test_workspace_switch.py

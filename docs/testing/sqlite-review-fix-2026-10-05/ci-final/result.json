@@ -1,0 +1,8 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "scripts/ci_check.py"
+  ],
+  "exitCode": 1,
+  "seconds": 748.0789999999106
+}

@@ -1,0 +1,34 @@
+{
+  "tags": [
+    "0c202c10c0984ba2a8f94f3fca8edabb43084bae\trefs/tags/v0.6.0",
+    "6d6cabfd8ea24fb6a42552bf7089080cade746ba\trefs/tags/v0.6.0^{}",
+    "cfe6915902dbbfa125cef363bde0a406f0156572\trefs/tags/v0.6.1",
+    "e1ab52b365ccba2a0347a9354af20e92176bc6f1\trefs/tags/v0.6.1^{}"
+  ],
+  "release": {
+    "id": 380277011,
+    "tag": "v0.6.1",
+    "publishedAt": "2026-09-01T07:04:35Z",
+    "bodySha256": "5fe7936199fc2dd5998361af418a89cf6c9774e95e192b95f35f20eb39b1efaf",
+    "assets": [
+      {
+        "id": 539146264,
+        "name": "emo-master-setup-v0.6.1.exe",
+        "size": 78412757,
+        "updated_at": "2026-09-01T07:04:35Z"
+      },
+      {
+        "id": 539146265,
+        "name": "emo-master-windows-v0.6.1.zip",
+        "size": 84070760,
+        "updated_at": "2026-09-01T07:04:35Z"
+      },
+      {
+        "id": 539146263,
+        "name": "manifest.json",
+        "size": 1179,
+        "updated_at": "2026-09-01T07:04:31Z"
+      }
+    ]
+  }
+}

@@ -6,6 +6,7 @@ import numpy as np
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
+from tests.runtime.runtime_test_utils import waitForTerminal
 
 
 def testRuntimeExecutesSavedProjectGraph(tmp_path: Path) -> None:
@@ -58,18 +59,22 @@ def testRuntimeExecutesSavedProjectGraph(tmp_path: Path) -> None:
     )
 
     runtimeService = RuntimeService()
-    loadReply = runtimeService.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
-        None,
-    )
-    assert loadReply.ok is True
+    try:
+        loadReply = runtimeService.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
+            None,
+        )
+        assert loadReply.ok is True
 
-    startReply = runtimeService.StartJob(
-        runtime_pb2.StartJobRequest(project_id=str(projectDir)),
-        None,
-    )
-    assert startReply.ok is True
-    assert outputImagePath.exists()
+        startReply = runtimeService.StartJob(
+            runtime_pb2.StartJobRequest(project_id=str(projectDir)),
+            None,
+        )
+        assert startReply.ok is True
+        waitForTerminal(runtimeService, startReply.job_id)
+        assert outputImagePath.exists()
+    finally:
+        runtimeService.close()
 
 
 def testRuntimeExecutesIfTrueBranchAndSkipsFalseBranch(tmp_path: Path) -> None:
@@ -151,19 +156,23 @@ def testRuntimeExecutesIfTrueBranchAndSkipsFalseBranch(tmp_path: Path) -> None:
     )
 
     runtimeService = RuntimeService()
-    loadReply = runtimeService.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
-        None,
-    )
-    assert loadReply.ok is True
+    try:
+        loadReply = runtimeService.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
+            None,
+        )
+        assert loadReply.ok is True
 
-    startReply = runtimeService.StartJob(
-        runtime_pb2.StartJobRequest(project_id=str(projectDir)),
-        None,
-    )
-    assert startReply.ok is True
-    assert trueOutputPath.exists()
-    assert not falseOutputPath.exists()
+        startReply = runtimeService.StartJob(
+            runtime_pb2.StartJobRequest(project_id=str(projectDir)),
+            None,
+        )
+        assert startReply.ok is True
+        waitForTerminal(runtimeService, startReply.job_id)
+        assert trueOutputPath.exists()
+        assert not falseOutputPath.exists()
+    finally:
+        runtimeService.close()
 
 
 def testRuntimeExecutesSwitchMatchedCaseAndSkipsOthers(tmp_path: Path) -> None:
@@ -249,16 +258,20 @@ def testRuntimeExecutesSwitchMatchedCaseAndSkipsOthers(tmp_path: Path) -> None:
     )
 
     runtimeService = RuntimeService()
-    loadReply = runtimeService.LoadProject(
-        runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
-        None,
-    )
-    assert loadReply.ok is True
+    try:
+        loadReply = runtimeService.LoadProject(
+            runtime_pb2.LoadProjectRequest(project_path=str(projectDir)),
+            None,
+        )
+        assert loadReply.ok is True
 
-    startReply = runtimeService.StartJob(
-        runtime_pb2.StartJobRequest(project_id=str(projectDir)),
-        None,
-    )
-    assert startReply.ok is True
-    assert case1OutputPath.exists()
-    assert not defaultOutputPath.exists()
+        startReply = runtimeService.StartJob(
+            runtime_pb2.StartJobRequest(project_id=str(projectDir)),
+            None,
+        )
+        assert startReply.ok is True
+        waitForTerminal(runtimeService, startReply.job_id)
+        assert case1OutputPath.exists()
+        assert not defaultOutputPath.exists()
+    finally:
+        runtimeService.close()

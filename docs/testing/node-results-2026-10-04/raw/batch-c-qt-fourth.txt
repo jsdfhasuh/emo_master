@@ -1,0 +1,35 @@
+.F................                                                       [100%]
+================================== FAILURES ===================================
+__ testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime __
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-894/testTwoRealRunsFollowSelection0')
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ee5fe280e0) at 0x000001EE61783480>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001EE617809A0>
+
+    def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tmp_path, designerApplication,
+                                                                                  ownedDesignerWindow):
+        with running(tmp_path) as (runtime, client, project, unusedSession):
+            # The helper's explicit test lease is closed before Designer opens its
+            # own lease. Viewing never creates another Job or subscriber.
+            client.inspectionSession('close', project, unusedSession)
+            window = ownedDesignerWindow(client)
+            window.resize(1280, 720)
+            window.show()
+            try:
+                wait(designerApplication, lambda: window.operatorCatalogController.state == 'ready')
+                assert window.loadProjectDirectory(project)
+                coordinator = window.nodeResultCoordinator
+                panel = coordinator.panel
+                window.navigateToNodeFromSidebar('load')
+                assert not coordinator.history.current and len(runtime.jobRepository.all()) == 0
+                window.startJob()
+                wait(designerApplication, lambda: coordinator.imagePacket is not None)
+                wait(designerApplication, lambda: not window.runtimeController._jobActive)
+                first = window.currentJobId
+>               assert coordinator.imagePacket['source'].originJobId == first
+E               TypeError: 'NoneType' object is not subscriptable
+
+tests\designer\test_node_image_viewer.py:86: TypeError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime
+1 failed, 17 passed in 2.55s

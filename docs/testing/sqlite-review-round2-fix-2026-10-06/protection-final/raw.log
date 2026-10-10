@@ -1,0 +1,84 @@
+FF..............                                                         [100%]
+================================== FAILURES ===================================
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug] _
+
+mode = 'debug'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 78, in protectionProbe
+E                     blocked.append(str(internal.relative_to(root)))
+E                   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py", line 818, in relative_to
+E                     raise ValueError("{!r} is not in the subpath of {!r}"
+E                 ValueError: '\\\\?\\C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-ke2esgz6\\preview-cache\\arbitrary-name.sqlite3' is not in the subpath of 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-ke2esgz6' OR one path is relative and the other is absolute.
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...\Users\\\\JSDFHA~1\\\\AppData\\\\Local\\\\Temp\\\\esq-ke2esgz6\' OR one path is relative and the other is absolute.\n'}
+
+tests\sqlite_writer\test_review_protection.py:136: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 78, in protectionProbe
+    blocked.append(str(internal.relative_to(root)))
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py", line 818, in relative_to
+    raise ValueError("{!r} is not in the subpath of {!r}"
+ValueError: '\\\\?\\C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-ke2esgz6\\preview-cache\\arbitrary-name.sqlite3' is not in the subpath of 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-ke2esgz6' OR one path is relative and the other is absolute.
+_ testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release] _
+
+mode = 'release'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn(mode):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=protectionProbe, args=(root, mode, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog; unrelated errors are not protected-target rejection'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 78, in protectionProbe
+E                     blocked.append(str(internal.relative_to(root)))
+E                   File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py", line 818, in relative_to
+E                     raise ValueError("{!r} is not in the subpath of {!r}"
+E                 ValueError: '\\\\?\\C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-f8an7n8r\\preview-cache\\arbitrary-name.sqlite3' is not in the subpath of 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-f8an7n8r' OR one path is relative and the other is absolute.
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...\Users\\\\JSDFHA~1\\\\AppData\\\\Local\\\\Temp\\\\esq-f8an7n8r\' OR one path is relative and the other is absolute.\n'}
+
+tests\sqlite_writer\test_review_protection.py:136: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_protection.py", line 78, in protectionProbe
+    blocked.append(str(internal.relative_to(root)))
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py", line 818, in relative_to
+    raise ValueError("{!r} is not in the subpath of {!r}"
+ValueError: '\\\\?\\C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-f8an7n8r\\preview-cache\\arbitrary-name.sqlite3' is not in the subpath of 'C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\esq-f8an7n8r' OR one path is relative and the other is absolute.
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[debug]
+FAILED tests/sqlite_writer/test_review_protection.py::testPreparedTargetsShareManagementAndStartJobProtectionWithRealSpawn[release]
+2 failed, 14 passed in 8.51s

@@ -1,0 +1,267 @@
+FFFFFF........................                                           [100%]
+================================== FAILURES ===================================
+______ testJsonEncodingFailuresAreTypedAndDoNotTruncate[surrogate-value] ______
+
+value = {'bad': '\ud800'}
+
+    @pytest.mark.parametrize('value', [{'bad': '\ud800'}, {'\udfff': 1}, 10**5000], ids=['surrogate-value', 'surrogate-key', 'integer-encoding-limit'])
+    def testJsonEncodingFailuresAreTypedAndDoNotTruncate(value):
+        with pytest.raises(SqliteWriterError) as failed:
+>           toStorage(value, 'JSON')
+
+tests\sqlite_writer\test_review_encoding.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'bad': '\ud800'}, storage = 'JSON', checkFile = True
+
+    def toStorage(value: Any, storage: str, *, checkFile: bool = True) -> Any:
+        result: Any
+        if value is None:
+            return None
+        if storage == "JSON":
+            result = json.dumps(jsonValue(value), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+>           if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+E           UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 8: surrogates not allowed
+
+src\emo_master\core\contracts\sqlite_writer.py:162: UnicodeEncodeError
+_______ testJsonEncodingFailuresAreTypedAndDoNotTruncate[surrogate-key] _______
+
+value = {'\udfff': 1}
+
+    @pytest.mark.parametrize('value', [{'bad': '\ud800'}, {'\udfff': 1}, 10**5000], ids=['surrogate-value', 'surrogate-key', 'integer-encoding-limit'])
+    def testJsonEncodingFailuresAreTypedAndDoNotTruncate(value):
+        with pytest.raises(SqliteWriterError) as failed:
+>           toStorage(value, 'JSON')
+
+tests\sqlite_writer\test_review_encoding.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = {'\udfff': 1}, storage = 'JSON', checkFile = True
+
+    def toStorage(value: Any, storage: str, *, checkFile: bool = True) -> Any:
+        result: Any
+        if value is None:
+            return None
+        if storage == "JSON":
+            result = json.dumps(jsonValue(value), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+>           if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+E           UnicodeEncodeError: 'utf-8' codec can't encode character '\udfff' in position 2: surrogates not allowed
+
+src\emo_master\core\contracts\sqlite_writer.py:162: UnicodeEncodeError
+__ testJsonEncodingFailuresAreTypedAndDoNotTruncate[integer-encoding-limit] ___
+
+value = <[ValueError('Exceeds the limit (4300) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit') raised in repr()] int object at 0x189e0a27320>
+
+    @pytest.mark.parametrize('value', [{'bad': '\ud800'}, {'\udfff': 1}, 10**5000], ids=['surrogate-value', 'surrogate-key', 'integer-encoding-limit'])
+    def testJsonEncodingFailuresAreTypedAndDoNotTruncate(value):
+        with pytest.raises(SqliteWriterError) as failed:
+>           toStorage(value, 'JSON')
+
+tests\sqlite_writer\test_review_encoding.py:25: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\contracts\sqlite_writer.py:161: in toStorage
+    result = json.dumps(jsonValue(value), ensure_ascii=False, allow_nan=False, separators=(",", ":"))
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\__init__.py:238: in dumps
+    **kw).encode(obj)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\encoder.py:199: in encode
+    chunks = self.iterencode(o, _one_shot=True)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <json.encoder.JSONEncoder object at 0x00000189E1A9F340>
+o = <[ValueError('Exceeds the limit (4300) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit') raised in repr()] int object at 0x189e0a27320>
+_one_shot = True
+
+    def iterencode(self, o, _one_shot=False):
+        """Encode the given object and yield each string
+        representation as available.
+    
+        For example::
+    
+            for chunk in JSONEncoder().iterencode(bigobject):
+                mysocket.write(chunk)
+    
+        """
+        if self.check_circular:
+            markers = {}
+        else:
+            markers = None
+        if self.ensure_ascii:
+            _encoder = encode_basestring_ascii
+        else:
+            _encoder = encode_basestring
+    
+        def floatstr(o, allow_nan=self.allow_nan,
+                _repr=float.__repr__, _inf=INFINITY, _neginf=-INFINITY):
+            # Check for specials.  Note that this type of test is processor
+            # and/or platform-specific, so do tests which don't depend on the
+            # internals.
+    
+            if o != o:
+                text = 'NaN'
+            elif o == _inf:
+                text = 'Infinity'
+            elif o == _neginf:
+                text = '-Infinity'
+            else:
+                return _repr(o)
+    
+            if not allow_nan:
+                raise ValueError(
+                    "Out of range float values are not JSON compliant: " +
+                    repr(o))
+    
+            return text
+    
+    
+        if (_one_shot and c_make_encoder is not None
+                and self.indent is None):
+            _iterencode = c_make_encoder(
+                markers, self.default, _encoder, self.indent,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, self.allow_nan)
+        else:
+            _iterencode = _make_iterencode(
+                markers, self.default, _encoder, self.indent, floatstr,
+                self.key_separator, self.item_separator, self.sort_keys,
+                self.skipkeys, _one_shot)
+>       return _iterencode(o, 0)
+E       ValueError: Exceeds the limit (4300) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\json\encoder.py:257: ValueError
+________ testActualLoopbackSpawnReportsEncodingFailureFromWriter[stop] ________
+
+policy = 'stop'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testActualLoopbackSpawnReportsEncodingFailureFromWriter(policy):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=encodingProbe, args=(root, policy, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_encoding.py", line 53, in encodingProbe
+E                     receipt = next(json.loads(e.payloadJson)['receipt'] for e in events if e.eventType == 'sqlite.write.finished')
+E                 StopIteration
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...(json.loads(e.payloadJson)[\'receipt\'] for e in events if e.eventType == \'sqlite.write.finished\')\nStopIteration\n'}
+
+tests\sqlite_writer\test_review_encoding.py:87: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-d3e8726c-509a-4439-baa4-0229ba5dd80d:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 93, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 227, in _runWorkflow
+    boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\workflow\parameter_bindings.py", line 68, in captureBoundValue
+    stored = toStorage(value, binding.storageType)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\contracts\sqlite_writer.py", line 162, in toStorage
+    if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 9: surrogates not allowed
+Process SpawnProcess-1:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_encoding.py", line 53, in encodingProbe
+    receipt = next(json.loads(e.payloadJson)['receipt'] for e in events if e.eventType == 'sqlite.write.finished')
+StopIteration
+______ testActualLoopbackSpawnReportsEncodingFailureFromWriter[continue] ______
+
+policy = 'continue'
+
+    @pytest.mark.parametrize('policy', ['stop', 'continue'])
+    def testActualLoopbackSpawnReportsEncodingFailureFromWriter(policy):
+        with tempfile.TemporaryDirectory(prefix='esq-') as root:
+            context = multiprocessing.get_context('spawn')
+            receive, send = context.Pipe(duplex=False)
+            process = context.Process(target=encodingProbe, args=(root, policy, send))
+            process.start()
+            send.close()
+            try:
+                assert receive.poll(25), 'outer watchdog'
+                result = receive.recv()
+                process.join(5)
+>               assert 'error' not in result, result.get('error')
+E               AssertionError: Traceback (most recent call last):
+E                   File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_encoding.py", line 53, in encodingProbe
+E                     receipt = next(json.loads(e.payloadJson)['receipt'] for e in events if e.eventType == 'sqlite.write.finished')
+E                 StopIteration
+E                 
+E               assert 'error' not in {'error': 'Traceback (most recent call last):\n  File "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\sqlite...(json.loads(e.payloadJson)[\'receipt\'] for e in events if e.eventType == \'sqlite.write.finished\')\nStopIteration\n'}
+
+tests\sqlite_writer\test_review_encoding.py:87: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-cc5f5713-9f61-45eb-b4fd-14bc58363a68:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 93, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 227, in _runWorkflow
+    boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\workflow\parameter_bindings.py", line 68, in captureBoundValue
+    stored = toStorage(value, binding.storageType)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\contracts\sqlite_writer.py", line 162, in toStorage
+    if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 9: surrogates not allowed
+Process SpawnProcess-2:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_review_encoding.py", line 53, in encodingProbe
+    receipt = next(json.loads(e.payloadJson)['receipt'] for e in events if e.eventType == 'sqlite.write.finished')
+StopIteration
+__________ testUnexpectedBindingDeliveryErrorTerminatesItsSourceNode __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-984/testUnexpectedBindingDeliveryE0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000189E1A3E3E0>
+
+    def testUnexpectedBindingDeliveryErrorTerminatesItsSourceNode(tmp_path, monkeypatch):
+        import emo_master.apps.runtime.workflow.runner as implementation
+        path = makeDb(tmp_path / 'business.sqlite3')
+        payload = project()
+        payload['workflows']['main']['nodes'][0]['params'] = config(path)
+        def unexpected(*_args):
+            raise RuntimeError('injected unexpected delivery failure')
+        monkeypatch.setattr(implementation, 'captureBoundValue', unexpected)
+        registry = {OPERATOR_ID: SqliteWriterOperator}
+        events = []
+        runner = WorkflowRunner(WorkflowCompiler(registry).compile(payload), registry, eventPublisher=lambda **e: events.append(e))
+        with pytest.raises(RuntimeError, match='unexpected delivery'):
+            runner.run('main', {'value': 7}, RunContext.root('job', 'main'), CancellationToken())
+>       assert [e['eventType'] for e in events if e['context'].callerNodeId == 'input'] == ['node.started', 'node.failed']
+E       AssertionError: assert ['node.started'] == ['node.starte...'node.failed']
+E         
+E         Right contains one more item: 'node.failed'
+E         Use -v to get more diff
+
+tests\sqlite_writer\test_review_encoding.py:114: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_encoding.py::testJsonEncodingFailuresAreTypedAndDoNotTruncate[surrogate-value]
+FAILED tests/sqlite_writer/test_review_encoding.py::testJsonEncodingFailuresAreTypedAndDoNotTruncate[surrogate-key]
+FAILED tests/sqlite_writer/test_review_encoding.py::testJsonEncodingFailuresAreTypedAndDoNotTruncate[integer-encoding-limit]
+FAILED tests/sqlite_writer/test_review_encoding.py::testActualLoopbackSpawnReportsEncodingFailureFromWriter[stop]
+FAILED tests/sqlite_writer/test_review_encoding.py::testActualLoopbackSpawnReportsEncodingFailureFromWriter[continue]
+FAILED tests/sqlite_writer/test_review_encoding.py::testUnexpectedBindingDeliveryErrorTerminatesItsSourceNode
+6 failed, 24 passed in 6.20s

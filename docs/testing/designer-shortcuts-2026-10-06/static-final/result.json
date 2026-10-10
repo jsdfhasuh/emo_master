@@ -1,0 +1,16 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "src/emo_master/apps/designer/ui/designer_actions.py",
+    "src/emo_master/apps/designer/ui/action_state.py",
+    "src/emo_master/apps/designer/ui/node_context_menu.py",
+    "tests/designer/test_designer_shortcuts.py",
+    "tests/designer/test_shortcut_guards.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 0.1410000000614673
+}

@@ -1,0 +1,195 @@
+........................................................................ [ 64%]
+.............................FF..FF..FF                                  [100%]
+================================== FAILURES ===================================
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430] ____
+
+editor = <function editor.<locals>.make at 0x000002999A7CAB00>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 640, height = 430, advanced = True, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 500 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x000002999A7F2240>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x000002999A7F2240> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x29998f554d0) at 0x000002999A7F2240>.width
+E        +  and   500 = <built-in method height of OperatorWorkspaceWindow object at 0x000002999A7F2240>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x000002999A7F2240> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x29998f554d0) at 0x000002999A7F2240>.height
+
+tests\designer\test_plc_editor.py:1312: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430] ____
+
+editor = <function editor.<locals>.make at 0x000002999A9B95A0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 800, height = 430, advanced = True, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 500 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x000002999AB18E80>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x000002999AB18E80> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x2999971b1d0) at 0x000002999AB18E80>.width
+E        +  and   500 = <built-in method height of OperatorWorkspaceWindow object at 0x000002999AB18E80>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x000002999AB18E80> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x2999971b1d0) at 0x000002999AB18E80>.height
+
+tests\designer\test_plc_editor.py:1312: AssertionError
+__ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430] __
+
+editor = <function editor.<locals>.make at 0x000002999A9B9CF0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 640, height = 430, advanced = True, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 500 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x000002999AAE2600>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x000002999AAE2600> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x29998f56c00) at 0x000002999AAE2600>.width
+E        +  and   500 = <built-in method height of OperatorWorkspaceWindow object at 0x000002999AAE2600>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x000002999AAE2600> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x29998f56c00) at 0x000002999AAE2600>.height
+
+tests\designer\test_plc_editor.py:1312: AssertionError
+__ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430] __
+
+editor = <function editor.<locals>.make at 0x000002999A9B9D80>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 800, height = 430, advanced = True, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 500 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x000002999AA77C80>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x000002999AA77C80> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x2999971c740) at 0x000002999AA77C80>.width
+E        +  and   500 = <built-in method height of OperatorWorkspaceWindow object at 0x000002999AA77C80>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x000002999AA77C80> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x2999971c740) at 0x000002999AA77C80>.height
+
+tests\designer\test_plc_editor.py:1312: AssertionError
+____ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430] ____
+
+editor = <function editor.<locals>.make at 0x000002999A9B8EE0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 640, height = 430, advanced = True, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+        assert root.width() == width and root.height() == height
+        assert root.minimumSizeHint().width() <= 600
+>       assert root.minimumSizeHint().height() <= 430
+E       assert 500 <= 430
+E        +  where 500 = <built-in method height of PySide2.QtCore.QSize object at 0x000002999AB2E140>()
+E        +    where <built-in method height of PySide2.QtCore.QSize object at 0x000002999AB2E140> = PySide2.QtCore.QSize(546, 500).height
+E        +      where PySide2.QtCore.QSize(546, 500) = <built-in method minimumSizeHint of OperatorWorkspaceWindow object at 0x000002999AAAAEC0>()
+E        +        where <built-in method minimumSizeHint of OperatorWorkspaceWindow object at 0x000002999AAAAEC0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x29998f5a860) at 0x000002999AAAAEC0>.minimumSizeHint
+
+tests\designer\test_plc_editor.py:1314: AssertionError
+____ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430] ____
+
+editor = <function editor.<locals>.make at 0x000002999A8A1A20>
+designerApplication = <PySide2.QtWidgets.QApplication(0x29998aa1130) at 0x0000029999544F00>
+width = 800, height = 430, advanced = True, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+        assert root.width() == width and root.height() == height
+        assert root.minimumSizeHint().width() <= 600
+>       assert root.minimumSizeHint().height() <= 430
+E       assert 500 <= 430
+E        +  where 500 = <built-in method height of PySide2.QtCore.QSize object at 0x000002999AA00080>()
+E        +    where <built-in method height of PySide2.QtCore.QSize object at 0x000002999AA00080> = PySide2.QtCore.QSize(546, 500).height
+E        +      where PySide2.QtCore.QSize(546, 500) = <built-in method minimumSizeHint of OperatorWorkspaceWindow object at 0x000002999AA012C0>()
+E        +        where <built-in method minimumSizeHint of OperatorWorkspaceWindow object at 0x000002999AA012C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x2999971fe60) at 0x000002999AA012C0>.minimumSizeHint
+
+tests\designer\test_plc_editor.py:1314: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430]
+6 failed, 105 passed in 18.67s

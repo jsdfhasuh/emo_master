@@ -1,0 +1,46 @@
+...F....                                                                 [100%]
+================================== FAILURES ===================================
+_______________ testDraftOnSameRuntimeReloadObserveAndAsyncExit _______________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x25fc6017900) at 0x0000025FC80009C0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-403/testDraftOnSameRuntimeReloadOb0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000025FC81BBB20>
+
+    def testDraftOnSameRuntimeReloadObserveAndAsyncExit(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
+        root = tmp_path/'project'
+        root.mkdir()
+        document = sampleProject(root)
+        saveProject(root, document.model_dump())
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        window = MainWindow(client)
+        preview = window.pageCoordinator.preview
+        try:
+            assert window.loadProjectDirectory(str(root))
+            window.show()
+            c = window.pageCoordinator
+            c.showPages()
+            preview.startDebug()
+            waitFor(lambda: preview.hub is not None or preview.error is not None)
+            assert preview.error is None
+            backend = preview.backend
+            assert backend.runtime is runtime
+            waitFor(lambda: bool(c.editor.renderer.displayed))
+            scope = next(iter(c.editor.renderer.displayed.values()))
+            assert scope.result.status == 'COMPLETE'
+            assert len(scope.images) == 1
+            assert next(s.valueJson for s in scope.result.sources if s.sourceId == 'count') == '2'
+            prepared = backend.service.prepared[backend.preparedId]
+>           assert Path(prepared.snapshot.runtimeDbPath).is_relative_to(backend.root)
+E           AssertionError: assert False
+E            +  where False = is_relative_to(WindowsPath('C:/Users/JSDFHA~1/AppData/Local/Temp/emo-p4-debug-nysy7us3'))
+E            +    where is_relative_to = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-p4-debug-nysy7us3/0aec4fece83552121034f2761669c8a9/debug/8169e622-e8fe-4c5e-b282-8802a4258423/runtime.sqlite3').is_relative_to
+E            +      where WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-p4-debug-nysy7us3/0aec4fece83552121034f2761669c8a9/debug/8169e622-e8fe-4c5e-b282-8802a4258423/runtime.sqlite3') = Path('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-p4-debug-nysy7us3\\0aec4fece83552121034f2761669c8a9\\debug\\8169e622-e8fe-4c5e-b282-8802a4258423\\runtime.sqlite3')
+E            +        where 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-p4-debug-nysy7us3\\0aec4fece83552121034f2761669c8a9\\debug\\8169e622-e8fe-4c5e-b282-8802a4258423\\runtime.sqlite3' = ProjectSnapshot(snapshotId='8169e622-e8fe-4c5e-b282-8802a4258423', mode='debug', projectId='p2-fixture', draftRevision...\\Temp\\emo-p4-debug-nysy7us3\\0aec4fece83552121034f2761669c8a9\\debug\\8169e622-e8fe-4c5e-b282-8802a4258423\\outputs').runtimeDbPath
+E            +          where ProjectSnapshot(snapshotId='8169e622-e8fe-4c5e-b282-8802a4258423', mode='debug', projectId='p2-fixture', draftRevision...\\Temp\\emo-p4-debug-nysy7us3\\0aec4fece83552121034f2761669c8a9\\debug\\8169e622-e8fe-4c5e-b282-8802a4258423\\outputs') = PreparedProject(snapshot=ProjectSnapshot(snapshotId='8169e622-e8fe-4c5e-b282-8802a4258423', mode='debug', projectId='p...622-e8fe-4c5e-b282-8802a4258423\\resource-0.png', 'b6ac8f65cd4d89bbb52322b6eb9e07ed4e5d592b364bac49cb6ee8337d085ec6'))).snapshot
+E            +    and   WindowsPath('C:/Users/JSDFHA~1/AppData/Local/Temp/emo-p4-debug-nysy7us3') = <emo_master.apps.designer.page_designer.preview.LocalBackend object at 0x0000025FC940FE80>.root
+
+tests\ui\page_designer\test_preview.py:52: AssertionError
+1 failed, 7 passed in 4.05s

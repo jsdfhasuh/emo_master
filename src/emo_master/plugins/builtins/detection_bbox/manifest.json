@@ -1,0 +1,32 @@
+{
+  "operatorId": "vision.geometry.detection_bbox",
+  "displayName": "检测区域提取（单对象）",
+  "version": "1.0.0",
+  "inputPorts": {
+    "detections": {
+      "type": "detectionCollection",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "bbox": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._geometry_bridges:DetectionBBoxOperator",
+  "category": "几何",
+  "summary": "从明确选中的单个检测对象提取强类型轴对齐包围框，供测量区域裁剪。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

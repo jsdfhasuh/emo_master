@@ -1,0 +1,32 @@
+{
+  "workingTreeExpanded": {
+    "passed": 1214,
+    "failed": 2,
+    "classification": "BASELINE_FAILURE",
+    "fullRepositoryRerun": false
+  },
+  "taskOnlyCandidate150": {
+    "passed": 129,
+    "failed": 0
+  },
+  "nativeLayout": {
+    "100Percent": 16,
+    "150Percent": 16,
+    "status": "PASS",
+    "runtimeCalls": 0
+  },
+  "static": {
+    "ruff": "PASS",
+    "mypyWorkspaceFiles": 344,
+    "mypyCandidateFiles": 335,
+    "protobufDrift": "PASS",
+    "sourceDiffCheck": "PASS"
+  },
+  "notRun": [
+    "packaging",
+    "release",
+    "real-camera",
+    "real-PLC",
+    "user-field-acceptance"
+  ]
+}

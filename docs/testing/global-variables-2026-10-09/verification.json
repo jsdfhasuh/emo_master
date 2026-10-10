@@ -1,0 +1,41 @@
+{
+  "date": "2026-10-09",
+  "scope": "Global variables, parameter bindings, While boolean references, Designer, preview, presentation and packages",
+  "sourceAcceptance": {
+    "targetedRegression": {"passed": 413, "failed": 0, "evidence": "acceptance-final.txt"},
+    "mypy": {"status": "PASS", "sourceFiles": 355, "evidence": "mypy-final.txt"},
+    "ruff": {"status": "PASS", "evidence": "ruff-final.txt"},
+    "protobufGenerationCheck": "PASS",
+    "gitDiffWhitespaceCheck": "PASS",
+    "exampleCompilation": "PASS"
+  },
+  "nativeQt": {
+    "platform": "windows",
+    "scaleFactors": [1.0, 1.5],
+    "managementWidths": [980, 640],
+    "bindingEditorWidths": [640, 460],
+    "evidence": ["native-100-final/report.json", "native-150-final/report.json"],
+    "visualInspection": "Chinese text, long-name elision, definition locks, inline parameter source and button layout inspected"
+  },
+  "fullSuite": {
+    "status": "NOT_PASSED",
+    "evidence": "regression.txt",
+    "reason": "Mixed suite ended around 71 percent with a Qt access violation in test window teardown / close confirmation. No full-suite success claimed.",
+    "relatedFailures": "Registration counts, v5 migration expectations, renamed menu, and compatibility with minimal runner test doubles were repaired and covered by final targeted acceptance.",
+    "remainingFixtureFailures": [
+      "test_image_batch_while.py: two cases now invoke an IMV camera from the shared example and fail without Huaray SDK",
+      "test_image_batch_while.py: expected image-loader folderPath is absent at the fixture node index",
+      "test_minimal_project_metadata.py: two cases expect an empty image-loader schema / folderPath at a node that differs in the current shared fixture"
+    ],
+    "fixturePolicy": "Shared existing examples were not rewritten to force these tests to pass.",
+    "recheckEvidence": ["failures-recheck.txt", "ui-recheck-final.txt", "compatibility-final.txt"]
+  },
+  "boundaries": {
+    "runningUserApplicationsRestarted": false,
+    "commit": false,
+    "push": false,
+    "publication": false,
+    "frozenReleaseAcceptance": "NOT_RUN",
+    "hardwareAndFieldAcceptance": "NOT_RUN"
+  }
+}

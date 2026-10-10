@@ -24,6 +24,18 @@ def testSidebarToggleState() -> None:
 
     window.expandSidebar()
     assert window.isSidebarCollapsed is False
+    if hasattr(window, 'floatingToolbox'):
+        window.show()
+        window.floatingToolbox.tabs.setCurrentIndex(2)
+        assert window.nodeListContainer.isVisible()
+        window.collapseSidebar()
+        assert window.isSidebarCollapsed is True
+        assert not window.nodeListContainer.isVisible()
+        assert not window.floatingToolbox.isExpanded()
+        window.expandSidebar()
+        assert window.nodeListContainer.isVisible()
+        window.close()
+        return
     nodeListContainer = getattr(window, "nodeListContainer", None)
     assert nodeListContainer is not None
     isHidden = getattr(nodeListContainer, "isHidden", None)

@@ -1,0 +1,3141 @@
+[
+  {
+    "operatorId": "vision.image.absdiff",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._arithmetic_operators:AbsDiffOperator",
+    "manifest": "src/emo_master/plugins/builtins/absdiff/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_arithmetic_operators.py",
+    "sourceSha256": "36a450f8db532ad0a48b3abd1c29f9a939f3807ad7a35bcf790192b2f3f0e892",
+    "inputPorts": {
+      "imageA": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "imageB": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frameA": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "frameB": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.image.add_weighted",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._arithmetic_operators:AddWeightedOperator",
+    "manifest": "src/emo_master/plugins/builtins/add_weighted/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_arithmetic_operators.py",
+    "sourceSha256": "36a450f8db532ad0a48b3abd1c29f9a939f3807ad7a35bcf790192b2f3f0e892",
+    "inputPorts": {
+      "imageA": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "imageB": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frameA": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "frameB": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "alpha",
+      "beta",
+      "gamma"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.affine",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._transform_operators:AffineOperator",
+    "manifest": "src/emo_master/plugins/builtins/affine/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_transform_operators.py",
+    "sourceSha256": "91939de3c9786dc48509355a2584bc2b0b6fee02209067cf3f752f494e38ae0a",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "dstPoints",
+      "interpolation",
+      "outputHeight",
+      "outputWidth",
+      "padValue",
+      "srcPoints"
+    ]
+  },
+  {
+    "operatorId": "vision.render.annotate",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.annotate.operator:AnnotateOperator",
+    "manifest": "src/emo_master/plugins/builtins/annotate/manifest.json",
+    "source": "src/emo_master/plugins/builtins/annotate/operator.py",
+    "sourceSha256": "70a02e2328e09b67ba02737330df7ea6575c8aa7b576f54717752fba18efea65",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "overlay": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "drawnCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "blobColor",
+      "detectionColor",
+      "drawBBoxes",
+      "drawCentroids",
+      "drawContours",
+      "drawLabels",
+      "drawRoi",
+      "fontScale",
+      "roiColor",
+      "thickness"
+    ]
+  },
+  {
+    "operatorId": "vision.mask.apply",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._arithmetic_operators:ApplyMaskOperator",
+    "manifest": "src/emo_master/plugins/builtins/apply_mask/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_arithmetic_operators.py",
+    "sourceSha256": "36a450f8db532ad0a48b3abd1c29f9a939f3807ad7a35bcf790192b2f3f0e892",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "maskFrame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "fillValue",
+      "invert"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.blob",
+    "version": "1.2.0",
+    "entry": "emo_master.plugins.builtins.blob_analysis.operator:BlobAnalysisOperator",
+    "manifest": "src/emo_master/plugins/builtins/blob_analysis/manifest.json",
+    "source": "src/emo_master/plugins/builtins/blob_analysis/operator.py",
+    "sourceSha256": "ce8736da2322fabe10a1e78c477ec69f7158199bb910b26304d2eb2499fafbb2",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "mask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": true,
+        "schemaVersion": "1.x"
+      },
+      "mask": {
+        "type": "image",
+        "required": true
+      },
+      "overlay": {
+        "type": "image",
+        "required": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "connectivity",
+      "drawOverlay",
+      "includeContour",
+      "invert",
+      "maxArea",
+      "minArea",
+      "threshold",
+      "useOtsu"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.blur",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.blur.operator:BlurOperator",
+    "manifest": "src/emo_master/plugins/builtins/blur/manifest.json",
+    "source": "src/emo_master/plugins/builtins/blur/operator.py",
+    "sourceSha256": "53838ef57db550cb4e9d224cb03fd286931ea17b1cd67213ee830e45374b03ca",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "diameter",
+      "kernelSize",
+      "mode",
+      "sigmaColor",
+      "sigmaSpace",
+      "sigmaX",
+      "sigmaY"
+    ]
+  },
+  {
+    "operatorId": "vision.edge.canny",
+    "version": "1.1.1",
+    "entry": "emo_master.plugins.builtins.canny_edge.operator:CannyEdgeOperator",
+    "manifest": "src/emo_master/plugins/builtins/canny_edge/manifest.json",
+    "source": "src/emo_master/plugins/builtins/canny_edge/operator.py",
+    "sourceSha256": "5e74fe027005c39bea2c08230f1abec54fb2b7ee5a1c3c664c095bae561ecddd",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "edges": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "overlay": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "apertureSize",
+      "l2Gradient",
+      "thresholdHigh",
+      "thresholdLow"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.clahe",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._intensity_operators:ClaheOperator",
+    "manifest": "src/emo_master/plugins/builtins/clahe/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_intensity_operators.py",
+    "sourceSha256": "e46bbe8ecee2ba0f3a9f41de1dba7e4d4287acfc941ea6a8866846903d79729e",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "clipLimit",
+      "tileGridHeight",
+      "tileGridWidth"
+    ]
+  },
+  {
+    "operatorId": "vision.collection.count",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.collection_count.operator:CollectionCountOperator",
+    "manifest": "src/emo_master/plugins/builtins/collection_count/manifest.json",
+    "source": "src/emo_master/plugins/builtins/collection_count/operator.py",
+    "sourceSha256": "88bc55215099136b584e2a1c45ff4ec381bbc4bbb95b086c8901eccb6e808390",
+    "inputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "outputPorts": {
+      "count": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.collection.filter",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.collection_filter.operator:CollectionFilterOperator",
+    "manifest": "src/emo_master/plugins/builtins/collection_filter/manifest.json",
+    "source": "src/emo_master/plugins/builtins/collection_filter/operator.py",
+    "sourceSha256": "8b1b6186672381595142d0cd732e65175a59e258511f60d985b744c3ffe7e9d9",
+    "inputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "keptCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "rejectedCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "keptBlobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "rejectedBlobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "keptDetections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "rejectedDetections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "keptContours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "rejectedContours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "keptMeasurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "rejectedMeasurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "keptLines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "rejectedLines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "keptCircles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "rejectedCircles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "keptMatches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "rejectedMatches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "blobLabels",
+      "circularityEnabled",
+      "classIds",
+      "contourMode",
+      "detectionLabels",
+      "geometryTypes",
+      "holeMode",
+      "maxArea",
+      "maxCircularity",
+      "maxConfidence",
+      "maxLength",
+      "maxPerimeter",
+      "maxQuality",
+      "maxRadius",
+      "minArea",
+      "minCircularity",
+      "minConfidence",
+      "minLength",
+      "minPerimeter",
+      "minQuality",
+      "minRadius",
+      "sourceTypes",
+      "spatialMode",
+      "templateMethods"
+    ]
+  },
+  {
+    "operatorId": "vision.collection.select",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.collection_select.operator:CollectionSelectOperator",
+    "manifest": "src/emo_master/plugins/builtins/collection_select/manifest.json",
+    "source": "src/emo_master/plugins/builtins/collection_select/operator.py",
+    "sourceSha256": "6f443d9f9ccf3385ad6e8aa01223ac262a767d3dad76e2e0ec8ee8c0bd831199",
+    "inputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "outputPorts": {
+      "selectedBlobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "selectedDetections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "selectedContours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "selectedMeasurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "selectedLines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "selectedCircles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "selectedMatches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "selectedCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "count",
+      "index",
+      "mode",
+      "onOutOfRange"
+    ]
+  },
+  {
+    "operatorId": "vision.collection.sort",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.collection_sort.operator:CollectionSortOperator",
+    "manifest": "src/emo_master/plugins/builtins/collection_sort/manifest.json",
+    "source": "src/emo_master/plugins/builtins/collection_sort/operator.py",
+    "sourceSha256": "dfa18d01b14dc363e38c9e7df2f7cb72fb5d428f0d369d9ce128839ae8283db8",
+    "inputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "outputPorts": {
+      "sortedBlobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "sortedDetections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "sortedContours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "sortedMeasurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "sortedLines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "sortedCircles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "sortedMatches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "direction",
+      "key"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.color_convert",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.color_convert.operator:ColorConvertOperator",
+    "manifest": "src/emo_master/plugins/builtins/color_convert/manifest.json",
+    "source": "src/emo_master/plugins/builtins/color_convert/operator.py",
+    "sourceSha256": "ce7712339cc00074b5079fa3e51a43e063d7ebab1f14f3590e80c9cde3c40d87",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "sourceSpace",
+      "targetSpace"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.contour",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._shape_operators:ContourExtractionOperator",
+    "manifest": "src/emo_master/plugins/builtins/contour/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_shape_operators.py",
+    "sourceSha256": "be7f83c592a90ed7fe7f05a9f51fbc91a621215a61aac70085e5714ad3081348",
+    "inputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "polygons": {
+        "type": "list<polygon2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "approximation",
+      "retrievalMode"
+    ]
+  },
+  {
+    "operatorId": "vision.geometry.coordinate_calculator",
+    "version": "1.2.0",
+    "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateCalculatorOperator",
+    "manifest": "src/emo_master/plugins/builtins/coordinate_calculator/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_coordinate_operators.py",
+    "sourceSha256": "b2ab420b20f75c5e15a999fb7966b53de1644017f3f7fb69dc785cb9846eafc5",
+    "inputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "otherPoints": {
+        "type": "list<point2d>",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "scalar": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "centroid": {
+        "type": "point2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "bounds": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "segmentLengths": {
+        "type": "list<number>",
+        "required": false,
+        "nullable": false
+      },
+      "pathLength": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "perimeter": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "signedArea": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "area": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "firstToLastDistance": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "firstToLastAngleDegrees": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "polygon": {
+        "type": "polygon2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "vectors": {
+        "type": "list<vector2d>",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "magnitudes": {
+        "type": "list<number>",
+        "required": false,
+        "nullable": false
+      },
+      "values": {
+        "type": "list<number>",
+        "required": false,
+        "nullable": false
+      },
+      "dotSum": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "resultCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "closed",
+      "mode",
+      "offsetX",
+      "offsetY",
+      "pairing",
+      "pivot",
+      "pivotX",
+      "pivotY",
+      "rotationDegrees",
+      "scalarValue",
+      "scaleX",
+      "scaleY"
+    ]
+  },
+  {
+    "operatorId": "vision.io.coordinate_reader",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateReaderOperator",
+    "manifest": "src/emo_master/plugins/builtins/coordinate_reader/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_coordinate_operators.py",
+    "sourceSha256": "b2ab420b20f75c5e15a999fb7966b53de1644017f3f7fb69dc785cb9846eafc5",
+    "inputPorts": {
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "pointCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "contentHash": {
+        "type": "string",
+        "required": true,
+        "nullable": false
+      },
+      "polygon": {
+        "type": "polygon2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "asPolygon",
+      "commentPrefix",
+      "delimiter",
+      "encoding",
+      "fileFormat",
+      "filePath",
+      "headerMode",
+      "imageHeight",
+      "imageWidth",
+      "maxFileBytes",
+      "maxPoints",
+      "onInvalidRow",
+      "readMode",
+      "sourceId",
+      "transformToSource",
+      "xColumn",
+      "yColumn"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.crop",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.crop.operator:CropOperator",
+    "manifest": "src/emo_master/plugins/builtins/crop/manifest.json",
+    "source": "src/emo_master/plugins/builtins/crop/operator.py",
+    "sourceSha256": "b36c19977a94841cbbff8584607f9551336b92ecb591273a0d4585ddef04f4ba",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "roi": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "clip",
+      "height",
+      "padValue",
+      "paddingBottom",
+      "paddingLeft",
+      "paddingRight",
+      "paddingTop",
+      "width",
+      "x",
+      "y"
+    ]
+  },
+  {
+    "operatorId": "vision.geometry.detection_bbox",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._geometry_bridges:DetectionBBoxOperator",
+    "manifest": "src/emo_master/plugins/builtins/detection_bbox/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_geometry_bridges.py",
+    "sourceSha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74",
+    "inputPorts": {
+      "detections": {
+        "type": "detectionCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "bbox": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.demo.empty",
+    "version": "0.1.0",
+    "entry": "emo_master.plugins.builtins.empty_operator.operator:EmptyOperator",
+    "manifest": "src/emo_master/plugins/builtins/empty_operator/manifest.json",
+    "source": "src/emo_master/plugins/builtins/empty_operator/operator.py",
+    "sourceSha256": "7f8d52f108cde42a959df0ca4397a742fa2ceb4fb21553eb422e0ee47a2590d7",
+    "inputPorts": {
+      "image": "image"
+    },
+    "outputPorts": {
+      "result": "json"
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [
+      "disposeOperator",
+      "initOperator"
+    ],
+    "baseClasses": [],
+    "parameterKeys": [
+      "enabled"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.equalize",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._intensity_operators:EqualizeOperator",
+    "manifest": "src/emo_master/plugins/builtins/equalize/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_intensity_operators.py",
+    "sourceSha256": "e46bbe8ecee2ba0f3a9f41de1dba7e4d4287acfc941ea6a8866846903d79729e",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.preprocess.flip",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._transform_operators:FlipOperator",
+    "manifest": "src/emo_master/plugins/builtins/flip/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_transform_operators.py",
+    "sourceSha256": "91939de3c9786dc48509355a2584bc2b0b6fee02209067cf3f752f494e38ae0a",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "mode"
+    ]
+  },
+  {
+    "operatorId": "vision.flow.error",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.flow_error.operator:FlowErrorOperator",
+    "manifest": "src/emo_master/plugins/builtins/flow_error/manifest.json",
+    "source": "src/emo_master/plugins/builtins/flow_error/operator.py",
+    "sourceSha256": "11a2b06c30373260b1442308d01e03b37d11f46f3cffdab7aa78509f43bcf770",
+    "inputPorts": {
+      "after": {
+        "type": "any",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "outputPorts": {},
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "code",
+      "message"
+    ]
+  },
+  {
+    "operatorId": "vision.flow.if",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.flow_if.operator:FlowIfOperator",
+    "manifest": "src/emo_master/plugins/builtins/flow_if/manifest.json",
+    "source": "src/emo_master/plugins/builtins/flow_if/operator.py",
+    "sourceSha256": "12a26b3689eb73da38ee0d2b417fbdce2a8b68da6816ae79746a3e66ee69d4ce",
+    "inputPorts": {
+      "value": "object"
+    },
+    "outputPorts": {
+      "true": "object",
+      "false": "object"
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "compareValue",
+      "mode"
+    ]
+  },
+  {
+    "operatorId": "vision.flow.switch",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.flow_switch.operator:FlowSwitchOperator",
+    "manifest": "src/emo_master/plugins/builtins/flow_switch/manifest.json",
+    "source": "src/emo_master/plugins/builtins/flow_switch/operator.py",
+    "sourceSha256": "359f771fda636288b12dbf4f608a46a70fa04bf08d6754338f033da5a0359945",
+    "inputPorts": {
+      "value": "object"
+    },
+    "outputPorts": {
+      "case0": "object",
+      "case1": "object",
+      "case2": "object",
+      "case3": "object",
+      "default": "object"
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "case0Value",
+      "case1Value",
+      "case2Value",
+      "case3Value"
+    ]
+  },
+  {
+    "operatorId": "communication.gateway.ack_validate",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._gateway_coordinates:GatewayAckValidateOperator",
+    "manifest": "src/emo_master/plugins/builtins/gateway_ack_validate/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_gateway_coordinates.py",
+    "sourceSha256": "43918056d919f9aceeacfa94d9cf2ced27b852e906b476b24c101adfc15fc4d8",
+    "inputPorts": {
+      "request": {
+        "type": "tcpMessage",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "response": {
+        "type": "tcpMessage",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "acknowledged": {
+        "type": "boolean",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "channel"
+    ]
+  },
+  {
+    "operatorId": "communication.gateway.coordinate_format",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._gateway_coordinates:GatewayCoordinateFormatOperator",
+    "manifest": "src/emo_master/plugins/builtins/gateway_coordinate_format/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_gateway_coordinates.py",
+    "sourceSha256": "43918056d919f9aceeacfa94d9cf2ced27b852e906b476b24c101adfc15fc4d8",
+    "inputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "message": {
+        "type": "tcpMessage",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "text": {
+        "type": "string",
+        "required": true,
+        "nullable": false
+      },
+      "expectedAck": {
+        "type": "string",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "channel",
+      "plcRounding"
+    ]
+  },
+  {
+    "operatorId": "vision.geometry.extract_points",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._geometry_bridges:GeometryPointsOperator",
+    "manifest": "src/emo_master/plugins/builtins/geometry_points/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_geometry_bridges.py",
+    "sourceSha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74",
+    "inputPorts": {
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "bbox": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "pointCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "feature"
+    ]
+  },
+  {
+    "operatorId": "vision.state.counter",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.global_counter.operator:GlobalCounterOperator",
+    "manifest": "src/emo_master/plugins/builtins/global_counter/manifest.json",
+    "source": "src/emo_master/plugins/builtins/global_counter/operator.py",
+    "sourceSha256": "8fb632f22ae7b079f25b03627dd5f5410acbb5bf00e68671f8c8538bd8d5285b",
+    "inputPorts": {
+      "increment": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      },
+      "reset": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "count": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "name"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.histogram",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.histogram.operator:HistogramOperator",
+    "manifest": "src/emo_master/plugins/builtins/histogram/manifest.json",
+    "source": "src/emo_master/plugins/builtins/histogram/operator.py",
+    "sourceSha256": "5c2177f9d39c65b04005899280fdf8117043868aeb0f8e047bf96f64dae88607",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "mask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      },
+      "maskFrame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "histogram": {
+        "type": "histogram",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "pure",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [
+      "_HistogramOperator"
+    ],
+    "parameterKeys": [
+      "bins",
+      "normalization"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.hough_circle",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._detection_operators:HoughCircleOperator",
+    "manifest": "src/emo_master/plugins/builtins/hough_circle/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_detection_operators.py",
+    "sourceSha256": "1f7ff9e65d6ca327f0e3989f5b6642ee3b98ba011dcbc97adaa778aceadec7d7",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "circles": {
+        "type": "circleCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "dp",
+      "maxRadius",
+      "minDist",
+      "minRadius",
+      "param1",
+      "param2"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.hough_line",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._detection_operators:HoughLineOperator",
+    "manifest": "src/emo_master/plugins/builtins/hough_line/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_detection_operators.py",
+    "sourceSha256": "1f7ff9e65d6ca327f0e3989f5b6642ee3b98ba011dcbc97adaa778aceadec7d7",
+    "inputPorts": {
+      "edge": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "lines": {
+        "type": "lineCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "maxLineGap",
+      "minLineLength",
+      "rho",
+      "thetaDegrees",
+      "threshold"
+    ]
+  },
+  {
+    "operatorId": "vision.io.huaray_camera",
+    "version": "1.2.0",
+    "entry": "emo_master.plugins.builtins.huaray_camera.operator:HuarayCameraOperator",
+    "manifest": "src/emo_master/plugins/builtins/huaray_camera/manifest.json",
+    "source": "src/emo_master/plugins/builtins/huaray_camera/operator.py",
+    "sourceSha256": "9095d3cf787e3381343f35b935eb439da681dd63047346c888ec9e5c9d188822",
+    "inputPorts": {},
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.1"
+      },
+      "blockId": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "deviceTimestamp": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "actualExposureUs": {
+        "type": "number",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "live",
+    "declaredLifecycleMethods": [
+      "disposeOperator",
+      "initOperator"
+    ],
+    "baseClasses": [],
+    "parameterKeys": [
+      "cameraKey",
+      "captureTimeoutMs",
+      "demosaic",
+      "deviceIndex",
+      "exposureMode",
+      "exposureUs",
+      "frameRate",
+      "frameRateMode",
+      "gainMode",
+      "gainRaw",
+      "height",
+      "ipAddress",
+      "offsetX",
+      "offsetY",
+      "outputColor",
+      "pixelFormat",
+      "retryCount",
+      "retryDelayMs",
+      "roiMode",
+      "selectionMode",
+      "sequencePolicy",
+      "triggerActivation",
+      "triggerMode",
+      "triggerSource",
+      "userId",
+      "waitMode",
+      "width"
+    ]
+  },
+  {
+    "operatorId": "vision.io.image_batch_loader",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.image_batch_loader.operator:ImageBatchLoaderOperator",
+    "manifest": "src/emo_master/plugins/builtins/image_batch_loader/manifest.json",
+    "source": "src/emo_master/plugins/builtins/image_batch_loader/operator.py",
+    "sourceSha256": "6b667e22348f6d7eeb2712b81301fd394bcaf761213131662bbb672e30cfcf70",
+    "inputPorts": {
+      "reset": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.1"
+      },
+      "imagePath": {
+        "type": "string",
+        "required": true,
+        "nullable": false
+      },
+      "index": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "total": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "hasNext": {
+        "type": "boolean",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [
+      "disposeOperator"
+    ],
+    "baseClasses": [],
+    "parameterKeys": [
+      "colorMode",
+      "folderPath",
+      "recursive"
+    ]
+  },
+  {
+    "operatorId": "vision.io.image_loader",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.image_loader.operator:ImageLoaderOperator",
+    "manifest": "src/emo_master/plugins/builtins/image_loader/manifest.json",
+    "source": "src/emo_master/plugins/builtins/image_loader/operator.py",
+    "sourceSha256": "8eadd03afa65fa7572387b5f2ff22f34934ca0ebf43615314c18f2940a952b87",
+    "inputPorts": {},
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.1"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "colorMode",
+      "imagePath"
+    ]
+  },
+  {
+    "operatorId": "vision.io.image_saver",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.image_saver.operator:ImageSaverOperator",
+    "manifest": "src/emo_master/plugins/builtins/image_saver/manifest.json",
+    "source": "src/emo_master/plugins/builtins/image_saver/operator.py",
+    "sourceSha256": "70c376b7409d870ad7ca1c39c571bdaef8a0659dd2054adb866090e083df945e",
+    "inputPorts": {
+      "image": "image"
+    },
+    "outputPorts": {
+      "result": "json"
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "outputPath",
+      "overwrite"
+    ]
+  },
+  {
+    "operatorId": "vision.segment.in_range",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.in_range.operator:InRangeOperator",
+    "manifest": "src/emo_master/plugins/builtins/in_range/manifest.json",
+    "source": "src/emo_master/plugins/builtins/in_range/operator.py",
+    "sourceSha256": "1d99ead6e576efb753d0a07e12a3c1c26d1fdc3a49a5d880061623720438263b",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "colorSpace",
+      "lower",
+      "upper"
+    ]
+  },
+  {
+    "operatorId": "vision.mask.logic",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.mask_logic.operator:MaskLogicOperator",
+    "manifest": "src/emo_master/plugins/builtins/mask_logic/manifest.json",
+    "source": "src/emo_master/plugins/builtins/mask_logic/operator.py",
+    "sourceSha256": "f6359109351bb55b7ef02f60538d6f8c8a2bdd902dd4983761dff38992615702",
+    "inputPorts": {
+      "maskA": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "maskB": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      },
+      "frameA": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "frameB": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "operation"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.minimum_enclosing_circle",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._geometry_bridges:MinimumEnclosingCircleOperator",
+    "manifest": "src/emo_master/plugins/builtins/minimum_enclosing_circle/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_geometry_bridges.py",
+    "sourceSha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74",
+    "inputPorts": {
+      "contours": {
+        "type": "contourCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "outputPorts": {
+      "circles": {
+        "type": "circleCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circleCount": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.preprocess.morphology",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.morphology.operator:MorphologyOperator",
+    "manifest": "src/emo_master/plugins/builtins/morphology/manifest.json",
+    "source": "src/emo_master/plugins/builtins/morphology/operator.py",
+    "sourceSha256": "06d0e52504a103e2c5990d5aeff203b6f35201c9f86dfc26e454340f5c1c7e8d",
+    "inputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "iterations",
+      "kernelShape",
+      "kernelSize",
+      "operation"
+    ]
+  },
+  {
+    "operatorId": "vision.compare.number",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.number_compare.operator:NumberCompareOperator",
+    "manifest": "src/emo_master/plugins/builtins/number_compare/manifest.json",
+    "source": "src/emo_master/plugins/builtins/number_compare/operator.py",
+    "sourceSha256": "a54029776df7579ee27d2d379e6e1c4d4565d1a43a0edd6ee302bfc6911e8f90",
+    "inputPorts": {
+      "left": {
+        "type": "number",
+        "required": true,
+        "nullable": false
+      },
+      "right": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "result": {
+        "type": "boolean",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "operator",
+      "rightValue"
+    ]
+  },
+  {
+    "operatorId": "vision.value.number",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.number_value.operator:NumberValueOperator",
+    "manifest": "src/emo_master/plugins/builtins/number_value/manifest.json",
+    "source": "src/emo_master/plugins/builtins/number_value/operator.py",
+    "sourceSha256": "229f942e4df50df3c35c8ad64824cb8d32093ad167eaad64889f79ae6772b966",
+    "inputPorts": {},
+    "outputPorts": {
+      "value": {
+        "type": "number",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "value"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.perspective",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._transform_operators:PerspectiveOperator",
+    "manifest": "src/emo_master/plugins/builtins/perspective/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_transform_operators.py",
+    "sourceSha256": "91939de3c9786dc48509355a2584bc2b0b6fee02209067cf3f752f494e38ae0a",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "interpolation",
+      "outputHeight",
+      "outputWidth",
+      "padValue",
+      "srcPoints"
+    ]
+  },
+  {
+    "operatorId": "communication.plc.slmp_read",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpReadOperator",
+    "manifest": "src/emo_master/plugins/builtins/plc_slmp_read/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_communication_operators.py",
+    "sourceSha256": "b3ef1792a979c11c16c83e07f11419055dcdfd9b108b9281c7a3e717dd848753",
+    "inputPorts": {},
+    "outputPorts": {
+      "values": {
+        "type": "plcValueCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "numberValue": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "booleanValue": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "previewMode": "none",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "connectTimeoutMs",
+      "count",
+      "dataType",
+      "device",
+      "host",
+      "moduleIoNo",
+      "moduleStationNo",
+      "monitoringTimer",
+      "networkNo",
+      "outputIndex",
+      "pcNo",
+      "port",
+      "responseTimeoutMs",
+      "retryCount",
+      "retryDelayMs",
+      "startAddress"
+    ]
+  },
+  {
+    "operatorId": "communication.plc.slmp_write",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpWriteOperator",
+    "manifest": "src/emo_master/plugins/builtins/plc_slmp_write/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_communication_operators.py",
+    "sourceSha256": "b3ef1792a979c11c16c83e07f11419055dcdfd9b108b9281c7a3e717dd848753",
+    "inputPorts": {
+      "data": {
+        "type": "plcValueCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "value": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "values": {
+        "type": "list<number>",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "receipt": {
+        "type": "plcWriteReceipt",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "none",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "connectTimeoutMs",
+      "dataType",
+      "device",
+      "host",
+      "moduleIoNo",
+      "moduleStationNo",
+      "monitoringTimer",
+      "networkNo",
+      "pcNo",
+      "port",
+      "responseTimeoutMs",
+      "retryCount",
+      "retryDelayMs",
+      "startAddress",
+      "values"
+    ]
+  },
+  {
+    "operatorId": "vision.geometry.reframe_points",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._geometry_bridges:PointsReframeOperator",
+    "manifest": "src/emo_master/plugins/builtins/points_reframe/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_geometry_bridges.py",
+    "sourceSha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74",
+    "inputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "points": {
+        "type": "list<point2d>",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.preprocess.resize",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.resize.operator:ResizeOperator",
+    "manifest": "src/emo_master/plugins/builtins/resize/manifest.json",
+    "source": "src/emo_master/plugins/builtins/resize/operator.py",
+    "sourceSha256": "8838802c07ca67bb564b1bf60e7be44ec495fcba0869d985d95b95509a90d4da",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "height",
+      "interpolation",
+      "mode",
+      "padValue",
+      "width"
+    ]
+  },
+  {
+    "operatorId": "vision.io.result_writer",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.result_writer.operator:ResultWriterOperator",
+    "manifest": "src/emo_master/plugins/builtins/result_writer/manifest.json",
+    "source": "src/emo_master/plugins/builtins/result_writer/operator.py",
+    "sourceSha256": "b229c472133082f688b65aa3586985b7b54d690744d03677c5ccb8eccd70ba8f",
+    "inputPorts": {
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "detections": {
+        "type": "detectionCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "histogram": {
+        "type": "histogram",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "lines": {
+        "type": "lineCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "circles": {
+        "type": "circleCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "statistics": {
+        "type": "colorStatistics",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "geometry": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "numberValue": {
+        "type": "number",
+        "required": false,
+        "nullable": false
+      },
+      "booleanValue": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      },
+      "stringValue": {
+        "type": "string",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "result": {
+        "type": "json",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "format",
+      "overwrite",
+      "relativePath"
+    ]
+  },
+  {
+    "operatorId": "vision.color.rgb_statistics",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.rgb_statistics.operator:RgbStatisticsOperator",
+    "manifest": "src/emo_master/plugins/builtins/rgb_statistics/manifest.json",
+    "source": "src/emo_master/plugins/builtins/rgb_statistics/operator.py",
+    "sourceSha256": "7476f1d5c515021cdf4fbe71a0095938897a3f1e8fa7f4adfc912c285b491ccc",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": true,
+        "schemaVersion": "1.x"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "statistics": {
+        "type": "colorStatistics",
+        "required": true,
+        "schemaVersion": "1.x"
+      },
+      "mask": {
+        "type": "image",
+        "required": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "clipRoi",
+      "ddof",
+      "emitMask"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.roi",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.roi.operator:RoiOperator",
+    "manifest": "src/emo_master/plugins/builtins/roi/manifest.json",
+    "source": "src/emo_master/plugins/builtins/roi/operator.py",
+    "sourceSha256": "89663c915e3d906c4827ffa7449fbdde971ed164df6fc330a68776b25fc79e18",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "croppedImage": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "croppedMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "croppedFrame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "maskedImage": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "fullMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "maskedFrame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "pure",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "angleDegrees",
+      "centerX",
+      "centerY",
+      "height",
+      "interpolation",
+      "padValue",
+      "points",
+      "roiType",
+      "width",
+      "x",
+      "y"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.rotate",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._transform_operators:RotateOperator",
+    "manifest": "src/emo_master/plugins/builtins/rotate/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_transform_operators.py",
+    "sourceSha256": "91939de3c9786dc48509355a2584bc2b0b6fee02209067cf3f752f494e38ae0a",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "validMask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "angleDegrees",
+      "expand",
+      "interpolation",
+      "padValue"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.shape_measurement",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._shape_operators:ShapeMeasurementOperator",
+    "manifest": "src/emo_master/plugins/builtins/shape_measurement/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_shape_operators.py",
+    "sourceSha256": "be7f83c592a90ed7fe7f05a9f51fbc91a621215a61aac70085e5714ad3081348",
+    "inputPorts": {
+      "contours": {
+        "type": "contourCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "blobs": {
+        "type": "blobCollection",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "measurements": {
+        "type": "shapeMeasurementCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": []
+  },
+  {
+    "operatorId": "vision.io.sqlite_writer",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.sqlite_writer.operator:SqliteWriterOperator",
+    "manifest": "src/emo_master/plugins/builtins/sqlite_writer/manifest.json",
+    "source": "src/emo_master/plugins/builtins/sqlite_writer/operator.py",
+    "sourceSha256": "8099c3e6e60554ef094036260b05df96f2c2cd236c67671036521c5980ed543d",
+    "inputPorts": {
+      "enabled": {
+        "type": "boolean",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "receipt": {
+        "type": "json",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "none",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "configVersion",
+      "databasePath",
+      "debugDatabasePath",
+      "failurePolicy",
+      "mappings",
+      "table"
+    ]
+  },
+  {
+    "operatorId": "communication.tcp.client",
+    "version": "1.2.0",
+    "entry": "emo_master.plugins.builtins._communication_operators:TcpClientOperator",
+    "manifest": "src/emo_master/plugins/builtins/tcp_client/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_communication_operators.py",
+    "sourceSha256": "b3ef1792a979c11c16c83e07f11419055dcdfd9b108b9281c7a3e717dd848753",
+    "inputPorts": {
+      "message": {
+        "type": "tcpMessage",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "text": {
+        "type": "string",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "response": {
+        "type": "tcpMessage",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "sentBytes": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "responseText": {
+        "type": "string",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "appendNewline",
+      "connectTimeoutMs",
+      "expectedBytes",
+      "host",
+      "maxRequestBytes",
+      "maxResponseBytes",
+      "operation",
+      "port",
+      "rejectTrailingResponse",
+      "responseEncoding",
+      "responseFraming",
+      "responseTextEncoding",
+      "responseTimeoutMs",
+      "shutdownWrite",
+      "text",
+      "textEncoding"
+    ]
+  },
+  {
+    "operatorId": "communication.tcp.receive_once",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins._communication_operators:TcpReceiveOnceOperator",
+    "manifest": "src/emo_master/plugins/builtins/tcp_receive_once/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_communication_operators.py",
+    "sourceSha256": "b3ef1792a979c11c16c83e07f11419055dcdfd9b108b9281c7a3e717dd848753",
+    "inputPorts": {},
+    "outputPorts": {
+      "message": {
+        "type": "tcpMessage",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "peerHost": {
+        "type": "string",
+        "required": true,
+        "nullable": false
+      },
+      "peerPort": {
+        "type": "integer",
+        "required": true,
+        "nullable": false
+      },
+      "text": {
+        "type": "string",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "acceptTimeoutMs",
+      "ackAppendNewline",
+      "ackEncoding",
+      "ackText",
+      "bindHost",
+      "expectedBytes",
+      "framing",
+      "maxAckBytes",
+      "maxMessageBytes",
+      "messageEncoding",
+      "messageTextEncoding",
+      "port",
+      "readTimeoutMs"
+    ]
+  },
+  {
+    "operatorId": "vision.analysis.template_match",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins._detection_operators:TemplateMatchingOperator",
+    "manifest": "src/emo_master/plugins/builtins/template_match/manifest.json",
+    "source": "src/emo_master/plugins/builtins/_detection_operators.py",
+    "sourceSha256": "1f7ff9e65d6ca327f0e3989f5b6642ee3b98ba011dcbc97adaa778aceadec7d7",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "template": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      },
+      "roi": {
+        "type": "geometry2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "matches": {
+        "type": "templateMatchCollection",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.2"
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "colorMode",
+      "label",
+      "maxMatches",
+      "method",
+      "nmsIouThreshold",
+      "peakKernelSize",
+      "threshold",
+      "thresholdMode"
+    ]
+  },
+  {
+    "operatorId": "vision.preprocess.threshold",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.threshold.operator:ThresholdOperator",
+    "manifest": "src/emo_master/plugins/builtins/threshold/manifest.json",
+    "source": "src/emo_master/plugins/builtins/threshold/operator.py",
+    "sourceSha256": "e3b3605bd62cdba1796131440e4a886d709bc7f7c0f44e71caed8285aa4979f1",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "mask": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "threshold": {
+        "type": "number",
+        "required": true,
+        "nullable": true
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "blockSize",
+      "constant",
+      "invert",
+      "mode",
+      "threshold"
+    ]
+  },
+  {
+    "operatorId": "vision.state.variable_read",
+    "version": "1.0.0",
+    "entry": "emo_master.plugins.builtins.variable_read.operator:ReadVariableOperator",
+    "manifest": "src/emo_master/plugins/builtins/variable_read/manifest.json",
+    "source": "src/emo_master/plugins/builtins/variable_read/operator.py",
+    "sourceSha256": "f9a3dee76aef66d0ff15143fb279a20df818f642128696c57ba39bbd0c5b069e",
+    "inputPorts": {},
+    "outputPorts": {
+      "value": {
+        "type": "any",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "variableId"
+    ]
+  },
+  {
+    "operatorId": "vision.state.variable_write",
+    "version": "1.1.0",
+    "entry": "emo_master.plugins.builtins.variable_write.operator:WriteVariableOperator",
+    "manifest": "src/emo_master/plugins/builtins/variable_write/manifest.json",
+    "source": "src/emo_master/plugins/builtins/variable_write/operator.py",
+    "sourceSha256": "112cc73837023929495822e0a3d121e9ef63cb1e8ffdfb782f6237b51fda5111",
+    "inputPorts": {
+      "value": {
+        "type": "any",
+        "required": false,
+        "nullable": false
+      },
+      "after": {
+        "type": "any",
+        "required": false,
+        "nullable": false
+      }
+    },
+    "outputPorts": {
+      "value": {
+        "type": "any",
+        "required": true,
+        "nullable": false
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [
+      "ReadVariableOperator"
+    ],
+    "parameterKeys": [
+      "delta",
+      "operation",
+      "variableId"
+    ]
+  },
+  {
+    "operatorId": "vision.inference.yolo",
+    "version": "1.2.1",
+    "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
+    "manifest": "src/emo_master/plugins/builtins/yolo_inference/manifest.json",
+    "source": "src/emo_master/plugins/builtins/yolo_inference/operator.py",
+    "sourceSha256": "296080f0d47e380a6d42d4dc306cd8cb83796f5105e8f6d773245a64349c8a34",
+    "inputPorts": {
+      "image": {
+        "type": "image",
+        "required": true,
+        "nullable": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": false,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "outputPorts": {
+      "detections": {
+        "type": "detectionCollection",
+        "required": true,
+        "schemaVersion": "1.x"
+      },
+      "overlay": {
+        "type": "image",
+        "required": false
+      },
+      "frame": {
+        "type": "bbox2d",
+        "required": true,
+        "nullable": false,
+        "schemaVersion": "1.x"
+      }
+    },
+    "previewMode": "undeclared",
+    "declaredLifecycleMethods": [],
+    "baseClasses": [],
+    "parameterKeys": [
+      "agnosticNms",
+      "classes",
+      "confidence",
+      "device",
+      "drawOverlay",
+      "imageSize",
+      "iou",
+      "maxDetections",
+      "modelPath"
+    ]
+  }
+]

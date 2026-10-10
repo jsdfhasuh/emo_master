@@ -1,0 +1,17 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "docs/testing/toolbox-category-2026-10-07/capture.py",
+    "--output",
+    "docs/testing/toolbox-category-2026-10-07/native-diagnostic/screens"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 1,
+  "seconds": 2.2659999998286366,
+  "outerWatchdogSeconds": 120,
+  "timedOut": false,
+  "qtPlatform": "windows",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\category-highlight-20261007-092430-369788\\category-test-runtime"
+}

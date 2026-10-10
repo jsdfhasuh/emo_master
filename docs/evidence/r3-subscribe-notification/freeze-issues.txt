@@ -1,0 +1,33 @@
+Local freeze checks, 2026-10-02 UTC. CI has not run.
+
+$ git diff --cached --check
+(exit 2; previously untracked evidence was now staged)
+docs/evidence/r3-subscribe-notification/production.patch:13: trailing whitespace.
++ \u0020 (trailing context space shown escaped)
+docs/evidence/r3-subscribe-notification/production.patch:21: trailing whitespace.
++ \u0020 (trailing context space shown escaped)
+docs/evidence/r3-subscribe-notification/production.patch:37: trailing whitespace.
++ \u0020 (trailing context space shown escaped)
+
+Cause: blank context lines in the full archived unified diff have a single space.
+Resolution: regenerated the identical production diff with --unified=0, omitting
+context lines; production code and tests were unchanged.
+
+$ git commit -m 'fix: notify idle display subscribers without changing yield pacing'
+(exit 128)
+Author identity unknown
+fatal: unable to auto-detect email address (got 'agent@a49516c2051d.(none)')
+
+Read-only diagnosis: git config has no user.name/user.email; git log -4 confirms
+all four commits, including 655eeac, use Jiahao Cai and
+49879362+jsdfhasuh@users.noreply.github.com for author and committer.
+Resolution: the parent directed the neutral agent identity Codex <codex@openai.com>
+for the local commit, through command-local -c settings. The earlier proposed
+reuse of the HEAD identity was not executed; no persistent configuration changes.
+
+This record transcribes the substantive tool error output. Git's generic
+configuration guidance is omitted. These failures occurred before full CI.
+
+A second staged whitespace check flagged the literal copied trailing spaces in
+this diagnostic file (lines 6, 8 and 10), before any commit attempt. The log now
+shows those spaces escaped; production code and tests remained unchanged.

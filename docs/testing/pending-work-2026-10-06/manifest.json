@@ -1,0 +1,13 @@
+{
+  "artifacts": {
+    "code-commits.json": "104607612708dd34fd50d609bedbf43fc4cae661c03efdcdac424afae0a4b5e9",
+    "content-audit.json": "06c970b6982e1b2b16d4ef247abd269fe47c8e76ba360c60aede3ac409559ddf",
+    "document-update.json": "84d290654f3e9ba15d4c9b4289b70613f7098854f9ccddae7451b84a46cae909",
+    "focused/candidate.json": "7c5585113793e8829bf7191037411acc8458ea62dfce4786c9a6fcc6139d13e1",
+    "focused/raw.log": "2e8f7d3459e99a9cc43f4bd68e59f92087432f2a9696f6b529454b794c579113",
+    "focused/result.json": "44bef328eda072b657adf17bce25d5d1ce908939326301eb2a7c456b179c8996",
+    "incoming.json": "d4dad7d7a8a753e5fdb139d90f507c6b9e35c4474513457dc7989f75ddd3f2ea",
+    "staged-content-audit.json": "d6a8bb3e62345d2037088b75ebda24513bd58918adc4dba00383f7b946d72968"
+  },
+  "notes": "Exact bytes; the manifest excludes itself."
+}

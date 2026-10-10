@@ -1,0 +1,17 @@
+{
+  "repository": "jsdfhasuh/python_build_scripts",
+  "workflow": "release-windows.yml",
+  "workflow_ref": "master",
+  "workflow_sha": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "target": "emo-master-runtime",
+  "source_ref": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "packager_ref": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "release_tag": "v0.6.1",
+  "release_repo": "jsdfhasuh/emo_master",
+  "publish_release": "false",
+  "run_id": 37559011805,
+  "previous_failed_run_id": 37558377392,
+  "previous_source_ref": "f1c85c22cbbebe654bee1b701f6da2a1e7574cf4",
+  "tagCreation": "NOT_RUN",
+  "formalPublication": "NOT_RUN"
+}

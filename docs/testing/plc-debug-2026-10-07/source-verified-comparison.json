@@ -1,0 +1,260 @@
+{
+  "Head": "6aa57f3e21fd207a65047f532feb92a3b82de1ae",
+  "Branch": "agent/runtime-workflow-architecture-v1",
+  "FinalSourceCount": 715,
+  "CiBeforeCount": 713,
+  "CiChangedPaths": [
+    "scripts/validate_plc_editor.py",
+    "src/emo_master/plugins/builtins/_plc_editor.py",
+    "tests/designer/test_plc_editor.py",
+    "tests/runtime/test_operator_registration.py"
+  ],
+  "CiAddedPaths": [
+    "tests/core/plugin/test_builtin_parameter_titles.py",
+    "tests/designer/test_parameter_titles.py"
+  ],
+  "FinalCaptureReports": [
+    {
+      "Directory": "verified-font-native-100",
+      "Status": "PASS",
+      "Cases": 14,
+      "FontFamily": "Microsoft YaHei UI",
+      "TextProbePixels": 70,
+      "SourceCount": 713,
+      "ChangedPaths": [],
+      "Loopback": {
+        "connections": 2,
+        "requests": 10,
+        "MNeighborsUnchanged": true
+      },
+      "Geometry": [
+        {
+          "requestedLogical": [
+            1280,
+            720
+          ],
+          "actualLogical": [
+            1280,
+            720
+          ],
+          "dpr": 1.0,
+          "actualPhysical": [
+            1280,
+            720
+          ],
+          "constrainedByScreen": false
+        },
+        {
+          "requestedLogical": [
+            1920,
+            1080
+          ],
+          "actualLogical": [
+            1902,
+            984
+          ],
+          "dpr": 1.0,
+          "actualPhysical": [
+            1902,
+            984
+          ],
+          "constrainedByScreen": true
+        }
+      ]
+    },
+    {
+      "Directory": "verified-font-native-125",
+      "Status": "PASS",
+      "Cases": 14,
+      "FontFamily": "Microsoft YaHei UI",
+      "TextProbePixels": 146,
+      "SourceCount": 713,
+      "ChangedPaths": [],
+      "Loopback": {
+        "connections": 2,
+        "requests": 10,
+        "MNeighborsUnchanged": true
+      },
+      "Geometry": [
+        {
+          "requestedLogical": [
+            1024,
+            576
+          ],
+          "actualLogical": [
+            1024,
+            576
+          ],
+          "dpr": 1.25,
+          "actualPhysical": [
+            1280,
+            720
+          ],
+          "constrainedByScreen": false
+        },
+        {
+          "requestedLogical": [
+            1536,
+            864
+          ],
+          "actualLogical": [
+            1518,
+            784
+          ],
+          "dpr": 1.25,
+          "actualPhysical": [
+            1898,
+            980
+          ],
+          "constrainedByScreen": true
+        }
+      ]
+    },
+    {
+      "Directory": "verified-font-native-150",
+      "Status": "PASS",
+      "Cases": 14,
+      "FontFamily": "Microsoft YaHei UI",
+      "TextProbePixels": 146,
+      "SourceCount": 713,
+      "ChangedPaths": [],
+      "Loopback": {
+        "connections": 2,
+        "requests": 10,
+        "MNeighborsUnchanged": true
+      },
+      "Geometry": [
+        {
+          "requestedLogical": [
+            853,
+            480
+          ],
+          "actualLogical": [
+            853,
+            480
+          ],
+          "dpr": 1.5,
+          "actualPhysical": [
+            1280,
+            720
+          ],
+          "constrainedByScreen": false
+        },
+        {
+          "requestedLogical": [
+            1280,
+            720
+          ],
+          "actualLogical": [
+            1262,
+            650
+          ],
+          "dpr": 1.5,
+          "actualPhysical": [
+            1893,
+            975
+          ],
+          "constrainedByScreen": true
+        }
+      ]
+    },
+    {
+      "Directory": "verified-font-offscreen-125",
+      "Status": "PASS",
+      "Cases": 14,
+      "FontFamily": "Microsoft YaHei UI",
+      "TextProbePixels": 153,
+      "SourceCount": 713,
+      "ChangedPaths": [],
+      "Loopback": {
+        "connections": 2,
+        "requests": 10,
+        "MNeighborsUnchanged": true
+      },
+      "Geometry": [
+        {
+          "requestedLogical": [
+            1024,
+            576
+          ],
+          "actualLogical": [
+            1024,
+            576
+          ],
+          "dpr": 1.25,
+          "actualPhysical": [
+            1280,
+            720
+          ],
+          "constrainedByScreen": false
+        },
+        {
+          "requestedLogical": [
+            1536,
+            864
+          ],
+          "actualLogical": [
+            1536,
+            864
+          ],
+          "dpr": 1.25,
+          "actualPhysical": [
+            1920,
+            1080
+          ],
+          "constrainedByScreen": false
+        }
+      ]
+    },
+    {
+      "Directory": "verified-font-offscreen-150",
+      "Status": "PASS",
+      "Cases": 14,
+      "FontFamily": "Microsoft YaHei UI",
+      "TextProbePixels": 153,
+      "SourceCount": 713,
+      "ChangedPaths": [],
+      "Loopback": {
+        "connections": 2,
+        "requests": 10,
+        "MNeighborsUnchanged": true
+      },
+      "Geometry": [
+        {
+          "requestedLogical": [
+            853,
+            480
+          ],
+          "actualLogical": [
+            853,
+            480
+          ],
+          "dpr": 1.5,
+          "actualPhysical": [
+            1280,
+            720
+          ],
+          "constrainedByScreen": false
+        },
+        {
+          "requestedLogical": [
+            1280,
+            720
+          ],
+          "actualLogical": [
+            1280,
+            720
+          ],
+          "dpr": 1.5,
+          "actualPhysical": [
+            1920,
+            1080
+          ],
+          "constrainedByScreen": false
+        }
+      ]
+    }
+  ],
+  "HardwareAcceptance": "NOT_RUN",
+  "Packaging": "NOT_RUN"
+}

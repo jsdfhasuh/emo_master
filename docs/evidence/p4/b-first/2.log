@@ -1,0 +1,33 @@
+F401 [*] `PySide2.QtWidgets.QVBoxLayout` imported but unused
+ --> src\emo_master\apps\designer\page_designer\tools.py:7:14
+  |
+5 | from PySide2.QtGui import QDrag
+6 | from PySide2.QtWidgets import (
+7 |     QWidget, QVBoxLayout, QFormLayout, QListWidget, QListWidgetItem, QTreeWidget,
+  |              ^^^^^^^^^^^
+8 |     QTreeWidgetItem, QPushButton, QLineEdit, QSpinBox, QComboBox, QLabel,
+9 |     QScrollArea, QInputDialog, QTableWidget, QTableWidgetItem,
+  |
+help: Remove unused import: `PySide2.QtWidgets.QVBoxLayout`
+
+F811 Redefinition of unused `designer` from line 10
+  --> tests\ui\page_designer\test_editing.py:80:57
+   |
+80 | def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, tmp_path):
+   |                                                         ^^^^^^^^ `designer` redefined here
+81 |     c = designer.pageCoordinator
+82 |     designer.workflowController.loadPayload(blank(tmp_path).model_dump())
+   |
+  ::: tests\ui\page_designer\test_editing.py:10:28
+   |
+ 8 | from PySide2.QtWidgets import QApplication, QInputDialog, QWidget
+ 9 |
+10 | from test_workspace import designer  # noqa: F401
+   |                            -------- previous definition of `designer` here
+11 | from emo_master.apps.designer.page_designer.editing import PageCommands, outputChoices
+12 | from emo_master.apps.designer.page_designer.tools import mime
+   |
+help: Remove definition: `designer`
+
+Found 2 errors.
+[*] 1 fixable with the `--fix` option.

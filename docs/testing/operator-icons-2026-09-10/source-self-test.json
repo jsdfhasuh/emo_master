@@ -1,0 +1,152 @@
+{
+  "status": "ok",
+  "version": "0.6.1",
+  "checks": {
+    "builtins": {
+      "status": "ok",
+      "operatorCount": 49,
+      "editorUiCount": 3,
+      "yoloVersion": "1.2.1"
+    },
+    "operatorIcons": {
+      "status": "ok",
+      "examples": {
+        "vision.edge.canny": {
+          "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37",
+          "byteSize": 320,
+          "mimeType": "image/svg+xml"
+        },
+        "vision.io.huaray_camera": {
+          "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70",
+          "byteSize": 394,
+          "mimeType": "image/svg+xml"
+        },
+        "vision.inference.yolo": {
+          "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf",
+          "byteSize": 411,
+          "mimeType": "image/svg+xml"
+        }
+      }
+    },
+    "designerQss": {
+      "status": "ok",
+      "path": "src/emo_master/apps/designer/ui/styles/app.qss",
+      "bytes": 7785
+    },
+    "migrations": {
+      "status": "ok",
+      "files": [
+        "001_init.sql",
+        "002_runtime_workflow.sql",
+        "003_runtime_timestamps.sql",
+        "004_global_counters.sql"
+      ],
+      "versions": [
+        1,
+        2,
+        3,
+        4
+      ],
+      "journalMode": "delete"
+    },
+    "onnxruntime": {
+      "status": "ok",
+      "version": "1.23.2",
+      "provider": "CPUExecutionProvider",
+      "inputShape": [
+        1,
+        3,
+        8,
+        8
+      ],
+      "detectionCount": 1
+    },
+    "guiIcons": {
+      "status": "ok",
+      "samples": [
+        {
+          "operatorId": "vision.edge.canny",
+          "renderSource": "custom",
+          "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37",
+          "scale": 1.0,
+          "pixelSize": 24,
+          "nonTransparentPixels": 124,
+          "accentPixels": 62
+        },
+        {
+          "operatorId": "vision.edge.canny",
+          "renderSource": "custom",
+          "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37",
+          "scale": 1.5,
+          "pixelSize": 36,
+          "nonTransparentPixels": 330,
+          "accentPixels": 113
+        },
+        {
+          "operatorId": "vision.edge.canny",
+          "renderSource": "custom",
+          "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37",
+          "scale": 2.0,
+          "pixelSize": 48,
+          "nonTransparentPixels": 496,
+          "accentPixels": 224
+        },
+        {
+          "operatorId": "vision.io.huaray_camera",
+          "renderSource": "custom",
+          "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70",
+          "scale": 1.0,
+          "pixelSize": 24,
+          "nonTransparentPixels": 254,
+          "accentPixels": 38
+        },
+        {
+          "operatorId": "vision.io.huaray_camera",
+          "renderSource": "custom",
+          "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70",
+          "scale": 1.5,
+          "pixelSize": 36,
+          "nonTransparentPixels": 603,
+          "accentPixels": 105
+        },
+        {
+          "operatorId": "vision.io.huaray_camera",
+          "renderSource": "custom",
+          "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70",
+          "scale": 2.0,
+          "pixelSize": 48,
+          "nonTransparentPixels": 940,
+          "accentPixels": 204
+        },
+        {
+          "operatorId": "vision.inference.yolo",
+          "renderSource": "custom",
+          "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf",
+          "scale": 1.0,
+          "pixelSize": 24,
+          "nonTransparentPixels": 224,
+          "accentPixels": 112
+        },
+        {
+          "operatorId": "vision.inference.yolo",
+          "renderSource": "custom",
+          "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf",
+          "scale": 1.5,
+          "pixelSize": 36,
+          "nonTransparentPixels": 614,
+          "accentPixels": 223
+        },
+        {
+          "operatorId": "vision.inference.yolo",
+          "renderSource": "custom",
+          "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf",
+          "scale": 2.0,
+          "pixelSize": 48,
+          "nonTransparentPixels": 888,
+          "accentPixels": 466
+        }
+      ]
+    }
+  },
+  "errors": []
+}

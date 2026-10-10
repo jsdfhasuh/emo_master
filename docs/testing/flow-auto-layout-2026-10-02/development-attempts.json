@@ -1,0 +1,27 @@
+{
+  "initialFocused": {
+    "command": "python -m pytest tests/designer/test_flow_layout_qt.py tests/designer/test_flow_layout_routing.py -q",
+    "result": "1 failed, 15 passed in 2.99s",
+    "testFixtureErrors": [
+      "PySide2 imported before emo_master Windows DLL preload produced native exception diagnostics; fixed import order in new test.",
+      "Save/reopen assertion examined entry workflow instead of the explicitly edited non-entry workflow; fixed test to reopen the same workflow."
+    ]
+  },
+  "earlyScreenshotRuns": {
+    "visual-1": "Offscreen font/viewport capture incomplete; not accepted as visual evidence.",
+    "visual-windows": "Screenshot captured before deferred fit settled; not accepted as full layout screenshot.",
+    "visual-windows-2": "Complete Windows screenshot; found ingress U-turn to refine.",
+    "visual-final": "Complete Windows screenshot, refined U-turn; target lane order still caused adjacent crossing.",
+    "visual-lanes": "Accepted Windows screenshot, port-position target lanes; all raw runs retained."
+  },
+  "originalCI": {
+    "log": "full-ci.log",
+    "result": "FAIL, pytest collection exit 2: ignored old baseline tree in manual_test_workspace collected duplicate modules."
+  },
+  "firstCompleteCI": {
+    "log": "full-ci-isolated.log",
+    "result": "2554 passed, 1 failed, 8 skipped, 26 subtests passed, 657.42s",
+    "failure": "A18 hidden_observers, native_threads 63 -> 65, handles 2235 -> 2235",
+    "code": "Started during implementation; final routing refinements require final committed-code CI. Exact earlier source digests retained in visual-1/validation.json."
+  }
+}

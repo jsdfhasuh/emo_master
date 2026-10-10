@@ -1,0 +1,16 @@
+{
+  "startingHead": "9737f04312a2803f824e4bbeab6ea845549edaf7",
+  "codeCommit": "e4b8b97ca698aed3be3ab598ddb10c1eab0bd877",
+  "originalDirtyFileCount": 233,
+  "otherOriginalDirtyHashesUnchanged": 232,
+  "mainOriginalContentRetainedAfterRemovingOnlyTwoTaskLines": true,
+  "originalStagedPatchSha256": "f9fc9c02556e37996ef85f6a39b238503cdc1130457d8a78602e30bbf8a7272e",
+  "originalStagedNames": [
+    ".gitignore",
+    "docs/plans/2026-10-06-standalone-runtime-production-v1.md"
+  ],
+  "testedSourceDigest": "72681a581534ceaf111099331bb9065611a3952c5326c8d54a1e2d80d1fe0fdc",
+  "currentSourceDigest": "72681a581534ceaf111099331bb9065611a3952c5326c8d54a1e2d80d1fe0fdc",
+  "fullCiSourceUnchanged": true,
+  "remoteCodeCommit": "e4b8b97ca698aed3be3ab598ddb10c1eab0bd877\trefs/heads/agent/runtime-workflow-architecture-v1"
+}

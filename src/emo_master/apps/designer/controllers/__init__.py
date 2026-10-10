@@ -4,10 +4,12 @@ from emo_master.apps.designer.controllers.layout_controller import LayoutControl
 from emo_master.apps.designer.controllers.operator_catalog_controller import (
     OperatorCatalogController,
 )
+from emo_master.apps.designer.controllers.workflow_controller import WorkflowController
 
 __all__ = [
     "ProjectController",
     "RuntimeController",
     "LayoutController",
     "OperatorCatalogController",
+    "WorkflowController",
 ]

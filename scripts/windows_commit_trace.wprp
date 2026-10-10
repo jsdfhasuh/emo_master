@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+<WindowsPerformanceRecorder Version="1.0">
+  <Profiles>
+    <SystemCollector Id="CommitCollector" Name="R3CommitTraceKernel">
+      <BufferSize Value="64" />
+      <Buffers Value="4096" PercentageOfTotalMemory="false" />
+    </SystemCollector>
+    <SystemProvider Id="CommitSystem">
+      <Keywords>
+        <Keyword Value="ProcessThread" />
+        <Keyword Value="CSwitch" />
+        <Keyword Value="ReadyThread" />
+        <Keyword Value="FileIO" />
+        <Keyword Value="FileIOInit" />
+        <Keyword Value="Filename" />
+        <Keyword Value="DiskIO" />
+        <Keyword Value="DiskIOInit" />
+      </Keywords>
+    </SystemProvider>
+    <Profile Id="CommitTrace.Light.Memory" Name="CommitTrace" Description="One-shot diagnostic only" DetailLevel="Light" LoggingMode="Memory">
+      <Collectors>
+        <SystemCollectorId Value="CommitCollector">
+          <SystemProviderId Value="CommitSystem" />
+        </SystemCollectorId>
+      </Collectors>
+    </Profile>
+  </Profiles>
+</WindowsPerformanceRecorder>

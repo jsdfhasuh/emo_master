@@ -1,0 +1,14 @@
+{
+  "startingHead": "9737f04312a2803f824e4bbeab6ea845549edaf7",
+  "commit": "e4b8b97ca698aed3be3ab598ddb10c1eab0bd877",
+  "taskPaths": [
+    "src/emo_master/apps/designer/ui/flow_scene.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/node_context_menu.py",
+    "tests/designer/test_node_context_menu.py"
+  ],
+  "originalDirtyFiles": 233,
+  "otherOriginalFilesUnchanged": 232,
+  "mainOriginalChangesRetained": true,
+  "originalStagedPatchRetained": true
+}

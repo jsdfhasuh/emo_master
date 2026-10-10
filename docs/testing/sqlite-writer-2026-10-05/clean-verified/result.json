@@ -1,0 +1,13 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/sqlite_writer"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-writer-20261005-092443-038925\\clean-candidate-20261005-111441-208843",
+  "exitCode": 0,
+  "seconds": 30.625,
+  "tree": "8ad183489ec7666ffcf3c44f9de8c2196cd0bc2f"
+}

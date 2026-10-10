@@ -1,0 +1,199 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "debug-01-nested-calls",
+    "name": "debug-01-nested-calls",
+    "revision": 1,
+    "createdAt": "2026-10-10T00:00:00Z",
+    "updatedAt": "2026-10-10T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "child"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Main - two calls, output 7",
+      "inputs": {},
+      "outputs": {
+        "value": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "params": {
+            "value": 1
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "displayName": "seed"
+        },
+        {
+          "nodeId": "first",
+          "kind": "subflow",
+          "targetWorkflowId": "child",
+          "inputPorts": {
+            "after": "number"
+          },
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "second",
+          "kind": "subflow",
+          "targetWorkflowId": "child",
+          "inputPorts": {
+            "after": "number"
+          },
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "value": "number"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "first",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "first",
+          "fromPort": "value",
+          "toNode": "second",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "second",
+          "fromPort": "value",
+          "toNode": "output",
+          "toPort": "value"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "seed": {
+            "x": 260,
+            "y": 100
+          },
+          "first": {
+            "x": 520,
+            "y": 100
+          },
+          "second": {
+            "x": 780,
+            "y": 100
+          },
+          "output": {
+            "x": 1040,
+            "y": 100
+          }
+        }
+      }
+    },
+    "child": {
+      "name": "Child - trial 99, original stays 7",
+      "inputs": {
+        "after": "number"
+      },
+      "outputs": {
+        "value": "number"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {
+            "after": "number"
+          }
+        },
+        {
+          "nodeId": "number",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          },
+          "displayName": "number"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "value": "number"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "number",
+          "fromPort": "value",
+          "toNode": "output",
+          "toPort": "value"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "number": {
+            "x": 260,
+            "y": 100
+          },
+          "output": {
+            "x": 520,
+            "y": 100
+          }
+        }
+      }
+    }
+  }
+}

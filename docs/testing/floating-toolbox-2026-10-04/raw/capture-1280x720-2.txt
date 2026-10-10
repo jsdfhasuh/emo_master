@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\floating-toolbox-2026-10-04\capture.py", line 168, in <module>
+    main()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\floating-toolbox-2026-10-04\capture.py", line 123, in main
+    assert not button.visibleRegion().isEmpty(), button.text()
+AssertionError: 检测

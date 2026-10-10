@@ -1,0 +1,67 @@
+{
+  "requested": [
+    1280,
+    720
+  ],
+  "actual": [
+    638,
+    319
+  ],
+  "physicalScreen": true,
+  "targetClient": [
+    638,
+    319
+  ],
+  "flowActual": [
+    638,
+    319
+  ],
+  "previewActual": [
+    638,
+    319
+  ],
+  "flowRunVisible": true,
+  "fitsTarget": true,
+  "dpr": 2.0,
+  "platform": "windows",
+  "availableScreen": [
+    960,
+    516
+  ],
+  "splitter": [
+    0,
+    280,
+    332
+  ],
+  "noHorizontalPropertyScroll": true,
+  "applyVisible": true,
+  "selectorVisible": true,
+  "previewActionVisible": true,
+  "pageListHeight": 60,
+  "propertyHeight": 115,
+  "previewHiddenInFlow": true,
+  "invalidInputBlocksSwitch": true,
+  "provenance": {
+    "head": "842d87a97efb62ac20364ff248e5a0c4db105831",
+    "dirty": " M docs/development-guide.md\n M scripts/validate_page_editor.py\n M src/emo_master/apps/designer/page_designer/canvas_tools.py\n M src/emo_master/apps/designer/page_designer/coordinator.py\n M src/emo_master/apps/designer/page_designer/grid_geometry.py\n M src/emo_master/apps/designer/page_designer/palette.py\n M src/emo_master/apps/designer/page_designer/preview.py\n M src/emo_master/apps/designer/page_designer/property_panel.py\n M src/emo_master/apps/designer/page_designer/tools.py\n M src/emo_master/apps/designer/page_designer/workspace.py\n M src/emo_master/apps/designer/ui/main_window.py\n M src/emo_master/apps/designer/ui/styles/app.qss\n M src/emo_master/ui/presentation/design_examples.py\n M src/emo_master/ui/presentation/renderer.py\n M tests/designer/test_visual_layout.py\n M tests/ui/page_designer/test_current_job_viewing.py\n M tests/ui/page_designer/test_delivery_path.py\n M tests/ui/page_designer/test_normal_run_path.py\n M tests/ui/page_designer/test_normal_run_viewing.py\n M tests/ui/page_designer/test_page_navigation.py\n M tests/ui/page_designer/test_preview.py\n M tests/ui/page_designer/test_retained_acceptance_multiscope.py\n M tests/ui/page_designer/test_two_job_observation.py\n M tests/ui/page_designer/test_usable_properties.py\n M tests/ui/page_designer/test_user_path.py\n M tests/ui/page_designer/test_visual_editor.py\n?? docs/testing/workspace-ui-2026-10-03.md\n?? docs/testing/workspace-ui-2026-10-03/\n?? scripts/validate_designer_workspaces.py\n?? src/emo_master/apps/designer/page_designer/chrome.py\n?? src/emo_master/apps/designer/page_designer/preview_window.py\n?? src/emo_master/apps/designer/page_designer/workspace_switch.py\n?? tests/ui/page_designer/test_palette.py\n?? tests/ui/page_designer/test_workspace_modes.py\n?? tests/ui/page_designer/test_workspace_switch.py\n",
+    "sourceSha256": {
+      "scripts/validate_designer_workspaces.py": "989441dd148a3b3a569f979b3adb2af76d7ee2a96623026486ed582fc496cf73",
+      "src/emo_master/apps/designer/page_designer/chrome.py": "a54bfe05fa3eead26576986131646cc57964dbdaa6694034e8b6eb31f764517b",
+      "src/emo_master/apps/designer/page_designer/preview_window.py": "d0a85c3d0ec6aec035a4448e9b43806f5c35f850103ba07dd2fa5c5258ff9e36",
+      "src/emo_master/apps/designer/page_designer/workspace_switch.py": "d8f93800bc0f5771b98c67f4cc5d9ee589e5432a7b657d18f29b2d477868e8bd",
+      "scripts/validate_page_editor.py": "8c07f894d98e845f984f2cc8eab7beeb85f0983b20980277cb503fa1bebb6878",
+      "src/emo_master/apps/designer/page_designer/canvas_tools.py": "411088113f289d0456ac086ced7961cf32dcdb382b5242d14ceb119dbf09639c",
+      "src/emo_master/apps/designer/page_designer/coordinator.py": "103390fb52174d8f5ca43bd5b117f581001d32c7b7648a4cc0d77a937c6a456f",
+      "src/emo_master/apps/designer/page_designer/grid_geometry.py": "dfb24fa7ffd2aa22ff41035d8691fdd432eb99efc636dc83fcb219e852071fc5",
+      "src/emo_master/apps/designer/page_designer/palette.py": "2c7d78cdbf23a84fcf629d433ab422b305a5fc2c4dd200c60bc6b370947a3c43",
+      "src/emo_master/apps/designer/page_designer/preview.py": "54f742f2a7b2e2660cdfee9c41b5db1dfe97847fdd5a48ac378f5d2501d43f7a",
+      "src/emo_master/apps/designer/page_designer/property_panel.py": "ab84f8eccd219d25e0093f3a1e7b77924defbb3e8d6bee25645bbc85c28b4944",
+      "src/emo_master/apps/designer/page_designer/tools.py": "559225430823263992a8cc075bb2f50b8e3ad71fa972827f40d7d31641d9c52d",
+      "src/emo_master/apps/designer/page_designer/workspace.py": "c163b69450b37ca826e6dfa414657d9ff3ef9baca64e2404a94415320dcb3f9c",
+      "src/emo_master/apps/designer/ui/main_window.py": "99f5936af168dd809a28bba1167c0f22e0d40016ceebae85f808348eb6648128",
+      "src/emo_master/apps/designer/ui/styles/app.qss": "c300eb250e29bbeb1c5e1f97967afe0ba48c71d6e2bb6f928dc5ad5abfec1ec7",
+      "src/emo_master/ui/presentation/design_examples.py": "8e9d65f83078d1e0ddd557f633dd924bc00cc66b5c3d6300ea9fd6cebfbcb970",
+      "src/emo_master/ui/presentation/renderer.py": "5f2eb421629e600162b524e8354c65af33cf4b8dc1a6d940c7f36e12ef1a823e"
+    }
+  }
+}

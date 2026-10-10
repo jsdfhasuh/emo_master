@@ -28,10 +28,10 @@ class FlowSwitchOperator:
         paramSchema={
             "type": "object",
             "properties": {
-                "case0Value": {"type": "string", "default": ""},
-                "case1Value": {"type": "string", "default": ""},
-                "case2Value": {"type": "string", "default": ""},
-                "case3Value": {"type": "string", "default": ""},
+                "case0Value": {"title": "分支 0 匹配值", "type": "string", "default": "", "xOptionalPresence": True},
+                "case1Value": {"title": "分支 1 匹配值", "type": "string", "default": "", "xOptionalPresence": True},
+                "case2Value": {"title": "分支 2 匹配值", "type": "string", "default": "", "xOptionalPresence": True},
+                "case3Value": {"title": "分支 3 匹配值", "type": "string", "default": "", "xOptionalPresence": True},
             },
         },
     )

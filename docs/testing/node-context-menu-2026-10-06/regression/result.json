@@ -1,0 +1,19 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_flow_scene_interactions.py",
+    "tests/designer/test_flow_layout_qt.py",
+    "tests/designer/test_node_result_panel.py",
+    "tests/designer/test_node_run_inspection.py",
+    "tests/designer/test_operator_editor_manager.py",
+    "tests/designer/test_main_window_project_save_load.py",
+    "tests/ui/page_designer/test_workspace_modes.py",
+    "tests/sqlite_writer/test_editor.py",
+    "tests/sqlite_writer/test_dependencies.py"
+  ],
+  "exitCode": 0,
+  "seconds": 8.219000000040978
+}

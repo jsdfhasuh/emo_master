@@ -1,0 +1,21 @@
+
+=================================== ERRORS ====================================
+__________ ERROR collecting tests/designer/test_node_image_viewer.py __________
+ImportError while importing test module 'C:\Users\jsdfhasuh\AppData\Local\Temp\codex-control-flow-candidate-tlikr3dj\tests\designer\test_node_image_viewer.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+..\..\..\..\.conda\envs\emo_master\lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\designer\test_node_image_viewer.py:12: in <module>
+    from tests.runtime.test_run_inspection_rpc import running
+..\..\..\..\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+tests\runtime\test_run_inspection_rpc.py:19: in <module>
+    from examples.flow_run_inspection import sampleProject
+..\..\..\..\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+E   ModuleNotFoundError: No module named 'examples.flow_run_inspection'
+=========================== short test summary info ===========================
+ERROR tests/designer/test_node_image_viewer.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 6.15s

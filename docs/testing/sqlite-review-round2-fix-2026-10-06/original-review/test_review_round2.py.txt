@@ -1,0 +1,92 @@
+"""External review expectations; failures demonstrate defects, not changed production code."""
+from pathlib import Path
+import json
+import sqlite3
+import sys
+import threading
+
+import pytest
+
+REPO = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / 'src'))
+
+from emo_master.apps.runtime.business_sqlite import backend
+from emo_master.apps.runtime.workflow.runner import WorkflowRunner, WorkflowExecutionError
+from emo_master.apps.runtime.workflow.context import RunContext
+from emo_master.apps.runtime.workflow.cancellation import CancellationToken
+from emo_master.core.workflow.compiler import WorkflowCompiler
+from emo_master.core.contracts.sqlite_writer import OPERATOR_ID
+from tests.sqlite_writer.test_backend import actualRun, makeDb
+from tests.sqlite_writer.test_dependencies import config, project, mapping
+
+
+def emit(name, payload):
+    print('REVIEW_EVIDENCE ' + json.dumps({'probe': name, **payload}, ensure_ascii=True))
+
+
+def testNormalRoundtripControl(tmp_path):
+    path = makeDb(tmp_path / 'normal.sqlite3')
+    receipt, _, _ = actualRun(path, {'actual': [0, False, None, '']})
+    with sqlite3.connect(path) as connection:
+        stored = connection.execute('SELECT value FROM records').fetchall()
+    emit('normal', {'receipt': receipt, 'rows': stored})
+    assert receipt['status'] == 'COMMITTED' and len(stored) == 1
+
+
+@pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE'])
+def testSqlKeywordsInsideDefaultsDoNotChangeTableKind(tmp_path, literal):
+    path = tmp_path / 'keyword-default.sqlite3'
+    error = None
+    structure = None
+    try:
+        result = backend.initialize(path, 'records', [{'name': 'value', 'storageType': 'TEXT', 'default': literal}])
+        structure = result['structure']
+    except Exception as failure:
+        error = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+    with sqlite3.connect(path) as connection:
+        native = connection.execute('PRAGMA table_list').fetchall()
+        ddl = connection.execute("SELECT sql FROM sqlite_schema WHERE type='table' AND name='records'").fetchone()[0]
+    rows = [{'column': 'value', 'storageType': 'TEXT', 'source': {'kind': 'constant', 'value': 'real'}, 'missing': 'error'}]
+    receipt, _, _ = actualRun(path, None, rows=rows, policy='continue')
+    emit('schema-literal', {'literal': literal, 'initializeError': error, 'structure': structure, 'native': native, 'ddl': ddl, 'receipt': receipt})
+    assert error is None, 'ordinary table was created but initialization returned an error'
+    assert structure['columns'][0]['autoPrimaryKey'] is True, 'ordinary rowid table lost its automatic integer primary key'
+    assert receipt['status'] == 'COMMITTED'
+
+
+def testConfirmedCommitSurvivesConnectionCleanupFailure(tmp_path, monkeypatch):
+    path = makeDb(tmp_path / 'cleanup.sqlite3')
+    original = backend.OperationGuard.close
+    def failAfterActualCleanup(self):
+        original(self)
+        raise OSError('injected cleanup failure after actual connection close')
+    with monkeypatch.context() as patch:
+        patch.setattr(backend.OperationGuard, 'close', failAfterActualCleanup)
+        receipt, _, _ = actualRun(path, 'confirmed', policy='continue')
+    with sqlite3.connect(path) as connection:
+        rows = connection.execute('SELECT value, write_id FROM records').fetchall()
+    monitors = [t.name for t in threading.enumerate() if t.name == 'sqlite-interrupt']
+    emit('cleanup-after-commit', {'faultInjection': True, 'receipt': receipt, 'rows': rows, 'liveMonitors': monitors})
+    assert len(rows) == 1 and rows[0][1] == receipt['writeId'] and not monitors
+    assert receipt['status'] == 'COMMITTED' and receipt['rowsAffected'] == 1, 'confirmed stored row is falsely reported FAILED/0'
+
+
+def testBadUtf8BoundValueUsesWriterContinuePolicy(tmp_path):
+    value = {'text': '\ud800'}
+    # The same output passes the existing formal json-port validation when not bound.
+    bare = project(nodes=[])
+    runner = WorkflowRunner(WorkflowCompiler({}).compile(bare), {}, eventPublisher=lambda **_: None)
+    runner.run('main', {'value': value}, RunContext.root('control', 'main'), CancellationToken())
+    path = makeDb(tmp_path / 'unicode.sqlite3')
+    receipt = None
+    error = None
+    try:
+        receipt, _, _ = actualRun(path, value, policy='continue')
+    except Exception as failure:
+        error = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+    with sqlite3.connect(path) as connection:
+        count = connection.execute('SELECT count(*) FROM records').fetchone()[0]
+    emit('invalid-unicode-bound-json', {'unboundControl': 'PASS', 'failurePolicy': 'continue', 'receipt': receipt, 'error': error, 'rows': count})
+    assert error is None, 'conversion escaped at source collection, bypassing SQLite writer and its continue policy'
+    assert receipt['status'] == 'FAILED' and count == 0

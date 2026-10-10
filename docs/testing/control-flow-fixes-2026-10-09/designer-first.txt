@@ -1,0 +1,123 @@
+........................................................................ [  8%]
+........................................................................ [ 16%]
+........................................................................ [ 25%]
+..............................................................FF........ [ 33%]
+........................................................................ [ 42%]
+........................................................................ [ 50%]
+........................................................................ [ 58%]
+........................................................................ [ 67%]
+........................................................................ [ 75%]
+........................................................................ [ 84%]
+........................................................................ [ 92%]
+.................................F.............................          [100%]
+================================== FAILURES ===================================
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000014A18969450>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000014A18968EE0>
+
+    def testEditorUsesLateCatalogWithoutMutatingSavedGraph(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        assert window.loadProjectDirectory(str(EXAMPLE))
+        assert not window.pageCoordinator.session.dirty
+        window.activateWorkflow("body")
+        node = window.flowModel.nodes["load"]
+>       assert node.paramSchema == {}
+E       AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E         Left contains 3 more items:
+E         {'properties': {'colorMode': {'default': 'color',
+E                                       'enum': ['color', 'grayscale'],
+E                                       'title': '颜色模式',
+E                                       'type': 'string'},
+E                         'folderPath': {'default': '',...
+E
+E         ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests\designer\test_minimal_project_metadata.py:94: AssertionError
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000014A18968250>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000014A1730ADD0>
+
+    def testNormalizationPreservesSavedContractsAndOwnsFallbackSchema(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        manifest = json.loads((EXAMPLE.parents[2] / (
+            "src/emo_master/plugins/builtins/image_batch_loader/manifest.json"
+        )).read_text(encoding="utf-8"))
+        _catalog(window, [SimpleNamespace(**manifest)])
+        payload = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+        original = deepcopy(payload)
+        resolved = window.pageCoordinator.normalizeDraft(payload)
+        hydrated = resolved["workflows"]["body"]["nodes"][1]
+>       hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E       KeyError: 'folderPath'
+
+tests\designer\test_minimal_project_metadata.py:125: KeyError
+_________ testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts __________
+
+ownedFlowScene = <tests.qt_scene_owner.OwnedFlowScenes object at 0x0000014A1936E650>
+
+    def testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts(ownedFlowScene) -> None:
+        payload = _payload()
+        payload["schemaVersion"] = "2.1"
+        payload["workflows"]["main"]["nodes"].extend(
+            [
+                {
+                    "nodeId": "repeat",
+                    "kind": "loop",
+                    "inputPorts": {"value": "json"},
+                    "outputPorts": {"result": "json"},
+                    "loop": {
+                        "contractVersion": 2,
+                        "mode": "repeat",
+                        "bodyWorkflowId": "body",
+                        "repeatCount": 1,
+                        "maxIterations": 1,
+                        "timeoutMs": 0,
+                    },
+                },
+                {
+                    "nodeId": "foreach",
+                    "kind": "loop",
+                    "inputPorts": {"items": "list<json>"},
+                    "outputPorts": {"result": "list<json>"},
+                    "loop": {
+                        "contractVersion": 2,
+                        "mode": "foreach",
+                        "bodyWorkflowId": "body",
+                        "itemInputPort": "value",
+                        "maxIterations": 10,
+                        "timeoutMs": 0,
+                    },
+                },
+            ]
+        )
+        store = WorkflowStore(payload)
+        model = FlowGraphModel()
+        controller = WorkflowController(store, model, ownedFlowScene())
+        controller.loadPayload(payload)
+
+        report = controller.setWorkflowInterface(
+            "body",
+            {"image": "image"},
+            {"edges": "image"},
+        )
+
+        assert model.nodes["repeat"].inputPorts == {"image": "image"}
+        assert model.nodes["repeat"].outputPorts == {"edges": "image"}
+>       assert model.nodes["foreach"].inputPorts == {"items": "list<image>"}
+E       AssertionError: assert {'items': 'li...age': 'image'} == {'items': 'list<image>'}
+E
+E         Differing items:
+E         {'items': 'list<any>'} != {'items': 'list<image>'}
+E         Left contains 1 more item:
+E         {'image': 'image'}
+E         Use -v to get more diff
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_workflow_store.py:241: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+FAILED tests/designer/test_workflow_store.py::testWorkflowInterfaceRefreshesRepeatAndForEachDerivedPorts
+3 failed, 852 passed in 112.55s (0:01:52)

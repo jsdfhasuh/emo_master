@@ -1,0 +1,22 @@
+..................................................................s..... [ 17%]
+........................................................................ [ 34%]
+........................................................................ [ 51%]
+........................................................................ [ 69%]
+........................................................................ [ 86%]
+.....F...................................................                [100%]
+================================== FAILURES ===================================
+__________________ testFutureProjectSchemaVersionIsRejected ___________________
+
+    def testFutureProjectSchemaVersionIsRejected() -> None:
+        payload = _v2_project()
+        payload["schemaVersion"] = "2.2"
+    
+>       with pytest.raises(ValueError, match="unsupported project schemaVersion"):
+E       AssertionError: Regex pattern did not match.
+E         Expected regex: 'unsupported project schemaVersion'
+E         Actual message: "1 validation error for ProjectDocument\n  Value error, project 2.2 requires presentation and resources [type=value_error, input_value={'schemaVersion': '2.2', ...ices': {'bindings': {}}}, input_type=dict]\n    For further information visit https://errors.pydantic.dev/2.13/v/value_error"
+
+tests\runtime\test_runtime_workflow_architecture.py:157: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\core\plugin\test_icon_resources.py:73: symlinks unavailable in this environment
+1 failed, 415 passed, 1 skipped in 43.72s

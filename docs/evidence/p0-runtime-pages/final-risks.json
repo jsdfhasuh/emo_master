@@ -1,0 +1,304 @@
+{
+  "head": "d96911b420380d9514393046b423993038b1a61d",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "os": "Windows-10-10.0.26200-SP0",
+  "processor": "Intel64 Family 6 Model 151 Stepping 2, GenuineIntel",
+  "versions": {
+    "PySide2": "5.15.2.1",
+    "grpcio": "1.78.0",
+    "grpcio-tools": "1.78.0",
+    "protobuf": "6.33.6",
+    "numpy": "1.26.4",
+    "opencv-python": "4.10.0.84",
+    "pydantic": "2.13.5",
+    "pytest": "9.1.1",
+    "ruff": "0.15.6",
+    "mypy": "2.3.1"
+  },
+  "exports": {
+    "execution": "PASS",
+    "evidence": {
+      "rows": [
+        {
+          "mode": "hang",
+          "elapsed_ms": 525.351099902764,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "hang",
+          "elapsed_ms": 533.4896000567824,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "hang",
+          "elapsed_ms": 526.8409999553114,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        },
+        {
+          "mode": "ipc",
+          "elapsed_ms": 15.506899915635586,
+          "started": true,
+          "status": "UNAVAILABLE",
+          "memory_after": 0
+        }
+      ],
+      "peak_reserved_bytes": 74649600,
+      "clock_samples": [
+        [
+          594708398247000,
+          594709057697800,
+          594709057827200
+        ],
+        [
+          594709057968200,
+          594709696988700,
+          594709697086800
+        ],
+        [
+          594710246781800,
+          594710925778000,
+          594710925890100
+        ],
+        [
+          594711484836600,
+          594712153808300,
+          594712153918000
+        ],
+        [
+          594712706690500,
+          594713380948600,
+          594713381104800
+        ],
+        [
+          594713426400000,
+          594714090368800,
+          594714090583900
+        ],
+        [
+          594714647688700,
+          594715339840500,
+          594715339936800
+        ],
+        [
+          594715340076300,
+          594716055425500,
+          594716055697400
+        ]
+      ],
+      "children_after": 0,
+      "staging_files_after": 0,
+      "quota_rejected": true
+    },
+    "stderr": ""
+  },
+  "network": {
+    "execution": "PASS",
+    "evidence": {
+      "rows": [
+        {
+          "phase": "C1",
+          "start_reply_ms": 35.4089,
+          "start_running_ms": 934.9353
+        },
+        {
+          "phase": "C1",
+          "get_status_ms": [
+            1.8848,
+            1.2459,
+            4.5306,
+            1.3497,
+            1.3579,
+            1.3095,
+            1.3478,
+            1.2382,
+            4.6892,
+            1.4769,
+            1.3015,
+            1.3455,
+            1.7427,
+            1.6779,
+            1.2877,
+            1.0692,
+            1.0808,
+            1.1723,
+            1.3404,
+            1.2253
+          ],
+          "active": {
+            "control": 0,
+            "events": 1,
+            "display": 1,
+            "preview": 0,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C2",
+          "get_status_ms": [
+            2.0042,
+            1.308,
+            1.265,
+            1.2914,
+            1.3824,
+            4.1461,
+            1.282,
+            1.2427,
+            1.2024,
+            1.2293,
+            1.5774,
+            0.8484,
+            3.0157,
+            0.7061,
+            0.7352,
+            0.9443,
+            1.1779,
+            0.9858,
+            0.7376,
+            0.6531
+          ],
+          "active": {
+            "control": 0,
+            "events": 1,
+            "display": 1,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C3",
+          "get_status_ms": [
+            1.1629,
+            1.0419,
+            1.0843,
+            0.8148,
+            0.9459,
+            3.3322,
+            0.7319,
+            0.8548,
+            1.5097,
+            1.8219,
+            0.7083,
+            0.615,
+            0.6723,
+            0.72,
+            0.7515,
+            0.6385,
+            0.6959,
+            0.6819,
+            0.6641,
+            0.8398
+          ],
+          "active": {
+            "control": 0,
+            "events": 1,
+            "display": 2,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "C4",
+          "start_reply_ms": 45.798,
+          "start_running_ms": 904.6853
+        },
+        {
+          "phase": "C4",
+          "get_status_ms": [
+            8.1593,
+            6.5897,
+            2.8555,
+            2.4331,
+            3.0791,
+            2.7047,
+            5.2438,
+            1.5123,
+            1.4427,
+            1.2608,
+            1.2325,
+            1.4342,
+            1.3767,
+            4.2395,
+            1.5049,
+            1.1571,
+            1.2011,
+            1.6434,
+            1.8617,
+            2.2252
+          ],
+          "active": {
+            "control": 0,
+            "events": 2,
+            "display": 2,
+            "preview": 1,
+            "asset": 0,
+            "bulk": 0
+          }
+        },
+        {
+          "phase": "export-hang-with-C4",
+          "two_status_rtt_ms": 2.3293,
+          "jobs_still_running": 2,
+          "export_memory_after": 0
+        },
+        {
+          "phase": "C4",
+          "stop_accept_ms": 0.4085,
+          "stop_reply_ms": 71.3553,
+          "stop_terminal_ms": 71.38
+        },
+        {
+          "phase": "C4",
+          "stop_accept_ms": 0.5666,
+          "stop_reply_ms": 54.0858,
+          "stop_terminal_ms": 54.1098
+        }
+      ],
+      "peak": {
+        "control": 1,
+        "events": 2,
+        "display": 2,
+        "preview": 1,
+        "asset": 0,
+        "bulk": 1
+      },
+      "spawn_jobs": 2,
+      "network_order_cases": 18,
+      "original_server_idle_status_ms": [
+        4.3331,
+        3.5074,
+        3.5319,
+        3.0221,
+        3.0801,
+        2.954,
+        3.0316,
+        3.9731,
+        3.2127,
+        3.0469,
+        3.3227,
+        3.4439,
+        3.541,
+        3.6849,
+        3.4632,
+        3.2148,
+        3.7965,
+        3.2385,
+        3.0603,
+        3.4338
+      ],
+      "supervisor_incomplete_scopes": 4,
+      "quota_rejected": true,
+      "simulated_preview": "640x480 JPEG, 10 fps, no hardware"
+    },
+    "stderr": ""
+  }
+}

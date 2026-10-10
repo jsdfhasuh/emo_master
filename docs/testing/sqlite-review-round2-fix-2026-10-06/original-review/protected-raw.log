@@ -1,0 +1,32 @@
+REVIEW_EVIDENCE {"probe": "protected-prepare", "mode": "debug", "dbPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro0\\debug\\control-state.sqlite3", "managementAccepted": false, "managementCode": "E_SQLITE_TARGET", "normalAccepted": false, "normalMessage": "\u4e0d\u80fd\u4f7f\u7528 Runtime \u5185\u90e8\u5e93\u3001\u7f13\u5b58\u6216\u4efb\u52a1\u4e34\u65f6\u76ee\u5f55", "loaded": true, "prepareAccepted": false, "prepareError": {"type": "FileNotFoundError", "code": "", "message": "[WinError 206] \u6587\u4ef6\u540d\u6216\u6269\u5c55\u540d\u592a\u957f\u3002: 'D:\\\\jsdfhasuh\\\\documents\\\\emo-master-backups\\\\sqlite-review-round2-20261005-231441-0683317\\\\protected-temp\\\\testPreparedPathRejectsSamePro0\\\\debug\\\\jobs-presentation\\\\bdb6ca30d14e260cfc8ea30c3592d0ad\\\\debug\\\\c6f4a4f0-be5b-4c45-8d06-4f05eb3d0809\\\\business-sqlite'"}, "runtimeInternalRows": [], "frozenRows": []}
+.REVIEW_EVIDENCE {"probe": "protected-prepare", "mode": "release", "dbPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro1\\release\\control-state.sqlite3", "managementAccepted": false, "managementCode": "E_SQLITE_TARGET", "normalAccepted": false, "normalMessage": "\u4e0d\u80fd\u4f7f\u7528 Runtime \u5185\u90e8\u5e93\u3001\u7f13\u5b58\u6216\u4efb\u52a1\u4e34\u65f6\u76ee\u5f55", "loaded": true, "prepareAccepted": true, "prepareError": null, "frozenWriterTarget": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro1\\release\\control-state.sqlite3", "jobId": "1b4eef48-3e5f-4741-b12f-50e6839ac3a0", "jobStatus": "COMPLETED", "receipt": {"writeId": "f4979d6f-598b-4e28-abfb-430d001b9b87", "status": "COMMITTED", "rowsAffected": 1, "primaryKey": null, "execution": {"jobId": "1b4eef48-3e5f-4741-b12f-50e6839ac3a0", "projectId": "sqlite-test", "workflowId": "main", "workflowRunId": "4ef56f68-e02c-4e68-ae78-61afb94d48f8", "nodeId": "writer", "nodeRunId": "b882aee7-9a67-45f0-ab49-bde7bb7d228d", "iterationPath": []}, "elapsedMs": 155.9999999590218, "error": null}, "runtimeInternalRows": [["review-owned", "probe", 123]], "frozenRows": [["review-owned", "probe", 123]]}
+F
+================================== FAILURES ===================================
+______ testPreparedPathRejectsSameProtectedTargetAsNormalStart[release] _______
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/protected-temp/testPreparedPathRejectsSamePro1')
+mode = 'release'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedPathRejectsSameProtectedTargetAsNormalStart(tmp_path, mode):
+        context = multiprocessing.get_context('spawn')
+        receive, send = context.Pipe(duplex=False)
+        process = context.Process(target=protectedProbe, args=(str(tmp_path / mode), mode, send))
+        process.start()
+        send.close()
+        try:
+            assert receive.poll(25), 'outer watchdog; final terminate/kill/join still required'
+            result = receive.recv()
+            process.join(5)
+            print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'protected-prepare', **result}, ensure_ascii=True))
+            assert not process.is_alive() and process.exitcode == 0
+            assert 'probeError' not in result
+            assert result['managementAccepted'] is False and result['normalAccepted'] is False
+>           assert result['prepareAccepted'] is False, 'formal prepared path bypassed Runtime state-file protection'
+E           AssertionError: formal prepared path bypassed Runtime state-file protection
+E           assert True is False
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py:107: AssertionError
+=========================== short test summary info ===========================
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py::testPreparedPathRejectsSameProtectedTargetAsNormalStart[release]
+1 failed, 1 passed in 8.13s

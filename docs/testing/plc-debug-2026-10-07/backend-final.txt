@@ -1,0 +1,890 @@
+........................................................................ [ 14%]
+........................................................................ [ 29%]
+........................................................................ [ 44%]
+........................................................................ [ 59%]
+........................................................................ [ 74%]
+.....................................................................EEE [ 89%]
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE......E.....                     [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of test_public_job_record_admission_blocks_debug_for_any_active_job[foreign-project-STOPPING] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_public_job_record_admissi7')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_public_job_records_do_not_block_debug[COMPLETED] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_public_job_recor0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_public_job_records_do_not_block_debug[FAILED] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_public_job_recor1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_public_job_records_do_not_block_debug[ABORTED] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_public_job_recor2')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_handles] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_bridges] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_finalizations] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir2')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_recoveries] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir3')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_retirements] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir4')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_handles] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir5')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_bridges] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir6')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_finalizations] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir7')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_recoveries] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir8')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_retirements] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_terminal_job_with_unretir9')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_service_not_loaded_and_closing_do_not_reserve_a_socket _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_service_not_loaded_and_cl0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_service_same_endpoint_rejected_and_released_by_project_reload[INPROCESS] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_service_same_endpoint_rej0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_service_same_endpoint_rejected_and_released_by_project_reload[GRPC_AIO] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_service_same_endpoint_rej1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_start_job_closes_all_debug_sessions_before_job_creation_and_process_admission _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_start_job_closes_all_debu0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+____ ERROR at setup of test_start_job_release_failure_refuses_job_creation ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_start_job_release_failure0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_presentation_start_closes_debug_before_public_job_admission _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_presentation_start_closes0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_presentation_start_release_failure_refuses_any_job_admission _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_presentation_start_releas0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_invalid_presentation_prepared_id_preserves_healthy_debug_session[INPROCESS] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_invalid_presentation_prep0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_invalid_presentation_prepared_id_preserves_healthy_debug_session[GRPC_AIO] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_invalid_presentation_prep1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-open] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-read] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-write] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation2')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-open] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation3')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-read] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation4')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-write] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation5')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_closes_real_loopback_socket_without_retry[INPROCESS-read] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation6')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_closes_real_loopback_socket_without_retry[INPROCESS-write] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation7')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_closes_real_loopback_socket_without_retry[GRPC_AIO-read] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation8')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_client_event_cancellation_closes_real_loopback_socket_without_retry[GRPC_AIO-write] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_client_event_cancellation9')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_cancelled_embedded_write_during_readback_preserves_confirmed_reply _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_cancelled_embedded_write_0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_precancelled_client_write_never_dispatches_and_reports_plc_cancelled[INPROCESS] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_precancelled_client_write0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_precancelled_client_write_never_dispatches_and_reports_plc_cancelled[GRPC_AIO] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_precancelled_client_write1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_real_aio_rpc_cancellation_and_deadline_retire_data_quota_and_socket[cancel] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_real_aio_rpc_cancellation0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_real_aio_rpc_cancellation_and_deadline_retire_data_quota_and_socket[deadline] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_real_aio_rpc_cancellation1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_real_aio_control_remains_responsive_when_all_plc_data_slots_are_blocked[page-lock] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_real_aio_control_remains_0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_real_aio_control_remains_responsive_when_all_plc_data_slots_are_blocked[close] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_real_aio_control_remains_1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_runtime_client_close_cancels_blocked_data_owner[INPROCESS] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_runtime_client_close_canc0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_runtime_client_close_cancels_blocked_data_owner[GRPC_AIO] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_runtime_client_close_canc1')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_service_open_connect_does_not_hold_project_or_job_admission_locks _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_service_open_connect_does0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+_ ERROR at setup of test_real_aio_old_runtime_unimplemented_maps_to_unsupported_even_for_write _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1154/test_real_aio_old_runtime_unim0')
+
+    @pytest.fixture
+    def runtime(tmp_path):
+        service = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "jobs")
+        try:
+            directory = tmp_path / "project"
+            directory.mkdir()
+            document = plcProject(10001)
+            (directory / "project.json").write_text(document.model_dump_json(), encoding="utf-8")
+            loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(directory)), None)
+>           assert loaded.ok, loaded.message
+E           AssertionError: operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: communication.plc.slmp_read; operator is not registered: communication.plc.slmp_write; operator is not registered: vision.compare.number"\n.ok
+
+tests\runtime\test_plc_debug.py:1467: AssertionError
+=========================== short test summary info ===========================
+ERROR tests/runtime/test_plc_debug.py::test_public_job_record_admission_blocks_debug_for_any_active_job[foreign-project-STOPPING]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_public_job_records_do_not_block_debug[COMPLETED]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_public_job_records_do_not_block_debug[FAILED]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_public_job_records_do_not_block_debug[ABORTED]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_handles]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_bridges]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_finalizations]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_recoveries]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[INPROCESS-_retirements]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_handles]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_bridges]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_finalizations]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_recoveries]
+ERROR tests/runtime/test_plc_debug.py::test_terminal_job_with_unretired_worker_resources_refuses_debug_open[GRPC_AIO-_retirements]
+ERROR tests/runtime/test_plc_debug.py::test_service_not_loaded_and_closing_do_not_reserve_a_socket
+ERROR tests/runtime/test_plc_debug.py::test_service_same_endpoint_rejected_and_released_by_project_reload[INPROCESS]
+ERROR tests/runtime/test_plc_debug.py::test_service_same_endpoint_rejected_and_released_by_project_reload[GRPC_AIO]
+ERROR tests/runtime/test_plc_debug.py::test_start_job_closes_all_debug_sessions_before_job_creation_and_process_admission
+ERROR tests/runtime/test_plc_debug.py::test_start_job_release_failure_refuses_job_creation
+ERROR tests/runtime/test_plc_debug.py::test_presentation_start_closes_debug_before_public_job_admission
+ERROR tests/runtime/test_plc_debug.py::test_presentation_start_release_failure_refuses_any_job_admission
+ERROR tests/runtime/test_plc_debug.py::test_invalid_presentation_prepared_id_preserves_healthy_debug_session[INPROCESS]
+ERROR tests/runtime/test_plc_debug.py::test_invalid_presentation_prepared_id_preserves_healthy_debug_session[GRPC_AIO]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-open]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-read]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[INPROCESS-write]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-open]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-read]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_interrupts_fake_connect_and_data_owners[GRPC_AIO-write]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_closes_real_loopback_socket_without_retry[INPROCESS-read]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_closes_real_loopback_socket_without_retry[INPROCESS-write]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_closes_real_loopback_socket_without_retry[GRPC_AIO-read]
+ERROR tests/runtime/test_plc_debug.py::test_client_event_cancellation_closes_real_loopback_socket_without_retry[GRPC_AIO-write]
+ERROR tests/runtime/test_plc_debug.py::test_cancelled_embedded_write_during_readback_preserves_confirmed_reply
+ERROR tests/runtime/test_plc_debug.py::test_precancelled_client_write_never_dispatches_and_reports_plc_cancelled[INPROCESS]
+ERROR tests/runtime/test_plc_debug.py::test_precancelled_client_write_never_dispatches_and_reports_plc_cancelled[GRPC_AIO]
+ERROR tests/runtime/test_plc_debug.py::test_real_aio_rpc_cancellation_and_deadline_retire_data_quota_and_socket[cancel]
+ERROR tests/runtime/test_plc_debug.py::test_real_aio_rpc_cancellation_and_deadline_retire_data_quota_and_socket[deadline]
+ERROR tests/runtime/test_plc_debug.py::test_real_aio_control_remains_responsive_when_all_plc_data_slots_are_blocked[page-lock]
+ERROR tests/runtime/test_plc_debug.py::test_real_aio_control_remains_responsive_when_all_plc_data_slots_are_blocked[close]
+ERROR tests/runtime/test_plc_debug.py::test_runtime_client_close_cancels_blocked_data_owner[INPROCESS]
+ERROR tests/runtime/test_plc_debug.py::test_runtime_client_close_cancels_blocked_data_owner[GRPC_AIO]
+ERROR tests/runtime/test_plc_debug.py::test_service_open_connect_does_not_hold_project_or_job_admission_locks
+ERROR tests/runtime/test_plc_debug.py::test_real_aio_old_runtime_unimplemented_maps_to_unsupported_even_for_write
+440 passed, 44 errors in 32.08s

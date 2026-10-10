@@ -1,0 +1,7 @@
+PASS 0
+PASS 1
+{"attempt": 1, "elapsed": 0.15600000000267755, "resetting": false, "closedAck": true, "state": "CLOSING", "code": "", "workerHeld": true}
+{"attempt": 2, "elapsed": 0.15600000000267755, "resetting": true, "closedAck": true, "state": "FAULTED", "code": "", "workerHeld": false}
+FAIL 2 debug state did not settle
+{"sessionId": "f42038e443b0450a95688fa9c10fa0af", "generation": 1, "state": "FAULTED", "resourcesHeld": false, "activeExecutionId": "", "code": "", "message": "", "lastSequence": 10, "draftDigest": "a38803097f30ff6177a16d1d7930ef69e0504330cb44abe622601622f4e3d782", "operatorId": "test.probe", "ttlMs": 44219, "forced": true, "closedAck": true}
+{"attempt": 3, "elapsed": 0.1559999999954016, "resetting": true, "closedAck": true, "state": "RESETTING", "code": "", "workerHeld": true}

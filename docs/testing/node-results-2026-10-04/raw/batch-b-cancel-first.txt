@@ -1,0 +1,134 @@
+...FFF                                                                   [100%]
+================================== FAILURES ===================================
+_____ testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly[graceful] _____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealCancelAndStrongKillKee0')
+mode = 'graceful'
+
+    @pytest.mark.parametrize('mode', ['graceful', 'force'])
+    def testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly(tmp_path, mode):
+        def configure(document, root):
+            from emo_master.core.project.models import NodeConfig, EdgeConfig
+            document.workflows['main'].nodes.append(NodeConfig(nodeId='gate', operatorId='test.inspection',
+                inputPorts={'index': 'integer'}, outputPorts={'image': 'image'},
+                params={'block': True, 'cooperative': mode == 'graceful'}))
+            document.workflows['main'].edges.append(EdgeConfig(fromNode='count', fromPort='count', toNode='gate', toPort='index'))
+>       with running(tmp_path, configure=configure) as (runtime, client, project, session):
+
+tests\runtime\test_run_inspection_rpc.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py:135: in __enter__
+    return next(self.gen)
+tests\runtime\test_run_inspection_rpc.py:34: in running
+    configure(document, root)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+document = ProjectDocument(schemaVersion='2.1', project=ProjectMetadata(projectId='flow-inspection-local-fixture', name='流程运行检查 ·...dependencies=ProjectDependencies(operators=[]), devices=ProjectDevices(bindings={}), presentation=None, resources=None)
+root = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealCancelAndStrongKillKee0')
+
+    def configure(document, root):
+>       from emo_master.core.project.models import NodeConfig, EdgeConfig
+E       ImportError: cannot import name 'NodeConfig' from 'emo_master.core.project.models' (D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\project\models.py)
+
+tests\runtime\test_run_inspection_rpc.py:147: ImportError
+______ testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly[force] _______
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealCancelAndStrongKillKee1')
+mode = 'force'
+
+    @pytest.mark.parametrize('mode', ['graceful', 'force'])
+    def testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly(tmp_path, mode):
+        def configure(document, root):
+            from emo_master.core.project.models import NodeConfig, EdgeConfig
+            document.workflows['main'].nodes.append(NodeConfig(nodeId='gate', operatorId='test.inspection',
+                inputPorts={'index': 'integer'}, outputPorts={'image': 'image'},
+                params={'block': True, 'cooperative': mode == 'graceful'}))
+            document.workflows['main'].edges.append(EdgeConfig(fromNode='count', fromPort='count', toNode='gate', toPort='index'))
+>       with running(tmp_path, configure=configure) as (runtime, client, project, session):
+
+tests\runtime\test_run_inspection_rpc.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py:135: in __enter__
+    return next(self.gen)
+tests\runtime\test_run_inspection_rpc.py:34: in running
+    configure(document, root)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+document = ProjectDocument(schemaVersion='2.1', project=ProjectMetadata(projectId='flow-inspection-local-fixture', name='流程运行检查 ·...dependencies=ProjectDependencies(operators=[]), devices=ProjectDevices(bindings={}), presentation=None, resources=None)
+root = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealCancelAndStrongKillKee1')
+
+    def configure(document, root):
+>       from emo_master.core.project.models import NodeConfig, EdgeConfig
+E       ImportError: cannot import name 'NodeConfig' from 'emo_master.core.project.models' (D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\project\models.py)
+
+tests\runtime\test_run_inspection_rpc.py:147: ImportError
+________ testRealLoopLastFailureCannotDisplayEarlierIterationSnapshot _________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealLoopLastFailureCannotD0')
+
+    def testRealLoopLastFailureCannotDisplayEarlierIterationSnapshot(tmp_path):
+        def configure(document, root):
+            from emo_master.core.project.models import WorkflowDefinition
+            body = WorkflowDefinition.model_validate({'name': '受控循环体', 'inputs': {'index': 'integer'},
+                'outputs': {'image': 'image'}, 'nodes': [{'nodeId': 'input', 'kind': 'workflow_input'},
+                    {'nodeId': 'image', 'operatorId': 'test.inspection', 'inputPorts': {'index': 'integer'},
+                     'outputPorts': {'image': 'image'}, 'params': {'failIndex': 1}},
+                    {'nodeId': 'output', 'kind': 'workflow_output'}], 'edges': [
+                    {'fromNode': 'input', 'fromPort': 'index', 'toNode': 'image', 'toPort': 'index'},
+                    {'fromNode': 'image', 'fromPort': 'image', 'toNode': 'output', 'toPort': 'image'}]})
+            main = WorkflowDefinition.model_validate({'name': '循环最后失败', 'inputs': {'items': 'list<integer>'},
+                'nodes': [{'nodeId': 'input', 'kind': 'workflow_input'},
+                    {'nodeId': 'loop', 'kind': 'loop', 'inputPorts': {'items': 'list<integer>'},
+                     'outputPorts': {'image': 'list<image>'}, 'loop': {'contractVersion': 2, 'mode': 'foreach',
+                        'bodyWorkflowId': 'body', 'itemInputPort': 'index', 'maxIterations': 2}},
+                    {'nodeId': 'output', 'kind': 'workflow_output'}], 'edges': [
+                    {'fromNode': 'input', 'fromPort': 'items', 'toNode': 'loop', 'toPort': 'items'}]})
+            document.workflows = {'main': main, 'body': body}
+            document.workflowOrder = ['main', 'body']
+>       with running(tmp_path, configure=configure) as (runtime, client, project, session):
+
+tests\runtime\test_run_inspection_rpc.py:194: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py:135: in __enter__
+    return next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+root = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealLoopLastFailureCannotD0')
+configure = <function testRealLoopLastFailureCannotDisplayEarlierIterationSnapshot.<locals>.configure at 0x0000014CF6E10550>
+
+    @contextmanager
+    def running(root, *, configure=None):
+        project = root / '本地 图片'
+        document = sampleProject(project)
+        plugin = root / 'controlled-plugin'
+        plugin.mkdir()
+        (plugin / 'manifest.json').write_text(json.dumps({'operatorId': 'test.inspection', 'displayName': '受控测试',
+            'version': '1.0.0', 'entry': 'tests.runtime.inspection_test_operator:InspectionTestOperator',
+            'inputPorts': {'index': {'type': 'integer', 'required': False}}, 'outputPorts': {'image': 'image'},
+            'paramSchema': {'type': 'object'}, 'minCoreVersion': '0.1.0', 'maxCoreVersion': '1.x'}), encoding='utf-8')
+        if configure:
+            configure(document, root)
+        saveProject(project, document.model_dump())
+        from pathlib import Path
+        builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
+        runtime = RuntimeService(dbPath=root / 'temporary.sqlite3', workspaceRoot=root / 'jobs', logDirectory=root / 'logs',
+                                 pluginRootPaths=(str(builtins), str(plugin)))
+        display = PresentationService(runtime, root / 'display')
+        server = AioRuntimeServer(runtime, display)
+        connection = grpc.insecure_channel(f'127.0.0.1:{server.port}')
+        client = RuntimeClient(rpc.RuntimeServiceStub(connection), ownedChannel=connection,
+                               runtimeTarget=f'127.0.0.1:{server.port}')
+        try:
+>           assert client.loadProject(str(project)).ok
+E           assert False
+E            +  where False = status: "FAILED"\nmessage: "operator is not registered: test.inspection"\n.ok
+E            +    where status: "FAILED"\nmessage: "operator is not registered: test.inspection"\n = loadProject('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-885\\testRealLoopLastFailureCannotD0\\本地 图片')
+E            +      where loadProject = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000014C9F904610>.loadProject
+E            +      and   'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-885\\testRealLoopLastFailureCannotD0\\本地 图片' = str(WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-885/testRealLoopLastFailureCannotD0/本地 图片'))
+
+tests\runtime\test_run_inspection_rpc.py:46: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_run_inspection_rpc.py::testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly[graceful]
+FAILED tests/runtime/test_run_inspection_rpc.py::testRealCancelAndStrongKillKeepCommittedPrecedingNodeOnly[force]
+FAILED tests/runtime/test_run_inspection_rpc.py::testRealLoopLastFailureCannotDisplayEarlierIterationSnapshot
+3 failed, 3 passed in 6.13s

@@ -1,0 +1,87 @@
+"""Real loopback/spawn check of source-conversion failure with continue policy."""
+from pathlib import Path
+import json
+import multiprocessing
+import sqlite3
+import sys
+import tempfile
+import traceback
+
+import grpc
+
+REPO = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / 'src'))
+
+
+def boundEncodingProbe(directory, sender):
+    from emo_master.apps.runtime.grpc_server.service import RuntimeService
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
+    from emo_master.apps.runtime.main import createRuntimeServer
+    from tests.sqlite_writer.test_backend import makeDb
+    from tests.sqlite_writer.test_dependencies import project
+    from tests.runtime.runtime_test_utils import waitForTerminal
+    root = Path(directory)
+    business = makeDb(root / 'business.sqlite3')
+    payload = project()
+    payload['workflows']['main']['nodes'][0]['params'].update(databasePath=str(business), failurePolicy='continue')
+    (root / 'project.json').write_text(json.dumps(payload), encoding='utf-8')
+    service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs')
+    server = channel = None
+    try:
+        server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        stub = rpc.RuntimeServiceStub(channel)
+        assert stub.LoadProject(pb.LoadProjectRequest(project_path=str(root)), timeout=3).ok
+        started = stub.StartJob(pb.StartJobRequest(project_id='sqlite-test',
+            inputs_json=json.dumps({'value': {'text': '\ud800'}})), timeout=3)
+        assert started.ok, started.message
+        terminal = waitForTerminal(service, started.job_id, timeoutSeconds=12)
+        events = service.eventStore.readMerged(started.job_id)
+        with sqlite3.connect(business) as connection:
+            count = connection.execute('SELECT count(*) FROM records').fetchone()[0]
+        result = {'accepted': started.ok, 'jobId': started.job_id, 'jobStatus': terminal.status,
+            'nodeEvents': [{'eventType': e.eventType, 'nodeId': e.nodeId, 'code': e.code, 'message': e.message,
+                           'payload': json.loads(e.payloadJson)}
+                for e in events if e.eventType in {'node.started', 'node.completed', 'node.failed', 'workflow.failed', 'sqlite.write.finished'}],
+            'databaseRows': count, 'remainingPendingWrites': len(service.sqliteOutcomes.pending)}
+        sender.send(result)
+    except BaseException:
+        sender.send({'probeError': traceback.format_exc()})
+        raise
+    finally:
+        if channel is not None:
+            channel.close()
+        if server is not None:
+            server.stop(0).wait()
+        service.close()
+        assert not multiprocessing.active_children()
+        sender.close()
+
+
+def testBoundEncodingFailureStillRunsWriterContinuePolicy():
+    root = tempfile.mkdtemp(prefix='sqlite-r2-json-', dir='D:/')
+    context = multiprocessing.get_context('spawn')
+    receive, send = context.Pipe(duplex=False)
+    process = context.Process(target=boundEncodingProbe, args=(root, send))
+    process.start()
+    send.close()
+    try:
+        assert receive.poll(25), 'outer watchdog'
+        result = receive.recv()
+        process.join(5)
+        print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'bound-json-network', **result}, ensure_ascii=True))
+        assert not process.is_alive() and process.exitcode == 0 and 'probeError' not in result
+        assert result['jobStatus'] == 'COMPLETED', 'writer continue policy was bypassed'
+        assert any(e['eventType'] == 'sqlite.write.finished' and e['payload']['receipt']['status'] == 'FAILED' for e in result['nodeEvents'])
+    finally:
+        if process.is_alive():
+            process.terminate()
+            process.join(3)
+        if process.is_alive():
+            process.kill()
+            process.join(3)
+        receive.close()
+        process.close()

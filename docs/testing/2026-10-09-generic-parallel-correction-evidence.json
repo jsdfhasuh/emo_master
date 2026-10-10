@@ -1,0 +1,894 @@
+{
+  "schemaVersion": 1,
+  "createdAt": "2026-10-09T22:20:40.179792+08:00",
+  "cwd": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master",
+  "resolvedCwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "head": "61a42bf3ab181c3b2339f0425edfb40a60d0ec7b",
+  "scope": "Source-only generic parallel correction; dirty work preserved; no commit/push/package/deploy/real-device acceptance",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "validation": [
+    {
+      "name": "regression",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "15",
+        "skipped": "2",
+        "tests": "3427",
+        "time": "2130.791",
+        "timestamp": "2026-10-09T21:29:03.399628+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [
+        {
+          "classname": "tests.runtime.presentation.test_normal_capture",
+          "test": "testKnownRejectionAndCaptureQuotasDoNotExecute",
+          "message": "assert not True\n +  where True = ok: true\\njob_id: \"e63ac297-44ec-40aa-9c7e-ca2de27e037c\"\\nmessage: \"job accepted\"\\nstatus: \"ACCEPTED\"\\nruntime_instance_id...3a93ee-f2dd-4a69-a7c2-7d9bfc22ea30\"\\nstart_request_id: \"2d1dc792e30b478681c37295a4cb3cd1\"\\nlegacy_snapshot_policy: \"ALL\"\\n.ok\n +    where ok: true\\njob_id: \"e63ac297-44ec-40aa-9c7e-ca2de27e037c\"\\nmessage: \"job accepted\"\\nstatus: \"ACCEPTED\"\\nruntime_instance_id...3a93ee-f2dd-4a69-a7c2-7d9bfc22ea30\"\\nstart_request_id: \"2d1dc792e30b478681c3729"
+        },
+        {
+          "classname": "tests.runtime.test_heartbeat_liveness",
+          "test": "testFailedCellAllocationClosesExistingQueue",
+          "message": "TypeError: testFailedCellAllocationClosesExistingQueue.<locals>.FailingContext.Queue() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.runtime.test_heartbeat_liveness",
+          "test": "testSlowProcessStartPreservesExistingStartupDeadline",
+          "message": "TypeError: _FakeProcessContext.Queue() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.runtime.test_heartbeat_liveness",
+          "test": "testFailedStartRetainsCellOnlyWhileProcessStillAlive[False]",
+          "message": "TypeError: _FakeProcessContext.Queue() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.runtime.test_heartbeat_liveness",
+          "test": "testFailedStartRetainsCellOnlyWhileProcessStillAlive[True]",
+          "message": "TypeError: _FakeProcessContext.Queue() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.runtime.test_job_supervisor_contracts",
+          "test": "testSupervisorCleansUpProcessWhenBridgeStartupFails",
+          "message": "TypeError: _FakeProcessContext.Queue() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.runtime.test_job_supervisor_contracts",
+          "test": "testFailedStartDoesNotJoinLiveBridgeOrReleaseItsOwners",
+          "message": "TypeError: testFailedStartDoesNotJoinLiveBridgeOrReleaseItsOwners.<locals>.<lambda>() got an unexpected keyword argument 'maxsize'"
+        },
+        {
+          "classname": "tests.designer.test_designer_shortcuts",
+          "test": "testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5",
+          "message": "AssertionError: assert ['start'] == ['start', 'stop']\n  \n  Right contains one more item: 'stop'\n  Use -v to get more diff"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-480]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929C84380>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929C84380> = <PySide2.QtWidgets.QToolButton(0x1c930e05070, name=\"dangerButton\") at 0x000001C929C84380>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-640]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92DBDEEC0>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92DBDEEC0> = <PySide2.QtWidgets.QToolButton(0x1c92ac68f80, name=\"dangerButton\") at 0x000001C92DBDEEC0>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-800]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929E55580>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929E55580> = <PySide2.QtWidgets.QToolButton(0x1c92a3781d0, name=\"dangerButton\") at 0x000001C929E55580>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-900]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929925280>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C929925280> = <PySide2.QtWidgets.QToolButton(0x1c92fe65bb0, name=\"dangerButton\") at 0x000001C929925280>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-960]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92DBDC640>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92DBDC640> = <PySide2.QtWidgets.QToolButton(0x1c92afbf350, name=\"dangerButton\") at 0x000001C92DBDC640>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_toolbar_width",
+          "test": "testRunAndStopRemainVisibleAtSupportedWidths[True-1280]",
+          "message": "assert '运行' in '没有可停止的当前任务'\n +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92B552BC0>()\n +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001C92B552BC0> = <PySide2.QtWidgets.QToolButton(0x1c92fe6cac0, name=\"dangerButton\") at 0x000001C92B552BC0>.toolTip"
+        },
+        {
+          "classname": "tests.designer.test_visual_layout",
+          "test": "testToolbarAndMenuShareEnabledActions",
+          "message": "assert not True\n +  where True = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x000001C92DA5E700>()\n +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x000001C92DA5E700> = <PySide2.QtWidgets.QAction(0x1c930c363e0 text=\"��������\" toolTip=\"��������\" shortcut=QKeySequence(\"F5\") menuRole=TextHeuristicRole visible=true) at 0x000001C92DA5E700>.isEnabled"
+        }
+      ],
+      "skipped": [
+        {
+          "classname": "tests.core.plugin.test_icon_resources",
+          "test": "testSymlinkCannotEscapeRoot",
+          "message": "symlinks unavailable in this environment"
+        },
+        {
+          "classname": "tests.plugins.test_huaray_camera_smoke",
+          "test": "testRealHuarayCameraSmoke",
+          "message": "set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera"
+        }
+      ],
+      "xml": {
+        "path": "build/parallel_correction/regression.xml",
+        "bytes": 530232,
+        "sha256": "fb567d7b24a82fffa250fdedbdefab0f983616998c8049386866a565c71b15c5"
+      },
+      "log": {
+        "path": "build/parallel_correction/regression.log",
+        "bytes": 15116,
+        "sha256": "1804cc78b761f9a02fb5f6639af8d23a021ecc1026314cd69ba969b1d4318608"
+      }
+    },
+    {
+      "name": "final-regression",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "134",
+        "time": "315.501",
+        "timestamp": "2026-10-09T22:04:59.150195+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [],
+      "skipped": [],
+      "xml": {
+        "path": "build/parallel_correction/final-regression.xml",
+        "bytes": 18549,
+        "sha256": "f5542412cc21feb504e79912857a31bf0d03d8e2952920051eca3538ceb3ad06"
+      },
+      "log": {
+        "path": "build/parallel_correction/final-regression.log",
+        "bytes": 195,
+        "sha256": "92b350e2cb1cbd4f845163fd66183f21bf4ef33302aff617ccc48c6a13e67b2d"
+      }
+    },
+    {
+      "name": "compatibility",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "926",
+        "time": "287.845",
+        "timestamp": "2026-10-09T22:10:32.286674+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [
+        {
+          "classname": "tests.runtime.test_spawned_hardware_stations",
+          "test": "testNoTriggerStationDoesNotBlockOtherActualHardwareNormalJob",
+          "message": "AssertionError: production Runtime deadline"
+        }
+      ],
+      "skipped": [],
+      "xml": {
+        "path": "build/parallel_correction/compatibility.xml",
+        "bytes": 133018,
+        "sha256": "812022f8bc3e8b9573798c84358af4d15350fdef5ac24e660f37e6fb14d5b0d7"
+      },
+      "log": {
+        "path": "build/parallel_correction/compatibility.log",
+        "bytes": 1844,
+        "sha256": "4c744e1132d4ea80ffdc05ca1ee853075488d829cd4f0985d14194eacc6f31d6"
+      }
+    },
+    {
+      "name": "hardware-repeat-1",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "39.962",
+        "timestamp": "2026-10-09T22:16:28.548035+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [],
+      "skipped": [],
+      "xml": {
+        "path": "build/parallel_correction/hardware-repeat-1.xml",
+        "bytes": 400,
+        "sha256": "1b3d66feeb75d23b14837926d43b92c3f5e07d3d88e867dbe19e0bb324816708"
+      },
+      "log": {
+        "path": "build/parallel_correction/hardware-repeat-1.log",
+        "bytes": 101,
+        "sha256": "43933378d4afbc5cba1779b54ad4f59f9945ff86a0bd38a5734ee70931fa766d"
+      }
+    },
+    {
+      "name": "hardware-repeat-2",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "1",
+        "time": "41.978",
+        "timestamp": "2026-10-09T22:17:09.088101+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [],
+      "skipped": [],
+      "xml": {
+        "path": "build/parallel_correction/hardware-repeat-2.xml",
+        "bytes": 400,
+        "sha256": "1ad99fd258fa85f49302725fbabc667b67ee27020b2d940a17141dc07be81918"
+      },
+      "log": {
+        "path": "build/parallel_correction/hardware-repeat-2.log",
+        "bytes": 101,
+        "sha256": "19cb5cba31f7f566643a339a59929321d81b285fe65047feef0bbc245b1558ed"
+      }
+    },
+    {
+      "name": "hardware-final",
+      "summary": {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "9",
+        "time": "58.961",
+        "timestamp": "2026-10-09T22:18:38.268980+08:00",
+        "hostname": "视觉电脑"
+      },
+      "failures": [],
+      "skipped": [],
+      "xml": {
+        "path": "build/parallel_correction/hardware-final.xml",
+        "bytes": 1604,
+        "sha256": "4af0771cae574ca27588c0a28b40ea620f1b54a390f87a8d5297082da9868a0b"
+      },
+      "log": {
+        "path": "build/parallel_correction/hardware-final.log",
+        "bytes": 101,
+        "sha256": "32eaccc81be0d36a544524b88a090348c2c1214ab021b9792c198f26775b7c14"
+      }
+    }
+  ],
+  "checks": [
+    {
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "<all changed/new Python files>"
+      ],
+      "exitCode": 0,
+      "output": "All checks passed!\n"
+    },
+    {
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "compileall",
+        "-q",
+        "src/emo_master"
+      ],
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "exitCode": 0,
+      "output": ""
+    },
+    {
+      "command": [
+        "git",
+        "-c",
+        "core.safecrlf=false",
+        "diff",
+        "--check"
+      ],
+      "exitCode": 0,
+      "output": ""
+    }
+  ],
+  "pythonFileCount": 88,
+  "artifacts": [
+    {
+      "path": "build/parallel_correction/designer-parallel-preview.png",
+      "bytes": 84643,
+      "sha256": "f7efa4af2c654bff41237a371f11bb691d79c6d581385c554215fd49d17c4daf"
+    },
+    {
+      "path": "build/parallel_correction/run-targets-preview.png",
+      "bytes": 53221,
+      "sha256": "e2c9aad49e9d183cb459056ff72d079afaff43d9287e324240f7d9ddc642a08e"
+    },
+    {
+      "path": "build/parallel_correction/static-checks.json",
+      "bytes": 1065,
+      "sha256": "7adbaaa088e3a2ad7c2b908432cc2aa36d6940875ff34ba1007061428a60ae39"
+    },
+    {
+      "path": "build/parallel_correction/before-correction.zip",
+      "bytes": 342721,
+      "sha256": "1750be678d31774c1a3bd66f1ed051da5a12a9f7e576ff669ae99b5bfb0e134a"
+    }
+  ],
+  "files": [
+    {
+      "path": "docs/plans/2026-10-09-two-station-hardware-trigger-migration-v1.md",
+      "bytes": 49608,
+      "sha256": "e2102c0d32ab07b1ef8060bb2164ea9427d9423fec91b23a46c79632de527b4d"
+    },
+    {
+      "path": "docs/testing/2026-10-09-generic-parallel-correction.md",
+      "bytes": 11378,
+      "sha256": "8689a8072b99d556e54ddc4ec21c806794c4c3cec5eba344108dc11c1c12afbd"
+    },
+    {
+      "path": "docs/testing/2026-10-09-two-station-normal-path-evidence.json",
+      "bytes": 14034,
+      "sha256": "b013fc1908a84957cea6433d4687b6b068e5564d8c571f311011a4aad4834236"
+    },
+    {
+      "path": "docs/testing/2026-10-09-two-station-normal-path-implementation.md",
+      "bytes": 10500,
+      "sha256": "e25bb029da7ffbc564f184c10f1889cb16f190f3c7d5a62728a55f3e1bdc1049"
+    },
+    {
+      "path": "docs/testing/2026-10-09-two-station-production-m5-evidence.json",
+      "bytes": 44466,
+      "sha256": "d73c444673d2e016c687b77ed94370e89ace4eea818993bc5a8d1c560f971a86"
+    },
+    {
+      "path": "docs/testing/2026-10-09-two-station-production-m5-implementation.md",
+      "bytes": 16975,
+      "sha256": "e70b8ff33960a1e0aa8f7047dfd19f573ba81806819da75a803bbe1d482d6ba5"
+    },
+    {
+      "path": "examples/hardware_trigger_normal_fixture/README.md",
+      "bytes": 11649,
+      "sha256": "4ebf03850eb18a4a021ff8977b4773f0962d7415ea6782b4a4097d576bb648ce"
+    },
+    {
+      "path": "examples/hardware_trigger_normal_fixture/build_project.py",
+      "bytes": 15622,
+      "sha256": "7f6a5a86365f9c532a460a8039982f3e27c2e1b90aded11d4ce79f928a397498"
+    },
+    {
+      "path": "examples/hardware_trigger_normal_fixture/project.json",
+      "bytes": 289416,
+      "sha256": "49a92929f903602751fe990f2b833b2ecc52f0914fc2c83f95092bc7180dca52"
+    },
+    {
+      "path": "examples/hardware_trigger_normal_fixture/station1_reference.txt",
+      "bytes": 6,
+      "sha256": "8b3a3ad9552da324931fb27537e3151951d3641d00b8fb322de4a2b0580d353d"
+    },
+    {
+      "path": "examples/hardware_trigger_normal_fixture/station2_reference.txt",
+      "bytes": 7,
+      "sha256": "ba8132e61864fd1f96221f8c6da9ba553a3fb4f6852a4a8f9bf9080de9b18287"
+    },
+    {
+      "path": "examples/two_station_normal_path/project.json",
+      "bytes": 27739,
+      "sha256": "b3bb8727d7f7dc7dd56867c2e5bc31a05ed7255bf4aead1e1f19bef25d5f9196"
+    },
+    {
+      "path": "examples/two_station_normal_path/run_simulation.py",
+      "bytes": 4223,
+      "sha256": "29585798142f00861a885fe2009da5576c5b7fae38fe052be7c8f1542299a44a"
+    },
+    {
+      "path": "examples/two_station_normal_path/station1_reference.txt",
+      "bytes": 73,
+      "sha256": "25358f59c6d43212c3b3016f0311fcc35524969f48462a64c037bd3049b0f0bf"
+    },
+    {
+      "path": "examples/two_station_normal_path/station2_reference.txt",
+      "bytes": 73,
+      "sha256": "2a82f697aae5e4a30a62355ee7d76fdd9c9cfe247901717f45be55eb097ac2d1"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "bytes": 21249,
+      "sha256": "db37eeb204333f08a619b865f7724170d1f1645a8eb1f68b6f630b44867f1651"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/workflow_runtime_controller.py",
+      "bytes": 8605,
+      "sha256": "4d707029ec9b7dc9c64271a0666c58715345c0b8101aa4406c5763bfbb3c422e"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "bytes": 15081,
+      "sha256": "5bfac347e396238295c542c9f6d507fdc03d6ce0b437583af1c260d66f139a4f"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "bytes": 29763,
+      "sha256": "19f44dfd792b324706fe64445856822e503ca55697079707f5c4976dc8a80df3"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "bytes": 14053,
+      "sha256": "65066a3a39cc512e21716ac34da0eddf90017eb24b73a1a79fe2cfa17db69a1b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/global_variables_dialog.py",
+      "bytes": 19952,
+      "sha256": "adef19cee4b94ba23f7efaa35624dbfb416c70e4184a6572f5b5b6c7ccb5ee62"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "bytes": 198499,
+      "sha256": "0623eba617c7c832fd7a5929f5554d3edac9ccb2189052b3ef3a52d33f6538ae"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/node_result_coordinator.py",
+      "bytes": 12590,
+      "sha256": "4529e3e4de3075b393cf20735348d932786f90a27469feda96200754ed8af3d2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/param_form.py",
+      "bytes": 29681,
+      "sha256": "49dedca1547e88d47a7bbbbad4e97e8b74c7861ceb5f46740967cf147334dd1b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/runtime_panel.py",
+      "bytes": 6501,
+      "sha256": "60406a6ef0bb124eae6b03404095fbece226e642dd8594e91fb034c7cf34e4a2"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/controller.py",
+      "bytes": 16132,
+      "sha256": "c1a055d5bee343ee8ff7ea0848512e2d6c8ad9d257b9d0d36ae19b96221843f3"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/main.py",
+      "bytes": 22413,
+      "sha256": "727cce5df26f212989238b93d6d780ba5217b451cf7c273933dfec474f0417aa"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/context/coordinate_snapshots.py",
+      "bytes": 3656,
+      "sha256": "608b4c0d40adddd39e093630f94881fa05408a154f464cafe20cb375b00c55f4"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/context/global_variables.py",
+      "bytes": 12415,
+      "sha256": "dbfb29eee59d1aced66990f733d54e222ec802200fb4157c60e8760fcba1e899"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "bytes": 89792,
+      "sha256": "996700a6b418dd4d32a1c642ecb29be5e892f00b66a4c8f585890231aea0cf0a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+      "bytes": 51887,
+      "sha256": "dd039dc8b2f4956ab68a77efb6b086c01efae182c560137f5fc3404221b5ce77"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "bytes": 10490,
+      "sha256": "11a8b2adbbd37ed7dcd3b0edde9a6b50b60c1e79a3e6b7ba4753cb6272ef322e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/exporter.py",
+      "bytes": 10910,
+      "sha256": "606fa635b074791ae23676c80eb2c160deceed362c0534e157606ab9b7f23503"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/normal_capture.py",
+      "bytes": 3789,
+      "sha256": "ce04f6b8d26aa5a62cde0b372d083064d757e7550d77c01429f8ebf2836b74b6"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/service.py",
+      "bytes": 27421,
+      "sha256": "19bedf174043b175ca8e9df7caa725ab291840b96c4b6b731ff10e10833df354"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/store.py",
+      "bytes": 6982,
+      "sha256": "578cdd4cc64c792b25f1ac77a5db0c5cf09867fc208b46dbf5005b890c14b226"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/live.py",
+      "bytes": 15707,
+      "sha256": "10bb2acf327735d6120bf032d6518929a9f5730e76b9c568a68401f1c28bb3f2"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/preview/run_inspection.py",
+      "bytes": 22244,
+      "sha256": "63e69479e9a805b8701d1c25c810eae7081145999940e1bb53764567b1833bd3"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/loop_runner.py",
+      "bytes": 17493,
+      "sha256": "4c5ba76cd38fc0885d6932735d78064d98b29f93a6e55f7120b491c4602f48bd"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "bytes": 36399,
+      "sha256": "1645aa637eb93f7741119cfeef2f82951dbcaecf331347a3fe1a689006ff9d57"
+    },
+    {
+      "path": "src/emo_master/core/presentation/validation.py",
+      "bytes": 6723,
+      "sha256": "cf20fc26f62b3228eb4222d1fa09297c78edd41b250ae3f315fae2b24c470ab9"
+    },
+    {
+      "path": "src/emo_master/core/presentation/workflow_view.py",
+      "bytes": 1788,
+      "sha256": "719ec741b3a4dc20c05e76999c65c8dcd4ef21c81ef88566dad8ca99ced4278b"
+    },
+    {
+      "path": "src/emo_master/core/project/global_variables.py",
+      "bytes": 8915,
+      "sha256": "0784ade0c3c376ac92172a3e1e79910943de36f1c43dda5a040169d1b0f8fe43"
+    },
+    {
+      "path": "src/emo_master/core/project/models.py",
+      "bytes": 8761,
+      "sha256": "1ddff08985a258b5d28fe1142840dcfbee0671d4296e4b257a4b7f0b2b8378d9"
+    },
+    {
+      "path": "src/emo_master/core/project/snapshots.py",
+      "bytes": 18023,
+      "sha256": "2145975741f998e57631b0e9e4bebd1794f3ca32b335e4d404cd3570f307e2fe"
+    },
+    {
+      "path": "src/emo_master/core/workflow/compiler.py",
+      "bytes": 20965,
+      "sha256": "47ffbf07010b24443396e9e46f849be0d1b0cc7a9fea2e251ac95c159401e4fe"
+    },
+    {
+      "path": "src/emo_master/core/workflow/loop_contracts.py",
+      "bytes": 14866,
+      "sha256": "a2d7b7906dfbc847ce145f825fa38515f6d25f729e032aebf25af3384c0d8774"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_communication_operators.py",
+      "bytes": 45065,
+      "sha256": "979a59680af8d351c90cb13a4dbd232785ffc9f34ce8283e416f43a729a9cc03"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_coordinate_operators.py",
+      "bytes": 36385,
+      "sha256": "b2ab420b20f75c5e15a999fb7966b53de1644017f3f7fb69dc785cb9846eafc5"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_gateway_coordinates.py",
+      "bytes": 7309,
+      "sha256": "43918056d919f9aceeacfa94d9cf2ced27b852e906b476b24c101adfc15fc4d8"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_geometry_bridges.py",
+      "bytes": 9832,
+      "sha256": "c83905b886772af91ccc8c8f9d25995749e7e9202136d27feca1bf74ded80c74"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_huaray_imv.py",
+      "bytes": 43819,
+      "sha256": "8ad9a2f2c2c5846f2e7aab37cca97a582de805f8cf7c9cba879c831be519431c"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_tcp_transport.py",
+      "bytes": 8366,
+      "sha256": "52695e4d057d3ed108d44f05a28d51b40d854caf03305dd3964d4458f349691e"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/coordinate_calculator/manifest.json",
+      "bytes": 3405,
+      "sha256": "8fe6f070fcfd53caaf6c0ad0a495719130729f7483f5954502cd592e154fac25"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/coordinate_reader/manifest.json",
+      "bytes": 4911,
+      "sha256": "25d9015f8cb5ceeddba224da6f7d787914de8b9385c7ccd2049479db4c3f7944"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/detection_bbox/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/detection_bbox/manifest.json",
+      "bytes": 872,
+      "sha256": "d3e9a30c6f8787c27b93a4ea6545d1529271fa1ddbe37646d30b9a7d239beea9"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/flow_error/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/flow_error/manifest.json",
+      "bytes": 1003,
+      "sha256": "fc3fda877680f4a94ba999d8aa6ea4ce6a372802741e34e50cd898b8b89d643d"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/flow_error/operator.py",
+      "bytes": 1655,
+      "sha256": "11a2b06c30373260b1442308d01e03b37d11f46f3cffdab7aa78509f43bcf770"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/gateway_ack_validate/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/gateway_ack_validate/manifest.json",
+      "bytes": 1344,
+      "sha256": "0a6763ae12055ac7001aeaceae2718f04fda0ba3e8091c4e85cf7dd13964d7e3"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/gateway_coordinate_format/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/gateway_coordinate_format/manifest.json",
+      "bytes": 2094,
+      "sha256": "4467b02ce6c6b89e0d6480d192987f07261a0a99f6b775911ab83675439eebc6"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/geometry_points/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/geometry_points/manifest.json",
+      "bytes": 1846,
+      "sha256": "6892c410d93c677ded4a4f2ff117d339b01c1e834920f3e3b9334f458d9f2ed3"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/manifest.json",
+      "bytes": 7074,
+      "sha256": "6634e89adc199d3668f3728d60f29d08849774163f558da6b5dbbcaea1870da0"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/operator.py",
+      "bytes": 23854,
+      "sha256": "9095d3cf787e3381343f35b935eb439da681dd63047346c888ec9e5c9d188822"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/parameter_form.py",
+      "bytes": 7027,
+      "sha256": "2769ce196a46b3499b376902aafc3c570f1e6738cda1b514687eea265b40dd5d"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/minimum_enclosing_circle/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/minimum_enclosing_circle/manifest.json",
+      "bytes": 983,
+      "sha256": "ae0161c2bb7fc5e8b2aef5cd9e8e90112beb1072b535a9262bbbabbdebb09401"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/points_reframe/__init__.py",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/points_reframe/manifest.json",
+      "bytes": 986,
+      "sha256": "3b7c4f9e099bda729b23d7ac3da6d5c6b8ebaabd9310a7c43992b2f8f864a70f"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_client/manifest.json",
+      "bytes": 4206,
+      "sha256": "3601fe4f4b90851f7d3789aabc1e0c1032a0dbdbde4b4049004084186000aedc"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/variable_write/manifest.json",
+      "bytes": 1261,
+      "sha256": "f72b6753908d058e4ac0f2b2a68cfa86d829ef930ec75dbe27b418654b3e8aa0"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/variable_write/operator.py",
+      "bytes": 3110,
+      "sha256": "112cc73837023929495822e0a3d121e9ef63cb1e8ffdfb782f6237b51fda5111"
+    },
+    {
+      "path": "src/emo_master/ui/presentation/renderer.py",
+      "bytes": 38036,
+      "sha256": "9d9ef3bf9bd45b47b177a977afa48a983700d5c78f5f0bd16f2b80061dcdeb62"
+    },
+    {
+      "path": "src/emo_master/ui/run_targets_dialog.py",
+      "bytes": 3369,
+      "sha256": "58fe107b2a1bc5f3cbec3d5c98974c8917e573ac422ef02b01a1b69c9e5be473"
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "bytes": 1058,
+      "sha256": "3ae1f9f07fd701c499743deb72a29d6dd311ff82e070769d355a763fc22cfbdb"
+    },
+    {
+      "path": "tests/core/test_hardware_normal_fixture_package.py",
+      "bytes": 5560,
+      "sha256": "3ded193a9f9607f99708eed59ed7d4b6f498415850169f1d332458d072541ae6"
+    },
+    {
+      "path": "tests/core/test_parallel_workflow_contract.py",
+      "bytes": 2317,
+      "sha256": "30f9b27b4105b1b14f27370d482f5cdec921fbc8395e7da170777ce698606f43"
+    },
+    {
+      "path": "tests/designer/runtime_state_fixture.py",
+      "bytes": 384,
+      "sha256": "b7257a5af0a51788a06027c78e67ce617f1777a50656a3b28d7eaac1d2c1427f"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "bytes": 17417,
+      "sha256": "867b949724c95e1468e1cee63fd1cc2a7ffd24002bb239b440cc625b2be45e9d"
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "bytes": 3615,
+      "sha256": "6a3fd44008d38d20d4fb771009bed94c17cd873de4a64dccad6e7dfcd1ea8114"
+    },
+    {
+      "path": "tests/designer/test_variable_write_modes_ui.py",
+      "bytes": 8132,
+      "sha256": "248de0a8152bfb734227a4745059952599ca24309f2c034350433222d9f4ec2e"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "bytes": 16046,
+      "sha256": "f3823d0908c3825f66ba0d4b723adfdec6be406c1f88d73492fbff15746e7743"
+    },
+    {
+      "path": "tests/designer/test_workflow_runtime_controller.py",
+      "bytes": 901,
+      "sha256": "585cec67fb501e986b6f9cdf71d04df584e54c63444ee72838a821e6f7adda79"
+    },
+    {
+      "path": "tests/plugins/test_camera_hardware_wait.py",
+      "bytes": 3817,
+      "sha256": "09b8e1f002ed57f48bbdf411ab16cdc268491e459b52fb9fb8dde9336ea9c3e7"
+    },
+    {
+      "path": "tests/plugins/test_gateway_coordinates.py",
+      "bytes": 4748,
+      "sha256": "7fbae7d3ff4f840764781a4ed1446a81918fb6ab4998cdbf3ce78e0862834420"
+    },
+    {
+      "path": "tests/plugins/test_geometry_bridges.py",
+      "bytes": 5100,
+      "sha256": "3fefa75c3884b0b1069c5182ad4f857f7f94ac8b42f949b4e7592d71ee5d8498"
+    },
+    {
+      "path": "tests/plugins/test_variable_write_modes.py",
+      "bytes": 3702,
+      "sha256": "d54eb019bf8f34caaa6c24ca71343d8298ce8cb13e4b633df905e3f14081d2fa"
+    },
+    {
+      "path": "tests/runtime/parallel_workflow_fixture.py",
+      "bytes": 3043,
+      "sha256": "bca67110945152e32672a4be0a292f516cbeddb9f184f926784a5f13f82e1018"
+    },
+    {
+      "path": "tests/runtime/presentation/test_normal_capture.py",
+      "bytes": 21323,
+      "sha256": "a9b8f11bd705babf5af6061542f7529e068811e74b0ce2396f0b515223df1885"
+    },
+    {
+      "path": "tests/runtime/station_camera_boundary.py",
+      "bytes": 3384,
+      "sha256": "28d90c85b55932eed985de067dd0615b9e948c6056a12bbbcc37d4616cc34cde"
+    },
+    {
+      "path": "tests/runtime/test_coordinate_snapshot_worker_admission.py",
+      "bytes": 2137,
+      "sha256": "783560e8dbdcbbba97ff3e929665919f464531a1aaa599c20ee2a9338f7e3923"
+    },
+    {
+      "path": "tests/runtime/test_coordinate_snapshots.py",
+      "bytes": 5426,
+      "sha256": "ae084d77da0c2e22d776ae75b1f56c1f858b58b3b9162c710debcae8447a3fbd"
+    },
+    {
+      "path": "tests/runtime/test_hardware_trigger_normal_chain.py",
+      "bytes": 11921,
+      "sha256": "5f2de696bbf28979f0bcb623d5c25939d8dc3007ec3a15165d83f716af4cc6a7"
+    },
+    {
+      "path": "tests/runtime/test_heartbeat_liveness.py",
+      "bytes": 14963,
+      "sha256": "2522257cb35c1a450a3669965aac11d51af018c67c54ea66f56802d5503aadd7"
+    },
+    {
+      "path": "tests/runtime/test_job_supervisor_contracts.py",
+      "bytes": 19953,
+      "sha256": "ed7dc2920f1a2dbd41c2dde07ff1c4e66624abc3019d0374d9bfdf0058e9becb"
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "bytes": 5311,
+      "sha256": "dc778beb4dc903ba28341836fd0aee17dff12d6a6810583eec4419a45f24078b"
+    },
+    {
+      "path": "tests/runtime/test_parallel_workflows.py",
+      "bytes": 12107,
+      "sha256": "cd2fe91f0240832c95783e940d4b53a44a2af2e2f885c634edfb2848eff769ec"
+    },
+    {
+      "path": "tests/runtime/test_production_continuous.py",
+      "bytes": 9732,
+      "sha256": "eff65cbd4a715f10bcb9f0a16a69c900ff44b99190fc656da4db918a907abe31"
+    },
+    {
+      "path": "tests/runtime/test_spawned_hardware_stations.py",
+      "bytes": 9423,
+      "sha256": "9aed6ff37e71c79440ba5f10aa05c2ad8b563bf646094dd9ad85a9b4668b184f"
+    },
+    {
+      "path": "tests/runtime/test_two_shot_variable_control.py",
+      "bytes": 5113,
+      "sha256": "d19f7263a1ef6febdcd474c5e919c2c2f9ad5440ee3fde4b1f094b99a3109160"
+    },
+    {
+      "path": "tests/runtime/test_unlimited_while.py",
+      "bytes": 1973,
+      "sha256": "6fbd214c545c51524c050e023856cc675100f831a3107e9219fd0c86a875ba58"
+    },
+    {
+      "path": "tests/runtime/test_variable_write_admission.py",
+      "bytes": 2828,
+      "sha256": "b60d28643aea42afb272f73d668275dc4e7c0d761857968d3ae21b0b166e699e"
+    },
+    {
+      "path": "tests/runtime/test_worker_heartbeat_finalization.py",
+      "bytes": 11945,
+      "sha256": "22d6db0933fd82497d2ffd64372d475967dd3ed114a72fadf4452d7364151320"
+    },
+    {
+      "path": "tests/runtime/two_station_fixture.py",
+      "bytes": 2163,
+      "sha256": "e4ecffa9f392ceb4b2fe6f7e587d407ca37fd5d8ab6a2ea847b13f225d30b945"
+    },
+    {
+      "path": "tests/sqlite_writer/test_dependencies.py",
+      "bytes": 8766,
+      "sha256": "2c15aa866ed78ab86af69c79974017d5ae3c40c3e3de39bbd081d6405c0240e4"
+    },
+    {
+      "path": "tests/ui/operator_view/test_parallel_workflow_window.py",
+      "bytes": 4858,
+      "sha256": "eda9ba57aca45776ace9261a2bc08b93f027dfe3c961798e663eb52c96289ed9"
+    },
+    {
+      "path": "tests/ui/operator_view/test_production_window.py",
+      "bytes": 11252,
+      "sha256": "cb4e0f897ad4019f141814eda3b90f5a0f89469f04f6a007f04b9fbb75156981"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "bytes": 8464,
+      "sha256": "e76ff5f5ea27c4d9aac468f0ef55a732c8f196850285dd562a3f7290a85d1361"
+    },
+    {
+      "path": "tests/ui/presentation/test_renderer.py",
+      "bytes": 5001,
+      "sha256": "d8195f0d8524db663b1c728e98c6f578cc6fb7b344f909d2b0c29cd566b89e4f"
+    }
+  ],
+  "notes": [
+    "Suites overlap; do not add counts as unique tests.",
+    "Broad regression preceded the final inspection/session and display-retirement fixes; its 15 old-assumption/test-double failures were updated and passed in final-regression.",
+    "Compatibility had 925 passed and one four-frame overall-wait timeout; exact log investigation is recorded in the report. The functional budget was set to 60s, two repeats passed, and the simulated waiting marker was made once-per-instance. Final hardware suite passed 9.",
+    "Real camera smoke and symlink capability were skipped, not passed. Physical takt, models, formulas, multi-hole protocol and field sync remain unverified."
+  ]
+}

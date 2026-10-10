@@ -1,0 +1,242 @@
+........................................................................ [ 30%]
+........................................................................ [ 60%]
+........................................................................ [ 90%]
+....EEEEEEEEEEEEEEEEEEEE                                                 [100%]
+=================================== ERRORS ====================================
+_____ ERROR at setup of testOverlayKeepsCanvasAndTabsStationary[640-499] ______
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 62
+  @pytest.mark.parametrize('width,height', [(640, 499), (1000, 600), (1600, 900)])
+  def testOverlayKeepsCanvasAndTabsStationary(toolboxWindow, width, height):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_____ ERROR at setup of testOverlayKeepsCanvasAndTabsStationary[1000-600] _____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 62
+  @pytest.mark.parametrize('width,height', [(640, 499), (1000, 600), (1600, 900)])
+  def testOverlayKeepsCanvasAndTabsStationary(toolboxWindow, width, height):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_____ ERROR at setup of testOverlayKeepsCanvasAndTabsStationary[1600-900] _____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 62
+  @pytest.mark.parametrize('width,height', [(640, 499), (1000, 600), (1600, 900)])
+  def testOverlayKeepsCanvasAndTabsStationary(toolboxWindow, width, height):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_ ERROR at setup of testLibraryReusesCatalogSearchAndRepeatedCategorySelection _
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 87
+  def testLibraryReusesCatalogSearchAndRepeatedCategorySelection(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+___ ERROR at setup of testClickAddsOneNodeThroughExistingProjectTransaction ___
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 108
+  def testClickAddsOneNodeThroughExistingProjectTransaction(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_ ERROR at setup of testLibraryListsOperatorsBeforeSystemTemplatesButKeepsRecentsFirst _
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 125
+  def testLibraryListsOperatorsBeforeSystemTemplatesButKeepsRecentsFirst(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_______ ERROR at setup of testDragUsesExistingMimeAndActualViewportDrop _______
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 136
+  def testDragUsesExistingMimeAndActualViewportDrop(toolboxWindow, monkeypatch):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+__ ERROR at setup of testEscapeOnlyCollapsesToolboxAndCanvasClicksKeepItOpen __
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 177
+  def testEscapeOnlyCollapsesToolboxAndCanvasClicksKeepItOpen(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_ ERROR at setup of testHeaderDragIsClampedAndStoredOutsideProject[position0] _
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 189
+  @pytest.mark.parametrize('position', [QPoint(-500, -300), QPoint(100_000, 100_000)])
+  def testHeaderDragIsClampedAndStoredOutsideProject(toolboxWindow, position):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+_ ERROR at setup of testHeaderDragIsClampedAndStoredOutsideProject[position1] _
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 189
+  @pytest.mark.parametrize('position', [QPoint(-500, -300), QPoint(100_000, 100_000)])
+  def testHeaderDragIsClampedAndStoredOutsideProject(toolboxWindow, position):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+____ ERROR at setup of testPositionRestoreAndMalformedPreferences[stored0] ____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 216
+  @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+  def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:216
+____ ERROR at setup of testPositionRestoreAndMalformedPreferences[stored1] ____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 216
+  @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+  def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:216
+____ ERROR at setup of testPositionRestoreAndMalformedPreferences[stored2] ____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 216
+  @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+  def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:216
+____ ERROR at setup of testPositionRestoreAndMalformedPreferences[stored3] ____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 216
+  @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+  def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:216
+______ ERROR at setup of testPositionRestoreAndMalformedPreferences[bad] ______
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 216
+  @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+  def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:216
+______ ERROR at setup of testShortCanvasCanScrollToEveryCategoryAndCard _______
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 235
+  def testShortCanvasCanScrollToEveryCategoryAndCard(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+___ ERROR at setup of testAncestorScrollingKeepsToolboxWithinVisibleCanvas ____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 257
+  def testAncestorScrollingKeepsToolboxWithinVisibleCanvas(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+____ ERROR at setup of testDependenciesNodesAndWorkspaceSwitchReuseOwners _____
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 277
+  def testDependenciesNodesAndWorkspaceSwitchReuseOwners(toolboxWindow, monkeypatch):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+______ ERROR at setup of testPanningZoomingAndFittingNeverMoveTheOverlay ______
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 300
+  def testPanningZoomingAndFittingNeverMoveTheOverlay(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+__ ERROR at setup of testOwnerCloseStopsPendingIconRefreshAndDeletesChildren __
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 314
+  def testOwnerCloseStopsPendingIconRefreshAndDeletesChildren(toolboxWindow):
+file D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py, line 54
+  @pytest.fixture
+  def toolboxWindow(designerApplication):
+E       fixture 'designerApplication' not found
+>       available fixtures: anyio_backend, anyio_backend_name, anyio_backend_options, cache, capfd, capfdbinary, caplog, capsys, capsysbinary, capteesys, cov, doctest_namespace, free_tcp_port, free_tcp_port_factory, free_udp_port, free_udp_port_factory, isolatedRuntimeData, monkeypatch, no_cover, ownedDesignerWindow, ownedFlowScene, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, retainedQtApplication, subtests, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory, toolboxWindow
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-final2\tests\designer\test_floating_toolbox.py:54
+=========================== short test summary info ===========================
+ERROR tests/designer/test_floating_toolbox.py::testOverlayKeepsCanvasAndTabsStationary[640-499]
+ERROR tests/designer/test_floating_toolbox.py::testOverlayKeepsCanvasAndTabsStationary[1000-600]
+ERROR tests/designer/test_floating_toolbox.py::testOverlayKeepsCanvasAndTabsStationary[1600-900]
+ERROR tests/designer/test_floating_toolbox.py::testLibraryReusesCatalogSearchAndRepeatedCategorySelection
+ERROR tests/designer/test_floating_toolbox.py::testClickAddsOneNodeThroughExistingProjectTransaction
+ERROR tests/designer/test_floating_toolbox.py::testLibraryListsOperatorsBeforeSystemTemplatesButKeepsRecentsFirst
+ERROR tests/designer/test_floating_toolbox.py::testDragUsesExistingMimeAndActualViewportDrop
+ERROR tests/designer/test_floating_toolbox.py::testEscapeOnlyCollapsesToolboxAndCanvasClicksKeepItOpen
+ERROR tests/designer/test_floating_toolbox.py::testHeaderDragIsClampedAndStoredOutsideProject[position0]
+ERROR tests/designer/test_floating_toolbox.py::testHeaderDragIsClampedAndStoredOutsideProject[position1]
+ERROR tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored0]
+ERROR tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored1]
+ERROR tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored2]
+ERROR tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored3]
+ERROR tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[bad]
+ERROR tests/designer/test_floating_toolbox.py::testShortCanvasCanScrollToEveryCategoryAndCard
+ERROR tests/designer/test_floating_toolbox.py::testAncestorScrollingKeepsToolboxWithinVisibleCanvas
+ERROR tests/designer/test_floating_toolbox.py::testDependenciesNodesAndWorkspaceSwitchReuseOwners
+ERROR tests/designer/test_floating_toolbox.py::testPanningZoomingAndFittingNeverMoveTheOverlay
+ERROR tests/designer/test_floating_toolbox.py::testOwnerCloseStopsPendingIconRefreshAndDeletesChildren
+220 passed, 20 errors in 68.06s (0:01:08)

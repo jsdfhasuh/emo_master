@@ -1,0 +1,4383 @@
+{
+  "finalSourceHead": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+  "finalCi": {
+    "exitCode": 1,
+    "sourceChanged": false,
+    "durationSeconds": 710.8900000001304,
+    "failures": [
+      {
+        "test": "tests.designer.test_visual_layout.testNarrowToolbarKeepsRunActionAndHasOverflow",
+        "kind": "failure",
+        "message": "assert False\n +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001FB289378C0>()\n +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001FB289378C0> = <PySide2.QtWidgets.QToolButton(0x1fb2a9cf460, name=\"primaryButton\") at 0x000001FB289378C0>.isVisible\n +      where <PySide2.QtWidgets.QToolButton(0x1fb2a9cf460, name=\"primaryButton\") at 0x000001FB289378C0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1fb2a51e4f0) at 0x000001FB289A9B00>.startButton"
+      }
+    ],
+    "skipped": [
+      {
+        "test": "tests.core.plugin.test_icon_resources.testSymlinkCannotEscapeRoot",
+        "message": "symlinks unavailable in this environment"
+      },
+      {
+        "test": "tests.plugins.test_huaray_camera_smoke.testRealHuarayCameraSmoke",
+        "message": "set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera"
+      },
+      {
+        "test": "tests.test_r3_export_credit_report.ReportTests.test_path_traversal_and_symlink_escape_rejected",
+        "message": "symlink creation is unavailable"
+      },
+      {
+        "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[database]",
+        "message": "Windows symlink privilege unavailable"
+      },
+      {
+        "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[wal]",
+        "message": "Windows symlink privilege unavailable"
+      },
+      {
+        "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[directory]",
+        "message": "Windows symlink privilege unavailable"
+      },
+      {
+        "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[root]",
+        "message": "Windows symlink privilege unavailable"
+      },
+      {
+        "test": "tests.test_r3_sqlite_wal_metadata.testUnsupportedPlatformNeverInspectsOrOpensDatabaseOrWal",
+        "message": "Non-Windows platform rejection"
+      }
+    ]
+  },
+  "finalCandidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+  "monotonicClock": {
+    "implementation": "GetTickCount64()",
+    "monotonic": true,
+    "adjustable": false,
+    "resolution": 0.015625
+  },
+  "matrix": [
+    {
+      "path": "reviewed-native-1280-1/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1280,
+        720
+      ],
+      "clientLogical": [
+        1280,
+        720
+      ],
+      "qtScale": "1",
+      "dpr": 1.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 375.0,
+      "projectLoadMs": 47.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "952ae1a5-fb63-4b5f-8ed9-9cfb045b7cef",
+            "main",
+            "load",
+            "a311d59b-d35a-4b38-ac53-6b76a2b0f87e",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331257500000000,
+          "panelFirstImagePaintNs": 1331257515000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "952ae1a5-fb63-4b5f-8ed9-9cfb045b7cef",
+            "main",
+            "load",
+            "a311d59b-d35a-4b38-ac53-6b76a2b0f87e",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331257500000000,
+          "panelFirstImagePaintNs": 1331257515000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "51c54ae9-d605-4b9d-9805-0dbb54c41e08",
+            "main",
+            "load",
+            "84e476be-7f99-4af0-b6e0-c30c3379224f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331257703000000,
+          "panelFirstImagePaintNs": 1331257703000000,
+          "viewerImageSetNs": 1331257703000000,
+          "viewerFirstImagePaintNs": 1331257703000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "51c54ae9-d605-4b9d-9805-0dbb54c41e08",
+            "main",
+            "load",
+            "84e476be-7f99-4af0-b6e0-c30c3379224f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331257703000000,
+          "panelFirstImagePaintNs": 1331257703000000,
+          "viewerImageSetNs": 1331257703000000,
+          "viewerFirstImagePaintNs": 1331257703000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "51c54ae9-d605-4b9d-9805-0dbb54c41e08",
+            "main",
+            "load",
+            "84e476be-7f99-4af0-b6e0-c30c3379224f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331257703000000,
+          "panelFirstImagePaintNs": 1331257703000000,
+          "viewerImageSetNs": 1331257703000000,
+          "viewerFirstImagePaintNs": 1331257703000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "952ae1a5-fb63-4b5f-8ed9-9cfb045b7cef",
+            "main",
+            "blob",
+            "a2914fc0-5f5f-4f2e-89c1-a2707bac7c4b",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331258000000000,
+          "panelFirstImagePaintNs": 1331258000000000,
+          "viewerImageSetNs": 1331258000000000,
+          "viewerFirstImagePaintNs": 1331258000000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "952ae1a5-fb63-4b5f-8ed9-9cfb045b7cef",
+            "main",
+            "save",
+            "3948bb1d-02d8-4df5-bf38-bacd924b5d19",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331258062000000,
+          "panelFirstImagePaintNs": 1331258062000000,
+          "viewerImageSetNs": 1331258062000000,
+          "viewerFirstImagePaintNs": 1331258062000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7600,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1280-1_25/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1280,
+        720
+      ],
+      "clientLogical": [
+        1280,
+        720
+      ],
+      "qtScale": "1.25",
+      "dpr": 1.25,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 453.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "b50dcd2d-f774-4801-9967-de7191c3c158",
+            "main",
+            "load",
+            "a0821866-74ef-45c3-856c-dc8baef38946",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265000000000,
+          "panelFirstImagePaintNs": 1331265015000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "b50dcd2d-f774-4801-9967-de7191c3c158",
+            "main",
+            "load",
+            "a0821866-74ef-45c3-856c-dc8baef38946",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265000000000,
+          "panelFirstImagePaintNs": 1331265015000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "8b181b2e-80a5-4f2b-b651-fa4a108984a5",
+            "main",
+            "load",
+            "ce14058c-6761-4aad-9e66-8d8c86a9792f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265250000000,
+          "panelFirstImagePaintNs": 1331265250000000,
+          "viewerImageSetNs": 1331265250000000,
+          "viewerFirstImagePaintNs": 1331265250000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "8b181b2e-80a5-4f2b-b651-fa4a108984a5",
+            "main",
+            "load",
+            "ce14058c-6761-4aad-9e66-8d8c86a9792f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265250000000,
+          "panelFirstImagePaintNs": 1331265250000000,
+          "viewerImageSetNs": 1331265250000000,
+          "viewerFirstImagePaintNs": 1331265250000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "8b181b2e-80a5-4f2b-b651-fa4a108984a5",
+            "main",
+            "load",
+            "ce14058c-6761-4aad-9e66-8d8c86a9792f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265250000000,
+          "panelFirstImagePaintNs": 1331265250000000,
+          "viewerImageSetNs": 1331265250000000,
+          "viewerFirstImagePaintNs": 1331265250000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "b50dcd2d-f774-4801-9967-de7191c3c158",
+            "main",
+            "blob",
+            "d9c8c8b5-bb28-45bf-8b64-e274c17ef47c",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265703000000,
+          "panelFirstImagePaintNs": 1331265703000000,
+          "viewerImageSetNs": 1331265703000000,
+          "viewerFirstImagePaintNs": 1331265703000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "b50dcd2d-f774-4801-9967-de7191c3c158",
+            "main",
+            "save",
+            "313149bc-9077-499b-8e20-e57eecc18c57",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331265781000000,
+          "panelFirstImagePaintNs": 1331265781000000,
+          "viewerImageSetNs": 1331265781000000,
+          "viewerFirstImagePaintNs": 1331265781000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1280-1_5/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1280,
+        720
+      ],
+      "clientLogical": [
+        1256,
+        640
+      ],
+      "qtScale": "1.5",
+      "dpr": 1.5,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "5874c4e6-50ed-414a-8dc5-eb9c28e5813e",
+            "main",
+            "load",
+            "978ccde1-ddde-47ba-a0e0-ec46eb48698b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331272968000000,
+          "panelFirstImagePaintNs": 1331272984000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "5874c4e6-50ed-414a-8dc5-eb9c28e5813e",
+            "main",
+            "load",
+            "978ccde1-ddde-47ba-a0e0-ec46eb48698b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331272968000000,
+          "panelFirstImagePaintNs": 1331272984000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "d68f28d7-c9fc-4393-a5c5-fbe748113dc7",
+            "main",
+            "load",
+            "917bde86-78de-4dc7-bb24-ea4c72f709e6",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331273296000000,
+          "panelFirstImagePaintNs": 1331273296000000,
+          "viewerImageSetNs": 1331273296000000,
+          "viewerFirstImagePaintNs": 1331273296000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "d68f28d7-c9fc-4393-a5c5-fbe748113dc7",
+            "main",
+            "load",
+            "917bde86-78de-4dc7-bb24-ea4c72f709e6",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331273296000000,
+          "panelFirstImagePaintNs": 1331273296000000,
+          "viewerImageSetNs": 1331273296000000,
+          "viewerFirstImagePaintNs": 1331273296000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "d68f28d7-c9fc-4393-a5c5-fbe748113dc7",
+            "main",
+            "load",
+            "917bde86-78de-4dc7-bb24-ea4c72f709e6",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331273296000000,
+          "panelFirstImagePaintNs": 1331273296000000,
+          "viewerImageSetNs": 1331273296000000,
+          "viewerFirstImagePaintNs": 1331273296000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "5874c4e6-50ed-414a-8dc5-eb9c28e5813e",
+            "main",
+            "blob",
+            "fcd47806-1a63-4688-a27e-0636ea02a082",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331273812000000,
+          "panelFirstImagePaintNs": 1331273828000000,
+          "viewerImageSetNs": 1331273812000000,
+          "viewerFirstImagePaintNs": 1331273812000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "5874c4e6-50ed-414a-8dc5-eb9c28e5813e",
+            "main",
+            "save",
+            "65a2dd39-a9a3-477e-b7f4-d38feefc61d5",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331273890000000,
+          "panelFirstImagePaintNs": 1331273906000000,
+          "viewerImageSetNs": 1331273890000000,
+          "viewerFirstImagePaintNs": 1331273906000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1280-2/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1280,
+        720
+      ],
+      "clientLogical": [
+        936,
+        468
+      ],
+      "qtScale": "2",
+      "dpr": 2.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 437.0,
+      "projectLoadMs": 15.0,
+      "explicitFlowLayoutMs": 16.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "b548bcf4-4b22-46bc-b9c3-a04563d08189",
+            "main",
+            "load",
+            "3606cd71-a8f5-4f00-9764-5ca68e266d24",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331280921000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "b548bcf4-4b22-46bc-b9c3-a04563d08189",
+            "main",
+            "load",
+            "3606cd71-a8f5-4f00-9764-5ca68e266d24",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331280921000000,
+          "panelFirstImagePaintNs": 1331281078000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "7609f180-7c92-4679-9f5e-02ce96e9519d",
+            "main",
+            "load",
+            "b9a28e5e-dfeb-498e-bbc3-a30fa3d03488",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331281281000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": 1331281281000000,
+          "viewerFirstImagePaintNs": 1331281281000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "7609f180-7c92-4679-9f5e-02ce96e9519d",
+            "main",
+            "load",
+            "b9a28e5e-dfeb-498e-bbc3-a30fa3d03488",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331281281000000,
+          "panelFirstImagePaintNs": 1331281343000000,
+          "viewerImageSetNs": 1331281281000000,
+          "viewerFirstImagePaintNs": 1331281281000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "7609f180-7c92-4679-9f5e-02ce96e9519d",
+            "main",
+            "load",
+            "b9a28e5e-dfeb-498e-bbc3-a30fa3d03488",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331281281000000,
+          "panelFirstImagePaintNs": 1331281343000000,
+          "viewerImageSetNs": 1331281281000000,
+          "viewerFirstImagePaintNs": 1331281281000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "b548bcf4-4b22-46bc-b9c3-a04563d08189",
+            "main",
+            "blob",
+            "2ef9ffdd-038a-4d14-aa0e-388508e74618",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331281718000000,
+          "panelFirstImagePaintNs": 1331281734000000,
+          "viewerImageSetNs": 1331281718000000,
+          "viewerFirstImagePaintNs": 1331281718000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "b548bcf4-4b22-46bc-b9c3-a04563d08189",
+            "main",
+            "save",
+            "48b31f00-ffcb-4c76-a616-f92ca4fc7249",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331281796000000,
+          "panelFirstImagePaintNs": 1331281812000000,
+          "viewerImageSetNs": 1331281796000000,
+          "viewerFirstImagePaintNs": 1331281812000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1600-1/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1600,
+        900
+      ],
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "qtScale": "1",
+      "dpr": 1.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 343.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 16.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "7a2e8799-c5ed-4aa7-9efc-aba4d1d389b8",
+            "main",
+            "load",
+            "ed815e87-6ee1-4c23-bf79-c4527bf095eb",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331288812000000,
+          "panelFirstImagePaintNs": 1331288828000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "7a2e8799-c5ed-4aa7-9efc-aba4d1d389b8",
+            "main",
+            "load",
+            "ed815e87-6ee1-4c23-bf79-c4527bf095eb",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331288812000000,
+          "panelFirstImagePaintNs": 1331288828000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "eeb06119-0149-403f-8197-b05d50b4806c",
+            "main",
+            "load",
+            "c6d2dcbb-a343-474e-8e41-53e63179ee1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331289046000000,
+          "panelFirstImagePaintNs": 1331289046000000,
+          "viewerImageSetNs": 1331289046000000,
+          "viewerFirstImagePaintNs": 1331289046000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "eeb06119-0149-403f-8197-b05d50b4806c",
+            "main",
+            "load",
+            "c6d2dcbb-a343-474e-8e41-53e63179ee1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331289046000000,
+          "panelFirstImagePaintNs": 1331289046000000,
+          "viewerImageSetNs": 1331289046000000,
+          "viewerFirstImagePaintNs": 1331289046000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "eeb06119-0149-403f-8197-b05d50b4806c",
+            "main",
+            "load",
+            "c6d2dcbb-a343-474e-8e41-53e63179ee1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331289046000000,
+          "panelFirstImagePaintNs": 1331289046000000,
+          "viewerImageSetNs": 1331289046000000,
+          "viewerFirstImagePaintNs": 1331289046000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "7a2e8799-c5ed-4aa7-9efc-aba4d1d389b8",
+            "main",
+            "blob",
+            "804c7a08-76d8-4b4e-b64b-ad1ac39d5be6",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331289390000000,
+          "panelFirstImagePaintNs": 1331289406000000,
+          "viewerImageSetNs": 1331289390000000,
+          "viewerFirstImagePaintNs": 1331289406000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "7a2e8799-c5ed-4aa7-9efc-aba4d1d389b8",
+            "main",
+            "save",
+            "97b845b0-8719-4e32-8f28-15d1c25577a9",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331289468000000,
+          "panelFirstImagePaintNs": 1331289484000000,
+          "viewerImageSetNs": 1331289468000000,
+          "viewerFirstImagePaintNs": 1331289468000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7599,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1600-1_25/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1600,
+        900
+      ],
+      "clientLogical": [
+        1512,
+        778
+      ],
+      "qtScale": "1.25",
+      "dpr": 1.25,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "1d7d5892-5f3f-41eb-9add-427a91610b8c",
+            "main",
+            "load",
+            "87835940-3725-4856-9d63-8d7ae07480bd",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331296359000000,
+          "panelFirstImagePaintNs": 1331296390000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "1d7d5892-5f3f-41eb-9add-427a91610b8c",
+            "main",
+            "load",
+            "87835940-3725-4856-9d63-8d7ae07480bd",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331296359000000,
+          "panelFirstImagePaintNs": 1331296390000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "53c974d0-4753-406c-9db7-8d6cbdb06def",
+            "main",
+            "load",
+            "f0388c50-61cc-41c3-8104-fbc6e0ddd791",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331296609000000,
+          "panelFirstImagePaintNs": 1331296609000000,
+          "viewerImageSetNs": 1331296609000000,
+          "viewerFirstImagePaintNs": 1331296609000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "53c974d0-4753-406c-9db7-8d6cbdb06def",
+            "main",
+            "load",
+            "f0388c50-61cc-41c3-8104-fbc6e0ddd791",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331296609000000,
+          "panelFirstImagePaintNs": 1331296609000000,
+          "viewerImageSetNs": 1331296609000000,
+          "viewerFirstImagePaintNs": 1331296609000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "53c974d0-4753-406c-9db7-8d6cbdb06def",
+            "main",
+            "load",
+            "f0388c50-61cc-41c3-8104-fbc6e0ddd791",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331296609000000,
+          "panelFirstImagePaintNs": 1331296609000000,
+          "viewerImageSetNs": 1331296609000000,
+          "viewerFirstImagePaintNs": 1331296609000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "1d7d5892-5f3f-41eb-9add-427a91610b8c",
+            "main",
+            "blob",
+            "4dc4315c-f227-4f9b-a106-07fd4f8f5b1d",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331297062000000,
+          "panelFirstImagePaintNs": 1331297062000000,
+          "viewerImageSetNs": 1331297062000000,
+          "viewerFirstImagePaintNs": 1331297062000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "1d7d5892-5f3f-41eb-9add-427a91610b8c",
+            "main",
+            "save",
+            "5b069261-5d85-4259-84fc-55535f88c076",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331297156000000,
+          "panelFirstImagePaintNs": 1331297156000000,
+          "viewerImageSetNs": 1331297156000000,
+          "viewerFirstImagePaintNs": 1331297156000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7600,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1600-1_5/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1600,
+        900
+      ],
+      "clientLogical": [
+        1256,
+        640
+      ],
+      "qtScale": "1.5",
+      "dpr": 1.5,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 16.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "ea7e9bbc-1845-4555-9a7c-c109cc740d2a",
+            "main",
+            "load",
+            "50e335a2-6f07-4695-b009-a3c5de40e984",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331303984000000,
+          "panelFirstImagePaintNs": 1331304000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "ea7e9bbc-1845-4555-9a7c-c109cc740d2a",
+            "main",
+            "load",
+            "50e335a2-6f07-4695-b009-a3c5de40e984",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331303984000000,
+          "panelFirstImagePaintNs": 1331304000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "7e986360-2217-4bc8-88e9-7d8af03ae3b8",
+            "main",
+            "load",
+            "25b41083-2b15-4115-b045-198a318ca613",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331304250000000,
+          "panelFirstImagePaintNs": 1331304265000000,
+          "viewerImageSetNs": 1331304250000000,
+          "viewerFirstImagePaintNs": 1331304250000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "7e986360-2217-4bc8-88e9-7d8af03ae3b8",
+            "main",
+            "load",
+            "25b41083-2b15-4115-b045-198a318ca613",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331304250000000,
+          "panelFirstImagePaintNs": 1331304265000000,
+          "viewerImageSetNs": 1331304250000000,
+          "viewerFirstImagePaintNs": 1331304250000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "7e986360-2217-4bc8-88e9-7d8af03ae3b8",
+            "main",
+            "load",
+            "25b41083-2b15-4115-b045-198a318ca613",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331304250000000,
+          "panelFirstImagePaintNs": 1331304265000000,
+          "viewerImageSetNs": 1331304250000000,
+          "viewerFirstImagePaintNs": 1331304250000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "ea7e9bbc-1845-4555-9a7c-c109cc740d2a",
+            "main",
+            "blob",
+            "cbf9308e-1ef2-4f19-b822-77fe2b94ea7a",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331304671000000,
+          "panelFirstImagePaintNs": 1331304703000000,
+          "viewerImageSetNs": 1331304671000000,
+          "viewerFirstImagePaintNs": 1331304671000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "ea7e9bbc-1845-4555-9a7c-c109cc740d2a",
+            "main",
+            "save",
+            "0c0e1672-f66c-4719-9ece-de6003c190c7",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331304765000000,
+          "panelFirstImagePaintNs": 1331304781000000,
+          "viewerImageSetNs": 1331304765000000,
+          "viewerFirstImagePaintNs": 1331304765000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1600-2/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1600,
+        900
+      ],
+      "clientLogical": [
+        936,
+        468
+      ],
+      "qtScale": "2",
+      "dpr": 2.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "4eff78a7-c12e-42e6-b231-ce0fb1b14e8f",
+            "main",
+            "load",
+            "b8992ae4-a2d3-4b30-b829-c3e049806974",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331311640000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "4eff78a7-c12e-42e6-b231-ce0fb1b14e8f",
+            "main",
+            "load",
+            "b8992ae4-a2d3-4b30-b829-c3e049806974",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331311640000000,
+          "panelFirstImagePaintNs": 1331311718000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "42b5683d-eaae-4c92-9a9c-0b863b311b18",
+            "main",
+            "load",
+            "e85ffad9-95cb-423e-965b-17de5176a0a7",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331311921000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": 1331311921000000,
+          "viewerFirstImagePaintNs": 1331311921000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "42b5683d-eaae-4c92-9a9c-0b863b311b18",
+            "main",
+            "load",
+            "e85ffad9-95cb-423e-965b-17de5176a0a7",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331311921000000,
+          "panelFirstImagePaintNs": 1331312000000000,
+          "viewerImageSetNs": 1331311921000000,
+          "viewerFirstImagePaintNs": 1331311921000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "42b5683d-eaae-4c92-9a9c-0b863b311b18",
+            "main",
+            "load",
+            "e85ffad9-95cb-423e-965b-17de5176a0a7",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331311921000000,
+          "panelFirstImagePaintNs": 1331312000000000,
+          "viewerImageSetNs": 1331311921000000,
+          "viewerFirstImagePaintNs": 1331311921000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "4eff78a7-c12e-42e6-b231-ce0fb1b14e8f",
+            "main",
+            "blob",
+            "22bf2479-f93e-442e-b69f-2a52b8b72648",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331312343000000,
+          "panelFirstImagePaintNs": 1331312359000000,
+          "viewerImageSetNs": 1331312343000000,
+          "viewerFirstImagePaintNs": 1331312343000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "4eff78a7-c12e-42e6-b231-ce0fb1b14e8f",
+            "main",
+            "save",
+            "e872d40d-db7f-41cd-ad34-e544899c3046",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331312421000000,
+          "panelFirstImagePaintNs": 1331312437000000,
+          "viewerImageSetNs": 1331312421000000,
+          "viewerFirstImagePaintNs": 1331312437000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1920-1/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1920,
+        1080
+      ],
+      "clientLogical": [
+        1896,
+        984
+      ],
+      "qtScale": "1",
+      "dpr": 1.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 329.0,
+      "projectLoadMs": 47.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "f95ccf58-77cc-4924-b905-7307eabb1c05",
+            "main",
+            "load",
+            "5360003a-086d-48fa-b232-e7894292afb4",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331318828000000,
+          "panelFirstImagePaintNs": 1331318843000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "f95ccf58-77cc-4924-b905-7307eabb1c05",
+            "main",
+            "load",
+            "5360003a-086d-48fa-b232-e7894292afb4",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331318828000000,
+          "panelFirstImagePaintNs": 1331318843000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "4483f250-4ff4-4756-96c8-7f60fd44aab4",
+            "main",
+            "load",
+            "314a3a0a-5dfb-4a0f-a424-5961b18e5b9f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331319078000000,
+          "panelFirstImagePaintNs": 1331319078000000,
+          "viewerImageSetNs": 1331319078000000,
+          "viewerFirstImagePaintNs": 1331319078000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "4483f250-4ff4-4756-96c8-7f60fd44aab4",
+            "main",
+            "load",
+            "314a3a0a-5dfb-4a0f-a424-5961b18e5b9f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331319078000000,
+          "panelFirstImagePaintNs": 1331319078000000,
+          "viewerImageSetNs": 1331319078000000,
+          "viewerFirstImagePaintNs": 1331319078000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "4483f250-4ff4-4756-96c8-7f60fd44aab4",
+            "main",
+            "load",
+            "314a3a0a-5dfb-4a0f-a424-5961b18e5b9f",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331319078000000,
+          "panelFirstImagePaintNs": 1331319078000000,
+          "viewerImageSetNs": 1331319078000000,
+          "viewerFirstImagePaintNs": 1331319078000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "f95ccf58-77cc-4924-b905-7307eabb1c05",
+            "main",
+            "blob",
+            "de1e35b0-c265-4891-8a11-0c60c13ea141",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331319484000000,
+          "panelFirstImagePaintNs": 1331319484000000,
+          "viewerImageSetNs": 1331319484000000,
+          "viewerFirstImagePaintNs": 1331319484000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "f95ccf58-77cc-4924-b905-7307eabb1c05",
+            "main",
+            "save",
+            "f45cbef5-1740-4c60-886a-963a3c0213f4",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331319578000000,
+          "panelFirstImagePaintNs": 1331319578000000,
+          "viewerImageSetNs": 1331319578000000,
+          "viewerFirstImagePaintNs": 1331319578000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1920-1_25/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1920,
+        1080
+      ],
+      "clientLogical": [
+        1512,
+        778
+      ],
+      "qtScale": "1.25",
+      "dpr": 1.25,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 406.0,
+      "projectLoadMs": 31.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "0ae5d95f-43db-4af1-bec9-0448d4c97f4a",
+            "main",
+            "load",
+            "abbc3089-52fb-49de-abe7-184a3bddf572",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326265000000,
+          "panelFirstImagePaintNs": 1331326281000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "0ae5d95f-43db-4af1-bec9-0448d4c97f4a",
+            "main",
+            "load",
+            "abbc3089-52fb-49de-abe7-184a3bddf572",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326265000000,
+          "panelFirstImagePaintNs": 1331326281000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "d3a44d1c-f92a-49d2-aa40-e8340b8230d2",
+            "main",
+            "load",
+            "0ceb7812-bfac-4b5a-856c-1ab51501cb1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326515000000,
+          "panelFirstImagePaintNs": 1331326515000000,
+          "viewerImageSetNs": 1331326515000000,
+          "viewerFirstImagePaintNs": 1331326515000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "d3a44d1c-f92a-49d2-aa40-e8340b8230d2",
+            "main",
+            "load",
+            "0ceb7812-bfac-4b5a-856c-1ab51501cb1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326515000000,
+          "panelFirstImagePaintNs": 1331326515000000,
+          "viewerImageSetNs": 1331326515000000,
+          "viewerFirstImagePaintNs": 1331326515000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "d3a44d1c-f92a-49d2-aa40-e8340b8230d2",
+            "main",
+            "load",
+            "0ceb7812-bfac-4b5a-856c-1ab51501cb1b",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326515000000,
+          "panelFirstImagePaintNs": 1331326515000000,
+          "viewerImageSetNs": 1331326515000000,
+          "viewerFirstImagePaintNs": 1331326515000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "0ae5d95f-43db-4af1-bec9-0448d4c97f4a",
+            "main",
+            "blob",
+            "b9d3d08d-f497-4bbb-888b-9720ae2dd497",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331326953000000,
+          "panelFirstImagePaintNs": 1331326953000000,
+          "viewerImageSetNs": 1331326953000000,
+          "viewerFirstImagePaintNs": 1331326953000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "0ae5d95f-43db-4af1-bec9-0448d4c97f4a",
+            "main",
+            "save",
+            "e7a67b25-da55-482b-9f22-800cf42b87bb",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331327031000000,
+          "panelFirstImagePaintNs": 1331327046000000,
+          "viewerImageSetNs": 1331327031000000,
+          "viewerFirstImagePaintNs": 1331327046000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15202,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1920-1_5/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1920,
+        1080
+      ],
+      "clientLogical": [
+        1256,
+        640
+      ],
+      "qtScale": "1.5",
+      "dpr": 1.5,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 32.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "8b8c69c0-bc51-41c8-ac9f-a35116850c2e",
+            "main",
+            "load",
+            "2944c8c0-6ac6-439e-966e-a9a7beca6059",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331333984000000,
+          "panelFirstImagePaintNs": 1331334000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "8b8c69c0-bc51-41c8-ac9f-a35116850c2e",
+            "main",
+            "load",
+            "2944c8c0-6ac6-439e-966e-a9a7beca6059",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331333984000000,
+          "panelFirstImagePaintNs": 1331334000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "696fbd7f-45fa-4b5a-b1fb-84116db32461",
+            "main",
+            "load",
+            "263f5883-bcd9-4a55-a7d8-ae20275d8473",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331334234000000,
+          "panelFirstImagePaintNs": 1331334234000000,
+          "viewerImageSetNs": 1331334234000000,
+          "viewerFirstImagePaintNs": 1331334234000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "696fbd7f-45fa-4b5a-b1fb-84116db32461",
+            "main",
+            "load",
+            "263f5883-bcd9-4a55-a7d8-ae20275d8473",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331334234000000,
+          "panelFirstImagePaintNs": 1331334234000000,
+          "viewerImageSetNs": 1331334234000000,
+          "viewerFirstImagePaintNs": 1331334234000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "696fbd7f-45fa-4b5a-b1fb-84116db32461",
+            "main",
+            "load",
+            "263f5883-bcd9-4a55-a7d8-ae20275d8473",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331334234000000,
+          "panelFirstImagePaintNs": 1331334234000000,
+          "viewerImageSetNs": 1331334234000000,
+          "viewerFirstImagePaintNs": 1331334234000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "8b8c69c0-bc51-41c8-ac9f-a35116850c2e",
+            "main",
+            "blob",
+            "7df73da0-d202-4386-a904-54fd66eeba41",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331334671000000,
+          "panelFirstImagePaintNs": 1331334687000000,
+          "viewerImageSetNs": 1331334671000000,
+          "viewerFirstImagePaintNs": 1331334671000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "8b8c69c0-bc51-41c8-ac9f-a35116850c2e",
+            "main",
+            "save",
+            "f4b5dc2f-d7d8-43eb-8a42-bb6c04d34671",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331334750000000,
+          "panelFirstImagePaintNs": 1331334750000000,
+          "viewerImageSetNs": 1331334750000000,
+          "viewerFirstImagePaintNs": 1331334750000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7600,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15201,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9950,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-1920-2/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1920,
+        1080
+      ],
+      "clientLogical": [
+        936,
+        468
+      ],
+      "qtScale": "2",
+      "dpr": 2.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 422.0,
+      "projectLoadMs": 15.0,
+      "explicitFlowLayoutMs": 16.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "a659a99e-1328-46a5-a1e5-075f141b481d",
+            "main",
+            "load",
+            "7b10f76f-f0f5-416d-8d43-f2c981ee459d",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331341421000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "a659a99e-1328-46a5-a1e5-075f141b481d",
+            "main",
+            "load",
+            "7b10f76f-f0f5-416d-8d43-f2c981ee459d",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331341421000000,
+          "panelFirstImagePaintNs": 1331341500000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "f8025d6e-fe91-44eb-93b2-625f3f564c04",
+            "main",
+            "load",
+            "c0a948fd-382a-4c6d-b4d6-1eb0be9d9479",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331341718000000,
+          "panelFirstImagePaintNs": 0,
+          "viewerImageSetNs": 1331341718000000,
+          "viewerFirstImagePaintNs": 1331341718000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "f8025d6e-fe91-44eb-93b2-625f3f564c04",
+            "main",
+            "load",
+            "c0a948fd-382a-4c6d-b4d6-1eb0be9d9479",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331341718000000,
+          "panelFirstImagePaintNs": 1331341781000000,
+          "viewerImageSetNs": 1331341718000000,
+          "viewerFirstImagePaintNs": 1331341718000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "f8025d6e-fe91-44eb-93b2-625f3f564c04",
+            "main",
+            "load",
+            "c0a948fd-382a-4c6d-b4d6-1eb0be9d9479",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331341718000000,
+          "panelFirstImagePaintNs": 1331341781000000,
+          "viewerImageSetNs": 1331341718000000,
+          "viewerFirstImagePaintNs": 1331341718000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "a659a99e-1328-46a5-a1e5-075f141b481d",
+            "main",
+            "blob",
+            "ff9311fe-f75f-44d7-afe5-e013311ad3de",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331342156000000,
+          "panelFirstImagePaintNs": 1331342171000000,
+          "viewerImageSetNs": 1331342156000000,
+          "viewerFirstImagePaintNs": 1331342156000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "a659a99e-1328-46a5-a1e5-075f141b481d",
+            "main",
+            "save",
+            "4ab58f58-a152-42ca-adfb-ce49620e18a4",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331342234000000,
+          "panelFirstImagePaintNs": 1331342250000000,
+          "viewerImageSetNs": 1331342234000000,
+          "viewerFirstImagePaintNs": 1331342250000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7600,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9949,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    },
+    {
+      "path": "reviewed-native-fullscreen/measurements.json",
+      "status": "PASS",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c",
+      "requestedLogicalClient": [
+        1920,
+        1080
+      ],
+      "clientLogical": [
+        1920,
+        1080
+      ],
+      "qtScale": "1",
+      "dpr": 1.0,
+      "shots": 13,
+      "previousCount": "count = 2  [integer]",
+      "currentCount": "count = 3  [integer]",
+      "windowConstructionMs": 328.0,
+      "projectLoadMs": 63.0,
+      "explicitFlowLayoutMs": 0.0,
+      "imagePaintSamples": [
+        {
+          "file": "02-current-B-image.png",
+          "selection": [
+            "fca19105-4085-4298-8b7d-e00fc1ae328f",
+            "main",
+            "load",
+            "2c80f440-2a8c-4821-9b8d-cb76ba4420bb",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331348968000000,
+          "panelFirstImagePaintNs": 1331349000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "02b-current-B-image-scrolled.png",
+          "selection": [
+            "fca19105-4085-4298-8b7d-e00fc1ae328f",
+            "main",
+            "load",
+            "2c80f440-2a8c-4821-9b8d-cb76ba4420bb",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331348968000000,
+          "panelFirstImagePaintNs": 1331349000000000,
+          "viewerImageSetNs": null,
+          "viewerFirstImagePaintNs": null
+        },
+        {
+          "file": "03-previous-A-image.png",
+          "selection": [
+            "fc321dfe-ac4e-42a8-83eb-c365b3262bc3",
+            "main",
+            "load",
+            "6e331be3-6b7a-4705-83e2-336882702090",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331349234000000,
+          "panelFirstImagePaintNs": 1331349250000000,
+          "viewerImageSetNs": 1331349234000000,
+          "viewerFirstImagePaintNs": 1331349234000000
+        },
+        {
+          "file": "03b-previous-A-image-scrolled.png",
+          "selection": [
+            "fc321dfe-ac4e-42a8-83eb-c365b3262bc3",
+            "main",
+            "load",
+            "6e331be3-6b7a-4705-83e2-336882702090",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331349234000000,
+          "panelFirstImagePaintNs": 1331349250000000,
+          "viewerImageSetNs": 1331349234000000,
+          "viewerFirstImagePaintNs": 1331349234000000
+        },
+        {
+          "file": "04-previous-A-viewer.png",
+          "selection": [
+            "fc321dfe-ac4e-42a8-83eb-c365b3262bc3",
+            "main",
+            "load",
+            "6e331be3-6b7a-4705-83e2-336882702090",
+            "image",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331349234000000,
+          "panelFirstImagePaintNs": 1331349250000000,
+          "viewerImageSetNs": 1331349234000000,
+          "viewerFirstImagePaintNs": 1331349234000000
+        },
+        {
+          "file": "09-current-B-overlay.png",
+          "selection": [
+            "fca19105-4085-4298-8b7d-e00fc1ae328f",
+            "main",
+            "blob",
+            "1cc4b564-2834-4169-8510-3dffb0edf4c0",
+            "overlay",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331349671000000,
+          "panelFirstImagePaintNs": 1331349671000000,
+          "viewerImageSetNs": 1331349671000000,
+          "viewerFirstImagePaintNs": 1331349671000000
+        },
+        {
+          "file": "10-saved-result.png",
+          "selection": [
+            "fca19105-4085-4298-8b7d-e00fc1ae328f",
+            "main",
+            "save",
+            "626b01f5-ac6d-4468-9f3f-54cb876d8fe0",
+            "__saved_result__",
+            "COMPLETED"
+          ],
+          "modelUpdatedNs": 1331349765000000,
+          "panelFirstImagePaintNs": 1331349765000000,
+          "viewerImageSetNs": 1331349765000000,
+          "viewerFirstImagePaintNs": 1331349765000000
+        }
+      ],
+      "resources": [
+        {
+          "stage": "A complete",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 5676,
+            "jobs": 1,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 7601,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 1,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 2932
+        },
+        {
+          "stage": "A+B retained",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 2,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "previous A selected with shared large window",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 11835,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 15200,
+          "qtImageBytes": 691200,
+          "peakQtImageBytes": 691200,
+          "imageReads": 3,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 3158
+        },
+        {
+          "stage": "third acceptance evicts A",
+          "server": {
+            "sessions": 1,
+            "readers": 0,
+            "encodedBytes": 6159,
+            "jobs": 2,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 9948,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 8,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "project switched; external Runtime remains alive",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        },
+        {
+          "stage": "Designer closed",
+          "server": {
+            "sessions": 0,
+            "readers": 0,
+            "encodedBytes": 0,
+            "jobs": 0,
+            "retiredJobs": 0,
+            "pendingFiles": 0
+          },
+          "summariesBytes": 0,
+          "qtImageBytes": 0,
+          "peakQtImageBytes": 691200,
+          "imageReads": 9,
+          "workerMailboxBytes": 0,
+          "peakDecodedBytes": 345600,
+          "peakScratchBytes": 86400
+        }
+      ],
+      "inspectionAfterWindowClose": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "runtimeAliveAfterWindowClose": true
+    }
+  ],
+  "allRawChecksIncludingFailures": [
+    {
+      "path": "raw/affected-regression-final.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 58.51600000006147,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/affected-regression-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 83.25,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/affected-regression-verified.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 74.625,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-a.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 16.766000000061467,
+      "head": "dcda2491dd0c2123b23e45cb1f7a068bdd5bd836",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-cancel-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 6.75,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-cancel-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 7.031999999890104,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-cancel-third.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.983999999938533,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-legacy-first.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 13.797000000020489,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-plugin-diagnostic.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 1.75,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-retention-diagnostic.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 4.702999999979511,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-retention-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 5.5,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-retention-owner-diagnostic.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 7.5,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-retention-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 9.937000000150874,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-retention-third.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 5.938000000081956,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b-ui-first.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 2.625,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-b.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 24.875,
+      "head": "bbe7d590fc9a7c1da9e5458d3a2441197cb4e1da",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-contracts-sixth.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 17.936999999918044,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-diagnostic.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 12.797000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-fifth.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 4.219000000040978,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 14.063000000081956,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-fourth.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 3.390000000130385,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 13.266000000061467,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/batch-c-qt-third.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 4.4530000002123415,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/before-task-layout-observer.json",
+      "exitCode": 1,
+      "sourceChanged": null,
+      "durationSeconds": 12.265999999828637,
+      "head": null,
+      "candidateTree": null
+    },
+    {
+      "path": "raw/candidate-c-final-regression.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 77.06200000015087,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "da3967348fd226a9ac5a73a25532a716e7db4777"
+    },
+    {
+      "path": "raw/candidate-c-final2-regression.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 69.11000000010245,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "45857fdef22e4f9cb7afcb9c01024a7a40484c2a"
+    },
+    {
+      "path": "raw/candidate-c-regression.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 66.96900000004098,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "f33df07db16c839e5544c2f5cc2a37d22f0d0f58"
+    },
+    {
+      "path": "raw/candidate-c-release-regression.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 69.90600000019185,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "aa24f32ba0ca36aa41f58452f019d3ca7ee33032"
+    },
+    {
+      "path": "raw/candidate-native-1600.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.843000000109896,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/candidate-reviewed-regression.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 72.07799999997951,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/candidate-toolbox-isolated.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 4.875,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "45857fdef22e4f9cb7afcb9c01024a7a40484c2a"
+    },
+    {
+      "path": "raw/final-code-ci.json",
+      "exitCode": 1,
+      "sourceChanged": true,
+      "durationSeconds": 710.5629999998491,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-layout-ci.json",
+      "exitCode": 1,
+      "sourceChanged": true,
+      "durationSeconds": 783.0779999999795,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1280-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.1100000001024455,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1280-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.156999999890104,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1280-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.1719999997876585,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1280-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.890000000130385,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1600-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.187999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1600-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.265999999828637,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1600-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.2649999998975545,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1600-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.25,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1920-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.0,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1920-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.108999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1920-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.358999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-1920-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.577999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-scroll-fullscreen-1920.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.859999999869615,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-stable-ci.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 723.7030000002123,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/final-task-ci.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 702.8430000001099,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/full-ci-final-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 709.905999999959,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/full-ci-final.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 0.8279999999795109,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/full-ci.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 800.9850000001024,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/layout-scroll-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 15.452999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/layout-scroll-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 9.530999999959022,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/layout-scroll-third.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 8.734999999869615,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1280-1-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.155999999959022,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1280-1_25-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.594000000040978,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1280-1_5-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.641000000061467,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1280-2-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.75,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-1-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.25,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-100-first.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 11.718999999808148,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-100-second.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.405999999959022,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-1_25-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.5310000001918525,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-1_5-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.813000000081956,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1600-2-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.577999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1920-1-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.766000000061467,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1920-1_25-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.625,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1920-1_5-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.483999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-1920-2-matrix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.562999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-200-arrows-fixed.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.547000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-200-wrapped-fixed.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.327999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1280-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.406999999890104,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1280-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.4060000001918525,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1280-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.172000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1280-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.2810000001918525,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1600-100.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.186999999918044,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1600-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.0,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1600-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.390000000130385,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1600-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.062999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1920-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.047000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1920-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.469000000040978,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1920-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.25,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-1920-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.547000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-200-first.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.780999999959022,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-200-layout-diagnostic.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.359999999869615,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-200-minimum-diagnostic.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.109999999869615,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-200-scroll.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 9.375,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/native-final-fullscreen-1920.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.936999999918044,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/panel-owned-scroll-final.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 6.733999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/reviewed-code-ci.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 710.8900000001304,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/reviewed-native-1280-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.858999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1280-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.062000000150874,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1280-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.922000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1280-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.233999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1600-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.6719999997876585,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1600-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.797000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1600-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.937999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1600-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.5310000001918525,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1920-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.547000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1920-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.702999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1920-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.688000000081956,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-1920-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.733999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/reviewed-native-fullscreen.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 6.687999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": "29196707609593ee251147719c47e496e8f77d5c"
+    },
+    {
+      "path": "raw/short-canvas-scroll-boundary.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 9.25,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/summary-quota-and-short-canvas-final.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.781000000191852,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1280-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.327999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1280-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.125,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1280-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.014999999897555,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1280-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 9.406000000191852,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1600-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.031000000191852,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1600-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.187999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1600-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.640999999828637,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1600-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.515999999828637,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1920-1.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.405999999959022,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1920-1_25.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.797000000020489,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1920-1_5.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 7.5939999998081475,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-1920-2.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.186999999918044,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/verified-fullscreen-1920.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 8.952999999979511,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/wrapped-header-after-fix-second.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 7.562999999849126,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/wrapped-header-after-fix.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 8.718000000109896,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/wrapped-header-and-tabs-final.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 5.608999999938533,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/wrapped-header-before-fix-splitter.json",
+      "exitCode": 1,
+      "sourceChanged": false,
+      "durationSeconds": 6.1560000001918525,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    },
+    {
+      "path": "raw/wrapped-header-before-fix.json",
+      "exitCode": 0,
+      "sourceChanged": false,
+      "durationSeconds": 1.8589999999385327,
+      "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+      "candidateTree": null
+    }
+  ],
+  "rawTextSha256": {
+    "raw/affected-regression-final.txt": "f40c6a93d794007a2d6f45261890a30eee0c533875638a76bfd4b729666a2c5d",
+    "raw/affected-regression-first.txt": "e51eb2b230bb834ba7c273cdd92050baf08b5a1c3c51a04f944dc26a8e180ec2",
+    "raw/affected-regression-verified.txt": "748ebe9a0c6dac7f3a93f5fea70302eed886354f12e72f5eb58aad6dc2586739",
+    "raw/batch-a.txt": "b98b79f89f9902233b953f66f783141ad39accdcb39eaab29b6fbe112ddebc5a",
+    "raw/batch-b-cancel-first.txt": "e8c151b5661402c71b1797261d52c9a75d38477d8b4432091782f5fb9dde4656",
+    "raw/batch-b-cancel-second.txt": "dd5af7267ce7e2c3855883b208905904d3ef8ba75529bf3e13d2612375b152af",
+    "raw/batch-b-cancel-third.txt": "9350a65c6ff47395e595592f24f8c2a74c1d903efa805ee8871c6dd7aaf6c437",
+    "raw/batch-b-legacy-first.txt": "b3381e17b67159d71b5b2eea75a9c293b0835b3f9b5fc2ded2313cc0ab4a4641",
+    "raw/batch-b-plugin-diagnostic.txt": "fd59016c2a8c4ec18b00b86c4f90979e95e762ad9da0d5874c4eca6536ef40db",
+    "raw/batch-b-retention-diagnostic.txt": "85a0fbffdd1e7fbdbe1ec1a1e121ffacce516d6f2341d5226fc5e7e8e400a2c4",
+    "raw/batch-b-retention-first.txt": "fe549429213264f3304eeb023ec58514a74e50fa2fef0cb0e884ea75d087b90e",
+    "raw/batch-b-retention-owner-diagnostic.txt": "d07201aa8ef7235f21a1e30d61bae2a9a12fae11d982e1c1056e5600f45cd37e",
+    "raw/batch-b-retention-second.txt": "647c8f1e1b2ee1abcf8d6b2eda855fb9dd313ddd63a940b1af65ed39439b717e",
+    "raw/batch-b-retention-third.txt": "dc1e4d7e8044691ad8ed1ef93d43c5ac752c790e1515188dfa4757d76a845583",
+    "raw/batch-b-ui-first.txt": "62583804f640f469e9ed7eac4d9a4abd81b2d768e77e24cb5ed98d686a86f54d",
+    "raw/batch-b.txt": "74ca6fa34c94b5a4c19f7bccbcc116df4caea9c216a05cd4c4689aeccfd3f927",
+    "raw/batch-c-contracts-sixth.txt": "3f2a6d7553083c645e81da094ee7baaba7136738fa30d1c8a0b1954533f89190",
+    "raw/batch-c-qt-diagnostic.txt": "4c2ee4ff695db48c07ad0ce13b62624f4e9736f4be37b79ffb8cedf83c523287",
+    "raw/batch-c-qt-fifth.txt": "841b005939ff81631672aba4b3d6ab6863f247fd493ad5cd335281619be8265b",
+    "raw/batch-c-qt-first.txt": "e2cf05b0f15f36074b118b282c2fcfba7fd0f800a7a102e2cb7c4d292d5c22ef",
+    "raw/batch-c-qt-fourth.txt": "ad2bfba08ae6e70722a1aeecd6565645b791a7dab4fce3dc0ba9f328a6b5ed48",
+    "raw/batch-c-qt-second.txt": "9641543c6863482357e8c7160d082cffdc9e652e844bc7b492fb52a183bb3687",
+    "raw/batch-c-qt-third.txt": "aa01be0cfcfe1ffbb79500dba84d736fdc8377bafe45af0eb565b8e1daca7387",
+    "raw/before-task-layout-observer.txt": "741680c545f5dc6201d55d7c5d8ba9df81323678635484d10d5334512eea31d8",
+    "raw/candidate-c-final-regression.txt": "13bf33ae0f52d00124ff35ed7985a469bf37c20d30a1a044abcde86c8c3362fa",
+    "raw/candidate-c-final2-regression.txt": "48f93eb3913915b77f5afc9c3d1fad57af3195cc7af5e1ff329dee39e74c4716",
+    "raw/candidate-c-regression.txt": "09adee275ac7a52aa6ae40305ef92026345ef95da89e259e6310384c30559c0e",
+    "raw/candidate-c-release-regression.txt": "0ff2634c478e8aaedecbdb33c41048d32f2815770dc49977a2ef13a23f3d9c2d",
+    "raw/candidate-native-1600.txt": "5f30a3d7a7288dc440f7ddbed8f5dbd2162886d4e1d2a981c7bf3597cbf3bf49",
+    "raw/candidate-reviewed-regression.txt": "91093aade6160ead4e0453744e5adc610f221d04270112fd40238edd4e158656",
+    "raw/candidate-toolbox-isolated.txt": "8e477261cfe52276a2d3e9e2921eaba063cb19a4c08f566af8103dee33129163",
+    "raw/final-code-ci.txt": "1282c83f5cb0d2fd57d7fb77a23850ba262ac2cd5e6b27ce4ce18129ff1455c1",
+    "raw/final-layout-ci.txt": "6b8c86439acdbc59e00ff8e68225bb705a7102065553b55b8b8645fca15943a5",
+    "raw/final-scroll-1280-1.txt": "61569800cf3487903daadbb9a303bc63f7701d6a877cd3ca704a2e651de4e729",
+    "raw/final-scroll-1280-1_25.txt": "559edd05895341e3e4affbe8c0c0d42cb2ca00f609720d08406ce09d80fffb9a",
+    "raw/final-scroll-1280-1_5.txt": "bd0d2d5316cceb773ad307e121151193a3d8cbcea99acfedf35571e942709889",
+    "raw/final-scroll-1280-2.txt": "8c2a653b6216b78282d7283f11d4ae4819830430f38bee0a18abac09825e9103",
+    "raw/final-scroll-1600-1.txt": "6ea554aa5a43d9959a7ac6618df15708648e0fe3d361c5f2d33edfb3c566cae0",
+    "raw/final-scroll-1600-1_25.txt": "256800a401cdfb0e66950005d5ff565fa223dc36504e0d1db287511fefbaa3ee",
+    "raw/final-scroll-1600-1_5.txt": "7e5f4f2aaaadb0c01e4dd5d8a488e8cb8716543ab52080765fc480687f3eaf73",
+    "raw/final-scroll-1600-2.txt": "4a2a6d5d982a88aaa36771b2908fa198f5b18e4be5614d0fee89f6f7cfc962dd",
+    "raw/final-scroll-1920-1.txt": "cd0f637292642b970706580e4d41e27d16a3af3ca7a7606cccc0a3ea7d13a6b2",
+    "raw/final-scroll-1920-1_25.txt": "6edd0c5c9e594b846c975beefa7782edfdccfede28c9b90ff184647c7e157d50",
+    "raw/final-scroll-1920-1_5.txt": "af5fe2771922660a24fd30bd10b460a948f176b0411d48e6a56904db61bfd134",
+    "raw/final-scroll-1920-2.txt": "b977ae1b0c9ebd761d557080747d7f241518705b39f7d6a020f73ceea2d84afc",
+    "raw/final-scroll-fullscreen-1920.txt": "ba3888f920ba7ddca4133039839378fb88863000b461b2882ad311763f396489",
+    "raw/final-stable-ci.txt": "42b3dbe83b2a0a1b72b16525f2e8c350a3156ec05ba46c7ff3ff5dcb8e5ae67f",
+    "raw/final-task-ci.txt": "3aa2e652ee4cfdf868c08e93b57d32828136e40fffd55cdb412fb2a0efa855d2",
+    "raw/full-ci-final-second.txt": "e0ad792b0e452c80880e751d93225992b95d44614420cd7dd642e089d40b5f97",
+    "raw/full-ci-final.txt": "297da74d03cdc3443e791480d95da5d16e5afcbfbe73c1098852d232aa2f8087",
+    "raw/full-ci.txt": "5f16a7c41006a660097c3c8f5d88a1fa396f01e80e4ccf881fa92bc9a4c8a04f",
+    "raw/layout-scroll-first.txt": "17c0baa9c67c699004129d4359e9853d093163d9b2284ecb1c995867b2da7260",
+    "raw/layout-scroll-second.txt": "69cc873054014750715ceacfffb77ea571d26df1569143d11db74a7bed712052",
+    "raw/layout-scroll-third.txt": "54ef8cbece4e605ad6eb9b19e06c15a14fdf4a6ebda39e07ba2d01f0dc66c2e3",
+    "raw/native-1280-1-matrix.txt": "87f520742a4be0a36975858935e0d250704a50467abbc34b019ebed52a2fc782",
+    "raw/native-1280-1_25-matrix.txt": "58207768f410ec9e64ec5739545f6edbbb2b5763ceac6de71420df534d59a9ab",
+    "raw/native-1280-1_5-matrix.txt": "fc26d6fccd75c723ea7a712a4ba3f7f3e7b88aaa5d922f588f954cea14ae6e05",
+    "raw/native-1280-2-matrix.txt": "040ded563f980706355310227009b033a9f28ccb2009bb93e3522bd639246b1a",
+    "raw/native-1600-1-matrix.txt": "1c4aa8fb0d1ab4ba474e4c1c2d9963a4254cf06851b73ed52dc9504821c81fa0",
+    "raw/native-1600-100-first.txt": "053fe0e30d56e8b1ec03750f46430cf1aa4a34680fe41bd62fc692e23d8398a4",
+    "raw/native-1600-100-second.txt": "44981296bdd125404442cfb7101f490342b4b0766bb0927bea16a7b3df4191fd",
+    "raw/native-1600-1_25-matrix.txt": "f1f82c98b2854588772a48d6bf4d59bcebf4d70c278535221aaf8ad13d9be3a2",
+    "raw/native-1600-1_5-matrix.txt": "7f04890551ff2ac6aa13faf742c7630aba5e28ddb545792c0fe6dc31851acfb3",
+    "raw/native-1600-2-matrix.txt": "956ba0fcd0c0661909dfbb6a8082c2d31d457ad6eb59be78c54c9f0af557b55a",
+    "raw/native-1920-1-matrix.txt": "0be1c319d1f8128f811b11d8ded13e05a56f311f5fe9809bdb9fafb3d1b4b233",
+    "raw/native-1920-1_25-matrix.txt": "2cb5700d3599ccaeae3ead23fde81a16437e19ccf2d073581ca240102f2d2826",
+    "raw/native-1920-1_5-matrix.txt": "cde1f2d9e292eb7f17fb7669a8c6d07b1da02200b4982e663c0a333542176f95",
+    "raw/native-1920-2-matrix.txt": "efb825e154ef36b81788931dc44bf33e9a45398274d296826c643f9873fdd824",
+    "raw/native-200-arrows-fixed.txt": "925a8fa0e812ac16b4e031e973b1346f9bb541ecf438789ad2cce61d434bee22",
+    "raw/native-200-wrapped-fixed.txt": "fe578f9a018e6e3dabbbc962c9d2aad361fc8f9fd0e39927885483806e6b81cb",
+    "raw/native-final-1280-1.txt": "5e9c460e23e311386b98da28f04b468e64a529a6ea16ef9f665ad16e2a676bbf",
+    "raw/native-final-1280-1_25.txt": "849e2a3826db19912f2c008e7f150ce4e024cd29650ba548363276c967333566",
+    "raw/native-final-1280-1_5.txt": "915c06df7ae3f3ecbbc45e96b5220d84f5bb5fa9f2e27c6877264d18b7be271f",
+    "raw/native-final-1280-2.txt": "d4218a42a32332efc418001269c2c80bbb0d45a5b41e132c33a62dcac2d6a625",
+    "raw/native-final-1600-100.txt": "9066eca8059bc5da617f2b5217808eafe465dc9613f8847e48168ab0d05cb938",
+    "raw/native-final-1600-1_25.txt": "8d4f30f3795bfaa529fc25584634080e4c766a1c66b52c00c255301079d856ea",
+    "raw/native-final-1600-1_5.txt": "5004dd4d9ac438fac57959afaf19217002a9437b8cc562264e50111ef2082a7b",
+    "raw/native-final-1600-2.txt": "914a3490b5d1ad37c66e1a72ac08dc598e9e6f60889e102e8f10965f4faa451c",
+    "raw/native-final-1920-1.txt": "c6df1a0f0fb9646c2b99cf2dd31b696ca59ccd20a315a86fb788c7950a096534",
+    "raw/native-final-1920-1_25.txt": "6b2970d7d81edcaf0d8618de4fdd77b2fbe5edc1e1c400f0ab8d49b9d01bf492",
+    "raw/native-final-1920-1_5.txt": "f23b3fb3ec0cd459906b674328cf14384d3652042a54764049b8b262dbf50f54",
+    "raw/native-final-1920-2.txt": "58c0b81cc18bac7ccff52a1cf43fc67229c480fd6984b1f3abda44ffbbb76fb0",
+    "raw/native-final-200-first.txt": "795e5a8a75e908dac58cd6c37195b1a4ae47a32c9291c3aaf87224778a4981cc",
+    "raw/native-final-200-layout-diagnostic.txt": "adac68a9652aef1b886807ab120c824e4c19ba29a3559dd81157acb2064d46fd",
+    "raw/native-final-200-minimum-diagnostic.txt": "8f4ef1f4cad65c36aad85ce9c6aaf47b629ee4ba3ca6183067995a708fee80b9",
+    "raw/native-final-200-scroll.txt": "e4eb11702e1c613b929820e62a5218912036ac184a72ba7a75921510efdf1758",
+    "raw/native-final-fullscreen-1920.txt": "e7e8d7caf423c8060c9d900e173b776bb7c8a43b396f461498ccb4e58c5f10fb",
+    "raw/panel-owned-scroll-final.txt": "d7a8d89556c0b25c85a41744dda8af723b28002984bdcc863e4f2aab62ec8549",
+    "raw/reviewed-code-ci.txt": "1a754fe839bf5c4aaa171db4df6d448023298f6a1f034a97764ee56a489b7ad6",
+    "raw/reviewed-native-1280-1.txt": "7b4b2c317d8af5322583aa672cfdd3edde960b72d22a14a8ab5ca2521e49fa07",
+    "raw/reviewed-native-1280-1_25.txt": "91e1dc2ed82836ee60964f086b7f68840d7aa256fd9ccaf6deeb1ddf1d718f49",
+    "raw/reviewed-native-1280-1_5.txt": "951f90e8ebad7675eb87ca5d460188303f50363e20c7a26516b1c167a8c845d6",
+    "raw/reviewed-native-1280-2.txt": "9972d08fd8d38d4fd4402bc80a39494dc8909e6eb9dbe8f0e7d6ef972ad82ed8",
+    "raw/reviewed-native-1600-1.txt": "50857b86b7b8b6e5a9a61e3780a823200c859fd4f882e926cca74418d5abc95e",
+    "raw/reviewed-native-1600-1_25.txt": "1c2d64ae40d0ca6487fd2c1a1667e52bd4af0ede432317d5c4777a58aaffab97",
+    "raw/reviewed-native-1600-1_5.txt": "1eded9f007520d97a33ecc460d7795b522b0def61f04923d4ead2d4dc1aebf60",
+    "raw/reviewed-native-1600-2.txt": "12d064a7ea45e6c2abd6b23d96280c9c47e39c1824abb70b1b287442d08cac42",
+    "raw/reviewed-native-1920-1.txt": "eb9bb33f76101cf06cb89ebf6dc263f328eb843f93421cdb471ba6080f9d5f35",
+    "raw/reviewed-native-1920-1_25.txt": "cdb0724e9a5c8bd408f6e123f249f66321970a8647106ca308b5d02a9594a53c",
+    "raw/reviewed-native-1920-1_5.txt": "2edc0488f3e3197f59d5e502e83510589ded7c61f46e973a5c0c9bca326061e6",
+    "raw/reviewed-native-1920-2.txt": "079ea9d7d94065fb52b2930a8c46dca85b98c51db80b05b07c2ed26705a99614",
+    "raw/reviewed-native-fullscreen.txt": "0df7a672721704687e12e27e95f2e3e3a511cd3c29f62c8b07cb52ba3b0f4803",
+    "raw/short-canvas-scroll-boundary.txt": "08c6f57944d38df54ad246014038a855f7bd864fb3e628798949418e89753a76",
+    "raw/summary-quota-and-short-canvas-final.txt": "a90910c41f92ae1f61164f86e6274ca856e5f9f51cff7bdfb372cface8c1efdc",
+    "raw/verified-1280-1.txt": "2f22a7776eb7e8a70f34e77095ca710fcf4ae86047135d3f1a3362a8010c11b7",
+    "raw/verified-1280-1_25.txt": "9efc973ea89498ae7506f10e5812bb293e0d85fbd0cbb3f41ccef9e6ce5b8901",
+    "raw/verified-1280-1_5.txt": "4b81375782315833f6a8492f723c82ad2f4d1c5ad4f25949a4e4acbfa7e3b0fa",
+    "raw/verified-1280-2.txt": "ce7b80e15de082384b0b4770e2a18461b575f056bfb872a10a6c3368b512bc4c",
+    "raw/verified-1600-1.txt": "e72c416e470d4e74206f365f6242fb1fc959cc009e49de61d1c5ec3c098af07c",
+    "raw/verified-1600-1_25.txt": "b83505fa3192ce066556daf214f92c822d581dd0b8f3a28a1822a57a9d902f5f",
+    "raw/verified-1600-1_5.txt": "57d320e1f43c5994ec2cd4f9875eb818da20ad5ce206df49daa6001f30249579",
+    "raw/verified-1600-2.txt": "a42d712fb3ecc42eddad9313627b0382797845205c674fc09251c28ac320d56b",
+    "raw/verified-1920-1.txt": "9c27221adfdaed85e54e4db286f86c90c69a0de4831b59d1e0a43e0a20afe7d7",
+    "raw/verified-1920-1_25.txt": "26153ae4f3bc4726b91befef3aad46c73f7f5999417aec5039f9ada42190a0d4",
+    "raw/verified-1920-1_5.txt": "e5c44f840b3392c52de5e892cea0ab88918a1f35f8d2f39eb13eaa0c43550e89",
+    "raw/verified-1920-2.txt": "884546029af00a6748e5d070aa0053857a45139306b38e20c7d3f030f76d89d4",
+    "raw/verified-fullscreen-1920.txt": "70c4ff37859477f11a5f62d27ba5828b11e3179050df1dcbeaf55932500eac23",
+    "raw/wrapped-header-after-fix-second.txt": "f1a86f873d7231ea8d683e8953175b55697cc7328aec9d23b4c0cc7b193cc166",
+    "raw/wrapped-header-after-fix.txt": "74e85545182e812955d8d702a6a8df92e1dc207fdd653b279c79bbd1aac57706",
+    "raw/wrapped-header-and-tabs-final.txt": "18f66895e64c62c25d5e66f7169480ab9324f7f4d02aa9485d8e2dd725aab589",
+    "raw/wrapped-header-before-fix-splitter.txt": "b39441e3fbbdf818ad56051f9b71a5f98c08fbe5c5fd6fb8b7721d32d407c37b",
+    "raw/wrapped-header-before-fix.txt": "64ecebdae81c71d9e3b26af36e6ddecbc6f5dc50bdfb7d6690ca58c4939f09c6"
+  },
+  "manuallyInspectedRepresentativeScreenshots": [
+    "reviewed-native-1600-1/03-previous-A-image.png",
+    "reviewed-native-1600-1/04-previous-A-viewer.png",
+    "reviewed-native-1280-2/02b-current-B-image-scrolled.png",
+    "reviewed-native-fullscreen/06-current-B-count.png"
+  ],
+  "limits": [
+    "Low-rate 360x240 local image fixture only",
+    "Qt scale factor on one Windows desktop; not multiple physical DPI devices",
+    "Monotonic resolution 15.625 ms; paint times are not DWM presentation",
+    "No 1080p/5 Hz performance or process RSS acceptance"
+  ]
+}

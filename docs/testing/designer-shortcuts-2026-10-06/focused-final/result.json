@@ -1,0 +1,16 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_designer_shortcuts.py",
+    "tests/designer/test_shortcut_guards.py",
+    "tests/designer/test_node_context_menu.py",
+    "tests/designer/test_delete_shortcut.py",
+    "tests/ui/page_designer/test_workspace_modes.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 16.140999999828637
+}

@@ -1,0 +1,1 @@
+"""Mitsubishi SLMP read builtin."""

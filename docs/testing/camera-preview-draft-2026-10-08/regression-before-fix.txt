@@ -1,0 +1,50 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____________ testDraftPreviewDoesNotOverwriteStaleLoadedProject ______________
+
+runtime = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000021F23087130>
+
+    def testDraftPreviewDoesNotOverwriteStaleLoadedProject(runtime):
+        old = draftProject()
+        old["workflows"]["main"]["nodes"] = []
+        document = ProjectDocument.model_validate(old)
+        runtime.loadedDocument = document
+        runtime.loadedPayload = document.model_dump(mode="json")
+        runtime.loadedProjectId = document.project.projectId
+        originalPayload = deepcopy(runtime.loadedPayload)
+        request = draftRequest()
+        legacy = runtime.OpenOperatorPreviewSession(request, None)
+        assert not legacy.ok and legacy.message == "node is not part of the workflow"
+>       reply = runtime.OpenDraftOperatorPreviewSession(request, None)
+E       AttributeError: 'RuntimeService' object has no attribute 'OpenDraftOperatorPreviewSession'. Did you mean: 'OpenOperatorPreviewSession'?
+
+tests\runtime\test_draft_live_preview.py:84: AttributeError
+_________ testContextSendsFreshDraftAndKeepsPreviewParametersSeparate _________
+
+    def testContextSendsFreshDraftAndKeepsPreviewParametersSeparate():
+        payload = draftProject()
+        requests = []
+
+        def openDraft(project, workflow, node, operator, params, projectPayload):
+            requests.append((project, workflow, node, operator, params, deepcopy(projectPayload)))
+            return SimpleNamespace(ok=True, session_id=f"session-{len(requests)}")
+
+>       editor = context(SimpleNamespace(openDraftOperatorPreviewSession=openDraft), lambda key: payload if key == KEY else None)
+
+tests\designer\test_live_preview_draft_context.py:30:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = namespace(openDraftOperatorPreviewSession=<function testContextSendsFreshDraftAndKeepsPreviewParametersSeparate.<locals>.openDraft at 0x0000021F2308F910>)
+provider = <function testContextSendsFreshDraftAndKeepsPreviewParametersSeparate.<locals>.<lambda> at 0x0000021F233A6B00>
+
+    def context(runtime, provider=None):
+>       return EditorContext(key=KEY, operatorId="vision.io.fake_camera", version="1.0", previewMode="live",
+                             paramSchema={}, runtimeClient=runtime, applyParams=lambda *_args: True,
+                             appendLog=lambda *_args: None, getPreviewProject=provider)
+E       TypeError: EditorContext.__init__() got an unexpected keyword argument 'getPreviewProject'
+
+tests\designer\test_live_preview_draft_context.py:17: TypeError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_draft_live_preview.py::testDraftPreviewDoesNotOverwriteStaleLoadedProject
+FAILED tests/designer/test_live_preview_draft_context.py::testContextSendsFreshDraftAndKeepsPreviewParametersSeparate
+2 failed in 2.01s

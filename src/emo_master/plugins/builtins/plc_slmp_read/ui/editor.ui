@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>PlcEditor</class>
+ <widget class="QWidget" name="PlcEditor">
+  <layout class="QVBoxLayout" name="rootLayout">
+   <item>
+    <widget class="QTabWidget" name="plcTabs">
+     <widget class="QWidget" name="paramsPage">
+      <attribute name="title"><string>参数</string></attribute>
+      <layout class="QVBoxLayout" name="paramsLayout"/>
+     </widget>
+     <widget class="QWidget" name="runtimePage">
+      <attribute name="title"><string>运行</string></attribute>
+      <layout class="QVBoxLayout" name="runtimeLayout"/>
+     </widget>
+    </widget>
+   </item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

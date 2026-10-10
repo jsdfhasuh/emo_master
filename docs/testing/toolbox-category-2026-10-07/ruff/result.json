@@ -1,0 +1,21 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/floating_toolbox.py",
+    "tests/designer/test_category_selection.py",
+    "docs/testing/toolbox-category-2026-10-07/capture.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 0.1559999999590218,
+  "outerWatchdogSeconds": 90,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\category-highlight-20261007-092430-369788\\category-test-runtime"
+}

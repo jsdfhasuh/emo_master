@@ -1,0 +1,409 @@
+...................................................................F.... [ 10%]
+...............s........................................................ [ 20%]
+........................................................................ [ 30%]
+........................................................................ [ 40%]
+........................................................................ [ 50%]
+........................................................................ [ 60%]
+........................................................................ [ 70%]
+....FFF................................................................. [ 80%]
+............................................F........................... [ 90%]
+...................................................................F.    [100%]
+================================== FAILURES ===================================
+______________ testAllBuiltinParameterTitlesSurviveRegistration _______________
+
+    def testAllBuiltinParameterTitlesSurviveRegistration():
+        root = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins"
+        scan = PluginRegistry("0.6.1").scan(root)
+        assert not scan.rejectedOperators
+>       assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 51
+E       AssertionError: assert 53 == 51
+E        +  where 53 = len([WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/absdiff/manifest.json'), Wi...sPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/blob_analysis/manifest.json'), ...])
+E        +    where [WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/absdiff/manifest.json'), Wi...sPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/blob_analysis/manifest.json'), ...] = list(<generator object Path.rglob at 0x000002173FBD4900>)
+E        +      where <generator object Path.rglob at 0x000002173FBD4900> = rglob('manifest.json')
+E        +        where rglob = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins').rglob
+
+tests\core\plugin\test_builtin_parameter_titles.py:20: AssertionError
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[1] ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1401/testRealWhileProcessesEveryIma0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021740F45600>
+count = 1
+
+    @pytest.mark.parametrize("count", [1, 3])
+    def testRealWhileProcessesEveryImageAndResetsForNewRun(tmp_path, monkeypatch, count):
+        images = tmp_path / "images"
+        images.mkdir()
+        for index in range(count):
+            assert cv2.imwrite(str(images / f"{index}.png"), np.full((8, 12, 3), index, np.uint8))
+        registry = _registry()
+        document = prepareRuntimeProject(_project(), tmp_path, registry)
+        compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+        processed = []
+        execute = BlurOperator.executeNode
+
+        def record(self, inputs, params, context):
+            processed.append(int(inputs["image"][0, 0, 0]))
+            return execute(self, inputs, params, context)
+
+        monkeypatch.setattr(BlurOperator, "executeNode", record)
+        runner = WorkflowRunner(compiled, registry)
+        for job in ("first", "second"):
+>           result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+
+tests\runtime\test_image_batch_while.py:68:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\workflow\runner.py:102: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:188: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002173F127460>
+node = CompiledNode(nodeId='node-1c1d7ac2', kind='operator', operatorId='vision.io.huaray_camera', inputPorts=mappingproxy({}...keep', 'Mono8', 'BayerGR8', 'BayerRG8', 'BayerGB8', 'BayerBG8', 'RGB8', 'BGR8'], 'default': 'keep'}}, 'required': []}))
+nodeInput = {}, supplied = {}
+context = RunContext(jobId='first', workflowId='main', workflowRunId='87bdf7e2-7627-4390-8028-e42bb2b4171f', parentWorkflowRunId...nId='a0add495-71c8-4fec-957e-5fbe440e38cc', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000021740F457E0>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+            invalidInputs = _invalidTypes(node.inputPorts, nodeInput)
+            if invalidInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_TYPE",
+                    f"node inputs have invalid types: {', '.join(invalidInputs)}",
+                    node.nodeId,
+                )
+        if node.kind == "workflow_input":
+            return {
+                key: supplied[key]
+                for key in node.outputPorts
+                if key in supplied
+            }, {}, {}
+        if node.kind == "workflow_output":
+            return dict(nodeInput), {}, {}
+        if node.kind == "subflow":
+            result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        if node.kind == "loop":
+            result = self.loopRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        operator = self._operatorForNode(node, context, cancellation)
+        if operator is None or not hasattr(operator, "executeNode"):
+            raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
+        params = dict(node.params)
+        if node.globalVariableBindings:
+            from emo_master.core.project.global_variables import resolveParams, validateBoundValues
+            values = self.globalVariables.readMany([binding["variableId"] for binding in node.globalVariableBindings])
+            params = resolveParams(params, node.globalVariableBindings, values)
+            validateBoundValues(params, node.globalVariableBindings, node.paramSchema)
+            validator = getattr(operator, "validateParams", None)
+            error = validator(params) if callable(validator) else None
+            if isinstance(error, dict):
+                raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
+                                             str(error.get("message", "invalid bound parameters")), node.nodeId)
+        logger = self._operatorLogManager.createLogger(
+            context,
+            str(node.operatorId or ""),
+            "execute",
+        )
+        runtimeContext = {
+            "jobId": context.jobId,
+            "projectId": context.projectId,
+            "workflowId": context.workflowId,
+            "workflowRunId": context.workflowRunId,
+            "parentWorkflowRunId": context.parentWorkflowRunId,
+            "nodeId": node.nodeId,
+            "nodeRunId": context.nodeRunId,
+            "iterationPath": list(context.iterationPath),
+            "workspacePath": context.workspacePath,
+            "isCancellationRequested": cancellation.isCancellationRequested,
+            "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
+            "logger": logger,
+            "globalCounters": self.globalCounters,
+            "globalVariables": self.globalVariables,
+            "mappedOutputs": dict(boundValues or {}),
+        }
+        if node.operatorId == "vision.io.sqlite_writer":
+            from emo_master.apps.runtime.business_sqlite.backend import insert
+            runtimeContext["sqliteInsert"] = insert
+            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
+            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
+                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
+        try:
+            result = operator.executeNode(nodeInput, params, runtimeContext)
+        except Exception as err:
+            loggingDiagnostics = logger.close()
+            if loggingDiagnostics:
+                _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
+            raise
+        loggingDiagnostics = logger.close()
+        if not isinstance(result, dict) or result.get("status") != "ok":
+            error = result.get("error", {}) if isinstance(result, dict) else {}
+            code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
+            message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
+            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
+            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
+            normalizedDiagnostics = (
+                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
+            )
+            if loggingDiagnostics:
+                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+>           raise WorkflowExecutionError(
+                str(code),
+                str(message),
+                node.nodeId,
+                failedMetrics if isinstance(failedMetrics, dict) else {},
+                normalizedDiagnostics,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+
+src\emo_master\apps\runtime\workflow\runner.py:403: WorkflowExecutionError
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[3] ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1401/testRealWhileProcessesEveryIma1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021740F6BCA0>
+count = 3
+
+    @pytest.mark.parametrize("count", [1, 3])
+    def testRealWhileProcessesEveryImageAndResetsForNewRun(tmp_path, monkeypatch, count):
+        images = tmp_path / "images"
+        images.mkdir()
+        for index in range(count):
+            assert cv2.imwrite(str(images / f"{index}.png"), np.full((8, 12, 3), index, np.uint8))
+        registry = _registry()
+        document = prepareRuntimeProject(_project(), tmp_path, registry)
+        compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+        processed = []
+        execute = BlurOperator.executeNode
+
+        def record(self, inputs, params, context):
+            processed.append(int(inputs["image"][0, 0, 0]))
+            return execute(self, inputs, params, context)
+
+        monkeypatch.setattr(BlurOperator, "executeNode", record)
+        runner = WorkflowRunner(compiled, registry)
+        for job in ("first", "second"):
+>           result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+
+tests\runtime\test_image_batch_while.py:68:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\workflow\runner.py:102: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:188: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000021740D3E320>
+node = CompiledNode(nodeId='node-1c1d7ac2', kind='operator', operatorId='vision.io.huaray_camera', inputPorts=mappingproxy({}...keep', 'Mono8', 'BayerGR8', 'BayerRG8', 'BayerGB8', 'BayerBG8', 'RGB8', 'BGR8'], 'default': 'keep'}}, 'required': []}))
+nodeInput = {}, supplied = {}
+context = RunContext(jobId='first', workflowId='main', workflowRunId='7a0cd399-ae9a-4c01-9460-1de0a3a30a40', parentWorkflowRunId...nId='8b28fbec-1202-4357-8c50-c5ad4e347a64', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000021740E789D0>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+            invalidInputs = _invalidTypes(node.inputPorts, nodeInput)
+            if invalidInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_TYPE",
+                    f"node inputs have invalid types: {', '.join(invalidInputs)}",
+                    node.nodeId,
+                )
+        if node.kind == "workflow_input":
+            return {
+                key: supplied[key]
+                for key in node.outputPorts
+                if key in supplied
+            }, {}, {}
+        if node.kind == "workflow_output":
+            return dict(nodeInput), {}, {}
+        if node.kind == "subflow":
+            result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        if node.kind == "loop":
+            result = self.loopRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        operator = self._operatorForNode(node, context, cancellation)
+        if operator is None or not hasattr(operator, "executeNode"):
+            raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
+        params = dict(node.params)
+        if node.globalVariableBindings:
+            from emo_master.core.project.global_variables import resolveParams, validateBoundValues
+            values = self.globalVariables.readMany([binding["variableId"] for binding in node.globalVariableBindings])
+            params = resolveParams(params, node.globalVariableBindings, values)
+            validateBoundValues(params, node.globalVariableBindings, node.paramSchema)
+            validator = getattr(operator, "validateParams", None)
+            error = validator(params) if callable(validator) else None
+            if isinstance(error, dict):
+                raise WorkflowExecutionError(str(error.get("code", "E_PARAM_INVALID")),
+                                             str(error.get("message", "invalid bound parameters")), node.nodeId)
+        logger = self._operatorLogManager.createLogger(
+            context,
+            str(node.operatorId or ""),
+            "execute",
+        )
+        runtimeContext = {
+            "jobId": context.jobId,
+            "projectId": context.projectId,
+            "workflowId": context.workflowId,
+            "workflowRunId": context.workflowRunId,
+            "parentWorkflowRunId": context.parentWorkflowRunId,
+            "nodeId": node.nodeId,
+            "nodeRunId": context.nodeRunId,
+            "iterationPath": list(context.iterationPath),
+            "workspacePath": context.workspacePath,
+            "isCancellationRequested": cancellation.isCancellationRequested,
+            "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
+            "logger": logger,
+            "globalCounters": self.globalCounters,
+            "globalVariables": self.globalVariables,
+            "mappedOutputs": dict(boundValues or {}),
+        }
+        if node.operatorId == "vision.io.sqlite_writer":
+            from emo_master.apps.runtime.business_sqlite.backend import insert
+            runtimeContext["sqliteInsert"] = insert
+            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
+            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
+                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
+        try:
+            result = operator.executeNode(nodeInput, params, runtimeContext)
+        except Exception as err:
+            loggingDiagnostics = logger.close()
+            if loggingDiagnostics:
+                _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
+            raise
+        loggingDiagnostics = logger.close()
+        if not isinstance(result, dict) or result.get("status") != "ok":
+            error = result.get("error", {}) if isinstance(result, dict) else {}
+            code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
+            message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
+            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
+            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
+            normalizedDiagnostics = (
+                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
+            )
+            if loggingDiagnostics:
+                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+>           raise WorkflowExecutionError(
+                str(code),
+                str(message),
+                node.nodeId,
+                failedMetrics if isinstance(failedMetrics, dict) else {},
+                normalizedDiagnostics,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+
+src\emo_master\apps\runtime\workflow\runner.py:403: WorkflowExecutionError
+___________ testDirectoryResolvedRelativeToProjectAndDraftUnchanged ___________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1401/testDirectoryResolvedRelativeT0')
+
+    def testDirectoryResolvedRelativeToProjectAndDraftUnchanged(tmp_path):
+        (tmp_path / "images").mkdir()
+        document = _project()
+        prepared = prepareRuntimeProject(document, tmp_path, _registry())
+>       assert document.workflows["body"].nodes[1].params["folderPath"] == "images"
+E       KeyError: 'folderPath'
+
+tests\runtime\test_image_batch_while.py:78: KeyError
+_____________ testBuiltinSqlitePreservesActualCoreCapabilityGate ______________
+
+    def testBuiltinSqlitePreservesActualCoreCapabilityGate():
+        from pathlib import Path
+        from emo_master import __version__
+        from emo_master.core.plugin.registry import PluginRegistry
+        root = Path('src/emo_master/plugins')
+        legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
+>       assert set(legacy.rejectedOperators) == {OPERATOR_ID}
+E       AssertionError: assert {'vision.io.s...riable_write'} == {'vision.io.sqlite_writer'}
+E
+E         Extra items in the left set:
+E         'vision.state.variable_write'
+E         'vision.state.variable_read'
+E         Use -v to get more diff
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_dependencies.py:95: AssertionError
+_______________________ testCompleteSqliteDesignerPath ________________________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000021741071AB0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1401/testCompleteSqliteDesignerPath0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000021741073940>
+
+    def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
+        out = Path(os.environ['EMO_SQLITE_SCREEN_DIR']) if os.environ.get('EMO_SQLITE_SCREEN_DIR') else None
+        screenshots = {}
+        root = tmp_path / '工程 中文 空格'
+        root.mkdir()
+        blank = project(nodes=[])
+        blank['workflows']['main']['inputs'] = {}
+        saveProject(root, blank)
+        runtime = RuntimeService(dbPath=tmp_path / 'runtime-state.sqlite3', workspaceRoot=tmp_path / 'jobs')
+        server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        client = RuntimeClient(rpc.RuntimeServiceStub(channel), runtimeTarget=f'127.0.0.1:{port}')
+        records = {'platform': QApplication.platformName(), 'jobs': [], 'rows': [], 'screenSizes': [],
+                   'devicePixelRatio': QApplication.primaryScreen().devicePixelRatio()}
+        def shot(widget, name):
+            QApplication.processEvents()
+            if out:
+                path = out / (name + '.png')
+                assert widget.grab().save(str(path))
+                screenshots[path.name] = hashlib.sha256(path.read_bytes()).hexdigest()
+        with ownedDesignerWindow as windows:
+            window = windows(client)
+            try:
+                window.resize(1600, 900)
+                assert window.loadProjectDirectory(str(root))
+                window.show()
+                waitQt(lambda: window.operatorCatalogController.state == 'ready')
+                viewport = window.flowView.viewport()
+                sourceId = dragOperator(window, 'vision.value.number', QPoint(viewport.width() // 3, 80), monkeypatch)
+                sourceEditor = doubleNode(window, sourceId)
+>               assert sourceEditor is not None and sourceEditor._schemaForm is not None
+E               assert (None is not None)
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_user_path.py:136: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\flow_scene.py", line 235, in mouseDoubleClickEvent
+    handleNodeDoubleClick(self.model.nodeId)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\flow_scene.py", line 767, in handleNodeDoubleClick
+    self._nodeDoubleClickHandler(nodeId)
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3923, in openNodeParamDialog
+    window = self.operatorEditorManager.open(
+TypeError: OperatorEditorManager.open() got an unexpected keyword argument 'variableDefinitions'
+=========================== short test summary info ===========================
+FAILED tests/core/plugin/test_builtin_parameter_titles.py::testAllBuiltinParameterTitlesSurviveRegistration
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[1]
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[3]
+FAILED tests/runtime/test_image_batch_while.py::testDirectoryResolvedRelativeToProjectAndDraftUnchanged
+FAILED tests/sqlite_writer/test_dependencies.py::testBuiltinSqlitePreservesActualCoreCapabilityGate
+FAILED tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath
+6 failed, 710 passed, 1 skipped in 71.33s (0:01:11)

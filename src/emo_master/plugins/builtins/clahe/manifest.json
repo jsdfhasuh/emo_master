@@ -1,0 +1,52 @@
+{
+  "operatorId": "vision.preprocess.clahe",
+  "displayName": "CLAHE",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._intensity_operators:ClaheOperator",
+  "category": "预处理",
+  "iconKey": "clahe",
+  "summary": "对灰度图或 BGR 图像 LAB 色彩空间的 L 通道执行 CLAHE。",
+  "inputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "clipLimit": {
+        "title": "对比度限制",
+        "type": "number",
+        "exclusiveMinimum": 0.0,
+        "default": 2.0,
+        "xExample": 2.0,
+        "description": "正数对比度限制；数值越大，允许的局部对比度增强越强。"
+      },
+      "tileGridWidth": {
+        "title": "分块列数",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 64,
+        "default": 8,
+        "xUnit": "列",
+        "xExample": 8,
+        "description": "图像水平方向的分块数量，范围为 1～64。"
+      },
+      "tileGridHeight": {
+        "title": "分块行数",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 64,
+        "default": 8,
+        "xUnit": "行",
+        "xExample": 8,
+        "description": "图像垂直方向的分块数量，范围为 1～64。"
+      }
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

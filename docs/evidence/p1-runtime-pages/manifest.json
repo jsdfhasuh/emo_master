@@ -1,0 +1,232 @@
+{
+  "checks": {
+    "accepted-focused": {
+      "tested_head": "0fdbcf47a6231074fdb5d646b6b3ce398c81a4cf",
+      "tested_status": "",
+      "suite": "focused",
+      "code_stable": true,
+      "code_digest": "6df95cc7a6ecdc7d4b8b82531d199a74a6ab939c802132fe34b9bd34af343981",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/core/presentation"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 2.577999999979511,
+          "log": "1.log",
+          "log_sha256": "7633cdd59eaee12d61e947acd810a63d0b4889ef5e0449af34b6960c9a5558be"
+        }
+      ]
+    },
+    "accepted-regression": {
+      "tested_head": "0fdbcf47a6231074fdb5d646b6b3ce398c81a4cf",
+      "tested_status": "",
+      "suite": "regression",
+      "code_stable": true,
+      "code_digest": "6df95cc7a6ecdc7d4b8b82531d199a74a6ab939c802132fe34b9bd34af343981",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/core",
+            "tests/runtime",
+            "tests/e2e",
+            "-rs"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 42.06200000003446,
+          "log": "1.log",
+          "log_sha256": "c1d281617c464a50fdb84baef746c49ead27b57f553db65c4dd37e83cdc9d155"
+        },
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/designer/test_project_store.py",
+            "tests/designer/test_workflow_store.py",
+            "tests/designer/test_workflow_package.py",
+            "tests/designer/test_workflow_boundary_nodes.py",
+            "tests/designer/test_workflow_dependency_tree.py",
+            "tests/designer/test_flow_graph_project_codec.py",
+            "tests/designer/test_main_window_project_save_load.py"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 4.562999999965541,
+          "log": "2.log",
+          "log_sha256": "231f4f8c13a278e6e6a842492ed9bb44ea9886c0255a4d10e5f4e7ef7788365e"
+        }
+      ]
+    },
+    "final-ci": {
+      "tested_head": "0fdbcf47a6231074fdb5d646b6b3ce398c81a4cf",
+      "tested_status": "",
+      "suite": "ci",
+      "code_stable": true,
+      "code_digest": "6df95cc7a6ecdc7d4b8b82531d199a74a6ab939c802132fe34b9bd34af343981",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "scripts/ci_check.py"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 109.375,
+          "log": "1.log",
+          "log_sha256": "e0909ba7422c9d18e5dcea3689cde97ca79e115445778fb1185f37218f5c3174"
+        }
+      ]
+    },
+    "final-focused": {
+      "tested_head": "44e1ba7abab820dc0b39c3558ff477d0d76d501d",
+      "tested_status": "",
+      "suite": "focused",
+      "code_stable": true,
+      "code_digest": "441e1aefc8e9f64120bc27c03a82bfa81e82111ab8d413b3608a2e214cedd2d5",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/core/presentation"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 2.8589999999385327,
+          "log": "1.log",
+          "log_sha256": "d7e76d0f325f55f779ca22533e7e19b992fc9076cb4e37a20a1b8e95f14736d7"
+        }
+      ]
+    },
+    "final-regression": {
+      "tested_head": "44e1ba7abab820dc0b39c3558ff477d0d76d501d",
+      "tested_status": "",
+      "suite": "regression",
+      "code_stable": true,
+      "code_digest": "441e1aefc8e9f64120bc27c03a82bfa81e82111ab8d413b3608a2e214cedd2d5",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/core",
+            "tests/runtime",
+            "tests/e2e",
+            "-rs"
+          ],
+          "status": "FAIL",
+          "exit_code": 1,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 44.73400000005495,
+          "log": "1.log",
+          "log_sha256": "563e1ce86a57c8db3bfa86afe69ca6db5bde1d0a1f331d750fd9ee472c532f90"
+        },
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "-m",
+            "pytest",
+            "-q",
+            "tests/designer/test_project_store.py",
+            "tests/designer/test_workflow_store.py",
+            "tests/designer/test_workflow_package.py",
+            "tests/designer/test_workflow_boundary_nodes.py",
+            "tests/designer/test_workflow_dependency_tree.py",
+            "tests/designer/test_flow_graph_project_codec.py",
+            "tests/designer/test_main_window_project_save_load.py"
+          ],
+          "status": "PASS",
+          "exit_code": 0,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 4.515999999945052,
+          "log": "2.log",
+          "log_sha256": "0411439ee772be612bdc4609787805e40fd9f0266b1cd91552f1ff831a5e9d3a"
+        }
+      ]
+    },
+    "verified-baseline": {
+      "tested_head": "5924c1dcbbcb7fdd36a25833b14e01ce519557fa",
+      "tested_status": "clean git archive (no workspace overlays)",
+      "suite": "ci",
+      "code_stable": true,
+      "code_digest": "e267012ede708c1eb111f0f4e33422bd94294d4a7b81fb81f532af6b90d6159d",
+      "results": [
+        {
+          "command": [
+            "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+            "scripts/ci_check.py"
+          ],
+          "status": "FAIL",
+          "exit_code": 4294967295,
+          "timeout": false,
+          "watchdog_seconds": 300,
+          "duration_seconds": 43.92099999997299,
+          "log": "1.log",
+          "log_sha256": "d06d9e2b28bc2f52b19fa59f516c3d295cadf80aa1d3815dd51fa6560b6a9614"
+        }
+      ]
+    }
+  },
+  "files": {
+    "baseline-ci.exit": "186a919b8c7cb84aebf4e53c70cd1cc028a93a1d183ee29dd6e10cd18a714577",
+    "baseline-ci.log": "516b7bcb579fa15c392b154b11e43336a857f0f9daf1ba21c7be9666466c7603",
+    "batch1-tests-final.log": "9a7629330972cb8e324b00aadfe176cfcb99b849bef5d00690e2e633add235b6",
+    "batch1-tests.log": "82f0877e7c88757bf7117f7c642b4ea871aae87ddab444efc76e06511e165bfc",
+    "batch2-tests.log": "5ec679daa416f0590b5fb5028ea23162bea2f4a5b262f5a8c39169655e469182",
+    "batch3-complete-tests.log": "e21c18ae7d9d373dfa20710fdfe49effd14c300935a69023339db282c8c35732",
+    "batch3-mypy.log": "0cd2b387088596e9570d9b390dc03333aa489c407888b9d92557eacd987f9dde",
+    "batch3-review-tests.log": "a3c6d835ab4a0818bb11324e590c426df3605a9a77a0e95b56149d30a0b73d1d",
+    "batch3-tests-final.log": "f1b7d1d2c9767768a315e8ee61012b18181f1f3147e2fa298964ffa9172b782b",
+    "batch3-tests.log": "af6b0a02eeef6f29bb45ef90bac494471c8b6e413880a031b321935d3529dfd3",
+    "compatibility-fix.log": "138048dd10b8c31eeb5e5e55f69281168ac226ca711ed5fcfd899ef4c739a14c",
+    "environment.txt": "978561a545052b37b72d5414207341dd6a710e3f4863c88665e8ffddcd55490f",
+    "accepted-focused/1.log": "7633cdd59eaee12d61e947acd810a63d0b4889ef5e0449af34b6960c9a5558be",
+    "accepted-focused/evidence.json": "99466753079b029bcd031d5b0bee75c637eca2e1559b90860fa550c616994aac",
+    "accepted-regression/1.log": "c1d281617c464a50fdb84baef746c49ead27b57f553db65c4dd37e83cdc9d155",
+    "accepted-regression/2.log": "231f4f8c13a278e6e6a842492ed9bb44ea9886c0255a4d10e5f4e7ef7788365e",
+    "accepted-regression/evidence.json": "ca999dca0eda9f442bcc875caef1b24d6997b93795c63d1abf299450bab4d496",
+    "final-ci/1.log": "e0909ba7422c9d18e5dcea3689cde97ca79e115445778fb1185f37218f5c3174",
+    "final-ci/evidence.json": "7523c2b8e9911da9ceb3aa8b5e4c3358e68422c984edc4f525cebbd8d9bd8522",
+    "final-focused/1.log": "d7e76d0f325f55f779ca22533e7e19b992fc9076cb4e37a20a1b8e95f14736d7",
+    "final-focused/evidence.json": "f9071f325b04695fb4e0985f9e4ac34a2f0a2abe399ddefb7bca96dc6789c636",
+    "final-regression/1.log": "563e1ce86a57c8db3bfa86afe69ca6db5bde1d0a1f331d750fd9ee472c532f90",
+    "final-regression/2.log": "0411439ee772be612bdc4609787805e40fd9f0266b1cd91552f1ff831a5e9d3a",
+    "final-regression/evidence.json": "a91e910856b0216b832666bcac9704a9269b60a22f8084fc3a2d83365ef1782f",
+    "verified-baseline/1.log": "d06d9e2b28bc2f52b19fa59f516c3d295cadf80aa1d3815dd51fa6560b6a9614",
+    "verified-baseline/evidence.json": "17170764fa66cef9a36d52b29a6465b23d27fb6f839363e181e28cea0b1d3090"
+  },
+  "notes": [
+    "Original exploratory logs retained, including resolved implementation failures.",
+    "baseline-ci.log started in live checkout before edits; use verified-baseline archived source for authoritative baseline comparison.",
+    "PASS on runner means process exit 0, not that skipped tests were executed.",
+    "P0 evidence files unchanged. This is P1 model/state acceptance, not release acceptance."
+  ]
+}

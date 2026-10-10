@@ -1,0 +1,416 @@
+[
+  {
+    "file": "1280x720-scale1.25-tab0.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale1.25-tab1.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale1.25-tab2.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale1.25-tab3.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale1.25-tab4.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1280x720-scale1.25-tab5.png",
+    "logical": [
+      1024,
+      576
+    ],
+    "actual": [
+      1024,
+      576
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab0.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab1.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab2.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab3.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab4.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1600x900-scale1.25-tab5.png",
+    "logical": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab0.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab1.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab2.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab3.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab4.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  },
+  {
+    "file": "1920x1080-scale1.25-tab5.png",
+    "logical": [
+      1536,
+      864
+    ],
+    "actual": [
+      1536,
+      864
+    ],
+    "text": [
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 21
+      },
+      {
+        "textHeight": 18,
+        "rowHeight": 18,
+        "colors": 35
+      }
+    ]
+  }
+]

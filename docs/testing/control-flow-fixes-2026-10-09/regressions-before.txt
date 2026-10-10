@@ -1,0 +1,989 @@
+FFFFFFFFFFFF............F......FFF.FFFFFFFFFFFFFFF                       [100%]
+================================== FAILURES ===================================
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-False-operator-if] __
+
+branch = 'if', target = 'operator', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000017ABC7CF040>
+node = CompiledNode(nodeId='work', kind='operator', operatorId='test.probe.main.work', inputPorts=mappingproxy({'gate': {'typ... outputPorts=mappingproxy({'result': 'string'}), params=mappingproxy({}), targetWorkflowId=None, loop=mappingproxy({}))
+nodeInput = {'data': 'shared'}, supplied = {'condition': True, 'data': 'shared'}
+context = RunContext(jobId='job', workflowId='main', workflowRunId='745293c4-0155-4970-ad95-b13123e0160d', parentWorkflowRunId='...nId='a9c55fb7-a061-46cd-8079-cfb3eab3ca34', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC848D60>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+>               raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+E               emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: node inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\runner.py:303: WorkflowExecutionError
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-False-operator-switch] _
+
+branch = 'switch', target = 'operator', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000017ABC8D63B0>
+node = CompiledNode(nodeId='work', kind='operator', operatorId='test.probe.main.work', inputPorts=mappingproxy({'gate': {'typ... outputPorts=mappingproxy({'result': 'string'}), params=mappingproxy({}), targetWorkflowId=None, loop=mappingproxy({}))
+nodeInput = {'data': 'shared'}, supplied = {'condition': True, 'data': 'shared'}
+context = RunContext(jobId='job', workflowId='main', workflowRunId='85dfd834-059a-4cce-9691-78093608f452', parentWorkflowRunId='...nId='d4dc89ba-4128-4b7d-bb85-596edfb1d7a6', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC8D4CD0>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+>               raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+E               emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: node inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\runner.py:303: WorkflowExecutionError
+__ testUnselectedBranchCannotBeActivatedBySharedData[False-False-subflow-if] __
+
+branch = 'if', target = 'subflow', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:324: in _runNode
+    result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.subflow_runner.SubflowRunner object at 0x0000017ABC84BAF0>
+node = CompiledNode(nodeId='work', kind='subflow', operatorId=None, inputPorts=mappingproxy({'gate': {'type': 'boolean', 'req...utputPorts=mappingproxy({'result': 'string'}), params=mappingproxy({}), targetWorkflowId='body', loop=mappingproxy({}))
+inputs = {'data': 'shared'}
+context = RunContext(jobId='job', workflowId='main', workflowRunId='9d9fa684-9b84-4620-8125-ccc6ce12ccb2', parentWorkflowRunId='...nId='1e8b52d4-159a-4e03-80c8-a9d49e863886', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC84BB20>
+
+    def run(
+        self,
+        node: "CompiledNode",
+        inputs: dict[str, object],
+        context: RunContext,
+        cancellation: CancellationToken,
+    ) -> "WorkflowResult":
+        from emo_master.apps.runtime.workflow.runner import WorkflowExecutionError
+
+        target = node.targetWorkflowId
+        if not target:
+            raise WorkflowExecutionError(
+                "E_WORKFLOW_INVALID", "subflow target workflow is required", node.nodeId
+            )
+        targetWorkflow = self.workflowRunner.compiledProject.workflows.get(target)
+        if targetWorkflow is None:
+            raise WorkflowExecutionError(
+                "E_WORKFLOW_INVALID", f"unknown subflow target: {target}", node.nodeId
+            )
+        missing = sorted(
+            key
+            for key, portSpec in targetWorkflow.inputs.items()
+            if key not in inputs and isPortRequired(portSpec, default=True)
+        )
+        if missing:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"subflow inputs are missing: {', '.join(missing)}",
+                node.nodeId,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: subflow inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\subflow_runner.py:43: WorkflowExecutionError
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-False-subflow-switch] _
+
+branch = 'switch', target = 'subflow', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:324: in _runNode
+    result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.subflow_runner.SubflowRunner object at 0x0000017ABC8D59F0>
+node = CompiledNode(nodeId='work', kind='subflow', operatorId=None, inputPorts=mappingproxy({'gate': {'type': 'boolean', 'req...utputPorts=mappingproxy({'result': 'string'}), params=mappingproxy({}), targetWorkflowId='body', loop=mappingproxy({}))
+inputs = {'data': 'shared'}
+context = RunContext(jobId='job', workflowId='main', workflowRunId='8f44c5bd-f6ef-449e-a5d9-0423389dc338', parentWorkflowRunId='...nId='22f2c49c-c561-48a5-8e8b-e49335c9dae1', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC8D6410>
+
+    def run(
+        self,
+        node: "CompiledNode",
+        inputs: dict[str, object],
+        context: RunContext,
+        cancellation: CancellationToken,
+    ) -> "WorkflowResult":
+        from emo_master.apps.runtime.workflow.runner import WorkflowExecutionError
+
+        target = node.targetWorkflowId
+        if not target:
+            raise WorkflowExecutionError(
+                "E_WORKFLOW_INVALID", "subflow target workflow is required", node.nodeId
+            )
+        targetWorkflow = self.workflowRunner.compiledProject.workflows.get(target)
+        if targetWorkflow is None:
+            raise WorkflowExecutionError(
+                "E_WORKFLOW_INVALID", f"unknown subflow target: {target}", node.nodeId
+            )
+        missing = sorted(
+            key
+            for key, portSpec in targetWorkflow.inputs.items()
+            if key not in inputs and isPortRequired(portSpec, default=True)
+        )
+        if missing:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"subflow inputs are missing: {', '.join(missing)}",
+                node.nodeId,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: subflow inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\subflow_runner.py:43: WorkflowExecutionError
+___ testUnselectedBranchCannotBeActivatedBySharedData[False-False-loop-if] ____
+
+branch = 'if', target = 'loop', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:327: in _runNode
+    result = self.loopRunner.run(node, nodeInput, context, cancellation)
+src\emo_master\apps\runtime\workflow\loop_runner.py:45: in run
+    result = self._repeat(node, inputs, context, cancellation, maxIterations, timeoutMs, startedAt)
+src\emo_master\apps\runtime\workflow\loop_runner.py:93: in _repeat
+    bodyResult = self.workflowRunner.run(
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000017ABC84BEE0>
+workflowId = 'body', inputs = {'data': 'shared', '__iteration__': 0}
+context = RunContext(jobId='job', workflowId='body', workflowRunId='5acc3820-f107-49c5-b1ec-72a66b829e2c', parentWorkflowRunId='...ork', nodeRunId='', callDepth=1, iterationPath=(0,), workspacePath='', projectId='', callPath=(('work', 'loop_body'),))
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC950190>
+disposeWhenComplete = False
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\runner.py:135: WorkflowExecutionError
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-False-loop-switch] __
+
+branch = 'switch', target = 'loop', optional = False, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+
+tests\runtime\test_control_flow_activation.py:93:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_control_flow_activation.py:82: in execute
+    return executor.run("main", {"condition": condition, "data": "shared"},
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:327: in _runNode
+    result = self.loopRunner.run(node, nodeInput, context, cancellation)
+src\emo_master\apps\runtime\workflow\loop_runner.py:45: in run
+    result = self._repeat(node, inputs, context, cancellation, maxIterations, timeoutMs, startedAt)
+src\emo_master\apps\runtime\workflow\loop_runner.py:93: in _repeat
+    bodyResult = self.workflowRunner.run(
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000017ABC9734C0>
+workflowId = 'body', inputs = {'data': 'shared', '__iteration__': 0}
+context = RunContext(jobId='job', workflowId='body', workflowRunId='524606a2-88f1-43c7-b034-402ec5690cbd', parentWorkflowRunId='...ork', nodeRunId='', callDepth=1, iterationPath=(0,), workspacePath='', projectId='', callPath=(('work', 'loop_body'),))
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000017ABC971510>
+disposeWhenComplete = False
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: gate
+
+src\emo_master\apps\runtime\workflow\runner.py:135: WorkflowExecutionError
+__ testUnselectedBranchCannotBeActivatedBySharedData[False-True-operator-if] __
+
+branch = 'if', target = 'operator', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-True-operator-switch] _
+
+branch = 'switch', target = 'operator', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+__ testUnselectedBranchCannotBeActivatedBySharedData[False-True-subflow-if] ___
+
+branch = 'if', target = 'subflow', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+_ testUnselectedBranchCannotBeActivatedBySharedData[False-True-subflow-switch] _
+
+branch = 'switch', target = 'subflow', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+____ testUnselectedBranchCannotBeActivatedBySharedData[False-True-loop-if] ____
+
+branch = 'if', target = 'loop', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+__ testUnselectedBranchCannotBeActivatedBySharedData[False-True-loop-switch] __
+
+branch = 'switch', target = 'loop', optional = True, selected = False
+
+    @pytest.mark.parametrize("branch", ["if", "switch"])
+    @pytest.mark.parametrize("target", ["operator", "subflow", "loop"])
+    @pytest.mark.parametrize("optional", [False, True])
+    @pytest.mark.parametrize("selected", [False, True])
+    def testUnselectedBranchCannotBeActivatedBySharedData(branch, target, optional, selected):
+        Probe.calls.clear()
+        executor, events = runner(program(branch, target, optional))
+>       assert execute(executor, condition=not selected) == ({"result": "shared"} if selected else {})
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:93: AssertionError
+__________ testSkipPropagatesDespiteSharedInputsAndIsInvocationLocal __________
+
+    def testSkipPropagatesDespiteSharedInputsAndIsInvocationLocal():
+        payload = program(target="operator", optional=True)
+        main = payload["workflows"]["main"]
+        main["nodes"].insert(-1, {"nodeId": "after", "operatorId": "test.probe",
+            "inputPorts": {"gate": {"type": "string", "required": False}, "data": "string"},
+            "outputPorts": {"result": "string"}})
+        main["edges"][-1] = edge("after", "result", "output", "result")
+        main["edges"].extend([edge("work", "result", "after", "gate"), edge("input", "data", "after", "data")])
+        executor, events = runner(payload)
+        for condition, count in [(True, 0), (False, 2), (True, 0)]:
+            Probe.calls.clear()
+>           assert execute(executor, condition) == ({"result": "shared"} if count else {})
+E           AssertionError: assert {'result': 'shared'} == {}
+E
+E             Left contains 1 more item:
+E             {'result': 'shared'}
+E             Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:115: AssertionError
+__________ testUnrelatedSelectedBranchDoesNotOverrideAnInactiveGate ___________
+
+    def testUnrelatedSelectedBranchDoesNotOverrideAnInactiveGate():
+        payload = program(target="operator", optional=True)
+        main = payload["workflows"]["main"]
+        main["nodes"].insert(2, {"nodeId": "other", "operatorId": "vision.flow.if", "params": {"mode": "bool"}})
+        main["nodes"][3]["inputPorts"]["alternative"] = {"type": "boolean", "required": False}
+        main["edges"].extend([edge("input", "condition", "other", "value"), edge("other", "true", "work", "alternative")])
+        Probe.calls.clear()
+        executor, _events = runner(payload)
+>       assert execute(executor) == {}
+E       AssertionError: assert {'result': 'shared'} == {}
+E
+E         Left contains 1 more item:
+E         {'result': 'shared'}
+E         Use -v to get more diff
+
+tests\runtime\test_control_flow_activation.py:178: AssertionError
+_ testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject[extra0-E_LOOP_ITEM_PORT_UNKNOWN] _
+
+extra = {'itemInputPort': 'old'}, code = 'E_LOOP_ITEM_PORT_UNKNOWN'
+
+    @pytest.mark.parametrize("extra,code", [({"itemInputPort": "old"}, "E_LOOP_ITEM_PORT_UNKNOWN"),
+                                          ({"indexInputPort": "value"}, "E_LOOP_INPUT_PORT_COLLISION")])
+    def testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject(extra, code):
+        payload = loopProgram(**extra)
+        before = deepcopy(payload)
+>       with pytest.raises(WorkflowCompileError) as error:
+E       Failed: DID NOT RAISE WorkflowCompileError
+
+tests\core\contracts\test_loop_mapping_safety.py:35: Failed
+_ testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject[extra1-E_LOOP_INPUT_PORT_COLLISION] _
+
+extra = {'indexInputPort': 'value'}, code = 'E_LOOP_INPUT_PORT_COLLISION'
+
+    @pytest.mark.parametrize("extra,code", [({"itemInputPort": "old"}, "E_LOOP_ITEM_PORT_UNKNOWN"),
+                                          ({"indexInputPort": "value"}, "E_LOOP_INPUT_PORT_COLLISION")])
+    def testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject(extra, code):
+        payload = loopProgram(**extra)
+        before = deepcopy(payload)
+>       with pytest.raises(WorkflowCompileError) as error:
+E       Failed: DID NOT RAISE WorkflowCompileError
+
+tests\core\contracts\test_loop_mapping_safety.py:35: Failed
+____ testDormantConditionDoesNotAffectCallGraphOrCompilation[main-repeat] _____
+
+mode = 'repeat', inactive = 'main'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x0000017A944C4250>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+            raise WorkflowCompileError(issues)
+
+        compiledWorkflows: dict[str, CompiledWorkflow] = {}
+        for workflowId in document.workflowOrder:
+            compiledWorkflows[workflowId] = self._compileWorkflow(
+                document, workflowId, document.workflows[workflowId]
+            )
+        callGraph = self._buildCallGraph(compiledWorkflows)
+        recursionIssues = self._findRecursion(callGraph, document.project.projectId)
+        if recursionIssues:
+>           raise WorkflowCompileError(recursionIssues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: recursive workflow call graph: main -> main
+
+src\emo_master\core\workflow\compiler.py:59: WorkflowCompileError
+____ testDormantConditionDoesNotAffectCallGraphOrCompilation[main-foreach] ____
+
+mode = 'foreach', inactive = 'main'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x0000017ABC981E10>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+            raise WorkflowCompileError(issues)
+
+        compiledWorkflows: dict[str, CompiledWorkflow] = {}
+        for workflowId in document.workflowOrder:
+            compiledWorkflows[workflowId] = self._compileWorkflow(
+                document, workflowId, document.workflows[workflowId]
+            )
+        callGraph = self._buildCallGraph(compiledWorkflows)
+        recursionIssues = self._findRecursion(callGraph, document.project.projectId)
+        if recursionIssues:
+>           raise WorkflowCompileError(recursionIssues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: recursive workflow call graph: main -> main
+
+src\emo_master\core\workflow\compiler.py:59: WorkflowCompileError
+___ testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-repeat] ___
+
+mode = 'repeat', inactive = 'missing'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\workflow\compiler.py:45: in compile
+    else ProjectDocument.model_validate(migrateProjectPayload(project))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+enablePresentation = False, enableProduction = False
+
+    def migrateProjectPayload(
+        payload: dict[str, object], *, enablePresentation: bool = False,
+        enableProduction: bool = False,
+    ) -> dict[str, object]:
+        """Validate before migration; preserve 2.1 unless page editing is explicit."""
+        if enableProduction and payload.get("schemaVersion") != "2.3":
+            from emo_master.core.project.models import ProjectDocument, ProductionSettings
+
+            upgraded = migrateProjectPayload(payload, enablePresentation=True)
+            upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
+            from emo_master.core.project.models import ProjectDocument
+            from emo_master.core.presentation.models import Presentation
+            from emo_master.core.project.resources import ResourcePlan
+
+            upgraded = migrateProjectPayload(payload)
+            # Legacy migration must also pass the original strict project contract.
+            upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+            upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+                            resources=ResourcePlan().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        source = deepcopy(payload)
+        if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+            # Merely relabelling a legacy-shaped document is not the explicit 2.2
+            # migration. Preserve the public unsupported-schema diagnostic prefix.
+            raise ValueError(
+                "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+                "presentation and resources are required"
+            )
+        if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3"}:
+            # v2.1 is already the canonical source. Validate it before returning so
+            # unknown fields and invalid kinds cannot disappear in normalization.
+            from emo_master.core.project.models import ProjectDocument
+
+>           return ProjectDocument.model_validate(source).model_dump(mode="python")
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E             Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ..., 'toPort': 'value'}]}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\core\project\migration.py:95: ValidationError
+__ testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-foreach] ___
+
+mode = 'foreach', inactive = 'missing'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\workflow\compiler.py:45: in compile
+    else ProjectDocument.model_validate(migrateProjectPayload(project))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+enablePresentation = False, enableProduction = False
+
+    def migrateProjectPayload(
+        payload: dict[str, object], *, enablePresentation: bool = False,
+        enableProduction: bool = False,
+    ) -> dict[str, object]:
+        """Validate before migration; preserve 2.1 unless page editing is explicit."""
+        if enableProduction and payload.get("schemaVersion") != "2.3":
+            from emo_master.core.project.models import ProjectDocument, ProductionSettings
+
+            upgraded = migrateProjectPayload(payload, enablePresentation=True)
+            upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
+            from emo_master.core.project.models import ProjectDocument
+            from emo_master.core.presentation.models import Presentation
+            from emo_master.core.project.resources import ResourcePlan
+
+            upgraded = migrateProjectPayload(payload)
+            # Legacy migration must also pass the original strict project contract.
+            upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+            upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+                            resources=ResourcePlan().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        source = deepcopy(payload)
+        if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+            # Merely relabelling a legacy-shaped document is not the explicit 2.2
+            # migration. Preserve the public unsupported-schema diagnostic prefix.
+            raise ValueError(
+                "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+                "presentation and resources are required"
+            )
+        if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3"}:
+            # v2.1 is already the canonical source. Validate it before returning so
+            # unknown fields and invalid kinds cannot disappear in normalization.
+            from emo_master.core.project.models import ProjectDocument
+
+>           return ProjectDocument.model_validate(source).model_dump(mode="python")
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E             Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ..., 'toPort': 'value'}]}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\core\project\migration.py:95: ValidationError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params0] ___
+
+params = {}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params1] ___
+
+params = {'case0Value': ''}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params2] ___
+
+params = {'case1Value': 'OK'}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params3] ___
+
+params = {'case0Value': '', 'case2Value': 'OK', 'case3Value': 'OK'}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+______ testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText ______
+
+    def testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText():
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, {}, 0, 0)
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       control = editor._schemaForm._controls["case0Value"]
+E       AttributeError: 'NoneType' object has no attribute '_schemaForm'
+
+tests\designer\test_control_flow_config_safety.py:42: AttributeError
+________________ testSwitchDefaultsDoNotInventConfiguredCases _________________
+
+    def testSwitchDefaultsDoNotInventConfiguredCases():
+>       assert applySchemaDefaults(FlowSwitchOperator.meta.paramSchema, {}) == {}
+E       AssertionError: assert {'case0Value'...se3Value': ''} == {}
+E
+E         Left contains 4 more items:
+E         {'case0Value': '', 'case1Value': '', 'case2Value': '', 'case3Value': ''}
+E         Use -v to get more diff
+
+tests\designer\test_control_flow_config_safety.py:60: AssertionError
+_________ testForEachFormRejectsOverlappingPortsWithoutReplacingThem __________
+
+    def testForEachFormRejectsOverlappingPortsWithoutReplacingThem():
+        window = _window()
+        window.workflowStore.addWorkflow("Integer body", workflowId="integer", inputs={"value": "integer"}, outputs={"value": "integer"})
+        config = {"mode": "foreach", "bodyWorkflowId": "integer", "itemInputPort": "value", "indexInputPort": "value",
+                  "maxIterations": 10, "timeoutMs": 0}
+        form = SchemaParamForm()
+        form.setSchema(window._nodeEditorSchema(SimpleNamespace(kind="loop", loop=config)), config)
+>       assert "不能相同" in form.validationMessage()
+E       AssertionError: assert '不能相同' in ''
+E        +  where '' = validationMessage()
+E        +    where validationMessage = <emo_master.apps.designer.ui.param_form.SchemaParamForm(0x17abd31e8a0) at 0x0000017ABA93BC00>.validationMessage
+
+tests\designer\test_control_flow_config_safety.py:73: AssertionError
+__ testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion[repeat] __
+
+mode = 'repeat'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.addWorkflow("Unused old condition", workflowId="old-condition")
+        config = {"mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "old-condition"}
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": config})
+        before = deepcopy(store.workflows)
+>       assert store.referencesTo("old-condition") == []
+E       AssertionError: assert ['main'] == []
+E
+E         Left contains one more item: 'main'
+E         Use -v to get more diff
+
+tests\designer\test_control_flow_config_safety.py:87: AssertionError
+_ testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion[foreach] __
+
+mode = 'foreach'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.addWorkflow("Unused old condition", workflowId="old-condition")
+        config = {"mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "old-condition"}
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": config})
+        before = deepcopy(store.workflows)
+>       assert store.referencesTo("old-condition") == []
+E       AssertionError: assert ['main'] == []
+E
+E         Left contains one more item: 'main'
+E         Use -v to get more diff
+
+tests\designer\test_control_flow_config_safety.py:87: AssertionError
+____ testWorkflowPackagePreservesButDoesNotRequireDormantCondition[repeat] ____
+
+mode = 'repeat'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testWorkflowPackagePreservesButDoesNotRequireDormantCondition(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": {
+            "mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "not-packaged"}})
+>       package = buildWorkflowPackage(store, "main")
+
+tests\designer\test_control_flow_config_safety.py:101:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\workflow_package.py:141: in buildWorkflowPackage
+    visit(rootWorkflowId)
+src\emo_master\apps\designer\state\workflow_package.py:139: in visit
+    visit(targetWorkflowId)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+workflowId = 'not-packaged'
+
+    def visit(workflowId: str) -> None:
+        if workflowId in visited:
+            return
+        if workflowId not in sourceStore.workflows:
+>           raise ValueError(f"workflow dependency does not exist: {workflowId}")
+E           ValueError: workflow dependency does not exist: not-packaged
+
+src\emo_master\apps\designer\state\workflow_package.py:135: ValueError
+___ testWorkflowPackagePreservesButDoesNotRequireDormantCondition[foreach] ____
+
+mode = 'foreach'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testWorkflowPackagePreservesButDoesNotRequireDormantCondition(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": {
+            "mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "not-packaged"}})
+>       package = buildWorkflowPackage(store, "main")
+
+tests\designer\test_control_flow_config_safety.py:101:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\workflow_package.py:141: in buildWorkflowPackage
+    visit(rootWorkflowId)
+src\emo_master\apps\designer\state\workflow_package.py:139: in visit
+    visit(targetWorkflowId)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+workflowId = 'not-packaged'
+
+    def visit(workflowId: str) -> None:
+        if workflowId in visited:
+            return
+        if workflowId not in sourceStore.workflows:
+>           raise ValueError(f"workflow dependency does not exist: {workflowId}")
+E           ValueError: workflow dependency does not exist: not-packaged
+
+src\emo_master\apps\designer\state\workflow_package.py:135: ValueError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-operator-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-operator-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-subflow-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-subflow-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-loop-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-False-loop-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-operator-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-operator-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-subflow-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-subflow-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-loop-if]
+FAILED tests/runtime/test_control_flow_activation.py::testUnselectedBranchCannotBeActivatedBySharedData[False-True-loop-switch]
+FAILED tests/runtime/test_control_flow_activation.py::testSkipPropagatesDespiteSharedInputsAndIsInvocationLocal
+FAILED tests/runtime/test_control_flow_activation.py::testUnrelatedSelectedBranchDoesNotOverrideAnInactiveGate
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject[extra0-E_LOOP_ITEM_PORT_UNKNOWN]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testCompilerRejectsUnsafeExplicitForEachMappingsWithoutMutatingProject[extra1-E_LOOP_INPUT_PORT_COLLISION]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[main-repeat]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[main-foreach]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-repeat]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-foreach]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params0]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params1]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params2]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params3]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchDefaultsDoNotInventConfiguredCases
+FAILED tests/designer/test_control_flow_config_safety.py::testForEachFormRejectsOverlappingPortsWithoutReplacingThem
+FAILED tests/designer/test_control_flow_config_safety.py::testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion[repeat]
+FAILED tests/designer/test_control_flow_config_safety.py::testDormantConditionDoesNotMakeWorkflowReachableOrPreventDeletion[foreach]
+FAILED tests/designer/test_control_flow_config_safety.py::testWorkflowPackagePreservesButDoesNotRequireDormantCondition[repeat]
+FAILED tests/designer/test_control_flow_config_safety.py::testWorkflowPackagePreservesButDoesNotRequireDormantCondition[foreach]
+31 failed, 19 passed in 3.37s

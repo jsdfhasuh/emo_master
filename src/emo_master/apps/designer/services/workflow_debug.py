@@ -9,6 +9,10 @@ from emo_master.apps.runtime.operator_debug.contracts import MAX_REQUEST_BYTES, 
 
 
 class WorkflowDebugConnection(DebugConnection):
+    def __init__(self, client):
+        super().__init__(client)
+        self.preStartBreakpoints = False
+
     def call(self, method, **fields):
         return super().call(method.replace("OperatorDebug", "WorkflowDebug"), **fields)
 
@@ -16,6 +20,7 @@ class WorkflowDebugConnection(DebugConnection):
         capability = self.call("GetWorkflowDebugCapabilities")
         if capability.get("debugKind") != "workflow":
             raise RuntimeClientError("E_DEBUG_UNSUPPORTED", "Runtime does not support workflow debugging")
+        self.preStartBreakpoints = capability.get("preStartBreakpoints") is True
         self.identity = dict(runtime_instance_id=capability["runtimeInstanceId"])
         try:
             state = self.call("OpenWorkflowDebugSession", open_request_id=self.openId,
@@ -58,10 +63,16 @@ class WorkflowDebugConnection(DebugConnection):
         self.uncertain = True
         raise RuntimeClientError("E_DEBUG_UNCERTAIN", "Control acknowledgement unavailable; request " + requestId)
 
-    def start(self, inputs):
+    def start(self, inputs, *, breakpoints=None):
+        if breakpoints and not self.preStartBreakpoints:
+            raise RuntimeClientError("E_DEBUG_UNSUPPORTED", "当前 Runtime 不支持启动前断点，请升级 Runtime 后重试；未启动流程")
         wire = {port: pb.OperatorDebugValue(inline_json=encode(value["inline"])) if "inline" in value
                 else pb.OperatorDebugValue(asset_ref=value["assetRef"]) for port, value in inputs.items()}
         prepared = self.mutation("PrepareWorkflowDebugInputs", inputs=wire)
+        if breakpoints is not None and self.preStartBreakpoints:
+            self.control("breakpoints", breakpoints=breakpoints)
+        if self.stop.is_set():
+            raise RuntimeClientError("E_DEBUG_STALE_SESSION", "Debug session is closing")
         return self.confirmed("StartWorkflowDebug", input_set_id=prepared["inputSetId"])
 
     def control(self, action, pauseSequence=0, **fields):

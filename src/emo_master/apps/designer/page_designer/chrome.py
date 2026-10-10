@@ -20,7 +20,7 @@ class WorkspaceChrome(QObject):
         self.menus = w._workspaceMenus
         self.flowActions = list(dict.fromkeys([
             a for key, a in {**w._toolbarActions, **w._menuActions}.items()
-            if key not in {'加载项目', '打开项目', '保存项目', '校验项目'}]))
+            if key not in {'加载项目', '打开项目', '新建项目…', '保存项目', '校验项目'}]))
         self.pageActions = []
         toolbar = w.mainToolbar
         for action in toolbar.actions():

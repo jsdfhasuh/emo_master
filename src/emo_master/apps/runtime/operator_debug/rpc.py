@@ -27,7 +27,7 @@ class OperatorDebugRpcMixin:
                     payload = manager.capabilities(runtime.pluginScanResult.activeOperators)
                     if debugKind == "workflow":
                         payload.update(debugKind="workflow", commands=["continue", "pause", "into", "over", "out", "runTo", "breakpoints", "trial"],
-                                       maxBreakpoints=256, maxSnapshots=32, fixedStartupDraft=True)
+                                       maxBreakpoints=256, maxSnapshots=32, fixedStartupDraft=True, preStartBreakpoints=True)
             else:
                 values = dict(debugKind=debugKind, controlJson=request.control_json or "{}",
                     runtimeInstanceId=request.runtime_instance_id, sessionId=request.session_id,

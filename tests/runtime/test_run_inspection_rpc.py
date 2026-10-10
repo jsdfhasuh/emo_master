@@ -148,6 +148,9 @@ def testFrozenSessionCanRenewReadAndCloseAfterAnotherProjectCopyLoads(tmp_path):
         source = listed(client, project, session, reply.job_id).sources[0]
         other = tmp_path / '同 projectId 的另一 工程副本'
         saveProject(other, sampleProject(other).model_dump())
+        # Terminal output is frozen before process/resource retirement completes.
+        # Loading another project must still respect that ownership fence.
+        runtime.jobSupervisor.waitForRetirement(deadline=time.monotonic() + 5)
         assert client.loadProject(str(other)).ok
         # An identical projectId is insufficient to substitute another copy.
         with pytest.raises(Exception, match='EXPIRED'):

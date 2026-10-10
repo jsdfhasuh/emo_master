@@ -31,11 +31,15 @@ def testSaveCommitsVisibleUnappliedProperties(designer, tmp_path):  # noqa: F811
     assert _component(editor.store.snapshot(), editor.pageId, key).props.title == saved['props']['title']
 
 
-def testInvalidPendingInputBlocksSaveWithoutDiscardingText(designer, tmp_path):  # noqa: F811
+def testInvalidPendingInputBlocksSaveWithoutDiscardingText(designer, tmp_path, monkeypatch):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
     editor.tools.addExtraRow(values=('boolean', 'invalid boolean', 'OK', 'green'))
     before = coordinator.session.payload()
+    from PySide2.QtWidgets import QMessageBox
+    warnings = []
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args: warnings.append(args))
     assert not designer.saveProjectToDirectory(str(tmp_path / 'invalid'))
+    assert warnings and warnings[-1][1] == '项目保存失败'
     assert coordinator.session.payload() == before
     assert editor.tools.extra.item(0, 1).text() == 'invalid boolean'
     assert not (tmp_path / 'invalid' / 'project.json').exists()

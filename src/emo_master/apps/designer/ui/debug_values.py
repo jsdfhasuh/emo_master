@@ -213,7 +213,7 @@ class InputRow(QWidget):
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         self.mode = QComboBox()
-        self.mode.addItems(["未提供", "值", "空值", "完整数据源"])
+        self.mode.addItems(["未提供", "手工输入（值）", "空值 null", "完整数据源"])
         layout.addWidget(self.mode)
         self.text = QLineEdit()
         self.boolean = QComboBox()
@@ -243,6 +243,24 @@ class InputRow(QWidget):
         self.mode.setCurrentIndex(3)
         self.text.setText(label)
         self.text.setToolTip(label)
+        self.refresh()
+
+    def restoreWire(self, mode, wire, label=''):
+        if mode == 'source':
+            self.setReference(deepcopy(wire), label)
+            return
+        self.reference = None
+        self.text.clear()
+        self.text.setToolTip('')
+        self.mode.setCurrentIndex({'missing': 0, 'value': 1, 'null': 2}[mode])
+        if mode == 'value':
+            value = wire['inline']
+            if self.portType == 'boolean':
+                self.boolean.setCurrentIndex(int(value))
+            elif self.portType in {'integer', 'number', 'string'}:
+                self.text.setText(value if isinstance(value, str) else encode(value))
+            else:
+                self.structured = deepcopy(value)
         self.refresh()
 
     def wire(self):

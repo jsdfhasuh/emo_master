@@ -68,6 +68,8 @@ class ProjectEditSession:
 
     def checkpoint(self) -> None:
         """Commit a completed legacy canvas command to the same history."""
+        if self._editing:
+            return  # the outer transaction validates and records exactly once
         current = self.payload()
         if _draftSignature(current) != _draftSignature(self._checkpoint):
             self.document()
@@ -105,6 +107,7 @@ class ProjectEditSession:
         if self._editing:
             raise RuntimeError("nested project transactions are not allowed")
         before = self.payload()
+        activeBefore = self.workflows.activeWorkflowId
         self._editing = True
         try:
             yield
@@ -115,6 +118,8 @@ class ProjectEditSession:
                 self._redo.clear()
         except BaseException:
             self._restore(before)
+            if activeBefore in self.workflows.workflows:
+                self.workflows.setActiveWorkflow(activeBefore)
             raise
         finally:
             self._editing = False
@@ -158,6 +163,13 @@ class ProjectEditSession:
 
     def redo(self) -> bool:
         return self._history(self._redo, self._undo)
+
+    def recoverCheckpoint(self) -> None:
+        """Explicit recovery only, after the UI has exported the invalid draft."""
+        if self._editing:
+            raise RuntimeError("cannot recover within a transaction")
+        self._restore(deepcopy(self._checkpoint))
+        self.document()
 
     def save(self, directory: Path) -> None:
         if self._editing:

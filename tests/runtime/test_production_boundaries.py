@@ -194,8 +194,9 @@ def testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings(tmp_pat
     assert payload["devices"] == document.devices.model_dump()
     assert payload["workflows"] == document.model_dump()["workflows"]
     assert (root / "project.json.bak").exists()
-    launcher = script.parent.parent / "start_runtime.cmd"
-    result = subprocess.run(["cmd", "/c", str(launcher), str(root), "--check", "--data-root", str(tmp_path / "check")],
+    launcher = (["cmd", "/c", str(script.parent.parent / "start_runtime.cmd")] if sys.platform == "win32"
+                else [sys.executable, str(script.parent / "run_operator.py")])
+    result = subprocess.run([*launcher, str(root), "--check", "--data-root", str(tmp_path / "check")],
                             cwd=tmp_path, env=dict(os.environ, EMO_MASTER_PYTHON=sys.executable),
                             capture_output=True, text=True, timeout=30)
     assert result.returncode == 0, result.stdout + result.stderr

@@ -140,9 +140,9 @@ class ProjectController:
         return False, None
 
     def loadProjectDirectory(
-        self, projectDirPath: str
+        self, projectDirPath: str, *, confirmed: bool = False
     ) -> tuple[bool, str | None, Path | None]:
-        if self.editCoordinator is not None and not self.editCoordinator.confirmLeave():
+        if self.editCoordinator is not None and not confirmed and not self.editCoordinator.confirmLeave():
             return False, None, None
         try:
             projectFile = resolveProjectFile(Path(projectDirPath))

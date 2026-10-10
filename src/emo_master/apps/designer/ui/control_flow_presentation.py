@@ -59,4 +59,11 @@ def controlFlowDetails(node, workflows, variables=None):
         lines.append(("按分支 0 → 3 的顺序匹配", None))
         if any(count > 1 for count in Counter(values).values()):
             lines.append(("匹配值重复：采用编号最小的分支", None))
+        lines.append(("文本匹配 str(value)；布尔值填 True / False（不带引号）", None))
+    elif node.operatorId == "vision.analysis.blob":
+        dynamic = any(binding.get("parameterPath") == ["drawOverlay"] for binding in getattr(node, 'globalVariableBindings', []))
+        enabled = node.params.get("drawOverlay", False)
+        label = "运行时决定" if dynamic else "已启用" if enabled else "未启用"
+        outputs["overlay"] = f"叠加图（可选 · {label}）"
+        lines.append(("overlay 仅在“绘制叠加图”开启时产生；必填出口需检查此开关", None))
     return tuple(lines), outputs

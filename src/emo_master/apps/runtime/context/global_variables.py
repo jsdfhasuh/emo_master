@@ -119,11 +119,16 @@ class ProjectGlobalVariables:
     def initializeJob(self):
         if not self.jobId:
             raise VariableError("E_VARIABLE_JOB_REQUIRED", "job ID is required")
+        scoped = {key: definition for key, definition in self.definitions.items()
+                  if definition.kind == "variable" and definition.lifetime == "job"}
+        if not scoped:
+            # Legacy/persistent-only projects have nothing to initialize here.
+            # An empty write transaction can still fail behind event commits.
+            return
         with self.store._connect() as connection:
             _beginWrite(connection)
-            for key, definition in self.definitions.items():
-                if definition.kind == "variable" and definition.lifetime == "job":
-                    self._initialize(connection, key, definition, self.jobId)
+            for key, definition in scoped.items():
+                self._initialize(connection, key, definition, self.jobId)
 
     def _initialize(self, connection, key, definition, scope):
         connection.execute("INSERT OR IGNORE INTO variableValues VALUES (?, ?, ?, ?, 1, ?)",

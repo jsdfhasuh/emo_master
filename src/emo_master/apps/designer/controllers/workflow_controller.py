@@ -35,12 +35,14 @@ class WorkflowController:
         refreshSidebarNodeList: Callable[[], None] | None = None,
         focusGraphContent: Callable[[], None] | None = None,
         updateToolbarState: Callable[[], None] | None = None,
+        saveGraphViewState: Callable[[], None] | None = None,
     ) -> None:
         self.workflowStore = workflowStore
         self.flowModel = flowModel
         self.flowScene = flowScene
         self.refreshSidebarNodeList = refreshSidebarNodeList or (lambda: None)
         self.focusGraphContent = focusGraphContent or (lambda: None)
+        self.saveGraphViewState = saveGraphViewState or (lambda: None)
         self.updateToolbarState = updateToolbarState or (lambda: None)
         self.lastInterfaceRefreshReport: list[str] = []
 
@@ -448,6 +450,7 @@ class WorkflowController:
         return self.workflowStore.referencesTo(workflowId)
 
     def _renderActive(self) -> None:
+        self.saveGraphViewState()  # capture the old viewport before scene bounds change
         self.workflowStore.ensureBoundaryNodes(self.activeWorkflowId)
         graph = self.workflowStore.graphFor()
         rawNodes = graph.get("nodes", [])

@@ -127,6 +127,15 @@ class PlcDebugServer:
                 self.changed.wait(remaining)
             assert not self.errors, self.errors
 
+    def wait_connections(self, count: int, timeout: float = 2.0) -> None:
+        deadline = time.monotonic() + timeout
+        with self.changed:
+            while self.connections < count and not self.errors:
+                remaining = deadline - time.monotonic()
+                assert remaining > 0, f"only {self.connections} of {count} sockets accepted"
+                self.changed.wait(remaining)
+            assert not self.errors, self.errors
+
     def _accept(self) -> None:
         try:
             while not self.stopped.is_set():
@@ -138,6 +147,7 @@ class PlcDebugServer:
                     self.connections += 1
                     connection = self.connections
                     self._sockets.append(sock)
+                    self.changed.notify_all()
                 worker = threading.Thread(target=self._serve, args=(sock, connection),
                                           name=f"test-plc-peer-{connection}", daemon=True)
                 self._workers.append(worker)

@@ -1,6 +1,7 @@
 """Only transaction admission is retryable, never mutations or side effects."""
 import sqlite3
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 from threading import Event
 
 import pytest
@@ -8,7 +9,62 @@ import pytest
 from emo_master.apps.runtime.context import global_variables as variables
 from emo_master.apps.runtime.context.global_counters import GlobalCounterError
 from emo_master.core.project.global_variables import VariableError
-from tests.runtime.test_global_variables import service
+from tests.runtime.test_global_variables import service, variable
+
+
+@pytest.mark.parametrize('definitions', [{}, {'v': variable()}, {'v': variable(kind='constant')}])
+def testJobInitializationWithoutJobValuesNeverRequestsWriter(tmp_path, monkeypatch, definitions):
+    accessor = service(tmp_path)
+    accessor.definitions = variables.definitions(definitions)
+    lock = accessor.store._connect()
+    lock.execute('BEGIN IMMEDIATE')
+    def unexpectedConnection():
+        pytest.fail('no job-scoped values: initialization must not request a database connection')
+    monkeypatch.setattr(accessor.store, '_connect', unexpectedConnection)
+    try:
+        accessor.initializeJob()
+    finally:
+        lock.rollback()
+        lock.close()
+
+
+def testRealJobInitializationStillRequiresWriteAdmissionAndInitializesOnce(tmp_path, monkeypatch):
+    accessor = service(tmp_path, {'v': variable(7, lifetime='job')})
+    accessor.jobId = 'second'
+    connect = accessor.store._connect
+    @contextmanager
+    def quickConnection():
+        connection = connect()
+        connection.execute('PRAGMA busy_timeout=30')
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+    monkeypatch.setattr(accessor.store, '_connect', quickConnection)
+    lock = connect()
+    lock.execute('BEGIN IMMEDIATE')
+    try:
+        with pytest.raises(VariableError) as caught:
+            accessor.initializeJob()
+        assert caught.value.code == 'E_VARIABLE_BUSY'
+    finally:
+        lock.rollback()
+        lock.close()
+    accessor.initializeJob()
+    assert accessor.get('v') == 7
+    accessor.set('v', 9)
+    accessor.initializeJob()
+    assert accessor.get('v') == 9
+
+
+def testEmptyInitializationStillRequiresJobIdentity(tmp_path):
+    accessor = service(tmp_path)
+    accessor.jobId = ''
+    accessor.definitions = {}
+    with pytest.raises(VariableError) as caught:
+        accessor.initializeJob()
+    assert caught.value.code == 'E_VARIABLE_JOB_REQUIRED'
 
 
 def testContendedAdmissionExecutesTransformExactlyOnce(tmp_path, monkeypatch):

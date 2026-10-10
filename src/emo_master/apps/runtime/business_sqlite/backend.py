@@ -10,6 +10,7 @@ import os
 from pathlib import Path
 import socket
 import sqlite3
+import sys
 import threading
 import time
 from typing import Any, Callable
@@ -33,8 +34,9 @@ def resolveTarget(raw: str, projectRoot: Path, protected=()) -> Path:
             raise SqliteWriterError("E_SQLITE_TARGET", "相对路径需要原工程的绝对目录")
         path = projectRoot / path
     path = path.resolve()
-    if os.name == "nt" and ctypes.windll.kernel32.GetDriveTypeW(str(path.anchor)) == 4:
-        raise SqliteWriterError("E_SQLITE_TARGET", "不支持映射网络盘")
+    if sys.platform == "win32":
+        if ctypes.windll.kernel32.GetDriveTypeW(str(path.anchor)) == 4:
+            raise SqliteWriterError("E_SQLITE_TARGET", "不支持映射网络盘")
     for item in protected:
         target = Path(item).resolve()
         if path == target or (target.is_dir() and path.is_relative_to(target)):

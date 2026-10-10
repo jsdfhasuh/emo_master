@@ -1,3 +1,5 @@
+from .qt_environment import prepareQtEnvironment as _prepareQtEnvironment
+
 __version__ = "0.6.1"
 
 
@@ -12,3 +14,5 @@ def _preloadOnnxRuntimeBeforeQt() -> None:
 
 
 _preloadOnnxRuntimeBeforeQt()
+
+_prepareQtEnvironment()

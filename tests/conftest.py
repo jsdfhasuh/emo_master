@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 
 import pytest
+import emo_master  # noqa: F401 - mirror application bootstrap before test collection imports Qt
 
 
 @pytest.fixture(autouse=True)
@@ -16,7 +17,6 @@ def isolatedRuntimeData(tmp_path, monkeypatch):
 def retainedQtApplication():
     """Keep the application wrapper alive even in a core-only Qt test run."""
     os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
-    import emo_master  # noqa: F401 - preload Windows dependencies before Qt
     try:
         from PySide2.QtWidgets import QApplication
     except ImportError:

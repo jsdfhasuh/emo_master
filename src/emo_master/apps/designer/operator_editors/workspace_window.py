@@ -36,7 +36,7 @@ try:
         QWidget,
     )
     from emo_master.apps.designer.operator_editors.builtin_layout import prepareBuiltinLayout
-    from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
+    from emo_master.apps.designer.ui.widgets import OptionalWrapLabel, scrollContent
     from emo_master.apps.designer.ui.icon_map import icon
 
     class OperatorWorkspaceWindow(QDialog):
@@ -59,6 +59,8 @@ try:
             super().__init__(cast(QWidget | None, parent))
             self.key = key
             self.context = context
+            self._scrollablePlcLayout = customRoot is not None and context.operatorId in {
+                'communication.plc.slmp_read', 'communication.plc.slmp_write'}
             self._controller = controller
             self._onClosed = onClosed
             self._loadedParams = dict(values)
@@ -77,7 +79,7 @@ try:
             self.resize(980 if customRoot is not None else 620, 720)
 
             layout = QVBoxLayout()
-            self._statusLabel = WrapLabel("")
+            self._statusLabel = OptionalWrapLabel("")
             self._statusLabel.setObjectName("operatorEditorStatus")
             layout.addWidget(self._statusLabel)
             if fallbackReason:
@@ -135,6 +137,20 @@ try:
         def openController(self) -> None:
             if self._controller is not None:
                 self._controller.onOpen()
+
+        def hasHeightForWidth(self) -> bool:
+            # The native Windows geometry handler treats the *preferred* HFW
+            # of nested PLC tables as a minimum, growing 430 px to 528 px after
+            # a reply. Child layouts still wrap text; the scrollable PLC form
+            # and table minimums, not its preferred height, constrain resizing.
+            if getattr(self, '_scrollablePlcLayout', False):
+                return False
+            return super().hasHeightForWidth()
+
+        def heightForWidth(self, width: int) -> int:
+            if getattr(self, '_scrollablePlcLayout', False):
+                return -1
+            return super().heightForWidth(width)
 
         def bindDebug(self, callback) -> None:
             self._openDebug = callback

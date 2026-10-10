@@ -212,6 +212,12 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
             assert window.flowModel.getNodeParams(writerId) == params
             writerEditor.forceClose()
             for number in (7, 13):
+                previousJob = window.currentJobId
+                if previousJob:
+                    # A terminal event can precede worker/inspection retirement.
+                    # Reload still refuses to replace a resource-owned project.
+                    runtime.jobSupervisor.waitForRetirement(timeoutSeconds=10)
+                    assert runtime.jobSupervisor.getProcess(previousJob) is None
                 if number == 13:
                     sourceEditor = doubleNode(window, sourceId)
                     sourceEditor._schemaForm._controls['value'].setValue(number)
@@ -219,7 +225,8 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
                     sourceEditor.forceClose()
                 # Run action uses the existing RuntimeController and spawn worker.
                 window._toolbarActions['开始运行'].trigger()
-                waitQt(lambda: window.currentJobId and not window.isJobRunning and window.runtimeController._worker is None)
+                waitQt(lambda: window.currentJobId and window.currentJobId != previousJob
+                    and not window.isJobRunning and window.runtimeController._worker is None)
                 job = window.currentJobId
                 state = runtime.jobRepository.get(job)
                 assert state.status == 'COMPLETED', state

@@ -33,8 +33,11 @@ class OperatorDebugWindow(QDialog):
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug")
         self.controls = ThreadPoolExecutor(max_workers=1, thread_name_prefix="designer-debug-control")
         self.bridge = Completion(self)
-        self.bridge.done.connect(self.completed)
+        self.bridge.done.connect(self.completed, Qt.QueuedConnection)
         self.busy = False
+        self.polling = False
+        self.commandVersion = 0
+        self.pollCommandVersion = 0
         self.closing = False
         self.disposed = False
         self.state = "STARTING"
@@ -88,6 +91,12 @@ class OperatorDebugWindow(QDialog):
         self.outputPorts = QComboBox()
         self.outputPorts.currentIndexChanged.connect(self.showOutput)
         resultBar.addWidget(self.outputPorts, 1)
+        from .debug_artifact_tools import DebugArtifactTools
+        self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.editor.key.projectId,
+            workflowId=self.editor.key.workflowId, nodeId=self.editor.key.nodeId, operatorId=self.editor.context.operatorId),
+            self.editor.collectParams, self.exportSelection)
+        resultBar.addWidget(self.artifacts.export)
+        resultBar.addWidget(self.artifacts.raw)
         resultLayout.addLayout(resultBar)
         self.resultLabel = WrapLabel("")
         resultLayout.addWidget(self.resultLabel)
@@ -117,10 +126,15 @@ class OperatorDebugWindow(QDialog):
             self.error(error)
 
     def submit(self, name, work, *, control=False):
-        if self.disposed or (self.busy and not control):
+        if self.disposed or (self.busy and not control) or (name == 'poll' and self.polling):
             return False
-        if not control:
+        if name == 'poll':
+            self.polling = True
+            self.pollCommandVersion = self.commandVersion
+        elif not control:
             self.busy = True
+        if name in {'execute', 'reset', 'copy', 'cancel', 'close'}:
+            self.commandVersion += 1
         bridge = self.bridge
         def finished(future):
             try:
@@ -136,7 +150,9 @@ class OperatorDebugWindow(QDialog):
         return True
 
     def error(self, error):
-        self.status.setText(f"{getattr(error, 'code', 'E_DEBUG_INPUT')}: {error}")
+        from .debug_errors import explainDebugError
+        code = getattr(error, 'code', 'E_DEBUG_INPUT')
+        self.status.setText(f"{code}: " + explainDebugError(code, str(error), self.editor.context.operatorId))
         self.logs.appendPlainText(self.status.text())
 
     def refreshControls(self):
@@ -147,6 +163,7 @@ class OperatorDebugWindow(QDialog):
         self.inputBody.setEnabled(ready)
         self.cancel.setEnabled(bool(self.executionId) and self.state == "RUNNING" and not self.closing)
         self.end.setEnabled(not self.closing)
+        self.artifacts.refresh(ready, not self.busy and not self.closing)
 
     def currentVariables(self):
         variables = self.editor.context.variableDefinitions
@@ -163,8 +180,13 @@ class OperatorDebugWindow(QDialog):
         if {key: row.portType for key, row in self.rows.items()} == {key: normalizePortType(value) for key, value in ports.items()}:
             return
         while self.inputForm.rowCount():
+            # The portable-input toolbar is owned separately from dynamic rows.
+            if self.inputForm.itemAt(0).widget() is self.artifacts.panel:
+                self.inputForm.takeRow(0)
+                continue
             self.inputForm.removeRow(0)
         self.rows = {}
+        self.inputForm.addRow(self.artifacts.panel)
         for port, spec in ports.items():
             row = InputRow(normalizePortType(spec))
             self.rows[port] = row
@@ -318,7 +340,7 @@ class OperatorDebugWindow(QDialog):
         if not self.valid() or not self.connection.attached():
             self.close()
             return
-        if self.capability is None or self.busy:
+        if self.capability is None or self.busy or self.polling:
             return
         if self.records:
             try:
@@ -334,10 +356,18 @@ class OperatorDebugWindow(QDialog):
     def completed(self, name, value, error):
         if self.disposed:
             return
-        if name != "cancel":
+        if name == 'poll':
+            self.polling = False
+        elif name != "cancel":
             self.busy = False
         if self.closing and name != "close":
             self.beginClose()
+            return
+        if name == 'poll' and self.pollCommandVersion != self.commandVersion:
+            # A read issued before a mutation must not restore READY, resurrect
+            # old results, or re-enable Cancel after the user's newer command.
+            self.refreshControls()
+            self.drainOutput()
             return
         if error is not None:
             self.error(error)
@@ -400,6 +430,11 @@ class OperatorDebugWindow(QDialog):
                     self.scaleImage()
                 else:
                     self.outputTree.setValue(parse(value["content"].decode(), VALUE_BYTES))
+        elif name.startswith('artifact:'):
+            try:
+                self.artifacts.completed(name, value)
+            except Exception as failure:
+                self.error(failure)
         elif name == "close":
             self.disposed = True
             self.pool.shutdown(wait=False)
@@ -434,6 +469,26 @@ class OperatorDebugWindow(QDialog):
         self.outputPorts.blockSignals(False)
         self.showOutput()
 
+    def exportSelection(self):
+        index, port = self.versions.currentIndex(), self.outputPorts.currentText()
+        if not 0 <= index < len(self.records) or not port:
+            return None
+        record = self.records[index]
+        if not record.get('executionId') or not record.get('status'):
+            return None  # never export an incomplete/anonymous UI placeholder
+        if port in record.get('outputAssets', {}):
+            wire = {'assetRef': record['outputAssets'][port]['assetId']}
+        elif port in record.get('outputs', {}):
+            wire = {'inline': deepcopy(record['outputs'][port])}
+        else:
+            return None
+        identity = dict(record.get('sourceIdentity', {}), executionId=record['executionId'],
+                        status=record['status'], rawParams=record.get('rawParams'),
+                        resolvedParams=record.get('resolvedParams'), selection='current' if index == 0 else 'history',
+                        resultKind='operator-debug')
+        mime = record.get('outputAssets', {}).get(port, {}).get('mime', 'application/json')
+        return dict(port=port, wire=wire, identity=identity, mime=mime)
+
     def showOutput(self, *_):
         self.pendingAsset = ""
         self.pixmap = None
@@ -451,6 +506,7 @@ class OperatorDebugWindow(QDialog):
             self.drainOutput()
         else:
             self.outputTree.setValue(self.records[index].get("outputs", {}).get(self.outputPorts.currentText()))
+        self.artifacts.refresh(self.run.isEnabled(), not self.busy and not self.closing)
 
     def scaleImage(self):
         if self.pixmap is not None:
@@ -469,6 +525,7 @@ class OperatorDebugWindow(QDialog):
         if self.disposed:
             return
         self.disposed = True
+        self.artifacts.cancelled.set()
         self.timer.stop()
         self.connection.stop.set()
         self.pool.submit(self.connection.close)
@@ -481,6 +538,7 @@ class OperatorDebugWindow(QDialog):
             return
         event.ignore()
         self.closing = True
+        self.artifacts.cancelled.set()
         self.timer.stop()
         self.status.setText("关闭中，等待 Runtime 确认释放资源…")
         self.beginClose()

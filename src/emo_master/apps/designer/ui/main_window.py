@@ -1286,6 +1286,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             flowScene=self.flowScene,
             refreshSidebarNodeList=self.refreshSidebarNodeList,
             focusGraphContent=lambda: self.focusGraphContent(automatic=True),
+            saveGraphViewState=self._saveWorkflowViewState,
             updateToolbarState=self.updateToolbarState,
         )
         self.projectController = ProjectController(
@@ -1475,6 +1476,28 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         self.saveProjectAsAction()
 
+    def newProjectAction(self) -> None:
+        if self.isJobRunning or self.hasActiveDebugSession():
+            QMessageBox.information(self, "新建项目", "请先结束当前运行或调试；新建项目不会自动停止任务。")
+            return
+        if not self.operatorEditorManager.resolveSqlitePending(self):
+            return
+        if self.pageCoordinator and not self.pageCoordinator.confirmLeave():
+            return
+        selected = self._chooseProjectFile("新建空白项目")
+        if not selected:
+            return
+        if Path(selected).exists():
+            QMessageBox.warning(self, "新建项目", "目标文件已存在，请选择新文件名；新建不会覆盖已有工程。")
+            return
+        from emo_master.apps.designer.state.project_store import createProjectSkeleton
+        try:
+            createProjectSkeleton(Path(selected), Path(selected).stem)
+        except (OSError, ValueError) as error:
+            QMessageBox.warning(self, "新建项目失败", str(error))
+            return
+        self.loadProjectDirectory(selected, confirmed=True)
+
     def saveProjectAsAction(self) -> None:
         if self.isJobRunning:
             self.appendRuntimeLog("WARN", "请结束当前任务后再将项目另存为其他文件")
@@ -1494,6 +1517,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         selected, _ = QFileDialog.getSaveFileName(self, title, initial, PROJECT_SAVE_FILTER)
         if not selected:
             return ""
+        if selected.lower().endswith(PROJECT_SUFFIX + PROJECT_SUFFIX):
+            answer = QMessageBox.question(self, "重复项目扩展名",
+                f"保存窗口返回了重复扩展名：{selected}\n选择“是”去掉最后一个扩展名，“否”保留原名，或取消保存。",
+                QMessageBox.Yes | QMessageBox.No | QMessageBox.Cancel, QMessageBox.Cancel)
+            if answer == QMessageBox.Cancel:
+                return ""
+            if answer == QMessageBox.Yes:
+                selected = selected[:-len(PROJECT_SUFFIX)]
+                if Path(selected).exists() and QMessageBox.question(self, "覆盖项目",
+                    f"文件已存在：{selected}\n是否覆盖？", QMessageBox.Yes | QMessageBox.No,
+                    QMessageBox.No) != QMessageBox.Yes:
+                    return ""
         if Path(selected).suffix.lower() != PROJECT_SUFFIX:
             selected += PROJECT_SUFFIX
             # Qt only confirmed the typed name, not the automatically completed name.
@@ -1543,18 +1578,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.loadedProjectPath = str(self.projectController.currentProjectFile)
             self.refreshRecentProjectsMenu()
             self.updateToolbarState()
+        elif self.pageCoordinator is not None and _nativeQt:
+            try:
+                self.pageCoordinator.session.document()
+            except ValueError as error:
+                self.pageCoordinator.offerDraftRecovery(error)
+            else:
+                QMessageBox.warning(self, "项目保存失败", "项目未保存；请检查运行日志中的具体路径、权限或配置错误。原有文件未因失败而覆盖。")
         return bool(ok)
 
-    def loadProjectDirectory(self, projectDirPath: str) -> bool:
+    def loadProjectDirectory(self, projectDirPath: str, *, confirmed: bool = False) -> bool:
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return False
-        self._focusedWorkflowId = None
-        self._workflowViewStates.clear()
+        self._saveWorkflowViewState()
         ok, loadedProjectPath, currentProjectDir = (
-            self.projectController.loadProjectDirectory(projectDirPath)
+            self.projectController.loadProjectDirectory(projectDirPath, confirmed=confirmed)
         )
         if ok:
+            self._focusedWorkflowId = None
+            self._workflowViewStates.clear()
             self._applyLoadedProjectState(loadedProjectPath, currentProjectDir)
+            self.focusGraphContent(automatic=True)
         else:
             self._refreshWorkflowTabs()
             self.updateToolbarState()
@@ -1887,6 +1931,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
 
         fileMenu = addMenu("文件")
+        self._addMenuAction(fileMenu, "新建项目…", self.newProjectAction)
+        if _nativeQt:
+            self._menuActions["新建项目…"].setShortcut(QKeySequence("Ctrl+N"))
         self._addMenuAction(fileMenu, "打开项目", self.loadProject)
         self._addMenuAction(fileMenu, "保存项目", self.saveProjectAction)
         self._addMenuAction(fileMenu, "项目另存为…", self.saveProjectAsAction)
@@ -2840,6 +2887,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self._screenSizingConnected = True
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
+        self._saveWorkflowViewState()
         debug = getattr(self, "_workflowDebugWindow", None)
         if debug is not None:
             from shiboken2 import isValid
@@ -3228,7 +3276,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.appendRuntimeLog("ERROR", f"项目校验失败：{list(errors)}")
 
     def startJob(self) -> None:
+        self.workflowController.captureActiveWorkflow()
+        if not self._checkConditionalOutputs(self.workflowStore.toPayload(), self.runTargetIds or [self.workflowStore.entryWorkflowId]):
+            return
         self.runtimeController.startJob()
+
+    def _checkConditionalOutputs(self, payload, workflows=None) -> bool:
+        from emo_master.core.workflow.output_conditions import disabledOutputConflicts
+        problems = disabledOutputConflicts(payload, workflows)
+        if not problems:
+            return True
+        first = problems[0]
+        if QMessageBox.question(self, "条件输出配置冲突", first["message"] + "\n是否定位到相关参数？",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
+            self.activateWorkflow(first["workflowId"])
+            self.flowModel.selectNode(first["nodeId"])
+            self.flowScene.setNodeSelected(first["nodeId"])
+            self.onNodeSelectionChanged()
+            self.openNodeParamDialog(first["nodeId"])
+        return False
 
     def stopAllJobs(self) -> None:
         self.runtimeController.stopAll()
@@ -3418,6 +3484,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         paramSchema = paramSchemaRaw if isinstance(paramSchemaRaw, dict) else {}
         if operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
             from emo_master.apps.designer.state.global_variables import enableVariables
+            if "globalVariables" not in self.workflowStore.projectExtensions:
+                if QMessageBox.question(self, "升级变量工程", "添加变量节点需要升级为 2.4 格式。迁移与添加可一起撤销；保存保留旧文件备份。是否升级并添加？\n变量可在“运行 → 全局变量”中创建并选择，未绑定节点仍可作为草稿保存。",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                    return
             try:
                 # Migrate the valid draft before inserting a 2.4-only node. The
                 # surrounding command records migration and insertion together.
@@ -3621,11 +3691,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if automatic and self._focusedWorkflowId == workflowId:
             return
         if automatic and _nativeQt:
-            if self._focusedWorkflowId is not None:
-                center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
-                self._workflowViewStates[self._focusedWorkflowId] = (self.flowView.getZoomFactor(), center)
             self._focusedWorkflowId = workflowId
             state = self._workflowViewStates.get(workflowId)
+            if state is None:
+                state = self._readWorkflowViewState(workflowId)
             if state is not None:
                 self.flowView.setZoomFactor(state[0])
                 self.flowView.centerOn(state[1])
@@ -3636,7 +3705,37 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         bounds = getContentBounds()
         if not isinstance(bounds, tuple) or len(bounds) != 4:
             return
-        self.flowView.fitContent(bounds, minimumZoom=0.85 if automatic else 0.02)
+        self.flowView.fitContent(bounds, minimumZoom=0.02)
+
+    def _workflowViewSettingsKey(self, workflowId):
+        import hashlib
+        path = self.projectController.currentProjectFile
+        identity = str(path.resolve()) if path else str(workflowId[0])
+        return 'ui/workflow_views/' + hashlib.sha256(identity.encode('utf-8')).hexdigest() + '/' + workflowId[1]
+
+    def _saveWorkflowViewState(self):
+        if not _nativeQt or self._focusedWorkflowId is None:
+            return
+        center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
+        zoom = self.flowView.getZoomFactor()
+        self._workflowViewStates[self._focusedWorkflowId] = (zoom, center)
+        self.settingsStore.setValue(self._workflowViewSettingsKey(self._focusedWorkflowId), [zoom, center.x(), center.y()])
+
+    def _readWorkflowViewState(self, workflowId):
+        import math
+        values = self.settingsStore.value(self._workflowViewSettingsKey(workflowId), None)
+        if not isinstance(values, (list, tuple)) or len(values) != 3:
+            return None
+        try:
+            zoom, x, y = (float(value) for value in values)
+        except (TypeError, ValueError):
+            return None
+        if not all(math.isfinite(value) for value in (zoom, x, y)) or not 0.02 <= zoom <= 4:
+            return None
+        left, top, width, height = self.flowScene.getContentBounds()
+        if not left - width <= x <= left + 2 * width or not top - height <= y <= top + 2 * height:
+            return None
+        return zoom, QPointF(x, y)
 
     def _appendNodeHints(self, nodeId: str) -> None:
         node = self.flowModel.nodes.get(nodeId)
@@ -3889,6 +3988,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def updateToolbarState(self) -> None:
         from emo_master.apps.designer.operator_editors.sqlite_canvas import refreshCanvasHints
         refreshCanvasHints(self)
+        new = self._menuActions.get("新建项目…")
+        if new is not None:
+            new.setEnabled(not self.isJobRunning and not (_nativeQt and self.hasActiveDebugSession()))
         controller = getattr(self, 'runtimeController', None)
         canRun = self.loadedProjectPath is not None and (controller.canStart() if controller else not self.isJobRunning)
         canStop = controller.canStop() if controller else False
@@ -4193,6 +4295,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             workflowId = self.activeWorkflowId
             try:
                 payload = self._livePreviewProject(EditorKey(projectId, workflowId, ""))
+                if not self._checkConditionalOutputs(payload, [workflowId]):
+                    return
                 def valid():
                     return isValid(self) and self._currentProjectId() == projectId and not self.runtimeController._closed
                 def navigate(target, node):

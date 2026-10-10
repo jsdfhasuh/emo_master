@@ -191,6 +191,26 @@ def testUnsupportedTargets(raw, tmp_path):
         resolveTarget(raw, tmp_path)
 
 
+@pytest.mark.parametrize('platform,driveType', [('linux', None), ('darwin', None), ('win32', 3), ('win32', 4)])
+def testDriveCheckIsWindowsOnlyAndStillRejectsMappedDrives(tmp_path, monkeypatch, platform, driveType):
+    from emo_master.apps.runtime.business_sqlite import backend
+    calls = []
+    def getDriveType(anchor):
+        calls.append(anchor)
+        assert platform == 'win32', 'Non-Windows targets must not access ctypes.windll'
+        return driveType
+    monkeypatch.setattr(backend, 'sys', SimpleNamespace(platform=platform), raising=False)
+    monkeypatch.setattr(backend, 'ctypes', SimpleNamespace(
+        windll=SimpleNamespace(kernel32=SimpleNamespace(GetDriveTypeW=getDriveType))))
+    path = (tmp_path / '业务 数据.sqlite3').resolve()
+    if driveType == 4:
+        with pytest.raises(SqliteWriterError, match='映射网络盘'):
+            resolveTarget(str(path), tmp_path)
+    else:
+        assert resolveTarget(str(path), tmp_path) == path
+    assert calls == ([path.anchor] if platform == 'win32' else [])
+
+
 def testOriginalRootFreezeAndDebugDoesNotChangeActualDatabase(tmp_path, monkeypatch):
     original = tmp_path / '工程 空格'
     original.mkdir()

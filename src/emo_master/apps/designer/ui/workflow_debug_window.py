@@ -52,6 +52,7 @@ class WorkflowDebugWindow(QDialog):
         self.pendingSnapshot = self.pendingAsset = ""
         self.capability = {}
         self.rows, self.breakpointRows = {}, []
+        self.appliedBreakpoints = self.pendingBreakpoints = None
         self.pixmap = None
         self.setAttribute(Qt.WA_DeleteOnClose)
         self.setWindowTitle("流程调试 - " + payload["workflows"][workflowId].get("name", workflowId))
@@ -91,6 +92,10 @@ class WorkflowDebugWindow(QDialog):
             label = QLabel(port + " : " + normalizePortType(spec))
             label.setWordWrap(True)
             form.addRow(label, row)
+        from .debug_artifact_tools import DebugArtifactTools
+        self.artifacts = DebugArtifactTools(self, lambda: dict(projectId=self.payload['project']['projectId'], workflowId=self.workflowId),
+            self.fixtureParameters, self.exportSelection)
+        form.addRow(self.artifacts.panel)
         self.tabs.addTab(scrollContent(self.inputBody), "根流程输入")
         data = QWidget()
         dataLayout = QVBoxLayout(data)
@@ -103,6 +108,8 @@ class WorkflowDebugWindow(QDialog):
         self.ports.currentIndexChanged.connect(self.selectPort)
         selectors.addWidget(self.history, 1)
         selectors.addWidget(self.ports, 1)
+        selectors.addWidget(self.artifacts.export)
+        selectors.addWidget(self.artifacts.raw)
         dataLayout.addLayout(selectors)
         self.dataLabel = WrapLabel("")
         dataLayout.addWidget(self.dataLabel)
@@ -116,6 +123,9 @@ class WorkflowDebugWindow(QDialog):
         self.tabs.addTab(self.variables, "变量监视")
         points = QWidget()
         pointsLayout = QVBoxLayout(points)
+        pointsLayout.addWidget(WrapLabel("启动时自动应用已勾选的断点；启动后修改请点击“更新断点”。"))
+        self.breakpointStatus = WrapLabel('尚未应用：启动时自动提交当前断点')
+        pointsLayout.addWidget(self.breakpointStatus)
         self.breakpoints = QTableWidget(0, 4)
         self.breakpoints.setHorizontalHeaderLabels(["启用", "流程 / 节点", "条件", "命中起点"])
         self.breakpoints.horizontalHeader().setSectionResizeMode(1, QHeaderView.Stretch)
@@ -137,6 +147,9 @@ class WorkflowDebugWindow(QDialog):
                 self.breakpoints.setCellWidget(row, 2, condition)
                 self.breakpoints.setCellWidget(row, 3, hits)
                 self.breakpointRows.append((key, node["nodeId"], enabled, condition, hits))
+                enabled.toggled.connect(self.refresh)
+                condition.textChanged.connect(self.refresh)
+                hits.valueChanged.connect(self.refresh)
         pointsLayout.addWidget(self.breakpoints)
         pointBar = QHBoxLayout()
         self.applyBreakpoints = QPushButton("更新断点")
@@ -155,6 +168,14 @@ class WorkflowDebugWindow(QDialog):
         self.timer.timeout.connect(self.poll)
         self.timer.start(250)
         self.submit("open", lambda: self.connection.openWorkflow(self.payload, workflowId))
+
+    def fixtureParameters(self):
+        # Audit the fixed draft's parameters and bindings, including children.
+        # Loading an input set never applies these to the current project.
+        return dict(draftDigest=self.startupDigest, workflows={workflowId: {
+            node['nodeId']: {key: deepcopy(node[key]) for key in ('params', 'globalVariableBindings') if key in node}
+            for node in workflow.get('nodes', []) if 'operatorId' in node
+        } for workflowId, workflow in self.payload['workflows'].items()})
 
     def submit(self, name, work, control=False):
         if self.disposed or (self.busy and not control) or (self.closing and name != "close"):
@@ -187,6 +208,7 @@ class WorkflowDebugWindow(QDialog):
         paused = idle and self.state == "PAUSED" and current and not self.session.get("flow", {}).get("trialRunning")
         self.startButton.setEnabled(idle and self.state == "READY")
         self.inputBody.setEnabled(idle and self.state == "READY")
+        self.breakpoints.setEnabled(idle)
         for key, button in self.buttons.items():
             button.setEnabled(paused if key != "pause" else idle and self.state == "RUNNING")
         self.buttons["trial"].setEnabled(paused and self.current is not None and self.current.get("phase") == "node.before"
@@ -195,24 +217,51 @@ class WorkflowDebugWindow(QDialog):
         self.applyBreakpoints.setEnabled(idle and self.state in {"PAUSED", "RUNNING", "PAUSE_REQUESTED"})
         self.locate.setEnabled(current and not self.closing)
         self.end.setEnabled(not self.closing)
+        self.artifacts.refresh(idle and self.state == 'READY', idle)
+        if self.connection.uncertain:
+            text = '断点应用状态未知：请结束会话，禁止重发或继续启动'
+        elif self.pendingBreakpoints is not None:
+            text = '等待 Worker 确认断点；确认前不会启动或发送下一条控制'
+        elif self.appliedBreakpoints is None:
+            text = '尚未应用：启动时自动提交当前断点'
+        elif self.selectedBreakpoints() == self.appliedBreakpoints:
+            text = f'已由 Worker 确认应用：{len(self.appliedBreakpoints)} 个断点'
+        else:
+            text = '有未提交修改：当前执行仍使用上一次已确认断点，请点击“更新断点”'
+        self.breakpointStatus.setText(text)
 
     def start(self):
         if not self.startButton.isEnabled():
             return
         try:
+            from emo_master.core.workflow.output_conditions import disabledOutputConflicts
+            problems = disabledOutputConflicts(self.payload, [self.workflowId])
+            if problems:
+                first = problems[0]
+                self.error(ValueError(first['message'] + ' 当前调试使用固定快照；修正参数后请结束并重新打开调试。'))
+                self.navigate(first['workflowId'], first['nodeId'])
+                return
             values = {key: row.wire() for key, row in self.rows.items() if row.wire() is not None}
-            self.submit("start", lambda: self.connection.start(values))
+            breakpoints = self.selectedBreakpoints()
+            self.pendingBreakpoints = deepcopy(breakpoints)
+            if not self.submit("start", lambda: self.connection.start(values, breakpoints=breakpoints)):
+                self.pendingBreakpoints = None
         except Exception as error:
             self.error(error)
 
     def command(self, action, **fields):
         sequence = self.pauseSequence
-        self.submit("command", lambda: self.connection.control(action, sequence, **fields))
+        if action == 'breakpoints':
+            self.pendingBreakpoints = deepcopy(fields['breakpoints'])
+        if not self.submit("command", lambda: self.connection.control(action, sequence, **fields)):
+            self.pendingBreakpoints = None
+
+    def selectedBreakpoints(self):
+        return [dict(workflowId=workflow, nodeId=node, enabled=True, condition=condition.text(), hitCount=hits.value())
+                for workflow, node, enabled, condition, hits in self.breakpointRows if enabled.isChecked()]
 
     def updateBreakpoints(self):
-        rows = [dict(workflowId=workflow, nodeId=node, enabled=True, condition=condition.text(), hitCount=hits.value())
-                for workflow, node, enabled, condition, hits in self.breakpointRows if enabled.isChecked()]
-        self.command("breakpoints", breakpoints=rows)
+        self.command("breakpoints", breakpoints=self.selectedBreakpoints())
 
     def runToSelected(self):
         row = self.breakpoints.currentRow()
@@ -301,6 +350,8 @@ class WorkflowDebugWindow(QDialog):
             self.beginClose()
             return
         if error is not None:
+            if name in {'start', 'command'}:
+                self.pendingBreakpoints = None
             self.error(error)
             if name == "open":
                 self.state = "FAULTED"
@@ -308,6 +359,10 @@ class WorkflowDebugWindow(QDialog):
                 self.closing = False
                 self.closeSent = False
                 self.timer.start(250)
+        elif name in {'start', 'command'}:
+            if self.pendingBreakpoints is not None:
+                self.appliedBreakpoints = self.pendingBreakpoints
+                self.pendingBreakpoints = None
         elif name == "open":
             self.capability = value["capability"]
             self.state = value["session"]["state"]
@@ -378,6 +433,11 @@ class WorkflowDebugWindow(QDialog):
                     self.data.setValue(parse(value["content"].decode(), VALUE_BYTES))
         elif name.startswith("file:"):
             self.rows[name[5:]].setReference(value, value["assetRef"])
+        elif name.startswith('artifact:'):
+            try:
+                self.artifacts.completed(name, value)
+            except Exception as failure:
+                self.error(failure)
         elif name == "close":
             self.disposed = True
             self.pool.shutdown(wait=False)
@@ -434,6 +494,21 @@ class WorkflowDebugWindow(QDialog):
             self.drain()
         else:
             self.data.setValue(self.displayed if group == "detail" else self.displayed[group][key])
+        self.artifacts.refresh(self.startButton.isEnabled(), not self.busy and not self.closing)
+
+    def exportSelection(self):
+        selected = self.ports.currentData()
+        if not selected or not self.displayed:
+            return None
+        group, asset, key, _mime = selected
+        value = self.displayed
+        identity = dict(value.get('identity', {}), projectId=self.payload['project']['projectId'],
+            snapshotId=value['snapshotId'], nodeId=value.get('nodeId'), phase=value.get('phase'),
+            snapshotKind=value.get('snapshotKind'), selection='current' if self.current and
+                self.current['snapshotId'] == value['snapshotId'] else 'history',
+            params=value.get('params'), resultKind='workflow-debug')
+        wire = {'assetRef': asset} if asset else {'inline': deepcopy(value if group == 'detail' else value[group][key])}
+        return dict(port=group + '/' + key, wire=wire, identity=identity, mime=_mime or 'application/json')
 
     def locateCurrent(self):
         if self.current:
@@ -455,6 +530,7 @@ class WorkflowDebugWindow(QDialog):
         if self.closing:
             return
         self.closing = True
+        self.artifacts.cancelled.set()
         self.timer.stop()
         self.status.setText("停止中，等待 Runtime 确认释放资源")
         self.beginClose()

@@ -16,7 +16,7 @@ def until(app, condition, timeout=20):
     raise AssertionError('Qt condition deadline')
 
 
-def testRealAlternatingImagesOneJobTwoPagesAndSharedWindows(qtApp):
+def testRealAlternatingImagesOneJobTwoPagesAndSharedWindows(qtApp, monkeypatch):
     backend=LocalDemo(count=4)
     session=DisplaySession(backend.address,backend.jobId)
     windows=[]
@@ -31,12 +31,19 @@ def testRealAlternatingImagesOneJobTwoPagesAndSharedWindows(qtApp):
         first=a.displayed['root'].result.identity.resultKey
         assert not a.widgets['overview']['overview-image'][1].image.isNull()
         converted=hub.conversions
-        a.navigate('detail')
-        assert a.displayed['root'].result.identity.resultKey==first
-        b=RuntimePages(backend.project.presentation,hub=hub)
-        windows.append(b)
-        b.show()
-        assert hub.conversions==converted
+        # Test cross-page/window sharing against the SAME immutable observation.
+        # Live navigation deliberately reads a fresh session snapshot, which can
+        # be loading the next result and must then clear the old display.
+        # That boundary is covered separately by the deterministic renderer test.
+        sharedView=a.lastView
+        with monkeypatch.context() as fixedObservation:
+            fixedObservation.setattr(session, 'readSnapshot', lambda: sharedView)
+            a.navigate('detail')
+            assert a.displayed['root'].result.identity.resultKey==first
+            b=RuntimePages(backend.project.presentation,hub=hub)
+            windows.append(b)
+            b.show()
+            assert hub.conversions==converted
         until(qtApp,lambda:a.widgets['detail']['detail-count'][1].text()=='3 个')
         assert a.displayed['root'].result==b.displayed['root'].result
         table=a.widgets['detail']['detail-table'][1]

@@ -39,13 +39,14 @@ main.runDesigner()
 raise AssertionError('busy startup unexpectedly continued')
 """
     environment = dict(os.environ, PYTHONPATH=str(ROOT / "src"),
-                       EMO_RUNTIME_DATA_DIR=str(directory), QT_QPA_PLATFORM="offscreen")
+                       EMO_RUNTIME_DATA_DIR=str(directory), QT_QPA_PLATFORM="offscreen",
+                       PYTHONIOENCODING="utf-8")
     for name in ("EMO_RUNTIME_TARGET", "EMO_RUNTIME_DB_PATH", "EMO_MASTER_RUNTIME_DB_PATH"):
         environment.pop(name, None)
     try:
         result = subprocess.run(
             [sys.executable, "-c", code, str(directory)], cwd=ROOT, env=environment,
-            capture_output=True, text=True, timeout=30,
+            capture_output=True, text=True, encoding="utf-8", timeout=30,
         )
         assert result.returncode == 2, result.stdout + result.stderr
         assert "BUSY_DIALOG_SHOWN" in result.stdout

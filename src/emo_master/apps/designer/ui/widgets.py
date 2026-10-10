@@ -61,6 +61,17 @@ class WrapLabel(QLabel):
         return QSize(0, self.fontMetrics().height())
 
 
+class OptionalWrapLabel(WrapLabel):
+    """An empty diagnostic should not reserve a platform-font-sized row."""
+    def __init__(self, text='', parent=None):
+        super().__init__(text, parent)
+        self.setVisible(bool(text))
+
+    def setText(self, text):
+        super().setText(text)
+        self.setVisible(bool(text))
+
+
 class PreviewLabel(QLabel):
     def __init__(self, text="", parent=None):
         super().__init__(text, parent)

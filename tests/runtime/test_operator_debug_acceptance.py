@@ -2,6 +2,7 @@ from concurrent.futures import ThreadPoolExecutor
 import gc
 import json
 import os
+import sys
 from pathlib import Path
 import threading
 from uuid import uuid4
@@ -79,6 +80,12 @@ def testThousandExecutionsAndFiftyRetirements(record_property):
     import ctypes
     import multiprocessing
     def resources():
+        if sys.platform == 'linux':
+            # Equivalent native ownership accounting, not a Windows-only skip.
+            rssPages = int(Path('/proc/self/statm').read_text().split()[1])
+            return dict(handles=len(list(Path('/proc/self/fd').iterdir())),
+                handleKind='linux-file-descriptors', threads=threading.active_count(),
+                rss=rssPages * os.sysconf('SC_PAGE_SIZE'))
         count = ctypes.c_ulong()
         kernel = ctypes.windll.kernel32
         kernel.GetCurrentProcess.restype = ctypes.c_void_p
@@ -90,7 +97,8 @@ def testThousandExecutionsAndFiftyRetirements(record_property):
         memory = Memory()
         memory.cb = ctypes.sizeof(memory)
         assert ctypes.windll.psapi.GetProcessMemoryInfo(ctypes.c_void_p(handle), ctypes.byref(memory), memory.cb)
-        return dict(handles=count.value, threads=threading.active_count(), rss=memory.rss)
+        return dict(handles=count.value, handleKind='windows-process-handles',
+                    threads=threading.active_count(), rss=memory.rss)
     before = resources()
     manager = OperatorDebugManager("runtime", admitted())
     roots = []
@@ -150,6 +158,7 @@ def testResetCannotReuseAnOldExecutionOutput():
 
 
 @pytest.mark.parametrize("mode", ["wait", "ignore"])
+@pytest.mark.skipif(sys.platform not in {'win32', 'linux'}, reason='requires Windows process handle or Linux pidfd')
 def testParentProcessDeathRetiresOrphanWorkerAndOwnedAssets(mode):
     import ctypes
     import multiprocessing
@@ -158,19 +167,30 @@ def testParentProcessDeathRetiresOrphanWorkerAndOwnedAssets(mode):
     reader, writer = context.Pipe(duplex=False)
     parent = context.Process(target=orphanParent, args=(writer, mode))
     handle = None
-    kernel = ctypes.windll.kernel32
-    kernel.OpenProcess.restype = ctypes.c_void_p
+    pidfd = None
+    if sys.platform == 'win32':
+        kernel = ctypes.windll.kernel32
+        kernel.OpenProcess.restype = ctypes.c_void_p
     try:
         parent.start()
         writer.close()
         assert reader.poll(15)
         info = json.loads(reader.recv_bytes())
-        handle = kernel.OpenProcess(0x100000, False, info["pid"])
-        assert handle
+        if sys.platform == 'win32':
+            handle = kernel.OpenProcess(0x100000, False, info["pid"])
+            assert handle
+        else:
+            pidfd = os.pidfd_open(info['pid'])
         parent.terminate()
         parent.join(5)
         assert parent.exitcode is not None
-        assert kernel.WaitForSingleObject(ctypes.c_void_p(handle), 8000) == 0
+        if sys.platform == 'win32':
+            assert kernel.WaitForSingleObject(ctypes.c_void_p(handle), 8000) == 0
+        else:
+            import select
+            poller = select.poll()
+            poller.register(pidfd, select.POLLIN)
+            assert poller.poll(8000), 'orphan worker did not exit'
         assert not Path(info["workspace"]).exists()
     finally:
         if parent.is_alive():
@@ -181,3 +201,5 @@ def testParentProcessDeathRetiresOrphanWorkerAndOwnedAssets(mode):
         writer.close()
         if handle:
             kernel.CloseHandle(ctypes.c_void_p(handle))
+        if pidfd is not None:
+            os.close(pidfd)

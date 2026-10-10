@@ -511,6 +511,10 @@ try:
                     label.setFont(nodeItem.bodyFont)
                     label.setBrush(QColor("#475569"))
                     label.setToolTip(f"{displayName}\n{portName}: {portType}")
+                    if direction == "output" and model.operatorId == "vision.analysis.blob" and portName == "overlay":
+                        hint = label.toolTip() + "\n可选输出：仅启用 drawOverlay（绘制叠加图）时产生；nullable 不代表允许缺失。"
+                        label.setToolTip(hint)
+                        portItem.setToolTip(hint)
                     if direction == "input" and portName in model.inputPortLabels:
                         tip = label.toolTip() + "\n初始值来自此连线；后续每轮判断循环体回传的同名布尔值"
                         label.setToolTip(tip)

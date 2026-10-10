@@ -61,6 +61,33 @@ class PageCoordinator:
             self.chrome.update()
             return False
 
+    def offerDraftRecovery(self, error):
+        """Keep every byte of the invalid in-memory draft before rolling back."""
+        from emo_master.core.project.delivery_store import atomicJson
+        answer = QMessageBox.question(self.window, '项目草稿未通过校验',
+            f'{error}\n可先导出恢复副本，再恢复到最后一次合法编辑；原工程文件不会改变。',
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        if answer != QMessageBox.Yes:
+            return False
+        path, _ = QFileDialog.getSaveFileName(self.window, '导出非法草稿恢复副本',
+            '项目草稿恢复.json', 'JSON (*.json)')
+        if not path:
+            return False
+        try:
+            atomicJson(Path(path), self.session.payload())
+            self.session.recoverCheckpoint()
+            self.window.workflowController._renderActive()
+            self.window.activeWorkflowId = self.session.workflows.activeWorkflowId
+            self.window._refreshWorkflowTabs()
+            if self.editor:
+                self.editor.refresh()
+            self.chrome.update()
+            self.preview.message('已保留恢复副本并恢复合法草稿；请检查后重新保存')
+            return True
+        except (OSError, ValueError) as failure:
+            QMessageBox.warning(self.window, '恢复未完成', str(failure))
+            return False
+
     def pageActive(self):
         return self.editor is not None and self.stack.currentWidget() is self.editor
 

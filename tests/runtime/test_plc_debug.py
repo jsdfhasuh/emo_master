@@ -1687,6 +1687,7 @@ def test_client_paths_reject_missing_invalid_and_stale_write_tokens_without_wire
         payload = receipt(reply, "rejected")
         assert payload["readback"] is None and payload["readbackError"] == ""
         assert reply.write_enabled and reply.write_lock_generation == enabled.write_lock_generation == 0
+        peer.wait_connections(1)
         assert peer.connections == 1 and peer.requests == [] and peer.words == {}
         assert client_path.client.closePlcDebugSession(opened.session_id, opened.runtime_instance_id).ok
 

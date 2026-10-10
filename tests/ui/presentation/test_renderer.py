@@ -1,4 +1,6 @@
 from types import MappingProxyType
+from types import SimpleNamespace
+from dataclasses import replace
 import threading
 import time
 
@@ -9,6 +11,8 @@ from PySide2.QtGui import QColor
 from emo_master.clients.runtime.view_state import ScopeView, SessionView
 from emo_master.core.presentation.results import ClosedResult, ResultIdentity, ClosedSource
 from emo_master.core.presentation.models import Presentation
+from emo_master.core.project.snapshots import captureDefinition, revisionOf
+from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.images import ownedImage
 from emo_master.ui.presentation.renderer import RuntimePages
 from examples.runtime_pages_p3 import sampleProjectP3
@@ -75,6 +79,29 @@ def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):
     assert second.widgets['alternate']['overview-count'][1].text()=='3 个'
     window.close()
     second.close()
+
+
+def testLivePageNavigationUsesFreshLoadingSnapshotRatherThanStaleResult(qtApp, tmp_path):
+    config = sampleProjectP3(tmp_path).presentation
+    first = resultView(capture=revisionOf(captureDefinition(config)))
+    current = [first]
+    session = SimpleNamespace(readSnapshot=lambda: current[0], imageDemand=False)
+    hub = DisplayHub(session)
+    window = RuntimePages(config, hub=hub)
+    try:
+        assert window.displayed['root'].result.identity.resultKey == 'result-1'
+        current[0] = replace(first, revision=2, scopes=MappingProxyType({}),
+                             loading=MappingProxyType({'root': first.scopes['root'].result}))
+        window.navigate('detail')
+        assert window.lastView is current[0]
+        assert not window.displayed
+        assert '当前结果准备中' in window.widgets['detail']['detail-count'][1].text()
+        current[0] = resultView(2, '3', capture=window.expectedCapture)
+        window.navigate('overview')
+        assert window.displayed['root'].result.identity.resultKey == 'result-2'
+        assert window.widgets['overview']['overview-count'][1].text() == '3 个'
+    finally:
+        window.close()
 
 
 def testEmptyUnboundAndUnsupportedAreExplicit(qtApp,tmp_path):

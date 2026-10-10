@@ -113,6 +113,11 @@ class WorkflowStore:
                 edges=[edge.model_dump(mode="python") for edge in workflow.edges],
                 layout=workflow.layout.model_dump(mode="python"),
             )
+            # Use the same display fallback for every workflow before any is
+            # visited. Canvas hydration must not become a navigation-only edit.
+            for node in self.workflows[workflowId].nodes:
+                if not isinstance(node.get('displayName'), str):
+                    node['displayName'] = node.get('operatorId') or str(node.get('kind', 'operator'))
         self.ensureBoundaryNodes()
 
     def loadProjectPayload(self, payload: dict[str, object]) -> None:
@@ -162,6 +167,10 @@ class WorkflowStore:
             for node in boundaryNodes
             if isinstance(node.get("nodeId"), str) and node.get("nodeId") not in nodeIds
         )
+        # Canvas rendering groups normal nodes ahead of boundary nodes for
+        # selection. Navigation is not permission to rewrite the saved order.
+        order = {node.get("nodeId"): index for index, node in enumerate(workflow.nodes)}
+        nodes.sort(key=lambda node: order.get(node.get("nodeId"), len(order)))
         nodeIds = {
             node.get("nodeId") for node in nodes if isinstance(node.get("nodeId"), str)
         }
@@ -182,6 +191,9 @@ class WorkflowStore:
                 continue
             if len(position) != 2:
                 continue
+            kind = next((node.get("kind", "operator") for node in nodes if node.get("nodeId") == nodeId), "operator")
+            if nodeId not in preservedPositions and position == defaultNodePosition(str(kind)):
+                continue  # an implicit rendered default is not a layout edit
             preservedPositions[nodeId] = {
                 "x": float(position[0]),
                 "y": float(position[1]),

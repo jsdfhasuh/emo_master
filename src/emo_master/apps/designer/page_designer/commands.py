@@ -18,11 +18,29 @@ def draftCommand(method):
             return method(self, *args, **kwargs)
         outermost = coordinator.commandDepth == 0
         before = _state(self, coordinator) if outermost else None
+        selected = self.flowModel.selectedNodeId
         coordinator.commandDepth += 1
         try:
-            return method(self, *args, **kwargs)
+            if not outermost:
+                return method(self, *args, **kwargs)
+            try:
+                with coordinator.session.transaction():
+                    result = method(self, *args, **kwargs)
+                    if before != _state(self, coordinator):
+                        coordinator.sync()
+                    return result
+            except BaseException:
+                # The session has restored content and history. Rebuild the
+                # scene from it as well, rather than leaving a poisoned canvas.
+                self.workflowController._renderActive()
+                self.activeWorkflowId = coordinator.session.workflows.activeWorkflowId
+                self._refreshWorkflowTabs()
+                if selected in self.flowModel.nodes:
+                    self.flowModel.selectNode(selected)
+                    self.flowScene.setNodeSelected(selected)
+                raise
         finally:
             coordinator.commandDepth -= 1
             if outermost and before != _state(self, coordinator):
-                coordinator.sync()
+                coordinator.chrome.update()
     return call

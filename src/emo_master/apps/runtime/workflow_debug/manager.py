@@ -22,7 +22,8 @@ def control(manager, session, action, request):
         command = parse(request.get("controlJson", "{}"))
         if not isinstance(command, dict) or command.get("action") not in {"pause", "continue", "into", "over", "out", "runTo", "breakpoints", "trial"}:
             fail("E_DEBUG_CONTEXT_INVALID", "invalid workflow control")
-        if session.state not in {"RUNNING", "PAUSE_REQUESTED", "PAUSED"}:
+        readyBreakpoints = session.state == "READY" and command["action"] == "breakpoints"
+        if session.state not in {"RUNNING", "PAUSE_REQUESTED", "PAUSED"} and not readyBreakpoints:
             fail("E_DEBUG_STALE_SESSION", "workflow is not active")
         if command["action"] in {"continue", "into", "over", "out", "runTo", "trial"}:
             if (type(command.get("pauseSequence")) is not int or session.state != "PAUSED"

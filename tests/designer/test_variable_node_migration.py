@@ -19,6 +19,14 @@ OPERATORS = [ReadVariableOperator, WriteVariableOperator]
 ENTRIES = ["drop", "bubble", "library"]
 
 
+@pytest.fixture(autouse=True)
+def approveExplicitMigration(monkeypatch):
+    from PySide2.QtWidgets import QMessageBox
+    original = QMessageBox.question
+    monkeypatch.setattr(QMessageBox, "question", lambda parent, title, *args, **kwargs:
+        QMessageBox.Yes if title == "升级变量工程" else original(parent, title, *args, **kwargs))
+
+
 def _window():
     return MainWindow(SimpleNamespace(
         listOperators=lambda: [],

@@ -103,6 +103,54 @@ def testRealWorkerNestedStepsPureTrialAndNoProductionMutation(runtime):
     client.close()
 
 
+@pytest.mark.parametrize("clearBeforeStart", [False, True])
+def testReadyBreakpointsAreConfirmedIdempotentAndReplaceable(runtime, clearBeforeStart):
+    client = FlowClient(runtime)
+    client.open()
+    try:
+        requestId, control = client.command("breakpoints", breakpoints=[
+            dict(workflowId="main", nodeId="first"),
+            dict(workflowId="child", nodeId="number", condition="hits == 2", hitCount=2)])
+        replay = client.call("ControlWorkflowDebug", request_id=requestId, control_json=json.dumps(control))
+        assert replay["status"] == "CONFIRMED"
+        state = client.state()
+        assert state["state"] == "READY" and not state["flow"].get("started")
+        assert not state["snapshots"]
+        client.command("breakpoints", breakpoints=[] if clearBeforeStart else [
+            dict(workflowId="child", nodeId="number", condition="hits == 2", hitCount=2)])
+        initial = client.start()
+        assert initial["reason"] == "step" and "main/first" not in initial["hits"]
+        client.command("continue", initial)
+        if clearBeforeStart:
+            assert initial["hits"] == {}
+            waitFor(lambda: client.state()["state"] == "SUCCEEDED")
+        else:
+            paused = client.paused(initial["pauseSequence"])
+            assert paused["nodeId"] == "number" and paused["hits"]["child/number"] == 2
+        assert runtime.loadedDocument is None and runtime.jobRepository.all() == []
+    finally:
+        client.close()
+
+
+def testReadyStillRejectsExecutionControlsAndTerminalRejectsBreakpoints(runtime):
+    client = FlowClient(runtime)
+    client.open()
+    try:
+        for action in ("pause", "continue", "into", "over", "out", "runTo", "trial"):
+            reply = client.raw("ControlWorkflowDebug", request_id=uuid4().hex,
+                control_json=json.dumps(dict(action=action, pauseSequence=0)))
+            assert not reply.ok and reply.code == "E_DEBUG_STALE_SESSION", action
+        assert client.state()["state"] == "READY"
+        initial = client.start()
+        client.command("continue", initial)
+        waitFor(lambda: client.state()["state"] == "SUCCEEDED")
+        reply = client.raw("ControlWorkflowDebug", request_id=uuid4().hex,
+            control_json=json.dumps(dict(action="breakpoints", breakpoints=[])))
+        assert not reply.ok and reply.code == "E_DEBUG_STALE_SESSION"
+    finally:
+        client.close()
+
+
 def testLoopbackGrpcWorkflowAndOperatorNamespacesCannotCross(runtime):
     server = grpc.server(ThreadPoolExecutor(max_workers=4), options=[("grpc.max_receive_message_length", 1024*1024)])
     rpc.add_RuntimeServiceServicer_to_server(runtime, server)
@@ -113,8 +161,11 @@ def testLoopbackGrpcWorkflowAndOperatorNamespacesCannotCross(runtime):
         client = FlowClient(runtime, rpc.RuntimeServiceStub(channel))
         capability = client.call("GetWorkflowDebugCapabilities")
         assert "trial" in capability["commands"]
+        assert capability["preStartBreakpoints"] is True
         client.open()
+        client.command("breakpoints", breakpoints=[dict(workflowId="main", nodeId="first")])
         paused = client.start()
+        assert paused["reason"] == "breakpoint" and paused["hits"]["main/first"] == 1
         rejected = client.raw("GetOperatorDebugSession")
         assert not rejected.ok and rejected.code == "E_DEBUG_CONTEXT_INVALID"
         client.command("over", paused)

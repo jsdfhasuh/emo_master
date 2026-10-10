@@ -48,7 +48,15 @@ class _WrappedRelationshipDelegate(QStyledItemDelegate):
             ancestor = ancestor.parent()
         width = max(1, self.tree.columnWidth(index.column()) - self.tree.indentation() * depth)
         document = self._document(styled, width, index)
-        return QSize(width, ceil(document.size().height()) + 6)
+        # Rich bold headings and plain-text fallback can have different line
+        # leading on Linux fonts. Reserve enough for both, with the same wrap.
+        plain = QTextDocument()
+        plain.setDocumentMargin(0)
+        plain.setDefaultFont(styled.font)
+        plain.setDefaultTextOption(document.defaultTextOption())
+        plain.setPlainText(styled.text.replace("\u2028", "\n"))
+        plain.setTextWidth(document.textWidth())
+        return QSize(width, ceil(max(document.size().height(), plain.size().height())) + 6)
 
     def paint(self, painter, option, index):
         styled = QStyleOptionViewItem(option)

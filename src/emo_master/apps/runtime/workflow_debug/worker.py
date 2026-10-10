@@ -157,6 +157,10 @@ def runWorkflowDebug(specJson, commands, events, cancellation, stop, heartbeat, 
                     runDone.clear()
                     executionThread = threading.Thread(target=execute, args=(command,), daemon=True)
                     executionThread.start()
+                elif action == "breakpoints" and executionThread is None:
+                    # Pre-start configuration must be adopted before the first
+                    # checkpoint, including its condition and hit counter.
+                    controller.setBreakpoints(command.get("breakpoints"), locations)
                 elif executionThread is None or runDone.is_set():
                     fail("E_DEBUG_STALE_SESSION", "workflow is not active")
                 elif action == "trial":

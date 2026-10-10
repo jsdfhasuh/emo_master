@@ -19,7 +19,7 @@ try:
             self._fitTimer.timeout.connect(self._applyPendingFit)
             self.setRenderHints(QPainter.Antialiasing | QPainter.TextAntialiasing | QPainter.SmoothPixmapTransform)
             self.setResizeAnchor(QGraphicsView.AnchorViewCenter)
-            self._minZoom = 0.35
+            self._minZoom = 0.02
             self._maxZoom = 3.0
             self._zoomStep = 1.15
             self._isPanning = False

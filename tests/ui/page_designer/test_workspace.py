@@ -68,7 +68,10 @@ def testSaveFailureAndCancelDoNotLoseDraft(designer, monkeypatch, tmp_path):
     c.session.presentation.createPage('keep')
     from emo_master.apps.designer.controllers import project_controller
     monkeypatch.setattr(project_controller, 'saveProject', lambda *a: (_ for _ in ()).throw(OSError('disk full')))
+    warnings = []
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args: warnings.append(args))
     assert not designer.saveProjectToDirectory(str(tmp_path/'fail'))
+    assert warnings and warnings[-1][1] == '项目保存失败'
     assert c.session.dirty
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Cancel)
     assert not c.confirmLeave()

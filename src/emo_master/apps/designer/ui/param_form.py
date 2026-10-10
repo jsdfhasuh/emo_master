@@ -291,6 +291,18 @@ try:
                 if isinstance(control, _WorkflowComboBox):
                     control.setToolTip(control.toolTip() + "\n双击名称打开工作流；单击选择工作流")
                 self._layout.addRow(label, control)
+                if field.name in {f"case{i}Value" for i in range(4)} and field.schema.get("xOptionalPresence"):
+                    valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
+                    if isinstance(valueControl, QLineEdit):
+                        for text in ("True", "False"):
+                            button = QPushButton(text)
+                            button.setToolTip("布尔输入的 Python 文本；不是 JSON 小写，也不需要输入引号")
+                            def choose(_checked=False, text=text, valueControl=valueControl, control=control):
+                                if isinstance(control, _OptionalFieldControl):
+                                    control.enabledCheckBox.setChecked(True)
+                                valueControl.setText(text)
+                            button.clicked.connect(choose)
+                            control.layout().addWidget(button)
                 if field.schema.get("xHidden"):
                     label.hide()
                     control.hide()
@@ -306,6 +318,48 @@ try:
                     if isinstance(control, QComboBox):
                         control.currentIndexChanged.connect(self._updateDependentFields)
             self._updateDependentFields()
+            if all(f"case{i}Value" in self._controls for i in range(4)):
+                self._buildSwitchPreview()
+
+        def _buildSwitchPreview(self):
+            from .widgets import WrapLabel
+            self._layout.addRow(WrapLabel('按 Python str(value) 逐项文本匹配，先匹配分支 0。布尔 true/false 转成 True/False；字符串 true 保持小写。匹配值不填引号，未启用不参与。'))
+            panel = QWidget()
+            layout = QHBoxLayout(panel)
+            layout.setContentsMargins(0, 0, 0, 0)
+            kind, sample = QComboBox(), QLineEdit('true')
+            kind.addItems(['boolean', 'string', 'integer'])
+            layout.addWidget(kind)
+            layout.addWidget(sample, 1)
+            self._layout.addRow('输入匹配预览', panel)
+            preview = WrapLabel()
+            preview.setObjectName('switchMatchPreview')
+            self._layout.addRow(preview)
+            def update(*_args):
+                try:
+                    text = sample.text()
+                    if kind.currentText() == 'boolean':
+                        if text not in {'true', 'false', 'True', 'False'}:
+                            raise ValueError('请输入 true 或 false')
+                        value = text.lower() == 'true'
+                    elif kind.currentText() == 'integer':
+                        value = int(text)
+                    else:
+                        value = text
+                    converted = str(value)
+                    values = self.getValues()
+                    target = next((f'case{i}' for i in range(4) if values.get(f'case{i}Value') == converted), 'default')
+                    preview.setText(f'转换文本：{converted!r} → {target}（固定匹配值预览；动态绑定以运行时为准）')
+                except ValueError as error:
+                    preview.setText(str(error))
+            kind.currentIndexChanged.connect(update)
+            sample.textChanged.connect(update)
+            for control in self._controls.values():
+                if isinstance(control, _OptionalFieldControl):
+                    control.enabledCheckBox.toggled.connect(update)
+                    if isinstance(control.valueControl, QLineEdit):
+                        control.valueControl.textChanged.connect(update)
+            update()
 
         def _updateDependentFields(self, *_args) -> None:
             values = self.getValues()

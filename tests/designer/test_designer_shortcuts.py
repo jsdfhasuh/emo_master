@@ -273,7 +273,10 @@ def testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField(canvas, monkeypatch
     assert payload['presentation']['pages'][editor.pageId]['components'][0]['props']['text'] == field.text()
     assert not window.pageCoordinator.session.dirty
     editor.tools.fields['fontSize'].setValue(1)
+    warnings = []
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *args: warnings.append(args))
     QTest.keyClick(field, Qt.Key_S, Qt.ControlModifier)
+    assert warnings and warnings[-1][1] == '项目保存失败'
     assert (directory / 'project.json').read_bytes() == saved
     assert editor.tools.fields['fontSize'].value() == 1
     assert editor.tools.propertyError.text()

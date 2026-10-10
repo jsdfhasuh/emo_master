@@ -159,6 +159,11 @@ def testWhileShowsCallerBeforeConditionAndBody(designerApplication, tmp_path):
     screenshot = tmp_path / "while-call-hierarchy.png"
     assert window.floatingToolbox.grab().save(str(screenshot))
     print(f"While hierarchy screenshot: {screenshot}")
+    # Native high-DPI screens can cap the requested 1000 logical-pixel window.
+    # The final row must remain accessible by real scrolling, not be clipped.
+    tree.scrollToItem(exitItem)
+    designerApplication.processEvents()
+    assert tree.visualItemRect(exitItem).top() >= 0
     assert tree.visualItemRect(exitItem).bottom() < tree.viewport().height()
     assert tree.horizontalScrollBar().maximum() == 0
     tree.setCurrentItem(body)
@@ -172,11 +177,21 @@ def testClickCallerLocatesLoopAndRefreshKeepsExpandedData(designerApplication):
     call = tree.topLevelItem(0).child(0)
     body = call.child(1)
     tree.setCurrentItem(body)
+    designerApplication.processEvents()
+    # At 200% the real screen caps the toolbox height. Finish pending wrapped
+    # row layout before scrolling, and click an actually visible row center.
+    tree.doItemsLayout()
+    tree.scrollToItem(body, tree.PositionAtCenter)
+    designerApplication.processEvents()
+    assert tree.viewport().rect().contains(tree.visualItemRect(body).center())
     QTest.mouseClick(tree.viewport(), Qt.LeftButton, pos=tree.visualItemRect(body).center())
     designerApplication.processEvents()
     assert window.getActiveWorkflowId() == "body"
     call = tree.topLevelItem(0).child(0)
-    tree.scrollToItem(call)
+    tree.doItemsLayout()
+    tree.scrollToItem(call, tree.PositionAtCenter)
+    designerApplication.processEvents()
+    assert tree.viewport().rect().contains(tree.visualItemRect(call).center())
     QTest.mouseClick(tree.viewport(), Qt.LeftButton, pos=tree.visualItemRect(call).center())
     designerApplication.processEvents()
     assert window.getActiveWorkflowId() == "main"

@@ -253,6 +253,11 @@ def testCompleteSqliteDesignerPath(ownedDesignerWindow, tmp_path, monkeypatch):
             assert saved['schemaVersion'] == '2.1'
             savedParams = next(n['params'] for n in saved['workflows']['main']['nodes'] if n['nodeId'] == writerId)
             assert savedParams == params
+            # COMPLETED publishes the result, not the retirement of its owners.
+            # The final reload needs the same release fence as the second run.
+            runtime.jobSupervisor.waitForRetirement(timeoutSeconds=10)
+            assert runtime.jobSupervisor.getProcess(job) is None
+            assert not runtime.jobSupervisor.ownsJobResources(job)
             assert window.loadProjectDirectory(str(root))
             assert window.flowModel.getNodeParams(writerId) == params
             reopened = doubleNode(window, writerId)

@@ -26,7 +26,7 @@ def previewParameters(store, document, workflowId, nodeId, params, schema, jobId
 
 def _storedParameters(store, document, params, schema, node, accessor, keys, withSnapshot):
     values = {}
-    with store._connect() as connection:
+    with store.connection() as connection:
         connection.execute("BEGIN")
         for key in keys:
             definition = accessor._definition(key)

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from datetime import datetime, timezone
 from pathlib import Path
 import json
@@ -143,7 +145,7 @@ class SqliteStore:
     ) -> None:
         accepted = acceptedAtMs if acceptedAtMs is not None else _timestampMs()
         now = _utcNow()
-        with self._connect() as connection:
+        with self.connection() as connection:
             connection.execute(
                 """
                 INSERT INTO jobs(
@@ -187,7 +189,7 @@ class SqliteStore:
             if startedAtMs is not None
             else None
         )
-        with self._connect() as connection:
+        with self.connection() as connection:
             current = connection.execute(
                 "SELECT startAt FROM jobs WHERE jobId = ?", (jobId,)
             ).fetchone()
@@ -241,7 +243,7 @@ class SqliteStore:
     ) -> int:
         timestampMs = timestamp if isinstance(timestamp, int) else _timestampMs()
         timestampText = _utcNow() if not isinstance(timestamp, str) else timestamp
-        with self._connect() as connection:
+        with self.connection() as connection:
             if sequence is None:
                 connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
@@ -287,7 +289,7 @@ class SqliteStore:
         return sequence
 
     def getLastJobEventSequence(self, jobId: str) -> int:
-        with self._connect() as connection:
+        with self.connection() as connection:
             row = connection.execute(
                 "SELECT COALESCE(MAX(sequence), 0) FROM jobEvents WHERE jobId = ?",
                 (jobId,),
@@ -295,7 +297,7 @@ class SqliteStore:
         return int(row[0]) if row is not None else 0
 
     def getTerminalJobEventSequence(self, jobId: str) -> int:
-        with self._connect() as connection:
+        with self.connection() as connection:
             row = connection.execute(
                 """
                 SELECT COALESCE(MAX(sequence), 0)
@@ -308,7 +310,7 @@ class SqliteStore:
         return int(row[0]) if row is not None else 0
 
     def getJob(self, jobId: str) -> dict[str, object] | None:
-        with self._connect() as connection:
+        with self.connection() as connection:
             row = connection.execute(
                 "SELECT jobId, projectId, projectRevision, workflowId, status, pid, acceptedAt, startAt, startedAt, endAt, durationMs, errorCode, errorMessage, stopMode FROM jobs WHERE jobId = ?",
                 (jobId,),
@@ -328,7 +330,7 @@ class SqliteStore:
         Events can be pruned independently of jobs. Missing evidence is UNKNOWN,
         while an existing pre-policy accepted event represents the old ALL path.
         """
-        with self._connect() as connection:
+        with self.connection() as connection:
             row = connection.execute(
                 "SELECT payloadJson FROM jobEvents WHERE jobId = ? AND eventType = 'job.accepted' ORDER BY sequence LIMIT 1",
                 (jobId,),
@@ -347,7 +349,7 @@ class SqliteStore:
                 "previewProjectKey": str(payload.get("previewProjectKey", ""))}
 
     def listJobEventsAfter(self, jobId: str, afterSequence: int = 0) -> list[RuntimeEvent]:
-        with self._connect() as connection:
+        with self.connection() as connection:
             rows = connection.execute(
                 """
                 SELECT jobId, eventType, message, level, nodeId, code, payloadJson,
@@ -360,7 +362,7 @@ class SqliteStore:
         return [RuntimeEvent(*row) for row in rows]
 
     def markOrphanedJobsFailed(self) -> int:
-        with self._connect() as connection:
+        with self.connection() as connection:
             connection.execute("BEGIN IMMEDIATE")
             rows = connection.execute(
                 "SELECT jobId, projectId, workflowId, startAt FROM jobs "
@@ -422,7 +424,7 @@ class SqliteStore:
         nowMs = _timestampMs() if currentTimestampMs is None else int(currentTimestampMs)
         cutoffMs = nowMs - max(1, retentionDays) * 86400000
         minimum = max(0, int(minimumJobsPerProject))
-        with self._connect() as connection:
+        with self.connection() as connection:
             rows = connection.execute(
                 """
                 SELECT jobId, projectId, endAt, startAt
@@ -463,7 +465,7 @@ class SqliteStore:
             return deleted
 
     def checkpointWal(self) -> None:
-        with self._connect() as connection:
+        with self.connection() as connection:
             connection.execute("PRAGMA wal_checkpoint(TRUNCATE)").fetchall()
 
     def applyGlobalCounter(
@@ -482,7 +484,7 @@ class SqliteStore:
 
     def listGlobalCounters(self, projectId: str) -> list[GlobalCounterRecord]:
         try:
-            with self._connect() as connection:
+            with self.connection() as connection:
                 rows = connection.execute(
                     "SELECT name, value, updatedAtMs FROM globalCounters "
                     "WHERE projectId = ? ORDER BY name COLLATE BINARY",
@@ -509,7 +511,7 @@ class SqliteStore:
         return self.setGlobalCounter(projectId, name, 0)
 
     def vacuumIfNeeded(self, minimumFreeRatio: float = 0.25) -> bool:
-        with self._connect() as connection:
+        with self.connection() as connection:
             pageRow = connection.execute("PRAGMA page_count").fetchone()
             freeRow = connection.execute("PRAGMA freelist_count").fetchone()
             pages = int(pageRow[0]) if pageRow is not None else 0
@@ -527,7 +529,7 @@ class SqliteStore:
         reasonCode: str,
         reasonMessage: str,
     ) -> None:
-        with self._connect() as connection:
+        with self.connection() as connection:
             connection.execute(
                 """
                 INSERT INTO pluginDiagnostics(operatorId, version, status, reasonCode, reasonMessage, timestamp)
@@ -537,9 +539,28 @@ class SqliteStore:
             )
             connection.commit()
 
+    @contextmanager
+    def connection(self) -> Iterator[sqlite3.Connection]:
+        """One independent transaction with deterministic handle retirement.
+
+        sqlite3.Connection.__exit__ commits/rolls back but DOES NOT close.
+        The explicit Runtime idle owner, not garbage-collected read/write
+        connections, is responsible for retaining the WAL lifetime.
+        """
+        connection = self._connect()
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
+
     def _connect(self) -> sqlite3.Connection:
         connection = sqlite3.connect(self.dbPath, timeout=5.0)
-        _configureConnection(connection)
+        try:
+            _configureConnection(connection)
+        except BaseException:
+            connection.close()
+            raise
         return connection
 
 

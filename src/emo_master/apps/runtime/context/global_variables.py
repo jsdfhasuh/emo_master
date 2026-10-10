@@ -81,7 +81,7 @@ def counterDefinition(name):
 
 
 def legacyDefinitions(store, projectId):
-    with store._connect() as connection:
+    with store.connection() as connection:
         return {key: json.loads(raw) for key, raw in connection.execute(
             "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=? AND legacyName IS NOT NULL",
             (projectId,))}
@@ -93,7 +93,7 @@ class ProjectGlobalVariables:
         self.definitions = definitions(variableDefinitions)
 
     def synchronize(self):
-        with self.store._connect() as connection:
+        with self.store.connection() as connection:
             _beginWrite(connection)
             legacy = {key: json.loads(raw)["name"] for key, raw in connection.execute(
                 "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=? AND legacyName IS NOT NULL",
@@ -125,7 +125,7 @@ class ProjectGlobalVariables:
             # Legacy/persistent-only projects have nothing to initialize here.
             # An empty write transaction can still fail behind event commits.
             return
-        with self.store._connect() as connection:
+        with self.store.connection() as connection:
             _beginWrite(connection)
             for key, definition in scoped.items():
                 self._initialize(connection, key, definition, self.jobId)
@@ -161,7 +161,7 @@ class ProjectGlobalVariables:
         return VariableRecord(key, value, row[1], row[2])
 
     def records(self, keys=None):
-        with self.store._connect() as connection:
+        with self.store.connection() as connection:
             connection.execute("BEGIN")
             return {key: self._read(connection, key) for key in (self.definitions if keys is None else keys)}
 
@@ -175,7 +175,7 @@ class ProjectGlobalVariables:
         definition = self._definition(key)
         if definition.kind == "constant":
             raise VariableError("E_VARIABLE_READ_ONLY", "constants cannot be written")
-        with self.store._connect() as connection:
+        with self.store.connection() as connection:
             _beginWrite(connection)
             old = self._read(connection, key)
             if expectedRevision is not None and expectedRevision != old.revision:
@@ -229,7 +229,7 @@ def counterOperation(store, projectId, name, *, increment=False, reset=False, va
     if value is not None:
         validateGlobalCounterValue(value)
     key = "counter:" + name
-    with store._connect() as connection:
+    with store.connection() as connection:
         existing = connection.execute("SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=?", (projectId,)).fetchall()
         if any(other != key and json.loads(raw)["name"] == name for other, raw in existing):
             raise GlobalCounterError("E_VARIABLE_NAME_CONFLICT", "counter name conflicts with an existing variable")

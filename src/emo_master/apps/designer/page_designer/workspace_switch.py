@@ -49,7 +49,14 @@ class WorkspaceSwitch(QWidget):
 
     def sizeHint(self):
         metrics = self.fontMetrics()
-        width = max(92, max(metrics.horizontalAdvance(a.text()) for a in self._actions) + 32)
+        # Keep a readable four-em target even when the platform's CJK fallback
+        # reports narrow/missing glyphs. A fixed 92 px floor must scale with the
+        # font too, rather than masking FontChange at a larger text size.
+        # An em is the font's pixel size, not its taller line-spacing height.
+        # Using line height over-allocates on Linux and hides Stop at 480 px.
+        em = self.fontInfo().pixelSize()
+        width = max(92, max(max(metrics.horizontalAdvance(a.text()), 4 * em)
+                            for a in self._actions) + 32)
         return QSize(width * len(self.buttons) + 8, max(36, metrics.height() + 16))
 
     def minimumSizeHint(self):

@@ -1,8 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
+from copy import copy, deepcopy
 from dataclasses import dataclass
 import importlib
+import logging
 import threading
 import time
 from typing import Protocol, runtime_checkable
@@ -71,6 +73,10 @@ class EditorContext:
         self.paramSchema = dict(paramSchema)
         self.workflowOptions = list(workflowOptions or [])
         self._runtimeClient = runtimeClient
+        # Reconnection must not send a previous window's session to a new
+        # Runtime. Cleanup remains pinned to the original transport.
+        self._pureRuntimeClient = copy(runtimeClient)
+        self._pureService = getattr(runtimeClient, "runtimeService", None)
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
         self._getPreviewProject = getPreviewProject
@@ -165,7 +171,8 @@ class EditorContext:
     def uploadPreviewImage(self, data: bytes, filename: str = "") -> str:
         self.prepareLocalPreview()
         options = {"draftSessionId": self._pureDraftSessionId} if self._pureDraftSessionId else {}
-        reply = self._runtimeMethod("uploadPreviewImage")(data, filename, self.key.projectId, **options)
+        reply = self._runtimeMethod("uploadPreviewImage", client=self._pureRuntimeClient if options else None)(
+            data, filename, self.key.projectId, **options)
         if not bool(getattr(reply, "ok", False)):
             self.closePurePreview()
         self._requireOk(reply, "E_PREVIEW_ASSET_INVALID")
@@ -184,9 +191,10 @@ class EditorContext:
         if self._currentPureDraft() is not None:
             self._requireCurrentPureDraft()
             if assetId not in self._pureDraftAssets:
-                raise EditorContextError("E_PREVIEW_ASSET_INVALID", "图片不属于当前草稿预览会话，请重新选择预览图片")
+                raise EditorContextError("E_PREVIEW_ASSET_INVALID", "图片不属于当前预览窗口的草稿会话，请重新选择预览图片")
             options = {"draftSessionId": self._pureDraftSessionId}
-        result = self._runtimeMethod("downloadPreviewAsset")(assetId, self.key.projectId, **options)
+        result = self._runtimeMethod("downloadPreviewAsset", client=self._pureRuntimeClient if options else None)(
+            assetId, self.key.projectId, **options)
         if not isinstance(result, tuple) or len(result) != 2:
             raise EditorContextError(
                 "E_PREVIEW_ASSET_INVALID", "Runtime returned an invalid preview asset"
@@ -224,11 +232,20 @@ class EditorContext:
     def _currentPureDraft(self):
         if self.previewMode != "pure" or self._getPreviewProject is None:
             return None
+        self._checkPureRuntime()
         payload = self._variablePreviewProject() if self.variableDefinitions is not None else self._getPreviewProject(self.key)
+        try:
+            next(node for node in payload["workflows"][self.key.workflowId]["nodes"]
+                 if node["nodeId"] == self.key.nodeId)
+        except (KeyError, TypeError, StopIteration) as error:
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "当前草稿节点已删除或切换，请重新打开配置窗口") from error
         # A current canvas draft is authoritative even for default 2.1 projects.
         # Only callers without a draft provider use the legacy loaded-project path.
-        from copy import deepcopy
         return deepcopy(payload)
+
+    def _checkPureRuntime(self):
+        if getattr(self._runtimeClient, "runtimeService", None) is not self._pureService:
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "Runtime 连接已改变，请重新打开预览窗口")
 
     def prepareLocalPreview(self):
         """Called before the file picker: unsupported Runtime never invites an upload."""
@@ -241,7 +258,7 @@ class EditorContext:
                 and time.monotonic() - self._pureDraftTouched < 290):
             return
         self.closePurePreview()
-        reply = self._runtimeMethod("openDraftPurePreviewSession")(
+        reply = self._runtimeMethod("openDraftPurePreviewSession", client=self._pureRuntimeClient)(
             self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId, payload)
         self._requireOk(reply, "E_PREVIEW_CONTEXT_INVALID")
         sessionId = str(getattr(reply, "session_id", ""))
@@ -264,8 +281,9 @@ class EditorContext:
 
     def preparePurePreview(self, params, imageAssetId, requestId=""):
         """Freeze draft and editor values on the UI thread, not in its worker."""
-        from copy import deepcopy
         from functools import partial
+        if self.previewMode != "pure":
+            raise EditorContextError("E_PREVIEW_UNSUPPORTED", "operator does not allow pure preview")
         payload = self._currentPureDraft()
         if payload is None:
             options = {}
@@ -281,7 +299,8 @@ class EditorContext:
                        self._pureDraftSessionId, payload)
 
     def _runDraftPurePreview(self, params, imageAssetId, requestId, sessionId, payload):
-        reply = self._runtimeMethod("runOperatorPreview")(
+        self._checkPureRuntime()
+        reply = self._runtimeMethod("runOperatorPreview", client=self._pureRuntimeClient)(
             self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
             params, imageAssetId, requestId, projectPayload=payload, draftSessionId=sessionId)
         # The GUI discards a late reply by generation. Never adopt its assets
@@ -312,15 +331,19 @@ class EditorContext:
             self._pureDraftOutputAssets.clear()
         if sessionId:
             try:
-                reply = self._runtimeMethod("closeDraftPurePreviewSession")(sessionId)
+                reply = self._runtimeMethod("closeDraftPurePreviewSession", client=self._pureRuntimeClient)(sessionId)
                 self._requireOk(reply, "E_PREVIEW_RELEASE_FAILED")
             except Exception as error:
-                self.log("WARN", f"纯预览会话释放失败（租约到期后失效）：{error}")
+                # Retirement may run after all widgets have been destroyed,
+                # on a background thread. Never invoke a Qt-owned log hook.
+                logging.getLogger(__name__).warning("纯预览会话释放失败（租约到期后失效）：%s", error)
 
     def _variablePreviewProject(self):
-        from copy import deepcopy
         payload = deepcopy(self._getPreviewProject(self.key))
-        node = next(item for item in payload["workflows"][self.key.workflowId]["nodes"] if item["nodeId"] == self.key.nodeId)
+        try:
+            node = next(item for item in payload["workflows"][self.key.workflowId]["nodes"] if item["nodeId"] == self.key.nodeId)
+        except (KeyError, TypeError, StopIteration) as error:
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "当前草稿节点已删除或切换，请重新打开配置窗口") from error
         bindings = self.collectVariableBindings()
         if bindings:
             node["globalVariableBindings"] = bindings
@@ -331,7 +354,8 @@ class EditorContext:
     def cancelPurePreview(self, requestId: str) -> None:
         if not requestId:
             return
-        reply = self._runtimeMethod("cancelOperatorPreview")(requestId)
+        reply = self._runtimeMethod("cancelOperatorPreview",
+            client=self._pureRuntimeClient if self._getPreviewProject is not None else None)(requestId)
         self._requireOk(reply, "E_CANCELLED")
 
     def openLivePreview(self, params: dict[str, object]) -> str:
@@ -392,8 +416,8 @@ class EditorContext:
             raise EditorContextError("E_PLC_UNSUPPORTED", "当前 Runtime 不支持 PLC 运行调试")
         return method
 
-    def _runtimeMethod(self, name: str):
-        method = getattr(self._runtimeClient, name, None)
+    def _runtimeMethod(self, name: str, *, client=None):
+        method = getattr(self._runtimeClient if client is None else client, name, None)
         if not callable(method):
             raise EditorContextError(
                 "E_PREVIEW_UNSUPPORTED",

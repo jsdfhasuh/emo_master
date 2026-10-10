@@ -16,7 +16,7 @@ def testDiagnosticArmsPreserveEveryCommittedSequence(tmp_path, mode):
     run = subprocess.run([sys.executable, str(SCRIPT), "--repo", str(ROOT),
         "--output", str(output), "--mode", mode, "--count", "5", "--seconds", "1"],
         capture_output=True, text=True, timeout=20)
-    assert run.returncode == 0, run.stderr
+    assert run.returncode == 0, run.stderr or run.stdout
     report = json.loads((output / "summary.json").read_text(encoding="utf-8"))
     completed = report["completed"]
     # The time bound is an alternative stopping condition, not a throughput
@@ -29,6 +29,10 @@ def testDiagnosticArmsPreserveEveryCommittedSequence(tmp_path, mode):
     assert report["pragmas"]["synchronous"] == 2  # FULL remains unchanged.
     assert report["stages"]["sql.commit"]["count"] == completed
     assert report["connections_during_measurement"]["created"] == (1 if mode == "reuse" else completed)
+    assert report["connections_during_measurement"]["explicit_closed"] == (0 if mode == "reuse" else completed)
+    assert report["connections_after_cleanup"]["explicit_closed"] == (1 if mode == "reuse" else completed)
+    if mode == "reuse":
+        assert report["stages"]["sql.borrow_release"]["count"] == completed
     assert report["connections_after_cleanup"]["live"] == 0
     assert report["cleanup_errors"] == []
     assert report["cpu_elapsed_seconds"] >= 0

@@ -224,7 +224,10 @@ class OperatorDebugWindow(QDialog):
             params, inputs = deepcopy(self.editor.collectParams()), self.inputValues()
             self.fingerprint = self.configuration(params, inputs)
             self.executionId = ""
-            self.executionStatus = "正在准备输入并提交本次执行"
+            self.pixmap = None
+            self.image.clear()
+            self.outputTree.clear()
+            self.executionStatus = "正在准备输入与校验参数；尚未取得执行确认"
             self.updateResultLabel()
             if not self.submit("execute", lambda: self.connection.execute(params, inputs)):
                 raise ValueError("当前有操作处理中，请稍后重试")
@@ -391,7 +394,7 @@ class OperatorDebugWindow(QDialog):
                 unstarted = self.connection.executionPhase == "preparing" and not self.connection.uncertain
                 if not unstarted:
                     self.connection.uncertain = True
-                self.executionStatus = ("本次未启动执行" if unstarted else "执行状态未知；请结束会话，勿重复执行")
+                self.executionStatus = ("准备失败；本次未启动执行" if unstarted else "执行状态未知；请结束会话，勿重复执行")
                 self.updateResultLabel()
             if name == "open":
                 self.state = "FAULTED"
@@ -511,7 +514,7 @@ class OperatorDebugWindow(QDialog):
         if 0 <= index < len(self.records):
             record = self.records[index]
             if text:
-                text += "；下方保留历史结果 / "
+                text += "；以下为历史结果（保留原参数身份） / "
             text += f"{record['status']} | {record.get('elapsedMs', 0):.1f} ms | {record.get('code', '')} {record.get('message', '')}"
         self.resultLabel.setText(text)
 

@@ -41,7 +41,7 @@ def testRealJobInitializationStillRequiresWriteAdmissionAndInitializesOnce(tmp_p
                 yield connection
         finally:
             connection.close()
-    monkeypatch.setattr(accessor.store, '_connect', quickConnection)
+    monkeypatch.setattr(accessor.store, 'connection', quickConnection)
     lock = connect()
     lock.execute('BEGIN IMMEDIATE')
     try:

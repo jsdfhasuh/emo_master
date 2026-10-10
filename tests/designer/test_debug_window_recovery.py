@@ -43,7 +43,12 @@ def inputWindow(runtime, kind):
         port, start, choose = 'item', dialog.startButton, dialog.file
     dialog.show()
     try:
-        wait(start.isEnabled)
+        try:
+            wait(start.isEnabled)
+        except AssertionError as error:
+            raise AssertionError(f"Debug open did not become ready: state={dialog.state}, busy={dialog.busy}, "
+                f"identity={dialog.connection.identity}, uncertain={dialog.connection.uncertain}, "
+                f"status={dialog.status.text()!r}, logs={dialog.logs.toPlainText()!r}") from error
         yield dialog, port, start, choose
     finally:
         if editor is not None:

@@ -4,6 +4,8 @@ from concurrent.futures import Future, ThreadPoolExecutor
 import json
 from pathlib import Path
 import queue
+import logging
+from threading import Lock, Thread
 from typing import Any, cast
 from uuid import uuid4
 
@@ -55,6 +57,8 @@ class PurePreviewControllerBase:
             max_workers=2, thread_name_prefix="designer-operator-preview"
         )
         self._future: Future[object] | None = None
+        self._previewFutures: set[Future[object]] = set()
+        self._futuresLock = Lock()
         self._requestId = ""
         self._results: queue.Queue[tuple[int, object | None, BaseException | None]] = (
             queue.Queue()
@@ -283,12 +287,17 @@ class PurePreviewControllerBase:
             self.context.setError(str(error))
             return
         self._future = future
+        with self._futuresLock:
+            self._previewFutures.add(future)
 
         def completed(value: Future[object]) -> None:
             try:
                 self._results.put((generation, value.result(), None))
             except BaseException as err:
                 self._results.put((generation, None, err))
+            finally:
+                with self._futuresLock:
+                    self._previewFutures.discard(value)
 
         future.add_done_callback(completed)
 
@@ -298,9 +307,13 @@ class PurePreviewControllerBase:
         latest: tuple[int, object | None, BaseException | None] | None = None
         while True:
             try:
-                latest = self._results.get_nowait()
+                candidate = self._results.get_nowait()
             except queue.Empty:
                 break
+            # Completion order is not request order: a late stale reply must
+            # not hide the current reply that was drained immediately before it.
+            if candidate[0] == self._generation:
+                latest = candidate
         if latest is None or latest[0] != self._generation or self.context is None:
             return
         _generation, reply, error = latest
@@ -352,8 +365,23 @@ class PurePreviewControllerBase:
         self._cancelCurrentPreview()
         closePreview = getattr(self.context, "closePurePreview", None)
         if callable(closePreview):
-            closePreview()
-        self._executor.shutdown(wait=False, cancel_futures=True)
+            # Join every producer, not only the most recently submitted future.
+            # Releasing on the same two-worker pool could overtake an old task.
+            def cleanup():
+                try:
+                    self._executor.shutdown(wait=True, cancel_futures=True)
+                    closePreview()
+                except Exception as error:
+                    logging.getLogger(__name__).warning("释放草稿预览图片失败：%s", error)
+            with self._futuresLock:
+                idle = ((self._future is None or self._future.done())
+                        and all(future.done() for future in self._previewFutures))
+            self._retirementThread = Thread(target=cleanup, name="designer-preview-retirement", daemon=True)
+            self._retirementThread.start()
+            if idle:
+                self._retirementThread.join()
+        else:
+            self._executor.shutdown(wait=False, cancel_futures=True)
 
     def _cancelCurrentPreview(self) -> None:
         requestId = self._requestId

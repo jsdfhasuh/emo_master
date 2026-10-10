@@ -578,7 +578,7 @@ try:
                 self._showFieldError(name, "")
             for name, control in self._controls.items():
                 field = self._fieldsByName[name]
-                if not control.isEnabled() or field.schema.get("xHidden"):
+                if not control.isEnabled() or field.schema.get("xHidden") and name not in self._suppliedFields:
                     continue
                 if isinstance(control, _OptionalFieldControl) and not control.enabledCheckBox.isChecked():
                     continue
@@ -817,8 +817,15 @@ try:
             if isinstance(control, QTextEdit):
                 textValue = control.toPlainText()
                 title = _parameterErrorTitle(field.name, field.schema) if field else "JSON"
-                if not textValue.strip() and field and field.fieldType == "array" and not field.required and field.schema.get("xBlankMeansEmpty"):
-                    return []
+                if not textValue.strip() and field and not field.required:
+                    if "xEmptyValue" in field.schema:
+                        value = deepcopy(field.schema["xEmptyValue"])
+                        message = _valueError(value, field.schema, title)
+                        if message:
+                            raise ValueError(message)
+                        return value
+                    if field.fieldType == "array" and field.schema.get("xBlankMeansEmpty"):
+                        return []
                 def rejectConstant(_value):
                     raise ValueError(f"{title}：JSON 不能包含 NaN 或 Infinity")
                 try:

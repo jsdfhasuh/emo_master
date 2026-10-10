@@ -58,3 +58,43 @@
 - 压力用例显式启用 `EMO_DEBUG_STRESS=1`；Linux 使用 `/proc/self/fd` 与 `/proc/self/statm` 记录本机 FD/RSS，Windows 保留原生进程句柄/RSS 统计，执行次数、会话退休、线程/资源上限和临时目录清理断言均保留。
 - 先冻结候选版本再跑最终全量；日志/JUnit、源码摘要、最终统计及逐项 dot 操作步骤保存在本次外部验收证据目录，不在运行中改动冻结源码。
 - 本表的 FIXED 表示维修已实现，不是 Debian 13/Xfce/GTK、硬件或成品发布验收通过。最终自动化结论以冻结版证据清单为准。
+
+## 74abb 固定提交复验后的第二轮维修
+
+### 重新打开的结论与本轮边界
+
+- 本节基线为 `74abb41612d2689ba44f34f599b9404a6f1ccbe1`；上述 `4e1aa` 维修过程是历史记录，不覆盖 dot 的新证据。
+- dot 对原 O01–O20 的综合判断为 **19 PASS / 1 FAIL**。O20 最终重载确实再次失败；上表“Job 资源退休 FIXED”仅覆盖第一次运行后的等待，不能继续用作最终重载已关闭的依据。
+- dot 的失败记录表明两个不同 Job 都取得 COMMITTED 回执，业务库内容为 `[7,13]`；不据此声称发生写入丢失。问题是第二 Job 显示 COMPLETED 后，其 bridge/进程尚未退休，立即重载被正确的所有权保护拒绝。
+- 本轮不移除该保护，不降低 FULL/WAL、提交频率、锁等待期限或安全准入；不修改封存工程/证据，不进行真实相机、PLC/TCP 外部写入。
+- 当前用户请求授权代码维修；本轮未提交、推送、合并、调度远端 CI、发布或重启用户应用。
+
+### 维修映射
+
+| 项目 | 本轮代码与回归 | 结论边界 |
+| --- | --- | --- |
+| O20 SQLite 保存后最终重载 | 在最后保存/重载前等待真实资源退休，并断言无 owned resources、无子进程；保留不同 Job、COMMITTED、写入值及拒绝内部数据库的断言 | FIXED 测试同步；需 dot 用新版本重复复验 |
+| InRange 非法 JSON Apply | JSON 解析失败不再回退为空数组/对象；保留输入文本与旧模型/基线/文件，字段级报错并阻止 Apply；递归检查类型、有限数、边界和数组元素 | 新增负向与纠正恢复回归；合法空数组与坏 JSON 分开 |
+| F01 通用数值表单精度 | 使用无隐式小数位舍入/范围夹取的数值文本控件；真实键入、失焦、Apply、保存与重开保留 `1.2345`、17 位浮点数与科学计数法 | 原截图只证明显示截断，本轮另验证存储；不声称任意十进制无限精度 |
+| F03 CLAHE 准备失败文案 | Prepare 前显示“正在准备…尚未取得执行确认”；仅 Execute ACK 后显示执行中；失败与 ACK 未知分别显示，保留历史身份 | `clipLimit=0` 返回 E_PARAM_INVALID；准备失败不发 Execute，不创建虚假 executionId；纠正后一次成功 |
+| ROI/Histogram 草稿专用预览 | 新增明确的草稿上传/读取/执行/释放 RPC；冻结当前 Qt 草稿、参数和窗口身份，隔离同 ID 的不同窗口资产；不调用 LoadProject，不创建正式 Job | 覆盖 2.1/2.2/2.3/2.4、fresh Runtime、未 Apply 参数、删除/切换节点、断线及原 Runtime 清理；旧 Runtime 明确要求更新/重启，不静默回退 |
+| 输入集错误被 poll 覆盖 | 会话健康状态与动作错误分开；成功 poll 不抹去加载失败，匹配的成功动作/重置可清除 | 算子与流程窗口均覆盖真实坏输入集、旧输入不变、跨多轮自然 poll、正常输入纠正 |
+| 零输入/慢 open/失败 open 布局 | 构造窗口时固定安装输入集工具区，只重建动态输入行 | 无输入 number、被拒绝相机通用调试均有布局回归；不扩大相机调试准入 |
+| Ubuntu toolbar font change | 工作流选择框 sizeHint 随当前字体 em/text 改变；保留窄窗口自动溢出行为 | 原断言未放宽；本地 Linux 与原 Ubuntu CI 分开判断 |
+| SQLite 连接生命周期 | 独立事务退出后确定性 close；初始化配置失败也释放句柄；显式 Runtime idle owner 仍单独持有 | 保留逐事件 durable commit；强引用探针从 82 个句柄中 81 个未关闭变为仅 1 个明确 idle owner；不据此宣称原 Windows CI 超时根因已证实 |
+| 纯预览异步收尾 | 关闭时等所有生产者结束再释放窗口资产；队列按当前 generation 筛选，晚到旧结果不会吞掉已完成的新结果 | 新增确定性失败前/修复后回归；不是对历史 F02 根因的推断 |
+| 诊断脚本 reuse 对照 | 仅 reuse 诊断臂显式持有原生连接，源事务 close 结束借用，最终 cleanup 真正关闭；分别记录 borrow release 与 native close | 不改变生产连接关闭；仍校验每次 commit、完整序号、FULL/WAL 和最终 live=0 |
+
+### 兼容性与验证证据
+
+- 动态 While/ForEach 端口按当前工作流校验，不使用开窗时的静态 enum；隐藏未提供参数和未启用可选参数不被新增校验误拒绝。
+- YOLO 明确允许的空类别筛选通过 schema 的 `xEmptyValue: []` 保留；`[1,` 等坏 JSON 仍拒绝。
+- SQLite Designer 路径及原两个 Windows CI 超时用例已在原期限下连续十轮运行，每轮四项通过；这些本地重复结果不替代新提交的 GitHub Actions。
+- 四档 Windows 原生 Qt 缩放探针为 1 / 1.25 / 1.5 / 2，使用测试专属窗口验证布局/文字/键盘鼠标操作。不是 Debian GTK 四档实机验收，也不是安装包验收。
+- 证据根：`C:/Users/jsdfhasuh/.codex/visualizations/2026/10/10/01a12413-8aec-7b13-b360-0f606c408e77/debian-acceptance-audit/repair-74abb/`。最终源码清单、全量 JUnit、日志、退出码和 `validation-summary.json` 记录冻结候选的实际结果；不把重叠专项的数量相加充作全量统计。
+- 保留所有中间失败：旧快照 Linux 的表单兼容性/toolbar 回归、缺 Git 元数据的诊断失败、未使用 tmpfs 临时目录的一次 ROI 等待失败，以及原工作区 pytest 意外收集 ignored 历史副本的 collection errors。最终验证使用带原基线 Git 身份的独立源码副本，Linux 临时工作目录位于可执行 tmpfs；不删除用户历史副本或改弱收集规则。
+- 全量/静态本地通过仅为软件回归证据。原 `74abb` push CI 的 Windows 2 FAIL、Ubuntu 1 FAIL 保留历史；merge `f034c6f` 的成功不能替代它们。新候选精确提交远端 CI 与 dot Debian 13 实机复验仍为 OPEN / NOT_RUN。
+
+复验步骤见同目录 `dot-74abb-second-repair-checklist.md`。不得把本节的 FIXED 写作全部生产验收已通过。
+
+后续与 dot 已推送 `657981e` 的语义整合见 `dot-657981e-integration-2026-10-10.md`：上文为独立本地维修快照，整合后的草稿协议、统一动作反馈和新验证证据以整合记录为准；不复用本节统计代替整合回归。

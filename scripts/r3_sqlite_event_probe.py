@@ -105,6 +105,21 @@ class TimedConnection(sqlite3.Connection):
         return result
 
 
+class RetainedTimedConnection(TimedConnection):
+    """Diagnostic reuse owner; source close releases a borrow, not ownership.
+
+    Only the reuse arm retains a native connection across source transactions.
+    It must physically retire that owner at cleanup, and reports the distinction.
+    Production continues to close each independently owned connection.
+    """
+
+    def close(self):
+        measured("sql.borrow_release", lambda: None)
+
+    def retire(self):
+        return super().close()
+
+
 def sourceIdentity(repo):
     source = repo / "src/emo_master/apps/runtime/context/sqlite_store.py"
     return {"commit": subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo,
@@ -163,7 +178,7 @@ def main():
         nonlocal reused
         if args.mode == "reuse" and reused is not None:
             return reused
-        keywords["factory"] = TimedConnection
+        keywords["factory"] = RetainedTimedConnection if args.mode == "reuse" else TimedConnection
         created = measured("sql.connect", NATIVE_CONNECT, *positional, **keywords)
         if args.mode == "reuse":
             reused = created
@@ -201,7 +216,10 @@ def main():
         for owned in (reused, keeper):
             if owned is not None:
                 try:
-                    owned.close()
+                    if isinstance(owned, RetainedTimedConnection):
+                        owned.retire()
+                    else:
+                        owned.close()
                 except Exception as failure:
                     cleanupErrors.append(repr(failure))
         gc.collect()
@@ -229,6 +247,7 @@ def main():
         "verified": rows == (completed, completed, 1 if completed else None, completed or None) and integrity == "ok",
         "limitations": ["synthetic small payload; no workflow, Qt, IPC, readers or counter contention",
                         "instrumented sqlite subclass; adjacent uninstrumented confirmation needed",
+                        "reuse arm alone borrows a diagnostic-owned connection; source close releases the borrow; cleanup physically closes the owner",
                         "elapsed bound checked between source operations; not a process watchdog",
                         "no change to SQLite sync policy, PRAGMAs or per-event transactions"]}
     (args.output / "summary.json").write_text(json.dumps(payload, indent=2), encoding="utf-8")

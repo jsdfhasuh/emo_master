@@ -183,7 +183,10 @@ def executionParams(spec, raw, values):
         fail("E_PARAM_INVALID", "parameters must be an object")
     bindings = spec.get("variableBindings", [])
     effective = resolveParams(original, bindings, values)
-    effective = validateEffectiveParams(effective, bindings, spec["paramSchema"])
+    try:
+        effective = validateEffectiveParams(effective, bindings, spec["paramSchema"])
+    except (ValueError, TypeError) as error:
+        raise DebugError("E_PARAM_INVALID", str(error)) from error
     ports = variablePorts(spec["operatorId"], effective, definitions(spec.get("variableDefinitions", {})))
     inputPorts, outputPorts = ports if ports is not None else (spec["inputPorts"], spec["outputPorts"])
     return effective, inputPorts, outputPorts

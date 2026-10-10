@@ -38,3 +38,16 @@ def testYoloFormAllowsUnrestrictedOrExplicitClasses(schemaSource, text, expected
         assert schema["properties"]["classes"]["description"] in control.toolTip()
     finally:
         form.close()
+
+
+def testOptionalClassFilterDoesNotTreatMalformedJsonAsUnrestricted():
+    form = SchemaParamForm()
+    try:
+        form.setSchema(YoloInferenceOperator.meta.paramSchema, {"modelPath": "model.onnx", "classes": [2]})
+        form._controls["classes"].setPlainText("[1,")
+        assert "JSON" in form.validationMessage()
+        with pytest.raises(ValueError):
+            form.getValues()
+        assert form._controls["classes"].toPlainText() == "[1,"
+    finally:
+        form.close()

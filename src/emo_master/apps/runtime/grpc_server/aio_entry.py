@@ -221,6 +221,7 @@ class AioRuntimeServer:
             category = {"StreamJobEvents": "events", "Subscribe": "display",
                         "StreamOperatorPreviewFrames": "camera", "StreamPreviewAsset": "asset", "ReadAsset": "asset",
                         "Prepare": "bulk", "LoadProject": "bulk", "RunOperatorPreview": "bulk",
+                        "OpenDraftPurePreviewSession": "bulk", "CloseDraftPurePreviewSession": "bulk",
                         "OpenOperatorPreviewSession": "bulk", "OpenDraftOperatorPreviewSession": "bulk",
                         "InspectSqliteTarget": "sqlite",
                         "OpenPlcDebugSession": "plc",

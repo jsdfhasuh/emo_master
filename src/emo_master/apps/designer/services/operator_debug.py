@@ -105,7 +105,12 @@ class DebugConnection:
                 wire[port] = pb.OperatorDebugValue(output_ref=pb.OperatorDebugOutputRef(
                     execution_id=value["executionId"], port=value["port"]))
         raw = encode(params)
-        prepared = self.mutation("PrepareOperatorDebugInputs", params_json=raw, inputs=wire)
+        try:
+            prepared = self.mutation("PrepareOperatorDebugInputs", params_json=raw, inputs=wire)
+        except Exception as error:
+            # Preparation is not execution acceptance, even after a prior run.
+            setattr(error, "debugPhase", "prepare")
+            raise
         inputSetId = prepared["inputSetId"]
         requestId = uuid4().hex
         self.executionPhase = "submitted"

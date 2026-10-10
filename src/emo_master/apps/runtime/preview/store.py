@@ -483,6 +483,12 @@ class PreviewAssetStore:
             if not _retirePaths(self._pendingTransientCleanup):
                 raise PreviewTransientCleanupPending("preview transient cleanup pending")
 
+    def releaseTransientProject(self, projectKey: str) -> None:
+        with self._lock:
+            for assetId, asset in list(self._assets.items()):
+                if asset.projectKey == projectKey:
+                    self.removeTransient(assetId)
+
     def _loadPersistentAssets(self) -> None:
         with self._lock:
             transient = {

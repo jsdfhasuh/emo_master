@@ -220,6 +220,35 @@ def testLateStructuredReplyCannotDisplayAfterCanvasDraftChanges(tmp_path):
         runtime.close()
 
 
+def testOldReplyCannotReplaceNewestAssetsWithinSameDraftSession(tmp_path, monkeypatch):
+    runtime = RuntimeService(dbPath=tmp_path / "runtime.db")
+    editor = context(RuntimeClient(runtimeService=runtime), lambda _key: draft())
+    started, finish = threading.Event(), threading.Event()
+    def run(*args, **kwargs):
+        requestId = args[6]
+        if requestId == "old":
+            started.set()
+            assert finish.wait(3)
+        return SimpleNamespace(ok=True, assets=[SimpleNamespace(asset_id=requestId)])
+    monkeypatch.setattr(editor._pureRuntimeClient, "runOperatorPreview", run)
+    try:
+        image = editor.uploadPreviewImage(imageBytes())
+        old = editor.preparePurePreview(PARAMS[ROI], image, "old")
+        with ThreadPoolExecutor(2) as pool:
+            first = pool.submit(old)
+            assert started.wait(2)
+            latest = editor.preparePurePreview(PARAMS[ROI], image, "latest")
+            assert pool.submit(latest).result(timeout=2).ok
+            finish.set()
+            assert first.result(timeout=2).ok
+        assert editor._pureDraftOutputAssets == {"latest"}
+        assert editor._pureDraftAssets == {image, "latest"}
+    finally:
+        finish.set()
+        editor.closePurePreview()
+        runtime.close()
+
+
 def testSameIdProjectCopySwitchClosesOldEditorSession(tmp_path, ownedDesignerWindow):
     from tests.designer.qt_wait import waitForCatalog
     service = RuntimeService(dbPath=tmp_path / "runtime.db")

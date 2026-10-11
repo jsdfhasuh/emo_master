@@ -3,6 +3,7 @@ import multiprocessing
 from collections import deque
 from functools import wraps
 import json
+import logging
 import queue
 from pathlib import Path
 import threading
@@ -17,6 +18,7 @@ from emo_master.apps.runtime.presentation.assets import AssetStore
 from emo_master.apps.runtime.presentation.exporter import ExportPool
 from emo_master.apps.runtime.presentation.collector import unavailable
 from emo_master.apps.runtime.presentation.mailbox import SharedMailbox
+from emo_master.apps.runtime.presentation.diagnostics import closureDiagnostic
 
 
 def _guardMutation(method):
@@ -59,6 +61,7 @@ class PresentationService:
             self.assets = AssetStore(root / "assets")
             self.exporter: ExportPool | None = None
             self.pending: dict = {}
+            self.diagnostics: deque[dict] = deque(maxlen=64)
             self.timings: dict = {}
             self.readers: dict = {}
             self.terminalStates: dict = {}
@@ -273,8 +276,11 @@ class PresentationService:
                 pending = self.pending.get(event["key"])
                 if pending is not None and "seal" not in pending:
                     pending["seal"] = event
-                    if "scopeEndedNs" in event:
-                        self.store.open[event["key"]]["scopeEndedNs"] = event["scopeEndedNs"]
+                    item = self.store.open.get(event["key"])
+                    if item is not None:
+                        item["sourceObservations"] = event.get("sourceObservations", {})
+                    if "scopeEndedNs" in event and item is not None:
+                        item["scopeEndedNs"] = event["scopeEndedNs"]
                     pending["deadline"] = event["sealedAt"] + .5
                     self._finish(event["key"])
 
@@ -284,34 +290,85 @@ class PresentationService:
             if pending is None:
                 return  # export owner deletes orphan staging after this callback
             source = unavailable(task["sourceId"], outcome if outcome != "AVAILABLE" else "EXPORT_FAILED")
+            diagnostic = dict(task.get("exportDiagnostic", {}))
             if path is not None:
                 try:
+                    diagnostic["adoptionStartedNs"] = time.monotonic_ns()
                     image = self.assets.adopt(path, task["jobId"], task["key"], task["provenance"])
                     source = {"sourceId": task["sourceId"], "state": "AVAILABLE", "image": image}
-                except (OSError, ValueError):
-                    source = unavailable(task["sourceId"], "EXPORT_FAILED")
+                except (OSError, ValueError) as error:
+                    from emo_master.apps.runtime.presentation.diagnostics import errorDetail
+                    diagnostic.update(adoptionError=errorDetail(error), stage="asset_adoption")
+                    source = unavailable(task["sourceId"], "EXPORT_FAILED",
+                        f"asset adoption failed: {type(error).__name__}; see Runtime diagnostics")
+                finally:
+                    diagnostic["adoptionEndedNs"] = time.monotonic_ns()
+            elif diagnostic:
+                source["reason"] = f"{outcome} at {diagnostic.get('stage')}; see Runtime diagnostics"
+            pending.setdefault("exportDiagnostics", {})[task["sourceId"]] = diagnostic
             pending["exports"][task["sourceId"]] = source
             self._finish(task["key"])
 
     def _finish(self, key):
+        # Readers, exporter callbacks, fences and the monitor share ownership.
+        # A repeated/late finish must not return a scope credit twice.
+        with self.store.lock:
+            self._finishLocked(key)
+
+    def _finishLocked(self, key):
         pending = self.pending.get(key)
         if pending is None or "seal" not in pending:
             return
         seal = pending["seal"]
+        item = self.store.open.get(key)
+        if item is None:
+            # The pending record, not close()'s boolean, owns the scope credit.
+            self._retirePending(key, pending)
+            return
         sources = []
-        for source in seal["sources"]:
-            if source.get("pendingImage"):
-                exported = pending["exports"].get(source.get("imageSourceId", source["sourceId"]))
-                if exported is None:
-                    if time.monotonic() < pending["deadline"]:
-                        return
-                    exported = unavailable(source["sourceId"], "EXPORT_TIMEOUT")
-                sources.append(dict(exported, sourceId=source["sourceId"]))
-            else:
-                sources.append(source)
-        if self.store.close(key, sources, seal["terminal"]):
-            self.jobs[pending["job"]]["credits"].release()
+        terminal = seal.get("terminal", "UNKNOWN")
+        try:
+            for source in seal["sources"]:
+                if source.get("pendingImage"):
+                    exported = pending["exports"].get(source.get("imageSourceId", source["sourceId"]))
+                    if exported is None:
+                        if time.monotonic() < pending["deadline"]:
+                            return
+                        exported = unavailable(source["sourceId"], "EXPORT_TIMEOUT",
+                            "assembler waiting for export callback exceeded seal deadline")
+                    sources.append(dict(exported, sourceId=source["sourceId"]))
+                else:
+                    sources.append(source)
+            self.store.close(key, sources, terminal)
+        except (ValueError, TypeError, KeyError, AttributeError) as error:
+            self._diagnose(key, item, seal.get("sources", []), terminal, "result_validation", error)
+            # No invalid payload is published as COMPLETE. Keep the original
+            # identity/expected manifest and a visible failure for every source.
+            # Atomic store.close left the open item intact for this closure.
+            detail = f"result closure validation failed: {type(error).__name__}; see Runtime diagnostics"
+            terminal = terminal if terminal in {"COMPLETED", "FAILED", "CANCELLED", "UNKNOWN"} else "UNKNOWN"
+            self.store.close(key, [unavailable(name, "INVALID_VALUE", detail) for name in item["expected"]], terminal)
+        else:
+            if terminal != "COMPLETED" or any(source["state"] != "AVAILABLE" for source in sources):
+                self._diagnose(key, item, sources, terminal, "result_closed")
+        self._retirePending(key, pending)
+
+    def _diagnose(self, key, item, sources, terminal, stage, error=None):
+        record = closureDiagnostic(key, item, sources, terminal, stage, error)
+        record["exports"] = list(self.pending.get(key, {}).get("exportDiagnostics", {}).values())[:16]
+        if not hasattr(self, "diagnostics"):
+            self.diagnostics = deque(maxlen=64)
+        self.diagnostics.append(record)
+        if error is not None:
+            logging.getLogger(__name__).warning("presentation closure failure %s", json.dumps(record))
+
+    def _retirePending(self, key, pending):
+        if self.pending.get(key) is not pending:
+            return
         del self.pending[key]
+        self.jobs[pending["job"]]["credits"].release()
+        # Scope credit is independent of image lane credit. Only the real
+        # exporter owner may return a lane after producer retirement.
         self._retain()
 
     def _retain(self):
@@ -348,9 +405,10 @@ class PresentationService:
                 if pending["job"] == jobId and "seal" not in pending:
                     item = self.store.open[key]
                     code = "EXECUTION_CANCELLED" if terminal == "CANCELLED" else "IPC_ERROR"
-                    self.store.close(key, [unavailable(s, code) for s in item["expected"]], terminal)
-                    self.jobs[jobId]["credits"].release()
-                    del self.pending[key]
+                    pending["seal"] = {"sources": [unavailable(s, code) for s in item["expected"]],
+                                       "terminal": terminal}
+                    pending["deadline"] = 0
+                    self._finish(key)
             self._retain()
 
     @_guardMutation

@@ -1,0 +1,141 @@
+{
+  "parent": "adba329cc11a74034299b9191b7decac6e567fdf",
+  "rawCheckoutLineEndings": "Windows configured core.autocrlf=true; compare canonical Git blobs across platforms",
+  "files": [
+    {
+      "path": "prototypes/runtime_pages_p0/async_exports.py",
+      "rawSha256": "ffc435876d8f5d31b3e70b0a40e1eeb4cff546054bde85ac83726093df53d88b",
+      "canonicalGitBlob": "4d619d6a65122519b781caf8c9af748e43ac4fc8"
+    },
+    {
+      "path": "src/emo_master/apps/designer/operator_editors/builtin_layout.py",
+      "rawSha256": "058f160f6bc88809f07af33b38e632bb70cf244ea57aedfdceef8aacfbcf3f30",
+      "canonicalGitBlob": "7b06285d467245d206aa07ebd70a25fac9f57b97"
+    },
+    {
+      "path": "src/emo_master/apps/designer/operator_editors/controller_protocol.py",
+      "rawSha256": "0200aab6c4458cc8d12ea0c0d45e62393bcbd7b6007613c11261d51e5eab64ea",
+      "canonicalGitBlob": "f2fdea588565328954eec9b0916d95556a510155"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/context/sqlite_transactions.py",
+      "rawSha256": "5a7eb3d1f2169472f4888990ec6be6e6b06d9cc0d1305bbfa572ef09f9c22246",
+      "canonicalGitBlob": "46d9e706422564fba985e87a404d33b523533e5d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "rawSha256": "6bf13cc0a65c3431f269f873b0af8664bfb7399856f323fee8c3fa96d8650e8a",
+      "canonicalGitBlob": "a8a640c0ebc626ce138234903c2d9eaaf4a98422"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/collector.py",
+      "rawSha256": "5d0eb40d1c1153dad68dfccb99900c9fedc399b3a34bf140d7a7e7df49b58f40",
+      "canonicalGitBlob": "75917261ac79e6574be8cf4454e118f07bfb69ba"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/diagnostics.py",
+      "rawSha256": "8ad922825c1fce336ac1cafc8f570424fd33257426925d5585b7555ca35d9547",
+      "canonicalGitBlob": "5896b17c0aa6ffccb423d88bdf1e14c345d7f9c8"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/exporter.py",
+      "rawSha256": "a9c138d166e02e2be1790630b450b0770b6e9ebda043115a4a325ea59f6a720c",
+      "canonicalGitBlob": "844f9063fef65985cea89e47a8980fa217f87e3c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/service.py",
+      "rawSha256": "2dffa79d6de58f3eb92ff25fb902b601ef6ddba6b79d02a4465c224a46b529f4",
+      "canonicalGitBlob": "73aa3b5bde006587d5e8fd6938454e496f4c602a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/store.py",
+      "rawSha256": "4a0cc505fe7ee1a1d4e7b5f154d548a93f1cb3fca302fbde373432a628ea3418",
+      "canonicalGitBlob": "5efd3cdc4056732d313382e2d40ba05549c85165"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "rawSha256": "583f41bb561184b684dd35f30a6394d648e43e13e2b1edd36e50d7efc63e56c4",
+      "canonicalGitBlob": "fe2ec72ebfa7d1eab760263e1181ecb4e93da0ce"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_editor_support.py",
+      "rawSha256": "d668f1d5d87ad5c5ea2a90e5fe842bbefcf07f8a2643ccc9ba9ed80b76310b80",
+      "canonicalGitBlob": "4d7afb0e460bfb80ea083eac66a80ba3274515b1"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/roi/editor.py",
+      "rawSha256": "2663bcc7f2736f92af4b25bb1907d04808eb301ebdc40e1a8f32ae081804a723",
+      "canonicalGitBlob": "82bc0bb41c7eb95a435eaebf5517e82c197c3f0e"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/roi/preview_result.py",
+      "rawSha256": "4cd1c178780708441a5f414468f60fdef4d85b6af6b5cda62544864b2e5f0568",
+      "canonicalGitBlob": "23c7660bee7416f504e31ed977bec58e005c7d32"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/roi/ui/editor.ui",
+      "rawSha256": "2bac47a8603519fa99d0667baa18f4626b12f0a04d7511c9bec7ca2d9640e198",
+      "canonicalGitBlob": "15004d9269900bed455883d202318ec6039ace16"
+    },
+    {
+      "path": "tests/designer/test_draft_pure_preview_context.py",
+      "rawSha256": "428940d4c5b57098210c08fa3f33e97499c5b6af5c4ea8565cef602ef55a9682",
+      "canonicalGitBlob": "39cdbb08b5bad18b7df7db1ebf3bd39da57f4abf"
+    },
+    {
+      "path": "tests/designer/test_roi_preview_export.py",
+      "rawSha256": "9fac39beaf37e1980146825a316985678503a61f2b16c8786553648c9345cc7c",
+      "canonicalGitBlob": "562ef4d8a7e0e8ce1088a8b0b4334ef548c38aee"
+    },
+    {
+      "path": "tests/p0/test_export_failure_diagnostics.py",
+      "rawSha256": "ddc6ce080fad787ebf147d257cfbc5468bae314d3c426fd3459febbca823a8d8",
+      "canonicalGitBlob": "ff44b69a280694008e6fe6d021e8edbb2021bbf3"
+    },
+    {
+      "path": "tests/runtime/presentation/test_closure_failures.py",
+      "rawSha256": "e558afd28fb80ef50823ea798968ed6eb1e44ad6a1c7fc745f3269e215ff2599",
+      "canonicalGitBlob": "d1e80369aeb3a146c167e0f86b1f340a794b0e8b"
+    },
+    {
+      "path": "tests/runtime/presentation/test_closure_runtime_integration.py",
+      "rawSha256": "6d4709d19ff1b3fa23f0a6038e16f4f2143d8b90b8c86bfcca100a6f6684bbf0",
+      "canonicalGitBlob": "73c3a239e7f0dea434868712020a4f61011f9cec"
+    },
+    {
+      "path": "tests/runtime/presentation/test_export_diagnostics.py",
+      "rawSha256": "5ce5aed940f95fc038c67ab74ab7b6b9d3efefb749950cf019279882d93e97d3",
+      "canonicalGitBlob": "6c8883c0c272f48ac179fbc7783ce744b82dfd1f"
+    },
+    {
+      "path": "tests/runtime/presentation/test_images.py",
+      "rawSha256": "cb82211f95ea3084b4dddb08ea39bb7bc2d3e3971154783c8bfaad4768250ff3",
+      "canonicalGitBlob": "2c4d67db5a9342fa5da91ec50b1361ca6058e37b"
+    },
+    {
+      "path": "tests/runtime/runtime_test_utils.py",
+      "rawSha256": "3b32a83a6e10406047d80a4496412981c66accdc37e7d69320ddd52147d2af1d",
+      "canonicalGitBlob": "62f27ab073d0f4d97b6fbc35c1bbe42d5b205c79"
+    },
+    {
+      "path": "tests/runtime/test_production_boundaries.py",
+      "rawSha256": "a0a2d5bedbb56d8e2ee996eaa883490afcb0cd3068e654ac79e8cbb01f8a4e15",
+      "canonicalGitBlob": "3e0709e62fe40166f04c00e4a6b0ab4862a2d36f"
+    },
+    {
+      "path": "tests/runtime/test_sqlite_write_admission.py",
+      "rawSha256": "e72ca9200ecef5f32e91074eb6f1d53c1d96389bb383b3442a664b5e5aa483fc",
+      "canonicalGitBlob": "80803398e795f094dd9e51fd7c07d8ef38ecedb7"
+    },
+    {
+      "path": "tests/runtime/test_worker_capture_diagnostics.py",
+      "rawSha256": "4aa4ff9c807c33f460c7f1ea14b14efd96cbd7d90ce892fabea9e88f537ec58b",
+      "canonicalGitBlob": "bb2e5d5439f7746a3524783ef023ecd13fbe97d0"
+    },
+    {
+      "path": "tests/test_r3_sqlite_phases.py",
+      "rawSha256": "e08f1e97d0726ee7632e5fd06c81f9b73e04848fa5b12e7c4801f9bb5eac12da",
+      "canonicalGitBlob": "92c78b8c6096868852829638f8603f496d8c8a0e"
+    }
+  ]
+}

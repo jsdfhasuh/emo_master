@@ -1,0 +1,23 @@
+{
+  "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "observedAt": "2026-10-11T13:46:21.316613+00:00",
+  "originalHead": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "initialDirtyFiles": 31,
+  "finalObservedDirtyFiles": 32,
+  "initialHashUnchangedFiles": 25,
+  "changedInParallelPaths": [
+    "projects/two_station_screw_vision/CONFIGURATION.md",
+    "projects/two_station_screw_vision/README.md",
+    "projects/two_station_screw_vision/VALIDATION.md",
+    "projects/two_station_screw_vision/build_initial_project.py",
+    "projects/two_station_screw_vision/two_station_screw_vision.emoproj",
+    "tests/core/test_two_station_migration_project.py"
+  ],
+  "addedDirtyPaths": [
+    "tests/core/test_station1_correction_project.py"
+  ],
+  "removedInitialPaths": [],
+  "branchMoved": false,
+  "originalWorkspaceWrittenByThisRepair": false,
+  "note": "Earlier checks matched all 31 hashes. Parallel work later changed six paths and added one; preserved current files without rollback. Original patch/content deliberately excluded from delivery evidence."
+}

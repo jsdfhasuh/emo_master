@@ -28,12 +28,19 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
     heartbeatStop = threading.Event()
     heartbeatEventsStopped = threading.Event()
     heartbeatEmissionLock = threading.Lock()
+    runner = None
 
     def publishTerminal(event):
         # Once terminal is enqueued, no heartbeat can follow it or race queue
         # close. Cell pulses continue until the existing feeder flush finishes.
         with heartbeatEmissionLock:
             heartbeatEventsStopped.set()
+        # Capture metadata is optional; diagnostic enrichment must not replace
+        # the original terminal/error or stop the queue-drain heartbeat fence.
+        captureErrors = getattr(runner, "captureErrors", 0)
+        if captureErrors:
+            event["payload"] = dict(event.get("payload", {}), captureErrors=captureErrors,
+                                    captureDiagnostics=list(getattr(runner, "captureDiagnostics", ())))
         _put(eventQueue, event)
 
     heartbeatThread = threading.Thread(

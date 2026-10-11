@@ -43,7 +43,7 @@ def prepareBuiltinLayout(root, operatorId):
         return
     previews = {
         "HuarayCameraEditor": ("previewLabel",),
-        "RoiEditor": ("croppedImageLabel", "croppedMaskLabel", "fullMaskLabel"),
+        "RoiEditor": ("croppedImageLabel", "croppedMaskLabel", "fullMaskLabel", "maskedImageLabel"),
         "HistogramEditor": ("sourceImageLabel",),
     }[name]
     for labelName in previews:

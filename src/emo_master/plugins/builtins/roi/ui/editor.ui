@@ -37,6 +37,7 @@
     <item><widget class="QLabel" name="croppedImageLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>croppedImage</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
     <item><widget class="QLabel" name="croppedMaskLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>croppedMask</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
     <item><widget class="QLabel" name="fullMaskLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>fullMask</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
+    <item><widget class="QLabel" name="maskedImageLabel"><property name="minimumSize"><size><width>200</width><height>140</height></size></property><property name="text"><string>maskedImage</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
    </layout></item>
   </layout>
  </widget>

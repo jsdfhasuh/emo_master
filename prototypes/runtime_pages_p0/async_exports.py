@@ -23,6 +23,7 @@ class AsyncExports(Exporters):
         self.tasks = {}
         self.finishing = set()
         self.errors = deque(maxlen=64)
+        self.diagnostics = deque(maxlen=64)
         self.owners = [threading.Thread(target=self._own, args=(i,), name=f"p0-export-owner-{i}") for i in range(2)]
         for owner in self.owners:
             owner.start()
@@ -77,24 +78,43 @@ class AsyncExports(Exporters):
             outcome = {"status": "UNAVAILABLE", "reason": "cancelled", "task_id": task}
             stage = "dispatch"
             dispatch = None
+            timeline = {"clock": "host_perf_counter", "submitted_ns": submitted, "copied_ns": copied}
+            actualIdentity = None
             try:
                 process, pipe = self.slots[index]
                 dispatch = time.perf_counter_ns()
                 pipe.send((task, segment.name, shape, str(path), mode))
                 def remaining():
                     return max(0, BUDGET.export_seconds - (time.perf_counter_ns()-submitted)/1e9)
-                stage = "start"
-                if not pipe.poll(remaining()) or pipe.recv() != ("STARTED", task):
+                stage = "start_wait"
+                timeline["start_wait_started_ns"] = time.perf_counter_ns()
+                timeline["start_remaining_ms"] = remaining() * 1000
+                startedReady = pipe.poll(remaining())
+                timeline["start_wait_ended_ns"] = time.perf_counter_ns()
+                if not startedReady:
                     raise TimeoutError("start deadline")
+                stage = "start_identity"
+                startedReply = pipe.recv()
+                actualIdentity = self._messageIdentity(startedReply)
+                if startedReply != ("STARTED", task):
+                    raise ValueError("STARTED identity mismatch")
                 self.started.append((task, process.pid, segment.name))
+                timeline["started_identity"] = actualIdentity
                 # Diagnostic identifiers are bounded, not a second task history.
                 del self.started[:-64]
-                stage = "completion"
-                if not pipe.poll(remaining()):
+                stage = "completion_wait"
+                actualIdentity = None
+                timeline["completion_wait_started_ns"] = time.perf_counter_ns()
+                timeline["completion_remaining_ms"] = remaining() * 1000
+                completedReady = pipe.poll(remaining())
+                timeline["completion_wait_ended_ns"] = time.perf_counter_ns()
+                if not completedReady:
                     raise TimeoutError("running export deadline")
                 reply = pipe.recv()
-                if reply[:2] != ("DONE", task):
-                    raise ValueError("IPC identity")
+                stage = "completion_identity"
+                actualIdentity = self._messageIdentity(reply)
+                if not isinstance(reply, tuple) or reply[:2] != ("DONE", task):
+                    raise ValueError("DONE identity mismatch")
                 stage = "adoption"
                 adopted_at = time.perf_counter_ns()
                 asset = self.assets.adopt(job, key, path, reply[2], reply[3], shape)
@@ -105,11 +125,15 @@ class AsyncExports(Exporters):
             except Exception as error:
                 broken = True
                 outcome.update(reason=type(error).__name__, detail=str(error)[:256], stage=stage,
+                    expected_identity=["STARTED" if stage.startswith("start") else "DONE", task],
+                    actual_identity=actualIdentity,
                     budget_ms=BUDGET.export_seconds * 1000,
                     elapsed_ms=(time.perf_counter_ns()-submitted)/1e6,
                     copy_ms=(copied-submitted)/1e6,
                     queue_ms=(dispatch-copied)/1e6 if dispatch is not None else None)
             finally:
+                outcome.update(job_id=job, result_key=key, slot=index, timeline=timeline)
+                timeline["retirement_started_ns"] = time.perf_counter_ns()
                 if broken:
                     self._retire(index)  # slot remains quarantined until dead
                 segment.close()
@@ -118,6 +142,7 @@ class AsyncExports(Exporters):
                 path.with_suffix(".part").unlink(missing_ok=True)
                 self.resources.release(memory)
                 self.resources.release(staging)
+                timeline["resources_released_ns"] = time.perf_counter_ns()
                 # Callback cannot retain raw images or SharedMemory. Admission
                 # is reopened before callback to avoid capture/result lock cycles.
                 with self.idle:
@@ -125,10 +150,18 @@ class AsyncExports(Exporters):
                     self.finishing.add(index)
                     self.idle.notify_all()
                 try:
+                    timeline["callback_started_ns"] = time.perf_counter_ns()
+                    # Results.value publishes this dict by ownership transfer.
+                    # Later retirement diagnostics must never mutate a result
+                    # already visible to either network consumer.
+                    outcome["timeline"] = dict(timeline)
                     callback(key, outcome)
                 except BaseException as error:
                     self.errors.append(repr(error))
                 finally:
+                    timeline["callback_ended_ns"] = time.perf_counter_ns()
+                    self.diagnostics.append(dict(job_id=job, result_key=key, task_id=task,
+                        status=outcome["status"], stage=stage, slot=index, timeline=dict(timeline)))
                     with self.idle:
                         self.finishing.remove(index)
                         self.idle.notify_all()
@@ -144,6 +177,13 @@ class AsyncExports(Exporters):
                     except BaseException as error:
                         self.errors.append(repr(error))
                 del self.reaped[:-64]
+
+    @staticmethod
+    def _messageIdentity(message):
+        if not isinstance(message, (tuple, list)):
+            return {"type": type(message).__name__}
+        return [value[:160] if isinstance(value, str) else {"type": type(value).__name__}
+                for value in message[:2]]
 
     def wait_idle(self, timeout=4):
         with self.idle:

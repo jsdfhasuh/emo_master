@@ -55,7 +55,9 @@ def testAdmissionCannotExtendTheOriginalTotalBudget(monkeypatch):
         module.beginImmediate(connection)
     assert caught.value is error
     assert elapsed[0] == pytest.approx(.010) and sum(pauses) == pytest.approx(.010)
-    assert connection.statements.count("BEGIN IMMEDIATE") == 5
+    # The old fifth attempt began exactly at the expired deadline. A retry
+    # budget may not admit that extra call, including after scheduler oversleep.
+    assert connection.statements.count("BEGIN IMMEDIATE") == 4
     assert connection.statements[-1] == "PRAGMA busy_timeout=10"
 
 
@@ -78,6 +80,58 @@ def testVariablesKeepTheirStableBusyCodeWithoutRetryingTheMutation(monkeypatch):
         _beginWrite(connection)
     assert error.value.code == "E_VARIABLE_BUSY"
     assert connection.statements.count("BEGIN IMMEDIATE") == 1
+
+
+def testSchedulerOversleepCannotStartAnotherBeginAfterTheBudget(monkeypatch):
+    elapsed, _ = fakeClock(monkeypatch)
+    monkeypatch.setattr(module.time, "sleep", lambda _: elapsed.__setitem__(0, .020))
+    error = sqlite3.OperationalError("database is locked")
+    connection = AdmissionConnection([error, None], 10)
+    with pytest.raises(sqlite3.OperationalError) as caught:
+        module.beginImmediate(connection)
+    assert caught.value is error
+    assert connection.statements.count("BEGIN IMMEDIATE") == 1
+    assert connection.statements[-1] == "PRAGMA busy_timeout=10"
+
+
+@pytest.mark.parametrize("beginFails", [False, True])
+def testRestoreFailureIsVisibleAndCannotHideTheOriginalBeginFailure(monkeypatch, beginFails):
+    fakeClock(monkeypatch)
+    primary = sqlite3.OperationalError("database is locked")
+    restore = sqlite3.OperationalError("injected timeout restore failure")
+
+    class Connection(AdmissionConnection):
+        def execute(self, sql):
+            result = super().execute(sql)
+            if sql == "PRAGMA busy_timeout=0" and self.statements.count(sql) == 2:
+                raise restore
+            return result
+
+    connection = Connection([primary] if beginFails else [None], 0)
+    with pytest.raises(sqlite3.OperationalError) as caught:
+        module.beginImmediate(connection)
+    assert caught.value is (primary if beginFails else restore)
+    if beginFails:
+        assert caught.value.__cause__ is restore
+    assert connection.statements.count("BEGIN IMMEDIATE") == 1
+
+
+def testSettingNonblockingModeFailureStillAttemptsRestore(monkeypatch):
+    fakeClock(monkeypatch)
+    error = sqlite3.OperationalError("injected mode switch failure")
+
+    class Connection(AdmissionConnection):
+        def execute(self, sql):
+            result = super().execute(sql)
+            if sql == "PRAGMA busy_timeout=0":
+                raise error
+            return result
+
+    connection = Connection([], 10)
+    with pytest.raises(sqlite3.OperationalError) as caught:
+        module.beginImmediate(connection)
+    assert caught.value is error and "BEGIN IMMEDIATE" not in connection.statements
+    assert connection.statements[-1] == "PRAGMA busy_timeout=10"
 
 
 @pytest.mark.parametrize("commitFailure", [None, "before", "after"])

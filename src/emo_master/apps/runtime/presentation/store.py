@@ -87,7 +87,7 @@ class ResultStore:
 
     def close(self, key, sources, terminal):
         with self.lock:
-            item = self.open.pop(key, None)
+            item = self.open.get(key)
             if item is None:
                 return False
             complete = all(s["state"] == "AVAILABLE" for s in sources)
@@ -101,6 +101,9 @@ class ResultStore:
             result = ClosedResult.model_validate_json(__import__("json").dumps(dict(
                 identity=item["identity"], expectedSourceIds=item["expected"], sources=sources,
                 status=status, executionTerminal=terminal, timing=timing)))
+            # Validation is fallible. Preserve open ownership and all published
+            # pointers until a complete immutable result is ready to publish.
+            del self.open[key]
             self.history.append(result)
             while len(self.history) > 32:
                 self.history.popleft()

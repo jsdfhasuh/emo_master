@@ -5,11 +5,13 @@ shared memory; the child writes a bounded staging file, never a large Pipe reply
 """
 import multiprocessing
 import math
+from collections import deque
 from multiprocessing.shared_memory import SharedMemory
 from pathlib import Path
 import queue
 import threading
 import time
+from uuid import uuid4
 
 
 RAW_LIMIT = 8 * 1024 * 1024
@@ -26,15 +28,19 @@ def encodeWorker(connection, memoryName):
             if task is None:
                 return
             try:
+                encodeStartedNs = time.monotonic_ns()
                 pixels = np.ndarray(tuple(task["shape"]), np.uint8, buffer=memory.buf,
                                     offset=task.get("offset", 0))
                 ok, encoded = cv2.imencode(".png", pixels)
                 if not ok or encoded.nbytes > task.get("capacity", RAW_LIMIT):
                     raise ValueError("encoded image budget exceeded")
+                encodedNs = time.monotonic_ns()
                 Path(task["path"]).write_bytes(encoded.tobytes())
-                connection.send({"ok": True})
+                connection.send({"ok": True, "taskId": task["taskId"],
+                    "encodeStartedNs": encodeStartedNs, "encodedNs": encodedNs,
+                    "stagedNs": time.monotonic_ns()})
             except Exception as error:
-                connection.send({"ok": False, "error": type(error).__name__})
+                connection.send({"ok": False, "taskId": task["taskId"], "error": type(error).__name__})
     finally:
         memory.close()
         connection.close()
@@ -50,6 +56,7 @@ class ExportPool:
         self.stop = threading.Event()
         self.slots: list[dict] = []
         self.errors: list[str] = []
+        self.diagnostics: deque[dict] = deque(maxlen=64)
         self.stats = {"completed": 0, "timed_out": 0, "reaped": 0, "failed": 0}
         try:
             for _ in range(2):
@@ -148,9 +155,10 @@ class ExportPool:
             slot["pending"].add(lane)
             slot["busy"] = True
             try:
+                submitted = time.monotonic()
                 slot["queue"].put_nowait(dict(descriptor, lane=lane,
                     offset=layout["offset"], capacity=layout["capacity"],
-                    deadline=time.monotonic() + .5))
+                    taskId=str(uuid4()), submittedNs=time.monotonic_ns(), deadline=submitted + .5))
             except BaseException:
                 slot["pending"].remove(lane)
                 slot["busy"] = bool(slot["pending"])
@@ -183,6 +191,15 @@ class ExportPool:
             path = self.root / f"slot-{slot['index']}-lane-{task['lane']}.png"
             outcome = "EXPORT_FAILED"
             reusable = not slot["quarantined"].value
+            stage = "queue_wait"
+            diagnostic = {"path": "local-presentation-export", "clock": "host_monotonic",
+                "taskId": task.get("taskId"), "resultKey": task.get("key"), "jobId": task.get("jobId"),
+                "sourceId": task.get("sourceId"), "slot": slot["index"], "lane": task["lane"],
+                "invocationId": task.get("invocationId"), "resultScopeId": task.get("resultScopeId"),
+                "resultOrdinal": task.get("resultOrdinal"),
+                "budgetMs": 500, "frozenAt": task.get("frozenAt"), "copyMs": task.get("copyMs"),
+                "submittedNs": task.get("submittedNs"), "ownerStartedNs": time.monotonic_ns(),
+                "deadline": task["deadline"], "laneReleased": False}
             try:
                 if not reusable:
                     raise RuntimeError("image slab quarantined")
@@ -191,49 +208,85 @@ class ExportPool:
                     outcome = "EXPORT_TIMEOUT"
                     self.stats["timed_out"] += 1
                 else:
+                    stage = "dispatch"
+                    diagnostic["dispatchNs"] = time.monotonic_ns()
                     slot["connection"].send(dict(task, path=str(path)))
-                    if not slot["connection"].poll(max(0, task["deadline"] - time.monotonic())):
+                    stage = "completion_wait"
+                    diagnostic["waitStartedNs"] = time.monotonic_ns()
+                    diagnostic["remainingMs"] = max(0, task["deadline"] - time.monotonic()) * 1000
+                    ready = slot["connection"].poll(max(0, task["deadline"] - time.monotonic()))
+                    diagnostic["waitEndedNs"] = time.monotonic_ns()
+                    if not ready:
                         outcome = "EXPORT_TIMEOUT"
                         self.stats["timed_out"] += 1
+                        diagnostic["reapStartedNs"] = time.monotonic_ns()
                         self._reap(slot)
+                        diagnostic["reapedNs"] = time.monotonic_ns()
                     else:
+                        stage = "encoder_reply"
                         reply = slot["connection"].recv()
+                        diagnostic["replyNs"] = time.monotonic_ns()
+                        if isinstance(reply, dict):
+                            if reply.get("taskId") != task["taskId"]:
+                                diagnostic["actualTaskId"] = str(reply.get("taskId"))[:160]
+                                raise ValueError("encoder reply task identity mismatch")
+                            for field in ("encodeStartedNs", "encodedNs", "stagedNs"):
+                                if type(reply.get(field)) is int:
+                                    diagnostic[field] = reply[field]
+                            if reply.get("error"):
+                                diagnostic["encoderErrorType"] = str(reply["error"])[:80]
                         if not isinstance(reply, dict) or not reply.get("ok"):
                             raise ValueError("invalid export reply")
                         if time.monotonic() > task["deadline"]:
+                            stage = "completion_after_deadline"
                             outcome = "EXPORT_TIMEOUT"
+                            self.stats["timed_out"] += 1
                         else:
                             outcome = "AVAILABLE"
                             self.stats["completed"] += 1
             except Exception as error:
+                diagnostic["errorType"] = type(error).__name__
+                diagnostic["detail"] = str(error)[:240]
                 self.stats["failed"] += 1
                 self.errors.append(repr(error))
                 self.errors[:] = self.errors[-32:]
                 try:
                     self._reap(slot)
                 except Exception as reapError:
+                    diagnostic["reapErrorType"] = type(reapError).__name__
                     reusable = False
                     self._quarantine(slot)
                     self.errors.append(repr(reapError))
+            diagnostic.update(stage=stage, outcome=outcome, callbackStartedNs=time.monotonic_ns())
+            task["exportDiagnostic"] = dict(diagnostic)
             try:
                 self.callback(task, path if outcome == "AVAILABLE" else None, outcome)
+            except Exception as error:
+                diagnostic["callbackErrorType"] = type(error).__name__
+                self.errors.append("callback: " + type(error).__name__)
+                self.errors[:] = self.errors[-32:]
             finally:
+                diagnostic["callbackEndedNs"] = time.monotonic_ns()
                 # A failed reap quarantines the entire slab, including the
                 # other lane. No credit is reused until real owner disposal.
-                if reusable:
-                    path.unlink(missing_ok=True)
-                    if slot["process"] is None and not self.stop.is_set():
-                        try:
-                            self._spawn(slot)
-                        except Exception as error:
-                            reusable = False
-                            self._quarantine(slot)
-                            self.errors.append(repr(error))
+                try:
                     if reusable:
+                        path.unlink(missing_ok=True)
+                        if slot["process"] is None and not self.stop.is_set():
+                            self._spawn(slot)
                         with slot["lock"]:
                             slot["pending"].remove(task["lane"])
                             slot["laneFree"][task["lane"]].release()
                             slot["busy"] = bool(slot["pending"])
+                            diagnostic["laneReleased"] = True
+                            diagnostic["laneReleasedNs"] = time.monotonic_ns()
+                except Exception as error:
+                    self._quarantine(slot)
+                    diagnostic["retirementErrorType"] = type(error).__name__
+                    self.errors.append(repr(error))
+                    self.errors[:] = self.errors[-32:]
+                diagnostic["retirementEndedNs"] = time.monotonic_ns()
+                self.diagnostics.append(diagnostic)
 
     def close(self):
         self.stop.set()

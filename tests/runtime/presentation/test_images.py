@@ -134,6 +134,28 @@ def testRunningExportIsReapedRepeatedly(tmp_path, worker, expected):
     assert all(s["process"] is None for s in pool.slots)
 
 
+def testCallbackFailureDoesNotLoseLaneOrStopActualExportOwner(tmp_path):
+    callbacks = []
+    def callback(task, path, outcome):
+        callbacks.append(outcome)
+        assert not pool.slots[0]["free"].acquire(False)
+        if len(callbacks) == 1:
+            raise ValueError("injected callback failure")
+    pool = ExportPool(tmp_path, callback)
+    try:
+        for ordinal in range(2):
+            slot = pool.slots[0]
+            waitFor(lambda: slot["free"].acquire(False))
+            pool.submit(dict(slot=0, shape=[1, 1], key=str(ordinal)))
+            waitFor(lambda: len(callbacks) == ordinal + 1 and not slot["busy"])
+        assert callbacks == ["AVAILABLE", "AVAILABLE"]
+        assert pool.slots[0]["thread"].is_alive() and "callback: ValueError" in pool.errors
+        assert pool.diagnostics[0]["callbackErrorType"] == "ValueError"
+        assert all(record["laneReleased"] for record in pool.diagnostics)
+    finally:
+        pool.close()
+
+
 def testForceKillFencesUnsealedResult(channel, sample, tmp_path):
     from copy import deepcopy
     from emo_master.core.project.models import ProjectDocument

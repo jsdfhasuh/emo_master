@@ -2,18 +2,26 @@ from __future__ import annotations
 
 import json
 import math
+from pathlib import Path
 from typing import Any
 
 from PySide2.QtCore import QByteArray, QPointF, Qt
-from PySide2.QtGui import QColor, QImage, QPainter, QPen, QPolygonF
+from PySide2.QtGui import QColor, QImage, QPainter, QPen, QPolygonF, QPixmap
 from PySide2.QtWidgets import (
     QComboBox,
+    QDialog,
     QDoubleSpinBox,
+    QFileDialog,
+    QHBoxLayout,
     QLabel,
     QPlainTextEdit,
+    QPushButton,
+    QScrollArea,
     QSpinBox,
+    QVBoxLayout,
     QWidget,
 )
+from emo_master.plugins.builtins.roi.preview_result import PreviewImage, RoiPreviewSnapshot, atomicWrite
 
 from emo_master.apps.designer.ui.param_form import applyParameterLabel
 from emo_master.plugins.builtins._editor_support import (
@@ -189,6 +197,9 @@ class RoiEditorController(PurePreviewControllerBase):
         self.canvas: _RoiCanvas | None = None
         self.controls: dict[str, Any] = {}
         self.outputLabels: dict[str, QLabel] = {}
+        self._previewSnapshot: RoiPreviewSnapshot | None = None
+        self._resultViewers: list[QDialog] = []
+        self._resultButtons: list[QPushButton] = []
 
     def bind(self, rootWidget: object, context: Any) -> None:
         self.bindPreviewBase(rootWidget, context)
@@ -234,7 +245,43 @@ class RoiEditorController(PurePreviewControllerBase):
             "croppedImage": requiredChild(rootWidget, QLabel, "croppedImageLabel"),
             "croppedMask": requiredChild(rootWidget, QLabel, "croppedMaskLabel"),
             "fullMask": requiredChild(rootWidget, QLabel, "fullMaskLabel"),
+            "maskedImage": requiredChild(rootWidget, QLabel, "maskedImageLabel"),
         }
+        self.outputCombo = QComboBox()
+        self.outputCombo.setObjectName("roiOutputCombo")
+        for port in self.outputLabels:
+            self.outputCombo.addItem(port, port)
+            self.outputLabels[port].setToolTip(f"{port} 缩略图；使用下方 1:1 查看 / PNG 导出查看完整像素")
+        self.viewImageButton = QPushButton("1:1 查看")
+        self.exportImageButton = QPushButton("导出 PNG")
+        self.viewResultButton = QPushButton("结果与身份")
+        self.exportJsonButton = QPushButton("导出 JSON")
+        self.exportArchiveButton = QPushButton("本次预览 ZIP")
+        tools = QHBoxLayout()
+        tools.addWidget(self.outputCombo)
+        for button, name, callback in (
+            (self.viewImageButton, "roiViewFullImageButton", self._viewFullImage),
+            (self.exportImageButton, "roiExportImageButton", self._exportImage),
+            (self.viewResultButton, "roiViewResultButton", self._viewResult),
+            (self.exportJsonButton, "roiExportJsonButton", self._exportJson),
+            (self.exportArchiveButton, "roiExportArchiveButton", self._exportArchive),
+        ):
+            button.setObjectName(name)
+            button.clicked.connect(callback)
+            button.setEnabled(False)
+            tools.addWidget(button)
+            self._resultButtons.append(button)
+        self.resultIdentityLabel = QLabel("尚无本次预览结果")
+        self.resultIdentityLabel.setObjectName("roiPreviewIdentityLabel")
+        self.resultIdentityLabel.setWordWrap(True)
+        # Do not let the expanding image splitter clip the parameter-provenance
+        # notice below its first line (verified with the native Qt renderer).
+        self.resultIdentityLabel.setMinimumHeight(self.resultIdentityLabel.fontMetrics().lineSpacing() * 3 + 4)
+        self.exportArchiveButton.setToolTip("四幅原始 PNG、frame/roi 等结构化结果及不可变请求身份；不重新执行")
+        self.exportJsonButton.setToolTip("结构化结果、四幅图像描述与请求身份（不包含 PNG 字节）")
+        self.exportImageButton.setToolTip("仅保存所选端口原始 PNG，不包含身份；完整身份请导出本次预览 ZIP")
+        self.root.layout().addLayout(tools)
+        self.root.layout().addWidget(self.resultIdentityLabel)
 
     def loadParams(self, params: dict[str, Any]) -> None:
         self._loading = True
@@ -283,18 +330,152 @@ class RoiEditorController(PurePreviewControllerBase):
             self.canvas.setImageBytes(content)
 
     def handlePreviewResult(self, outputs: dict[str, object], assets: dict[str, str]) -> None:
-        _ = outputs
+        self._clearRoiResult()
+        if not outputs and not assets:
+            return
+        try:
+            if self._previewMetadata is None:
+                raise ValueError("缺少本次草稿预览身份，请重新预览")
+            metadataJson = json.dumps(self._previewMetadata, ensure_ascii=False, allow_nan=False)
+            outputsJson = json.dumps(outputs, ensure_ascii=False, allow_nan=False)
+            images = []
+            for port in self.outputLabels:
+                assetId = assets.get(port)
+                if not assetId:
+                    raise ValueError(f"预览缺少图像输出：{port}")
+                # The restricted session bridge is the sole byte source. Never
+                # read a Runtime cache path or save a scaled label pixmap.
+                content, mime = self.context.downloadPreviewAsset(assetId)
+                image = QImage.fromData(QByteArray(content))
+                if mime != "image/png" or image.isNull() or not content.startswith(b"\x89PNG\r\n\x1a\n"):
+                    raise ValueError(f"预览输出不是有效的完整 PNG：{port}")
+                images.append(PreviewImage(port, assetId, bytes(content), image.width(), image.height()))
+            snapshot = RoiPreviewSnapshot(metadataJson, outputsJson, tuple(images))
+            self._previewSnapshot = snapshot
+            self._validateSnapshot(snapshot)
+            for previewImage in snapshot.images:
+                setImageLabel(self.outputLabels[previewImage.port], previewImage.content)
+            for button in self._resultButtons:
+                button.setEnabled(True)
+            self.resultIdentityLabel.setText(
+                f"本次纯预览 {self._previewMetadata['requestId']} · 四幅完整图像及 frame/roi\n"
+                "PNG 仅图像；ZIP 含本次身份。参数为请求值；Runtime 未返回实际解析参数。")
+            self.context.setStatus("ROI 预览已刷新（四幅原图 / 结构化结果可查看与导出）")
+        except Exception as error:
+            self._clearRoiResult()
+            self.context.setError(str(error))
+
+    def onPreviewInvalidated(self) -> None:
+        super().onPreviewInvalidated()
+        self._clearRoiResult()
+
+    def _clearRoiResult(self) -> None:
+        self._previewSnapshot = None
+        for button in self._resultButtons:
+            button.setEnabled(False)
         for port, label in self.outputLabels.items():
-            assetId = assets.get(port)
-            if not assetId:
-                continue
-            try:
-                content, _mime = self.context.downloadPreviewAsset(assetId)
-                setImageLabel(label, content)
-            except Exception as err:
-                self.context.setError(str(err))
+            label.clear()
+            label.setText(port + "（等待本次预览）")
+        for viewer in self._resultViewers:
+            viewer.close()
+            viewer.deleteLater()
+        self._resultViewers.clear()
+        if hasattr(self, "resultIdentityLabel"):
+            self.resultIdentityLabel.setText("尚无本次预览结果；更改参数或图源后旧结果不可导出")
+
+    def _validateSnapshot(self, snapshot: RoiPreviewSnapshot) -> None:
+        try:
+            metadata = json.loads(snapshot.metadataJson)
+            if (self._disposed or self._previewSnapshot is not snapshot
+                    or metadata["generation"] != self._generation):
+                raise ValueError("预览已失效，请等待本次结果")
+            self.context.validatePurePreviewResult()
+            if self.context.purePreviewIdentity() != metadata["context"]:
+                raise ValueError("预览会话或 Runtime 已变更，请重新预览")
+        except Exception:
+            self.onPreviewInvalidated()
+            raise
+
+    def _selectedImage(self, snapshot):
+        return next(image for image in snapshot.images if image.port == self.outputCombo.currentData())
+
+    def _viewFullImage(self) -> None:
+        snapshot = self._previewSnapshot
+        if snapshot is None:
+            return
+        try:
+            self._validateSnapshot(snapshot)
+            image = self._selectedImage(snapshot)
+            viewer = self._newViewer(f"{image.port} · {image.width}×{image.height} · 1:1", snapshot)
+            scroll = QScrollArea(viewer)
+            label = QLabel()
+            pixmap = QPixmap.fromImage(QImage.fromData(QByteArray(image.content)))
+            label.setPixmap(pixmap)
+            label.setFixedSize(pixmap.size())
+            scroll.setWidget(label)
+            viewer.layout().addWidget(scroll)
+            viewer.show()
+        except Exception as error:
+            self.context.setError(str(error))
+
+    def _viewResult(self) -> None:
+        snapshot = self._previewSnapshot
+        if snapshot is None:
+            return
+        try:
+            self._validateSnapshot(snapshot)
+            viewer = self._newViewer("结构化结果与本次请求身份", snapshot)
+            text = QPlainTextEdit()
+            text.setReadOnly(True)
+            text.setPlainText(snapshot.resultJson().decode("utf-8"))
+            viewer.layout().addWidget(text)
+            viewer.show()
+        except Exception as error:
+            self.context.setError(str(error))
+
+    def _newViewer(self, title, snapshot):
+        viewer = QDialog(self.root)
+        viewer.setWindowTitle(f"{title} · {json.loads(snapshot.metadataJson)['requestId']}")
+        viewer.setLayout(QVBoxLayout())
+        viewer.resize(800, 600)
+        self._resultViewers.append(viewer)
+        return viewer
+
+    def _exportImage(self) -> None:
+        snapshot = self._previewSnapshot
+        if snapshot is not None:
+            image = self._selectedImage(snapshot)
+            self._saveSnapshot(snapshot, image.port + ".png", "PNG (*.png)", ".png",
+                               lambda stream: stream.write(image.content))
+
+    def _exportJson(self) -> None:
+        snapshot = self._previewSnapshot
+        if snapshot is not None:
+            self._saveSnapshot(snapshot, "roi-result.json", "JSON (*.json)", ".json",
+                               lambda stream: stream.write(snapshot.resultJson()))
+
+    def _exportArchive(self) -> None:
+        snapshot = self._previewSnapshot
+        if snapshot is not None:
+            self._saveSnapshot(snapshot, "roi-preview.zip", "ZIP (*.zip)", ".zip", snapshot.writeArchive)
+
+    def _saveSnapshot(self, snapshot, filename, filters, suffix, writer):
+        try:
+            self._validateSnapshot(snapshot)
+            selected, _ = QFileDialog.getSaveFileName(self.root, "导出本次 ROI 纯预览", filename, filters)
+            if not selected:
                 return
-        self.context.setStatus("ROI 预览已刷新")
+            path = Path(selected)
+            # GTK/native pickers need not append the filter suffix.
+            if path.suffix.lower() != suffix:
+                path = path.with_name(path.name + suffix)
+            atomicWrite(path, writer, lambda: self._validateSnapshot(snapshot))
+            self.context.setStatus(f"已导出本次 ROI 预览：{path}")
+        except Exception as error:
+            # No partial file replaces an existing destination, and no stale
+            # selection is silently re-exported after a nested modal event.
+            if not self._disposed:
+                self.context.setError(f"ROI 导出失败：{error}")
 
     def onClose(self) -> None:
         super().onClose()

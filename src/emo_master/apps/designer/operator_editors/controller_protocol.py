@@ -87,6 +87,7 @@ class EditorContext:
         self._pureDraftProject = None
         self._pureDraftAssets: set[str] = set()
         self._pureDraftOutputAssets: set[str] = set()
+        self._pureDraftRequestToken: object | None = None
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self.variableDefinitions = variableDefinitions
@@ -274,7 +275,8 @@ class EditorContext:
         from emo_master.apps.runtime.preview.pure_draft import draftFingerprint
         payload = self._currentPureDraft()
         if (not self._pureDraftSessionId or payload is None
-                or draftFingerprint(payload) != self._pureDraftFingerprint):
+                or draftFingerprint(payload) != self._pureDraftFingerprint
+                or time.monotonic() - self._pureDraftTouched >= 300):
             self.closePurePreview()
             raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "工程草稿已变更或会话已失效，请重新选择预览图片")
         return payload
@@ -295,10 +297,13 @@ class EditorContext:
         payload = self._requireCurrentPureDraft()
         if imageAssetId not in self._pureDraftAssets:
             raise EditorContextError("E_PREVIEW_ASSET_INVALID", "图片不属于当前草稿预览会话")
+        token = object()
+        with self._pureDraftLock:
+            self._pureDraftRequestToken = token
         return partial(self._runDraftPurePreview, deepcopy(params), imageAssetId, requestId,
-                       self._pureDraftSessionId, payload)
+                       self._pureDraftSessionId, payload, token)
 
-    def _runDraftPurePreview(self, params, imageAssetId, requestId, sessionId, payload):
+    def _runDraftPurePreview(self, params, imageAssetId, requestId, sessionId, payload, token):
         self._checkPureRuntime()
         reply = self._runtimeMethod("runOperatorPreview", client=self._pureRuntimeClient)(
             self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
@@ -306,12 +311,13 @@ class EditorContext:
         # The GUI discards a late reply by generation. Never adopt its assets
         # into a replacement session even when the project/node IDs are equal.
         with self._pureDraftLock:
-            if self._pureDraftSessionId == sessionId and bool(getattr(reply, "ok", False)):
+            current = self._pureDraftSessionId == sessionId and self._pureDraftRequestToken is token
+            if current and bool(getattr(reply, "ok", False)):
                 self._pureDraftTouched = time.monotonic()
                 self._pureDraftAssets.difference_update(self._pureDraftOutputAssets)
                 self._pureDraftOutputAssets = {str(asset.asset_id) for asset in getattr(reply, "assets", [])}
                 self._pureDraftAssets.update(self._pureDraftOutputAssets)
-            elif self._pureDraftSessionId == sessionId and str(getattr(reply, "code", "")) == "E_PREVIEW_CONTEXT_INVALID":
+            elif current and str(getattr(reply, "code", "")) == "E_PREVIEW_CONTEXT_INVALID":
                 self._pureDraftTouched = 0.0
         return reply
 
@@ -321,6 +327,16 @@ class EditorContext:
         if self._pureDraftSessionId or self._currentPureDraft() is not None:
             self._requireCurrentPureDraft()
 
+    def purePreviewIdentity(self):
+        """Known client/session facts, not generic-debug execution metadata."""
+        self._checkPureRuntime()
+        self.validatePurePreviewResult()
+        return dict(projectId=self.key.projectId, workflowId=self.key.workflowId, nodeId=self.key.nodeId,
+            operatorId=self.operatorId, operatorVersion=self.version,
+            draftSessionId=self._pureDraftSessionId, draftFingerprint=self._pureDraftFingerprint,
+            runtimeTarget=str(getattr(self._pureRuntimeClient, "_runtimeTarget", "")) or "embedded",
+            mode="draft-pure-preview" if self._pureDraftSessionId else "loaded-project-pure-preview")
+
     def closePurePreview(self):
         with self._pureDraftLock:
             sessionId = self._pureDraftSessionId
@@ -329,6 +345,7 @@ class EditorContext:
             self._pureDraftProject = None
             self._pureDraftAssets.clear()
             self._pureDraftOutputAssets.clear()
+            self._pureDraftRequestToken = None
         if sessionId:
             try:
                 reply = self._runtimeMethod("closeDraftPurePreviewSession", client=self._pureRuntimeClient)(sessionId)

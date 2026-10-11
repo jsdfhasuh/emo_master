@@ -65,6 +65,8 @@ class WorkflowRunner:
             resultCollector.globalCounters = self.globalCounters
         self.retainOperators = retainOperators
         self.captureErrors = 0
+        from collections import deque
+        self.captureDiagnostics: deque[dict] = deque(maxlen=16)
         self._operatorLogManager = OperatorLogManager(
             self.publish if eventPublisher is not None else None
         )
@@ -413,8 +415,13 @@ class WorkflowRunner:
     def _capture(self, method, *args, **kwargs):
         try:
             return getattr(self.resultCollector, method)(*args, **kwargs)
-        except Exception:
+        except Exception as error:
             self.captureErrors += 1
+            context = next((arg for arg in args if isinstance(arg, RunContext)), None)
+            self.captureDiagnostics.append(dict(method=method, errorType=type(error).__name__,
+                workflowId=getattr(context, "workflowId", ""), workflowRunId=getattr(context, "workflowRunId", ""),
+                nodeId=getattr(context, "callerNodeId", ""), nodeRunId=getattr(context, "nodeRunId", ""),
+                iterationPath=list(getattr(context, "iterationPath", ()))[:16]))
             # Bounded diagnostics in shared state; no unbounded error event queue.
             config = getattr(self.resultCollector, "config", {})
             rejected = config.get("rejected")

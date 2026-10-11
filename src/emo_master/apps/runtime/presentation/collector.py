@@ -2,6 +2,7 @@
 import json
 from multiprocessing.shared_memory import SharedMemory
 import queue
+import sqlite3
 import time
 from uuid import uuid4
 
@@ -66,10 +67,16 @@ class ResultCollector:
             sources = {key: source for key, source in self.plan["sources"].items()
                        if source["resultScopeId"] == scopeId}
             item = {"identity": identity, "expected": list(sources), "values": {}, "bytes": 0,
-                    "sources": sources, "rawBytes": 0}
+                    "sources": sources, "rawBytes": 0, "sourceObservations": {}}
             self.open[(context.workflowRunId, scopeId)] = item
             try:
                 self.emit({"eventType": "display.open", "item": {"identity": identity, "expected": list(sources),
+                    "workflowId": context.workflowId,
+                    "iterationPath": list(getattr(context, "iterationPath", ()))[:16],
+                    "callPath": path[:16],
+                    "sourceOrigins": {key: {name: value for name, value in source.items() if name in
+                        {"kind", "workflowId", "nodeId", "port", "fieldPath", "variableId", "name"}}
+                        for key, source in sources.items()},
                                                                   "captureStartedNs": time.perf_counter_ns()}})
             except Exception:
                 self.open.pop((context.workflowRunId, scopeId))
@@ -88,6 +95,11 @@ class ResultCollector:
                     continue
                 if not workflow and source["nodeId"] != context.callerNodeId:
                     continue
+                item["sourceObservations"][key] = {
+                    "workflowRunId": context.workflowRunId,
+                    "nodeRunId": getattr(context, "nodeRunId", ""),
+                    "iterationPath": list(getattr(context, "iterationPath", ()))[:16],
+                    "observedNs": time.monotonic_ns()}
                 if source["port"] not in outputs:
                     item["values"][key] = unavailable(key, "OPTIONAL_ABSENT")
                     continue
@@ -109,8 +121,8 @@ class ResultCollector:
                     else:
                         item["bytes"] += len(frozen.encode())
                         item["values"][key] = {"sourceId": key, "state": "AVAILABLE", "valueJson": frozen}
-                except (ValueError, TypeError, KeyError, IndexError):
-                    item["values"][key] = unavailable(key, "INVALID_VALUE")
+                except (ValueError, TypeError, KeyError, IndexError) as error:
+                    item["values"][key] = unavailable(key, "INVALID_VALUE", type(error).__name__)
 
     def image(self, key, value, item):
         import numpy as np
@@ -138,6 +150,7 @@ class ResultCollector:
                     return unavailable(key, "BUDGET_EXCEEDED", "image slab quarantined until actual owner retirement")
                 memory = SharedMemory(name=slot["name"])
                 try:
+                    copyStartedNs = time.monotonic_ns()
                     target = np.ndarray(value.shape, value.dtype, buffer=memory.buf, offset=slot.get("offset", 0))
                     np.copyto(target, value)
                     del target
@@ -147,6 +160,10 @@ class ResultCollector:
                               "offset": slot.get("offset", 0), "shape": list(value.shape), "sourceId": key,
                               "key": item["identity"]["resultKey"], "jobId": item["identity"]["jobId"],
                               "frozenAt": time.monotonic(), "rawBytes": value.nbytes,
+                              "copyMs": (time.monotonic_ns() - copyStartedNs) / 1e6,
+                              "invocationId": item["identity"].get("invocationId"),
+                              "resultScopeId": item["identity"].get("resultScopeId"),
+                              "resultOrdinal": item["identity"].get("resultOrdinal"),
                               "provenance": self.frames.lookup(value) or {"frameIdentity": str(uuid4()),
                                   "coordinateSpaceId": str(uuid4()), "trust": "unknown"}}
                 self.emit({"eventType": "display.image", "descriptor": descriptor})
@@ -208,13 +225,18 @@ class ResultCollector:
                         raise ValueError("variable capture budget exceeded")
                     item["bytes"] += len(frozen.encode())
                     item["values"][sourceId] = {"sourceId": sourceId, "state": "AVAILABLE", "valueJson": frozen}
-                except (ValueError, AttributeError, KeyError):
-                    item["values"][sourceId] = unavailable(sourceId, "VARIABLE_UNAVAILABLE")
+                except (ValueError, TypeError, AttributeError, KeyError, sqlite3.Error, OSError) as error:
+                    # Keep the published reason enum understood by old strict
+                    # clients; VARIABLE_UNAVAILABLE is a diagnostic, not a new
+                    # incompatible wire code. Never drop the original failure.
+                    item["values"][sourceId] = unavailable(sourceId, "INVALID_VALUE",
+                        f"VARIABLE_UNAVAILABLE: {type(error).__name__}: {str(error)[:240]}")
             code = {"COMPLETED": "SOURCE_MISSING", "FAILED": "NODE_FAILED", "CANCELLED": "EXECUTION_CANCELLED"}[terminal]
             values = [dict(item["values"].get(key, unavailable(key, code))) for key in item["expected"]]
             key = item["identity"]["resultKey"]
             self.pendingSeals[key] = {"eventType": "display.seal", "key": key,
-                "sources": values, "terminal": terminal, "sealedAt": sealedAt, "scopeEndedNs": scopeEndedNs}
+                "sources": values, "terminal": terminal, "sealedAt": sealedAt, "scopeEndedNs": scopeEndedNs,
+                "sourceObservations": item.get("sourceObservations", {})}
         if not self._flushSeals():
             if timings:
                 # Seals retain ownership; optional timings are actually lost.

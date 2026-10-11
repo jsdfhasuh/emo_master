@@ -463,13 +463,25 @@ def testObserverDoesNotKeepNativeConnectionAliveOrCloseIt():
     assert store._connect is connect
 
 
-def testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows(tmp_path):
+def testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows(tmp_path, monkeypatch):
     from emo_master.apps.runtime.context.sqlite_store import SqliteStore
     store = SqliteStore(tmp_path / "runtime.db")
     store.initialize()
     store.retainIdleConnection()
     blocker = sqlite3.connect(store.dbPath)
     blocker.execute("BEGIN IMMEDIATE")
+    nativeConnect, writerConfig = store._connect, []
+
+    def connect():
+        connection = nativeConnect()
+        # Observe the actual writer, not the unrelated blocker connection.
+        writerConfig.append((threading.get_ident(),
+            connection.execute("PRAGMA synchronous").fetchone()[0],
+            connection.execute("PRAGMA journal_mode").fetchone()[0],
+            connection.execute("PRAGMA busy_timeout").fetchone()[0]))
+        return connection
+
+    monkeypatch.setattr(store, "_connect", connect)
     probe = SqlitePhases()
     probe.install(store)
     result, failures = [], []
@@ -486,18 +498,29 @@ def testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows(tmp_path)
         deadline = time.monotonic() + 2
         while time.monotonic() < deadline:
             report = probe.snapshot()
-            if any(row["phase"] == "begin_immediate" for row in report["active"]):
+            assert report["enabled"] and not report["errors"], report
+            # Native BEGIN is now a short nonblocking attempt. Cumulative
+            # failures prove real contention even if no 5ms sample hits active.
+            if report["stages"].get("begin_immediate", {}).get("failed", 0):
                 break
             threading.Event().wait(0.005)
         else:
-            pytest.fail("writer never entered measured BEGIN IMMEDIATE")
+            pytest.fail(f"writer never attempted a contended BEGIN IMMEDIATE: {probe.snapshot()}")
+        assert thread.is_alive() and not result and not failures
+        assert report["stages"]["begin_immediate"]["entered"] >= report["stages"]["begin_immediate"]["failed"] > 0
         assert report["stages"]["begin_immediate"]["returned"] == 0
         assert report["stages"].get("commit", {}).get("entered", 0) == 0
+        assert report["stages"].get("sequence_select", {}).get("entered", 0) == 0
+        assert report["stages"].get("event_insert", {}).get("entered", 0) == 0
         blocker.rollback()
         thread.join(3)
         assert not thread.is_alive() and result == [1] and not failures
         report = probe.snapshot()
-        assert not report["active"] and report["stages"]["commit"]["returned"] == 1
+        assert report["enabled"] and not report["errors"] and not report["active"], report
+        assert report["stages"]["begin_immediate"]["returned"] == 1
+        assert report["stages"]["commit"]["entered"] == report["stages"]["commit"]["returned"] == 1
+        assert report["stages"]["sequence_select"]["returned"] == report["stages"]["event_insert"]["returned"] == 1
+        assert writerConfig == [(thread.ident, 2, "wal", 5000)]
         assert blocker.execute("SELECT sequence FROM jobEvents").fetchall() == [(1,)]
         assert blocker.execute("PRAGMA synchronous").fetchone()[0] == 2
         assert blocker.execute("PRAGMA journal_mode").fetchone()[0] == "wal"

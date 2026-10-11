@@ -1,0 +1,838 @@
+{
+  "productBaseline": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "parent": "adba329cc11a74034299b9191b7decac6e567fdf",
+  "candidate": "E",
+  "sourceFiles": 5104,
+  "frozenManifestSha256": "25eed17019f0ae13abea64c516ae6ad1957bd0e1e1d9b6134b29d9b380b7ade9",
+  "frozenSourceAndRepairWorktreeMatch": true,
+  "windowsFull": {
+    "label": "final-windows-full",
+    "exit": 0,
+    "seconds": 1493.0469999999914,
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short",
+      "--junitxml=C:\\Users\\jsdfhasuh\\.codex\\tmp\\emo-abc7ae-followup-20261011\\final-windows-full.xml"
+    ],
+    "cwd": "C:\\Users\\jsdfhasuh\\.codex\\worktrees\\abc7ae-acceptance-repair\\emo_master",
+    "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+    "qtBackend": "offscreen",
+    "sourceChanged": [],
+    "terminalSummary": "4895 passed, 11 skipped, 28 subtests passed in 1490.50s (0:24:50)",
+    "junitSuite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "11",
+      "tests": "4934",
+      "time": "1489.853",
+      "timestamp": "2026-10-11T21:19:25.312125+08:00",
+      "hostname": "视觉电脑"
+    },
+    "skipped": [
+      {
+        "name": "testSymlinkCannotEscapeRoot",
+        "reason": "symlinks unavailable in this environment"
+      },
+      {
+        "name": "testNativeSaveWarningCanBeAcknowledgedWithoutLosingPendingInput",
+        "reason": "Windows offscreen QPA cannot open QMessageBox; tested separately with native windows QPA"
+      },
+      {
+        "name": "testRealHuarayCameraSmoke",
+        "reason": "set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera"
+      },
+      {
+        "name": "testThousandExecutionsAndFiftyRetirements",
+        "reason": "explicit 1000 execution / 50 session acceptance run"
+      },
+      {
+        "name": "testDesignerConnectionRenewsWhilePausedBeyondLease",
+        "reason": "65-second live lease acceptance; set EMO_DEBUG_STRESS=1"
+      },
+      {
+        "name": "test_path_traversal_and_symlink_escape_rejected",
+        "reason": "symlink creation is unavailable"
+      },
+      {
+        "name": "testSymlinkComponentsRejectedWithoutReading[database]",
+        "reason": "Windows symlink privilege unavailable"
+      },
+      {
+        "name": "testSymlinkComponentsRejectedWithoutReading[wal]",
+        "reason": "Windows symlink privilege unavailable"
+      },
+      {
+        "name": "testSymlinkComponentsRejectedWithoutReading[directory]",
+        "reason": "Windows symlink privilege unavailable"
+      },
+      {
+        "name": "testSymlinkComponentsRejectedWithoutReading[root]",
+        "reason": "Windows symlink privilege unavailable"
+      },
+      {
+        "name": "testUnsupportedPlatformNeverInspectsOrOpensDatabaseOrWal",
+        "reason": "Non-Windows platform rejection"
+      }
+    ]
+  },
+  "linuxFocused": {
+    "command": [
+      "/usr/local/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "--tb=short",
+      "tests/test_r3_sqlite_phases.py",
+      "tests/runtime/test_sqlite_write_admission.py",
+      "tests/runtime/test_variable_write_admission.py",
+      "tests/runtime/test_counter_transaction_boundaries.py",
+      "tests/runtime/test_global_variables.py",
+      "tests/runtime/test_global_counters.py",
+      "tests/runtime/test_global_variable_presentation.py",
+      "tests/runtime/test_sqlite_connection_retirement.py",
+      "tests/runtime/test_parallel_workflows.py",
+      "tests/runtime/test_worker_heartbeat_finalization.py",
+      "tests/runtime/test_worker_capture_diagnostics.py",
+      "tests/runtime/test_production_boundaries.py",
+      "tests/runtime/presentation/test_closure_failures.py",
+      "tests/runtime/presentation/test_closure_runtime_integration.py",
+      "tests/runtime/presentation/test_export_diagnostics.py",
+      "tests/runtime/presentation/test_images.py",
+      "tests/runtime/presentation/test_multi_capture.py",
+      "tests/p0",
+      "tests/designer/test_roi_preview_export.py",
+      "tests/designer/test_draft_pure_preview_ui.py",
+      "tests/designer/test_draft_pure_preview_context.py",
+      "tests/designer/test_debug_example_interactions.py",
+      "tests/sqlite_writer",
+      "--junitxml=/audit/final-linux.xml"
+    ],
+    "exit": 0,
+    "seconds": 180.78173854399938,
+    "python": "3.10.22 (main, Oct  6 2026, 02:06:23) [GCC 12.2.0]",
+    "os": "PRETTY_NAME=\"Debian GNU/Linux 12 (bookworm)\"\nNAME=\"Debian GNU/Linux\"\nVERSION_ID=\"12\"\nVERSION=\"12 (bookworm)\"\nVERSION_CODENAME=bookworm\nID=debian\nHOME_URL=\"https://www.debian.org/\"\nSUPPORT_URL=\"https://www.debian.org/support\"\nBUG_REPORT_URL=\"https://bugs.debian.org/\"\n",
+    "sourceChanged": [],
+    "sourceFiles": 5104,
+    "storage": "writable tmpfs; network isolated; synthetic data only",
+    "terminalSummary": "423 passed, 8 skipped in 176.18s (0:02:56)",
+    "junitSuite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "8",
+      "tests": "431",
+      "time": "176.166",
+      "timestamp": "2026-10-11T13:19:53.630386+00:00",
+      "hostname": "a25da13c180f"
+    },
+    "skipped": [
+      {
+        "name": "testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-case]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-case]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[stop-PREVIEW-CACHE]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[stop-PREVIEW_STAGING]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[stop-JOBS]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[continue-PREVIEW-CACHE]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[continue-PREVIEW_STAGING]",
+        "reason": "Windows case-insensitive filesystem regression"
+      },
+      {
+        "name": "testRealImageSaverBindingRejectsTransientPathsAndKeepsPersistentReference[continue-JOBS]",
+        "reason": "Windows case-insensitive filesystem regression"
+      }
+    ]
+  },
+  "nativeQtMatrix": {
+    "classification": "native Windows Qt automation, not manual desktop acceptance",
+    "terminalSummary": "50 passed in 59.68s",
+    "junitSuite": {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "50",
+      "time": "59.635",
+      "timestamp": "2026-10-11T21:21:52.916514+08:00",
+      "hostname": "视觉电脑"
+    },
+    "skipped": []
+  },
+  "nativeLongPauseRoi": {
+    "classification": "native Windows Qt automation; synthetic images; no devices",
+    "qtBackend": "windows",
+    "D06": {
+      "status": "PASS",
+      "pausedSeconds": 80.0,
+      "pauseSequence": 1,
+      "identity": {
+        "callDepth": 0,
+        "callPath": [],
+        "callerNodeId": "first",
+        "iterationPath": [],
+        "jobId": "debug:90533ef0da72451cafa1e8b3f4576632",
+        "nodeRunId": "b5c844f2-de11-4451-b6a0-57d364da6b37",
+        "parentWorkflowRunId": "",
+        "projectId": "debug-project",
+        "workflowId": "main",
+        "workflowRunId": "8c1ac5a2-5005-4bae-973e-ea1a1c36e4e1",
+        "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-9porqfxp"
+      },
+      "outputs": {
+        "value": 7.0
+      }
+    },
+    "ROI": {
+      "status": "PASS",
+      "preview": {
+        "generation": 8,
+        "requestId": "ee5f4fba-e8ee-485e-b4e3-f0bb84aff8ae",
+        "inputAssetId": "transient-9bb08a98-9603-4c67-9357-4bfb219b6277",
+        "input": {
+          "assetId": "transient-9bb08a98-9603-4c67-9357-4bfb219b6277",
+          "mimeType": "image/png",
+          "byteSize": 540,
+          "sha256": "2d251acf2a3000ce7fb48c925f9a8e07ba771cd26f4c2d400ec6619de7c5b13a"
+        },
+        "requestedAtClientMonotonicNs": 209426484000000,
+        "context": {
+          "projectId": "draft",
+          "workflowId": "main",
+          "nodeId": "node",
+          "operatorId": "vision.preprocess.roi",
+          "operatorVersion": "1.1.0",
+          "draftSessionId": "f884579d626d42739e0387bb3e584a01",
+          "draftFingerprint": "06da4e9a88fcb7c22006d6444754f81eacb48eaed45d4934475983ecfe47ea10",
+          "runtimeTarget": "embedded",
+          "mode": "draft-pure-preview"
+        },
+        "requestedParams": {
+          "roiType": "bbox",
+          "x": 32.0,
+          "y": 16.0,
+          "width": 32.0,
+          "height": 24.0,
+          "centerX": 0.0,
+          "centerY": 0.0,
+          "angleDegrees": 0.0,
+          "points": [],
+          "padValue": 0,
+          "interpolation": "linear"
+        },
+        "resolvedParams": null,
+        "resolvedParamsStatus": "NOT_RETURNED_BY_PURE_PREVIEW_RPC"
+      },
+      "outputs": [
+        {
+          "port": "croppedImage",
+          "assetId": "transient-3c07eb74-71fd-4f01-a46f-8b04cc74ab07",
+          "file": "croppedImage.png",
+          "mimeType": "image/png",
+          "width": 32,
+          "height": 24,
+          "byteSize": 115,
+          "sha256": "6a17200c4ec5f9d4172fb271fef2fce4d14ccbb48ec4cbef1c0c69cfb0763e3c"
+        },
+        {
+          "port": "croppedMask",
+          "assetId": "transient-ce2a9226-0b89-4ae5-93ad-1243534b3e77",
+          "file": "croppedMask.png",
+          "mimeType": "image/png",
+          "width": 32,
+          "height": 24,
+          "byteSize": 114,
+          "sha256": "9fc0bfe869131f64b18d991fe2eed7347b38c237b908f15f43e711cbcb3ad0fc"
+        },
+        {
+          "port": "fullMask",
+          "assetId": "transient-8ef26414-68e5-4c84-a74d-720797610cab",
+          "file": "fullMask.png",
+          "mimeType": "image/png",
+          "width": 320,
+          "height": 240,
+          "byteSize": 589,
+          "sha256": "bebfea36d1761fd6e8a15dc2a4f3bf73c02e4393f58b395e753ecf79cf10cef1"
+        },
+        {
+          "port": "maskedImage",
+          "assetId": "transient-9d5d0677-08cf-453f-b926-933c63c80867",
+          "file": "maskedImage.png",
+          "mimeType": "image/png",
+          "width": 320,
+          "height": 240,
+          "byteSize": 616,
+          "sha256": "c46e0926ae8696d5a3b733b7f217ce05d23a817c9db7836829c357e3da074088"
+        }
+      ],
+      "pixels": "all four PNG bytes equal original authorized assets"
+    },
+    "retirement": {
+      "draftAssets": 0,
+      "formalJobs": 0,
+      "operatorResources": false
+    }
+  },
+  "nativeForEachLongPause": {
+    "status": "PASS",
+    "classification": "native Windows Qt automated ForEach conditional point; not manual Debian UI",
+    "pauseSeconds": 80.0,
+    "pauseSequence": 3,
+    "identity": {
+      "callDepth": 1,
+      "callPath": [
+        [
+          "foreach",
+          "loop_body"
+        ]
+      ],
+      "callerNodeId": "compare",
+      "iterationPath": [
+        2
+      ],
+      "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+      "nodeRunId": "ebdf93f6-30a7-4144-a932-aeb27d33ddaa",
+      "parentWorkflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+      "projectId": "debug-02-foreach",
+      "workflowId": "body",
+      "workflowRunId": "b8eb909f-f986-4395-b2c1-7f366607c9f4",
+      "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+    },
+    "conditionalObservations": [
+      {
+        "conditionError": "",
+        "hits": {
+          "body/compare": 2
+        },
+        "identity": {
+          "callDepth": 1,
+          "callPath": [
+            [
+              "foreach",
+              "loop_body"
+            ]
+          ],
+          "callerNodeId": "compare",
+          "iterationPath": [
+            1
+          ],
+          "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+          "nodeRunId": "2104801c-6e61-44b9-a437-ab5cf5dc35a1",
+          "parentWorkflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+          "projectId": "debug-02-foreach",
+          "workflowId": "body",
+          "workflowRunId": "f1292afa-2172-4d30-8348-d690345586fe",
+          "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+        },
+        "inputs": {
+          "left": 5
+        },
+        "inputsAssets": {},
+        "nodeId": "compare",
+        "outputs": {},
+        "outputsAssets": {},
+        "params": {
+          "operator": "gte",
+          "rightValue": 5.0
+        },
+        "pauseSequence": 2,
+        "phase": "node.before",
+        "reason": "breakpoint",
+        "snapshotId": "26f2556efacc4f64810566ec82baedc3",
+        "snapshotKind": "paused",
+        "stack": [
+          {
+            "callDepth": 0,
+            "callPath": [],
+            "callerNodeId": "foreach",
+            "iterationPath": [],
+            "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+            "kind": "loop",
+            "nodeId": "foreach",
+            "nodeRunId": "e1859ace-9b90-48de-aff5-a08e407ec756",
+            "parentWorkflowRunId": "",
+            "projectId": "debug-02-foreach",
+            "workflowId": "main",
+            "workflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+            "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+          },
+          {
+            "callDepth": 1,
+            "callPath": [
+              [
+                "foreach",
+                "loop_body"
+              ]
+            ],
+            "callerNodeId": "compare",
+            "iterationPath": [
+              1
+            ],
+            "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+            "kind": "operator",
+            "nodeId": "compare",
+            "nodeRunId": "2104801c-6e61-44b9-a437-ab5cf5dc35a1",
+            "parentWorkflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+            "projectId": "debug-02-foreach",
+            "workflowId": "body",
+            "workflowRunId": "f1292afa-2172-4d30-8348-d690345586fe",
+            "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+          }
+        ],
+        "state": "PAUSED",
+        "variables": {}
+      },
+      {
+        "conditionError": "",
+        "hits": {
+          "body/compare": 3
+        },
+        "identity": {
+          "callDepth": 1,
+          "callPath": [
+            [
+              "foreach",
+              "loop_body"
+            ]
+          ],
+          "callerNodeId": "compare",
+          "iterationPath": [
+            2
+          ],
+          "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+          "nodeRunId": "ebdf93f6-30a7-4144-a932-aeb27d33ddaa",
+          "parentWorkflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+          "projectId": "debug-02-foreach",
+          "workflowId": "body",
+          "workflowRunId": "b8eb909f-f986-4395-b2c1-7f366607c9f4",
+          "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+        },
+        "inputs": {
+          "left": 9
+        },
+        "inputsAssets": {},
+        "nodeId": "compare",
+        "outputs": {},
+        "outputsAssets": {},
+        "params": {
+          "operator": "gte",
+          "rightValue": 5.0
+        },
+        "pauseSequence": 3,
+        "phase": "node.before",
+        "reason": "breakpoint",
+        "snapshotId": "2cd26c331eca4b42b9842a148267d657",
+        "snapshotKind": "paused",
+        "stack": [
+          {
+            "callDepth": 0,
+            "callPath": [],
+            "callerNodeId": "foreach",
+            "iterationPath": [],
+            "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+            "kind": "loop",
+            "nodeId": "foreach",
+            "nodeRunId": "e1859ace-9b90-48de-aff5-a08e407ec756",
+            "parentWorkflowRunId": "",
+            "projectId": "debug-02-foreach",
+            "workflowId": "main",
+            "workflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+            "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+          },
+          {
+            "callDepth": 1,
+            "callPath": [
+              [
+                "foreach",
+                "loop_body"
+              ]
+            ],
+            "callerNodeId": "compare",
+            "iterationPath": [
+              2
+            ],
+            "jobId": "debug:593a2842f8d240d9852b7f8fc01641d4",
+            "kind": "operator",
+            "nodeId": "compare",
+            "nodeRunId": "ebdf93f6-30a7-4144-a932-aeb27d33ddaa",
+            "parentWorkflowRunId": "e890b96c-fb5a-4d25-8d11-78d714b4443d",
+            "projectId": "debug-02-foreach",
+            "workflowId": "body",
+            "workflowRunId": "b8eb909f-f986-4395-b2c1-7f366607c9f4",
+            "workspacePath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-operator-debug-yeokbh5k"
+          }
+        ],
+        "state": "PAUSED",
+        "variables": {}
+      }
+    ],
+    "outputs": {
+      "index": [
+        0,
+        1,
+        2
+      ],
+      "result": [
+        false,
+        true,
+        true
+      ]
+    },
+    "projectSha256": "48d176f9e8c1b6c48e858fc012609abc01cd06aa21d57c26589c7aded241bdff",
+    "retirement": {
+      "operatorResources": false,
+      "formalJobs": 0,
+      "projectUnmodified": true
+    }
+  },
+  "fixedRounds": {
+    "plannedRounds": 3,
+    "policy": "run each independent process exactly once, keep every outcome; no changes to source/deadlines",
+    "sourceManifestSha256": "25eed17019f0ae13abea64c516ae6ad1957bd0e1e1d9b6134b29d9b380b7ade9",
+    "rounds": [
+      {
+        "round": 1,
+        "name": "software",
+        "command": [
+          "/usr/local/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short",
+          "tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath",
+          "tests/runtime/test_parallel_workflows.py::testMoreThanTwoActualWhileJobsWithImages",
+          "tests/runtime/test_production_boundaries.py::testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount",
+          "--junitxml=/audit/fixed-round-1-software.xml"
+        ],
+        "exit": 0,
+        "seconds": 15.437769116979325
+      },
+      {
+        "round": 1,
+        "name": "p0",
+        "command": [
+          "/usr/local/bin/python",
+          "/audit/p0_capture.py",
+          "/audit/fixed-round-1-p0"
+        ],
+        "exit": 0,
+        "seconds": 10.757201945991255
+      },
+      {
+        "round": 2,
+        "name": "software",
+        "command": [
+          "/usr/local/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short",
+          "tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath",
+          "tests/runtime/test_parallel_workflows.py::testMoreThanTwoActualWhileJobsWithImages",
+          "tests/runtime/test_production_boundaries.py::testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount",
+          "--junitxml=/audit/fixed-round-2-software.xml"
+        ],
+        "exit": 0,
+        "seconds": 15.483568627998466
+      },
+      {
+        "round": 2,
+        "name": "p0",
+        "command": [
+          "/usr/local/bin/python",
+          "/audit/p0_capture.py",
+          "/audit/fixed-round-2-p0"
+        ],
+        "exit": 0,
+        "seconds": 10.702168513002107
+      },
+      {
+        "round": 3,
+        "name": "software",
+        "command": [
+          "/usr/local/bin/python",
+          "-m",
+          "pytest",
+          "-q",
+          "--tb=short",
+          "tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath",
+          "tests/runtime/test_parallel_workflows.py::testMoreThanTwoActualWhileJobsWithImages",
+          "tests/runtime/test_production_boundaries.py::testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount",
+          "--junitxml=/audit/fixed-round-3-software.xml"
+        ],
+        "exit": 0,
+        "seconds": 15.235450415988453
+      },
+      {
+        "round": 3,
+        "name": "p0",
+        "command": [
+          "/usr/local/bin/python",
+          "/audit/p0_capture.py",
+          "/audit/fixed-round-3-p0"
+        ],
+        "exit": 0,
+        "seconds": 10.702125487994635
+      }
+    ],
+    "sourceChanged": [],
+    "evidence": [
+      {
+        "round": 1,
+        "software": {
+          "terminalSummary": "4 passed in 14.85s",
+          "junitSuite": {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "0",
+            "skipped": "0",
+            "tests": "4",
+            "time": "14.850",
+            "timestamp": "2026-10-11T13:23:50.465857+00:00",
+            "hostname": "84fa65baab07"
+          },
+          "skipped": []
+        },
+        "p0": {
+          "coverage": [
+            1.0,
+            1.0
+          ],
+          "incomplete": 0,
+          "clientErrors": [
+            null,
+            null
+          ],
+          "correctnessStatus": "PASS",
+          "cleanup": {
+            "used": {
+              "memory": 0,
+              "staging": 0,
+              "cache": 0,
+              "lease": 0
+            },
+            "peak": {
+              "memory": 73697280,
+              "staging": 16777216,
+              "cache": 199454432,
+              "lease": 0
+            },
+            "jobs": {},
+            "owners": 0
+          },
+          "measuredOrdinals": [
+            6,
+            45
+          ],
+          "imagesPerConsumer": 40
+        }
+      },
+      {
+        "round": 2,
+        "software": {
+          "terminalSummary": "4 passed in 14.87s",
+          "junitSuite": {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "0",
+            "skipped": "0",
+            "tests": "4",
+            "time": "14.871",
+            "timestamp": "2026-10-11T13:24:16.642023+00:00",
+            "hostname": "84fa65baab07"
+          },
+          "skipped": []
+        },
+        "p0": {
+          "coverage": [
+            1.0,
+            1.0
+          ],
+          "incomplete": 0,
+          "clientErrors": [
+            null,
+            null
+          ],
+          "correctnessStatus": "PASS",
+          "cleanup": {
+            "used": {
+              "memory": 0,
+              "staging": 0,
+              "cache": 0,
+              "lease": 0
+            },
+            "peak": {
+              "memory": 73697280,
+              "staging": 16777216,
+              "cache": 199454432,
+              "lease": 0
+            },
+            "jobs": {},
+            "owners": 0
+          },
+          "measuredOrdinals": [
+            6,
+            45
+          ],
+          "imagesPerConsumer": 40
+        }
+      },
+      {
+        "round": 3,
+        "software": {
+          "terminalSummary": "4 passed in 14.71s",
+          "junitSuite": {
+            "name": "pytest",
+            "errors": "0",
+            "failures": "0",
+            "skipped": "0",
+            "tests": "4",
+            "time": "14.715",
+            "timestamp": "2026-10-11T13:24:42.807789+00:00",
+            "hostname": "84fa65baab07"
+          },
+          "skipped": []
+        },
+        "p0": {
+          "coverage": [
+            1.0,
+            1.0
+          ],
+          "incomplete": 0,
+          "clientErrors": [
+            null,
+            null
+          ],
+          "correctnessStatus": "PASS",
+          "cleanup": {
+            "used": {
+              "memory": 0,
+              "staging": 0,
+              "cache": 0,
+              "lease": 0
+            },
+            "peak": {
+              "memory": 73697280,
+              "staging": 16777216,
+              "cache": 199454432,
+              "lease": 0
+            },
+            "jobs": {},
+            "owners": 0
+          },
+          "measuredOrdinals": [
+            6,
+            45
+          ],
+          "imagesPerConsumer": 40
+        }
+      }
+    ]
+  },
+  "staticChecks": {
+    "sourceManifestSha256": "25eed17019f0ae13abea64c516ae6ad1957bd0e1e1d9b6134b29d9b380b7ade9",
+    "sourceChanged": [],
+    "checks": [
+      {
+        "name": "proto",
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "scripts/gen_proto.py",
+          "--check"
+        ],
+        "exit": 0,
+        "seconds": 0.21899999998277053
+      },
+      {
+        "name": "ruff",
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "ruff",
+          "check",
+          "src",
+          "tests"
+        ],
+        "exit": 0,
+        "seconds": 0.25
+      },
+      {
+        "name": "prototype-ruff",
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "ruff",
+          "check",
+          "prototypes/runtime_pages_p0/async_exports.py"
+        ],
+        "exit": 0,
+        "seconds": 0.1720000000204891
+      },
+      {
+        "name": "mypy",
+        "command": [
+          "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+          "-m",
+          "mypy",
+          "--config-file",
+          "mypy.ini",
+          "src"
+        ],
+        "exit": 0,
+        "seconds": 1.0309999999881256
+      }
+    ]
+  },
+  "resourceBoundaries": "Synthetic local fixtures; actual spawn/monitor and loopback; no production devices",
+  "manualDebian13QtGtk": "NOT_RUN",
+  "hardwarePackagingReleaseDeployment": "NOT_RUN",
+  "historicalRootCauses": {
+    "productionNgIncomplete": "OPEN_NOT_REPRODUCED",
+    "p0Ordinal20": "OPEN_NOT_REPRODUCED"
+  },
+  "previewProtocolLimit": "No executionId/resolvedParams/server attestation returned; requestedParams only",
+  "originalWorkspace": {
+    "path": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+    "observedAt": "2026-10-11T13:46:21.316613+00:00",
+    "originalHead": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+    "initialDirtyFiles": 31,
+    "finalObservedDirtyFiles": 32,
+    "initialHashUnchangedFiles": 25,
+    "changedInParallelPaths": [
+      "projects/two_station_screw_vision/CONFIGURATION.md",
+      "projects/two_station_screw_vision/README.md",
+      "projects/two_station_screw_vision/VALIDATION.md",
+      "projects/two_station_screw_vision/build_initial_project.py",
+      "projects/two_station_screw_vision/two_station_screw_vision.emoproj",
+      "tests/core/test_two_station_migration_project.py"
+    ],
+    "addedDirtyPaths": [
+      "tests/core/test_station1_correction_project.py"
+    ],
+    "removedInitialPaths": [],
+    "branchMoved": false,
+    "originalWorkspaceWrittenByThisRepair": false,
+    "note": "Earlier checks matched all 31 hashes. Parallel work later changed six paths and added one; preserved current files without rollback. Original patch/content deliberately excluded from delivery evidence."
+  },
+  "countsPolicy": "Overlapping layers and subtests are not added together"
+}

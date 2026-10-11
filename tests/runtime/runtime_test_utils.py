@@ -76,10 +76,16 @@ def jobFailureDetails(runtimeService, jobId: str, status=None, result=None) -> s
         owner = getattr(runtimeService, "_presentationOwner", None)
         exporter = getattr(owner, "exporter", None)
         details["export_errors"] = [small(error) for error in list(getattr(exporter, "errors", ()))[-8:]]
+        details["closure_diagnostics"] = [row for row in list(getattr(owner, "diagnostics", ()))[-8:]
+            if row.get("identity", {}).get("jobId") == jobId]
+        details["export_diagnostics"] = [row for row in list(getattr(exporter, "diagnostics", ()))[-8:]
+            if row.get("jobId") == jobId]
         if result is not None:
-            details["result"] = {"status": result.status, "executionTerminal": result.executionTerminal,
+            details["result"] = {"status": result.status, "identity": result.identity.model_dump(),
+                "executionTerminal": result.executionTerminal, "expectedSourceIds": list(result.expectedSourceIds),
                 "sources": [{"id": small(source.sourceId), "state": source.state,
-                             "reason": small(source.reasonCode)} for source in result.sources[:16]]}
+                             "reason": small(source.reasonCode), "detail": small(source.reason)}
+                            for source in result.sources[:16]]}
     except Exception as error:
         details["diagnostic_error"] = small(error)
     def shorten(value, limit):

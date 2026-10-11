@@ -258,7 +258,8 @@ def testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount(tmp_path):
         job = owner.start()
         waitFor(lambda: any(r.identity.resultOrdinal >= 3 for r in owner.presentation.store.latest.values()))
         result = next(iter(owner.presentation.store.latest.values()))
-        assert result.status == "COMPLETE", result.model_dump()
+        from tests.runtime.runtime_test_utils import jobFailureDetails
+        assert result.status == "COMPLETE", jobFailureDetails(owner.runtime, job, result=result)
         assert {s.sourceId: s.valueJson for s in result.sources if s.valueJson is not None} == {"count": "2", "judge": "false"}
         assert {s.sourceId for s in result.sources} == {"count", "judge", "image"}
         waitFor(lambda: any(e.workflowRunId == result.identity.invocationId

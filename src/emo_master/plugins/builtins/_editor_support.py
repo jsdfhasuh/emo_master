@@ -1,10 +1,13 @@
 from __future__ import annotations
 
 from concurrent.futures import Future, ThreadPoolExecutor
+from copy import deepcopy
+import hashlib
 import json
 from pathlib import Path
 import queue
 import logging
+import time
 from threading import Lock, Thread
 from typing import Any, cast
 from uuid import uuid4
@@ -51,6 +54,7 @@ class PurePreviewControllerBase:
         self.sourceCombo: QComboBox | None = None
         self.localImageButton: QPushButton | None = None
         self.currentAssetId = ""
+        self._inputMetadata: dict[str, Any] = {}
         self._sourceMimeTypes: dict[str, str] = {}
         self._generation = 0
         self._executor = ThreadPoolExecutor(
@@ -60,6 +64,7 @@ class PurePreviewControllerBase:
         self._previewFutures: set[Future[object]] = set()
         self._futuresLock = Lock()
         self._requestId = ""
+        self._previewMetadata: dict[str, Any] | None = None
         self._results: queue.Queue[tuple[int, object | None, BaseException | None]] = (
             queue.Queue()
         )
@@ -107,8 +112,10 @@ class PurePreviewControllerBase:
         """A Run/project change invalidates selection and every in-flight result."""
         if self._disposed:
             return
+        self.onPreviewInvalidated()
         self._generation += 1
         self.currentAssetId = ""
+        self._inputMetadata = {}
         if self._debounceTimer is not None:
             self._debounceTimer.stop()
         if self._future is not None:
@@ -199,6 +206,7 @@ class PurePreviewControllerBase:
             return
         if markDirty and self.context is not None:
             self.context.markDirty()
+        self.onPreviewInvalidated()
         self._cancelCurrentPreview()
         self._generation += 1
         self._debounceTimer.start()
@@ -233,6 +241,7 @@ class PurePreviewControllerBase:
     def _sourceChanged(self, _index: int) -> None:
         if self._disposed or self.sourceCombo is None or self.context is None:
             return
+        self.onPreviewInvalidated()
         self._cancelCurrentPreview()
         self._generation += 1
         if self._debounceTimer is not None:
@@ -240,6 +249,7 @@ class PurePreviewControllerBase:
         if self._future is not None:
             self._future.cancel()
         self.currentAssetId = ""
+        self._inputMetadata = {}
         # Clear historical pixels/results before selecting even a placeholder
         # or an asset whose download may fail. Do not repopulate the combo.
         self._clearPreviewVisuals()
@@ -261,6 +271,8 @@ class PurePreviewControllerBase:
             self.context.setError(str(err))
             return
         self.currentAssetId = assetId
+        self._inputMetadata = dict(assetId=assetId, mimeType=mimeType, byteSize=len(content),
+                                   sha256=hashlib.sha256(content).hexdigest())
         self.context.setStatus(f"已选择：{self.sourceCombo.currentText()}")
         if mimeType.startswith("image/"):
             self.schedulePreview(markDirty=False)
@@ -268,20 +280,32 @@ class PurePreviewControllerBase:
     def _startPreview(self) -> None:
         if self._disposed or self.context is None or not self.currentAssetId:
             return
+        self.onPreviewInvalidated()
+        self._generation += 1
         generation = self._generation
-        params = self.collectParams()
         previous = self._future
         if previous is not None and not previous.done():
             previous.cancel()
         requestId = str(uuid4())
         self._requestId = requestId
         try:
+            params = deepcopy(self.collectParams())
             prepare = getattr(self.context, "preparePurePreview", None)
             if callable(prepare):
                 invocation = prepare(params, self.currentAssetId, requestId)
-                future = self._executor.submit(invocation)
             else:
-                future = self._executor.submit(self.context.runPurePreview, params, self.currentAssetId, requestId)
+                from functools import partial
+                invocation = partial(self.context.runPurePreview, params, self.currentAssetId, requestId)
+            identity: dict[str, Any] = getattr(self.context, "purePreviewIdentity", lambda: {})()
+            # Freeze only known client facts. The existing RPC does not return
+            # resolvedParams, executionId, or server attestation.
+            self._previewMetadata = json.loads(json.dumps(dict(
+                generation=generation, requestId=requestId, inputAssetId=self.currentAssetId,
+                input=self._inputMetadata,
+                requestedAtClientMonotonicNs=time.monotonic_ns(), context=identity,
+                requestedParams=params, resolvedParams=None,
+                resolvedParamsStatus="NOT_RETURNED_BY_PURE_PREVIEW_RPC"), allow_nan=False))
+            future = self._executor.submit(invocation)
         except Exception as error:
             self._clearPreviewVisuals("预览已失效")
             self.context.setError(str(error))
@@ -318,9 +342,11 @@ class PurePreviewControllerBase:
             return
         _generation, reply, error = latest
         if error is not None:
+            self.onPreviewInvalidated()
             self.context.setError(str(error))
             return
         if not bool(getattr(reply, "ok", False)):
+            self.onPreviewInvalidated()
             code = str(getattr(reply, "code", ""))
             message = str(getattr(reply, "message", ""))
             self.context.setError(f"{code}: {message}".strip(": "))
@@ -336,8 +362,12 @@ class PurePreviewControllerBase:
         rawOutputs = str(getattr(reply, "outputs_json", "{}"))
         try:
             parsed = json.loads(rawOutputs)
-        except json.JSONDecodeError:
-            parsed = {}
+            if not isinstance(parsed, dict):
+                raise ValueError("preview outputs must be an object")
+        except (ValueError, TypeError) as error:
+            self.onPreviewInvalidated()
+            self.context.setError(f"预览结果无效：{error}")
+            return
         outputs = parsed if isinstance(parsed, dict) else {}
         assets = {
             str(getattr(asset, "port", "")): str(getattr(asset, "asset_id", ""))
@@ -350,6 +380,7 @@ class PurePreviewControllerBase:
     def disposePreviewBase(self) -> None:
         if self._disposed:
             return
+        self.onPreviewInvalidated()
         self._disposed = True
         bindInvalidation = getattr(self.context, "bindPreviewInvalidation", None)
         if callable(bindInvalidation):
@@ -392,6 +423,9 @@ class PurePreviewControllerBase:
             self.context.cancelPurePreview(requestId)
         except Exception as err:
             self.context.log("WARN", f"取消旧预览失败：{err}")
+
+    def onPreviewInvalidated(self) -> None:
+        self._previewMetadata = None
 
     def collectParams(self) -> dict[str, object]:
         raise NotImplementedError

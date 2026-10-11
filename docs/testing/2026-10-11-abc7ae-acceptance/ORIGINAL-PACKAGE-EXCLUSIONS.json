@@ -1,0 +1,92 @@
+{
+  "version": 1,
+  "scope": "Exclude only explicitly reviewed regenerable caches/render copies or confirmed internal transfer/credential artifacts. Never remove original files. Synthetic test credentials remain evidence.",
+  "excluded_paths": [
+    {
+      "path": "automation/ruff-cache",
+      "reason": "Regenerable Ruff cache"
+    },
+    {
+      "path": "automation/full/pytest-cache",
+      "reason": "Regenerable pytest cache; original full basetemp, JUnit, logs and DB retained"
+    },
+    {
+      "path": "automation/stress1000-retire50/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/lease65/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-01/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-02/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-03/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-04/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-05/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-06/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-07/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-08/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-09/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "automation/sqlite-round-10/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "targeted/pytest-cache",
+      "reason": "Regenerable pytest cache"
+    },
+    {
+      "path": "ui/cache",
+      "reason": "Regenerable isolated native UI application cache"
+    },
+    {
+      "path": "ui/fresh-cache",
+      "reason": "Regenerable isolated fresh UI application cache"
+    },
+    {
+      "path": "report/.cache",
+      "reason": "Regenerable report renderer/fontconfig cache"
+    },
+    {
+      "path": "report/rendered",
+      "reason": "Regenerable rendered page PNGs and duplicate PDF; top-level final report DOCX/PDF and native UI screenshots remain included"
+    },
+    {
+      "path": "report/rendered-final",
+      "reason": "Regenerable final report page PNGs and duplicate rendered PDF; top-level final DOCX/PDF and report QA JSON remain included"
+    },
+    {
+      "path": "diagnosis-deep",
+      "reason": "Newly requested later code-investigation appendix, actively written after the frozen acceptance report; deliberately excluded from this acceptance snapshot and to be saved independently"
+    }
+  ],
+  "reviewed_safe_findings": [],
+  "internal_transfer_review": "Primary acceptance operator confirmed Library upload receipts/helpers live outside evidence in temporary/scratch locations. No such artifact was found in the current evidence filename review; final static scan must still run."
+}

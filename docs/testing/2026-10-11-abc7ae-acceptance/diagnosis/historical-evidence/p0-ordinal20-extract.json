@@ -1,0 +1,126 @@
+{
+  "count": 40,
+  "warmup": 5,
+  "coverage": [
+    0.975,
+    0.975
+  ],
+  "incomplete": 1,
+  "client_errors": [
+    null,
+    null
+  ],
+  "correctness_status": "FAIL",
+  "execution_p95_ms": 809.329885,
+  "achieved_hz": 2.5443699629792866,
+  "max_schedule_lateness_ms": 8118.0416,
+  "stats": {
+    "generated": 45,
+    "sealed": 45,
+    "final": 45,
+    "rejected": 0,
+    "open": 0,
+    "history": 32,
+    "runs": 0,
+    "metadata": 32,
+    "diagnostics": 64,
+    "assets": 32,
+    "evictions": 12,
+    "resources": {
+      "used": {
+        "memory": 35782656,
+        "staging": 0,
+        "cache": 199454432,
+        "lease": 0
+      },
+      "peak": {
+        "memory": 74090496,
+        "staging": 16777216,
+        "cache": 199454432,
+        "lease": 0
+      },
+      "jobs": {
+        "measurement": 35782656
+      },
+      "owners": 97
+    }
+  },
+  "cleanup": {
+    "used": {
+      "memory": 0,
+      "staging": 0,
+      "cache": 0,
+      "lease": 0
+    },
+    "peak": {
+      "memory": 74090496,
+      "staging": 16777216,
+      "cache": 199454432,
+      "lease": 0
+    },
+    "jobs": {},
+    "owners": 0
+  },
+  "after_close": {
+    "rss_bytes": 98340864,
+    "peak_rss_bytes": 155893760,
+    "handles": 475,
+    "cpu_seconds": 22.984375
+  },
+  "ordinal20_server": [
+    {
+      "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+      "ordinal": 20,
+      "status": "INCOMPLETE",
+      "scope_end_ns": 952181950700,
+      "commit_ns": 952235998700,
+      "image": [
+        "UNAVAILABLE",
+        {
+          "status": "UNAVAILABLE",
+          "reason": "TimeoutError",
+          "task_id": "1055159d-9f71-43c7-915b-8785b96b95fc"
+        }
+      ]
+    }
+  ],
+  "ordinal20_runner": [
+    {
+      "index": 19,
+      "ordinal": 20,
+      "warmup": false,
+      "scheduled_ns": 948765055100,
+      "start_ns": 951220847800,
+      "end_ns": 952182273300,
+      "execution_ms": 961.4255,
+      "lateness_ms": 2455.7927
+    }
+  ],
+  "ordinal20_clients": [
+    [
+      {
+        "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+        "ordinal": 20,
+        "status": "INCOMPLETE",
+        "scope_end_ns": 952181950700,
+        "received_ns": 952237780900,
+        "decoded": false,
+        "commit_ns": 952237784500,
+        "latency_ms": 55.8338
+      }
+    ],
+    [
+      {
+        "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+        "ordinal": 20,
+        "status": "INCOMPLETE",
+        "scope_end_ns": 952181950700,
+        "received_ns": 952237596600,
+        "decoded": false,
+        "commit_ns": 952237600400,
+        "latency_ms": 55.6497
+      }
+    ]
+  ],
+  "server_close_minus_scope_end_ms": 54.048
+}

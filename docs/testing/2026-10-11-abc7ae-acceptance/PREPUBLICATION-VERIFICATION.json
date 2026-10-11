@@ -1,0 +1,16 @@
+{
+  "scope": "Local staging verification only; no upload, commit, push, deployment, probe, or acceptance rerun",
+  "part_count": 17,
+  "chunk_bytes": 4194304,
+  "reassembled_bytes": 68072637,
+  "reassembled_sha256": "1b01545a84b957375abac33975fe29307f56f72d99ffd57cd469ed6ca1a2f2bf",
+  "reassembled_zip_crc_test": "PASS",
+  "zip_entries": 21177,
+  "diagnosis_original_byte_identical_files": 26,
+  "diagnosis_local_markdown_links_checked": 20,
+  "diagnosis_broken_local_markdown_links": 0,
+  "maximum_staged_file_bytes": 4194304,
+  "safety_audit_candidate_count": 0,
+  "original_acceptance_files_unchanged": true,
+  "sha256sums_policy": "Parent publisher must refresh after adding handoff prompt and final publication manifest."
+}

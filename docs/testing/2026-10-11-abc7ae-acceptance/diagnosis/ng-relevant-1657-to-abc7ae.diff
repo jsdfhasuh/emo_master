@@ -1,0 +1,185 @@
+diff --git a/prototypes/runtime_pages_p0/async_exports.py b/prototypes/runtime_pages_p0/async_exports.py
+index e299e0b6..7ee00d31 100644
+--- a/prototypes/runtime_pages_p0/async_exports.py
++++ b/prototypes/runtime_pages_p0/async_exports.py
+@@ -75,22 +75,27 @@ class AsyncExports(Exporters):
+             path = self.root / f"{task}.png"
+             broken = False
+             outcome = {"status": "UNAVAILABLE", "reason": "cancelled", "task_id": task}
++            stage = "dispatch"
++            dispatch = None
+             try:
+                 process, pipe = self.slots[index]
+                 dispatch = time.perf_counter_ns()
+                 pipe.send((task, segment.name, shape, str(path), mode))
+                 def remaining():
+                     return max(0, BUDGET.export_seconds - (time.perf_counter_ns()-submitted)/1e9)
++                stage = "start"
+                 if not pipe.poll(remaining()) or pipe.recv() != ("STARTED", task):
+                     raise TimeoutError("start deadline")
+                 self.started.append((task, process.pid, segment.name))
+                 # Diagnostic identifiers are bounded, not a second task history.
+                 del self.started[:-64]
++                stage = "completion"
+                 if not pipe.poll(remaining()):
+                     raise TimeoutError("running export deadline")
+                 reply = pipe.recv()
+                 if reply[:2] != ("DONE", task):
+                     raise ValueError("IPC identity")
++                stage = "adoption"
+                 adopted_at = time.perf_counter_ns()
+                 asset = self.assets.adopt(job, key, path, reply[2], reply[3], shape)
+                 outcome = dict(status="VALID", asset=asset, raw_sha256=reply[5], task_id=task,
+@@ -99,7 +104,11 @@ class AsyncExports(Exporters):
+                                adoption_ms=(time.perf_counter_ns()-adopted_at)/1e6)
+             except Exception as error:
+                 broken = True
+-                outcome["reason"] = type(error).__name__
++                outcome.update(reason=type(error).__name__, detail=str(error)[:256], stage=stage,
++                    budget_ms=BUDGET.export_seconds * 1000,
++                    elapsed_ms=(time.perf_counter_ns()-submitted)/1e6,
++                    copy_ms=(copied-submitted)/1e6,
++                    queue_ms=(dispatch-copied)/1e6 if dispatch is not None else None)
+             finally:
+                 if broken:
+                     self._retire(index)  # slot remains quarantined until dead
+diff --git a/prototypes/runtime_pages_p0/network.py b/prototypes/runtime_pages_p0/network.py
+index 2e549615..cfd871ae 100644
+--- a/prototypes/runtime_pages_p0/network.py
++++ b/prototypes/runtime_pages_p0/network.py
+@@ -15,6 +15,7 @@ import time
+ import grpc
+ 
+ from .contracts import Unavailable
++from .resources import Assets
+ 
+ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
+ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
+@@ -152,7 +153,7 @@ class IsolatedServer:
+     def _release(self, category):
+         self.active[category] -= 1
+ 
+-    def _stream(self, method, category):
++    def _stream(self, method, category, *, batched=False):
+         async def stream(request, context):
+             await self._admit(category, context)
+             cancel = CancelContext()
+@@ -167,7 +168,15 @@ class IsolatedServer:
+                     valid, message = await asyncio.shield(pending)
+                     if not valid:
+                         return
+-                    yield message
++                    if batched:
++                        for chunk in message:
++                            if context.cancelled():
++                                return
++                            yield chunk
++                        del message
++                        chunk = None
++                    else:
++                        yield message
+             except RpcAbort as error:
+                 await context.abort(error.code, error.details)
+             except Unavailable as error:
+@@ -269,6 +278,12 @@ class IsolatedServer:
+                 self._stream(self.display.follow, "display"), request_deserializer=json.loads,
+                 response_serializer=lambda v: json.dumps(v).encode())}),))
+         if hasattr(self.display, "assets"):
++            batchReader = getattr(self.display.assets, "readBatches", None)
++            if (getattr(batchReader, "__func__", None) is Assets.readBatches
++                    and getattr(self.display.assets.read, "__func__", None) is not Assets._nativeRead):
++                # A custom public reader may own a cancellation/deadline gate.
++                # Native batching must not bypass that reader's semantics.
++                batchReader = None
+             async def pin(request, context):
+                 await self._admit("control", context)
+                 try:
+@@ -280,7 +295,8 @@ class IsolatedServer:
+                 return {}
+             self.server.add_generic_rpc_handlers((grpc.method_handlers_generic_handler("p0.Display", {
+                 "GetDisplayAsset": grpc.unary_stream_rpc_method_handler(
+-                    self._stream(self.display.assets.read, "asset"), request_deserializer=json.loads,
++                    self._stream(batchReader if callable(batchReader) else self.display.assets.read,
++                                 "asset", batched=callable(batchReader)), request_deserializer=json.loads,
+                     response_serializer=lambda value: value),
+                 "Pin": grpc.unary_unary_rpc_method_handler(pin, request_deserializer=json.loads,
+                     response_serializer=lambda value: json.dumps(value).encode()),
+diff --git a/prototypes/runtime_pages_p0/resources.py b/prototypes/runtime_pages_p0/resources.py
+index 69c3deef..7abf8a53 100644
+--- a/prototypes/runtime_pages_p0/resources.py
++++ b/prototypes/runtime_pages_p0/resources.py
+@@ -9,6 +9,10 @@ from uuid import uuid4
+ from .contracts import BUDGET, Unavailable
+ 
+ 
++ASSET_BATCH_CHUNKS = 4
++ASSET_CHUNK_BYTES = 64 * 1024
++
++
+ class Resources:
+     def __init__(self):
+         self.lock = threading.RLock()
+@@ -152,24 +156,44 @@ class Assets:
+                 self.resources.release(self.lease_tokens.pop(entry[0]))
+ 
+     def read(self, request, context):
++        yield from self._read(request, context, 1)
++
++    _nativeRead = read
++
++    def readBatches(self, request, context):
++        # One executor dispatch owns at most four original wire chunks. This
++        # avoids a thread/asyncio round trip per 64KiB without growing either
++        # the read deadline or the runtime/job memory limits.
++        yield from self._read(request, context, ASSET_BATCH_CHUNKS)
++
++    def _read(self, request, context, batchSize):
+         asset_id = request["asset_id"]
+         with self.lock:
+             self._expire()
+             asset = self.entries.get(asset_id)
+             if asset is None or asset.job != request["job"]:
+                 raise KeyError("expired or wrong-job asset")
+-            token = self.resources.reserve(asset.job, "memory", 3 * 64 * 1024)
++            token = self.resources.reserve(asset.job, "memory", 3 * batchSize * ASSET_CHUNK_BYTES)
+             asset.readers += 1
+         deadline = time.monotonic() + BUDGET.read_seconds
+         try:
+             with asset.path.open("rb") as handle:
+                 while context.is_active():
+-                    if time.monotonic() > deadline:
+-                        raise TimeoutError("asset read deadline")
+-                    chunk = handle.read(64 * 1024)
+-                    if not chunk:
++                    chunks = []
++                    for _ in range(batchSize):
++                        if not context.is_active():
++                            return
++                        if time.monotonic() > deadline:
++                            raise TimeoutError("asset read deadline")
++                        chunk = handle.read(ASSET_CHUNK_BYTES)
++                        if not chunk:
++                            break
++                        chunks.append(chunk)
++                    if not chunks:
+                         return
+-                    yield chunk
++                    # Retain the reader and its charged buffers while even a
++                    # final partial batch is suspended in the RPC transport.
++                    yield chunks[0] if batchSize == 1 else tuple(chunks)
+         finally:
+             with self.lock:
+                 asset.readers -= 1
+diff --git a/tests/runtime/test_production_boundaries.py b/tests/runtime/test_production_boundaries.py
+index 107e3a17..dd8743cf 100644
+--- a/tests/runtime/test_production_boundaries.py
++++ b/tests/runtime/test_production_boundaries.py
+@@ -258,7 +258,7 @@ def testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount(tmp_path):
+         job = owner.start()
+         waitFor(lambda: any(r.identity.resultOrdinal >= 3 for r in owner.presentation.store.latest.values()))
+         result = next(iter(owner.presentation.store.latest.values()))
+-        assert result.status == "COMPLETE"
++        assert result.status == "COMPLETE", result.model_dump()
+         assert {s.sourceId: s.valueJson for s in result.sources if s.valueJson is not None} == {"count": "2", "judge": "false"}
+         assert {s.sourceId for s in result.sources} == {"count", "judge", "image"}
+         waitFor(lambda: any(e.workflowRunId == result.identity.invocationId

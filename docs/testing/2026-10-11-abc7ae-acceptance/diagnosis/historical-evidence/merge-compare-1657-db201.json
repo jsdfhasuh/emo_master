@@ -1,0 +1,30 @@
+{
+  "content": [
+    {
+      "type": "text",
+      "text": "Action completed."
+    }
+  ],
+  "structuredContent": {
+    "repository_full_name": "jsdfhasuh/emo_master",
+    "base": "1657a65e5700b963000090964bd1b54227e1d550",
+    "head": "db2014401017a04c832f69fa0fa4d208bccbbe53",
+    "status": "ahead",
+    "ahead_by": 1,
+    "behind_by": 0,
+    "total_commits": 1,
+    "too_large": null,
+    "base_commit": {
+      "sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "url": "https://api.github.com/repos/jsdfhasuh/emo_master/commits/1657a65e5700b963000090964bd1b54227e1d550",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/commit/1657a65e5700b963000090964bd1b54227e1d550"
+    },
+    "merge_base_commit": {
+      "sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "url": "https://api.github.com/repos/jsdfhasuh/emo_master/commits/1657a65e5700b963000090964bd1b54227e1d550",
+      "html_url": "https://github.com/jsdfhasuh/emo_master/commit/1657a65e5700b963000090964bd1b54227e1d550"
+    },
+    "files": []
+  },
+  "isError": false
+}

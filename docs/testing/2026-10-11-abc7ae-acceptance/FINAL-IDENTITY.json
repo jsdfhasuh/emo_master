@@ -1,0 +1,11 @@
+{
+  "acceptance_sha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "source_head_unchanged": true,
+  "tracked_diff": "",
+  "tracked_files": 5034,
+  "git_status": "?? docs.emofixture\n",
+  "untracked_explanation": "docs.emofixture is this round GUI-created test input set; original retained and byte-identical evidence copy retained.",
+  "source_identity_initial_file": "source-identity-initial.json",
+  "final_cleanup_file": "final-cleanup.json",
+  "scope": "Derived summary of frozen acceptance evidence; not a new acceptance of publication HEAD."
+}

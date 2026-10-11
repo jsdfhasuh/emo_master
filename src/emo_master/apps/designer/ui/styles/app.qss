@@ -12,13 +12,17 @@ QMenuBar { background: #ffffff; border-bottom: 1px solid #d8dce3; }
 QMenuBar::item { padding: 5px 12px; background: transparent; }
 QMenuBar::item:selected { background: #edf3ff; }
 QMenu { background: #ffffff; border: 1px solid #d8dce3; padding: 4px; }
-QMenu::item { padding: 7px 26px; border-radius: 4px; }
+/* Reserve a font-scaled caption column alongside icon and shortcut columns. */
+QMenu::item { min-width: 7em; padding: 7px 26px; border-radius: 4px; }
 QMenu::item:selected { background: #edf3ff; color: #1748b5; }
 QMenu::item:disabled { color: #9299a4; }
 QMenu::separator { height: 1px; background: #e5e7eb; margin: 4px 6px; }
 QToolBar { background: #ffffff; border: none; border-bottom: 1px solid #d8dce3; spacing: 4px; padding: 6px 8px; }
 QToolBar::separator { width: 1px; background: #e5e7eb; margin: 5px 6px; }
 QToolButton { background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 5px 7px; }
+/* Qt reserves only the extension extent (12 px in Fusion). Generic tool
+   padding consumes its entire paint rect and makes overflow invisible. */
+QToolButton#qt_toolbar_ext_button { padding: 0; border: none; border-radius: 0; }
 QToolButton:hover { background: #edf3ff; border-color: #d7e4ff; }
 QToolButton:pressed, QToolButton:checked { background: #dce8ff; color: #1748b5; }
 QToolButton:disabled { color: #9299a4; }

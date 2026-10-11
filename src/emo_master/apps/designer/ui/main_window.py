@@ -1612,6 +1612,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str, *, confirmed: bool = False) -> bool:
+        if not self._allowProjectReplacement():
+            return False
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return False
         self._saveWorkflowViewState()
@@ -2914,16 +2916,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def closeEvent(self, event) -> None:  # type: ignore[override]
         self._saveWorkflowViewState()
-        debug = getattr(self, "_workflowDebugWindow", None)
-        if debug is not None:
-            from shiboken2 import isValid
-            if isValid(debug) and not debug.disposed:
+        debugWindows = self._activeDebugWindows()
+        if debugWindows:
+            # Keep the transport and parameter owners alive until every debug
+            # owner confirms retirement. A sibling's success must not retry a
+            # failed close; only a fresh user close can do that.
+            for debug in debugWindows:
                 if not getattr(debug, "_closeParentAfter", False):
                     debug._closeParentAfter = True
-                    debug.destroyed.connect(lambda: QTimer.singleShot(0, self.close))
+                    debug.destroyed.connect(lambda: QTimer.singleShot(0, self._finishDebugShutdown))
                 debug.close()
-                event.ignore()
-                return
+            event.ignore()
+            return
         if not self.operatorEditorManager.resolveSqlitePending(self):
             event.ignore()
             return
@@ -3290,6 +3294,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         successMessagePrefix: str,
         failedMessagePrefix: str,
     ) -> bool:
+        if not self._allowProjectReplacement():
+            return False
         reply = self.runtimeClient.loadProject(projectPath)
         if getattr(reply, "ok", False):
             self.loadedProjectPath = projectPath
@@ -3304,6 +3310,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return False
 
     def showStartupProjectEntry(self) -> bool:
+        if not self._allowProjectReplacement():
+            return False
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.handleStartupProjectEntry(
                 self,
@@ -4346,11 +4354,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         debug.raise_()
         debug.activateWindow()
 
-    def hasActiveDebugSession(self) -> bool:
+    def _activeDebugWindows(self):
         from shiboken2 import isValid
         windows = [getattr(self, "_workflowDebugWindow", None)]
         windows.extend(getattr(editor, "_debugWindow", None) for editor in self.operatorEditorManager._windows.values())
-        return any(window is not None and isValid(window) and not window.disposed for window in windows)
+        return [window for window in windows if window is not None and isValid(window) and not window.disposed]
+
+    def hasActiveDebugSession(self) -> bool:
+        return bool(self._activeDebugWindows())
+
+    def _finishDebugShutdown(self) -> None:
+        from shiboken2 import isValid
+        if isValid(self) and not self.hasActiveDebugSession():
+            self.close()
+
+    def _allowProjectReplacement(self) -> bool:
+        if self.hasActiveDebugSession():
+            self.appendRuntimeLog("WARN", "请先明确结束调试并等待资源释放，再切换项目；当前项目保持不变。")
+            return False
+        return True
 
     def openWorkflowDebug(self) -> None:
         from shiboken2 import isValid

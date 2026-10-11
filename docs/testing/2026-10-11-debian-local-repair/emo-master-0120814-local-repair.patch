@@ -1,0 +1,1122 @@
+diff --git a/src/emo_master/apps/designer/operator_editors/workspace_window.py b/src/emo_master/apps/designer/operator_editors/workspace_window.py
+index ea7cc65..f8a33b8 100644
+--- a/src/emo_master/apps/designer/operator_editors/workspace_window.py
++++ b/src/emo_master/apps/designer/operator_editors/workspace_window.py
+@@ -26,12 +26,13 @@ def _validationMessage(value: object) -> str:
+ 
+ 
+ try:
+-    from PySide2.QtCore import Qt, Signal
++    from PySide2.QtCore import Qt, QTimer, Signal
+     from PySide2.QtWidgets import (
+         QDialog,
+         QHBoxLayout,
+         QMessageBox,
+         QPushButton,
++        QTabWidget,
+         QVBoxLayout,
+         QWidget,
+     )
+@@ -67,6 +68,9 @@ try:
+             self._dirtyHint = False
+             self._forceClosing = False
+             self._disposed = False
++            self._waitingForDebug = False
++            self._debugCloseConnected = None
++            self._disabledForDebugClose: list[tuple[QWidget, bool]] = []
+             self._debugWindow = None
+             self._openDebug = None
+             self._schemaForm: SchemaParamForm | None = None
+@@ -106,8 +110,14 @@ try:
+                 context.collectVariableBindings = self._bindingPanel.bindings
+                 bindingScroll = scrollContent(self._bindingPanel)
+                 self._bindingScroll = bindingScroll
+-                bindingScroll.setMaximumHeight(230)
+-                layout.addWidget(bindingScroll)
++                if self._scrollablePlcLayout:
++                    # Keep parameter bindings accessible without taking half
++                    # the height of the dedicated PLC runtime page.
++                    tabs = cast(QTabWidget, cast(QWidget, customRoot).findChild(QTabWidget, "plcTabs"))
++                    tabs.addTab(bindingScroll, "参数来源")
++                else:
++                    bindingScroll.setMaximumHeight(230)
++                    layout.addWidget(bindingScroll)
+                 if self._schemaForm is not None and self._bindingPanel.installInline(self._schemaForm):
+                     bindingScroll.hide()
+             buttons = QHBoxLayout()
+@@ -242,8 +252,69 @@ try:
+             self._forceClosing = True
+             self.close()
+ 
++        def done(self, result: int) -> None:
++            # Esc and QDialog completion must respect unapplied edits and
++            # unregister/dispose this editor through the same close path.
++            if not self._disposed:
++                self.close()
++                return
++            super().done(result)
++
++        def reject(self) -> None:
++            self.done(QDialog.Rejected)
++
++        def accept(self) -> None:
++            self.done(QDialog.Accepted)
++
++        def _restoreAfterDebugClose(self) -> None:
++            from shiboken2 import isValid
++            for widget, enabled in self._disabledForDebugClose:
++                if isValid(widget):
++                    widget.setEnabled(enabled)
++            self._disabledForDebugClose.clear()
++
++        def _debugCloseFailed(self) -> None:
++            self._waitingForDebug = False
++            self._forceClosing = False
++            self._restoreAfterDebugClose()
++            self.setError("调试资源释放失败，窗口已保留；请在调试窗口查看错误并明确重试关闭")
++
++        def _finishDebugClose(self) -> None:
++            from shiboken2 import isValid
++            if isValid(self) and self._waitingForDebug:
++                self._restoreAfterDebugClose()
++                self.close()
++
++        def _waitForDebugClose(self) -> bool:
++            from shiboken2 import isValid
++            debug = self._debugWindow
++            if debug is None or not isValid(debug) or debug.disposed:
++                return False
++            if not self._waitingForDebug:
++                self._waitingForDebug = True
++                # Disable only editor controls, never the child debug window:
++                # it must remain usable if cleanup fails and needs an explicit
++                # user action. Preserve each original enabled state.
++                def disable(layout):
++                    for index in range(layout.count()):
++                        item = layout.itemAt(index)
++                        widget = item.widget()
++                        if widget is not None and widget is not self._statusLabel:
++                            self._disabledForDebugClose.append((widget, widget.isEnabled()))
++                            widget.setEnabled(False)
++                        elif item.layout() is not None:
++                            disable(item.layout())
++                disable(self.layout())
++                self.setStatus("关闭中，等待调试资源实际释放…")
++            if self._debugCloseConnected is not debug:
++                self._debugCloseConnected = debug
++                debug.cleanupFailed.connect(self._debugCloseFailed)
++                debug.destroyed.connect(lambda: QTimer.singleShot(0, self._finishDebugClose))
++            debug.close()
++            return True
++
+         def closeEvent(self, event) -> None:  # type: ignore[override]
+-            if not self._forceClosing and self.isDirty():
++            if not self._forceClosing and not self._waitingForDebug and self.isDirty():
+                 answer = QMessageBox.question(
+                     self,
+                     "未保存的参数",
+@@ -257,6 +328,9 @@ try:
+                 if answer == QMessageBox.Save and not self.applyChanges():
+                     event.ignore()
+                     return
++            if self._waitForDebugClose():
++                event.ignore()
++                return
+             self._dispose()
+             event.accept()
+             try:
+diff --git a/src/emo_master/apps/designer/ui/main_window.py b/src/emo_master/apps/designer/ui/main_window.py
+index 16bf475..dff6d3e 100644
+--- a/src/emo_master/apps/designer/ui/main_window.py
++++ b/src/emo_master/apps/designer/ui/main_window.py
+@@ -1612,6 +1612,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
+         return bool(ok)
+ 
+     def loadProjectDirectory(self, projectDirPath: str, *, confirmed: bool = False) -> bool:
++        if not self._allowProjectReplacement():
++            return False
+         if not self.operatorEditorManager.resolveSqlitePending(self):
+             return False
+         self._saveWorkflowViewState()
+@@ -2914,16 +2916,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
+ 
+     def closeEvent(self, event) -> None:  # type: ignore[override]
+         self._saveWorkflowViewState()
+-        debug = getattr(self, "_workflowDebugWindow", None)
+-        if debug is not None:
+-            from shiboken2 import isValid
+-            if isValid(debug) and not debug.disposed:
++        debugWindows = self._activeDebugWindows()
++        if debugWindows:
++            # Keep the transport and parameter owners alive until every debug
++            # owner confirms retirement. A sibling's success must not retry a
++            # failed close; only a fresh user close can do that.
++            for debug in debugWindows:
+                 if not getattr(debug, "_closeParentAfter", False):
+                     debug._closeParentAfter = True
+-                    debug.destroyed.connect(lambda: QTimer.singleShot(0, self.close))
++                    debug.destroyed.connect(lambda: QTimer.singleShot(0, self._finishDebugShutdown))
+                 debug.close()
+-                event.ignore()
+-                return
++            event.ignore()
++            return
+         if not self.operatorEditorManager.resolveSqlitePending(self):
+             event.ignore()
+             return
+@@ -3290,6 +3294,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
+         successMessagePrefix: str,
+         failedMessagePrefix: str,
+     ) -> bool:
++        if not self._allowProjectReplacement():
++            return False
+         reply = self.runtimeClient.loadProject(projectPath)
+         if getattr(reply, "ok", False):
+             self.loadedProjectPath = projectPath
+@@ -3304,6 +3310,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
+         return False
+ 
+     def showStartupProjectEntry(self) -> bool:
++        if not self._allowProjectReplacement():
++            return False
+         ok, loadedProjectPath, currentProjectDir = (
+             self.projectController.handleStartupProjectEntry(
+                 self,
+@@ -4346,11 +4354,25 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
+         debug.raise_()
+         debug.activateWindow()
+ 
+-    def hasActiveDebugSession(self) -> bool:
++    def _activeDebugWindows(self):
+         from shiboken2 import isValid
+         windows = [getattr(self, "_workflowDebugWindow", None)]
+         windows.extend(getattr(editor, "_debugWindow", None) for editor in self.operatorEditorManager._windows.values())
+-        return any(window is not None and isValid(window) and not window.disposed for window in windows)
++        return [window for window in windows if window is not None and isValid(window) and not window.disposed]
++
++    def hasActiveDebugSession(self) -> bool:
++        return bool(self._activeDebugWindows())
++
++    def _finishDebugShutdown(self) -> None:
++        from shiboken2 import isValid
++        if isValid(self) and not self.hasActiveDebugSession():
++            self.close()
++
++    def _allowProjectReplacement(self) -> bool:
++        if self.hasActiveDebugSession():
++            self.appendRuntimeLog("WARN", "请先明确结束调试并等待资源释放，再切换项目；当前项目保持不变。")
++            return False
++        return True
+ 
+     def openWorkflowDebug(self) -> None:
+         from shiboken2 import isValid
+diff --git a/src/emo_master/apps/designer/ui/operator_debug_window.py b/src/emo_master/apps/designer/ui/operator_debug_window.py
+index c154891..5061c6e 100644
+--- a/src/emo_master/apps/designer/ui/operator_debug_window.py
++++ b/src/emo_master/apps/designer/ui/operator_debug_window.py
+@@ -27,6 +27,8 @@ class Completion(QObject):
+ 
+ 
+ class OperatorDebugWindow(QDialog):
++    cleanupFailed = Signal()
++
+     def __init__(self, editor, valid=lambda: True):
+         super().__init__(editor)
+         self.editor, self.valid = editor, valid
+@@ -40,6 +42,7 @@ class OperatorDebugWindow(QDialog):
+         self.commandVersion = 0
+         self.pollCommandVersion = 0
+         self.closing = False
++        self.closeSent = False
+         self.disposed = False
+         self.state = "STARTING"
+         self.executionId = ""
+@@ -399,8 +402,10 @@ class OperatorDebugWindow(QDialog):
+             if name == "open":
+                 self.state = "FAULTED"
+             if name == "close":
++                self.closeSent = False
+                 self.closing = False
+                 self.state = "FAULTED"
++                self.cleanupFailed.emit()
+             self.refreshControls()
+             self.drainOutput()
+             return
+@@ -566,8 +571,8 @@ class OperatorDebugWindow(QDialog):
+         self.scaleImage()
+ 
+     def beginClose(self):
+-        if not self.busy:
+-            self.submit("close", self.connection.close)
++        if not self.busy and not self.closeSent:
++            self.closeSent = self.submit("close", self.connection.close)
+ 
+     def detach(self):
+         """Parent lifetime ended; keep the pinned connection alive until cleanup finishes."""
+@@ -577,15 +582,34 @@ class OperatorDebugWindow(QDialog):
+         self.artifacts.cancelled.set()
+         self.timer.stop()
+         self.connection.stop.set()
+-        self.pool.submit(self.connection.close)
++        if not self.closeSent:
++            self.closeSent = True
++            self.pool.submit(self.connection.close)
+         self.pool.shutdown(wait=False)
+         self.controls.shutdown(wait=False)
+ 
++    def done(self, result):
++        # QDialog's Esc/reject/accept paths bypass closeEvent. Keep the
++        # resource-owning window alive until the normal async close confirms
++        # retirement, exactly as the title-bar and End buttons do.
++        if not self.disposed:
++            self.close()
++            return
++        super().done(result)
++
++    def reject(self):
++        self.done(QDialog.Rejected)
++
++    def accept(self):
++        self.done(QDialog.Accepted)
++
+     def closeEvent(self, event):
+         if self.disposed:
+             event.accept()
+             return
+         event.ignore()
++        if self.closing:
++            return
+         self.closing = True
+         self.artifacts.cancelled.set()
+         self.timer.stop()
+diff --git a/src/emo_master/apps/designer/ui/styles/app.qss b/src/emo_master/apps/designer/ui/styles/app.qss
+index fc15f41..9562917 100644
+--- a/src/emo_master/apps/designer/ui/styles/app.qss
++++ b/src/emo_master/apps/designer/ui/styles/app.qss
+@@ -12,13 +12,17 @@ QMenuBar { background: #ffffff; border-bottom: 1px solid #d8dce3; }
+ QMenuBar::item { padding: 5px 12px; background: transparent; }
+ QMenuBar::item:selected { background: #edf3ff; }
+ QMenu { background: #ffffff; border: 1px solid #d8dce3; padding: 4px; }
+-QMenu::item { padding: 7px 26px; border-radius: 4px; }
++/* Reserve a font-scaled caption column alongside icon and shortcut columns. */
++QMenu::item { min-width: 7em; padding: 7px 26px; border-radius: 4px; }
+ QMenu::item:selected { background: #edf3ff; color: #1748b5; }
+ QMenu::item:disabled { color: #9299a4; }
+ QMenu::separator { height: 1px; background: #e5e7eb; margin: 4px 6px; }
+ QToolBar { background: #ffffff; border: none; border-bottom: 1px solid #d8dce3; spacing: 4px; padding: 6px 8px; }
+ QToolBar::separator { width: 1px; background: #e5e7eb; margin: 5px 6px; }
+ QToolButton { background: transparent; border: 1px solid transparent; border-radius: 4px; padding: 5px 7px; }
++/* Qt reserves only the extension extent (12 px in Fusion). Generic tool
++   padding consumes its entire paint rect and makes overflow invisible. */
++QToolButton#qt_toolbar_ext_button { padding: 0; border: none; border-radius: 0; }
+ QToolButton:hover { background: #edf3ff; border-color: #d7e4ff; }
+ QToolButton:pressed, QToolButton:checked { background: #dce8ff; color: #1748b5; }
+ QToolButton:disabled { color: #9299a4; }
+diff --git a/src/emo_master/apps/designer/ui/workflow_debug_window.py b/src/emo_master/apps/designer/ui/workflow_debug_window.py
+index eef3127..a7535fd 100644
+--- a/src/emo_master/apps/designer/ui/workflow_debug_window.py
++++ b/src/emo_master/apps/designer/ui/workflow_debug_window.py
+@@ -556,6 +556,21 @@ class WorkflowDebugWindow(QDialog):
+         super().resizeEvent(event)
+         self.scaleImage()
+ 
++    def done(self, result):
++        # QDialog's Esc/reject/accept paths bypass closeEvent. Keep the
++        # resource-owning window alive until the normal async close confirms
++        # retirement, exactly as the title-bar and End buttons do.
++        if not self.disposed:
++            self.close()
++            return
++        super().done(result)
++
++    def reject(self):
++        self.done(QDialog.Rejected)
++
++    def accept(self):
++        self.done(QDialog.Accepted)
++
+     def closeEvent(self, event):
+         if self.disposed:
+             event.accept()
+diff --git a/src/emo_master/plugins/builtins/_plc_editor.py b/src/emo_master/plugins/builtins/_plc_editor.py
+index a38ca95..ca748fa 100644
+--- a/src/emo_master/plugins/builtins/_plc_editor.py
++++ b/src/emo_master/plugins/builtins/_plc_editor.py
+@@ -11,7 +11,7 @@ from threading import Event, Lock, Thread
+ from typing import Any, cast
+ from uuid import uuid4
+ 
+-from PySide2.QtCore import QDateTime, QTimer, Qt
++from PySide2.QtCore import QDateTime, QEvent, QSize, QTimer, Qt
+ from PySide2.QtGui import QValidator
+ from PySide2.QtWidgets import (
+     QAbstractItemView,
+@@ -244,6 +244,37 @@ def _runCleanup(context: Any, cleanup: _Cleanup, results: queue.Queue) -> None:
+     results.put(result)
+ 
+ 
++class _RuntimeContent(QWidget):
++    # QScrollArea otherwise uses the preferred heightForWidth (including the
++    # tables' preferred 192 px) as a minimum rather than their 100 px minimum.
++    # Child layouts still wrap labels at the available width.
++    def hasHeightForWidth(self) -> bool:
++        return False
++
++    def heightForWidth(self, width: int) -> int:
++        return -1
++
++
++class _FullHeightSection(QScrollArea):
++    """Retain the section container without a nested vertical scroll target."""
++    def minimumSizeHint(self):
++        widget = self.widget()
++        width = max(1, self.width() - 2 * self.frameWidth())
++        height = max(widget.minimumSizeHint().height(), widget.heightForWidth(width))
++        return QSize(0, height + 2 * self.frameWidth())
++
++    def sizeHint(self):
++        return self.minimumSizeHint()
++
++    def event(self, event):
++        result = super().event(event)
++        if event.type() in (QEvent.Resize, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange, QEvent.Show):
++            if self.widget() is not None:
++                self.setMinimumHeight(self.minimumSizeHint().height())
++                self.updateGeometry()
++        return result
++
++
+ class PlcEditorController:
+     def __init__(self) -> None:
+         self.context: Any = None
+@@ -327,7 +358,14 @@ class PlcEditorController:
+         return label
+ 
+     def _buildRuntimePage(self) -> None:
+-        runtimeLayout = self.runtimePage.layout()
++        # Keep one scrollable runtime page. Independent 24 px / 0 px scroll
++        # regions lost their controls when the production parameter-source
++        # panel and result-table minimums consumed a small window's height.
++        content = _RuntimeContent()
++        runtimeLayout = QVBoxLayout(content)
++        self.runtimeScroll = scrollContent(content, name="plcRuntimeScroll")
++        self.runtimePage.layout().setContentsMargins(0, 0, 0, 0)
++        self.runtimePage.layout().addWidget(self.runtimeScroll)
+         runtimeLayout.setContentsMargins(6, 4, 6, 4)
+         runtimeLayout.setSpacing(4)
+         self.runtimePage.setMinimumWidth(520)
+@@ -393,9 +431,11 @@ class PlcEditorController:
+             ("device", self.deviceCombo), ("startAddress", self.addressSpin),
+             ("dataType", self.dataTypeCombo), ("count", self.countSpin),
+         )):
+-            tools.addWidget(self._parameterLabel(name, control), 0, column * 2)
+-            tools.addWidget(control, 0, column * 2 + 1)
+-        tools.setColumnStretch(3, 1)
++            # A label/control pair on one line clipped Chinese captions at
++            # 640 px. Four caption-over-control columns keep both readable.
++            tools.addWidget(self._parameterLabel(name, control), 0, column)
++            tools.addWidget(control, 1, column)
++        tools.setColumnStretch(1, 1)
+         layout.addLayout(tools)
+         actions = QHBoxLayout()
+         actions.setSpacing(6)
+@@ -415,10 +455,7 @@ class PlcEditorController:
+         actions.addStretch(1)
+         actions.addWidget(self.writeEnabledCheck)
+         actions.addWidget(self.writeButton)
+-        self.controlsScroll = scrollContent(controls, name="plcControlsScroll")
+-        self.controlsScroll.setMinimumHeight(24)
+-        self.controlsScroll.setMaximumHeight(96)
+-        runtimeLayout.addWidget(self.controlsScroll)
++        runtimeLayout.addWidget(controls)
+         runtimeLayout.addLayout(actions)
+         layout = runtimeLayout
+ 
+@@ -458,17 +495,16 @@ class PlcEditorController:
+             spin = self._spin("debug_" + name, spec["minimum"], spec["maximum"], spec["default"])
+             self._endpointControls[name] = spin
+             advancedForm.addRow(self._parameterLabel(name, spin), spin)
+-        self.advancedScroll = QScrollArea()
++        self.advancedScroll = _FullHeightSection()
+         self.advancedScroll.setObjectName("advancedEndpointScroll")
+         self.advancedScroll.setWidgetResizable(True)
+         self.advancedScroll.setFrameShape(QScrollArea.NoFrame)
+         self.advancedScroll.setWidget(advanced)
+-        self.advancedScroll.setMaximumHeight(110)
+-        self.advancedScroll.setMinimumHeight(0)
+-        self.advancedScroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
++        # The outer page owns scrolling, including advanced fields. Never
++        # collapse an expanded section to zero height or nest wheel targets.
++        self.advancedScroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
+         self.advancedScroll.hide()
+-        # Share spare height with the result tables while allowing short windows.
+-        layout.addWidget(self.advancedScroll, 1)
++        layout.addWidget(self.advancedScroll)
+         self.advancedButton.toggled.connect(self._toggleAdvanced)
+         self.deviceCombo.currentTextChanged.connect(self._deviceChanged)
+         self.dataTypeCombo.currentTextChanged.connect(self._shapeChanged)
+diff --git a/tests/designer/test_debug_example_interactions.py b/tests/designer/test_debug_example_interactions.py
+index bc36d46..cc31349 100644
+--- a/tests/designer/test_debug_example_interactions.py
++++ b/tests/designer/test_debug_example_interactions.py
+@@ -7,7 +7,7 @@ import emo_master  # noqa: F401
+ import cv2
+ import numpy as np
+ import pytest
+-from PySide2.QtCore import Qt, QTimer
++from PySide2.QtCore import QCoreApplication, QEvent, Qt, QTimer
+ from PySide2.QtTest import QTest
+ from PySide2.QtWidgets import QApplication, QDialog, QDialogButtonBox, QFileDialog
+ from shiboken2 import isValid
+@@ -46,8 +46,19 @@ def exampleWindow(runtime, ownedDesignerWindow, filename):
+         if dialog is not None and isValid(dialog):
+             dialog.close()
+             wait(lambda: not isValid(dialog))
++        editors = tuple(window.operatorEditorManager._windows.values())
++        debugWindows = tuple(getattr(editor, "_debugWindow", None) for editor in editors)
+         window.operatorEditorManager.closeAll()
+-        wait(lambda: not runtime.operatorDebugManager.ownsResources())
++        def retired():
++            # Runtime retirement can precede the queued close acknowledgement.
++            # Deliver deferred Qt deletion before the native owner asserts that
++            # the main window can close synchronously; never repeat the RPC.
++            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
++            return (not runtime.operatorDebugManager.ownsResources()
++                    and all(debug is None or not isValid(debug) for debug in debugWindows)
++                    and all(not isValid(editor) for editor in editors)
++                    and window.operatorEditorManager.count() == 0)
++        wait(retired)
+ 
+ 
+ def paused(dialog, nodeId, workflowId, *, after=0, phase="node.before"):
+diff --git a/tests/designer/test_operator_debug_window.py b/tests/designer/test_operator_debug_window.py
+index 60dff49..82c73c0 100644
+--- a/tests/designer/test_operator_debug_window.py
++++ b/tests/designer/test_operator_debug_window.py
+@@ -224,8 +224,16 @@ def testUnsavedCanvasNodeContextEntryLeavesDraftHistoryUntouched(runtime, tmp_pa
+         assert window.pageCoordinator.session.payload() == before
+         assert (root/"project.json").read_bytes() == original
+     finally:
++        from PySide2.QtCore import QCoreApplication, QEvent
+         window.operatorEditorManager.closeAll()
+-        wait(lambda: not runtime.operatorDebugManager.ownsResources())
++        def retired():
++            # The Runtime ACK reaches Qt after resourcesHeld becomes false.
++            # Keep the original deadline, but verify the native owners too.
++            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
++            return (not runtime.operatorDebugManager.ownsResources()
++                    and not isValid(debug) and not isValid(editor)
++                    and window.operatorEditorManager.count() == 0)
++        wait(retired)
+ 
+ 
+ def testDebugActionCannotRunInPageWorkspaceOrOnControlNodes(canvas, monkeypatch):
+diff --git a/tests/designer/test_debug_dialog_retirement.py b/tests/designer/test_debug_dialog_retirement.py
+new file mode 100644
+index 0000000..22dd56f
+--- /dev/null
++++ b/tests/designer/test_debug_dialog_retirement.py
+@@ -0,0 +1,216 @@
++"""Native QDialog completion routes must retire the pinned debug owner."""
++import pytest
++import emo_master  # noqa: F401
++from PySide2.QtCore import Qt
++from PySide2.QtTest import QTest
++from PySide2.QtWidgets import QDialog
++from shiboken2 import isValid
++
++from emo_master.apps.designer.services.runtime_client import RuntimeClient
++from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
++from emo_master.apps.designer.ui.workflow_debug_window import WorkflowDebugWindow
++from tests.designer.test_operator_debug_window import editorFor, wait
++from tests.runtime.test_operator_debug_rpc import runtime as runtime
++from tests.runtime.test_workflow_debug_control import nestedProject
++
++
++@pytest.mark.parametrize('kind', ['operator', 'workflow'])
++@pytest.mark.parametrize('route', ['escape', 'reject', 'accept', 'done', 'window_close', 'end'])
++def testEveryDialogExitRetiresWorkerBeforeDeletion(runtime, retainedQtApplication, monkeypatch, kind, route):
++    editor = None
++    if kind == 'operator':
++        editor, *_ = editorFor(runtime)
++        dialog = OperatorDebugWindow(editor)
++        editor._debugWindow = dialog
++        ready = dialog.run.isEnabled
++    else:
++        dialog = WorkflowDebugWindow(RuntimeClient(runtime), nestedProject(), 'main')
++        ready = dialog.startButton.isEnabled
++    dialog.show()
++    connection = dialog.connection
++    calls = []
++    original = connection.call
++    def observed(method, **fields):
++        calls.append(method)
++        return original(method, **fields)
++    monkeypatch.setattr(connection, 'call', observed)
++    second = None
++    try:
++        wait(ready)
++        assert runtime.operatorDebugManager.ownsResources()
++        if route == 'escape':
++            QTest.keyClick(dialog, Qt.Key_Escape)
++        elif route == 'end':
++            QTest.mouseClick(dialog.end, Qt.LeftButton)
++        elif route == 'done':
++            dialog.done(QDialog.Rejected)
++        elif route == 'window_close':
++            dialog.close()
++        else:
++            getattr(dialog, route)()
++        wait(lambda: not isValid(dialog))
++        assert connection.stop.is_set(), 'Window vanished without stopping its lease renewer'
++        assert connection.renewer is None or not connection.renewer.is_alive()
++        assert not runtime.operatorDebugManager.ownsResources()
++        assert calls.count('CloseOperatorDebugSession') == 1
++        second = WorkflowDebugWindow(RuntimeClient(runtime), nestedProject(), 'main')
++        second.show()
++        wait(lambda: second.startButton.isEnabled())
++    finally:
++        if second is not None and isValid(second):
++            second.close()
++            wait(lambda: not isValid(second))
++        if isValid(dialog):
++            dialog.close()
++            wait(lambda: not isValid(dialog))
++        elif not connection.stop.is_set():
++            connection.close()
++        if editor is not None:
++            editor.forceClose()
++        wait(lambda: not runtime.operatorDebugManager.ownsResources())
++
++
++@pytest.mark.parametrize('kind', ['operator', 'workflow'])
++def testRepeatedEscapeDuringSlowOpenWaitsForOriginalOwner(runtime, retainedQtApplication, monkeypatch, kind):
++    import threading
++    from emo_master.apps.designer.services.operator_debug import DebugConnection
++    from emo_master.apps.designer.services.workflow_debug import WorkflowDebugConnection
++    entered, release = threading.Event(), threading.Event()
++    cls, method = (DebugConnection, 'open') if kind == 'operator' else (WorkflowDebugConnection, 'openWorkflow')
++    original = getattr(cls, method)
++    def slowOpen(self, *args, **kwargs):
++        entered.set()
++        assert release.wait(10), 'Test gate was never released'
++        return original(self, *args, **kwargs)
++    monkeypatch.setattr(cls, method, slowOpen)
++    editor = None
++    if kind == 'operator':
++        editor, *_ = editorFor(runtime)
++        dialog = OperatorDebugWindow(editor)
++        editor._debugWindow = dialog
++    else:
++        dialog = WorkflowDebugWindow(RuntimeClient(runtime), nestedProject(), 'main')
++    dialog.show()
++    connection = dialog.connection
++    try:
++        wait(entered.is_set)
++        QTest.keyClick(dialog, Qt.Key_Escape)
++        dialog.reject()
++        dialog.close()
++        assert dialog.isVisible() and dialog.closing
++        assert not dialog.disposed
++        release.set()
++        wait(lambda: not isValid(dialog))
++        assert connection.stop.is_set()
++        assert not connection.renewer.is_alive()
++        assert not runtime.operatorDebugManager.ownsResources()
++    finally:
++        release.set()
++        if isValid(dialog):
++            dialog.close()
++            wait(lambda: not isValid(dialog))
++        if editor is not None:
++            editor.forceClose()
++
++
++@pytest.mark.parametrize('kind', ['operator', 'workflow'])
++def testFailedCloseStaysVisibleAndExplicitCloseCanRecover(runtime, retainedQtApplication, monkeypatch, kind):
++    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
++    editor = None
++    if kind == 'operator':
++        editor, *_ = editorFor(runtime)
++        dialog = OperatorDebugWindow(editor)
++        editor._debugWindow = dialog
++        ready = dialog.run.isEnabled
++    else:
++        dialog = WorkflowDebugWindow(RuntimeClient(runtime), nestedProject(), 'main')
++        ready = dialog.startButton.isEnabled
++    dialog.show()
++    original = dialog.connection.close
++    attempts = []
++    def failOnce():
++        attempts.append('close')
++        if len(attempts) == 1:
++            raise RuntimeClientError('E_RESOURCE_CLEANUP_FAILED', 'Injected unavailable cleanup acknowledgement')
++        return original()
++    monkeypatch.setattr(dialog.connection, 'close', failOnce)
++    try:
++        wait(ready)
++        QTest.keyClick(dialog, Qt.Key_Escape)
++        wait(lambda: not dialog.closing)
++        assert dialog.isVisible() and not dialog.disposed
++        assert runtime.operatorDebugManager.ownsResources()
++        assert 'E_RESOURCE_CLEANUP_FAILED' in dialog.status.text()
++        assert len(attempts) == 1  # no automatic replay
++        QTest.mouseClick(dialog.end, Qt.LeftButton)
++        wait(lambda: not isValid(dialog))
++        assert len(attempts) == 2
++        assert not runtime.operatorDebugManager.ownsResources()
++    finally:
++        if isValid(dialog):
++            dialog.close()
++            wait(lambda: not isValid(dialog))
++        if editor is not None:
++            editor.forceClose()
++
++
++@pytest.mark.parametrize('force', [False, True])
++def testParentWaitsForInFlightCleanupFailureAndExplicitRecovery(runtime, retainedQtApplication, monkeypatch, force):
++    import threading
++    from PySide2.QtCore import QCoreApplication, QEvent
++    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
++    editor, *_ = editorFor(runtime)
++    dialog = OperatorDebugWindow(editor)
++    editor._debugWindow = dialog
++    dialog.show()
++    entered, release = threading.Event(), threading.Event()
++    attempts, closed = [], []
++    editor._onClosed = lambda *_: closed.append('closed')
++    original = dialog.connection.close
++    def close():
++        attempts.append('close')
++        if len(attempts) == 1:
++            entered.set()
++            assert release.wait(10), 'Cleanup fault-injection gate was not released'
++            raise RuntimeClientError('E_RESOURCE_CLEANUP_FAILED', 'Injected pending close failure')
++        return original()
++    monkeypatch.setattr(dialog.connection, 'close', close)
++    try:
++        wait(dialog.run.isEnabled)
++        dialog.close()
++        wait(entered.is_set)
++        editor.forceClose() if force else editor.close()
++        assert editor.isVisible() and dialog.isVisible()
++        assert not editor._disposed and not dialog.disposed
++        assert not editor._applyButton.isEnabled()
++        release.set()
++        wait(lambda: not dialog.closing and not editor._waitingForDebug)
++        assert editor._applyButton.isEnabled() and editor._closeButton.isEnabled()
++        assert editor.isVisible() and dialog.isVisible()
++        assert 'E_RESOURCE_CLEANUP_FAILED' in dialog.status.text()
++        assert runtime.operatorDebugManager.ownsResources()
++        assert attempts == ['close'] and not closed
++        assert not editor._forceClosing
++        # After a failed forced close, a normal close must again ask about edits.
++        from PySide2.QtWidgets import QMessageBox
++        monkeypatch.setattr(editor, 'isDirty', lambda: True)
++        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Cancel)
++        editor.close()
++        assert editor.isVisible() and dialog.isVisible()
++        assert attempts == ['close'] and not editor._waitingForDebug
++        monkeypatch.setattr(editor, 'isDirty', lambda: False)
++        # A fresh, explicit parent-close action requests cleanup once.
++        editor.close()
++        def retired():
++            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
++            return not isValid(dialog) and not isValid(editor)
++        wait(retired)
++        assert attempts == ['close', 'close'] and closed == ['closed']
++        assert not runtime.operatorDebugManager.ownsResources()
++    finally:
++        release.set()
++        if isValid(dialog):
++            dialog.close()
++            wait(lambda: not isValid(dialog))
++        if isValid(editor):
++            editor.forceClose()
+diff --git a/tests/designer/test_debug_main_window_boundaries.py b/tests/designer/test_debug_main_window_boundaries.py
+new file mode 100644
+index 0000000..4780a80
+--- /dev/null
++++ b/tests/designer/test_debug_main_window_boundaries.py
+@@ -0,0 +1,166 @@
++"""Main-window boundaries retain debug owners until confirmed retirement."""
++from types import SimpleNamespace
++
++import pytest
++from PySide2.QtCore import QCoreApplication, QEvent, Qt
++from PySide2.QtWidgets import QDialog
++from shiboken2 import isValid
++
++from tests.designer.test_operator_debug_window import wait
++from tests.runtime.test_operator_debug_rpc import runtime as runtime
++from emo_master.apps.designer.operator_editors import EditorKey
++
++
++class PendingDebug(QDialog):
++    def __init__(self, parent):
++        super().__init__(parent)
++        self.setAttribute(Qt.WA_DeleteOnClose)
++        self.disposed = False
++        self.closing = False
++        self.attempts = 0
++        self.show()
++
++    def closeEvent(self, event):
++        if self.disposed:
++            event.accept()
++            return
++        event.ignore()
++        if not self.closing:
++            self.closing = True
++            self.attempts += 1
++
++    def fail(self):
++        self.closing = False
++
++    def retire(self):
++        self.disposed = True
++        self.close()
++        QCoreApplication.sendPostedEvents(self, QEvent.DeferredDelete)
++
++
++def addOperator(window, debug):
++    window.operatorEditorManager._windows[EditorKey('detached-test', 'main', 'node')] = SimpleNamespace(
++        _debugWindow=debug, context=SimpleNamespace(operatorId='vision.value.number',
++            invalidatePreviewSources=lambda: None), forceClose=lambda: None)
++
++
++@pytest.mark.parametrize('kind', ['operator', 'workflow'])
++@pytest.mark.parametrize('entry', ['directory', 'runtime', 'startup'])
++def testProjectReplacementRefusesLiveDebugBeforeMutations(ownedDesignerWindow, monkeypatch, kind, entry):
++    client = SimpleNamespace(listOperators=lambda: [])
++    window = ownedDesignerWindow(client)
++    debug = PendingDebug(window)
++    if kind == 'operator':
++        addOperator(window, debug)
++    else:
++        window._workflowDebugWindow = debug
++    called = []
++    monkeypatch.setattr(window.operatorEditorManager, 'resolveSqlitePending', lambda *_: called.append('dirty'))
++    monkeypatch.setattr(window.projectController, 'loadProjectDirectory', lambda *_args, **_kw: called.append('load'))
++    monkeypatch.setattr(window.projectController, 'handleStartupProjectEntry', lambda *_: called.append('startup'))
++    client.loadProject = lambda *_: called.append('runtime')
++    before = window.loadedProjectPath
++    try:
++        if entry == 'directory':
++            result = window.loadProjectDirectory('/not-opened.emoproj', confirmed=True)
++        elif entry == 'runtime':
++            result = window.loadProjectFromPath('/not-opened.emoproj', 'loaded', 'failed')
++        else:
++            result = window.showStartupProjectEntry()
++        assert result is False and not called
++        assert window.loadedProjectPath == before
++        assert debug.attempts == 0 and isValid(debug)
++    finally:
++        debug.retire()
++        window.operatorEditorManager._windows.clear()
++        monkeypatch.undo()
++
++
++def testMainCloseWaitsForAllDebugOwnersWithoutSiblingFailureReplay(ownedDesignerWindow):
++    window = ownedDesignerWindow(SimpleNamespace(listOperators=lambda: []))
++    window.show()
++    operator = PendingDebug(window)
++    workflow = PendingDebug(window)
++    addOperator(window, operator)
++    window._workflowDebugWindow = workflow
++    try:
++        assert not window.close()
++        assert window.isVisible() and not window.runtimeController._closed
++        assert operator.attempts == workflow.attempts == 1
++        operator.fail()
++        workflow.retire()
++        # A successful sibling's queued callback must not re-close the failed owner.
++        for _ in range(3):
++            QCoreApplication.processEvents()
++        assert operator.attempts == 1
++        assert window.isVisible() and not window.runtimeController._closed
++        assert not window.close()  # explicit retry
++        assert operator.attempts == 2
++        operator.retire()
++        wait(lambda: window.runtimeController._closed)
++        assert not window.isVisible()
++    finally:
++        for debug in (operator, workflow):
++            if isValid(debug):
++                debug.retire()
++        window.operatorEditorManager._windows.clear()
++
++
++def testNoProjectNoDebugStillAllowsNormalClose(ownedDesignerWindow):
++    window = ownedDesignerWindow(SimpleNamespace(listOperators=lambda: []))
++    assert window.loadedProjectPath is None
++    assert window._allowProjectReplacement()
++    window.show()
++    assert window.close()
++    assert window.runtimeController._closed
++
++
++def testMainCloseRetainsRealRuntimeUntilExplicitCleanupRecovery(runtime, ownedDesignerWindow, monkeypatch):
++    import threading
++    from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
++    from emo_master.apps.designer.ui.operator_debug_window import OperatorDebugWindow
++    from tests.designer.test_operator_debug_window import editorFor
++    window = ownedDesignerWindow(RuntimeClient(runtime))
++    editor, *_ = editorFor(runtime)
++    editor.setParent(window, Qt.Dialog)
++    window.operatorEditorManager._windows[editor.key] = editor
++    editor._onClosed = window.operatorEditorManager._onWindowClosed
++    dialog = OperatorDebugWindow(editor)
++    editor._debugWindow = dialog
++    window.show()
++    editor.show()
++    dialog.show()
++    entered, release = threading.Event(), threading.Event()
++    attempts = []
++    original = dialog.connection.close
++    def close():
++        attempts.append('close')
++        if len(attempts) == 1:
++            entered.set()
++            assert release.wait(10)
++            raise RuntimeClientError('E_RESOURCE_CLEANUP_FAILED', 'Injected close failure')
++        return original()
++    monkeypatch.setattr(dialog.connection, 'close', close)
++    try:
++        wait(dialog.run.isEnabled)
++        assert not window.close()
++        wait(entered.is_set)
++        assert window.isVisible() and editor.isVisible() and dialog.isVisible()
++        assert not window.runtimeController._closed
++        release.set()
++        wait(lambda: not dialog.closing)
++        assert runtime.operatorDebugManager.ownsResources()
++        assert window.isVisible() and not window.runtimeController._closed
++        assert attempts == ['close']
++        assert not window.close()
++        wait(lambda: window.runtimeController._closed)
++        assert attempts == ['close', 'close']
++        assert not runtime.operatorDebugManager.ownsResources()
++        assert not window.isVisible()
++    finally:
++        release.set()
++        if isValid(dialog):
++            dialog.close()
++            wait(lambda: not isValid(dialog))
++        if isValid(editor):
++            editor.forceClose()
+diff --git a/tests/designer/test_parameter_editor_retirement.py b/tests/designer/test_parameter_editor_retirement.py
+new file mode 100644
+index 0000000..839541f
+--- /dev/null
++++ b/tests/designer/test_parameter_editor_retirement.py
+@@ -0,0 +1,77 @@
++"""Every parameter-editor dismissal preserves the dirty-edit contract."""
++import json
++
++import pytest
++import emo_master  # noqa: F401
++from PySide2.QtCore import QCoreApplication, QEvent, Qt
++from PySide2.QtTest import QTest
++from PySide2.QtWidgets import QDialog, QLineEdit, QMessageBox
++from shiboken2 import isValid
++
++from emo_master.apps.designer.operator_editors import OperatorEditorManager
++from tests.designer.test_operator_debug_window import wait
++from tests.designer.test_operator_editor_manager import _Settings, _Runtime
++
++
++@pytest.mark.parametrize('route', ['escape', 'reject', 'accept', 'done'])
++@pytest.mark.parametrize('answer', [QMessageBox.Cancel, QMessageBox.Discard, QMessageBox.Save])
++def testCompletionRoutesRespectDirtyPromptAndUnregister(tmp_path, monkeypatch, route, answer):
++    model = {'value': 7}
++    project = tmp_path / 'original.emoproj'
++    project.write_text(json.dumps(model))
++    original = project.read_bytes()
++    applied, questions, closed = [], [], []
++    def apply(_key, params):
++        applied.append(dict(params))
++        model.update(params)
++        return True
++    manager = OperatorEditorManager(runtimeClient=_Runtime(), settingsStore=_Settings(),
++        applyParams=apply, appendLog=lambda *_: None, cacheRoot=tmp_path/'cache')
++    args = dict(projectId='project', workflowId='main', nodeId='number',
++        operatorId='vision.value.number', displayName='数值',
++        schema={'type': 'object', 'properties': {'value': {'type': 'number'}}})
++    dialog = manager.open(**args, values=dict(model))
++    notify = dialog._onClosed
++    def onClosed(key, window):
++        closed.append(key)
++        notify(key, window)
++    dialog._onClosed = onClosed
++    def question(*args, **kwargs):
++        questions.append(args[1])
++        return answer
++    monkeypatch.setattr(QMessageBox, 'question', question)
++    field = dialog._schemaForm.findChild(QLineEdit)
++    field.setFocus()
++    QTest.keyClick(field, Qt.Key_A, Qt.ControlModifier)
++    QTest.keyClicks(field, '99')
++    QTest.keyClick(field, Qt.Key_Tab)
++    assert dialog.isDirty() and dialog.collectParams() == {'value': 99}
++    try:
++        if route == 'escape':
++            QTest.keyClick(dialog, Qt.Key_Escape)
++        elif route == 'done':
++            dialog.done(QDialog.Rejected)
++        else:
++            getattr(dialog, route)()
++        assert questions == ['未保存的参数']
++        if answer == QMessageBox.Cancel:
++            assert isValid(dialog) and dialog.isVisible() and not dialog._disposed
++            assert dialog.collectParams() == {'value': 99}
++            assert model == {'value': 7} and manager.count() == 1 and not closed
++            assert manager.open(**args, values=dict(model)) is dialog
++            dialog.forceClose()
++        def deleted():
++            # This editor calls QDialog.closeEvent, which posts DeferredDelete.
++            # processEvents alone does not deliver it without app.exec().
++            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
++            return not isValid(dialog)
++        wait(deleted)
++        assert manager.count() == 0 and len(closed) == 1
++        assert model == {'value': 99 if answer == QMessageBox.Save else 7}
++        assert applied == ([{'value': 99}] if answer == QMessageBox.Save else [])
++        assert project.read_bytes() == original  # Apply is not implicit Save.
++        reopened = manager.open(**args, values=dict(model))
++        assert isValid(reopened) and reopened is not dialog
++        assert reopened.collectParams() == model
++    finally:
++        manager.closeAll()
+diff --git a/tests/designer/test_small_window_layout_repair.py b/tests/designer/test_small_window_layout_repair.py
+new file mode 100644
+index 0000000..d9b75e5
+--- /dev/null
++++ b/tests/designer/test_small_window_layout_repair.py
+@@ -0,0 +1,126 @@
++"""Production-assembled PLC editor and painted toolbar overflow regressions."""
++import pytest
++from PySide2.QtCore import QPoint, Qt
++from PySide2.QtTest import QTest
++from PySide2.QtWidgets import QLabel, QMenu, QToolButton
++
++from tests.designer.test_plc_editor import editor, _Context, _pump  # noqa: F401
++from tests.designer.test_toolbar_width import settle
++from tests.designer.test_visual_layout import makeWindow
++
++
++@pytest.mark.parametrize('width,height', [(640, 474), (800, 478)])
++@pytest.mark.parametrize('directory', ['plc_slmp_read', 'plc_slmp_write'])
++def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, height, directory):  # noqa: F811 - imported pytest fixture
++    context = _Context(directory)
++    context.variableDefinitions = lambda: {}
++    context.variableBindings = []
++    controller, _, window = editor(directory, window=True, context=context)
++    window.bindDebug(lambda *args: None)
++    settle(designerApplication)
++    controller.tabs.setCurrentWidget(controller.runtimePage)
++    controller.advancedButton.setChecked(True)
++    window.resize(width, height)
++    settle(designerApplication)
++    assert window._bindingPanel is not None
++    baseline = controller.collectParams()
++    bindings = window._bindingPanel.bindings()
++    assert controller.advancedScroll.verticalScrollBar().maximum() == 0
++    for control in [controller.hostEdit, controller.portSpin, controller.deviceCombo,
++                    controller.addressSpin, controller.dataTypeCombo, controller.countSpin,
++                    *controller._endpointControls.values()]:
++        # Scroll the actual assembled page, not a reduced editor fixture.
++        controller.runtimeScroll.ensureWidgetVisible(control)
++        settle(designerApplication)
++        viewport = controller.runtimeScroll.viewport()
++        bounds = control.rect().translated(control.mapTo(viewport, QPoint()))
++        assert viewport.rect().contains(bounds), (control.objectName(), bounds, viewport.rect())
++    for caption in ('PLC 软元件', '起始地址', '数据类型', '数量'):
++        labels = [label for label in controller.runtimePage.findChildren(QLabel)
++                  if label.text().strip() == caption]
++        assert labels, caption
++        label = labels[0]
++        controller.runtimeScroll.ensureWidgetVisible(label)
++        settle(designerApplication)
++        assert label.width() >= label.fontMetrics().horizontalAdvance(label.text()), caption
++        assert label.height() >= label.heightForWidth(label.width()), caption
++    assert window._applyButton.isVisible()
++    assert controller.collectParams() == baseline
++    assert window._bindingPanel.bindings() == bindings
++    assert controller.tabs.tabText(controller.tabs.indexOf(window._bindingScroll)) == '参数来源'
++    controller.tabs.setCurrentWidget(window._bindingScroll)
++    settle(designerApplication)
++    assert window._bindingScroll.isVisible()
++    for control in window._bindingPanel.fields.values():
++        window._bindingScroll.ensureWidgetVisible(control)
++        settle(designerApplication)
++        viewport = window._bindingScroll.viewport()
++        bounds = control.rect().translated(control.mapTo(viewport, QPoint()))
++        assert viewport.rect().contains(bounds)
++    controller.tabs.setCurrentWidget(controller.runtimePage)
++    settle(designerApplication)
++    assert controller.collectParams() == baseline
++
++
++@pytest.mark.parametrize('width', [480, 589, 658, 800])
++def testOverflowButtonHasPaintedArrowAndSharedTailActions(designerApplication, width):
++    window = makeWindow()
++    try:
++        window.show()
++        window.resize(width, 500)
++        settle(designerApplication)
++        toolbar = window.mainToolbar
++        extension = toolbar.findChild(QToolButton, 'qt_toolbar_ext_button')
++        assert extension.isVisible()
++        assert toolbar.rect().contains(extension.geometry())
++        # isVisible() alone missed a zero-sized arrow paint rect under global QSS.
++        shot = extension.grab().toImage()
++        dark = 0
++        for y in range(shot.height()):
++            for x in range(shot.width()):
++                color = shot.pixelColor(x, y)
++                if max(color.red(), color.green(), color.blue()) < 180:
++                    dark += 1
++        assert dark >= 4, 'overflow exists but has no visible arrow'
++        QTest.mouseClick(extension, Qt.LeftButton)
++        chrome = window.pageCoordinator.chrome
++        _pump(designerApplication, lambda: toolbar.widgetForAction(chrome.testAction).isVisible())
++        for action in (window._toolbarActions['自动布局'], chrome.testAction, chrome.redo):
++            button = toolbar.widgetForAction(action)
++            assert button.isVisible()
++            assert toolbar.rect().contains(button.geometry())
++        layoutAction = window._toolbarActions['自动布局']
++        activated = []
++        layoutAction.triggered.connect(lambda: activated.append(True))
++        QTest.mouseClick(toolbar.widgetForAction(layoutAction), Qt.LeftButton)
++        assert len(activated) == 1
++        QTest.mouseClick(extension, Qt.LeftButton)
++        settle(designerApplication)
++    finally:
++        window.close()
++
++
++def testMenuCaptionAndShortcutColumnsHaveReadableGap(designerApplication):
++    from emo_master.apps.designer.ui.icon_map import icon
++    menu = QMenu()
++    try:
++        redo = menu.addAction('重做')
++        redo.setShortcut('Ctrl+Shift+Z')
++        copy = menu.addAction(icon('layout-grid'), '复制所选算子')
++        copy.setShortcut('Ctrl+D')
++        menu.addAction('复制当前工作流')
++        delete = menu.addAction('删除选中元素')
++        delete.setShortcut('Del')
++        menu.popup(QPoint(0, 0))
++        settle(designerApplication)
++        fm = menu.fontMetrics()
++        # Global QSS padding + icon + the longest shortcut must not consume
++        # the caption column. The original 240 px row fails this measurement.
++        caption = max(fm.horizontalAdvance(a.text()) for a in menu.actions())
++        shortcut = max(fm.horizontalAdvance(a.shortcut().toString()) for a in menu.actions())
++        required = caption + shortcut + 2 * 26 + 16 + fm.horizontalAdvance(' ')*2
++        assert menu.actionGeometry(copy).width() >= required
++        assert copy.shortcut().toString() == 'Ctrl+D'
++        assert delete.shortcut().toString() == 'Del'
++    finally:
++        menu.close()

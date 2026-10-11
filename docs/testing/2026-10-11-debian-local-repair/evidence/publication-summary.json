@@ -1,0 +1,21 @@
+{
+  "input_evidence_members": 16529,
+  "published_members": 16484,
+  "excluded_members": 45,
+  "byte_modified_members": 0,
+  "archive_count": 18,
+  "individual_archive_limit_exclusive_bytes": 5000000,
+  "total_archive_bytes": 85337884,
+  "total_preserved_uncompressed_bytes": 750030708,
+  "exclusion_counts": {
+    "library_upload_receipt": 1,
+    "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately": 4,
+    "external_library_helper_internals": 3,
+    "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained": 37
+  },
+  "all_archive_CRCs_passed": true,
+  "all_file_SHA256_verified": true,
+  "original_evidence_modified": false,
+  "redactions": [],
+  "scope": "All acceptance, test, UI, database, sidecar, failure-history and report evidence preserved. Only helper/upload internals, rebuildable runtime caches and redundant stage checkpoints omitted. Eight cache-behavior fixture indexes retained. Public package does not include delivery index/receipts or original archive bundles."
+}

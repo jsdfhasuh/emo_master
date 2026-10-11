@@ -7,7 +7,7 @@ import emo_master  # noqa: F401
 import cv2
 import numpy as np
 import pytest
-from PySide2.QtCore import Qt, QTimer
+from PySide2.QtCore import QCoreApplication, QEvent, Qt, QTimer
 from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QApplication, QDialog, QDialogButtonBox, QFileDialog
 from shiboken2 import isValid
@@ -46,8 +46,19 @@ def exampleWindow(runtime, ownedDesignerWindow, filename):
         if dialog is not None and isValid(dialog):
             dialog.close()
             wait(lambda: not isValid(dialog))
+        editors = tuple(window.operatorEditorManager._windows.values())
+        debugWindows = tuple(getattr(editor, "_debugWindow", None) for editor in editors)
         window.operatorEditorManager.closeAll()
-        wait(lambda: not runtime.operatorDebugManager.ownsResources())
+        def retired():
+            # Runtime retirement can precede the queued close acknowledgement.
+            # Deliver deferred Qt deletion before the native owner asserts that
+            # the main window can close synchronously; never repeat the RPC.
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            return (not runtime.operatorDebugManager.ownsResources()
+                    and all(debug is None or not isValid(debug) for debug in debugWindows)
+                    and all(not isValid(editor) for editor in editors)
+                    and window.operatorEditorManager.count() == 0)
+        wait(retired)
 
 
 def paused(dialog, nodeId, workflowId, *, after=0, phase="node.before"):

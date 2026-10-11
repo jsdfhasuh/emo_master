@@ -27,6 +27,8 @@ class Completion(QObject):
 
 
 class OperatorDebugWindow(QDialog):
+    cleanupFailed = Signal()
+
     def __init__(self, editor, valid=lambda: True):
         super().__init__(editor)
         self.editor, self.valid = editor, valid
@@ -40,6 +42,7 @@ class OperatorDebugWindow(QDialog):
         self.commandVersion = 0
         self.pollCommandVersion = 0
         self.closing = False
+        self.closeSent = False
         self.disposed = False
         self.state = "STARTING"
         self.executionId = ""
@@ -399,8 +402,10 @@ class OperatorDebugWindow(QDialog):
             if name == "open":
                 self.state = "FAULTED"
             if name == "close":
+                self.closeSent = False
                 self.closing = False
                 self.state = "FAULTED"
+                self.cleanupFailed.emit()
             self.refreshControls()
             self.drainOutput()
             return
@@ -566,8 +571,8 @@ class OperatorDebugWindow(QDialog):
         self.scaleImage()
 
     def beginClose(self):
-        if not self.busy:
-            self.submit("close", self.connection.close)
+        if not self.busy and not self.closeSent:
+            self.closeSent = self.submit("close", self.connection.close)
 
     def detach(self):
         """Parent lifetime ended; keep the pinned connection alive until cleanup finishes."""
@@ -577,15 +582,34 @@ class OperatorDebugWindow(QDialog):
         self.artifacts.cancelled.set()
         self.timer.stop()
         self.connection.stop.set()
-        self.pool.submit(self.connection.close)
+        if not self.closeSent:
+            self.closeSent = True
+            self.pool.submit(self.connection.close)
         self.pool.shutdown(wait=False)
         self.controls.shutdown(wait=False)
+
+    def done(self, result):
+        # QDialog's Esc/reject/accept paths bypass closeEvent. Keep the
+        # resource-owning window alive until the normal async close confirms
+        # retirement, exactly as the title-bar and End buttons do.
+        if not self.disposed:
+            self.close()
+            return
+        super().done(result)
+
+    def reject(self):
+        self.done(QDialog.Rejected)
+
+    def accept(self):
+        self.done(QDialog.Accepted)
 
     def closeEvent(self, event):
         if self.disposed:
             event.accept()
             return
         event.ignore()
+        if self.closing:
+            return
         self.closing = True
         self.artifacts.cancelled.set()
         self.timer.stop()

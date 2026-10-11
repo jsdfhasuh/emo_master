@@ -11,7 +11,7 @@ from threading import Event, Lock, Thread
 from typing import Any, cast
 from uuid import uuid4
 
-from PySide2.QtCore import QDateTime, QTimer, Qt
+from PySide2.QtCore import QDateTime, QEvent, QSize, QTimer, Qt
 from PySide2.QtGui import QValidator
 from PySide2.QtWidgets import (
     QAbstractItemView,
@@ -244,6 +244,37 @@ def _runCleanup(context: Any, cleanup: _Cleanup, results: queue.Queue) -> None:
     results.put(result)
 
 
+class _RuntimeContent(QWidget):
+    # QScrollArea otherwise uses the preferred heightForWidth (including the
+    # tables' preferred 192 px) as a minimum rather than their 100 px minimum.
+    # Child layouts still wrap labels at the available width.
+    def hasHeightForWidth(self) -> bool:
+        return False
+
+    def heightForWidth(self, width: int) -> int:
+        return -1
+
+
+class _FullHeightSection(QScrollArea):
+    """Retain the section container without a nested vertical scroll target."""
+    def minimumSizeHint(self):
+        widget = self.widget()
+        width = max(1, self.width() - 2 * self.frameWidth())
+        height = max(widget.minimumSizeHint().height(), widget.heightForWidth(width))
+        return QSize(0, height + 2 * self.frameWidth())
+
+    def sizeHint(self):
+        return self.minimumSizeHint()
+
+    def event(self, event):
+        result = super().event(event)
+        if event.type() in (QEvent.Resize, QEvent.LayoutRequest, QEvent.FontChange, QEvent.StyleChange, QEvent.Show):
+            if self.widget() is not None:
+                self.setMinimumHeight(self.minimumSizeHint().height())
+                self.updateGeometry()
+        return result
+
+
 class PlcEditorController:
     def __init__(self) -> None:
         self.context: Any = None
@@ -327,7 +358,14 @@ class PlcEditorController:
         return label
 
     def _buildRuntimePage(self) -> None:
-        runtimeLayout = self.runtimePage.layout()
+        # Keep one scrollable runtime page. Independent 24 px / 0 px scroll
+        # regions lost their controls when the production parameter-source
+        # panel and result-table minimums consumed a small window's height.
+        content = _RuntimeContent()
+        runtimeLayout = QVBoxLayout(content)
+        self.runtimeScroll = scrollContent(content, name="plcRuntimeScroll")
+        self.runtimePage.layout().setContentsMargins(0, 0, 0, 0)
+        self.runtimePage.layout().addWidget(self.runtimeScroll)
         runtimeLayout.setContentsMargins(6, 4, 6, 4)
         runtimeLayout.setSpacing(4)
         self.runtimePage.setMinimumWidth(520)
@@ -393,9 +431,11 @@ class PlcEditorController:
             ("device", self.deviceCombo), ("startAddress", self.addressSpin),
             ("dataType", self.dataTypeCombo), ("count", self.countSpin),
         )):
-            tools.addWidget(self._parameterLabel(name, control), 0, column * 2)
-            tools.addWidget(control, 0, column * 2 + 1)
-        tools.setColumnStretch(3, 1)
+            # A label/control pair on one line clipped Chinese captions at
+            # 640 px. Four caption-over-control columns keep both readable.
+            tools.addWidget(self._parameterLabel(name, control), 0, column)
+            tools.addWidget(control, 1, column)
+        tools.setColumnStretch(1, 1)
         layout.addLayout(tools)
         actions = QHBoxLayout()
         actions.setSpacing(6)
@@ -415,10 +455,7 @@ class PlcEditorController:
         actions.addStretch(1)
         actions.addWidget(self.writeEnabledCheck)
         actions.addWidget(self.writeButton)
-        self.controlsScroll = scrollContent(controls, name="plcControlsScroll")
-        self.controlsScroll.setMinimumHeight(24)
-        self.controlsScroll.setMaximumHeight(96)
-        runtimeLayout.addWidget(self.controlsScroll)
+        runtimeLayout.addWidget(controls)
         runtimeLayout.addLayout(actions)
         layout = runtimeLayout
 
@@ -458,17 +495,16 @@ class PlcEditorController:
             spin = self._spin("debug_" + name, spec["minimum"], spec["maximum"], spec["default"])
             self._endpointControls[name] = spin
             advancedForm.addRow(self._parameterLabel(name, spin), spin)
-        self.advancedScroll = QScrollArea()
+        self.advancedScroll = _FullHeightSection()
         self.advancedScroll.setObjectName("advancedEndpointScroll")
         self.advancedScroll.setWidgetResizable(True)
         self.advancedScroll.setFrameShape(QScrollArea.NoFrame)
         self.advancedScroll.setWidget(advanced)
-        self.advancedScroll.setMaximumHeight(110)
-        self.advancedScroll.setMinimumHeight(0)
-        self.advancedScroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Ignored)
+        # The outer page owns scrolling, including advanced fields. Never
+        # collapse an expanded section to zero height or nest wheel targets.
+        self.advancedScroll.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Minimum)
         self.advancedScroll.hide()
-        # Share spare height with the result tables while allowing short windows.
-        layout.addWidget(self.advancedScroll, 1)
+        layout.addWidget(self.advancedScroll)
         self.advancedButton.toggled.connect(self._toggleAdvanced)
         self.deviceCombo.currentTextChanged.connect(self._deviceChanged)
         self.dataTypeCombo.currentTextChanged.connect(self._shapeChanged)

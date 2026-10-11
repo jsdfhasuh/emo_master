@@ -1,0 +1,317 @@
+[
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/library-stage1.json",
+    "size_bytes": 278,
+    "sha256": "1281c8f93d71db7bc9b97aee865f15c06f0a3c7ff0575c74d128bf0eb053f3c5",
+    "reason": "library_upload_receipt"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/repair-native-evidence-checkpoint.zip",
+    "size_bytes": 2345768,
+    "sha256": "9aec64bd8adff8a527464cd6e5c736f81de24510603710c1e01197b634699652",
+    "reason": "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/repair-stage1-checkpoint.zip",
+    "size_bytes": 14023,
+    "sha256": "cd95661edbcde27e1896df8920a3432e7ea1d94637df0f20e0e958f6e8b611ca",
+    "reason": "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/repair-stage2-checkpoint.zip",
+    "size_bytes": 18890,
+    "sha256": "78f5568f6b63bd0af72479798e13a65058968242cb60109bf33d9d7439ef5a90",
+    "reason": "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/repair-stage3-checkpoint.zip",
+    "size_bytes": 15273,
+    "sha256": "851a05edeb6fd53a85b84e57b7646ef88de7be900a5fa7742919f5dd5613eeea",
+    "reason": "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/library-helper/library_file_transfer.py",
+    "size_bytes": 11085,
+    "sha256": "5c81478cd94a59d721a1677d0bd36f7cec23c18a21b48740b1c9ff94d27fb26f",
+    "reason": "external_library_helper_internals"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/library-helper/library_hosted_apps.py",
+    "size_bytes": 12577,
+    "sha256": "b7961301f7ca6f76b2f2f30e4e5673a303532680a790e545c3207a2bf5e63de4",
+    "reason": "external_library_helper_internals"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/library-helper/library_upload.py",
+    "size_bytes": 44877,
+    "sha256": "b11e4929596e321366c2f7291890fbb6d6bf8b413ae6d24593e9548f9bf50f23",
+    "reason": "external_library_helper_internals"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite/cache/emo_master/designer/editor-ui-cache/041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7.ui",
+    "size_bytes": 2102,
+    "sha256": "041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite/cache/emo_master/designer/editor-ui-cache/339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10.ui",
+    "size_bytes": 2458,
+    "sha256": "339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite/cache/emo_master/designer/editor-ui-cache/7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412.ui",
+    "size_bytes": 5375,
+    "sha256": "7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite-v2/cache/emo_master/designer/editor-ui-cache/041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7.ui",
+    "size_bytes": 2102,
+    "sha256": "041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite-v2/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite-v2/cache/emo_master/designer/editor-ui-cache/339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10.ui",
+    "size_bytes": 2458,
+    "sha256": "339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-01.zip",
+    "path": "evidence/regression/final-full-suite-v2/cache/emo_master/designer/editor-ui-cache/7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412.ui",
+    "size_bytes": 5375,
+    "sha256": "7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-full-suite-v3/cache/emo_master/designer/editor-ui-cache/041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7.ui",
+    "size_bytes": 2102,
+    "sha256": "041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-full-suite-v3/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-full-suite-v3/cache/emo_master/designer/editor-ui-cache/339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10.ui",
+    "size_bytes": 2458,
+    "sha256": "339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-full-suite-v3/cache/emo_master/designer/editor-ui-cache/7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412.ui",
+    "size_bytes": 5375,
+    "sha256": "7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-01/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-02/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-03/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-04/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-05/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-02.zip",
+    "path": "evidence/regression/final-o20/round-06/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/final-o20/round-07/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/final-o20/round-08/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/final-o20/round-09/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/final-o20/round-10/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/full-suite/cache/emo_master/designer/editor-ui-cache/041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7.ui",
+    "size_bytes": 2102,
+    "sha256": "041ac6e003e3fb5fc43e4d28374c731eb9e2e06339409618c5cd1d7c1ef99dd7",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/full-suite/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/full-suite/cache/emo_master/designer/editor-ui-cache/339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10.ui",
+    "size_bytes": 2458,
+    "sha256": "339071148d5765642acc2b50b9b94568cc502089a6a1d1f98ce97c2c2fb0aa10",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/full-suite/cache/emo_master/designer/editor-ui-cache/7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412.ui",
+    "size_bytes": 5375,
+    "sha256": "7e000c27f918d36b4db2073c521c1d77ea024ca4b4f4a65d1cf23536ccac9412",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-01/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-02/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-03/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-04/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-05/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-06/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-07/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-03.zip",
+    "path": "evidence/regression/o20/round-08/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-04.zip",
+    "path": "evidence/regression/o20/round-09/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-04.zip",
+    "path": "evidence/regression/o20/round-10/cache/emo_master/designer/editor-ui-cache/251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc.ui",
+    "size_bytes": 323,
+    "sha256": "251a394cf0d58ed2db222bb166428059d73e94a5a70537561c56876b372959fc",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  },
+  {
+    "original_archive": "emo-master-repair-evidence-part-05.zip",
+    "path": "evidence/ui-frozen/cache/emo_master/designer/editor-ui-cache/182b60d877e7f125e007f5681527ca30947949ec03148884d4eba760adf0cfb1.ui",
+    "size_bytes": 689,
+    "sha256": "182b60d877e7f125e007f5681527ca30947949ec03148884d4eba760adf0cfb1",
+    "reason": "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained"
+  }
+]

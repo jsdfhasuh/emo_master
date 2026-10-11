@@ -224,8 +224,16 @@ def testUnsavedCanvasNodeContextEntryLeavesDraftHistoryUntouched(runtime, tmp_pa
         assert window.pageCoordinator.session.payload() == before
         assert (root/"project.json").read_bytes() == original
     finally:
+        from PySide2.QtCore import QCoreApplication, QEvent
         window.operatorEditorManager.closeAll()
-        wait(lambda: not runtime.operatorDebugManager.ownsResources())
+        def retired():
+            # The Runtime ACK reaches Qt after resourcesHeld becomes false.
+            # Keep the original deadline, but verify the native owners too.
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            return (not runtime.operatorDebugManager.ownsResources()
+                    and not isValid(debug) and not isValid(editor)
+                    and window.operatorEditorManager.count() == 0)
+        wait(retired)
 
 
 def testDebugActionCannotRunInPageWorkspaceOrOnControlNodes(canvas, monkeypatch):

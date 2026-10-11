@@ -26,12 +26,13 @@ def _validationMessage(value: object) -> str:
 
 
 try:
-    from PySide2.QtCore import Qt, Signal
+    from PySide2.QtCore import Qt, QTimer, Signal
     from PySide2.QtWidgets import (
         QDialog,
         QHBoxLayout,
         QMessageBox,
         QPushButton,
+        QTabWidget,
         QVBoxLayout,
         QWidget,
     )
@@ -67,6 +68,9 @@ try:
             self._dirtyHint = False
             self._forceClosing = False
             self._disposed = False
+            self._waitingForDebug = False
+            self._debugCloseConnected = None
+            self._disabledForDebugClose: list[tuple[QWidget, bool]] = []
             self._debugWindow = None
             self._openDebug = None
             self._schemaForm: SchemaParamForm | None = None
@@ -106,8 +110,14 @@ try:
                 context.collectVariableBindings = self._bindingPanel.bindings
                 bindingScroll = scrollContent(self._bindingPanel)
                 self._bindingScroll = bindingScroll
-                bindingScroll.setMaximumHeight(230)
-                layout.addWidget(bindingScroll)
+                if self._scrollablePlcLayout:
+                    # Keep parameter bindings accessible without taking half
+                    # the height of the dedicated PLC runtime page.
+                    tabs = cast(QTabWidget, cast(QWidget, customRoot).findChild(QTabWidget, "plcTabs"))
+                    tabs.addTab(bindingScroll, "参数来源")
+                else:
+                    bindingScroll.setMaximumHeight(230)
+                    layout.addWidget(bindingScroll)
                 if self._schemaForm is not None and self._bindingPanel.installInline(self._schemaForm):
                     bindingScroll.hide()
             buttons = QHBoxLayout()
@@ -242,8 +252,69 @@ try:
             self._forceClosing = True
             self.close()
 
+        def done(self, result: int) -> None:
+            # Esc and QDialog completion must respect unapplied edits and
+            # unregister/dispose this editor through the same close path.
+            if not self._disposed:
+                self.close()
+                return
+            super().done(result)
+
+        def reject(self) -> None:
+            self.done(QDialog.Rejected)
+
+        def accept(self) -> None:
+            self.done(QDialog.Accepted)
+
+        def _restoreAfterDebugClose(self) -> None:
+            from shiboken2 import isValid
+            for widget, enabled in self._disabledForDebugClose:
+                if isValid(widget):
+                    widget.setEnabled(enabled)
+            self._disabledForDebugClose.clear()
+
+        def _debugCloseFailed(self) -> None:
+            self._waitingForDebug = False
+            self._forceClosing = False
+            self._restoreAfterDebugClose()
+            self.setError("调试资源释放失败，窗口已保留；请在调试窗口查看错误并明确重试关闭")
+
+        def _finishDebugClose(self) -> None:
+            from shiboken2 import isValid
+            if isValid(self) and self._waitingForDebug:
+                self._restoreAfterDebugClose()
+                self.close()
+
+        def _waitForDebugClose(self) -> bool:
+            from shiboken2 import isValid
+            debug = self._debugWindow
+            if debug is None or not isValid(debug) or debug.disposed:
+                return False
+            if not self._waitingForDebug:
+                self._waitingForDebug = True
+                # Disable only editor controls, never the child debug window:
+                # it must remain usable if cleanup fails and needs an explicit
+                # user action. Preserve each original enabled state.
+                def disable(layout):
+                    for index in range(layout.count()):
+                        item = layout.itemAt(index)
+                        widget = item.widget()
+                        if widget is not None and widget is not self._statusLabel:
+                            self._disabledForDebugClose.append((widget, widget.isEnabled()))
+                            widget.setEnabled(False)
+                        elif item.layout() is not None:
+                            disable(item.layout())
+                disable(self.layout())
+                self.setStatus("关闭中，等待调试资源实际释放…")
+            if self._debugCloseConnected is not debug:
+                self._debugCloseConnected = debug
+                debug.cleanupFailed.connect(self._debugCloseFailed)
+                debug.destroyed.connect(lambda: QTimer.singleShot(0, self._finishDebugClose))
+            debug.close()
+            return True
+
         def closeEvent(self, event) -> None:  # type: ignore[override]
-            if not self._forceClosing and self.isDirty():
+            if not self._forceClosing and not self._waitingForDebug and self.isDirty():
                 answer = QMessageBox.question(
                     self,
                     "未保存的参数",
@@ -257,6 +328,9 @@ try:
                 if answer == QMessageBox.Save and not self.applyChanges():
                     event.ignore()
                     return
+            if self._waitForDebugClose():
+                event.ignore()
+                return
             self._dispose()
             event.accept()
             try:

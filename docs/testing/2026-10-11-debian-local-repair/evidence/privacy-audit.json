@@ -1,0 +1,111 @@
+{
+  "decision": "Approved publication subset after exact exclusions; retained acceptance evidence is byte-identical.",
+  "original_evidence_archive_integrity_verified": true,
+  "original_evidence_archives": [
+    {
+      "path": "emo-master-repair-evidence-part-01.zip",
+      "size_bytes": 18729144,
+      "sha256": "89e818310b0cea9bf8a608bc19a9dbfbba4d4f496fe0a7fbef26aa52cc113622"
+    },
+    {
+      "path": "emo-master-repair-evidence-part-02.zip",
+      "size_bytes": 18608312,
+      "sha256": "8eecf8503c715591f0417aaec47d2d3c2db0d7b8b89c5388a6a33e7d2f029d71"
+    },
+    {
+      "path": "emo-master-repair-evidence-part-03.zip",
+      "size_bytes": 18734908,
+      "sha256": "98fa59bab7c45edbb9376af5816bcf449485fb77dd3e9b0238d2a23925bf72ef"
+    },
+    {
+      "path": "emo-master-repair-evidence-part-04.zip",
+      "size_bytes": 18859971,
+      "sha256": "b3c68d07440881e1862bdf9d40a87ffbc3adfe0869e8637ecf9fc8947ad2d6af"
+    },
+    {
+      "path": "emo-master-repair-evidence-part-05.zip",
+      "size_bytes": 12831999,
+      "sha256": "249947feb92964db82155ab755b34b1bfeb96eef3929dadadcccb9e435ebb435"
+    }
+  ],
+  "scope": {
+    "input_top_level_files": 16529,
+    "scanned_files_including_nested_containers": 16729,
+    "scanned_uncompressed_bytes_including_nested_containers": 761650932,
+    "png_and_pdf_occurrences_including_docx_images": 541,
+    "unique_image_or_pdf_objects": 370,
+    "docx_embedded_image_occurrences": 12,
+    "docx_images_all_match_previously_reviewed_screenshot_hashes": true,
+    "sqlite_named_files": 3964,
+    "sqlite_databases_read_only_with_matching_wal": 3555,
+    "sqlite_named_non_sqlite_synthetic_fixtures": 409,
+    "sqlite_read_errors_after_supported_copy_scan": 0
+  },
+  "confirmed_sensitive_findings_retained": 0,
+  "retained_credential_pattern_hits": 0,
+  "retained_actual_library_id_keys": 0,
+  "retained_upload_or_transfer_instructions": 0,
+  "redacted_files": 0,
+  "excluded_file_count": 45,
+  "exclusion_counts": {
+    "library_upload_receipt": 1,
+    "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately": 4,
+    "external_library_helper_internals": 3,
+    "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained": 37
+  },
+  "false_positive_dispositions": [
+    {
+      "rule": "library_identifier",
+      "disposition": "Actual receipt/helper identity keys excluded; retained broad-pattern hits are existing test function names and acceptance artifact filenames."
+    },
+    {
+      "rule": "email",
+      "disposition": "Retained hits are Python pytest decorators inside source-context snippets; compressed-container accidental matches occur only inside an excluded duplicate checkpoint."
+    },
+    {
+      "rule": "user_home",
+      "disposition": "26 occurrences identify generic executor home paths, not a personal account."
+    },
+    {
+      "rule": "url",
+      "disposition": "65 unique raw URL values classified. Helper-internal endpoints excluded; remaining values are test literals, standard XML/PDF namespaces, public documentation or Debian public support metadata."
+    },
+    {
+      "rule": "images",
+      "disposition": "Loopback/stub fixtures, PID/clock diagnostics and OCR false positives; no sensitive imagery found."
+    }
+  ],
+  "methods": [
+    "Read every member of five original evidence archives; recursively inspect nested ZIP/DOCX parts; scan bytes for credential/private-key, endpoint, email, home path and transfer-identity indicators.",
+    "Resolve unclassified URLs against original test constants and standard document/distribution metadata.",
+    "Copy valid SQLite databases and matching WAL to disposable scratch; query mode=ro/query_only; inspect schema and text/blob values without changing originals.",
+    "OCR/text extraction plus contact-sheet visual inspection of every unique image and PDF; duplicate DOCX images verified by content hash.",
+    "Repackage only byte-identical permitted members; verify ZIP CRC and every decompressed member SHA256; verify original archive SHA256 unchanged."
+  ],
+  "limits": [
+    "Pattern and OCR review reduce accidental disclosure risk but do not claim a mathematical proof of absence.",
+    "Some database-named test fixtures intentionally contain non-SQLite bytes; their raw bytes were reviewed and preserved.",
+    "No acceptance conclusions, failure records, hardware/platform limitations or product files changed."
+  ],
+  "package_verification": {
+    "input_evidence_members": 16529,
+    "published_members": 16484,
+    "excluded_members": 45,
+    "byte_modified_members": 0,
+    "archive_count": 18,
+    "individual_archive_limit_exclusive_bytes": 5000000,
+    "total_archive_bytes": 85337884,
+    "total_preserved_uncompressed_bytes": 750030708,
+    "exclusion_counts": {
+      "library_upload_receipt": 1,
+      "redundant_stage_checkpoint_archive; constituent acceptance evidence retained separately": 4,
+      "external_library_helper_internals": 3,
+      "rebuildable_runtime_editor_cache; cache-behavior test fixtures retained": 37
+    },
+    "all_archive_CRCs_passed": true,
+    "all_file_SHA256_verified": true,
+    "original_evidence_modified": false,
+    "redactions": [],
+    "scope": "All acceptance, test, UI, database, sidecar, failure-history and report evidence preserved. Only helper/upload internals, rebuildable runtime caches and redundant stage checkpoints omitted. Eight cache-behavior fixture indexes retained. Public package does not include delivery index/receipts or original archive bundles."
+  }
+}

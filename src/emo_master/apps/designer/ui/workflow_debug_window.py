@@ -556,6 +556,21 @@ class WorkflowDebugWindow(QDialog):
         super().resizeEvent(event)
         self.scaleImage()
 
+    def done(self, result):
+        # QDialog's Esc/reject/accept paths bypass closeEvent. Keep the
+        # resource-owning window alive until the normal async close confirms
+        # retirement, exactly as the title-bar and End buttons do.
+        if not self.disposed:
+            self.close()
+            return
+        super().done(result)
+
+    def reject(self):
+        self.done(QDialog.Rejected)
+
+    def accept(self):
+        self.done(QDialog.Accepted)
+
     def closeEvent(self, event):
         if self.disposed:
             event.accept()

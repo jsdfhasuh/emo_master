@@ -11,6 +11,7 @@ try:
         QLabel,
         QListWidget,
         QListWidgetItem,
+        QPlainTextEdit,
         QPushButton,
         QVBoxLayout,
         QWidget,
@@ -79,6 +80,14 @@ try:
             self._actionSection.setLayout(buttonRow)
             rootLayout.addWidget(self._actionSection)
 
+            self._loadErrorEdit = QPlainTextEdit()
+            self._loadErrorEdit.setObjectName("startupLoadError")
+            self._loadErrorEdit.setAccessibleName("项目打开失败详情")
+            self._loadErrorEdit.setReadOnly(True)
+            self._loadErrorEdit.setMaximumHeight(150)
+            self._loadErrorEdit.hide()
+            rootLayout.addWidget(self._loadErrorEdit)
+
             self._recentSection = QWidget()
             setRecentSectionName = getattr(self._recentSection, "setObjectName", None)
             if callable(setRecentSectionName):
@@ -116,8 +125,18 @@ try:
             self._clearRecentButton.clicked.connect(self._onClearRecentProjects)
 
         def execSelection(self) -> tuple[str, str]:
+            # Re-entering after a failure requires a NEW explicit selection.
+            # Esc/X must not replay the previously accepted open operation.
+            self._action, self._selectedPath = "cancel", ""
             _ = self.exec_()
             return self._action, self._selectedPath
+
+        def setLoadError(self, message: str) -> None:
+            self._loadErrorEdit.setPlainText(
+                "未能打开项目。原项目文件未被修改。\n"
+                "请检查以下错误；可继续选择其他项目、新建空白项目，或取消退出。\n\n" + message
+            )
+            self._loadErrorEdit.show()
 
         def setRecentProjects(self, projects: list[dict[str, str]]) -> None:
             self._recentProjects = list(projects)

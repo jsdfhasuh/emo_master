@@ -14,6 +14,7 @@ from emo_master.apps.designer.ui.flow_scene import FlowEdgeViewModel, FlowNodeVi
 from emo_master.core.project.migration import utc_now_iso
 from emo_master.core.project.files import projectFileForSave, resolveProjectFile
 from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+from emo_master.apps.designer.services.runtime_client import RuntimeClientError
 
 
 class ProjectController:
@@ -44,6 +45,7 @@ class ProjectController:
         self.workflowController = workflowController
         self.editCoordinator = None
         self.currentProjectFile: Path | None = None
+        self.lastLoadError = ""
         self._fallbackProjectMetadata: dict[str, object] = {
             "projectId": str(uuid4()),
             "name": "project",
@@ -127,21 +129,31 @@ class ProjectController:
         successMessagePrefix: str,
         failedMessagePrefix: str,
     ) -> tuple[bool, str | None]:
-        reply = self.runtimeClient.loadProject(projectPath)
+        self.lastLoadError = ""
+        try:
+            reply = self.runtimeClient.loadProject(projectPath)
+        except RuntimeClientError as error:
+            self.lastLoadError = f"{failedMessagePrefix}：{projectPath}\n{error.code}: {error}"
+            self.appendLog("ERROR", self.lastLoadError)
+            return False, None
         if getattr(reply, "ok", False):
             self.appendLog("INFO", f"{successMessagePrefix}：{projectPath}")
             self.updateRuntimeJobState("READY", f"当前项目：{projectPath}")
             self.refreshRuntimePanelView()
             self.updateToolbarState()
             return True, projectPath
-        self.appendLog(
-            "ERROR", f"{failedMessagePrefix}：{getattr(reply, 'message', '未知错误')}"
+        code = getattr(reply, "code", "")
+        self.lastLoadError = (
+            f"{failedMessagePrefix}：{projectPath}\n"
+            f"{code + ': ' if code else ''}{getattr(reply, 'message', '未知错误')}"
         )
+        self.appendLog("ERROR", self.lastLoadError)
         return False, None
 
     def loadProjectDirectory(
         self, projectDirPath: str, *, confirmed: bool = False
     ) -> tuple[bool, str | None, Path | None]:
+        self.lastLoadError = ""
         if self.editCoordinator is not None and not confirmed and not self.editCoordinator.confirmLeave():
             return False, None, None
         try:
@@ -149,7 +161,8 @@ class ProjectController:
             projectDir = projectFile.parent
             payload = loadProject(projectFile)
         except (OSError, ValueError) as err:
-            self.appendLog("ERROR", f"加载项目失败：{err}")
+            self.lastLoadError = f"加载项目失败：{projectDirPath}\n{err}"
+            self.appendLog("ERROR", self.lastLoadError)
             return False, None, None
         if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4'}:
             # Opening an editable draft must not compile unresolved resource paths
@@ -236,13 +249,30 @@ class ProjectController:
         execSelection = getattr(dialogObj, "execSelection", None)
         if not callable(execSelection):
             return False, None, None
-        selectionResult = execSelection()
-        if callable(clearRecentProjects) and clearRecentProjects():
-            self.clearRecentProjects()
-        if callable(removedRecentProjectPath):
-            removedPath = removedRecentProjectPath()
-            if isinstance(removedPath, str) and removedPath != "":
-                self.removeRecentProject(removedPath)
+        while True:
+            selectionResult = execSelection()
+            if callable(clearRecentProjects) and clearRecentProjects():
+                self.clearRecentProjects()
+            if callable(removedRecentProjectPath):
+                removedPath = removedRecentProjectPath()
+                if isinstance(removedPath, str) and removedPath != "":
+                    self.removeRecentProject(removedPath)
+            self.lastLoadError = ""
+            result = self._loadStartupSelection(selectionResult, chooseProjectDirectory)
+            if result[0] or not self.lastLoadError:
+                return result
+            setLoadError = getattr(dialogObj, "setLoadError", None)
+            if not callable(setLoadError):
+                return result
+            setLoadError(self.lastLoadError)
+            if callable(setRecentProjects):
+                setRecentProjects(self.getRecentProjects())
+            # Reopen the chooser, not the project. Only the user's next
+            # selection may load again; failed paths are never auto-retried.
+
+    def _loadStartupSelection(
+        self, selectionResult, chooseProjectDirectory: Callable[[str], str]
+    ) -> tuple[bool, str | None, Path | None]:
         action = "cancel"
         selectedPath = ""
         if (
@@ -254,9 +284,8 @@ class ProjectController:
             action = selectionResult[0]
             selectedPath = selectionResult[1]
         if action == "open_project" and selectedPath != "":
-            projectDir = self.resolveProjectDirectory(selectedPath)
-            if projectDir is None:
-                return False, None, None
+            # Let the loader record missing/malformed-file errors as well as
+            # Runtime validation errors; a silent precheck loses the reason.
             return self.loadProjectDirectory(selectedPath)
         if action == "new_blank":
             selectedDir = chooseProjectDirectory("新建项目")

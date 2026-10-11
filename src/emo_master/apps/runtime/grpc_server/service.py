@@ -275,7 +275,14 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             ProjectGlobalVariables(self.sqliteStore, document.project.projectId, document.globalVariables).synchronize()
         except WorkflowCompileError as err:
             self._clearLoadedProject(str(err))
-            return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message=str(err))
+            # LoadProject has a textual error contract. Retain the compiler's
+            # existing code/location instead of discarding them via str(err),
+            # so a startup chooser can explain which legacy node needs repair.
+            details = []
+            for issue in err.issues:
+                location = issue.fieldPath or "/".join(filter(None, (issue.workflowId, issue.nodeId))) or "project"
+                details.append(f"{issue.code} [{location}]: {issue.message}")
+            return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message="\n".join(details) or str(err))
         except Exception as err:
             self._clearLoadedProject(str(err))
             return runtime_pb2.LoadProjectReply(

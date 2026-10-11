@@ -5,7 +5,8 @@ from dataclasses import asdict, dataclass
 import json
 import sqlite3
 import time
-import random
+
+from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate, isBusy
 
 from emo_master.core.project.global_variables import VariableDefinition, VariableError, definitions, validateValue
 
@@ -50,29 +51,12 @@ def migrateVariables(connection):
 
 
 def _beginWrite(connection):
-    """Bounded, jittered admission avoids starvation behind event commits.
-
-    SQLite's increasing busy sleeps can repeatedly miss short gaps between
-    durable event writes. Retry ONLY BEGIN, before reading/changing a value.
-    The transaction body and commit are executed once, never replayed.
-    """
-    timeout = connection.execute("PRAGMA busy_timeout").fetchone()[0]
-    deadline = time.monotonic() + timeout / 1000
-    connection.execute("PRAGMA busy_timeout=0")
     try:
-        while True:
-            try:
-                connection.execute("BEGIN IMMEDIATE")
-                return
-            except sqlite3.OperationalError as error:
-                if not any(word in str(error).lower() for word in ("locked", "busy")):
-                    raise
-                remaining = deadline - time.monotonic()
-                if remaining <= 0:
-                    raise VariableError("E_VARIABLE_BUSY", "global variable database is busy") from error
-                time.sleep(min(remaining, random.uniform(.001, .005)))
-    finally:
-        connection.execute(f"PRAGMA busy_timeout={int(timeout)}")
+        beginImmediate(connection)
+    except sqlite3.OperationalError as error:
+        if isBusy(error):
+            raise VariableError("E_VARIABLE_BUSY", "global variable database is busy") from error
+        raise
 
 
 def counterDefinition(name):
@@ -177,16 +161,20 @@ class ProjectGlobalVariables:
             raise VariableError("E_VARIABLE_READ_ONLY", "constants cannot be written")
         with self.store.connection() as connection:
             _beginWrite(connection)
-            old = self._read(connection, key)
-            if expectedRevision is not None and expectedRevision != old.revision:
-                raise VariableError("E_VARIABLE_CONFLICT", "value changed; refresh before setting it again")
-            value = transform(old.value)
-            validateValue(value, definition.type, legacy=definition.legacyCounterName is not None)
-            updated = _now()
-            connection.execute("""UPDATE variableValues SET valueJson=?, revision=revision+1, updatedAtMs=?
-                WHERE projectId=? AND variableId=? AND scope=?""",
-                (json.dumps(value, allow_nan=False), updated, self.projectId, key, self._scope(definition)))
-            return VariableRecord(key, value, old.revision + 1, updated)
+            return self._mutateInTransaction(connection, key, transform, expectedRevision)
+
+    def _mutateInTransaction(self, connection, key, transform, expectedRevision=None):
+        definition = self._definition(key)
+        old = self._read(connection, key)
+        if expectedRevision is not None and expectedRevision != old.revision:
+            raise VariableError("E_VARIABLE_CONFLICT", "value changed; refresh before setting it again")
+        value = transform(old.value)
+        validateValue(value, definition.type, legacy=definition.legacyCounterName is not None)
+        updated = _now()
+        connection.execute("""UPDATE variableValues SET valueJson=?, revision=revision+1, updatedAtMs=?
+            WHERE projectId=? AND variableId=? AND scope=?""",
+            (json.dumps(value, allow_nan=False), updated, self.projectId, key, self._scope(definition)))
+        return VariableRecord(key, value, old.revision + 1, updated)
 
     def set(self, key, value, expectedRevision=None):
         return self._mutate(key, lambda _: value, expectedRevision).value
@@ -221,6 +209,32 @@ class ReadOnlyVariables:
     reset = increment = set
 
 
+def _counterReady(connection, accessor, key, name, *, create=False):
+    existing = connection.execute(
+        "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=?",
+        (accessor.projectId,)).fetchall()
+    if any(other != key and json.loads(raw)["name"] == name for other, raw in existing):
+        raise VariableError("E_VARIABLE_NAME_CONFLICT", "counter name conflicts with an existing variable")
+    raw = next((raw for other, raw in existing if other == key), None)
+    definition = accessor.definitions[key]
+    if raw is not None:
+        previous = VariableDefinition.model_validate_json(raw)
+        if any(getattr(previous, field) != getattr(definition, field)
+               for field in ("type", "kind", "lifetime", "legacyCounterName")):
+            raise VariableError("E_VARIABLE_DEFINITION_CHANGED", "variable identity/type/lifetime changed")
+    elif not create:
+        return False
+    else:
+        connection.execute("INSERT INTO variableDefinitions VALUES (?, ?, ?, ?)",
+                           (accessor.projectId, key, definition.model_dump_json(), name))
+    if create:
+        accessor._initialize(connection, key, definition, "")
+        return True
+    return connection.execute(
+        "SELECT 1 FROM variableValues WHERE projectId=? AND variableId=? AND scope=''",
+        (accessor.projectId, key)).fetchone() is not None
+
+
 def counterOperation(store, projectId, name, *, increment=False, reset=False, value=None):
     from emo_master.apps.runtime.context.global_counters import (
         GlobalCounterError, GlobalCounterRecord, validateGlobalCounterName, validateGlobalCounterValue,
@@ -229,17 +243,24 @@ def counterOperation(store, projectId, name, *, increment=False, reset=False, va
     if value is not None:
         validateGlobalCounterValue(value)
     key = "counter:" + name
-    with store.connection() as connection:
-        existing = connection.execute("SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=?", (projectId,)).fetchall()
-        if any(other != key and json.loads(raw)["name"] == name for other, raw in existing):
-            raise GlobalCounterError("E_VARIABLE_NAME_CONFLICT", "counter name conflicts with an existing variable")
     accessor = ProjectGlobalVariables(store, projectId, {key: counterDefinition(name)})
     try:
-        accessor.synchronize()
-        if value is not None or reset or increment:
-            record = accessor._mutate(key, lambda current: value if value is not None else 0 if reset else current + 1)
-        else:
-            record = accessor.records([key])[key]
+        mutate = value is not None or reset or increment
+        if not mutate:
+            with store.connection() as connection:
+                connection.execute("BEGIN")
+                if _counterReady(connection, accessor, key, name):
+                    record = accessor._read(connection, key)
+                    return GlobalCounterRecord(name, record.value, record.updatedAtMs)
+        # Missing-counter initialization and its first mutation are one commit.
+        # Existing read-only calls never request SQLite's writer; intentional
+        # writes never synchronize/rewrite declarations in a second transaction.
+        with store.connection() as connection:
+            _beginWrite(connection)
+            _counterReady(connection, accessor, key, name, create=True)
+            record = (accessor._mutateInTransaction(
+                connection, key, lambda current: value if value is not None else 0 if reset else current + 1)
+                if mutate else accessor._read(connection, key))
         return GlobalCounterRecord(name, record.value, record.updatedAtMs)
     except VariableError as error:
         code = {"E_VARIABLE_TYPE": "E_COUNTER_VALUE_RANGE", "E_VARIABLE_BUSY": "E_COUNTER_BUSY"}.get(error.code, error.code)

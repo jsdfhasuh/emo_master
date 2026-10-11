@@ -11,10 +11,11 @@ from threading import Event, Lock, Thread
 from typing import Any, cast
 from uuid import uuid4
 
-from PySide2.QtCore import QDateTime, QEvent, QSize, QTimer, Qt
-from PySide2.QtGui import QValidator
+from PySide2.QtCore import QDateTime, QEvent, QObject, QPointF, QSize, QTimer, Qt
+from PySide2.QtGui import QValidator, QWheelEvent
 from PySide2.QtWidgets import (
     QAbstractItemView,
+    QApplication,
     QCheckBox,
     QComboBox,
     QFormLayout,
@@ -255,6 +256,31 @@ class _RuntimeContent(QWidget):
         return -1
 
 
+class _ScrollValuesGuard(QObject):
+    """Wheel gestures scroll the page; clicks and keyboard edit PLC values.
+
+    Also guard focused controls: focus can remain on a live PLC destination
+    after editing it, and a later page-scroll must never change that address.
+    Forward to the page viewport explicitly: Qt's synthetic/spontaneous event
+    routes differ, and a nested advanced section must not swallow the gesture.
+    """
+    def __init__(self, scroll: QScrollArea) -> None:
+        super().__init__(scroll)
+        self.scroll = scroll
+
+    def eventFilter(self, control, event):
+        if event.type() == QEvent.Wheel:
+            target = self.scroll.viewport()
+            forwarded = QWheelEvent(QPointF(target.mapFromGlobal(event.globalPos())),
+                                    event.globalPosF(), event.pixelDelta(), event.angleDelta(),
+                                    event.buttons(), event.modifiers(), event.phase(),
+                                    event.inverted(), event.source())
+            QApplication.sendEvent(target, forwarded)
+            event.accept()
+            return True
+        return super().eventFilter(control, event)
+
+
 class _FullHeightSection(QScrollArea):
     """Retain the section container without a nested vertical scroll target."""
     def minimumSizeHint(self):
@@ -310,8 +336,12 @@ class PlcEditorController:
         self.paramsPage.layout().setContentsMargins(0, 0, 0, 0)
         self.paramForm = SchemaParamForm()
         self.paramForm.setWorkflowOptions(getattr(context, "workflowOptions", []))
-        self.paramsPage.layout().addWidget(scrollContent(self.paramForm))
+        self.paramScroll = scrollContent(self.paramForm)
+        self.paramsPage.layout().addWidget(self.paramScroll)
         self._buildRuntimePage()
+        self._runtimeWheelGuard = _ScrollValuesGuard(self.runtimeScroll)
+        self._parameterWheelGuard = _ScrollValuesGuard(self.paramScroll)
+        self._guardScrollValues(self.runtimePage, self._runtimeWheelGuard)
         self._resultTimer = QTimer(self.root)
         self._resultTimer.setInterval(20)
         self._resultTimer.timeout.connect(self._drainResults)
@@ -349,6 +379,11 @@ class PlcEditorController:
         spin.setValue(value)
         spin.setMinimumWidth(80)
         spin.setFixedHeight(28)
+        # Write-table cells are rebuilt when the data shape changes.
+        guard = getattr(self, "_runtimeWheelGuard", None)
+        if guard is not None:
+            spin.setFocusPolicy(Qt.StrongFocus)
+            spin.installEventFilter(guard)
         return spin
 
     def _parameterLabel(self, name: str, control: QWidget) -> QLabel:
@@ -531,8 +566,15 @@ class PlcEditorController:
 
     def loadParams(self, params: dict[str, object]) -> None:
         self.paramForm.setSchema(self.context.paramSchema, deepcopy(params))
+        # setSchema replaces controls, so install the same owner on new fields.
+        self._guardScrollValues(self.paramForm, self._parameterWheelGuard)
         if self._debugInitialized:
             self.reloadParameters()
+
+    def _guardScrollValues(self, page: QWidget, guard: _ScrollValuesGuard) -> None:
+        for control in [*page.findChildren(QSpinBox), *page.findChildren(QComboBox)]:
+            control.setFocusPolicy(Qt.StrongFocus)
+            control.installEventFilter(guard)
 
     def collectParams(self) -> dict[str, object]:
         return deepcopy(self.paramForm.getValues())

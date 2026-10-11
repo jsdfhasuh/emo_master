@@ -75,22 +75,27 @@ class AsyncExports(Exporters):
             path = self.root / f"{task}.png"
             broken = False
             outcome = {"status": "UNAVAILABLE", "reason": "cancelled", "task_id": task}
+            stage = "dispatch"
+            dispatch = None
             try:
                 process, pipe = self.slots[index]
                 dispatch = time.perf_counter_ns()
                 pipe.send((task, segment.name, shape, str(path), mode))
                 def remaining():
                     return max(0, BUDGET.export_seconds - (time.perf_counter_ns()-submitted)/1e9)
+                stage = "start"
                 if not pipe.poll(remaining()) or pipe.recv() != ("STARTED", task):
                     raise TimeoutError("start deadline")
                 self.started.append((task, process.pid, segment.name))
                 # Diagnostic identifiers are bounded, not a second task history.
                 del self.started[:-64]
+                stage = "completion"
                 if not pipe.poll(remaining()):
                     raise TimeoutError("running export deadline")
                 reply = pipe.recv()
                 if reply[:2] != ("DONE", task):
                     raise ValueError("IPC identity")
+                stage = "adoption"
                 adopted_at = time.perf_counter_ns()
                 asset = self.assets.adopt(job, key, path, reply[2], reply[3], shape)
                 outcome = dict(status="VALID", asset=asset, raw_sha256=reply[5], task_id=task,
@@ -99,7 +104,11 @@ class AsyncExports(Exporters):
                                adoption_ms=(time.perf_counter_ns()-adopted_at)/1e6)
             except Exception as error:
                 broken = True
-                outcome["reason"] = type(error).__name__
+                outcome.update(reason=type(error).__name__, detail=str(error)[:256], stage=stage,
+                    budget_ms=BUDGET.export_seconds * 1000,
+                    elapsed_ms=(time.perf_counter_ns()-submitted)/1e6,
+                    copy_ms=(copied-submitted)/1e6,
+                    queue_ms=(dispatch-copied)/1e6 if dispatch is not None else None)
             finally:
                 if broken:
                     self._retire(index)  # slot remains quarantined until dead

@@ -1814,6 +1814,9 @@ def test_service_same_endpoint_rejected_and_released_by_project_reload(runtime, 
         duplicate = client_path.client.openPlcDebugSession(runtime.loadedProjectId, "main", "write", WRITE_OPERATOR,
                                                           peer.params(), "duplicate-endpoint")
         assert not duplicate.ok and duplicate.code == "E_RESOURCE_BUSY"
+        # connect() may return before the peer's accept thread is scheduled.
+        # Synchronize on the actual server observation, not an arbitrary sleep.
+        peer.wait_connections(1)
         assert peer.connections == 1
         loaded = client_path.client.loadProject(runtime.loadedProjectPath)
         assert loaded.ok, loaded.message

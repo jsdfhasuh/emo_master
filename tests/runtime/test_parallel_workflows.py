@@ -23,7 +23,8 @@ def testMoreThanTwoActualWhileJobsWithImages(limit, count, tmp_path):
         assert all(row['ok'] for row in results.values()), results
         jobs = [row['jobId'] for row in results.values()]
         waitFor(lambda: all(len(cycles(owner, job)) >= 4 for job in jobs), seconds=45)
-        assert all(owner.runtime.jobRepository.get(job).status == 'RUNNING' for job in jobs)
+        assert all(owner.runtime.jobRepository.get(job).status == 'RUNNING' for job in jobs), {
+            job: vars(owner.runtime.jobRepository.get(job)) for job in jobs}
         assert len({owner.runtime.jobRepository.get(job).pid for job in jobs}) == count
         waitFor(lambda: len(owner.presentation.store.latest) == count)
         assert len(owner.presentation.jobs) == count

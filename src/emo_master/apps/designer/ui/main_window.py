@@ -4369,8 +4369,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.close()
 
     def _allowProjectReplacement(self) -> bool:
-        if self.hasActiveDebugSession():
-            self.appendRuntimeLog("WARN", "请先明确结束调试并等待资源释放，再切换项目；当前项目保持不变。")
+        windows = self._activeDebugWindows()
+        if windows:
+            message = "请先明确结束调试并等待资源释放，再切换项目；当前项目保持不变。"
+            self.appendRuntimeLog("WARN", message)
+            if _nativeQt:
+                from PySide2.QtWidgets import QApplication
+                from shiboken2 import isValid
+                from emo_master.apps.designer.ui.debug_notice import ProjectReplacementNotice
+                notice = getattr(self, "_projectReplacementNotice", None)
+                if notice is None or not isValid(notice) or not notice.isVisible():
+                    active = QApplication.activeWindow()
+                    parent = active if active in windows else windows[0]
+                    notice = ProjectReplacementNotice(message, parent)
+                    self._projectReplacementNotice = notice
+                    notice.open()
+                notice.raise_()
+                notice.activateWindow()
             return False
         return True
 

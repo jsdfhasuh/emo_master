@@ -16,6 +16,7 @@ from emo_master.apps.runtime.context.global_counters import (
     validateGlobalCounterValue,
 )
 from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
 
 
 class SqliteStore:
@@ -123,7 +124,7 @@ class SqliteStore:
                 connection.commit()
                 if 5 not in applied:
                     from emo_master.apps.runtime.context.global_variables import migrateVariables
-                    connection.execute("BEGIN IMMEDIATE")
+                    beginImmediate(connection)
                     migrateVariables(connection)
                     connection.execute(
                         "INSERT INTO schemaMigrations(version, appliedAt) VALUES (5, ?)", (_utcNow(),)
@@ -244,8 +245,8 @@ class SqliteStore:
         timestampMs = timestamp if isinstance(timestamp, int) else _timestampMs()
         timestampText = _utcNow() if not isinstance(timestamp, str) else timestamp
         with self.connection() as connection:
+            beginImmediate(connection)
             if sequence is None:
-                connection.execute("BEGIN IMMEDIATE")
                 row = connection.execute(
                     "SELECT COALESCE(MAX(sequence), 0) + 1 FROM jobEvents WHERE jobId = ?",
                     (jobId,),
@@ -363,7 +364,7 @@ class SqliteStore:
 
     def markOrphanedJobsFailed(self) -> int:
         with self.connection() as connection:
-            connection.execute("BEGIN IMMEDIATE")
+            beginImmediate(connection)
             rows = connection.execute(
                 "SELECT jobId, projectId, workflowId, startAt FROM jobs "
                 "WHERE status IN ('ACCEPTED', 'STARTING', 'RUNNING', 'STOPPING')"
@@ -451,7 +452,7 @@ class SqliteStore:
                     candidates.append(str(jobId))
             if not candidates:
                 return 0
-            connection.execute("BEGIN IMMEDIATE")
+            beginImmediate(connection)
             deleted = 0
             for offset in range(0, len(candidates), 400):
                 batch = candidates[offset : offset + 400]

@@ -15,6 +15,7 @@ import time
 import grpc
 
 from .contracts import Unavailable
+from .resources import Assets
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc as rpc
@@ -152,7 +153,7 @@ class IsolatedServer:
     def _release(self, category):
         self.active[category] -= 1
 
-    def _stream(self, method, category):
+    def _stream(self, method, category, *, batched=False):
         async def stream(request, context):
             await self._admit(category, context)
             cancel = CancelContext()
@@ -167,7 +168,15 @@ class IsolatedServer:
                     valid, message = await asyncio.shield(pending)
                     if not valid:
                         return
-                    yield message
+                    if batched:
+                        for chunk in message:
+                            if context.cancelled():
+                                return
+                            yield chunk
+                        del message
+                        chunk = None
+                    else:
+                        yield message
             except RpcAbort as error:
                 await context.abort(error.code, error.details)
             except Unavailable as error:
@@ -269,6 +278,12 @@ class IsolatedServer:
                 self._stream(self.display.follow, "display"), request_deserializer=json.loads,
                 response_serializer=lambda v: json.dumps(v).encode())}),))
         if hasattr(self.display, "assets"):
+            batchReader = getattr(self.display.assets, "readBatches", None)
+            if (getattr(batchReader, "__func__", None) is Assets.readBatches
+                    and getattr(self.display.assets.read, "__func__", None) is not Assets._nativeRead):
+                # A custom public reader may own a cancellation/deadline gate.
+                # Native batching must not bypass that reader's semantics.
+                batchReader = None
             async def pin(request, context):
                 await self._admit("control", context)
                 try:
@@ -280,7 +295,8 @@ class IsolatedServer:
                 return {}
             self.server.add_generic_rpc_handlers((grpc.method_handlers_generic_handler("p0.Display", {
                 "GetDisplayAsset": grpc.unary_stream_rpc_method_handler(
-                    self._stream(self.display.assets.read, "asset"), request_deserializer=json.loads,
+                    self._stream(batchReader if callable(batchReader) else self.display.assets.read,
+                                 "asset", batched=callable(batchReader)), request_deserializer=json.loads,
                     response_serializer=lambda value: value),
                 "Pin": grpc.unary_unary_rpc_method_handler(pin, request_deserializer=json.loads,
                     response_serializer=lambda value: json.dumps(value).encode()),

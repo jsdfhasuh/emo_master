@@ -9,6 +9,10 @@ from uuid import uuid4
 from .contracts import BUDGET, Unavailable
 
 
+ASSET_BATCH_CHUNKS = 4
+ASSET_CHUNK_BYTES = 64 * 1024
+
+
 class Resources:
     def __init__(self):
         self.lock = threading.RLock()
@@ -152,24 +156,44 @@ class Assets:
                 self.resources.release(self.lease_tokens.pop(entry[0]))
 
     def read(self, request, context):
+        yield from self._read(request, context, 1)
+
+    _nativeRead = read
+
+    def readBatches(self, request, context):
+        # One executor dispatch owns at most four original wire chunks. This
+        # avoids a thread/asyncio round trip per 64KiB without growing either
+        # the read deadline or the runtime/job memory limits.
+        yield from self._read(request, context, ASSET_BATCH_CHUNKS)
+
+    def _read(self, request, context, batchSize):
         asset_id = request["asset_id"]
         with self.lock:
             self._expire()
             asset = self.entries.get(asset_id)
             if asset is None or asset.job != request["job"]:
                 raise KeyError("expired or wrong-job asset")
-            token = self.resources.reserve(asset.job, "memory", 3 * 64 * 1024)
+            token = self.resources.reserve(asset.job, "memory", 3 * batchSize * ASSET_CHUNK_BYTES)
             asset.readers += 1
         deadline = time.monotonic() + BUDGET.read_seconds
         try:
             with asset.path.open("rb") as handle:
                 while context.is_active():
-                    if time.monotonic() > deadline:
-                        raise TimeoutError("asset read deadline")
-                    chunk = handle.read(64 * 1024)
-                    if not chunk:
+                    chunks = []
+                    for _ in range(batchSize):
+                        if not context.is_active():
+                            return
+                        if time.monotonic() > deadline:
+                            raise TimeoutError("asset read deadline")
+                        chunk = handle.read(ASSET_CHUNK_BYTES)
+                        if not chunk:
+                            break
+                        chunks.append(chunk)
+                    if not chunks:
                         return
-                    yield chunk
+                    # Retain the reader and its charged buffers while even a
+                    # final partial batch is suspended in the RPC transport.
+                    yield chunks[0] if batchSize == 1 else tuple(chunks)
         finally:
             with self.lock:
                 asset.readers -= 1

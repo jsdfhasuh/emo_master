@@ -9,6 +9,16 @@ from tests.designer.test_toolbar_width import settle
 from tests.designer.test_visual_layout import makeWindow
 
 
+def revealControl(scroll, control):
+    # Qt's ensureWidgetVisible may use ImCursorRectangle for a spin box,
+    # leaving its frame/arrows clipped when only the text cursor fits.
+    # Scroll the WHOLE control into view and keep the full-bounds assertion.
+    bounds = control.rect().translated(control.mapTo(scroll.widget(), QPoint()))
+    center = bounds.center()
+    scroll.ensureVisible(center.x(), center.y(), (bounds.width() + 1) // 2 + 2,
+                         (bounds.height() + 1) // 2 + 2)
+
+
 @pytest.mark.parametrize('width,height', [(640, 474), (800, 478)])
 @pytest.mark.parametrize('directory', ['plc_slmp_read', 'plc_slmp_write'])
 def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, height, directory):  # noqa: F811 - imported pytest fixture
@@ -30,7 +40,7 @@ def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, h
                     controller.addressSpin, controller.dataTypeCombo, controller.countSpin,
                     *controller._endpointControls.values()]:
         # Scroll the actual assembled page, not a reduced editor fixture.
-        controller.runtimeScroll.ensureWidgetVisible(control)
+        revealControl(controller.runtimeScroll, control)
         settle(designerApplication)
         viewport = controller.runtimeScroll.viewport()
         bounds = control.rect().translated(control.mapTo(viewport, QPoint()))
@@ -40,7 +50,7 @@ def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, h
                   if label.text().strip() == caption]
         assert labels, caption
         label = labels[0]
-        controller.runtimeScroll.ensureWidgetVisible(label)
+        revealControl(controller.runtimeScroll, label)
         settle(designerApplication)
         assert label.width() >= label.fontMetrics().horizontalAdvance(label.text()), caption
         assert label.height() >= label.heightForWidth(label.width()), caption
@@ -52,7 +62,7 @@ def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, h
     settle(designerApplication)
     assert window._bindingScroll.isVisible()
     for control in window._bindingPanel.fields.values():
-        window._bindingScroll.ensureWidgetVisible(control)
+        revealControl(window._bindingScroll, control)
         settle(designerApplication)
         viewport = window._bindingScroll.viewport()
         bounds = control.rect().translated(control.mapTo(viewport, QPoint()))
@@ -84,8 +94,14 @@ def testOverflowButtonHasPaintedArrowAndSharedTailActions(designerApplication, w
         assert dark >= 4, 'overflow exists but has no visible arrow'
         QTest.mouseClick(extension, Qt.LeftButton)
         chrome = window.pageCoordinator.chrome
-        _pump(designerApplication, lambda: toolbar.widgetForAction(chrome.testAction).isVisible())
-        for action in (window._toolbarActions['自动布局'], chrome.testAction, chrome.redo):
+        tail = (window._toolbarActions['自动布局'], chrome.testAction, chrome.redo)
+        # At some font widths 图片测试 already fits before expansion. Waiting
+        # for it alone returns before Qt finishes revealing the overflow row.
+        _pump(designerApplication, lambda: all(
+            toolbar.widgetForAction(action).isVisible()
+            and toolbar.rect().contains(toolbar.widgetForAction(action).geometry())
+            for action in tail))
+        for action in tail:
             button = toolbar.widgetForAction(action)
             assert button.isVisible()
             assert toolbar.rect().contains(button.geometry())

@@ -3701,7 +3701,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def deleteSelectedElements(self) -> None:
-        if not flowEditAllowed(self):
+        if not flowEditAllowed(self) or getattr(self.flowScene, 'isEdgeMenuOpen', lambda: False)():
             return
         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
         for fromNode, fromPort, toNode, toPort in selectedEdgeKeys:

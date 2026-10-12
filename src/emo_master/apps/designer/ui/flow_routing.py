@@ -1,14 +1,14 @@
 """Obstacle-aware orthogonal visibility graph, with no Qt or project dependency.
 
 Routing is derived state. The additional 8px corner reserve ensures rounding never
-cuts into the required 12px clearance. Costs discourage crossings, shared trunks,
-bends and length, in that order of weight; obstacle avoidance is a hard constraint.
+cuts into the required 12px clearance. Only fanouts of the exact same source port
+may share trunks freely; obstacle avoidance remains a hard constraint.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from heapq import heappop, heappush
-from collections.abc import Mapping, Sequence
+from collections.abc import Generator, Iterator, Mapping, Sequence
 
 Point = tuple[float, float]
 EdgeKey = tuple[str, str, str, str]
@@ -42,6 +42,26 @@ class Route:
     reason: str = ""
 
 
+@dataclass(frozen=True)
+class OccupiedSegment:
+    """A routed segment owned by one (node ID, output port) signal."""
+    start: Point
+    end: Point
+    signal: tuple[str, str]
+
+
+Segment = tuple[Point, Point] | OccupiedSegment
+
+
+@dataclass
+class _Traffic:
+    count: int = 0
+    costs: dict[tuple[str, str] | None, float] = field(default_factory=dict)
+
+
+TrafficCache = dict[tuple[int, int], _Traffic]
+
+
 def intersects(a: Point, b: Point, rect: Rect) -> bool:
     """Open interior intersection; travelling along a reserved boundary is safe."""
     if a[1] == b[1]:
@@ -67,10 +87,19 @@ def simplify(points: Sequence[Point]) -> tuple[Point, ...]:
     return tuple(result)
 
 
-def _trafficCost(a: Point, b: Point, occupied: Sequence[tuple[Point, Point]]) -> float:
-    cost = 0.0
+def _trafficCost(
+    a: Point, b: Point, occupied: Sequence[Segment],
+    entry: _Traffic, signal: tuple[str, str],
+) -> float:
     horizontal = a[1] == b[1]
-    for c, d in occupied:
+    for segment in occupied[entry.count:]:
+        if isinstance(segment, OccupiedSegment):
+            c, d = segment.start, segment.end
+            owner: tuple[str, str] | None = segment.signal
+        else:
+            c, d = segment
+            owner = None
+        cost = 0.0
         if horizontal == (c[1] == d[1]):
             axis = 0 if horizontal else 1
             other = 1 - axis
@@ -80,8 +109,11 @@ def _trafficCost(a: Point, b: Point, occupied: Sequence[tuple[Point, Point]]) ->
         else:
             h1, h2, v1, v2 = (a, b, c, d) if horizontal else (c, d, a, b)
             if min(h1[0], h2[0]) < v1[0] <= max(h1[0], h2[0]) and min(v1[1], v2[1]) < h1[1] <= max(v1[1], v2[1]):
-                cost += 240
-    return cost
+                cost += 80
+        if cost:
+            entry.costs[owner] = entry.costs.get(owner, 0.0) + cost
+    entry.count = len(occupied)
+    return sum(cost for owner, cost in entry.costs.items() if owner != signal)
 
 
 class OrthogonalRouter:
@@ -93,30 +125,56 @@ class OrthogonalRouter:
     def __init__(self, nodes: Mapping[str, Rect], requests: Sequence[RouteRequest]) -> None:
         self.nodes = nodes
         self.obstacles = {key: rect.expanded(20) for key, rect in nodes.items()}
-        self.requests = sorted(requests, key=lambda request: request.key)
+        # Local links establish the channels before long result/bypass links.
+        # Geometry, not arbitrary IDs or port spelling, determines priority.
+        self.requests = sorted(requests, key=lambda r: (
+            r.end[0] <= r.start[0], abs(r.end[0] - r.start[0]),
+            r.start[1], r.end[1], r.key))
         self.stubs: dict[EdgeKey, tuple[Point, Point]] = {}
         xs: set[float] = set()
         ys: set[float] = set()
         for rect in self.obstacles.values():
             xs.update((rect.left, rect.right))
             ys.update((rect.top, rect.bottom))
-        outgoing: dict[str, int] = {}
+        outgoing: dict[tuple[str, str], int] = {}
         incoming: dict[EdgeKey, int] = {}
         # Target lanes follow actual port order, never alphabetical port names.
         # This matters when e.g. frame sorts before image but is drawn below it.
         targets: dict[str, list[RouteRequest]] = {}
+        sources: dict[str, dict[str, list[RouteRequest]]] = {}
         for request in self.requests:
             targets.setdefault(request.key[2], []).append(request)
+            sources.setdefault(request.key[0], {}).setdefault(request.key[1], []).append(request)
+        for source, ports in sources.items():
+            # A fanout has one exit lane. Downward wires from lower ports
+            # turn first; upward wires from upper ports turn first.
+            upward: list[tuple[float, str]] = []
+            downwardPorts: list[tuple[float, str]] = []
+            for port, group in ports.items():
+                (upward if sum(r.end[1] - r.start[1] for r in group) < 0
+                 else downwardPorts).append((group[0].start[1], port))
+            orderedPorts = sorted(upward) + sorted(downwardPorts, reverse=True)
+            outgoing.update({(source, port): lane for lane, (_, port) in enumerate(orderedPorts)})
         for group in targets.values():
             downward = sum(r.end[1] - r.start[1] for r in group) >= 0
             ordered = sorted(group, key=lambda r: (r.end[1], r.key), reverse=not downward)
             incoming.update({request.key: lane for lane, request in enumerate(ordered)})
         for request in self.requests:
-            source, _, target, _ = request.key
-            outLane, inLane = outgoing.get(source, 0), incoming[request.key]
-            outgoing[source] = outLane + 1
-            start = (self.obstacles[source].right + 10 * outLane, request.start[1])
-            end = (self.obstacles[target].left - 10 * inLane, request.end[1])
+            source, port, target, _ = request.key
+            outLane, inLane = outgoing[(source, port)], incoming[request.key]
+            sourceX, targetX = self.obstacles[source].right, self.obstacles[target].left
+            # Compress only the lane spacing in a narrow manual layout. A
+            # reservation must not itself manufacture a blocked port exit.
+            exitSpace = min((rect.left - sourceX for key, rect in self.obstacles.items()
+                             if key != source and rect.left >= sourceX
+                             and rect.top < request.start[1] < rect.bottom), default=float('inf'))
+            entrySpace = min((targetX - rect.right for key, rect in self.obstacles.items()
+                              if key != target and rect.right <= targetX
+                              and rect.top < request.end[1] < rect.bottom), default=float('inf'))
+            exitPitch = min(10.0, exitSpace / (2 * len(sources[source])))
+            entryPitch = min(10.0, entrySpace / (2 * len(targets[target])))
+            start = (sourceX + exitPitch * outLane, request.start[1])
+            end = (targetX - entryPitch * inLane, request.end[1])
             self.stubs[request.key] = (start, end)
             xs.update((start[0], end[0]))
             ys.update((start[1], end[1]))
@@ -154,37 +212,67 @@ class OrthogonalRouter:
                 previousColumn[x] = index
 
     def routeAll(self) -> dict[EdgeKey, Route]:
-        occupied: list[tuple[Point, Point]] = []
-        routes: dict[EdgeKey, Route] = {}
-        for request in self.requests:
-            route = self.route(request, occupied)
-            routes[request.key] = route
-            if not route.blocked:
-                occupied.extend(zip(route.points, route.points[1:]))
-        return routes
+        return dict(item for item in self.iterRoutes() if item is not None)
 
-    def route(self, request: RouteRequest, occupied: Sequence[tuple[Point, Point]] = ()) -> Route:
+    def iterRoutes(self, *, stepNodes: int = 0) -> Iterator[tuple[EdgeKey, Route] | None]:
+        """Yield edges and optional search checkpoints for interactive callers."""
+        occupied: list[Segment] = []
+        # Occupancy only grows. Each grid segment caches contributions by
+        # signal so every fanout reuses the cache without charging its own trunk.
+        traffic: TrafficCache = {}
+        for request in self.requests:
+            route = yield from self._routeSteps(request, occupied, traffic, stepNodes)
+            if not route.blocked:
+                occupied.extend(OccupiedSegment(a, b, request.key[:2])
+                                for a, b in zip(route.points, route.points[1:]))
+            yield request.key, route
+
+    def route(
+        self, request: RouteRequest, occupied: Sequence[Segment] = (), *,
+        traffic: TrafficCache | None = None,
+    ) -> Route:
+        steps = self._routeSteps(request, occupied, traffic, 0)
+        while True:
+            try:
+                next(steps)
+            except StopIteration as result:
+                return result.value
+
+    def _routeSteps(
+        self, request: RouteRequest, occupied: Sequence[Segment],
+        traffic: TrafficCache | None, stepNodes: int,
+    ) -> Generator[None, None, Route]:
         start, end = self.stubs[request.key]
         source, _, target, _ = request.key
         blocked = (start not in self.indices or end not in self.indices
                    or any(intersects(request.start, start, rect.expanded(12)) for key, rect in self.nodes.items() if key != source)
                    or any(intersects(end, request.end, rect.expanded(12)) for key, rect in self.nodes.items() if key != target))
         if not blocked:
-            points = self._search(start, end, occupied)
+            points = yield from self._searchSteps(start, end, occupied, traffic, stepNodes, request.key[:2])
             if points:
                 return Route(simplify([request.start, *points, request.end]))
         middle = (start[0], end[1])
         return Route(simplify([request.start, start, middle, end, request.end]), True,
                      "连线受阻：节点重叠或端口出口没有安全通道，请移动节点或执行自动布局")
 
-    def _search(self, start: Point, end: Point, occupied: Sequence[tuple[Point, Point]]) -> list[Point]:
+    def _searchSteps(
+        self, start: Point, end: Point, occupied: Sequence[Segment],
+        traffic: TrafficCache | None, stepNodes: int,
+        signal: tuple[str, str],
+    ) -> Generator[None, None, list[Point]]:
         initial = (self.indices[start], 0)
         target = self.indices[end]
         distance = {initial: 0.0}
         parents: dict[tuple[int, int], tuple[int, int]] = {}
         queue = [(0.0, 0.0, initial)]
-        traffic: dict[tuple[int, int], float] = {}
+        if traffic is None:
+            traffic = {}
+        visited = 0
         while queue:
+            visited += 1
+            if stepNodes > 0 and visited % stepNodes == 0:
+                # One long A* search must not monopolize an interactive slice.
+                yield None
             _, cost, state = heappop(queue)
             if cost != distance[state]:
                 continue
@@ -204,12 +292,17 @@ class OrthogonalRouter:
                 if neighbour == target and self.points[index][0] > end[0]:
                     continue
                 segment = (min(index, neighbour), max(index, neighbour))
-                if segment not in traffic:
-                    traffic[segment] = _trafficCost(self.points[index], self.points[neighbour], occupied)
+                entry = traffic.get(segment)
+                if entry is None:
+                    entry = traffic[segment] = _Traffic()
+                trafficCost = _trafficCost(self.points[index], self.points[neighbour], occupied, entry, signal)
                 extra = 32 if direction != incoming else 0
                 if neighbour == target and direction != 0:
                     extra += 32
-                nextCost = cost + length + extra + traffic[segment]
+                # A few unavoidable crossings are clearer than a long reverse
+                # dogleg. Return edges/self-loops still have a finite cost.
+                reverse = max(0.0, self.points[index][0] - self.points[neighbour][0])
+                nextCost = cost + length + extra + trafficCost + reverse * 3
                 nextState = (neighbour, direction)
                 if nextCost < distance.get(nextState, float("inf")):
                     distance[nextState] = nextCost

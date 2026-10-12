@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 try:
-    from PySide2.QtCore import QPoint, QSize, QTimer, Qt, Signal
+    from PySide2.QtCore import QPoint, QPointF, QRectF, QSize, QTimer, Qt, Signal
     from PySide2.QtGui import QPainter
-    from PySide2.QtWidgets import QGraphicsView
+    from PySide2.QtWidgets import QGraphicsItem, QGraphicsView
 
     class DesignerGraphicsView(QGraphicsView):
         zoomChanged: Any = Signal(float)
@@ -31,6 +31,60 @@ try:
                 setHorizontalPolicy(Qt.ScrollBarAlwaysOff)
             if callable(setVerticalPolicy):
                 setVerticalPolicy(Qt.ScrollBarAlwaysOff)
+            self._navigationTimer = QTimer(self)
+            self._navigationTimer.setSingleShot(True)
+            self._navigationTimer.timeout.connect(self._ensureNavigationBounds)
+            scene.changed.connect(self._queueNavigationBounds)
+            self._ensureNavigationBounds()
+
+        def _viewportCenter(self) -> QPointF:
+            # Use the geometric center, not the rounded integer pixel center:
+            # rounding here would accumulate drift each time bounds expand.
+            return self.mapToScene(self.viewport().rect()).boundingRect().center()
+
+        def _queueNavigationBounds(self, _regions) -> None:
+            if not self._navigationTimer.isActive():
+                self._navigationTimer.start(0)
+
+        def _ensureNavigationBounds(self, center=None, zoom=None, *, reset=False) -> None:
+            """Keep real scroll range even when the graph is smaller than the viewport.
+
+            Bounds belong to this view, not the graph or saved project. Grow
+            before scrolling/zooming so Qt never clamps the requested movement.
+            The spare viewport on each side amortizes expansion during a drag.
+            """
+            currentCenter = self._viewportCenter()
+            targetCenter = currentCenter if center is None else center
+            scale = self.getZoomFactor() if zoom is None else zoom
+            width = max(1, self.viewport().width()) / scale
+            height = max(1, self.viewport().height()) / scale
+            visible = QRectF(targetCenter.x() - width / 2, targetCenter.y() - height / 2, width, height)
+            guard = 64 / scale
+            scene = self.scene()
+            content = scene.itemsBoundingRect() if scene is not None else QRectF()
+            required = visible.adjusted(-guard, -guard, guard, guard)
+            if not content.isEmpty():
+                required = required.united(content.adjusted(-guard, -guard, guard, guard))
+            if not reset and self.sceneRect().contains(required):
+                return
+            bounds = required.united(visible.adjusted(-width, -height, width, height))
+            if not reset:
+                bounds = bounds.united(self.sceneRect())
+            anchor = self.transformationAnchor()
+            self.setTransformationAnchor(QGraphicsView.NoAnchor)
+            self.setSceneRect(bounds)
+            # Changing the scrollbar range must not move the camera or nodes.
+            super().centerOn(currentCenter)
+            self.setTransformationAnchor(anchor)
+
+        def centerOn(self, *args) -> None:
+            if len(args) == 1:
+                target = args[0]
+                point = target.sceneBoundingRect().center() if isinstance(target, QGraphicsItem) else QPointF(target)
+            else:
+                point = QPointF(*args)
+            self._ensureNavigationBounds(center=point)
+            super().centerOn(point)
 
         def getZoomFactor(self) -> float:
             return float(self.transform().m11())
@@ -39,8 +93,10 @@ try:
             self._pendingFit = None
             self._fitTimer.stop()
             target = max(self._minZoom, min(self._maxZoom, float(factor)))
+            self._ensureNavigationBounds(zoom=target)
             self.setTransformationAnchor(QGraphicsView.AnchorUnderMouse if underMouse else QGraphicsView.AnchorViewCenter)
             self.scale(target / self.getZoomFactor(), target / self.getZoomFactor())
+            self._ensureNavigationBounds()
             self.zoomChanged.emit(self.getZoomFactor())
 
         def fitContent(self, bounds, minimumZoom: float = 0.02) -> None:
@@ -63,16 +119,22 @@ try:
                          (self.viewport().height() - 24) / max(1, height), 1.0)
             self.resetTransform()
             self.scale(max(minimum, target), max(minimum, target))
+            # Fit is an explicit reframe: discard distant navigation history
+            # from other workflows instead of growing bounds forever.
+            self._ensureNavigationBounds(center=QPointF(x + width / 2, y + height / 2), reset=True)
             self.centerOn(x + width / 2, y + height / 2)
             self.zoomChanged.emit(self.getZoomFactor())
 
         def showEvent(self, event):
             super().showEvent(event)
+            self._ensureNavigationBounds()
             if self._pendingFit is not None:
                 self._fitTimer.start(0)
 
         def resizeEvent(self, event):
             super().resizeEvent(event)
+            if hasattr(self, "_navigationTimer"):
+                self._ensureNavigationBounds()
             if self._pendingFit is not None:
                 self._fitTimer.start(0)
 
@@ -99,7 +161,12 @@ try:
                 item = itemAt(int(x), int(y))
                 if item is not None:
                     return False
+            clearFocus = getattr(sceneObj, "clearEdgeFocus", None)
+            if callable(clearFocus):
+                clearFocus()
             self._isPanning = True
+            self._pendingFit = None
+            self._fitTimer.stop()
             self._lastPanPoint = QPoint(int(x), int(y))
             return True
 
@@ -115,6 +182,7 @@ try:
             vBar = verticalBar()
             currentPoint = QPoint(int(x), int(y))
             delta = currentPoint - self._lastPanPoint
+            self._ensureNavigationBounds(center=self._viewportCenter() - QPointF(delta) / self.getZoomFactor())
             setHValue = getattr(hBar, "setValue", None)
             setVValue = getattr(vBar, "setValue", None)
             hValue = getattr(hBar, "value", None)

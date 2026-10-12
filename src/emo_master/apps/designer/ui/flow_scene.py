@@ -2,13 +2,21 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass, field, replace
+from time import perf_counter
+from collections.abc import Iterator
 from typing import Callable, cast
 
 from emo_master.apps.designer.ui.operator_bubble import OPERATOR_MIME_TYPE
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.apps.designer.ui.node_geometry import gridPositions, measureNode
-from emo_master.apps.designer.ui.flow_layout import LayoutNode, flowPositions
-from emo_master.apps.designer.ui.flow_routing import OrthogonalRouter, Rect, Route, RouteRequest
+from emo_master.apps.designer.ui.flow_layout import LayoutEdge, LayoutNode, flowPositions
+from emo_master.apps.designer.ui.flow_routing import EdgeKey, OrthogonalRouter, Rect, Route, RouteRequest, simplify
+from emo_master.apps.designer.ui.flow_edge_presentation import (
+    SELECTED_COLOR, FOCUS_COLOR, WireGeometry, WirePart, edgeStyle, focusEdges, wireGeometry,
+)
+
+
+_SELECTED_EDGE_COLOR = SELECTED_COLOR
 
 
 @dataclass
@@ -43,9 +51,9 @@ OperatorDropHandler = Callable[[dict[str, object], float, float], None]
 
 
 try:
-    from PySide2.QtCore import QPointF, QRectF, Qt, QTimer
+    from PySide2.QtCore import QEvent, QPointF, QRectF, Qt, QTimer
     from shiboken2 import isValid
-    from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPen, QTransform
+    from PySide2.QtGui import QBrush, QColor, QFontMetricsF, QPainter, QPainterPath, QPainterPathStroker, QPen, QPolygonF, QTransform
     from emo_master.apps.designer.ui.theme import uiFont
     from emo_master.apps.designer.ui.icon_map import operatorIcon
     from PySide2.QtWidgets import (
@@ -57,7 +65,84 @@ try:
         QGraphicsSceneContextMenuEvent,
         QGraphicsSceneMouseEvent,
         QGraphicsSimpleTextItem,
+        QMenu,
     )
+
+    def _partPath(part: WirePart) -> QPainterPath:
+        path = QPainterPath(QPointF(*part.points[0]))
+        if len(part.points) == 3:
+            path.quadTo(QPointF(*part.points[1]), QPointF(*part.points[2]))
+        else:
+            path.lineTo(QPointF(*part.points[1]))
+        return path
+
+    def _stroke(path: QPainterPath) -> QPainterPath:
+        stroker = QPainterPathStroker()
+        stroker.setWidth(8.0)
+        return stroker.createStroke(path)
+
+    class _WireLayer(QGraphicsPathItem):
+        def __init__(self) -> None:
+            super().__init__()
+            self.setAcceptedMouseButtons(Qt.NoButton)
+
+        def shape(self):
+            return QPainterPath()
+
+        def paint(self, painter, option, widget=None):
+            painter.setPen(self.pen())
+            painter.setBrush(Qt.NoBrush)
+            painter.drawPath(self.path())
+
+    class _BranchMenu(QMenu):
+        def event(self, event):
+            if event.type() == QEvent.ShortcutOverride and event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+                event.accept()
+                return True
+            return super().event(event)
+
+        def keyPressEvent(self, event):
+            if event.key() in (Qt.Key_Delete, Qt.Key_Backspace):
+                event.accept()
+                return
+            super().keyPressEvent(event)
+
+    class _SharedWireItem(QGraphicsPathItem):
+        def __init__(self, scene, path, owners) -> None:
+            super().__init__(path)
+            self.sceneRef = scene
+            self.owners = frozenset(owners)
+            self._hitPath = _stroke(path)
+            self.setAcceptHoverEvents(True)
+            self.setZValue(-.2)
+            self.setCursor(Qt.PointingHandCursor)
+            source = next(iter(self.owners))
+            self.setToolTip(f"{scene._edgeLabel(source, sourceOnly=True)}\n{len(self.owners)} 条支路")
+
+        def shape(self):
+            return self._hitPath
+
+        def boundingRect(self):
+            return self._hitPath.boundingRect()
+
+        def paint(self, painter, option, widget=None):
+            pass
+
+        def hoverEnterEvent(self, event):
+            self.sceneRef._setWireHover(self.owners)
+            super().hoverEnterEvent(event)
+
+        def hoverLeaveEvent(self, event):
+            self.sceneRef._setWireHover(None)
+            super().hoverLeaveEvent(event)
+
+        def mousePressEvent(self, event):
+            event.accept()
+            if event.button() == Qt.LeftButton:
+                self.sceneRef._showEdgeMenu(self.owners, event.screenPos(), event.modifiers())
+
+        def mouseReleaseEvent(self, event):
+            event.accept()
 
     class _WorkflowReferenceText(QGraphicsSimpleTextItem):
         def __init__(self, text, parent, workflowId, scene):
@@ -265,6 +350,19 @@ try:
             )
             self._snapFillColor = QColor("#0984e3")
 
+        def boundingRect(self):
+            # Reserve the selection ring without enlarging the port's hit shape.
+            return super().boundingRect().adjusted(-3, -3, 3, 3)
+
+        def paint(self, painter, option, widget=None):
+            super().paint(painter, option, widget)
+            scene = self.scene()
+            color = scene._portEmphasis.get((self.nodeId, self.direction, self.portName)) if isinstance(scene, FlowScene) else None
+            if color is not None:
+                painter.setPen(QPen(QColor(color), 1.5))
+                painter.setBrush(Qt.NoBrush)
+                painter.drawEllipse(self.rect().adjusted(-2.5, -2.5, 2.5, 2.5))
+
         def hoverEnterEvent(self, event) -> None:  # type: ignore[override]
             handlePortHover = getattr(self._sceneRef, "handlePortHover", None)
             if handlePortHover is not None:
@@ -311,39 +409,86 @@ try:
             self.edge = edge
             self.sourcePort = sourcePort
             self.targetPort = targetPort
-            self.setPen(QPen(QColor("#0984e3"), 2.0))
+            self.setPen(QPen(QColor(edgeStyle()[0]), edgeStyle()[1]))
             self.setFlag(QGraphicsItem.ItemIsSelectable, True)
             self.setData(
                 int(Qt.UserRole),
                 (edge.fromNodeId, edge.fromPort, edge.toNodeId, edge.toPort),
             )
-            self._normalPen = QPen(QColor("#0984e3"), 2.0)
-            self._selectedPen = QPen(QColor("#0652dd"), 3.2)
+            self.setAcceptHoverEvents(True)
             self.route = Route(())
+            self._displayPath = QPainterPath()
+            self._hitPath = QPainterPath()
+            self._focused = False
             self.setZValue(-1)
+
+        def paint(self, painter, option, widget=None):
+            # QGraphicsPathItem also paints a dashed bounding rectangle when
+            # selected. A routed edge can span most of the graph: highlight the
+            # actual line instead, not a misleading box around unrelated nodes.
+            painter.setPen(self.pen())
+            painter.setBrush(self.brush())
+            painter.drawPath(self._displayPath)
+            if (self.isSelected() or self._focused) and len(self.route.points) >= 2:
+                a, b = self.route.points[-2:]
+                length = abs(b[0] - a[0]) + abs(b[1] - a[1])
+                if length >= 12:
+                    dx, dy = (b[0] - a[0]) / length, (b[1] - a[1]) / length
+                    tip = QPointF(b[0] - dx * 7, b[1] - dy * 7)
+                    base = tip - QPointF(dx * 6, dy * 6)
+                    painter.setBrush(self.pen().color())
+                    painter.drawPolygon(QPolygonF([tip, base + QPointF(-dy * 3, dx * 3),
+                                                    base + QPointF(dy * 3, -dx * 3)]))
+
+        def shape(self):
+            # The default shape includes the implicitly closed path interior,
+            # even with NoBrush. That steals clicks from large blank regions
+            # and prevents canvas panning inside a long bent connection.
+            return self._hitPath
+
+        def boundingRect(self):
+            return self.path().boundingRect().adjusted(-5, -5, 5, 5)
 
         def itemChange(
             self, change: QGraphicsItem.GraphicsItemChange, value: object
         ) -> object:
             result = super().itemChange(change, value)
-            if change == QGraphicsItem.ItemSelectedHasChanged:
+            if change == QGraphicsItem.ItemSelectedHasChanged and not isinstance(self.scene(), FlowScene):
                 self._applySelectionStyle(bool(value))
             return result
 
         def setSelectedStyle(self, selected: bool) -> None:
             self.setSelected(selected)
-            self._applySelectionStyle(selected)
+
+        def hoverEnterEvent(self, event) -> None:  # type: ignore[override]
+            scene = self.scene()
+            if isinstance(scene, FlowScene):
+                scene._setWireHover((self.data(int(Qt.UserRole)),))
+            super().hoverEnterEvent(event)
+
+        def hoverLeaveEvent(self, event) -> None:  # type: ignore[override]
+            scene = self.scene()
+            if isinstance(scene, FlowScene):
+                scene._setWireHover(None)
+            super().hoverLeaveEvent(event)
 
         def getStyle(self) -> dict[str, object]:
             pen = self.pen()
             return {"width": float(pen.widthF()), "color": str(pen.color().name())}
 
         def _applySelectionStyle(self, selected: bool) -> None:
-            pen = QPen(self._selectedPen if selected else self._normalPen)
-            if self.route.blocked:
-                pen.setColor(QColor("#dc6b17"))
-                pen.setStyle(Qt.DashLine)
-            self.setPen(pen)
+            scene = self.scene()
+            if isinstance(scene, FlowScene):
+                scene._refreshEdgePresentation()
+            else:
+                color, width, _ = edgeStyle(selected=selected, blocked=self.route.blocked)
+                self.setPen(QPen(QColor(color), width, Qt.DashLine if self.route.blocked else Qt.SolidLine))
+
+        def _setDisplayPath(self, path) -> None:
+            self.prepareGeometryChange()
+            self._displayPath = path
+            self._hitPath = _stroke(path)
+            self.update()
 
         def refreshPath(self) -> None:
             scene = self.scene()
@@ -352,12 +497,16 @@ try:
 
         def applyRoute(self, route: Route) -> None:
             self.route = route
-            self.setToolTip(route.reason)
+            scene = self.scene()
+            key = self.data(int(Qt.UserRole))
+            label = scene._edgeLabel(key) if isinstance(scene, FlowScene) else " -> ".join((".".join(key[:2]), ".".join(key[2:])))
+            self.setToolTip(label + ("\n" + route.reason if route.reason else ""))
             path = QPainterPath()
-            if route.points:
-                path.moveTo(QPointF(*route.points[0]))
-                for index in range(1, len(route.points) - 1):
-                    before, corner, after = route.points[index - 1:index + 2]
+            points = simplify(route.points)
+            if points:
+                path.moveTo(QPointF(*points[0]))
+                for index in range(1, len(points) - 1):
+                    before, corner, after = points[index - 1:index + 2]
                     incoming = abs(corner[0] - before[0]) + abs(corner[1] - before[1])
                     outgoing = abs(after[0] - corner[0]) + abs(after[1] - corner[1])
                     radius = min(8.0, incoming / 2, outgoing / 2)
@@ -367,17 +516,28 @@ try:
                                         corner[1] + (after[1] - corner[1]) * radius / outgoing)
                     path.lineTo(entry)
                     path.quadTo(QPointF(*corner), exitPoint)
-                path.lineTo(QPointF(*route.points[-1]))
+                path.lineTo(QPointF(*points[-1]))
             self.setPath(path)
-            self._applySelectionStyle(self.isSelected())
+            self._setDisplayPath(path)
+            if isinstance(scene, FlowScene):
+                scene._wireGeometryChanged()
+            else:
+                self._applySelectionStyle(self.isSelected())
 
     class FlowScene(QGraphicsScene):
         def __init__(self) -> None:
             super().__init__()
             self._routeBatch = False
+            self._routesDirty = False
+            self._mouseEditChanged = False
             self._routeTimer = QTimer(self)
             self._routeTimer.setSingleShot(True)
             self._routeTimer.timeout.connect(self.refreshAllRoutes)
+            self._routeRefineTimer = QTimer(self)
+            self._routeRefineTimer.setSingleShot(True)
+            self._routeRefineTimer.timeout.connect(self._continueRouteRefinement)
+            self._routeRefinement: Iterator[tuple[EdgeKey, Route] | None] | None = None
+            self._refinedRoutes: dict[EdgeKey, Route] = {}
             self._nodeItems: dict[str, _NodeItem] = {}
             self.presentationProvider: Callable[[FlowNodeViewModel], FlowNodeViewModel] | None = None
             self.workflowOpenHandler: Callable[[str], None] | None = None
@@ -406,6 +566,184 @@ try:
             self._dragSnapRadius = 26.0
             self._dragHintText = ""
             self._dragHintItem: QGraphicsSimpleTextItem | None = None
+            self._wireGeometry = WireGeometry((), ())
+            self._wirePaths: list[tuple[WirePart, QPainterPath]] = []
+            self._wireLayers: dict[tuple, _WireLayer] = {}
+            self._sharedWireItems: list[_SharedWireItem] = []
+            self._wireBatch = False
+            self._wireEpoch = 0
+            self._hoverEdgeKeys: frozenset[EdgeKey] | None = None
+            self._menuPreview: frozenset[EdgeKey] | None = None
+            self._portEmphasis: dict[tuple[str, str, str], str] = {}
+            self._focusedEdges: frozenset[EdgeKey] = frozenset()
+            self._branchMenu: QMenu | None = None
+            self._presentationSignature: tuple[frozenset[EdgeKey], frozenset[EdgeKey], bool] | None = None
+            self.selectionChanged.connect(self._refreshEdgePresentation)
+
+        def _edgeLabel(self, key, sourceOnly=False) -> str:
+            def endpoint(nodeId, direction, portName):
+                node = self._nodeItems.get(nodeId)
+                title = node.model.title if node is not None else nodeId
+                labels = (node.model.outputPortLabels if direction == "output" else node.model.inputPortLabels) if node else {}
+                label = labels.get(portName, portName)
+                return f"{title} [{nodeId}].{label}" + (f" ({portName})" if label != portName else "")
+            source = endpoint(key[0], "output", key[1])
+            return source if sourceOnly else source + " -> " + endpoint(key[2], "input", key[3])
+
+        def _setWireHover(self, keys) -> None:
+            if self._dragSourcePort is not None or self._branchMenu is not None:
+                return
+            self._hoverEdgeKeys = frozenset(keys) if keys is not None else None
+            self._refreshEdgePresentation()
+
+        def _refreshEdgePresentation(self) -> None:
+            selected = frozenset(self.getSelectedEdgeKeys())
+            port = None
+            if self._hoverPort is not None and self._hoverPort.scene() is self:
+                port = (self._hoverPort.nodeId, self._hoverPort.direction, self._hoverPort.portName)
+            preview = self._menuPreview if self._menuPreview is not None else self._hoverEdgeKeys
+            self._focusedEdges = focusEdges(self._edgeItems, self.getSelectedNodeIds(), selected,
+                                           port if self._dragSourcePort is None else None,
+                                           preview if self._dragSourcePort is None else None)
+            active = bool(self._focusedEdges or port is not None or preview is not None or self.getSelectedNodeIds())
+            signature = (selected, self._focusedEdges, active)
+            if signature == self._presentationSignature:
+                return
+            self._presentationSignature = signature
+            styles = {}
+            oldPorts, self._portEmphasis = self._portEmphasis, {}
+            for key, edge in self._edgeItems.items():
+                color, width, rank = edgeStyle(selected=key in selected, focused=key in self._focusedEdges,
+                                               dimmed=active, blocked=edge.route.blocked)
+                pen = QPen(QColor(color), width, Qt.DashLine if edge.route.blocked else Qt.SolidLine)
+                pen.setCapStyle(Qt.RoundCap)
+                styles[key] = (rank, color, width, edge.route.blocked)
+                edge._focused = key in self._focusedEdges
+                if edge.pen() != pen:
+                    edge.setPen(pen)
+                edge.setZValue(-.25 if key in selected else -.5 if edge._focused else -1)
+                if edge._focused:
+                    for portKey in ((key[0], "output", key[1]), (key[2], "input", key[3])):
+                        if self._portEmphasis.get(portKey) != SELECTED_COLOR:
+                            self._portEmphasis[portKey] = SELECTED_COLOR if key in selected else FOCUS_COLOR
+            for portKey in oldPorts.keys() | self._portEmphasis.keys():
+                if portKey in self._portItems:
+                    self._portItems[portKey].update()
+            buckets: dict[tuple, QPainterPath] = {}
+            for part, path in self._wirePaths:
+                if len(part.owners) > 1:
+                    style = max(styles[key] for key in part.owners if key in styles)
+                    buckets.setdefault(style, QPainterPath()).addPath(path)
+            for point, owners in self._wireGeometry.junctions:
+                style = max(styles[key] for key in owners if key in styles)
+                buckets.setdefault(style, QPainterPath()).addEllipse(QPointF(*point), 2.3, 2.3)
+            for style in self._wireLayers.keys() - buckets.keys():
+                self._wireLayers[style].setPath(QPainterPath())
+            for style, path in buckets.items():
+                if style not in self._wireLayers:
+                    layer = _WireLayer()
+                    self.addItem(layer)
+                    self._wireLayers[style] = layer
+                layer = self._wireLayers[style]
+                rank, color, width, blocked = style
+                pen = QPen(QColor(color), width, Qt.DashLine if blocked else Qt.SolidLine)
+                pen.setCapStyle(Qt.RoundCap)
+                layer.setPen(pen)
+                layer.setPath(path)
+                layer.setZValue(-.95 + rank * .1775)
+
+        def _wireGeometryChanged(self) -> None:
+            if self._wireBatch:
+                return
+            self._wireEpoch += 1
+            self._presentationSignature = None
+            self._closeEdgeMenu()
+            self._hoverEdgeKeys = None
+            for item in self._sharedWireItems:
+                self.removeItem(item)
+            self._sharedWireItems = []
+            self._wireGeometry = wireGeometry({key: edge.route for key, edge in self._edgeItems.items()})
+            self._wirePaths = [(part, _partPath(part)) for part in self._wireGeometry.parts]
+            unique = {key: QPainterPath() for key in self._edgeItems}
+            shared: dict[frozenset[EdgeKey], QPainterPath] = {}
+            for part, path in self._wirePaths:
+                if len(part.owners) == 1:
+                    unique[next(iter(part.owners))].addPath(path)
+                else:
+                    shared.setdefault(part.owners, QPainterPath()).addPath(path)
+            for key, path in unique.items():
+                self._edgeItems[key]._setDisplayPath(path)
+            for owners, path in shared.items():
+                item = _SharedWireItem(self, path, owners)
+                self.addItem(item)
+                self._sharedWireItems.append(item)
+            self._refreshEdgePresentation()
+
+        def _closeEdgeMenu(self) -> None:
+            if self._branchMenu is not None:
+                menu, self._branchMenu = self._branchMenu, None
+                menu.close()
+                menu.deleteLater()
+            self._menuPreview = None
+
+        def _showEdgeMenu(self, keys, screenPos, modifiers=Qt.NoModifier) -> None:
+            keys = sorted(set(keys).intersection(self._edgeItems))
+            if not keys:
+                return
+            self._closeEdgeMenu()
+            epoch = self._wireEpoch
+            parent = self.views()[0] if self.views() else None
+            menu = _BranchMenu(parent)
+            menu.setObjectName("flowEdgeBranchMenu")
+            menu.setToolTipsVisible(True)
+            self._branchMenu = menu
+            self.destroyed.connect(menu.close)
+            self._hoverEdgeKeys = None
+            for key in keys:
+                label = self._edgeLabel(key)
+                screen = parent.screen() if parent is not None else None
+                width = min(1000, screen.availableGeometry().width() - 80) if screen else 900
+                action = menu.addAction(QFontMetricsF(menu.font()).elidedText(label, Qt.ElideMiddle, width))
+                action.setToolTip(label)
+                action.setData(key)
+                action.hovered.connect(lambda key=key: self._previewMenuEdge(key))
+                action.triggered.connect(lambda checked=False, key=key: self._chooseMenuEdge(key, epoch, modifiers))
+            def hidden():
+                if isValid(self) and self._branchMenu is menu:
+                    self._branchMenu = None
+                    self._menuPreview = None
+                    self._refreshEdgePresentation()
+                menu.deleteLater()
+            menu.aboutToHide.connect(hidden)
+            self._refreshEdgePresentation()
+            menu.popup(screenPos)
+
+        def _previewMenuEdge(self, key) -> None:
+            if not isValid(self) or key not in self._edgeItems:
+                return
+            self._menuPreview = frozenset((key,))
+            self._refreshEdgePresentation()
+
+        def _chooseMenuEdge(self, key, epoch, modifiers) -> None:
+            if not isValid(self) or epoch != self._wireEpoch or key not in self._edgeItems:
+                return
+            edge = self._edgeItems[key]
+            if not modifiers & Qt.ControlModifier:
+                self.clearSelection()
+            edge.setSelected(not edge.isSelected() if modifiers & Qt.ControlModifier else True)
+            self._menuPreview = None
+            self._refreshEdgePresentation()
+
+        def clearEdgeFocus(self) -> None:
+            self._closeEdgeMenu()
+            self._hoverPort = None
+            self._hoverEdgeKeys = None
+            self._clearInputHints()
+            self.clearSelection()
+            self._refreshEdgePresentation()
+
+        def isEdgeMenuOpen(self) -> bool:
+            return self._branchMenu is not None
 
         def setIconProvider(self, provider, contextSupplier: Callable[[], tuple]) -> None:
             if self._iconProvider is not None:
@@ -451,7 +789,11 @@ try:
 
         def clearGraph(self) -> None:
             hadSelection = bool(self.selectedItems())
+            self._closeEdgeMenu()
             self._routeTimer.stop()
+            self._cancelRouteRefinement()
+            self._routesDirty = False
+            self._mouseEditChanged = False
             self._dragHintItem = None
             if self._iconProvider is not None:
                 for item in self._nodeItems.values():
@@ -469,6 +811,16 @@ try:
             self._bindingSources = ()
             self._portItems = {}
             self._edgeItems = {}
+            self._wireGeometry = WireGeometry((), ())
+            self._wirePaths = []
+            self._wireLayers = {}
+            self._sharedWireItems = []
+            self._wireEpoch += 1
+            self._hoverEdgeKeys = None
+            self._menuPreview = None
+            self._portEmphasis = {}
+            self._focusedEdges = frozenset()
+            self._presentationSignature = None
             self._inputEdgeIndex = {}
             self._dragSourcePort = None
             self._dragPathItem = None
@@ -515,7 +867,7 @@ try:
                         hint = label.toolTip() + "\n可选输出：仅启用 drawOverlay（绘制叠加图）时产生；nullable 不代表允许缺失。"
                         label.setToolTip(hint)
                         portItem.setToolTip(hint)
-                    if direction == "input" and portName in model.inputPortLabels:
+                    if direction == "input" and model.kind == "loop" and portName in model.inputPortLabels:
                         tip = label.toolTip() + "\n初始值来自此连线；后续每轮判断循环体回传的同名布尔值"
                         label.setToolTip(tip)
                         portItem.setToolTip(tip)
@@ -538,6 +890,9 @@ try:
                     selected, state = old.isSelected(), old._runtimeState
                     if self._iconProvider is not None:
                         self._iconProvider.unbind(old)
+                    for key in list(self._portItems):
+                        if key[0] == nodeId:
+                            del self._portItems[key]
                     self.removeItem(old)
                     self.addFlowNode(model)
                     item = self._nodeItems[nodeId]
@@ -551,6 +906,8 @@ try:
                             edge.targetPort = self._portItems[(nodeId, "input", edge.edge.toPort)]
             finally:
                 self.blockSignals(previous)
+            self._hoverPort = None
+            self._refreshEdgePresentation()
             self._scheduleRoutes()
 
         def renderEdge(self, edge: FlowEdgeViewModel) -> None:
@@ -570,15 +927,18 @@ try:
             self.addItem(edgeItem)
             self._edgeItems[edgeKey] = edgeItem
             self._inputEdgeIndex[inputKey] = edgeKey
+            if existingEdgeKey is not None:
+                self.refreshPresentations()
+            self._wireGeometryChanged()
             self._scheduleRoutes()
 
         def _scheduleRoutes(self) -> None:
+            self._cancelRouteRefinement()
+            self._routesDirty = True
             if not self._routeBatch and self.mouseGrabberItem() is None:
                 self._routeTimer.start(0)
 
-        def _routeEdges(self, items: list[_EdgeItem]) -> None:
-            if not items:
-                return
+        def _routingInputs(self, items: list[_EdgeItem]) -> tuple[dict[str, Rect], list[RouteRequest]]:
             nodes = {}
             for key, item in self._nodeItems.items():
                 rect = item.mapRectToScene(item.rect())
@@ -590,20 +950,77 @@ try:
                 edge = item.edge
                 requests.append(RouteRequest((edge.fromNodeId, edge.fromPort, edge.toNodeId, edge.toPort),
                                              (start.x(), start.y()), (end.x(), end.y())))
+            return nodes, requests
+
+        def _routeEdges(self, items: list[_EdgeItem]) -> None:
+            if not items:
+                return
+            nodes, requests = self._routingInputs(items)
             routes = OrthogonalRouter(nodes, requests).routeAll()
-            for item, request in zip(items, requests):
-                item.applyRoute(routes[request.key])
+            self._wireBatch = True
+            try:
+                for item, request in zip(items, requests):
+                    item.applyRoute(routes[request.key])
+            finally:
+                self._wireBatch = False
+            self._wireGeometryChanged()
 
         def refreshAllRoutes(self) -> None:
             self._routeTimer.stop()
+            self._cancelRouteRefinement()
             self._routeEdges(list(self._edgeItems.values()))
             self._refreshBindingPaths()
+            self._routesDirty = False
+
+        def _cancelRouteRefinement(self) -> None:
+            self._routeRefineTimer.stop()
+            self._routeRefinement = None
+            self._refinedRoutes.clear()
+
+        def _scheduleRouteRefinement(self) -> None:
+            self._routeTimer.stop()
+            if self._routeRefinement is None and not self._routeRefineTimer.isActive():
+                self._routeRefineTimer.start(0)
+
+        def _continueRouteRefinement(self) -> None:
+            # Refine a snapshot cooperatively, rather than blocking a mouse
+            # release for the whole graph. A new edit/clear cancels the snapshot.
+            if self.mouseGrabberItem() is not None:
+                self._routeRefineTimer.start(16)
+                return
+            deadline = perf_counter() + .008
+            if self._routeRefinement is None:
+                nodes, requests = self._routingInputs(list(self._edgeItems.values()))
+                self._routeRefinement = OrthogonalRouter(nodes, requests).iterRoutes(stepNodes=64)
+            while perf_counter() < deadline:
+                try:
+                    result = next(self._routeRefinement)
+                except StopIteration:
+                    self._wireBatch = True
+                    try:
+                        for key, route in self._refinedRoutes.items():
+                            self._edgeItems[key].applyRoute(route)
+                    finally:
+                        self._wireBatch = False
+                    self._wireGeometryChanged()
+                    self._refreshBindingPaths()
+                    self._routesDirty = False
+                    self._cancelRouteRefinement()
+                    return
+                if result is not None:
+                    key, route = result
+                    self._refinedRoutes[key] = route
+            self._routeRefineTimer.start(1)
 
         def refreshEdgesForNode(self, nodeId: str) -> None:
+            self._cancelRouteRefinement()
             self._refreshBindingPaths()
             if self._routeBatch:
                 return
             if self.mouseGrabberItem() is not None:
+                self._routeTimer.stop()
+                self._routesDirty = True
+                self._mouseEditChanged = True
                 self._routeEdges([item for item in self._edgeItems.values()
                                   if nodeId in (item.edge.fromNodeId, item.edge.toNodeId)])
             else:
@@ -683,6 +1100,8 @@ try:
                     self._iconProvider.unbind(nodeItem)
                 self.removeItem(nodeItem)
                 del self._nodeItems[nodeId]
+                self._hoverPort = None
+                self._wireGeometryChanged()
                 self._scheduleRoutes()
 
         def removeFlowEdge(
@@ -698,6 +1117,7 @@ try:
             existing = self._inputEdgeIndex.get(inputKey)
             if existing == edgeKey:
                 del self._inputEdgeIndex[inputKey]
+            self._wireGeometryChanged()
             self._scheduleRoutes()
 
         def getSelectedEdgeKeys(self) -> list[tuple[str, str, str, str]]:
@@ -729,10 +1149,18 @@ try:
                 self.refreshAllRoutes()
 
         def layoutNodesFlow(self) -> None:
+            # Measure local port offsets, not saved positions or port-key order.
+            # Routing stays derived state; only this explicit layout moves nodes.
+            links = []
+            for edge in self._edgeItems.values():
+                source, target = edge.sourcePort, edge.targetPort
+                links.append(LayoutEdge(edge.edge.fromNodeId, edge.edge.toNodeId,
+                    source.mapToParent(source.boundingRect().center()).y(),
+                    target.mapToParent(target.boundingRect().center()).y()))
             positions = flowPositions(
                 {key: LayoutNode(item.geometry.width, item.geometry.height, item.model.kind)
                  for key, item in self._nodeItems.items()},
-                [(edge[0], edge[2]) for edge in self._edgeItems])
+                links)
             self._applyPositions(positions)
 
         def nextNodePosition(self) -> tuple[float, float]:
@@ -740,7 +1168,11 @@ try:
             return (20.0, float(bottom + 48))
 
         def startConnectionDrag(self, sourcePort: _PortItem) -> None:
+            self._closeEdgeMenu()
+            self._hoverPort = None
+            self._hoverEdgeKeys = None
             self._dragSourcePort = sourcePort
+            self._refreshEdgePresentation()
             self._dragInvalidReason = ""
             self._applyConnectableInputHighlight(sourcePort)
             self._setDragHint(
@@ -754,16 +1186,17 @@ try:
             self._dragPathItem = pathItem
 
         def handlePortHover(self, portItem: _PortItem, entered: bool) -> None:
-            if portItem.direction != "output":
-                return
-            if self._dragSourcePort is not None:
+            if self._dragSourcePort is not None or self._branchMenu is not None:
                 return
             self._clearInputHints()
             if entered:
                 self._hoverPort = portItem
-                self._applyConnectableInputHighlight(portItem)
-            else:
+                self._hoverEdgeKeys = None
+                if portItem.direction == "output":
+                    self._applyConnectableInputHighlight(portItem)
+            elif self._hoverPort is portItem:
                 self._hoverPort = None
+            self._refreshEdgePresentation()
 
         def handleNodeDoubleClick(self, nodeId: str) -> None:
             if self._nodeDoubleClickHandler is None:
@@ -815,11 +1248,56 @@ try:
             super().mouseMoveEvent(event)
 
         def mousePressEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            if event.button() == Qt.LeftButton:
+                self._mouseEditChanged = False
             if self._dragSourcePort is None and self._canvasClickHandler is not None:
                 itemsAtPos = self.items(event.scenePos())
                 if len(itemsAtPos) == 0:
                     self._canvasClickHandler()
+            if event.button() == Qt.LeftButton and self._dragSourcePort is None:
+                items = self.items(event.scenePos())
+                candidates = set()
+                for item in items:
+                    if isinstance(item, (_NodeItem, _PortItem)) or item.parentItem() is not None:
+                        break
+                    if isinstance(item, _EdgeItem):
+                        candidates.add(item.data(int(Qt.UserRole)))
+                    elif isinstance(item, _SharedWireItem):
+                        candidates.update(item.owners)
+                if len(candidates) > 1:
+                    self._showEdgeMenu(candidates, event.screenPos(), event.modifiers())
+                    event.accept()
+                    return
+                if not items:
+                    self.clearEdgeFocus()
             super().mousePressEvent(event)
+
+        def keyPressEvent(self, event) -> None:
+            if event.key() == Qt.Key_Escape:
+                if self._dragSourcePort is not None:
+                    self._cancelConnectionDrag()
+                    event.accept()
+                    return
+                if self._focusedEdges or self._hoverPort is not None:
+                    self.clearEdgeFocus()
+                    event.accept()
+                    return
+            super().keyPressEvent(event)
+
+        def _cancelConnectionDrag(self) -> None:
+            if self._dragPathItem is not None:
+                self.removeItem(self._dragPathItem)
+            self._dragPathItem = None
+            self._dragSourcePort = None
+            self._snapTargetPort = None
+            self._dragInvalidReason = ""
+            self._hoverPort = None
+            self._clearInputHints()
+            self._setDragHint("", None)
+            grabber = self.mouseGrabberItem()
+            if isinstance(grabber, _PortItem):
+                grabber.ungrabMouse()
+            self._refreshEdgePresentation()
 
         def mouseReleaseEvent(self, event: QGraphicsSceneMouseEvent) -> None:
             if self._dragSourcePort is not None:
@@ -849,6 +1327,7 @@ try:
                         )
                         if createdEdge is not None:
                             self.renderEdge(createdEdge)
+                            self._mouseEditChanged = True
                     else:
                         reason = (
                             str(preview.get("reason", "连线无效"))
@@ -859,19 +1338,15 @@ try:
                 elif self._dragInvalidReason != "":
                     self._emitConnectionError(self._dragInvalidReason)
 
-                if self._dragPathItem is not None:
-                    self.removeItem(self._dragPathItem)
-                self._dragPathItem = None
-                self._dragSourcePort = None
-                self._snapTargetPort = None
-                self._dragInvalidReason = ""
-                self._clearInputHints()
-                self._setDragHint("", None)
+                self._cancelConnectionDrag()
             super().mouseReleaseEvent(event)
-            self.refreshAllRoutes()
-            callback = getattr(self, "editCompleted", None)
-            if callback is not None:
-                callback()
+            if self._routesDirty:
+                self._scheduleRouteRefinement()
+            if self._mouseEditChanged:
+                self._mouseEditChanged = False
+                callback = getattr(self, "editCompleted", None)
+                if callback is not None:
+                    callback()
 
         def dragEnterEvent(self, event) -> None:  # type: ignore[override]
             mimeData = event.mimeData()
@@ -1070,6 +1545,9 @@ try:
             if sourcePort is None:
                 return False
             self._dragSourcePort = sourcePort
+            self._hoverPort = None
+            self._hoverEdgeKeys = None
+            self._refreshEdgePresentation()
             self._applyConnectableInputHighlight(sourcePort)
             self._setDragHint(
                 "拖拽到输入端口以连接", sourcePort.sceneBoundingRect().center()
@@ -1085,11 +1563,7 @@ try:
             return self._dragHintText
 
         def endDragPreview(self) -> None:
-            self._dragSourcePort = None
-            self._snapTargetPort = None
-            self._dragInvalidReason = ""
-            self._clearInputHints()
-            self._setDragHint("", None)
+            self._cancelConnectionDrag()
 
         def getDragHintText(self) -> str:
             return self._dragHintText
@@ -1609,7 +2083,8 @@ except Exception:  # pragma: no cover
                 self._selectedEdges.discard(edgeKey)
 
         def getEdgeStyle(self, edgeKey: tuple[str, str, str, str]) -> dict[str, object]:
+            color, width, _ = edgeStyle(selected=edgeKey in self._selectedEdges)
             return {
-                "width": 3.2 if edgeKey in self._selectedEdges else 2.0,
-                "color": "#0652dd" if edgeKey in self._selectedEdges else "#0984e3",
+                "width": width,
+                "color": color,
             }

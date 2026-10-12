@@ -99,3 +99,24 @@ def testOverlappingObstructionIsExplicitAndSelfLoopCanRoute():
     nodes.pop('t')
     loop = RouteRequest(('s', 'out', 's', 'in'), (248, 60), (12, 90))
     assertSafe(nodes, loop, OrthogonalRouter(nodes, [loop]).routeAll()[loop.key])
+
+
+@pytest.mark.parametrize('fraction', [0, .123456789])
+def testCachedBatchMatchesUncachedRoutingExactlyAndResetsBetweenBatches(fraction):
+    nodes = {'s': Rect(0, 0, 260, 260), 't': Rect(1000, 330, 1260, 620),
+             'obstacle': Rect(520, 90, 700, 250)}
+    requests = [RouteRequest(('s', f'o{i}', 't', f'i{i}'),
+                (248, 40 + i * 25 + fraction), (1012, 370 + i * 25 + fraction)) for i in range(8)]
+    router = OrthogonalRouter(nodes, requests)
+    occupied, expected = [], {}
+    for request in router.requests:
+        route = router.route(request, occupied)
+        expected[request.key] = route
+        if not route.blocked:
+            occupied.extend(zip(route.points, route.points[1:]))
+    assert router.routeAll() == expected
+    assert dict(router.iterRoutes()) == expected
+    assert router.routeAll() == expected
+    steps = list(router.iterRoutes(stepNodes=8))
+    assert None in steps
+    assert dict(item for item in steps if item is not None) == expected

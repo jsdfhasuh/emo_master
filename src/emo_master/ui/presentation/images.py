@@ -19,8 +19,11 @@ def ownedImage(pixels):
     if channels not in (1, 3, 4):
         raise ValueError("unsupported image channels")
     if channels == 3:
-        data = np.ascontiguousarray(pixels[:, :, ::-1])
-        format_ = QImage.Format_RGB888
+        # Qt >= 5.14 accepts OpenCV's native BGR order. Contiguous input needs
+        # only the final owned QImage copy; strided input still uses at most
+        # one bounded scratch buffer. Avoid a full channel shuffle on the GUI.
+        data = np.ascontiguousarray(pixels)
+        format_ = QImage.Format_BGR888
     elif channels == 4:
         # One scratch allocation; advanced indexing followed by ascontiguousarray
         # can otherwise transiently allocate two full BGRA images.

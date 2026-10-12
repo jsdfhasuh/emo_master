@@ -21,6 +21,8 @@ on:
       - tests/runtime/presentation/test_r3_export_credit_trace.py
       - tests/runtime/presentation/test_r3_capture_credit_trace.py
       - src/emo_master/apps/runtime/presentation/**
+      - src/emo_master/ui/presentation/images.py
+      - tests/ui/presentation/test_renderer.py
 
 permissions:
   contents: read

@@ -6,7 +6,8 @@ import time
 
 import numpy as np
 import pytest
-from PySide2.QtGui import QColor
+from PySide2.QtGui import QColor, QImage, QPainter
+from PySide2.QtCore import QRect
 
 from emo_master.clients.runtime.view_state import ScopeView, SessionView
 from emo_master.core.presentation.results import ClosedResult, ResultIdentity, ClosedSource
@@ -52,6 +53,35 @@ def testQtConversionRejectsWorkerThread(qtApp):
     worker.start()
     worker.join(1)
     assert errors==["Qt presentation requires the GUI thread"]
+
+
+@pytest.mark.parametrize("layout", ["contiguous", "columns", "reversed", "fortran"])
+def testNativeBgrMatchesRgbPaintAndRetainsIndependentPixels(qtApp, layout):
+    pixels = np.random.default_rng(26).integers(0, 256, (33, 55, 3), np.uint8)
+    if layout == "columns":
+        pixels = pixels[:, ::2]
+    elif layout == "reversed":
+        pixels = pixels[::-1, ::-1]
+    elif layout == "fortran":
+        pixels = np.asfortranarray(pixels)
+    rgb = np.ascontiguousarray(pixels[:, :, ::-1])
+    reference = QImage(rgb.data, rgb.shape[1], rgb.shape[0], rgb.strides[0], QImage.Format_RGB888).copy()
+    pixels.flags.writeable = False  # Runtime decoders publish immutable arrays.
+    actual = ownedImage(pixels)
+    pixels.flags.writeable = True
+    pixels[:] = 0  # The returned image must own pixels, including odd-width padding.
+    assert actual.convertToFormat(QImage.Format_ARGB32) == reference.convertToFormat(QImage.Format_ARGB32)
+    rendered = []
+    for source in (reference, actual):
+        canvas = QImage(79, 51, QImage.Format_ARGB32)
+        canvas.fill(0)
+        painter = QPainter(canvas)
+        try:
+            painter.drawImage(QRect(0, 0, 79, 51), source)
+        finally:
+            painter.end()
+        rendered.append(canvas)
+    assert rendered[0] == rendered[1]
 
 
 def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):

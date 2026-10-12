@@ -157,16 +157,33 @@ def testDragAndEscapeRestoreFocusWithoutConnecting(ownedFlowScene, designerAppli
         view.setScene(None)
 
 
-def testBlankPanClearsFocusAndRemainsPannable(ownedFlowScene):
+@pytest.mark.parametrize("scale", [.5, 1, 1.5, 2])
+def testBlankPanClearsFocusAndRemainsPannable(ownedFlowScene, designerApplication, scale):
     scene, keys = branchScene(ownedFlowScene)
     view = DesignerGraphicsView(scene)
     view.resize(1000, 800)
-    scene.setEdgeSelected(keys[1], True)
-    assert view.beginPanAt(*tuple(view.mapFromScene(QPointF(450, 680)).toTuple()))
-    assert not scene.getSelectedEdgeKeys() and not scene._focusedEdges
-    view.endPan()
-    view.close()
-    view.setScene(None)
+    view.show()
+    designerApplication.processEvents()
+    view.setZoomFactor(scale)
+    view.centerOn(QPointF(450, 680))
+    positions = scene.getNodePositions()
+    point = view.mapFromScene(QPointF(450, 680))
+    before = view.mapToScene(point)
+    try:
+        scene.setEdgeSelected(keys[1], True)
+        assert view.beginPanAt(point.x(), point.y())
+        assert not scene.getSelectedEdgeKeys() and not scene._focusedEdges
+        view.updatePanTo(point.x() + 60, point.y() + 45)
+        after = view.mapToScene(point)
+        assert after.x() - before.x() == pytest.approx(-60 / scale, abs=1 / scale)
+        assert after.y() - before.y() == pytest.approx(-45 / scale, abs=1 / scale)
+        view.endPan()
+        assert not view.isPanning()
+        assert scene.getNodePositions() == positions
+        assert set(scene._edgeItems) == set(keys)
+    finally:
+        view.close()
+        view.setScene(None)
 
 
 def testBindingsStaySeparateAndCannotEnterBranchMenu(ownedFlowScene):

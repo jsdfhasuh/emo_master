@@ -57,4 +57,3 @@ class NavigationHistory:
                 return index
             index += direction
         return None
-

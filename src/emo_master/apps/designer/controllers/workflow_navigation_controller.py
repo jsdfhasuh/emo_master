@@ -257,4 +257,3 @@ class WorkflowNavigationController:
 
         title = f'{names[target]} 的调用来源（{len(rows)}）'
         self.popup.present(title, rows, choose, w.workflowNavigationControls.references)
-

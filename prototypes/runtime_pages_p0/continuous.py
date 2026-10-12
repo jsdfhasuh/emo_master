@@ -43,28 +43,51 @@ class NetworkConsumer:
         self.thread.start()
         assert self.ready.wait(5)
 
-    def _decode(self, snapshot, values, received):
+    def _decode(self, snapshot, values, received, diagnostics=None):
+        diagnostics = {} if diagnostics is None else diagnostics
+        phases = dict(received_ns=received, transfer_end_ns=None,
+                      encoded_verified_ns=None, decoded_ns=None, verified_ns=None,
+                      finished_ns=None, bytes_received=0, stage="identity",
+                      budget_ms=BUDGET.client_result_seconds * 1000,
+                      asset_rpc_budget_ms=BUDGET.read_seconds * 1000)
+        diagnostics["read_phases"] = phases
+        try:
+            return self._decode_phases(snapshot, values, received, diagnostics, phases)
+        finally:
+            phases["finished_ns"] = time.perf_counter_ns()
+            phases["elapsed_ms"] = (phases["finished_ns"] - received) / 1e6
+
+    def _decode_phases(self, snapshot, values, received, diagnostics, phases):
         asset = values["image"][1]["asset"]
+        diagnostics["asset_id"] = asset["asset_id"]
         assert asset["result_key"] == snapshot["key"] and asset["job"] == self.job
         assert 0 < asset["size"] <= BUDGET.image_bytes * 2
         # Client local budget, separate from server accounting:
         # one <=16MiB bytearray + decoder buffer + one 8MiB image.
         content = bytearray()
+        phases["stage"] = "transfer"
         self.asset_call = self.assets({"asset_id": asset["asset_id"], "job": self.job}, timeout=BUDGET.read_seconds)
         for chunk in self.asset_call:
             assert len(content) + len(chunk) <= asset["size"]
             content.extend(chunk)
+            phases["bytes_received"] = len(content)
             if self.slow:
                 time.sleep(self.slow)
         transferred = time.perf_counter_ns()
+        phases.update(transfer_end_ns=transferred, stage="encoded_verify")
         assert len(content) == asset["size"] and hashlib.sha256(content).hexdigest() == asset["sha256"]
+        phases.update(encoded_verified_ns=time.perf_counter_ns(), stage="decode")
         decoded = cv2.imdecode(np.frombuffer(content, np.uint8), cv2.IMREAD_UNCHANGED)
+        phases.update(decoded_ns=time.perf_counter_ns(), stage="decoded_verify")
         assert decoded is not None and list(decoded.shape) == asset["shape"]
         assert hashlib.sha256(decoded).hexdigest() == self.digest == values["image"][1]["raw_sha256"]
         assert values["items"] == ["VALID", [[["count", 7]]]]
-        if (time.perf_counter_ns() - received) / 1e9 > BUDGET.read_seconds:
+        verified = time.perf_counter_ns()
+        phases.update(verified_ns=verified, stage="total_deadline")
+        if verified - received > round(BUDGET.client_result_seconds * 1e9):
             raise TimeoutError("client read/decode deadline")
         del decoded, content
+        phases["stage"] = "complete"
         return dict(decoded=True, asset_id=asset["asset_id"], transfer_ms=(transferred-received)/1e6,
                    decode_verify_ms=(time.perf_counter_ns()-transferred)/1e6)
 
@@ -83,11 +106,12 @@ class NetworkConsumer:
                 values = dict(snapshot["values"])
                 if snapshot["status"] == "COMMITTED" and values["image"][0] == "VALID":
                     try:
-                        row.update(self._decode(snapshot, values, received))
-                    except (grpc.RpcError, AssertionError, TimeoutError) as error:
+                        row.update(self._decode(snapshot, values, received, row))
+                    except (grpc.RpcError, AssertionError, TimeoutError, cv2.error) as error:
                         # A bad/late image invalidates this result, never leaves
                         # the preceding OK visible or ends the subscription.
-                        row.update(status="UNAVAILABLE", read_error=str(error))
+                        row.update(status="UNAVAILABLE", read_error=str(error),
+                                   read_error_type=type(error).__name__)
                         snapshot = dict(snapshot, status="INCOMPLETE")
                         if self.asset_call:
                             self.asset_call.cancel()
@@ -184,6 +208,7 @@ def window(root, service, image_path, digest, count=96, viewers=2, enabled=True,
         execution_p95 = float(np.percentile([r["execution_ms"] for r in measured], 95))
         throughput = (count - 1) * 1e9 / (measured[-1]["start_ns"]-measured[0]["start_ns"])
         report = dict(enabled=enabled, viewers=viewers, count=count, warmup=warmup, rows=rows,
+                    client_result_budget_ms=BUDGET.client_result_seconds * 1000,
                     commits=commits, clients=client_rows, samples=samples, stats=stats,
                     before=before, after=resources(), execution_p95_ms=execution_p95,
                     client_errors=[c.error for c in consumers],

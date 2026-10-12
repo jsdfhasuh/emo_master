@@ -6,6 +6,48 @@ import pytest
 from scripts import r3_measure as measure
 
 
+@pytest.mark.parametrize('binding', ['omitted', 'positional', 'keyword'])
+@pytest.mark.parametrize('fails', [False, True])
+def testMeasuredWorkerForwardsBoundValuesAndOriginalErrors(tmp_path, monkeypatch, binding, fails):
+    from types import SimpleNamespace
+    from emo_master.apps.runtime.jobs import worker_main
+    from emo_master.apps.runtime.workflow.runner import WorkflowRunner
+
+    monkeypatch.setenv('EMO_R3_TRACE_DIR', str(tmp_path))
+    bound = object()
+    calls = []
+    original_error = ValueError('original operator failure')
+    def original(self, node, inputs, supplied, context, cancel, boundValues=None):
+        calls.append(boundValues)
+        if fails:
+            raise original_error
+        return {'value': 7}
+    monkeypatch.setattr(WorkflowRunner, '_runNode', original)
+    def worker(*args):
+        node = SimpleNamespace(nodeId='pace', operatorId='fixture', kind='operator')
+        context = SimpleNamespace(iterationPath=[0], workflowId='tick', workflowRunId='invocation', callerNodeId='loop')
+        runner = WorkflowRunner.__new__(WorkflowRunner)
+        args = (node, {}, {}, context, None)
+        kwargs = {}
+        if binding == 'positional':
+            args += (bound,)
+        elif binding == 'keyword':
+            kwargs['boundValues'] = bound
+        assert runner._runNode(*args, **kwargs) == {'value': 7}
+    monkeypatch.setattr(worker_main, 'runJobProcess', worker)
+    if fails:
+        with pytest.raises(ValueError) as raised:
+            measure.measuredJob(None, None, None)
+        assert raised.value is original_error
+    else:
+        measure.measuredJob(None, None, None)
+    assert calls == [None if binding == 'omitted' else bound]
+    assert WorkflowRunner._runNode is original
+    rows = json.loads(next(tmp_path.glob('trace-*.json')).read_text())['rows']
+    assert rows[0]['stage'] == 'scheduler.wait'
+    assert rows[0]['outcome'] == ('ValueError' if fails else 'OK')
+
+
 def testBoundedTraceReportsOverflowAndRestoresNestedContext(tmp_path, monkeypatch):
     monkeypatch.setenv("EMO_R3_TRACE_DIR", str(tmp_path))
     monkeypatch.setattr(measure, "TRACE_LIMIT", 2)

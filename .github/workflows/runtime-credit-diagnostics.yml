@@ -83,5 +83,13 @@ jobs:
           ORIGINAL_CONTROL_STEP: ${{ steps.credit_control.outcome }}
         run: |
           $evidence = Join-Path $env:RUNNER_TEMP ('export-credit-' + $env:GITHUB_RUN_ID + '-' + $env:GITHUB_RUN_ATTEMPT)
-          python scripts/r3_export_credit_report.py --evidence $evidence --expected-sha $env:GITHUB_SHA --original-step $env:ORIGINAL_CONTROL_STEP
+          python scripts/r3_export_credit_report.py --evidence $evidence --expected-sha $env:GITHUB_SHA --original-step $env:ORIGINAL_CONTROL_STEP --output-json "$env:RUNNER_TEMP/export-credit-public.json"
           exit $LASTEXITCODE
+      - name: Retain only the sanitized bounded diagnostic report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: export-credit-public-${{ github.run_id }}-${{ github.run_attempt }}
+          path: ${{ runner.temp }}/export-credit-public.json
+          if-no-files-found: warn
+          retention-days: 7

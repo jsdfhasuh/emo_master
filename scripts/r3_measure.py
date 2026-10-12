@@ -130,11 +130,11 @@ def measuredJob(spec, cancelEvent, eventQueue):
     try:
         with patches() as patch:
             wrap(trace, patch, WorkflowRunner, "_runNode",
-                 lambda _self, node, *_a: "input.operator_total" if node.nodeId == "load" else
+                 lambda _self, node, *_a, **_kw: "input.operator_total" if node.nodeId == "load" else
                  "scheduler.wait" if node.nodeId == "pace" else "algorithm.operator_total",
-                 lambda _self, node, _inputs, _supplied, context, _cancel:
+                 lambda _self, node, _inputs, _supplied, context, _cancel, *_a, **_kw:
                  {**contextDetails(context), "operator": node.operatorId},
-                 lambda _self, node, *_a: node.kind == "operator")
+                 lambda _self, node, *_a, **_kw: node.kind == "operator")
             wrap(trace, patch, cv2, "imread", "input.file_read_decode")
             wrap(trace, patch, np, "fromfile", "input.file_read")
             wrap(trace, patch, cv2, "imdecode", "input.decode")

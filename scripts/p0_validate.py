@@ -46,7 +46,7 @@ def main():
                   python=sys.version, executable=sys.executable, os=platform.platform(), processor=platform.processor(),
                   versions={name: importlib.metadata.version(name) for name in ["PySide2", "grpcio", "grpcio-tools", "protobuf",
                             "numpy", "opencv-python", "pydantic", "pytest", "ruff", "mypy"]},
-                  single_task_deadlines="unchanged: export/read/seal 500ms, reap 1s", p0_exit="NOT_EVALUATED",
+                  single_task_deadlines="export/asset RPC/read/seal 500ms, reap 1s; client receive/decode/verify total 550ms (user-approved 2026-10-12)", p0_exit="NOT_EVALUATED",
                   require_performance=args.require_performance)
     failed = False
     for name in args.scenarios:

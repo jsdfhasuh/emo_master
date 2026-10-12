@@ -35,6 +35,9 @@ class Budget:
     export_seconds: float = 0.5
     reap_seconds: float = 1.0
     read_seconds: float = 0.5
+    # User-approved 2026-10-12: client receive/decode/verify total only.
+    # Server read/export/seal deadlines and live-age gates remain unchanged.
+    client_result_seconds: float = 0.55
     lease_seconds: float = 30.0
     control_seconds: float = 0.2
 

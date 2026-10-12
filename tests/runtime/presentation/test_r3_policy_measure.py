@@ -7,6 +7,30 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from scripts import r3_policy_measure as measure
 
 
+def testTerminalDiagnosticPreservesFirstErrorsAndBoundsMessages():
+    from types import SimpleNamespace
+    record = SimpleNamespace(status='FAILED', errorCode='E_WORKER_CRASHED', message='x' * 5000)
+    events = [SimpleNamespace(eventType='node.failed', sequence=i, workflowId='w',
+                              workflowRunId='run', nodeId='pace', nodeRunId='node',
+                              code='E_EXEC_FAILED', message='original failure') for i in range(20)]
+    runtime = SimpleNamespace(jobRepository=SimpleNamespace(get=lambda _: record),
+                              eventStore=SimpleNamespace(read=lambda _: events))
+    result = measure.terminalDiagnostic(runtime, 'job')
+    assert result['job_status'] == 'FAILED' and result['error_code'] == 'E_WORKER_CRASHED'
+    assert result['message_truncated'] and len(result['message']) == 4096
+    assert result['event_count'] == 20 and result['events_truncated']
+    assert [row['sequence'] for row in result['events']] == list(range(16))
+    assert result['events'][0]['message'] == 'original failure'
+
+
+def testTerminalDiagnosticSamplingFailureCannotReplaceJobError():
+    from types import SimpleNamespace
+    def unavailable(_):
+        raise OSError('private path')
+    result = measure.terminalDiagnostic(SimpleNamespace(jobRepository=SimpleNamespace(get=unavailable)), 'job')
+    assert result == {'status': 'UNAVAILABLE', 'sampling_error_type': 'OSError'}
+
+
 def testPolicyArmsKeepExplicitLegacyPolicyAndCapturePairing():
     assert measure.ARM_SPECS == {
         "all_off": {"policy": "ALL", "capture": False},

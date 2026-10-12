@@ -403,6 +403,7 @@ def normalTrial(root, arm, count, warmup, app):
             "capture_enabled": request.capture_presentation, "enabled": request.capture_presentation,
             "expected_source_ids": sorted(project.presentation.dataSources),
             "job": job, "job_status": runtime.jobRepository.get(job).status,
+            "terminal_diagnostic": terminalDiagnostic(runtime, job),
             "owner_resources_before": ownerBefore,
             "request": {"project_id": request.project_id, "workflow_id": request.workflow_id,
                 "legacy_snapshot_policy": request.legacy_snapshot_policy, "capture_presentation": request.capture_presentation,
@@ -447,6 +448,30 @@ def normalTrial(root, arm, count, warmup, app):
         if cleanupErrors:
             raise RuntimeError("normal policy trial cleanup incomplete: " + json.dumps(cleanupErrors))
     return result
+
+
+def terminalDiagnostic(runtime, job):
+    """Local-only bounded error evidence before the owned workspace retires.
+
+    The public reporter must independently allowlist fields and hash free text.
+    A sampling error is diagnostic, never a replacement for the Job outcome.
+    """
+    try:
+        record = runtime.jobRepository.get(job)
+        events = [event for event in runtime.eventStore.read(job)
+                  if event.eventType in {"job.failed", "job.aborted", "node.failed", "workflow.failed"}]
+        return {"status": "OBSERVED", "job_status": record.status,
+                "error_code": record.errorCode[:160], "message": record.message[:4096],
+                "message_truncated": len(record.message) > 4096,
+                "event_count": len(events), "events_truncated": len(events) > 16,
+                "events": [{"sequence": e.sequence, "event_type": e.eventType,
+                            "workflow_id": e.workflowId, "workflow_run_id": e.workflowRunId,
+                            "node_id": e.nodeId, "node_run_id": e.nodeRunId,
+                            "error_code": e.code[:160], "message": e.message[:4096],
+                            "message_truncated": len(e.message) > 4096}
+                           for e in events[:16]]}
+    except Exception as error:
+        return {"status": "UNAVAILABLE", "sampling_error_type": type(error).__name__}
 
 
 def executeTrial(args):

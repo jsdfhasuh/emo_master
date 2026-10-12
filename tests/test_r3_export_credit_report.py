@@ -449,9 +449,46 @@ class ReportTests(unittest.TestCase):
         self.assertIn("persist-credentials: false", content)
         self.assertIn("timeout-minutes: 20", content)
         self.assertNotIn("continue-on-error", content)
-        self.assertNotIn("upload-artifact", content)
+        self.assertIn("actions/upload-artifact@v4", content)
+        self.assertIn("path: ${{ runner.temp }}/export-credit-public.json", content)
+        self.assertIn("--output-json", content)
+        self.assertNotIn("path: ${{ runner.temp }}/export-credit-*", content)
+        self.assertIn("retention-days: 7", content)
         self.assertNotIn("pull_request", content)
         self.assertEqual(content.count("exit $LASTEXITCODE"), 2)
+
+    def test_terminal_diagnostic_keeps_categories_not_private_text(self):
+        secret = 'C:/private/secret-image.png'
+        raw = {"status": "OBSERVED", "job_status": "FAILED", "error_code": "E_WORKER_CRASHED",
+               "message": "measuredJob.<locals>.<lambda>() takes 6 positional arguments but 7 were given",
+               "events": [{"sequence": 15, "event_type": "node.failed", "error_code": "E_EXEC_FAILED",
+                           "message": secret, "node_id": secret, "workflow_run_id": "invocation"}]}
+        self.on_mutate('trial.json', lambda data: data.update(terminal_diagnostic=raw))
+        result = self.build(step='failure')
+        diagnostic = result['arms'][1]['terminal_diagnostic']
+        self.assertEqual(diagnostic['message_category'], 'OBSERVER_RUN_NODE_SIGNATURE_MISMATCH')
+        self.assertEqual(diagnostic['events'][0]['error_code'], 'E_EXEC_FAILED')
+        self.assertEqual(diagnostic['events'][0]['message_category'], 'UNCLASSIFIED')
+        self.assertNotIn(secret, reporter.encoded(result).decode())
+        self.assertEqual(result['original_step_outcome'], 'failure')
+
+    def test_old_or_unavailable_terminal_diagnostic_is_not_success(self):
+        self.assertEqual(reporter.terminal_diagnostic(None), {'status': 'NOT_RECORDED'})
+        self.assertEqual(reporter.terminal_diagnostic({'status': 'UNAVAILABLE'}), {'status': 'UNAVAILABLE'})
+        with self.assertRaises(reporter.InvalidEvidence):
+            reporter.terminal_diagnostic({'status': 'OBSERVED', 'events': [{}] * 17})
+
+    def test_exclusive_public_artifact_matches_sanitized_report(self):
+        destination = self.evidence / 'public.json'
+        args = ['--evidence', str(self.evidence), '--repo', str(self.repo), '--expected-sha', SHA,
+                '--original-step', 'success', '--output-json', str(destination)]
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(reporter.main(args), 0)
+        first = destination.read_bytes()
+        self.assertEqual(json.loads(first), self.build())
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(reporter.main(args), 1)
+        self.assertEqual(destination.read_bytes(), first)
 
     def test_transport_round_trip_and_missing_part_integrity(self):
         result = self.build()

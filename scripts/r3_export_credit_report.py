@@ -90,6 +90,47 @@ def pick(value, fields):
     return {key: value[key] for key in fields if key in value}
 
 
+def terminal_diagnostic(raw):
+    """Allowlisted error categories; never publish arbitrary messages or paths."""
+    if raw is None:
+        return {"status": "NOT_RECORDED"}
+    require(isinstance(raw, dict), "terminal_diagnostic_schema")
+    if raw.get("status") != "OBSERVED":
+        return {"status": "UNAVAILABLE"}
+    events = raw.get("events", [])
+    require(isinstance(events, list) and len(events) <= 16, "terminal_event_budget")
+    codes = {"E_EXEC_FAILED", "E_WORKER_CRASHED", "E_VARIABLE_BUSY", "E_PARAM_INVALID",
+             "E_INPUT_MISSING", "E_INPUT_TYPE", "E_HEARTBEAT_TIMEOUT", "E_EVENT_PERSISTENCE",
+             "E_CANCELLED", "E_STOP_TIMEOUT", "E_RUNTIME_SHUTDOWN", ""}
+    def error_fields(row):
+        require(isinstance(row, dict), "terminal_event_schema")
+        message = row.get("message", "")
+        require(isinstance(message, str) and len(message) <= 4096, "terminal_message_budget")
+        category = "UNCLASSIFIED"
+        if message == "measuredJob.<locals>.<lambda>() takes 6 positional arguments but 7 were given":
+            category = "OBSERVER_RUN_NODE_SIGNATURE_MISMATCH"
+        elif message == "global variable database is busy":
+            category = "GLOBAL_VARIABLE_DATABASE_BUSY"
+        code = row.get("error_code", "")
+        return {"error_code": code if isinstance(code, str) and code in codes else "UNRECOGNIZED",
+                "message_category": category, "message_digest": text_digest(message),
+                "message_truncated": row.get("message_truncated") is True}
+    result = {"status": "OBSERVED", **error_fields(raw),
+              "job_status": raw.get("job_status") if raw.get("job_status") in
+              {"ACCEPTED", "STARTING", "RUNNING", "STOPPING", "COMPLETED", "FAILED", "ABORTED"} else "UNKNOWN",
+              "events_truncated": raw.get("events_truncated") is True, "events": []}
+    for row in events:
+        fields = error_fields(row)
+        kind = row.get("event_type")
+        fields["event_type"] = kind if kind in {"job.failed", "job.aborted", "node.failed", "workflow.failed"} else "UNKNOWN"
+        fields["sequence"] = row.get("sequence") if integer(row.get("sequence")) else None
+        # Digests retain correlation without exposing arbitrary node/path strings.
+        fields["identity_digests"] = {key: text_digest(row.get(key, "")) for key in
+            ("workflow_id", "workflow_run_id", "node_id", "node_run_id")}
+        result["events"].append(fields)
+    return result
+
+
 class Reader:
     def __init__(self, root):
         self.root = Path(root).resolve()
@@ -692,6 +733,7 @@ def read_arm(reader, entry, position, repo, original_valid=False):
     base_coverage = base_trace_coverage(payload, raw_traces, entry, raw_asset["observed_rpc_rows"],
                                         encoded_bytes, issues, original_valid)
     result = {"position": position, "observer_mode": mode,
+              "terminal_diagnostic": terminal_diagnostic(payload.get("terminal_diagnostic")),
               "identity": pick(payload, ("job", "mode", "arm", "qt_platform", "legacy_snapshot_policy", "accepted_policy", "input_sha256")),
               "runtime_instance_id": payload.get("request", {}).get("expected_runtime_instance_id"),
               "watchdog": pick(watch, ("status", "exit_code", "timeout", "watchdog_seconds", "log_overflow", "log_limit_bytes", "log_bytes", "duration_seconds", "log_sha256", "owner_retirement_verified")),
@@ -862,10 +904,16 @@ def main(argv=None):
     parser.add_argument("--repo", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--expected-sha", default=os.environ.get("GITHUB_SHA", ""))
     parser.add_argument("--original-step", choices=("success", "failure", "cancelled", "skipped", "unknown"), default="unknown")
+    parser.add_argument("--output-json", type=Path, help="Exclusive-write sanitized bounded report only; never raw logs")
     args = parser.parse_args(argv)
     report = None
     try:
         report = build_report(args.evidence, args.repo, args.expected_sha, args.original_step)
+        # Validate the same complete transport cap before publishing an artifact.
+        transport(report)
+        if args.output_json is not None:
+            with args.output_json.open("xb") as stream:
+                stream.write(encoded(report))
         emit(report)
         return int(report["observation_status"] != "COMPLETE")
     except Exception as error:

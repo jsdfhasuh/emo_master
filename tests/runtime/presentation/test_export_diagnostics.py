@@ -51,7 +51,11 @@ def testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement(tmp_path
     callbacks = []
 
     def callback(task, path, result):
-        assert slot["busy"] and not credit.acquire(False), "callback cannot return producer lane early"
+        assert slot["busy"], "callback still owns the staging file and slab assignment"
+        acquired = credit.acquire(False)
+        assert acquired == (result == "AVAILABLE"), "only a verified success may release raw ownership before callback"
+        if acquired:
+            credit.release()
         callbacks.append((task, path, result))
         pool.stop.set()
 
@@ -66,7 +70,10 @@ def testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement(tmp_path
     record = pool.diagnostics[-1]
     assert record["stage"] == stage and record["taskId"] == "task"
     assert record["resultKey"] == "key" and record["sourceId"] == "image" and record["budgetMs"] == 500
-    assert record["callbackEndedNs"] <= record["laneReleasedNs"] <= record["retirementEndedNs"]
+    if outcome == "AVAILABLE":
+        assert record["replyNs"] <= record["laneReleasedNs"] <= record["callbackStartedNs"]
+    else:
+        assert record["callbackEndedNs"] <= record["laneReleasedNs"] <= record["retirementEndedNs"]
     assert record["laneReleased"] and not slot["busy"] and not slot["pending"]
     assert credit.acquire(False) and not credit.acquire(False)
     if fault == "encoder_error":

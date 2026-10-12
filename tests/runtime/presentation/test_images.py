@@ -138,7 +138,10 @@ def testCallbackFailureDoesNotLoseLaneOrStopActualExportOwner(tmp_path):
     callbacks = []
     def callback(task, path, outcome):
         callbacks.append(outcome)
+        assert pool.slots[0]["busy"]
+        assert pool.slots[0]["free"].acquire(False)
         assert not pool.slots[0]["free"].acquire(False)
+        pool.slots[0]["free"].release()
         if len(callbacks) == 1:
             raise ValueError("injected callback failure")
     pool = ExportPool(tmp_path, callback)

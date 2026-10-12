@@ -273,7 +273,8 @@ def testRealExportCallbackPreservesIdentityOwnershipAndRetirement(tmp_path, faul
     assert rows["parent.pipe_recv"]["end_ns"] <= rows["parent.export_callback"]["start_ns"]
     assert rows["parent.export_callback"]["start_ns"] <= rows["parent.asset_adopt"]["start_ns"]
     assert rows["parent.asset_adopt"]["end_ns"] <= rows["parent.result_finish"]["start_ns"]
-    assert rows["parent.export_callback"]["end_ns"] <= rows["parent.credit_release"]["start_ns"]
+    assert rows["parent.pipe_recv"]["end_ns"] <= rows["parent.credit_release"]["start_ns"]
+    assert rows["parent.credit_release"]["end_ns"] <= rows["parent.export_callback"]["start_ns"]
     assert summary["stage_coverage"]["admitted_exports"] == 1
     assert summary["stage_coverage"]["available_callbacks"] == 1
     assert not summary["stage_coverage"]["missing_available_stages"]
@@ -726,16 +727,18 @@ def testNoDiagnosticSerializationOrPostFingerprintBeforeOwnerRetirement(tmp_path
 
 
 @pytest.mark.parametrize("observed", [False, True])
-def testRealCollectorCannotReuseCreditDuringAdoptButCanAfterOriginalRelease(tmp_path, observed):
+def testRealCollectorReusesReleasedRawDuringAdoptWithoutReplacingPriorAsset(tmp_path, observed):
     """Controlled causality, not latency: events gate the original adoption."""
     import cv2
     import numpy as np
     from emo_master.apps.runtime.presentation.collector import ResultCollector
     from emo_master.apps.runtime.presentation.exporter import ExportPool
+    from tests.runtime.presentation.test_images import waitFor
 
     owner = prepared_service(tmp_path)
     trace = credit_trace.ExportCreditTrace()
     entered, resume, callback_returned, released = [threading.Event() for _ in range(4)]
+    second_returned = threading.Event()
     original_adopt = owner.assets.adopt
     callbacks, emissions, release_calls = [], [], []
     pixels = np.full((4, 4, 3), 43, np.uint8)
@@ -751,6 +754,8 @@ def testRealCollectorCannotReuseCreditDuringAdoptButCanAfterOriginalRelease(tmp_
         callbacks.append((descriptor, outcome))
         owner._exported(descriptor, path, outcome)
         callback_returned.set()
+        if descriptor["key"] == "second":
+            second_returned.set()
 
     @contextmanager
     def observer(patch):
@@ -803,44 +808,47 @@ def testRealCollectorCannotReuseCreditDuringAdoptButCanAfterOriginalRelease(tmp_
                     started = time.monotonic()
                     # The real .5 second export deadline is never changed.
                     owner.pending["result"]["deadline"] = started + .5
+                    identity = dict(owner.store.open["result"]["identity"],
+                                    resultKey="second", invocationId="second", resultOrdinal=2)
+                    owner.store.begin({"identity": identity, "expected": ["image"]})
+                    owner.pending["second"] = {"job": "job", "exports": {}, "deadline": started + .5,
+                        "seal": {"sources": [{"sourceId": "image", "pendingImage": True}], "terminal": "COMPLETED"}}
                     assert collector.image("image", pixels, item("result"))["pendingImage"]
                     submitted = time.monotonic()
                     assert entered.wait(10)
                     assert callbacks[0][1] == "AVAILABLE"
                     assert started + .5 <= callbacks[0][0]["deadline"] <= submitted + .5
-                    assert not callback_returned.is_set() and not released.is_set()
-                    assert slot["pending"] == {0} and slot["busy"]
+                    assert not callback_returned.is_set() and released.is_set()
+                    assert not slot["pending"] and slot["busy"]
+                    assert release_calls == [1]
+                    assert collector.image("image", pixels + 2, item("second"))["pendingImage"]
+                    assert slot["pending"] == {0}
                     rejected = collector.image("image", pixels + 1, item("busy"))
                     assert rejected["state"] == "UNAVAILABLE" and rejected["reasonCode"] == "BUDGET_EXCEEDED"
-                    assert "busy" in rejected["reason"] and len(emissions) == 1
+                    assert "busy" in rejected["reason"] and len(emissions) == 2
                     assert not slot["free"].acquire(False)
                     resume.set()
-                    assert callback_returned.wait(10) and released.wait(10)
-                    assert release_calls == [1]
-                    # The release observer may signal while its enclosing slot
-                    # lock is held; take that same lock for the postcondition.
+                    assert second_returned.wait(10)
+                    waitFor(lambda: not slot["busy"])
                     with slot["lock"]:
                         assert not slot["pending"] and not slot["busy"]
-                    first = owner.store.snapshot("job")["results"][0]
+                    first = next(result for result in owner.store.history if result.identity.resultKey == "result")
                     assert first.status == "COMPLETE" and first.sources[0].image is not None
                     image = first.sources[0].image
                     data, digest = owner.assets.read("job", image.resourceId)
                     assert hashlib.sha256(data).hexdigest() == digest == image.sha256
                     assert np.array_equal(cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_COLOR), pixels)
-                    identity = first.identity.model_dump()
-                    identity.update(resultKey="second", invocationId="second", resultOrdinal=2)
-                    owner.store.begin({"identity": identity, "expected": ["image"]})
-                    owner.pending["second"] = {"job": "job", "exports": {}, "deadline": time.monotonic() + .5,
-                        "seal": {"sources": [{"sourceId": "image", "pendingImage": True}], "terminal": "COMPLETED"}}
-                    callback_returned.clear()
-                    released.clear()
-                    assert collector.image("image", pixels + 2, item("second"))["pendingImage"]
-                    assert len(emissions) == 2
-                    assert callback_returned.wait(10) and released.wait(10)
+                    second = owner.store.snapshot("job")["results"][0]
+                    assert second.status == "COMPLETE" and second.identity.resultKey == "second"
+                    secondData, secondDigest = owner.assets.read("job", second.sources[0].image.resourceId)
+                    assert hashlib.sha256(secondData).hexdigest() == secondDigest == second.sources[0].image.sha256
+                    assert np.array_equal(cv2.imdecode(np.frombuffer(secondData, np.uint8), cv2.IMREAD_COLOR), pixels + 2)
                     assert [outcome for _, outcome in callbacks] == ["AVAILABLE", "AVAILABLE"]
                     assert release_calls == [1, 1] and not pool.errors
                     assert pool.stats["completed"] == 2 and pool.stats["timed_out"] == 0
                     assert owner.assets.read("job", image.resourceId) == (data, digest)
+                    assert slot["free"].acquire(False) and not slot["free"].acquire(False)
+                    slot["free"].release()
                 finally:
                     resume.set()
                     pool.close()

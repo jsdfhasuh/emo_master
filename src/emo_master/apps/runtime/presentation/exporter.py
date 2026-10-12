@@ -2,6 +2,9 @@
 
 Only bounded descriptors travel over the Pipe. Raw input lives in preallocated
 shared memory; the child writes a bounded staging file, never a large Pipe reply.
+A verified successful reply ends raw ownership. The serial export owner retains
+the staging file and Job's slab until adoption/cleanup, while the producer may
+fill the same raw lane for one queued successor.
 """
 import multiprocessing
 import math
@@ -73,7 +76,7 @@ class ExportPool:
         memory = SharedMemory(create=True, size=RAW_LIMIT)
         slot: dict = {"memory": memory, "free": self.context.BoundedSemaphore(1),
             "queue": queue.Queue(maxsize=2), "index": index, "process": None,
-            "connection": None, "busy": False, "pending": set(), "laneCount": 1,
+            "connection": None, "busy": False, "active": False, "pending": set(), "laneCount": 1,
             "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False)}
         slot["laneFree"] = [slot["free"], self.context.BoundedSemaphore(1)]
         self.slots.append(slot)
@@ -161,7 +164,7 @@ class ExportPool:
                     taskId=str(uuid4()), submittedNs=time.monotonic_ns(), deadline=submitted + .5))
             except BaseException:
                 slot["pending"].remove(lane)
-                slot["busy"] = bool(slot["pending"])
+                slot["busy"] = bool(slot["pending"]) or slot.get("active", False)
                 raise
 
     def _reap(self, slot):
@@ -182,12 +185,23 @@ class ExportPool:
         slot.update(process=None, connection=None)
         self.stats["reaped"] += 1
 
+    def _releaseLane(self, slot, task, diagnostic):
+        with slot["lock"]:
+            slot["pending"].remove(task["lane"])
+            slot["laneFree"][task["lane"]].release()
+            diagnostic["laneReleased"] = True
+            diagnostic["laneReleasedNs"] = time.monotonic_ns()
+            # busy includes the active callback/file owner. Clearing it here
+            # would allow releaseSlot/configureLanes to reassign a live slab.
+
     def _run(self, slot):
         while not self.stop.is_set() or not slot["queue"].empty():
             try:
                 task = slot["queue"].get(timeout=.02)
             except queue.Empty:
                 continue
+            with slot["lock"]:
+                slot["active"] = True
             path = self.root / f"slot-{slot['index']}-lane-{task['lane']}.png"
             outcome = "EXPORT_FAILED"
             reusable = not slot["quarantined"].value
@@ -257,6 +271,20 @@ class ExportPool:
                     reusable = False
                     self._quarantine(slot)
                     self.errors.append(repr(reapError))
+            if outcome == "AVAILABLE":
+                try:
+                    # Matching successful reply proves the child has finished
+                    # reading raw pixels and writing the independent PNG. Asset
+                    # adoption must not hold the producer's raw lane. The next
+                    # task stays queued until this callback and unlink finish.
+                    self._releaseLane(slot, task, diagnostic)
+                except Exception as error:
+                    reusable = False
+                    self._quarantine(slot)
+                    outcome = "EXPORT_FAILED"
+                    diagnostic["retirementErrorType"] = type(error).__name__
+                    self.errors.append(repr(error))
+                    self.errors[:] = self.errors[-32:]
             diagnostic.update(stage=stage, outcome=outcome, callbackStartedNs=time.monotonic_ns())
             task["exportDiagnostic"] = dict(diagnostic)
             try:
@@ -275,11 +303,12 @@ class ExportPool:
                         if slot["process"] is None and not self.stop.is_set():
                             self._spawn(slot)
                         with slot["lock"]:
-                            slot["pending"].remove(task["lane"])
-                            slot["laneFree"][task["lane"]].release()
+                            if not diagnostic["laneReleased"]:
+                                self._releaseLane(slot, task, diagnostic)
+                            # An admitted successor owns its own pending entry
+                            # and reservation; never remove or release it here.
+                            slot["active"] = False
                             slot["busy"] = bool(slot["pending"])
-                            diagnostic["laneReleased"] = True
-                            diagnostic["laneReleasedNs"] = time.monotonic_ns()
                 except Exception as error:
                     self._quarantine(slot)
                     diagnostic["retirementErrorType"] = type(error).__name__
@@ -299,6 +328,7 @@ class ExportPool:
             self._reap(slot)
             with slot["lock"]:
                 slot["pending"].clear()
+                slot["active"] = False
                 slot["busy"] = False
                 slot["quarantined"].value = False
             slot["memory"].close()

@@ -53,6 +53,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.edge.canny",
         "vision.flow.if",
         "vision.flow.switch",
+        "vision.flow.select_value",
         "vision.flow.error",
         "vision.geometry.coordinate_calculator",
         "vision.geometry.detection_bbox",
@@ -88,7 +89,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.state.counter",
         "vision.value.number",
     } <= operatorIds
-    assert len(operatorIds) == 60
+    assert len(operatorIds) == 61
     assert list(rejectedReply.rejected) == []
 
 

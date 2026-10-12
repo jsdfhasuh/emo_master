@@ -72,6 +72,28 @@ def testOnnxSessionRunsTinyModelAndMapsLetterboxToGrayImage(tmp_path) -> None:
     np.testing.assert_allclose(result.boxesXyxy, [[2.0, 0.0, 6.0, 4.0]])
 
 
+@pytest.mark.parametrize("classes,rank,success", [([], 1, True), ([0], 1, True), ([1], 1, False), ([], 2, False)])
+def testRealTinyOnnxCropUsesPostFilterNmsAndUnletterboxedPixels(tmp_path, classes, rank, success):
+    modelPath = tmp_path / "tiny.onnx"
+    modelPath.write_bytes(base64.b64decode(_TINY_YOLO_ONNX))
+    image = np.arange(4 * 8 * 3, dtype=np.uint8).reshape(4, 8, 3)
+    YoloInferenceOperator.clearCache()
+    try:
+        result = YoloInferenceOperator().executeNode(
+            {"image": image},
+            {"modelPath": str(modelPath), "classes": classes, "outputCrop": True, "cropTargetIndex": rank}, {},
+        )
+        if success:
+            assert result["status"] == "ok"
+            np.testing.assert_array_equal(result["outputs"]["croppedImage"], image[:, 2:6])
+            assert result["metrics"]["detectionCount"] == 1
+        else:
+            assert result["error"]["code"] == "E_CROP_TARGET_NOT_FOUND"
+            assert "outputs" not in result
+    finally:
+        YoloInferenceOperator.clearCache()
+
+
 def testDecodeOutputSupportsPredictionMajorShapeAndClassAwareNms() -> None:
     raw = np.asarray(
         [

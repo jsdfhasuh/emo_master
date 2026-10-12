@@ -715,7 +715,7 @@ if isinstance(geometry, BBox2D):
 | `vision.mask.logic` | `maskA`、可选 `maskB/frameA/frameB` | `mask`、`frame` | AND、OR、XOR、NOT 或差集 |
 | `vision.analysis.blob` | `image`、可选 `mask/frame` | `blobs`、`mask`、`frame`、可选 `overlay` | 连通域过滤、轮廓和质心 |
 | `vision.color.rgb_statistics` | `image`、可选 `roi/frame` | `statistics`、`frame`、可选 `mask` | 按 BGR 图像输入计算标准 RGB 通道统计 |
-| `vision.inference.yolo` | `image`、可选 `frame` | `detections`、`frame`、可选 `overlay` | ONNX Runtime CPU 执行 YOLOv8/YOLO11 detect，输出源图坐标 |
+| `vision.inference.yolo` | `image`、可选 `frame` | `detections`、`frame`、可选 `overlay/croppedImage/croppedFrame` | ONNX Runtime CPU 执行 YOLOv8/YOLO11 detect，输出输入图空间的检测集合，可按置信度排名选择目标裁剪 |
 | `vision.analysis.contour` | `mask`、可选 `frame` | `polygons`、`contours`、`frame` | 提取轮廓并保留完整层级来源关系 |
 | `vision.analysis.shape_measurement` | `contours` 或 `blobs` | `measurements` | 面积、周长、质心、圆度、BBox 和最小外接矩形 |
 | `vision.preprocess.rotate` | `image`、可选 `frame/validMask` | `image`、`frame`、`validMask` | 围绕图像中心旋转，可扩展画布并保留回源变换 |
@@ -738,6 +738,7 @@ if isinstance(geometry, BBox2D):
 | `vision.collection.select` | 七类集合中的一个 | 对应类型的 selected 集合、`selectedCount` | First、Last、Index 或 Top-K，单项仍使用集合 |
 | `vision.value.number` | 无 | `value` | 产生有限 number 常量 |
 | `vision.compare.number` | `left`、可选 `right` | `result` | 数值比较；未连接 `right` 时使用 `rightValue` |
+| `vision.flow.select_value` | `condition:boolean`、可选 `trueValue/falseValue:any` | `value:any` | 按布尔条件选值；选中输入缺失时报错，不回退或保留旧值 |
 | `vision.render.annotate` | `image`、可选 `frame/roi` 及七类集合 | `overlay`、`frame`、`drawnCount` | 在图像副本上绘制多类语义结果 |
 | `vision.io.result_writer` | 十三种强类型或基础值入口中的一个 | `result` | 在 Job 工作区写 JSON、JSONL 或 CSV，并返回 receipt |
 | `vision.io.coordinate_reader` | 可选 `frame:bbox2d` | `points:list<point2d>`、`pointCount`、可选 `polygon` | 从本地 TXT/CSV 严格读取坐标，支持列、分隔符、编码和无效行策略 |
@@ -794,6 +795,14 @@ Filter、Count、Sort、Select 都使用第 8 节的 exactly-one 七入口规则
 `right` 可选；连接 `right` 时覆盖参数 `rightValue`，比较符固定为
 `eq/ne/lt/lte/gt/gte`，输出 boolean，可直接接入 `vision.flow.if`。Count 的 integer
 可通过第 2 节的单向拓宽直接连接 Compare 的 number 输入。
+
+`vision.flow.select_value`（条件选值）是无状态的数据选择算子，**不控制上游是否执行**。
+`condition` 必须为布尔；为 true 时输出 `trueValue`，否则输出 `falseValue`。
+两个候选端口可选以允许汇合互斥分支，但本次选中的端口必须有非 null 值；缺失时报
+`E_INPUT_MISSING`，不会退回另一输入，也不读取上次执行值。False、0、空字符串、空集合
+均为有效值，保留原值/对象，不复制或改写图像。算子无参数，无变量和设备状态。
+分支执行仍由 If/Switch 管理，候选输入仍遵守普通 DAG 依赖，不提供短路求值。
+输出可接有明确类型的工作流输出供页面使用，类型由接收端的原有契约校验。
 
 `vision.render.annotate` 可同时接收 ROI 与 Blob、Detection、Contour、Measurement、Line、
 Circle、TemplateMatch 七类集合；所有语义输入必须与图像 frame 的坐标空间等价，空集合
@@ -926,3 +935,23 @@ Threshold 输出固定为仅含 0/255 的单通道 `uint8` 掩码；固定、Ots
 ONNX Runtime CPU session，并按模型路径与 device 缓存。模型路径可以是绝对路径，也可以
 相对作业工作区；仅支持 batch 1、float32、未内置 NMS 的 Ultralytics YOLOv8/YOLO11
 detect `.onnx` 导出，不支持 pose、segmentation、端到端 NMS、INT8、DirectML 或 CUDA。
+
+YOLO 从 1.3.0 起支持可选检测框裁剪：
+
+- `detections` 保留所有经过类别/置信度/NMS 过滤且裁切到图像边界后仍有面积的结果，
+  按置信度**从高到低**排序；相同置信度保留后端顺序。序号仅表示当前图像的排名，
+  不是跨帧跟踪身份，也不是检测 ID。`classes` 留空或 `[]` 仍表示不过滤类别。
+- `outputCrop=false`（兼容默认值）时不产生裁剪输出；启用后，`cropTargetIndex`
+  为从 1 开始的整数，默认 1 即最高置信度。序号作用于上述最终检测集合，不是模型原始行号。
+- `croppedImage` 是所选矩形内的原始像素副本，尺寸随检测框变化，既不是分割掩码，也不是
+  全图保留区域、外部填黑的图。左/上向下取整、右/下向上取整并裁切到图像边界；
+  与通用 Crop 算子复用同一实现。支持灰度/BGR 和非连续输入，不修改输入或从 overlay 取像素。
+- `croppedFrame` 表示裁剪图的有效内容与回源变换；二值化等下游必须同时接入
+  `croppedImage` 和 `croppedFrame`。已有缩放/裁剪/透视回源映射继续组合。
+  测量点的数值仍属于裁剪图局部空间；保留元数据**不等于**已完成点回源或单位换算，
+  不能回源之后再重复相加同一个 ROI 偏移。
+- 原 `frame` 和所有检测几何仍属于 YOLO 输入图空间，不随裁剪输出改变；原图画框应继续
+  使用该检测集合。`overlay` 仅用于显示，不用于测量。选择一个裁剪目标不删除其余检测框。
+- 启用裁剪但本次没有有效目标、或序号超出本次数量时，返回 `E_CROP_TARGET_NOT_FOUND`
+  和明确的序号/数量提示；无输出，不退回第一个目标、不沿用上次图像。关闭裁剪仍允许空检测成功。
+  所选框与输入 frame 的有效内容无交集时保留 Crop 的 `E_INPUT_SHAPE` 错误，不输出虚构图像。

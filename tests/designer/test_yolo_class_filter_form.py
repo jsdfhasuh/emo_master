@@ -51,3 +51,34 @@ def testOptionalClassFilterDoesNotTreatMalformedJsonAsUnrestricted():
         assert form._controls["classes"].toPlainText() == "[1,"
     finally:
         form.close()
+
+
+@pytest.mark.parametrize("schemaSource", ["operator", "manifest"])
+def testYoloCropFormEnablesRankOnlyWhenCropIsSelected(schemaSource):
+    schema = YoloInferenceOperator.meta.paramSchema
+    if schemaSource == "manifest":
+        schema = json.loads(Path(yolo_module.__file__).with_name("manifest.json").read_text(encoding="utf-8"))["paramSchema"]
+    form = SchemaParamForm()
+    try:
+        form.setSchema(schema, {"modelPath": "model.onnx"})
+        crop, rank = form._controls["outputCrop"], form._controls["cropTargetIndex"]
+        assert not crop.isChecked() and not rank.isEnabled()
+        crop.setChecked(True)
+        assert rank.isEnabled()
+        assert rank.value() == 1
+        assert "置信度从高到低" in rank.toolTip()
+        rank.setValue(0)
+        assert "不能小于 1" in form.validationMessage()
+        rank.setValue(2)
+        values = form.getValues()
+        assert values["outputCrop"] is True and values["cropTargetIndex"] == 2
+        assert YoloInferenceOperator().validateParams(values) is None
+        form.setSchema(schema, values)
+        assert form._controls["cropTargetIndex"].value() == 2
+        form._controls["cropTargetIndex"].setValue(0)
+        assert form.validationMessage()
+        form._controls["outputCrop"].setChecked(False)
+        assert not form._controls["cropTargetIndex"].isEnabled()
+        assert form.validationMessage() == ""
+    finally:
+        form.close()

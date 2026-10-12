@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -112,6 +113,7 @@ def testYoloInferenceProducesTypedDetectionsAndOverlay(
     assert isinstance(overlay, np.ndarray)
     assert overlay.shape == image.shape
     assert second["status"] == "ok"
+    assert set(second["outputs"]) == {"detections", "frame"}
     assert len(loads) == 1
     assert len(fakeModel.calls) == 2
     assert fakeModel.calls[0]["confidence"] == 0.25
@@ -204,3 +206,137 @@ def testYoloInferenceValidatesParametersAndImageType(tmp_path: Path) -> None:
     )
     assert invalidModelType["error"]["code"] == "E_PARAM_INVALID"
     assert invalidDevice["error"]["code"] == "E_PARAM_INVALID"
+
+
+@pytest.mark.parametrize("targetIndex,expectedLeft", [(1, 6), (2, 3), (3, 0)])
+@pytest.mark.parametrize("channels", [1, 3])
+def testSelectedCropUsesDescendingConfidenceAndRawOwnedPixels(
+    tmp_path, monkeypatch, targetIndex, expectedLeft, channels
+):
+    # Deliberately shuffled backend order; crop ranking must be explicit.
+    fake = _FakeModel(_result([[0, 1, 2, 4], [6, 1, 8, 4], [3, 1, 5, 4]],
+                              [.5, .95, .75], [0, 1, 0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    source = np.arange(6 * 20 * channels, dtype=np.uint8).reshape(
+        (6, 20) if channels == 1 else (6, 20, channels)
+    )
+    image = source[:, ::2]  # non-contiguous grayscale or BGR input
+    before = image.copy()
+    result = YoloInferenceOperator().executeNode(
+        {"image": image},
+        {"modelPath": str(_modelFile(tmp_path)), "outputCrop": True,
+         "cropTargetIndex": targetIndex, "drawOverlay": True},
+        {"nodeId": "yolo"},
+    )
+    assert result["status"] == "ok"
+    outputs = result["outputs"]
+    detections = DetectionCollection.fromPayload(outputs["detections"])
+    assert [d.confidence for d in detections.items] == pytest.approx([.95, .75, .5])
+    assert [d.bbox.x for d in detections.items] == [6, 3, 0]
+    assert result["metrics"]["detectionCount"] == 3
+    crop = outputs["croppedImage"]
+    np.testing.assert_array_equal(crop, before[1:4, expectedLeft:expectedLeft + 2])
+    np.testing.assert_array_equal(image, before)
+    assert crop.flags.c_contiguous and not np.shares_memory(crop, image)
+    assert not np.shares_memory(crop, outputs["overlay"])
+    assert outputs["overlay"].shape == (6, 10, 3)
+    frame = BBox2D.fromPayload(outputs["croppedFrame"])
+    assert (frame.width, frame.height) == (2, 3)
+    assert frame.coordinateSpace.reference == "node:yolo"
+    assert frame.coordinateSpace.mapPointToSource(0, 0) == (expectedLeft, 1)
+    assert BBox2D.fromPayload(outputs["frame"]).coordinateSpace.imageWidth == 10
+
+
+def testDetectionOrderIsStableForTiesWithoutEnablingCrop(tmp_path, monkeypatch):
+    fake = _FakeModel(_result([[0, 0, 1, 1], [1, 0, 2, 1], [2, 0, 3, 1]],
+                              [.8, .9, .9], [0, 1, 0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    result = YoloInferenceOperator().executeNode(
+        {"image": np.zeros((4, 4), dtype=np.uint8)},
+        {"modelPath": str(_modelFile(tmp_path))}, {},
+    )
+    detections = DetectionCollection.fromPayload(result["outputs"]["detections"])
+    assert [d.bbox.x for d in detections.items] == [1, 2, 0]
+    assert set(result["outputs"]) == {"detections", "frame"}
+
+
+@pytest.mark.parametrize("transform", [
+    {"transformToSource": (2, 0, 0, 3, 10, 20)},
+    {"transformToSource": None, "homographyToSource": (2, 0, 10, 0, 3, 20, .01, .02, 1)},
+])
+def testCropRoundsClipsAndComposesExistingSourceTransform(tmp_path, monkeypatch, transform):
+    fake = _FakeModel(_result([[1.8, -3.1, 6.2, 4.1]], [.9], [0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    space = CoordinateSpace2D(sourceId="camera", imageWidth=8, imageHeight=6, **transform)
+    frame = BBox2D(2, 1, 5, 4, space)  # padded input: only some pixels are valid
+    image = np.arange(48, dtype=np.uint8).reshape(6, 8)
+    result = YoloInferenceOperator().executeNode(
+        {"image": image, "frame": frame.toPayload()},
+        {"modelPath": str(_modelFile(tmp_path)), "outputCrop": True}, {},
+    )
+    assert result["status"] == "ok"
+    np.testing.assert_array_equal(result["outputs"]["croppedImage"], image[0:5, 1:7])
+    croppedFrame = BBox2D.fromPayload(result["outputs"]["croppedFrame"])
+    assert (croppedFrame.x, croppedFrame.y, croppedFrame.width, croppedFrame.height) == (1, 1, 5, 4)
+    assert (croppedFrame.coordinateSpace.imageWidth, croppedFrame.coordinateSpace.imageHeight) == (6, 5)
+    assert croppedFrame.coordinateSpace.sourceId == "camera"
+    assert croppedFrame.coordinateSpace.mapPointToSource(2, 3) == pytest.approx(space.mapPointToSource(3, 3))
+    np.testing.assert_array_equal(image, np.arange(48, dtype=np.uint8).reshape(6, 8))
+
+
+@pytest.mark.parametrize("boxes", [[], [[20, 20, 30, 30]]])
+def testEmptyOrOutsideDetectionHasNoCropAndDoesNotReusePreviousFrame(tmp_path, monkeypatch, boxes):
+    fake = _FakeModel(_result([[1, 1, 3, 3]], [.9], [0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    operator = YoloInferenceOperator()
+    params = {"modelPath": str(_modelFile(tmp_path)), "outputCrop": True}
+    inputs = {"image": np.zeros((8, 8, 3), dtype=np.uint8)}
+    assert operator.executeNode(inputs, params, {})["status"] == "ok"
+    fake.result = _result(boxes, [.9] * len(boxes), [0] * len(boxes))
+    result = operator.executeNode(inputs, params, {})
+    assert result["error"]["code"] == "E_CROP_TARGET_NOT_FOUND"
+    assert "0 个" in result["error"]["message"]
+    assert "outputs" not in result
+
+
+def testOutOfRangeCropNeverFallsBackToFirstDetection(tmp_path, monkeypatch):
+    fake = _FakeModel(_result([[1, 1, 3, 3]], [.9], [0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    result = YoloInferenceOperator().executeNode(
+        {"image": np.zeros((8, 8), dtype=np.uint8)},
+        {"modelPath": str(_modelFile(tmp_path)), "outputCrop": True, "cropTargetIndex": 2}, {},
+    )
+    assert result["error"]["code"] == "E_CROP_TARGET_NOT_FOUND"
+    assert "序号为 2" in result["error"]["message"] and "1 个" in result["error"]["message"]
+    assert "outputs" not in result
+
+
+def testCropOutsideValidContentFailsWithoutFabricatedPixels(tmp_path, monkeypatch):
+    fake = _FakeModel(_result([[0, 0, 1, 1]], [.9], [0]))
+    monkeypatch.setattr(yolo_module, "_createModel", lambda path: fake)
+    frame = BBox2D(3, 3, 2, 2, CoordinateSpace2D(imageWidth=8, imageHeight=8))
+    result = YoloInferenceOperator().executeNode(
+        {"image": np.zeros((8, 8), dtype=np.uint8), "frame": frame.toPayload()},
+        {"modelPath": str(_modelFile(tmp_path)), "outputCrop": True}, {},
+    )
+    assert result["error"]["code"] == "E_INPUT_SHAPE"
+    assert "valid frame content" in result["error"]["message"]
+    assert "outputs" not in result
+
+
+@pytest.mark.parametrize("index", [0, -1, True, 1.5, "1", None])
+def testCropIndexValidationOnlyAppliesWhenEnabled(index):
+    params = {"modelPath": "model.onnx", "cropTargetIndex": index}
+    operator = YoloInferenceOperator()
+    assert operator.validateParams(params) is None
+    assert operator.validateParams({**params, "outputCrop": True})["code"] == "E_PARAM_INVALID"
+
+
+def testCropManifestMatchesRuntimeContractAndDefaults():
+    manifest = json.loads(Path(yolo_module.__file__).with_name("manifest.json").read_text(encoding="utf-8"))
+    meta = YoloInferenceOperator.meta
+    for name in ("version", "inputPorts", "outputPorts", "paramSchema"):
+        assert manifest[name] == getattr(meta, name)
+    assert meta.paramSchema["properties"]["outputCrop"]["default"] is False
+    assert meta.paramSchema["properties"]["cropTargetIndex"]["default"] == 1
+    assert YoloInferenceOperator().validateParams({"modelPath": "model.onnx", "outputCrop": "true"})["code"] == "E_PARAM_INVALID"

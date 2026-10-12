@@ -18,6 +18,7 @@ from emo_master.core.contracts.geometry2d import (
     PayloadValidationError,
 )
 from emo_master.plugins.builtins._image_frame import frameForInput
+from emo_master.plugins.builtins.crop.operator import CropOperator
 from emo_master.plugins.builtins.yolo_inference.onnx_backend import (
     OnnxBackendUnavailableError,
     OnnxInferenceError,
@@ -122,6 +123,20 @@ _PARAM_SCHEMA: dict[str, object] = {
             "default": False,
         },
         "drawOverlay": {"title": "绘制叠加图", "type": "boolean", "default": False},
+        "outputCrop": {
+            "title": "输出裁剪图",
+            "type": "boolean",
+            "default": False,
+            "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。",
+        },
+        "cropTargetIndex": {
+            "title": "裁剪目标序号（从 1 开始）",
+            "type": "integer",
+            "minimum": 1,
+            "default": 1,
+            "xEnabledWhen": {"outputCrop": [True]},
+            "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。",
+        },
     },
     "required": ["modelPath"],
 }
@@ -131,7 +146,7 @@ class YoloInferenceOperator:
     meta = OperatorMeta(
         operatorId="vision.inference.yolo",
         displayName="YOLO Inference",
-        version="1.2.1",
+        version="1.3.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -148,6 +163,13 @@ class YoloInferenceOperator:
                 "schemaVersion": "1.x",
             },
             "overlay": {"type": "image", "required": False},
+            "croppedImage": {"type": "image", "required": False, "nullable": False},
+            "croppedFrame": {
+                "type": "bbox2d",
+                "required": False,
+                "nullable": False,
+                "schemaVersion": "1.x",
+            },
             "frame": {
                 "type": "bbox2d",
                 "required": True,
@@ -194,9 +216,15 @@ class YoloInferenceOperator:
             for item in classes
         ):
             return _paramError("classes must be an array of non-negative integers")
-        for name, default in (("agnosticNms", False), ("drawOverlay", False)):
+        for name, default in (
+            ("agnosticNms", False), ("drawOverlay", False), ("outputCrop", False)
+        ):
             if not isinstance(params.get(name, default), bool):
                 return _paramError(f"{name} must be boolean")
+        if params.get("outputCrop", False):
+            index = params.get("cropTargetIndex", 1)
+            if not isinstance(index, int) or isinstance(index, bool) or index < 1:
+                return _paramError("裁剪目标序号 cropTargetIndex 必须是从 1 开始的整数")
         return None
 
     def executeNode(
@@ -280,6 +308,26 @@ class YoloInferenceOperator:
             ).toPayload(),
             "frame": frame.toPayload(),
         }
+        if cast(bool, params.get("outputCrop", False)):
+            targetIndex = cast(int, params.get("cropTargetIndex", 1))
+            if targetIndex > len(detections):
+                return _error(
+                    "E_CROP_TARGET_NOT_FOUND",
+                    f"裁剪目标序号为 {targetIndex}，本次仅有 {len(detections)} 个有效目标"
+                    "（按置信度从高到低排序）；请检查目标序号、类别和置信度阈值。",
+                )
+            # Reuse the normal crop operator's pixel rounding, clipping, owned
+            # image and composable source transform. Never crop the overlay.
+            cropResult = CropOperator().executeNode(
+                {"image": image, "frame": frame.toPayload(),
+                 "roi": detections[targetIndex - 1].bbox.toPayload()},
+                {"clip": True},
+                runtimeContext,
+            )
+            if cropResult["status"] != "ok":
+                return cropResult
+            outputs["croppedImage"] = cropResult["outputs"]["image"]
+            outputs["croppedFrame"] = cropResult["outputs"]["frame"]
         if cast(bool, params.get("drawOverlay", False)):
             outputs["overlay"] = _drawOverlay(image, detections)
         elapsedMs = (perf_counter() - startedAt) * 1000.0
@@ -392,7 +440,9 @@ def _parseResults(
                 attributes={"backend": "onnxruntime"},
             )
         )
-    return detections
+    # Stable ties retain backend order; IDs remain backend detection IDs, not
+    # tracking identities. The selectable crop uses this same public ordering.
+    return sorted(detections, key=lambda detection: detection.confidence, reverse=True)
 
 
 def _classLabel(names: object, classId: int) -> str:

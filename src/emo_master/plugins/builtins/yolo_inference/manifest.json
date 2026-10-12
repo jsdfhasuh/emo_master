@@ -1,12 +1,12 @@
 {
   "operatorId": "vision.inference.yolo",
   "displayName": "YOLO Inference",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "entry": "emo_master.plugins.builtins.yolo_inference.operator:YoloInferenceOperator",
   "category": "推理",
   "iconKey": "yolo",
   "iconResource": "assets/icon.svg",
-  "summary": "使用 ONNX Runtime CPU 执行 YOLOv8/YOLO11 目标检测，输出标准 DetectionCollection。",
+  "summary": "使用 ONNX Runtime CPU 执行 YOLOv8/YOLO11 目标检测，按置信度降序输出检测集合，可选择目标输出检测框裁剪图。",
   "inputPorts": {
     "image": {
       "type": "image",
@@ -29,6 +29,17 @@
     "overlay": {
       "type": "image",
       "required": false
+    },
+    "croppedImage": {
+      "type": "image",
+      "required": false,
+      "nullable": false
+    },
+    "croppedFrame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
     },
     "frame": {
       "type": "bbox2d",
@@ -122,6 +133,24 @@
         "title": "绘制叠加图",
         "type": "boolean",
         "default": false
+      },
+      "outputCrop": {
+        "title": "输出裁剪图",
+        "type": "boolean",
+        "default": false,
+        "description": "输出所选检测框内的原始像素和裁剪坐标框；不是分割掩码，也不裁剪叠加图。"
+      },
+      "cropTargetIndex": {
+        "title": "裁剪目标序号（从 1 开始）",
+        "type": "integer",
+        "minimum": 1,
+        "default": 1,
+        "xEnabledWhen": {
+          "outputCrop": [
+            true
+          ]
+        },
+        "description": "按类别过滤、置信度筛选和 NMS 后的有效检测框排序：置信度从高到低，第 1 个最高；同分保留后端顺序。序号仅属于当前图像，超出数量时报错。"
       }
     },
     "required": [

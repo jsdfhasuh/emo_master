@@ -38,6 +38,38 @@ class ResultCollector:
         self.ordinals = {}
         self.frames = FrameTracker(config.get("versions", {}))
         self.telemetry = {}
+        self.traceIdentities = {}
+        if config.get("phaseTrace") is not None:
+            self.emit = self._tracedEmitter(emit)
+
+    def _trace(self, phase, identity, **details):
+        trace = self.config.get("phaseTrace")
+        if trace is not None:
+            try:
+                trace.record(phase, identity, **details)
+            except Exception:
+                pass
+
+    def _tracedEmitter(self, send):
+        def emit(event):
+            kind = event["eventType"].removeprefix("display.")
+            descriptor = event.get("descriptor", {})
+            key = event.get("key", descriptor.get("key"))
+            identity = event.get("item", {}).get("identity", self.traceIdentities.get(key, {}))
+            if not identity:
+                identity = dict(self.config["identity"], **{name: descriptor[name] for name in
+                    ("invocationId", "resultScopeId", "resultOrdinal") if name in descriptor})
+                identity["resultKey"] = key
+            self._trace(kind + ".sending", identity, sourceId=descriptor.get("sourceId"))
+            try:
+                send(event)
+            except Exception as error:
+                self._trace(kind + ".send_failed", identity, errorType=type(error).__name__)
+                raise
+            self._trace(kind + ".sent", identity, sourceId=descriptor.get("sourceId"))
+            if kind == "seal":
+                self.traceIdentities.pop(key, None)
+        return emit
 
     def observe(self, node, inputs, outputs):
         if self.config.get("capture", True):
@@ -64,6 +96,9 @@ class ResultCollector:
                 continue
             identity = dict(self.config["identity"], resultScopeId=scopeId,
                             invocationId=context.workflowRunId, resultKey=str(uuid4()), resultOrdinal=ordinal)
+            if self.config.get("phaseTrace") is not None:
+                self.traceIdentities[identity["resultKey"]] = identity
+                self._trace("scope.begin", identity)
             sources = {key: source for key, source in self.plan["sources"].items()
                        if source["resultScopeId"] == scopeId}
             item = {"identity": identity, "expected": list(sources), "values": {}, "bytes": 0,
@@ -80,6 +115,7 @@ class ResultCollector:
                                                                   "captureStartedNs": time.perf_counter_ns()}})
             except Exception:
                 self.open.pop((context.workflowRunId, scopeId))
+                self.traceIdentities.pop(identity["resultKey"], None)
                 self.config["credits"].release()
                 raise
 
@@ -100,6 +136,8 @@ class ResultCollector:
                     "nodeRunId": getattr(context, "nodeRunId", ""),
                     "iterationPath": list(getattr(context, "iterationPath", ()))[:16],
                     "observedNs": time.monotonic_ns()}
+                self._trace("source.observed", item["identity"], sourceId=key,
+                    nodeRunId=getattr(context, "nodeRunId", ""), nodeId=getattr(context, "callerNodeId", ""))
                 if source["port"] not in outputs:
                     item["values"][key] = unavailable(key, "OPTIONAL_ABSENT")
                     continue
@@ -122,6 +160,7 @@ class ResultCollector:
                         item["bytes"] += len(frozen.encode())
                         item["values"][key] = {"sourceId": key, "state": "AVAILABLE", "valueJson": frozen}
                 except (ValueError, TypeError, KeyError, IndexError) as error:
+                    self._trace("source.freeze_failed", item["identity"], sourceId=key, errorType=type(error).__name__)
                     item["values"][key] = unavailable(key, "INVALID_VALUE", type(error).__name__)
 
     def image(self, key, value, item):
@@ -196,6 +235,7 @@ class ResultCollector:
                 # Other IPC failures may have partially published the packet;
                 # never retry ambiguous delivery. The original parent fence owns it.
                 del self.pendingSeals[key]
+                self.traceIdentities.pop(key, None)
                 raise
             del self.pendingSeals[key]
         return True
@@ -211,6 +251,7 @@ class ResultCollector:
             if address[0] != context.workflowRunId:
                 continue
             item = self.open.pop(address)
+            self._trace("scope.end", item["identity"], terminal=terminal)
             for sourceId, source in item["sources"].items():
                 if source["kind"] not in {"global_variable", "global_counter"}:
                     continue

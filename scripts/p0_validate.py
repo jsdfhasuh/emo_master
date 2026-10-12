@@ -33,16 +33,21 @@ def main():
     parser.add_argument("--rounds", type=int, default=3)
     parser.add_argument("--warmup", type=int, default=8)
     parser.add_argument("--benchmark-timeout", type=float)
+    parser.add_argument("--require-performance", action="store_true",
+                        help="Exit nonzero unless the unchanged benchmark performance gate passes; preserves all raw windows")
     args = parser.parse_args()
     if args.count < 2 or args.rounds < 1 or args.warmup < 0:
         parser.error("invalid window size")
+    if args.require_performance and "benchmark" not in args.scenarios:
+        parser.error("--require-performance requires the benchmark scenario")
     if args.output.exists():
         parser.error("evidence already exists; choose a new output name")
     report = dict(code=identity(), started_utc=datetime.now(timezone.utc).isoformat(),
                   python=sys.version, executable=sys.executable, os=platform.platform(), processor=platform.processor(),
                   versions={name: importlib.metadata.version(name) for name in ["PySide2", "grpcio", "grpcio-tools", "protobuf",
                             "numpy", "opencv-python", "pydantic", "pytest", "ruff", "mypy"]},
-                  single_task_deadlines="unchanged: export/read/seal 500ms, reap 1s", p0_exit="NOT_EVALUATED")
+                  single_task_deadlines="unchanged: export/read/seal 500ms, reap 1s", p0_exit="NOT_EVALUATED",
+                  require_performance=args.require_performance)
     failed = False
     for name in args.scenarios:
         timeout = (args.benchmark_timeout or (args.count+args.warmup)*args.rounds+120) if name == "benchmark" else 90
@@ -58,7 +63,13 @@ def main():
             report[name] = dict(execution_status="FAIL", correctness_status="FAIL", performance_status="NOT_RUN",
                                 compatibility_status="NOT_RUN", error=str(error), outer_watchdog_seconds=timeout)
             failed = True
-        print(name, report[name]["execution_status"], flush=True)
+        stage = report[name]
+        failed = failed or stage["correctness_status"] != "PASS"
+        if args.require_performance and name == "benchmark":
+            failed = failed or stage["performance_status"] != "PASS"
+        report["exit_code"] = int(failed)
+        print(name, "execution=" + stage["execution_status"], "correctness=" + stage["correctness_status"],
+              "performance=" + stage["performance_status"], "exit_code=" + str(report["exit_code"]), flush=True)
         report["code_after"] = identity()
         report["finished_utc"] = datetime.now(timezone.utc).isoformat()
         args.output.parent.mkdir(parents=True, exist_ok=True)

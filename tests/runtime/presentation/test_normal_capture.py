@@ -287,10 +287,12 @@ def testUnknownStartLedgerEntriesAreNeverEvicted(channel, tmp_path):
 
 
 @pytest.mark.parametrize("mode", ["graceful", "force"])
-def testExplicitStopReleaseAndRestartNormalJob(tmp_path, mode):
+def testExplicitStopReleaseAndRestartNormalJob(tmp_path, mode, monkeypatch):
     from examples.runtime_pages_p2 import pacedProject, pluginRoots
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
     from emo_master.apps.runtime.presentation.service import PresentationService
+    from emo_master.apps.runtime.presentation.phase_trace import captureFailureSnapshot
+    monkeypatch.setenv("EMO_PRESENTATION_TRACE", "1")
     project = pacedProject(tmp_path, count=30)
     project.workflows["detect"].nodes[1].params["imagePath"] = str(tmp_path / "input.png")
     (tmp_path / "project.json").write_text(project.model_dump_json(), encoding="utf-8")
@@ -310,7 +312,13 @@ def testExplicitStopReleaseAndRestartNormalJob(tmp_path, mode):
             end = time.monotonic() + 10
             while not display.store.snapshot(reply.job_id)["results"] and time.monotonic() < end:
                 time.sleep(.02)
-            assert display.store.snapshot(reply.job_id)["results"], jobFailureDetails(runtime, reply.job_id)
+            firstResults = display.store.snapshot(reply.job_id)["results"]
+            observedNs = time.monotonic_ns()
+            if not firstResults:
+                evidence = captureFailureSnapshot(display, reply.job_id)
+                evidence.update(assertionObservedNs=observedNs, assertionResultKeys=[])
+                print("FIRST_CAPTURE_TIMEOUT " + json.dumps(evidence, ensure_ascii=True))
+            assert firstResults, jobFailureDetails(runtime, reply.job_id)
             assert runtime.StopJob(pb.StopJobRequest(job_id=reply.job_id, mode=mode), None).ok
             assert waitForTerminal(runtime, reply.job_id).status == "ABORTED"
             release(display, reply.job_id)

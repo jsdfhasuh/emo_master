@@ -4,6 +4,7 @@ from collections import deque
 from functools import wraps
 import json
 import logging
+import os
 import queue
 from pathlib import Path
 import threading
@@ -62,6 +63,7 @@ class PresentationService:
             self.exporter: ExportPool | None = None
             self.pending: dict = {}
             self.diagnostics: deque[dict] = deque(maxlen=64)
+            self.phaseTraces: dict = {}
             self.timings: dict = {}
             self.readers: dict = {}
             self.terminalStates: dict = {}
@@ -219,6 +221,14 @@ class PresentationService:
                 index = self.exporter.addSlot()
             laneCount = len(set(config["imageLaneBySource"].values())) or 1
             config["slots"] = self.exporter.configureLanes(index, laneCount)
+        if os.environ.get("EMO_PRESENTATION_TRACE") == "1":
+            from emo_master.apps.runtime.presentation.phase_trace import LocalPhaseTrace, SharedPhaseTrace
+            try:
+                producerTrace, parentTrace = SharedPhaseTrace(self.context), LocalPhaseTrace()
+                config["phaseTrace"] = producerTrace
+                self.phaseTraces[jobId] = parentTrace
+            except Exception as error:
+                config["phaseTraceUnavailable"] = type(error).__name__
         self.jobs[jobId] = config
         self.timings[jobId] = deque(maxlen=128)
         reader = threading.Thread(target=self._read, args=(jobId, config), name=f"display-ipc-{jobId}")
@@ -254,12 +264,19 @@ class PresentationService:
         self._consume(jobId, event)
 
     def _consume(self, jobId, event):
+        key = event.get("key", event.get("descriptor", {}).get("key"))
+        identity = event.get("item", {}).get("identity")
+        self._trace(jobId, "reader.received", key, identity=identity, reason=event.get("eventType"))
+        waiting = time.monotonic_ns() if getattr(self, "phaseTraces", {}).get(jobId) is not None else None
         with self.store.lock:
+            if waiting is not None:
+                self._trace(jobId, "reader.lock_acquired", key, identity=identity, waitNs=time.monotonic_ns() - waiting)
             if event["eventType"] == "display.timing":
                 self.timings[jobId].append(event)
             elif event["eventType"] == "display.open":
                 if self.store.begin(event["item"]):
                     self.pending[event["item"]["identity"]["resultKey"]] = {"job": jobId, "exports": {}}
+                    self._trace(jobId, "store.opened", identity=event["item"]["identity"])
             elif event["eventType"] == "display.image":
                 if self.exporter is not None:
                     descriptor = event["descriptor"]
@@ -271,7 +288,9 @@ class PresentationService:
                             or (config["imageLaneBySource"]
                                 and config["imageLaneBySource"].get(descriptor["sourceId"]) != descriptor.get("lane", 0))):
                         raise ValueError("image descriptor does not belong to this Job/source lane")
+                    self._trace(jobId, "export.submitting", key, sourceId=descriptor["sourceId"])
                     self.exporter.submit(descriptor)
+                    self._trace(jobId, "export.submitted", key, sourceId=descriptor["sourceId"])
             elif event["eventType"] == "display.seal":
                 pending = self.pending.get(event["key"])
                 if pending is not None and "seal" not in pending:
@@ -282,12 +301,15 @@ class PresentationService:
                     if "scopeEndedNs" in event and item is not None:
                         item["scopeEndedNs"] = event["scopeEndedNs"]
                     pending["deadline"] = event["sealedAt"] + .5
+                    self._trace(jobId, "seal.received", key, terminal=event.get("terminal"))
                     self._finish(event["key"])
 
     def _exported(self, task, path, outcome):
+        self._trace(task.get("jobId"), "export.callback", task.get("key"), sourceId=task.get("sourceId"), reason=outcome)
         with self.store.lock:
             pending = self.pending.get(task["key"])
             if pending is None:
+                self._trace(task.get("jobId"), "export.orphan", task.get("key"), sourceId=task.get("sourceId"))
                 return  # export owner deletes orphan staging after this callback
             source = unavailable(task["sourceId"], outcome if outcome != "AVAILABLE" else "EXPORT_FAILED")
             diagnostic = dict(task.get("exportDiagnostic", {}))
@@ -295,8 +317,10 @@ class PresentationService:
                 try:
                     diagnostic["adoptionStartedNs"] = time.monotonic_ns()
                     image = self.assets.adopt(path, task["jobId"], task["key"], task["provenance"])
+                    self._trace(task["jobId"], "export.adopted", task["key"], sourceId=task["sourceId"])
                     source = {"sourceId": task["sourceId"], "state": "AVAILABLE", "image": image}
                 except (OSError, ValueError) as error:
+                    self._trace(task["jobId"], "export.adopt_failed", task["key"], errorType=type(error).__name__)
                     from emo_master.apps.runtime.presentation.diagnostics import errorDetail
                     diagnostic.update(adoptionError=errorDetail(error), stage="asset_adoption")
                     source = unavailable(task["sourceId"], "EXPORT_FAILED",
@@ -317,7 +341,10 @@ class PresentationService:
 
     def _finishLocked(self, key):
         pending = self.pending.get(key)
-        if pending is None or "seal" not in pending:
+        if pending is None:
+            return
+        if "seal" not in pending:
+            self._traceWait(key, pending, "finish.wait_seal")
             return
         seal = pending["seal"]
         item = self.store.open.get(key)
@@ -333,14 +360,21 @@ class PresentationService:
                     exported = pending["exports"].get(source.get("imageSourceId", source["sourceId"]))
                     if exported is None:
                         if time.monotonic() < pending["deadline"]:
+                            if getattr(self, "phaseTraces", {}).get(pending["job"]) is not None:
+                                waiting = [s.get("sourceId") for s in seal["sources"][:16]
+                                    if isinstance(s, dict) and s.get("pendingImage")
+                                    and s.get("imageSourceId", s.get("sourceId")) not in pending["exports"]]
+                                self._traceWait(key, pending, "finish.wait_sources", waiting)
                             return
                         exported = unavailable(source["sourceId"], "EXPORT_TIMEOUT",
                             "assembler waiting for export callback exceeded seal deadline")
                     sources.append(dict(exported, sourceId=source["sourceId"]))
                 else:
                     sources.append(source)
+            self._trace(pending["job"], "store.closing", key, terminal=terminal)
             self.store.close(key, sources, terminal)
         except (ValueError, TypeError, KeyError, AttributeError) as error:
+            self._trace(pending["job"], "store.validation_error", identity=item["identity"], errorType=type(error).__name__)
             self._diagnose(key, item, seal.get("sources", []), terminal, "result_validation", error)
             # No invalid payload is published as COMPLETE. Keep the original
             # identity/expected manifest and a visible failure for every source.
@@ -351,7 +385,29 @@ class PresentationService:
         else:
             if terminal != "COMPLETED" or any(source["state"] != "AVAILABLE" for source in sources):
                 self._diagnose(key, item, sources, terminal, "result_closed")
+        self._trace(pending["job"], "store.closed", identity=item["identity"], terminal=terminal)
         self._retirePending(key, pending)
+
+    def _trace(self, jobId, phase, key=None, *, identity=None, **details):
+        trace = getattr(self, "phaseTraces", {}).get(jobId)
+        if trace is None:
+            return
+        try:
+            if identity is None:
+                identity = self.store.open.get(key, {}).get("identity")
+            if identity is None:
+                identity = dict(self.jobs.get(jobId, {}).get("identity", {}), resultKey=key)
+            trace.record(phase, identity, **details)
+        except Exception:
+            pass  # Optional evidence must never replace the original operation.
+
+    def _traceWait(self, key, pending, phase, sources=None):
+        if getattr(self, "phaseTraces", {}).get(pending["job"]) is None:
+            return
+        state = (phase, tuple(sources or ()))
+        if pending.get("traceWait") != state:
+            pending["traceWait"] = state
+            self._trace(pending["job"], phase, key, waitingSources=sources or [])
 
     def _diagnose(self, key, item, sources, terminal, stage, error=None):
         record = closureDiagnostic(key, item, sources, terminal, stage, error)
@@ -440,6 +496,7 @@ class PresentationService:
                     for index in {descriptor["index"] for descriptor in config["slots"]}:
                         self.exporter.releaseSlot(index)
                 self.jobs.pop(jobId, None)
+                getattr(self, "phaseTraces", {}).pop(jobId, None)
                 self.timings.pop(jobId, None)
                 self.readers.pop(jobId, None)
                 self.terminalStates.pop(jobId, None)

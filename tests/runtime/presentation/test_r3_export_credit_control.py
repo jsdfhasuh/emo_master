@@ -28,6 +28,7 @@ def testCreditControlKeepsOriginalLoadAndDisablesRpcMarkers(tmp_path):
     on = control.childCommand(tmp_path, "windows", "on")
     assert on == off + ["--export-credit-trace", "--capture-credit-trace"]
     assert "--passive-rpc-markers" not in on
+    assert "--startup-barrier" in on
     for flag, value in (("--count", "96"), ("--warmup", "8"), ("--arm", "none_qt"),
                         ("--qt-platform", "windows")):
         assert on[on.index(flag)+1] == value
@@ -36,7 +37,7 @@ def testCreditControlKeepsOriginalLoadAndDisablesRpcMarkers(tmp_path):
         control.childCommand(tmp_path, "windows", "invalid")
 
 
-@pytest.mark.parametrize("fault", [None, "coverage", "credit", "input", "owner", "markers", "wrong_mode", "raw_empty", "wrong_job", "duplicate_release", "capture_empty", "capture_wrong_lane", "capture_wrong_job", "fine_missing", "fine_sum", "fine_count", "fine_bytes", "fine_outside", "export_lane", "join_slot", "capture_time_missing", "capture_time_reverse", "capture_time_elapsed", "capture_cpu_invalid"])
+@pytest.mark.parametrize("fault", [None, "startup", "coverage", "credit", "input", "owner", "markers", "wrong_mode", "raw_empty", "wrong_job", "duplicate_release", "capture_empty", "capture_wrong_lane", "capture_wrong_job", "fine_missing", "fine_sum", "fine_count", "fine_bytes", "fine_outside", "export_lane", "join_slot", "capture_time_missing", "capture_time_reverse", "capture_time_elapsed", "capture_cpu_invalid"])
 def testControlPreservesMissingFrameAndObserverFailures(tmp_path, monkeypatch, fault):
     calls = []
     monkeypatch.setattr(control, "identity", lambda: {"source": "fixed"})
@@ -61,7 +62,12 @@ def testControlPreservesMissingFrameAndObserverFailures(tmp_path, monkeypatch, f
             "job": "job", "job_status": "COMPLETED", "executed": 88, "achieved_hz": 5,
             "request": {"expected_runtime_instance_id": "runtime"},
             "max_schedule_lateness_ms": 0, "p95_execution_ms": 5,
-            "phases": {"raw_all_window": {"max_ui_ms": 800}},
+            "phases": {"raw_all_window": {"max_ui_ms": 800}, "first_input_start_ns": 100},
+            "timestamps": {"observation_start_ns": 10},
+            "startup_readiness": {"protocol": control.policy.STARTUP_PROTOCOL, "job_id": "job", "budget_seconds": 10,
+                "worker_wait_ns": 20, "worker_continue_ns": 95, "subscriptions_ready_ns": [30, 40],
+                "windows_painted_ns": [50, 60], "clients_ready_ns": 70,
+                "gate_opened_ns": 101 if fault == "startup" else 90},
             "consumers": [{"p95_model_ms": 225}]*2,
             "ui": [{"p95_scope_to_gui_ms": 250, "p95_scope_to_paint_ms": 270}]*2,
             "observed_result_outcomes": {f"result-{ordinal}": {"ordinal": ordinal, "source_outcomes": {"image": {

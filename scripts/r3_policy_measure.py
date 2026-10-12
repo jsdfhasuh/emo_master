@@ -9,6 +9,7 @@ additional evidence, never a replacement or denominator filter for that verdict.
 import argparse
 from collections import Counter
 from contextlib import nullcontext
+from functools import partial
 import hashlib
 import json
 import os
@@ -16,6 +17,7 @@ from pathlib import Path
 import platform
 import statistics
 import sys
+import threading
 import time
 from uuid import uuid4
 
@@ -33,6 +35,106 @@ ARM_SPECS = {
 OBSERVATION_SECONDS = 45
 FINAL_OBSERVATION_SECONDS = .5
 RAW_BYTES = 24 * 1024 * 1024
+STARTUP_PROTOCOL = "subscribers-and-qt-before-input-v1"
+STARTUP_SECONDS = 10
+
+
+def waitForInputGate(gate, cancelEvent):
+    """Measurement-only first-input barrier, before the original pace origin."""
+    ready, entered, continued = gate
+    entered.value = time.perf_counter_ns()
+    deadline = time.monotonic() + STARTUP_SECONDS
+    while not ready.wait(.02):
+        if cancelEvent.is_set():
+            raise RuntimeError("measurement startup cancelled")
+        if time.monotonic() >= deadline:
+            raise TimeoutError("measurement observers did not become ready")
+    if cancelEvent.is_set():
+        raise RuntimeError("measurement startup cancelled")
+    continued.value = time.perf_counter_ns()
+
+
+class StartupReadiness:
+    """Bounded passive readiness evidence; no synthetic result or warmup input."""
+    def __init__(self):
+        import multiprocessing
+        context = multiprocessing.get_context("spawn")
+        self.inputGate = (context.Event(), context.RawValue("q", 0), context.RawValue("q", 0))
+        self.lock = threading.Lock()
+        self.job = None
+        self.subscriptions = {}
+        self.paints = {}
+        self.filters = []
+        self.openedNs = None
+        self.clientsReadyNs = None
+
+    def observeSubscription(self, job, context):
+        with self.lock:
+            if job == self.job and len(self.subscriptions) < 2:
+                self.subscriptions.setdefault(id(context), time.perf_counter_ns())
+
+    def watchWindow(self, window, index):
+        from PySide2.QtCore import QObject, QEvent
+        owner = self
+
+        class FirstPaint(QObject):
+            def eventFilter(self, watched, event):
+                if event.type() == QEvent.Paint:
+                    owner.paints.setdefault(index, time.perf_counter_ns())
+                return False
+
+        observer = FirstPaint(window)
+        window.installEventFilter(observer)
+        self.filters.append(observer)
+
+    def release(self, app, clients, windows, runtimeId):
+        deadline = time.monotonic() + STARTUP_SECONDS
+        while time.monotonic() < deadline:
+            app.processEvents()
+            connected = []
+            for client in clients:
+                with client.lock:
+                    connected.append(client.jobId == self.job and client.instanceId == runtimeId
+                        and client.compatible and client.connection == "CONNECTED" and client.stream is not None
+                        and not client.records and not client.errors)
+            with self.lock:
+                subscribed = len(self.subscriptions) == 2
+            if (len(connected) == 2 and all(connected) and subscribed and self.inputGate[1].value
+                    and len(windows) == 2 and len(self.paints) == 2 and all(w.isVisible() for w in windows)):
+                self.clientsReadyNs = time.perf_counter_ns()
+                self.openedNs = time.perf_counter_ns()
+                self.inputGate[0].set()
+                return
+            time.sleep(.003)
+        raise TimeoutError("measurement startup readiness incomplete")
+
+    def report(self):
+        return {"protocol": STARTUP_PROTOCOL, "job_id": self.job, "budget_seconds": STARTUP_SECONDS,
+                "worker_wait_ns": self.inputGate[1].value, "worker_continue_ns": self.inputGate[2].value,
+                "subscriptions_ready_ns": sorted(self.subscriptions.values()),
+                "windows_painted_ns": [self.paints.get(index) for index in range(2)],
+                "clients_ready_ns": self.clientsReadyNs, "gate_opened_ns": self.openedNs}
+
+
+def startupComplete(result):
+    record = result.get("startup_readiness", {})
+    if not isinstance(record, dict):
+        return False
+    subscriptions, paints = record.get("subscriptions_ready_ns"), record.get("windows_painted_ns")
+    if not isinstance(subscriptions, list) or not isinstance(paints, list):
+        return False
+    first = result.get("phases", {}).get("first_input_start_ns")
+    observation = result.get("timestamps", {}).get("observation_start_ns")
+    opened, continued = record.get("gate_opened_ns"), record.get("worker_continue_ns")
+    waits = [record.get("worker_wait_ns"), record.get("clients_ready_ns"),
+             *subscriptions, *paints]
+    return (record.get("protocol") == STARTUP_PROTOCOL and record.get("job_id") == result.get("job")
+            and isinstance(record.get("job_id"), str) and bool(record["job_id"])
+            and record.get("budget_seconds") == STARTUP_SECONDS and len(waits) == 6
+            and len(subscriptions) == len(paints) == 2
+            and all(type(value) is int and value > 0 for value in [opened, continued, first, observation, *waits])
+            and max(waits) <= opened <= continued <= first
+            and observation <= opened)
 
 
 def armOrder(group):
@@ -53,7 +155,7 @@ def buildStartRequest(projectId, arm, generation, token):
 
 
 
-def measuredJob(spec, cancelEvent, eventQueue):
+def measuredJob(spec, cancelEvent, eventQueue, *, inputGate=None):
     """Uniform inclusive detect-workflow timing, including capture-off."""
     from emo_master.apps.runtime.workflow.runner import WorkflowRunner
     trace = base.Trace("execution")
@@ -63,6 +165,16 @@ def measuredJob(spec, cancelEvent, eventQueue):
         captureTrace = CaptureCreditTrace()
     try:
         with base.patches() as patch:
+            if inputGate is not None:
+                from examples.p2_pace import Pace
+                originalPace = Pace.executeNode
+
+                def paced(self, *args, **kwargs):
+                    if self.index == 0:
+                        trace.call("startup.input_gate", waitForInputGate, inputGate, cancelEvent)
+                    return originalPace(self, *args, **kwargs)
+
+                patch(Pace, "executeNode", paced)
             base.wrap(trace, patch, WorkflowRunner, "run", "workflow.detect",
                 lambda _self, workflowId, inputs, context, cancellation: base.contextDetails(context),
                 lambda _self, workflowId, *_args, **_kwargs: workflowId == "detect")
@@ -283,7 +395,7 @@ def retireGui(windows, hub, app):
     app.processEvents()
 
 
-def normalTrial(root, arm, count, warmup, app):
+def normalTrial(root, arm, count, warmup, app, startup=None):
     import grpc
     from examples.runtime_pages_p2 import pacedProject, pluginRoots
     from examples.runtime_pages_p3 import pageConfiguration
@@ -333,6 +445,8 @@ def normalTrial(root, arm, count, warmup, app):
         if not reply.ok or not reply.job_id or reply.legacy_snapshot_policy != ARM_SPECS[arm]["policy"]:
             raise RuntimeError("normal StartJob did not accept exact requested policy: " + str(reply))
         job = reply.job_id
+        if startup is not None:
+            startup.job = job
         if ARM_SPECS[arm]["capture"]:
             clients = [base.MeasuredSession(address, job) for _ in range(2)]
             hub = DisplayHub(clients[0])
@@ -340,6 +454,8 @@ def normalTrial(root, arm, count, warmup, app):
             screen = app.primaryScreen().availableGeometry()
             width = max(460, min(1060, screen.width()//2-20))
             for index, window in enumerate(windows):
+                if startup is not None:
+                    startup.watchWindow(window, index)
                 window.resize(width, min(720, screen.height()-60))
                 window.move(screen.x()+index*(width+10), screen.y()+20)
                 window.show()
@@ -348,6 +464,8 @@ def normalTrial(root, arm, count, warmup, app):
         nextSample = 0
         nextNative = 0
         stamps["observation_start_ns"] = time.perf_counter_ns()
+        if startup is not None:
+            startup.release(app, clients, windows, capabilities.runtime_instance_id)
         deadline = time.perf_counter()+OBSERVATION_SECONDS
 
         def observe(stamp):
@@ -418,6 +536,8 @@ def normalTrial(root, arm, count, warmup, app):
             "supervisor_errors": list(runtime.jobSupervisor.presentationErrors),
             "qt_platform": app.platformName(), "control_transport": "normal RuntimeService RPC; idle presentation owner in all arms; no exporter/capture allocation for all_off",
             "input_sha256": hashlib.sha256((root/"input.png").read_bytes()).hexdigest()}
+        if startup is not None:
+            result["startup_readiness"] = startup.report()
     finally:
         stamps["cleanup_start_ns"] = time.perf_counter_ns()
         def attempt(label, action):
@@ -494,6 +614,7 @@ def executeTrial(args):
     assetTraceSummary = None
     creditTrace = None
     creditTraceSummary = None
+    startup = StartupReadiness() if getattr(args, "startup_barrier", False) else None
     if getattr(args, "asset_split_trace", False):
         from scripts.r3_asset_split_trace import AssetSplitTrace, installed
         assetTrace = AssetSplitTrace(passive_markers=getattr(args, "passive_rpc_markers", False))
@@ -502,7 +623,18 @@ def executeTrial(args):
         creditTrace = ExportCreditTrace()
     try:
         with base.patches() as patch:
-            patch(supervisor, "runJobProcess", measuredJob)
+            patch(supervisor, "runJobProcess", partial(measuredJob, inputGate=startup.inputGate) if startup else measuredJob)
+            if startup is not None:
+                from emo_master.apps.runtime.presentation.rpc import DisplayRpc
+                originalSnapshot = DisplayRpc._snapshot
+
+                def snapshot(self, request, context, incremental=False):
+                    result = originalSnapshot(self, request, context, incremental)
+                    if incremental:
+                        startup.observeSubscription(request.job_id, context)
+                    return result
+
+                patch(DisplayRpc, "_snapshot", snapshot)
             patch(service, "ExportPool", base.MeasuredPool)
             original = display_session.decodeResult
             def decode(wire):
@@ -531,7 +663,7 @@ def executeTrial(args):
             root = args.output / "work-trial"
             with installed(assetTrace, patch, ROOT) if assetTrace is not None else nullcontext():
                 with creditInstalled(creditTrace, patch, ROOT) if creditTrace is not None else nullcontext():
-                    result = normalTrial(root, args.arm, args.count, args.warmup, app)
+                    result = normalTrial(root, args.arm, args.count, args.warmup, app, startup)
             (args.output / "owners-closed.json").write_text(json.dumps({
                 "all_original_trial_close_calls_returned": True}), encoding="utf-8")
     finally:
@@ -765,11 +897,15 @@ def main():
         help="opt-in existing exporter reply/callback/credit boundaries; never changes ownership or reports performance PASS")
     parser.add_argument("--capture-credit-trace", action="store_true",
         help="opt-in worker's original nonblocking lane acquire result; metadata only, no extra semaphore call")
+    parser.add_argument("--startup-barrier", action="store_true",
+        help="diagnostic v3: wait for two subscribers and native window paints before the first scheduled input")
     parser.add_argument("--child", action="store_true", help=argparse.SUPPRESS)
     parser.add_argument("--arm", choices=tuple(ARM_SPECS), default="all_off", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.passive_rpc_markers and not args.asset_split_trace:
         parser.error("--passive-rpc-markers requires --asset-split-trace")
+    if args.startup_barrier and (not args.child or args.arm != "none_qt"):
+        parser.error("--startup-barrier is only supported for the none_qt diagnostic child")
     if not 2 <= args.count <= 96 or not 0 <= args.warmup < args.count or not 1 <= args.groups <= 3:
         parser.error("count 2..96, warmup 0..count-1, groups 1..3; reduced runs are diagnostic only")
     args.output = args.output.resolve()

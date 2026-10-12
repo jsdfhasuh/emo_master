@@ -1,4 +1,4 @@
-"""Read-only, stdlib-only, bounded hosted report for export-credit ABBA v2.
+"""Read-only, stdlib-only, bounded hosted report for export-credit ABBA v3.
 
 Never runs a workload or imports the runtime. COMPLETE describes observations,
 not acceptance: the original control exit and INVALID measurement remain so.
@@ -612,6 +612,14 @@ def base_trace_coverage(payload, traces, entry, rpc_count, asset_bytes, issues, 
                        "outcome": row["outcome"], "invocation": row.get("invocation")} for row in detect],
                      key=lambda row: row["startNs"])
     check(issues, payload.get("raw_timings") == timings, "raw_execution_timing_mismatch")
+    readiness = payload.get("startup_readiness", {})
+    gates = [row for row in by_role["execution"] if row.get("stage") == "startup.input_gate"]
+    check(issues, len(gates) == 1 and gates[0].get("outcome") == "OK"
+          and integer(readiness.get("worker_wait_ns")) and integer(readiness.get("worker_continue_ns"))
+          and gates[0]["start_ns"] <= readiness["worker_wait_ns"] <= readiness["worker_continue_ns"] <= gates[0]["end_ns"]
+          and bool(timings) and gates[0]["end_ns"] <= timings[0]["startNs"]
+          and payload.get("phases", {}).get("first_input_start_ns") == timings[0]["startNs"],
+          "raw_startup_gate_mismatch")
     seen = Counter(row["ordinal"] for row in timings)
     all_ordinals, formal = set(range(1, COUNT + 1)), set(range(9, COUNT + 1))
     completed = {row["ordinal"] for row in timings if row["ordinal"] in formal and row["outcome"] == "OK"}
@@ -668,6 +676,23 @@ def read_arm(reader, entry, position, repo, original_valid=False):
     check(issues, entry.get("position") == position and entry.get("observer_mode") == mode, "arm_order")
     prefix = "trial-" + str(position) + "-credit-" + mode + "/"
     payload = reader.read(prefix + "trial.json", 24 * MIB)
+    startup = payload.get("startup_readiness", {})
+    require(isinstance(startup, dict), "startup_readiness_schema")
+    subscriptions, paints = startup.get("subscriptions_ready_ns", []), startup.get("windows_painted_ns", [])
+    require(isinstance(subscriptions, list) and isinstance(paints, list), "startup_readiness_schema")
+    opened, continued = startup.get("gate_opened_ns"), startup.get("worker_continue_ns")
+    first = payload.get("phases", {}).get("first_input_start_ns")
+    observation = payload.get("timestamps", {}).get("observation_start_ns")
+    prerequisites = [startup.get("worker_wait_ns"), startup.get("clients_ready_ns"),
+        *subscriptions, *paints]
+    check(issues, startup.get("protocol") == "subscribers-and-qt-before-input-v1"
+        and startup.get("job_id") == payload.get("job") and startup.get("budget_seconds") == 10
+        and isinstance(startup.get("job_id"), str) and bool(startup["job_id"])
+        and len(subscriptions) == len(paints) == 2
+        and len(prerequisites) == 6 and all(integer(value) and value > 0 for value in [opened, continued, first, observation, *prerequisites])
+        and max(prerequisites) <= opened <= continued <= first
+        and observation <= opened
+        and entry.get("startup_complete") is True, "startup_readiness")
     marker = reader.read(prefix + "owners-closed.json", 4096)
     check(issues, marker.get("all_original_trial_close_calls_returned") is True, "owner_marker")
     watch = entry.get("watchdog", {})
@@ -740,6 +765,8 @@ def read_arm(reader, entry, position, repo, original_valid=False):
               "watchdog": pick(watch, ("status", "exit_code", "timeout", "watchdog_seconds", "log_overflow", "log_limit_bytes", "log_bytes", "duration_seconds", "log_sha256", "owner_retirement_verified")),
               "original_control_fields": pick(entry, ("exact_ordinal_coverage", "trace_complete", "trace_roles", "trace_dropped_rows", "asset_fingerprint", "split_accounting", "source_outcomes", "delivery", "credit_identity_coverage", "capture_identity_coverage", "capture_export_join", "observer_configuration_matches", "passive_markers_disabled")),
               "trial_summary": pick(payload, ("job_status", "expected", "executed", "achieved_hz", "max_schedule_lateness_ms", "mean_execution_ms", "p95_execution_ms", "denominators", "pace_denominators", "phases", "timestamps", "record_retention", "outcome_overflow", "export")),
+              "startup_readiness": pick(startup, ("protocol", "job_id", "budget_seconds", "worker_wait_ns", "worker_continue_ns",
+                  "subscriptions_ready_ns", "windows_painted_ns", "clients_ready_ns", "gate_opened_ns")),
               "sources": source_rows, "consumers": consumers, "windows": windows,
               "base_traces": trace_summaries, "resources": resource_summary(payload, issues)}
     result["base_raw_coverage"] = base_coverage
@@ -797,9 +824,9 @@ def build_report(evidence, repo, expected_sha, original_step):
     require(isinstance(expected_sha, str) and re.fullmatch(r"[0-9a-f]{40,64}", expected_sha), "expected_sha_missing")
     check(issues, manifest.get("head") == expected_sha, "checkout_sha_mismatch")
     check(issues, manifest.get("dirty") == "", "dirty_source")
-    check(issues, manifest.get("experiment") == "export_credit_lifetime_abba_v2", "control_version")
+    check(issues, manifest.get("experiment") == "export_credit_lifetime_abba_v3", "control_version")
     check(issues, manifest.get("configuration") == {"count": COUNT, "warmup": 8,
-          "observer_order": list(ORDER), "qt_platform": "windows"}, "control_configuration")
+          "observer_order": list(ORDER), "qt_platform": "windows", "startup_protocol": "subscribers-and-qt-before-input-v1"}, "control_configuration")
     check(issues, manifest.get("source_stable") is True, "control_source_unstable")
     before, after = manifest.get("source_before", {}), manifest.get("source_after", {})
     source = source_pair(before.get("files"), after.get("files"), repo, issues)

@@ -1,6 +1,7 @@
 """Fixed off/on/on/off observer control for parent export-credit lifetime.
 
-The unchanged NONE+Qt 96/8, 1080p/5Hz workload uses two consumers and windows.
+The NONE+Qt 96/8, 1080p/5Hz workload uses two consumers and windows. Version 3
+holds only the first input until both subscribers and native windows are ready.
 Every arm keeps the existing asset split trace; passive RPC markers stay off.
 Unavailable sources and missed images remain failed full-coverage evidence.
 The new observer reports admitted-export boundaries, never performance PASS.
@@ -37,7 +38,7 @@ def childCommand(directory, platformName, mode):
         raise ValueError("unknown export-credit observer mode")
     command = [sys.executable, str(ROOT / "scripts" / "r3_policy_measure.py"), "--child",
         "--output", str(directory), "--arm", "none_qt", "--count", str(COUNT),
-        "--warmup", str(WARMUP), "--qt-platform", platformName, "--asset-split-trace"]
+        "--warmup", str(WARMUP), "--qt-platform", platformName, "--asset-split-trace", "--startup-barrier"]
     return command + (["--export-credit-trace", "--capture-credit-trace"] if mode == "on" else [])
 
 
@@ -252,15 +253,18 @@ def captureExportJoin(capture, export):
 def run(args):
     base = policy.base
     before = identity()
-    manifest = {"experiment": "export_credit_lifetime_abba_v2", "head": git("rev-parse", "HEAD"),
+    manifest = {"experiment": "export_credit_lifetime_abba_v3", "head": git("rev-parse", "HEAD"),
         "dirty": git("status", "--short"), "source_before": before, "started_ns": time.perf_counter_ns(),
         "python": sys.version, "os": platform.platform(), "configuration": {
-            "count": COUNT, "warmup": WARMUP, "observer_order": list(ORDER), "qt_platform": args.qt_platform},
+            "count": COUNT, "warmup": WARMUP, "observer_order": list(ORDER), "qt_platform": args.qt_platform,
+            "startup_protocol": policy.STARTUP_PROTOCOL},
         "load": "Original seed20260926, 1920x1080x3, scheduled5Hz,96inputs/8warmup; two consumers/windows",
         "bounds": {"trials": 4, "watchdog_seconds_per_trial": 90, "log_bytes": base.LOG_BYTES,
             "raw_trial_bytes": policy.RAW_BYTES, "asset_split_bytes": 24*1024*1024,
             "export_deadline_seconds": .5, "asset_rpc_deadline_seconds": .5},
-        "interpretation": "Diagnostic-only observer control. No ownership, channel, codec, quota or deadline change. "
+        "interpretation": "Diagnostic-only observer control. Version 3 starts the original pace clock after subscriber/window readiness; "
+            "historical v2 startup failures remain unchanged and are not comparable startup performance evidence. "
+            "No ownership, channel, codec, quota or deadline change. "
             "Pre-adopt time includes callback lock wait and Python work; it is not a pure lock measurement. "
             "Credit trace completeness describes observed admitted exports, never missing-source acceptance. "
             "Keep original coverage/age/latency failures; never subtract presumed observer overhead.",
@@ -277,6 +281,7 @@ def run(args):
             entry.update(fields)
             entry["input_sha256"] = payload["input_sha256"]
             entry["exact_ordinal_coverage"] = policy.exactCoverage(payload)
+            entry["startup_complete"] = policy.startupComplete(payload)
             path = directory / "asset-split.json"
             if not path.is_file() or not 0 < path.stat().st_size <= 24*1024*1024:
                 raise ValueError("asset split missing or oversized")
@@ -339,7 +344,7 @@ def run(args):
         row.get("asset_fingerprint", {}).get("complete") for row in manifest["trials"])
     valid = manifest["source_stable"] and manifest["identical_input_and_asset"] and all(
         row["watchdog"]["status"] == "PASS" and row["watchdog"].get("owner_retirement_verified")
-        and row.get("trace_complete") and row.get("exact_ordinal_coverage")
+        and row.get("trace_complete") and row.get("exact_ordinal_coverage") and row.get("startup_complete")
         and row.get("passive_markers_disabled") and row.get("observer_configuration_matches")
         and row.get("split_accounting", {}).get("status") == "COMPLETE"
         and (row["observer_mode"] == "off" or (row.get("export_credit_trace", {}).get("complete") is True

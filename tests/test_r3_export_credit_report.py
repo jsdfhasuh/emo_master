@@ -40,9 +40,9 @@ def fixture(root, refused=False):
         path.write_text("# synthetic guard source\n", encoding="utf-8")
         guard_hashes[name] = hashlib.sha256(path.read_bytes()).hexdigest()
     identity = {"files": hashes, "digest": hashlib.sha256(json.dumps(hashes, sort_keys=True).encode()).hexdigest()}
-    manifest = {"experiment": "export_credit_lifetime_abba_v2", "head": SHA, "dirty": "",
+    manifest = {"experiment": "export_credit_lifetime_abba_v3", "head": SHA, "dirty": "",
                 "source_before": identity, "source_after": identity, "source_stable": True,
-                "configuration": {"count": 96, "warmup": 8, "observer_order": list(reporter.ORDER), "qt_platform": "windows"},
+                "configuration": {"count": 96, "warmup": 8, "observer_order": list(reporter.ORDER), "qt_platform": "windows", "startup_protocol": "subscribers-and-qt-before-input-v1"},
                 "measurement_status": "INVALID" if refused else "VALID", "performance_status": "NOT_ASSESSED",
                 "identical_input_and_asset": not refused, "trials": []}
     for position, mode in enumerate(reporter.ORDER):
@@ -63,6 +63,11 @@ def fixture(root, refused=False):
         payload = {"arm": "none_qt", "qt_platform": "windows", "mode": "runtime", "job": "job-" + str(position),
                    "legacy_snapshot_policy": "NONE", "accepted_policy": "NONE", "capture_enabled": True,
                    "request": {"expected_runtime_instance_id": "runtime-" + str(position)},
+                   "startup_readiness": {"protocol": "subscribers-and-qt-before-input-v1", "job_id": "job-" + str(position),
+                       "budget_seconds": 10, "worker_wait_ns": 20, "worker_continue_ns": 95,
+                       "subscriptions_ready_ns": [30, 40], "windows_painted_ns": [50, 60],
+                       "clients_ready_ns": 70, "gate_opened_ns": 90},
+                   "phases": {"first_input_start_ns": 1000}, "timestamps": {"observation_start_ns": 10},
                    "outcome_overflow": 0, "cleanup_errors": [], "record_retention": {"capacity_reached": False},
                    "input_sha256": "b" * 64, "observed_result_outcomes": observed,
                    "consumers": [{"raw_records": consumers, "rows": consumers[8:], "total_record_count": 96, "errors": [],
@@ -93,7 +98,7 @@ def fixture(root, refused=False):
                  "log_overflow": False, "log_errors": [], "watchdog_seconds": 90}
         entry = {"position": position, "observer_mode": mode, "watchdog": watch, "trace_complete": True,
                  "trace_roles": {"execution": 1, "job": 1, "owner": 1, "exporter": 2}, "trace_dropped_rows": 0,
-                 "passive_markers_disabled": True, "observer_configuration_matches": True,
+                 "passive_markers_disabled": True, "observer_configuration_matches": True, "startup_complete": True,
                  "exact_ordinal_coverage": not refused, "input_sha256": "b" * 64,
                  "asset_fingerprint": {"complete": not refused, "calls": 190 if refused else 192, "distinct_fingerprints": 1,
                  "asset_bytes": None if refused else 123, "asset_sha256": None if refused else "c" * 64},
@@ -102,6 +107,7 @@ def fixture(root, refused=False):
                               start_ns=1000 * ordinal, end_ns=1000 * ordinal + 100) for ordinal in range(1, 97)]
         payload["raw_timings"] = [{"ordinal": row["ordinal"], "startNs": row["start_ns"], "endNs": row["end_ns"],
                                   "outcome": row["outcome"], "invocation": row["invocation"]} for row in execution_rows]
+        execution_rows.append(span("startup.input_gate", start_ns=15, end_ns=96, elapsed_ms=.000081))
         payload.update(expected=88, executed=88, denominators={"planned_inputs": 96, "warmup_inputs": 8,
             "measured_inputs": 88, "executed_total": 96, "missing_execution_ordinals": [],
             "missing_measured_execution_ordinals": [], "duplicate_execution_ordinals": {},
@@ -253,6 +259,7 @@ class ReportTests(unittest.TestCase):
             ("capture-credit-10.json", lambda raw: raw["counters"].update(attempts=95), "capture_counter_attempts"),
             ("export-credit.json", lambda raw: raw.update(observer_retired=False), "probe_observer_retired"),
             ("trial.json", lambda raw: raw.update(qt_platform="offscreen"), "native_windows_profile"),
+            ("trace-execution-0.json", lambda raw: raw["rows"].pop(), "raw_startup_gate_mismatch"),
         ]
         for name, action, issue in cases:
             with self.subTest(issue=issue):
@@ -272,6 +279,22 @@ class ReportTests(unittest.TestCase):
         self.on_mutate("export-credit.json", fault)
         result = self.build()
         self.assertIn("fine_aggregate_clock_or_counters", result["arms"][1]["issues"])
+
+    def test_startup_claim_requires_complete_ordered_raw_readiness(self):
+        path = self.evidence / "trial-1-credit-on/trial.json"
+        original = path.read_bytes()
+        for field, value in (("gate_opened_ns", 101), ("worker_continue_ns", 89),
+                             ("subscriptions_ready_ns", [30]), ("windows_painted_ns", [50, 91]),
+                             ("job_id", "wrong"), ("clients_ready_ns", True)):
+            with self.subTest(field=field):
+                self.on_mutate("trial.json", lambda raw: raw["startup_readiness"].update({field: value}))
+                result = self.build()
+                self.assertEqual(result["observation_status"], "INVALID")
+                self.assertIn("startup_readiness", result["arms"][1]["issues"])
+                path.write_bytes(original)
+        self.on_mutate("trial.json", lambda raw: raw["startup_readiness"].update(windows_painted_ns=None))
+        with self.assertRaisesRegex(reporter.InvalidEvidence, "startup_readiness_schema"):
+            self.build()
 
     def test_source_changed_rejected(self):
         (self.repo / "fixture.py").write_text("changed")

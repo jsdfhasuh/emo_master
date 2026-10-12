@@ -2,9 +2,10 @@
 
 Only bounded descriptors travel over the Pipe. Raw input lives in preallocated
 shared memory; the child writes a bounded staging file, never a large Pipe reply.
-A verified successful reply ends raw ownership. The serial export owner retains
-the staging file and Job's slab until adoption/cleanup, while the producer may
-fill the same raw lane for one queued successor.
+A verified private-snapshot acknowledgment ends shared raw ownership. One child
+snapshot (at most one lane, within the encoder reservation) survives encoding.
+The serial owner retains the staging file and Job's slab until adoption/cleanup,
+while the producer may fill the same raw lane for one queued successor.
 """
 import multiprocessing
 import math
@@ -30,20 +31,30 @@ def encodeWorker(connection, memoryName):
             task = connection.recv()
             if task is None:
                 return
+            pixels = encoded = None
             try:
-                encodeStartedNs = time.monotonic_ns()
+                rawBytes = math.prod(task["shape"])
+                if not 0 < rawBytes <= task.get("capacity", RAW_LIMIT) <= RAW_LIMIT:
+                    raise ValueError("snapshot exceeds image lane budget")
                 pixels = np.ndarray(tuple(task["shape"]), np.uint8, buffer=memory.buf,
-                                    offset=task.get("offset", 0))
+                                    offset=task.get("offset", 0)).copy()
+                connection.send({"kind": "snapshot", "ok": True, "taskId": task["taskId"],
+                                 "rawBytes": pixels.nbytes, "copiedNs": time.monotonic_ns()})
+                encodeStartedNs = time.monotonic_ns()
                 ok, encoded = cv2.imencode(".png", pixels)
                 if not ok or encoded.nbytes > task.get("capacity", RAW_LIMIT):
                     raise ValueError("encoded image budget exceeded")
                 encodedNs = time.monotonic_ns()
                 Path(task["path"]).write_bytes(encoded.tobytes())
-                connection.send({"ok": True, "taskId": task["taskId"],
+                connection.send({"kind": "complete", "ok": True, "taskId": task["taskId"],
                     "encodeStartedNs": encodeStartedNs, "encodedNs": encodedNs,
                     "stagedNs": time.monotonic_ns()})
             except Exception as error:
-                connection.send({"ok": False, "taskId": task["taskId"], "error": type(error).__name__})
+                connection.send({"kind": "complete", "ok": False, "taskId": task["taskId"], "error": type(error).__name__})
+            finally:
+                # Never retain the previous private input while allocating the
+                # next. The Pipe contains descriptors/acks only, never pixels.
+                pixels = encoded = None
     finally:
         memory.close()
         connection.close()
@@ -225,66 +236,64 @@ class ExportPool:
                     stage = "dispatch"
                     diagnostic["dispatchNs"] = time.monotonic_ns()
                     slot["connection"].send(dict(task, path=str(path)))
-                    stage = "completion_wait"
-                    diagnostic["waitStartedNs"] = time.monotonic_ns()
-                    diagnostic["remainingMs"] = max(0, task["deadline"] - time.monotonic()) * 1000
-                    ready = slot["connection"].poll(max(0, task["deadline"] - time.monotonic()))
-                    diagnostic["waitEndedNs"] = time.monotonic_ns()
-                    if not ready:
-                        outcome = "EXPORT_TIMEOUT"
-                        self.stats["timed_out"] += 1
-                        diagnostic["reapStartedNs"] = time.monotonic_ns()
-                        self._reap(slot)
-                        diagnostic["reapedNs"] = time.monotonic_ns()
-                    else:
-                        stage = "encoder_reply"
+                    for phase in ("snapshot", "complete"):
+                        stage = "snapshot_wait" if phase == "snapshot" else "completion_wait"
+                        prefix = "snapshot" if phase == "snapshot" else ""
+                        diagnostic[prefix + "waitStartedNs"] = time.monotonic_ns()
+                        remaining = max(0, task["deadline"] - time.monotonic())
+                        diagnostic[prefix + "remainingMs"] = remaining * 1000
+                        ready = slot["connection"].poll(remaining)
+                        diagnostic[prefix + "waitEndedNs"] = time.monotonic_ns()
+                        if not ready:
+                            raise TimeoutError("export deadline expired waiting for " + phase)
+                        stage = "snapshot_reply" if phase == "snapshot" else "encoder_reply"
                         reply = slot["connection"].recv()
-                        diagnostic["replyNs"] = time.monotonic_ns()
+                        diagnostic["snapshotReplyNs" if phase == "snapshot" else "replyNs"] = time.monotonic_ns()
                         if isinstance(reply, dict):
                             if reply.get("taskId") != task["taskId"]:
                                 diagnostic["actualTaskId"] = str(reply.get("taskId"))[:160]
                                 raise ValueError("encoder reply task identity mismatch")
-                            for field in ("encodeStartedNs", "encodedNs", "stagedNs"):
+                            for field in ("copiedNs", "encodeStartedNs", "encodedNs", "stagedNs"):
                                 if type(reply.get(field)) is int:
                                     diagnostic[field] = reply[field]
                             if reply.get("error"):
                                 diagnostic["encoderErrorType"] = str(reply["error"])[:80]
-                        if not isinstance(reply, dict) or not reply.get("ok"):
+                        if not isinstance(reply, dict) or reply.get("ok") is not True or reply.get("kind") != phase:
                             raise ValueError("invalid export reply")
                         if time.monotonic() > task["deadline"]:
-                            stage = "completion_after_deadline"
-                            outcome = "EXPORT_TIMEOUT"
-                            self.stats["timed_out"] += 1
-                        else:
-                            outcome = "AVAILABLE"
-                            self.stats["completed"] += 1
+                            stage = "snapshot_after_deadline" if phase == "snapshot" else "completion_after_deadline"
+                            raise TimeoutError("export reply after deadline")
+                        if phase == "snapshot":
+                            if type(reply.get("rawBytes")) is not int or reply["rawBytes"] != math.prod(task["shape"]):
+                                raise ValueError("snapshot byte count mismatch")
+                            diagnostic["snapshotBytes"] = reply["rawBytes"]
+                            try:
+                                self._releaseLane(slot, task, diagnostic)
+                            except Exception:
+                                reusable = False
+                                self._quarantine(slot)
+                                raise
+                    outcome = "AVAILABLE"
+                    self.stats["completed"] += 1
             except Exception as error:
                 diagnostic["errorType"] = type(error).__name__
                 diagnostic["detail"] = str(error)[:240]
-                self.stats["failed"] += 1
-                self.errors.append(repr(error))
-                self.errors[:] = self.errors[-32:]
+                if isinstance(error, TimeoutError):
+                    outcome = "EXPORT_TIMEOUT"
+                    self.stats["timed_out"] += 1
+                else:
+                    self.stats["failed"] += 1
+                    self.errors.append(repr(error))
+                    self.errors[:] = self.errors[-32:]
                 try:
+                    diagnostic["reapStartedNs"] = time.monotonic_ns()
                     self._reap(slot)
+                    diagnostic["reapedNs"] = time.monotonic_ns()
                 except Exception as reapError:
                     diagnostic["reapErrorType"] = type(reapError).__name__
                     reusable = False
                     self._quarantine(slot)
                     self.errors.append(repr(reapError))
-            if outcome == "AVAILABLE":
-                try:
-                    # Matching successful reply proves the child has finished
-                    # reading raw pixels and writing the independent PNG. Asset
-                    # adoption must not hold the producer's raw lane. The next
-                    # task stays queued until this callback and unlink finish.
-                    self._releaseLane(slot, task, diagnostic)
-                except Exception as error:
-                    reusable = False
-                    self._quarantine(slot)
-                    outcome = "EXPORT_FAILED"
-                    diagnostic["retirementErrorType"] = type(error).__name__
-                    self.errors.append(repr(error))
-                    self.errors[:] = self.errors[-32:]
             diagnostic.update(stage=stage, outcome=outcome, callbackStartedNs=time.monotonic_ns())
             task["exportDiagnostic"] = dict(diagnostic)
             try:

@@ -36,6 +36,7 @@ SOURCE_FILES = (
 )
 SUCCESS_STAGES = (
     "parent.export_submit", "parent.task_dequeued", "parent.pipe_send",
+    "parent.snapshot_poll", "parent.snapshot_recv",
     "parent.pipe_poll", "parent.pipe_recv", "parent.export_callback",
     "parent.credit_release",
 )
@@ -361,8 +362,11 @@ class ExportCreditTrace:
     def hook_connection(self, pool, slot):
         pool_id = self.pool_id(pool)
         ref = weakref.ref(self)
+        # One serial owner per connection. First reply acknowledges the bounded
+        # private copy; the second is the final PNG result. Never edit replies.
+        replies = [0]
         for name in ("send", "poll", "recv"):
-            def factory(original, stage="parent.pipe_" + name):
+            def factory(original, method=name):
                 def observed(*args, **kwargs):
                     trace = ref()
                     if trace is None or trace.disabled:
@@ -370,7 +374,14 @@ class ExportCreditTrace:
                     details = trace.observe(trace.current)
                     if details is None or details["pool_id"] != pool_id:
                         return original(*args, **kwargs)
-                    return trace.call(stage, details, original, *args, **kwargs)
+                    if method == "send":
+                        replies[0] = 0
+                    stage = "parent." + ("snapshot_" if method != "send" and replies[0] == 0 else "pipe_") + method
+                    try:
+                        return trace.call(stage, details, original, *args, **kwargs)
+                    finally:
+                        if method == "recv":
+                            replies[0] += 1
                 return observed
             self._patch_instance(slot["connection"], name, factory)
 

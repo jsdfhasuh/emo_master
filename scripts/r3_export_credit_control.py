@@ -28,6 +28,7 @@ from p2_validate import identity, git  # noqa: E402
 ORDER = ("off", "on", "on", "off")
 COUNT, WARMUP = 96, 8
 REQUIRED_CREDIT_STAGES = ("parent.export_submit", "parent.task_dequeued", "parent.pipe_send",
+    "parent.snapshot_poll", "parent.snapshot_recv",
     "parent.pipe_poll", "parent.pipe_recv", "parent.export_callback", "parent.credit_release", "parent.asset_adopt")
 
 
@@ -56,6 +57,7 @@ def creditBoundaries(payload, trace):
             "ordinal": record["ordinal"] if record is not None else None,
             "boundaries_ns": {}, "missing_or_duplicate": []}
         for label, stage, boundary in (
+                ("snapshot_received", "parent.snapshot_recv", "end_ns"),
                 ("reply_received", "parent.pipe_recv", "end_ns"),
                 ("callback_entered", "parent.export_callback", "start_ns"),
                 ("adopt_entered", "parent.asset_adopt", "start_ns"),
@@ -72,6 +74,8 @@ def creditBoundaries(payload, trace):
         points = entry["boundaries_ns"]
         entry["intervals_ms"] = {}
         for label, start, end in (
+                ("snapshot_to_credit_release", "snapshot_received", "credit_release_returned"),
+                ("credit_release_to_reply", "credit_release_returned", "reply_received"),
                 ("reply_to_callback", "reply_received", "callback_entered"),
                 ("inclusive_pre_adopt", "callback_entered", "adopt_entered"),
                 ("adopt", "adopt_entered", "adopt_returned"),

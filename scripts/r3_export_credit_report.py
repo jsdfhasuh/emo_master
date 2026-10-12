@@ -29,6 +29,7 @@ PHASES = {"parent.asset_adopt." + name: (2 if name == "hash_hexdigest" else 1)
           for name in ("collect", "stat", "hash_create", "open", "stream_enter",
                        "read", "hash_update", "stream_exit", "replace", "hash_hexdigest")}
 REQUIRED = ("parent.export_submit", "parent.task_dequeued", "parent.pipe_send",
+            "parent.snapshot_poll", "parent.snapshot_recv",
             "parent.pipe_poll", "parent.pipe_recv", "parent.export_callback",
             "parent.credit_release", "parent.asset_adopt")
 PARENT_FIELDS = ("stage", "start_ns", "end_ns", "elapsed_ms", "thread_cpu_ns", "thread_id",

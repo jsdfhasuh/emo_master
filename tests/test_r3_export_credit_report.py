@@ -220,7 +220,11 @@ class ReportTests(unittest.TestCase):
             for consumer in arm["consumers"]:
                 self.assertEqual([row[1] for row in consumer["raw_records"]["rows"]], list(range(1, 97)))
         parent = result["arms"][1]["parent_rows"]
-        self.assertEqual(sum(len(group["rows"]) for group in parent["groups"]), 96 * 19)
+        self.assertEqual(sum(len(group["rows"]) for group in parent["groups"]), 96 * 21)
+        for stage in ("parent.snapshot_poll", "parent.snapshot_recv"):
+            stage_index = parent["stage_dictionary"].index(stage)
+            column = parent["row_columns"].index("stage")
+            self.assertEqual(sum(row[column] == stage_index for group in parent["groups"] for row in group["rows"]), 96)
         self.assertEqual(len(result["arms"][1]["capture_rows"]["rows"]), 96)
 
     def test_refusal_is_complete_diagnostic_but_original_invalid_failure(self):

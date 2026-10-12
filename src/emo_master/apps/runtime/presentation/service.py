@@ -587,7 +587,10 @@ class PresentationService:
 
     def _resourceStats(self):
         # Conservative fixed reservations, not a substitute for measured RSS.
-        # At most 2 Jobs, one 8 MiB raw slot per Job; 6x includes encoder/IPC copies.
+        # At most 2 Jobs, one 8 MiB raw slot per Job (counted separately).
+        # The existing 6x encoder reservation includes ONE private input snapshot,
+        # encoded ndarray/bytes and codec workspace. Snapshot <= lane capacity;
+        # no pixels go over IPC. This reservation is not a measured RSS ceiling.
         exportReservation = 2 * 6 * 8 * 1024 * 1024 if self.exporter else 0
         sharedCapacity = 2 * 8 * 1024 * 1024 if self.exporter else 0
         metadataReservation = len(self.jobs) * 64 * 1024 * 1024

@@ -273,7 +273,8 @@ def testRealExportCallbackPreservesIdentityOwnershipAndRetirement(tmp_path, faul
     assert rows["parent.pipe_recv"]["end_ns"] <= rows["parent.export_callback"]["start_ns"]
     assert rows["parent.export_callback"]["start_ns"] <= rows["parent.asset_adopt"]["start_ns"]
     assert rows["parent.asset_adopt"]["end_ns"] <= rows["parent.result_finish"]["start_ns"]
-    assert rows["parent.pipe_recv"]["end_ns"] <= rows["parent.credit_release"]["start_ns"]
+    assert rows["parent.snapshot_recv"]["end_ns"] <= rows["parent.credit_release"]["start_ns"]
+    assert rows["parent.credit_release"]["end_ns"] <= rows["parent.pipe_poll"]["start_ns"]
     assert rows["parent.credit_release"]["end_ns"] <= rows["parent.export_callback"]["start_ns"]
     assert summary["stage_coverage"]["admitted_exports"] == 1
     assert summary["stage_coverage"]["available_callbacks"] == 1
@@ -407,9 +408,11 @@ def testMeasuredPoolReceiverWorkIsIncludedAndInheritedClassProvenanceRestored(tm
                        if slot["connection"] is not None)
         assert base.MeasuredPool._spawn is raw_spawn and base.TraceReceiver.recv is raw_receiver
         assert "_run" not in vars(base.MeasuredPool)
-        assert len(receiver_spans) == 1
+        assert len(receiver_spans) == 2
+        snapshot = next(row for row in trace.rows if row["stage"] == "parent.snapshot_recv")
+        assert snapshot["start_ns"] <= receiver_spans[0][0] <= receiver_spans[0][1] <= snapshot["end_ns"]
         span = next(row for row in trace.rows if row["stage"] == "parent.pipe_recv")
-        assert span["start_ns"] <= receiver_spans[0][0] <= receiver_spans[0][1] <= span["end_ns"]
+        assert span["start_ns"] <= receiver_spans[1][0] <= receiver_spans[1][1] <= span["end_ns"]
         assert any(row["stage"] == "export.file_write" for batch in base.ENCODER_TRACES.values()
                    for row in batch["rows"])
         assert trace.save(tmp_path / "credit.json")["complete"]

@@ -249,6 +249,72 @@ def testOldReplyCannotReplaceNewestAssetsWithinSameDraftSession(tmp_path, monkey
         runtime.close()
 
 
+def testRetiredSessionLeasesReleaseOnceOnOriginalRuntimeAfterReconnect(tmp_path, monkeypatch):
+    runtime = RuntimeService(dbPath=tmp_path / "runtime.db")
+    client = RuntimeClient(runtimeService=runtime)
+    editor = context(client, lambda _: draft())
+    closes = []
+    close = editor._pureRuntimeClient.closeDraftPurePreviewSession
+    monkeypatch.setattr(editor._pureRuntimeClient, "closeDraftPurePreviewSession",
+                        lambda session: closes.append(session) or close(session))
+    try:
+        asset = editor.uploadPreviewImage(imageBytes())
+        session = editor._pureDraftSessionId
+        queued = editor.preparePurePreview(PARAMS[ROI], asset)
+        first, second = editor.retainPurePreview(), editor.retainPurePreview()
+        client.runtimeService = SimpleNamespace()  # A new connection cannot own old assets.
+        editor.closePurePreview()
+        editor.closePurePreview()
+        first()
+        first()
+        assert session in runtime.pureDraftPreviewSessions.sessions and not closes
+        with pytest.raises(EditorContextError, match="会话已失效"):
+            queued()
+        second()
+        second()
+        assert closes == [session]
+        assert not editor._pureDraftProducers and not editor._pureDraftRetired
+        assert not runtime.pureDraftPreviewSessions.sessions and not runtime.previewAssetStore._assets
+    finally:
+        editor.closePurePreview()
+        runtime.close()
+
+
+def testDirectRpcRetainsItsSessionUntilTransportReturns(tmp_path, monkeypatch):
+    runtime = RuntimeService(dbPath=tmp_path / "runtime.db")
+    editor = context(RuntimeClient(runtimeService=runtime), lambda _: draft())
+    entered, unblock = threading.Event(), threading.Event()
+    native = editor._pureRuntimeClient.runOperatorPreview
+
+    def delayed(*args, **kwargs):
+        reply = native(*args, **kwargs)
+        assert reply.ok
+        entered.set()
+        assert unblock.wait(5)
+        return reply
+
+    monkeypatch.setattr(editor._pureRuntimeClient, "runOperatorPreview", delayed)
+    try:
+        asset = editor.uploadPreviewImage(imageBytes())
+        session = editor._pureDraftSessionId
+        invocation = editor.preparePurePreview(PARAMS[ROI], asset)
+        with ThreadPoolExecutor(1) as pool:
+            future = pool.submit(invocation)
+            try:
+                assert entered.wait(3)
+                editor.closePurePreview()
+                assert session in runtime.pureDraftPreviewSessions.sessions
+            finally:
+                unblock.set()
+            assert future.result(timeout=3).ok
+        assert not editor._pureDraftProducers and not editor._pureDraftRetired
+        assert not runtime.pureDraftPreviewSessions.sessions and not runtime.previewAssetStore._assets
+    finally:
+        unblock.set()
+        editor.closePurePreview()
+        runtime.close()
+
+
 def testSameIdProjectCopySwitchClosesOldEditorSession(tmp_path, ownedDesignerWindow):
     from tests.designer.qt_wait import waitForCatalog
     service = RuntimeService(dbPath=tmp_path / "runtime.db")

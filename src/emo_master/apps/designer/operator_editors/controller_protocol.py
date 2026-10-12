@@ -88,6 +88,8 @@ class EditorContext:
         self._pureDraftAssets: set[str] = set()
         self._pureDraftOutputAssets: set[str] = set()
         self._pureDraftRequestToken: object | None = None
+        self._pureDraftProducers: dict[str, int] = {}
+        self._pureDraftRetired: dict[str, Callable[[], None]] = {}
         self._invalidatePreviewSources: Callable[[], None] = lambda: None
         self._applyParams = applyParams
         self.variableDefinitions = variableDefinitions
@@ -304,22 +306,62 @@ class EditorContext:
                        self._pureDraftSessionId, payload, token)
 
     def _runDraftPurePreview(self, params, imageAssetId, requestId, sessionId, payload, token):
-        self._checkPureRuntime()
-        reply = self._runtimeMethod("runOperatorPreview", client=self._pureRuntimeClient)(
-            self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
-            params, imageAssetId, requestId, projectPayload=payload, draftSessionId=sessionId)
-        # The GUI discards a late reply by generation. Never adopt its assets
-        # into a replacement session even when the project/node IDs are equal.
+        # Protect direct callers too, not just the controller's accepted Future.
+        # A queued invocation invalidated before it starts must not use the old
+        # session; an already running RPC retains it until its return/exception.
+        release = self.retainPurePreview(sessionId)
+        try:
+            self._checkPureRuntime()
+            reply = self._runtimeMethod("runOperatorPreview", client=self._pureRuntimeClient)(
+                self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+                params, imageAssetId, requestId, projectPayload=payload, draftSessionId=sessionId)
+            # Never adopt a late reply into a replacement session/request.
+            with self._pureDraftLock:
+                current = self._pureDraftSessionId == sessionId and self._pureDraftRequestToken is token
+                if current and bool(getattr(reply, "ok", False)):
+                    self._pureDraftTouched = time.monotonic()
+                    self._pureDraftAssets.difference_update(self._pureDraftOutputAssets)
+                    self._pureDraftOutputAssets = {str(asset.asset_id) for asset in getattr(reply, "assets", [])}
+                    self._pureDraftAssets.update(self._pureDraftOutputAssets)
+                elif current and str(getattr(reply, "code", "")) == "E_PREVIEW_CONTEXT_INVALID":
+                    self._pureDraftTouched = 0.0
+            return reply
+        finally:
+            release()
+
+    def retainPurePreview(self, sessionId=None):
+        """Lease the exact session, independent of logical UI invalidation.
+
+        The controller owns a lease from submit through Future completion (also
+        cancellation). The RPC owns another for direct callers. Both releases
+        are idempotent and never touch widgets or a replacement Runtime.
+        """
         with self._pureDraftLock:
-            current = self._pureDraftSessionId == sessionId and self._pureDraftRequestToken is token
-            if current and bool(getattr(reply, "ok", False)):
-                self._pureDraftTouched = time.monotonic()
-                self._pureDraftAssets.difference_update(self._pureDraftOutputAssets)
-                self._pureDraftOutputAssets = {str(asset.asset_id) for asset in getattr(reply, "assets", [])}
-                self._pureDraftAssets.update(self._pureDraftOutputAssets)
-            elif current and str(getattr(reply, "code", "")) == "E_PREVIEW_CONTEXT_INVALID":
-                self._pureDraftTouched = 0.0
-        return reply
+            if sessionId is None:
+                sessionId = self._pureDraftSessionId
+            if not sessionId:
+                return lambda: None  # Legacy loaded-project preview.
+            if sessionId != self._pureDraftSessionId:
+                raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "草稿预览会话已失效，请重新选择预览图片")
+            self._pureDraftProducers[sessionId] = self._pureDraftProducers.get(sessionId, 0) + 1
+        released = False
+
+        def release():
+            nonlocal released
+            close = None
+            with self._pureDraftLock:
+                if released:
+                    return
+                released = True
+                remaining = self._pureDraftProducers[sessionId] - 1
+                if remaining:
+                    self._pureDraftProducers[sessionId] = remaining
+                else:
+                    del self._pureDraftProducers[sessionId]
+                    close = self._pureDraftRetired.pop(sessionId, None)
+            if close is not None:
+                close()
+        return release
 
     def validatePurePreviewResult(self):
         # Result delivery runs on the GUI thread and must re-check edits made
@@ -338,6 +380,7 @@ class EditorContext:
             mode="draft-pure-preview" if self._pureDraftSessionId else "loaded-project-pure-preview")
 
     def closePurePreview(self):
+        close = None
         with self._pureDraftLock:
             sessionId = self._pureDraftSessionId
             self._pureDraftSessionId = ""
@@ -346,14 +389,23 @@ class EditorContext:
             self._pureDraftAssets.clear()
             self._pureDraftOutputAssets.clear()
             self._pureDraftRequestToken = None
-        if sessionId:
-            try:
-                reply = self._runtimeMethod("closeDraftPurePreviewSession", client=self._pureRuntimeClient)(sessionId)
-                self._requireOk(reply, "E_PREVIEW_RELEASE_FAILED")
-            except Exception as error:
-                # Retirement may run after all widgets have been destroyed,
-                # on a background thread. Never invoke a Qt-owned log hook.
-                logging.getLogger(__name__).warning("纯预览会话释放失败（租约到期后失效）：%s", error)
+            if sessionId:
+                from functools import partial
+                close = partial(self._releasePureSession, self._pureRuntimeClient, sessionId)
+                if self._pureDraftProducers.get(sessionId, 0):
+                    self._pureDraftRetired[sessionId] = close
+                    close = None
+        if close is not None:
+            close()
+
+    def _releasePureSession(self, client, sessionId):
+        try:
+            reply = self._runtimeMethod("closeDraftPurePreviewSession", client=client)(sessionId)
+            self._requireOk(reply, "E_PREVIEW_RELEASE_FAILED")
+        except Exception as error:
+            # This can run after widget destruction on a producer thread.
+            # Preserve the error, but never invoke a Qt-owned log hook.
+            logging.getLogger(__name__).warning("纯预览会话释放失败（租约到期后失效）：%s", error)
 
     def _variablePreviewProject(self):
         payload = deepcopy(self._getPreviewProject(self.key))

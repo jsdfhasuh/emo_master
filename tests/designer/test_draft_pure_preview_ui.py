@@ -147,3 +147,52 @@ def testClosingPreviewWaitsForOlderWorkerEvenWhenNewestResultIsDone():
         controller._retirementThread.join(5)
     assert events == ["new-output", "old-output", "release"]
     assert not controller._retirementThread.is_alive()
+
+
+def testIdleCloseTransportCannotBlockGuiIndefinitely():
+    entered, release = threading.Event(), threading.Event()
+    controller = support.PurePreviewControllerBase()
+
+    def close():
+        entered.set()
+        assert release.wait(3)
+
+    controller.context = SimpleNamespace(closePurePreview=close)
+    try:
+        controller.disposePreviewBase()
+        assert entered.wait(1)
+        assert controller._retirementThread.is_alive()
+    finally:
+        release.set()
+        controller._retirementThread.join(3)
+    assert not controller._retirementThread.is_alive()
+
+
+@pytest.mark.parametrize("submitFails", [False, True])
+def testAcceptedPreviewLeaseReleasedOnQueuedCancelOrSubmitFailure(submitFails):
+    from concurrent.futures import Future
+    controller = support.PurePreviewControllerBase()
+    released, errors = [], []
+    future = Future()
+
+    def submit(_invocation):
+        if submitFails:
+            raise RuntimeError("injected executor submission failure")
+        return future
+
+    controller._executor.shutdown(wait=True)
+    controller._executor = SimpleNamespace(submit=submit, shutdown=lambda **_: None)
+    controller.context = SimpleNamespace(preparePurePreview=lambda *_: lambda: None,
+        retainPurePreview=lambda: lambda: released.append(True), setError=errors.append,
+        cancelPurePreview=lambda *_: None)
+    controller.currentAssetId = "asset"
+    controller.collectParams = lambda: {}
+    try:
+        controller._startPreview()
+        if not submitFails:
+            assert released == []
+            future.cancel()
+        assert released == [True]
+        assert bool(errors) == submitFails
+    finally:
+        controller.disposePreviewBase()

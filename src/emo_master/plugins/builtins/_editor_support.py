@@ -288,6 +288,8 @@ class PurePreviewControllerBase:
             previous.cancel()
         requestId = str(uuid4())
         self._requestId = requestId
+        def release():
+            pass
         try:
             params = deepcopy(self.collectParams())
             prepare = getattr(self.context, "preparePurePreview", None)
@@ -305,8 +307,10 @@ class PurePreviewControllerBase:
                 requestedAtClientMonotonicNs=time.monotonic_ns(), context=identity,
                 requestedParams=params, resolvedParams=None,
                 resolvedParamsStatus="NOT_RETURNED_BY_PURE_PREVIEW_RPC"), allow_nan=False))
+            release = getattr(self.context, "retainPurePreview", lambda: (lambda: None))()
             future = self._executor.submit(invocation)
         except Exception as error:
+            release()
             self._clearPreviewVisuals("预览已失效")
             self.context.setError(str(error))
             return
@@ -322,6 +326,7 @@ class PurePreviewControllerBase:
             finally:
                 with self._futuresLock:
                     self._previewFutures.discard(value)
+                release()
 
         future.add_done_callback(completed)
 
@@ -410,7 +415,9 @@ class PurePreviewControllerBase:
             self._retirementThread = Thread(target=cleanup, name="designer-preview-retirement", daemon=True)
             self._retirementThread.start()
             if idle:
-                self._retirementThread.join()
+                # Even an idle producer pool may have a slow close RPC. Never
+                # wait unboundedly for transport cleanup on the GUI thread.
+                self._retirementThread.join(timeout=.05)
         else:
             self._executor.shutdown(wait=False, cancel_futures=True)
 

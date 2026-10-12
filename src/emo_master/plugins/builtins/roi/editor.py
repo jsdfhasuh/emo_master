@@ -233,8 +233,8 @@ class RoiEditorController(PurePreviewControllerBase):
             )
         for name in ("x", "y", "width", "height", "centerX", "centerY"):
             control = self.controls[name]
-            control.setRange(-1_000_000_000.0, 1_000_000_000.0)
             control.setDecimals(3)
+            control.setRange(.001 if name in ("width", "height") else -1_000_000_000.0, 1_000_000_000.0)
             control.valueChanged.connect(self._paramsChanged)
         self.controls["angleDegrees"].valueChanged.connect(self._paramsChanged)
         self.controls["padValue"].valueChanged.connect(self._paramsChanged)

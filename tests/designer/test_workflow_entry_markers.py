@@ -7,7 +7,7 @@ import emo_master  # noqa: F401 - preload ONNX Runtime before Qt on Windows
 from PySide2.QtCore import QPoint, Qt
 from PySide2.QtGui import QFontDatabase
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QTabBar, QToolButton, QWidget
+from PySide2.QtWidgets import QTabBar, QToolButton
 
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.ui.widgets import WorkflowTabs
@@ -94,11 +94,12 @@ def testChoosingTargetsRefreshesMarkersWithoutRebuildingOrDirtying(designerAppli
     other = window.createWorkflow('Other')
     before = window.pageCoordinator.session.document().model_dump()
     dirty = window.pageCoordinator.session.dirty
-    pages = [window.workflowTabs.widget(i) for i in range(window.workflowTabs.count())]
+    labels = {key: id(value) for key, value in window.workflowTabs._labels.items()}
     active = window.getActiveWorkflowId()
 
     def choose(dialog):
         assert dialog.entryWorkflowId == 'main'
+        dialog.temporary.setChecked(True)
         for index in range(dialog.targets.count()):
             item = dialog.targets.item(index)
             item.setCheckState(Qt.Checked if item.data(Qt.UserRole) == other else Qt.Unchecked)
@@ -108,7 +109,7 @@ def testChoosingTargetsRefreshesMarkersWithoutRebuildingOrDirtying(designerAppli
     window.openRunTargetsDialog()
     assert window.runTargetIds == [other]
     assert window.getActiveWorkflowId() == active
-    assert [window.workflowTabs.widget(i) for i in range(window.workflowTabs.count())] == pages
+    assert {key: id(value) for key, value in window.workflowTabs._labels.items()} == labels
     assert window.pageCoordinator.session.document().model_dump() == before
     assert window.pageCoordinator.session.dirty == dirty
     assert badgeFor(window, 'main').text() == '默认入口'
@@ -151,9 +152,8 @@ def testLongTabNamesNeverElideEntryBadgeAndBadgeClickSelectsTab(designerApplicat
     tabs.setObjectName('workflowTabs')
     for i, role in enumerate(('', '默认入口', '运行入口')):
         title = '很长的工作流名称 Camera Capture ' * 5
-        tabs.addTab(QWidget(), title)
+        tabs.addWorkflow(str(i), title)
         tabs.setEntryMarker(i, role, f'{role}\n{title}')
-    tabs.addTab(QWidget(), '+')
     tabs.resize(width, tabs.sizeHint().height())
     tabs.show()
     bar = tabs.tabBar()
@@ -289,10 +289,9 @@ def testRuntimeBadgesAndColorStripeVisibleWithLongNames(designerApplication, tmp
     tabs = WorkflowTabs()
     tabs.setObjectName('workflowTabs')
     for index, status in enumerate(('RUNNING', 'WAITING_CHILD', 'COMPLETED', 'FAILED', 'ABORTED')):
-        tabs.addTab(QWidget(), '长工作流名称 Workflow ' * 10)
+        tabs.addWorkflow(str(index), '长工作流名称 Workflow ' * 10)
         tabs.setEntryMarker(index, '默认入口' if index == 0 else '运行入口', 'entry')
         tabs.setRuntimeStatus(index, status, f'Job test: {status}')
-    tabs.addTab(QWidget(), '+')
     tabs.resize(width, tabs.sizeHint().height())
     tabs.show()
     for index in range(5):
@@ -319,10 +318,9 @@ def testGrowingOverflowStripHasNoBlankLeadingGapOrDisabledScroll(designerApplica
     tabs.setObjectName('workflowTabs')
     tabs.setLayoutDirection(direction)
     for index in range(4):
-        tabs.addTab(QWidget(), '持续运行 Workflow ' * 6)
+        tabs.addWorkflow(str(index), '持续运行 Workflow ' * 6)
         tabs.setEntryMarker(index, '运行入口', 'test')
         tabs.setRuntimeStatus(index, 'RUNNING', 'Job test')
-    tabs.addTab(QWidget(), '+')
     tabs.setCurrentIndex(1)
     tabs.resize(380, 40)
     tabs.show()

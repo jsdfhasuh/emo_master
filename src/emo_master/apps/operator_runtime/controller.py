@@ -118,7 +118,7 @@ class ProductionRuntime:
             self.projectOwner = None
             raise
         self.document = self.runtime.loadedDocument
-        self.sessions = {self.document.entryWorkflowId: WorkflowSession()}
+        self.sessions = {key: WorkflowSession() for key in self.document.startupWorkflows()}
         return self.document
 
     @serialized
@@ -168,7 +168,11 @@ class ProductionRuntime:
     def startAll(self, workflowIds=None):
         # Selection is a run command, never a second project ownership schema.
         with self.operationLock:
-            keys = list(dict.fromkeys(workflowIds or [self.document.entryWorkflowId]))
+            if self.document is None:
+                raise ValueError("project not loaded")
+            keys = list(dict.fromkeys(self.document.startupWorkflows() if workflowIds is None else workflowIds))
+            if not keys:
+                raise ValueError("select at least one workflow")
             if any(key not in self.workflows for key in keys):
                 raise ValueError("workflow not found")
             states = {key: self.status(key) for key in keys}
@@ -192,7 +196,7 @@ class ProductionRuntime:
             if self.document is None:
                 return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={})
             if workflowId is not None or len(self.sessions) == 1:
-                key = self._workflowId(workflowId)
+                key = self._workflowId(workflowId if workflowId is not None else next(iter(self.sessions)))
                 state = self._workflowStatus(key)
                 if workflowId is None:
                     state["workflows"] = {key: dict(state)}

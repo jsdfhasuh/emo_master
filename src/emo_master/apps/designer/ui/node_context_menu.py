@@ -90,6 +90,8 @@ class NodeContextMenu(QObject):
         entries = (('configure', '配置算子…'), ('results', '查看节点结果'),
                    ('operator_debug', '算子调试…'),
                    ('copy', '复制算子'), ('delete', '删除算子'))
+        if node.kind in {'subflow', 'loop'} and getattr(self.window, 'workflowNavigation', None) is not None:
+            entries = (('definition', '进入子工作流'), *entries)
         for key, text in entries:
             if key == 'copy':
                 self.menu.addSeparator()

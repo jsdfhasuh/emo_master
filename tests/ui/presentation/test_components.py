@@ -52,15 +52,19 @@ def testIndicatorOnlyUsesExplicitValueNeverComplete(qtApp,tmp_path,value,expecte
     window.close()
 
 
-@pytest.mark.parametrize('reason',['OPTIONAL_ABSENT','BRANCH_SKIPPED','NODE_FAILED','EXPORT_TIMEOUT','RESOURCE_EXPIRED'])
-def testNewUnavailableClearsOldValue(qtApp,tmp_path,reason):
+@pytest.mark.parametrize('reason,message',[
+    ('OPTIONAL_ABSENT','本次未提供此项结果'), ('BRANCH_SKIPPED','本次未执行此项检测'),
+    ('NODE_FAILED','本次处理异常，请联系技术人员'), ('EXPORT_TIMEOUT','结果读取超时，请检查连接'),
+    ('RESOURCE_EXPIRED','此结果已过期，请等待新的结果')])
+def testNewUnavailableClearsOldValue(qtApp,tmp_path,reason,message):
     window=RuntimePages(sampleProjectP3(tmp_path).presentation)
     view=resultView(capture=window.expectedCapture)
     window.submit(view)
     scope=view.scopes['root']
     failed=scope.result.model_copy(update={'sources':(ClosedSource(sourceId='count',state='UNAVAILABLE',reasonCode=reason,reason=reason),),'status':'INCOMPLETE'})
     window.submit(replace(view,scopes=MappingProxyType({'root':replace(scope,result=failed)})))
-    assert window.widgets['overview']['overview-count'][1].text()==reason
+    assert window.widgets['overview']['overview-count'][1].text()==message
+    assert window.widgets['overview']['overview-count'][1].toolTip()==reason
     window.close()
 
 

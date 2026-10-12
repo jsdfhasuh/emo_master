@@ -5,6 +5,38 @@ from emo_master.apps.operator_runtime.main import OperatorWindow
 from tests.runtime.two_station_fixture import twoStationProject
 from tests.ui.operator_view.test_production_window import closeWindow, preferences
 from tests.ui.operator_view.test_view import waitFor
+import pytest
+
+
+@pytest.mark.parametrize('roots,autoStart', [(['main', 'second'], False), (['main', 'second'], True), (['second'], False)])
+def testSavedDefaultsDriveStartAndRestoreAfterReload(qtApp, tmp_path, roots, autoStart):
+    from tests.runtime.production_fixture import saveDocument
+    root = tmp_path / 'engineering'
+    document = twoStationProject(root)
+    document.runtime.startupWorkflowIds = roots
+    document.production.autoStart = autoStart
+    saveDocument(root, document)
+    window = OperatorWindow(root, dataRoot=tmp_path / 'data', preferences=preferences(tmp_path))
+    window.show()
+    try:
+        waitFor(lambda: window.controller and window.controller.document and not window.busy or window.error)
+        assert not window.error and window.selectedWorkflowIds == roots
+        if not autoStart:
+            assert not window.controller.runtime.jobRepository.all()
+            QTest.mouseClick(window.startButton, Qt.LeftButton)
+        waitFor(lambda: len(window.workflowHubs) == len(roots) or window.error)
+        assert not window.error
+        waitFor(lambda: not window.busy and all(row['state'] == 'RUNNING' for row in window.state['workflows'].values()))
+        assert set(window.workflowHubs) == set(roots)
+        assert len(window.controller.runtime.jobRepository.all()) == len(roots)
+        QTest.mouseClick(window.stopButton, Qt.LeftButton)
+        waitFor(lambda: not window.busy and window.state['canLoad'])
+        window.selectedWorkflowIds = ['main']  # Temporary UI selection, never saved.
+        window.reloadProject()
+        waitFor(lambda: not window.busy and window.selectedWorkflowIds == roots or window.error)
+        assert not window.error
+    finally:
+        closeWindow(window)
 
 
 def testIndependentNativeWorkflowStartStopRestartPreservesOtherView(qtApp, tmp_path):

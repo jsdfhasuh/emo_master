@@ -92,7 +92,8 @@ def testHubPublishesStatusWithoutNewResultAndKeepsFrozenBusinessValue(qtApp, tmp
         session.view = replace(session.view, job=replace(job(), status='', availability='UNAVAILABLE', detail='状态超时'))
         hub.tick()
         assert '状态超时' in window.jobStatus.text() and 'RUNNING' not in window.jobStatus.text()
-        assert window.status.text().startswith('CONNECTED')
+        assert window.status.text().startswith('结果服务已连接')
+        assert window.status.toolTip().startswith('CONNECTED')
         assert window.frozen == 'ticket'
     finally:
         window.close()

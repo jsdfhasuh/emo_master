@@ -110,13 +110,12 @@ def testTabsDoNotReserveEmptyPagesOrMoveOnSelection(styledApp):
     tabs.setObjectName("workflowTabs")
     tabs.setAttribute(Qt.WA_DontShowOnScreen, True)
     for index in range(20):
-        tabs.addTab(QWidget(), f"Camera Capture 中文流程 {index} [入口]")
-    tabs.addTab(QWidget(), "+")
+        tabs.addWorkflow(str(index), f"Camera Capture 中文流程 {index} [入口]")
     tabs.resize(520, 40)
     tabs.show()
     styledApp.processEvents()
     try:
-        assert tabs.findChild(QStackedWidget).isHidden()
+        assert tabs.findChild(QStackedWidget) is None
         assert tabs.height() < 60
         size = tabs.tabBar().tabSizeHint(1)
         tabs.setCurrentIndex(1)
@@ -125,9 +124,9 @@ def testTabsDoNotReserveEmptyPagesOrMoveOnSelection(styledApp):
         assert tabs._addButton.isVisible()
         assert tabs.rect().contains(tabs._addButton.geometry())
         clicked = []
-        tabs.tabBarClicked.connect(clicked.append)
+        tabs.addRequested.connect(lambda: clicked.append('add'))
         tabs._addButton.click()
-        assert clicked[-1] == 20
+        assert clicked == ['add'] and tabs.count() == 20
     finally:
         tabs.close()
 

@@ -7,7 +7,7 @@ import emo_master  # noqa: F401 - preload Windows dependencies before Qt
 import pytest
 from PySide2.QtCore import QEventLoop, Qt, QTimer
 from PySide2.QtTest import QTest
-from PySide2.QtWidgets import QApplication, QStyle, QStyleOptionComboBox
+from PySide2.QtWidgets import QApplication, QComboBox, QStyle, QStyleOptionComboBox
 
 from emo_master.apps.designer.ui.main_window import MainWindow
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
@@ -118,70 +118,91 @@ def _doubleClickName(combo):
     QTest.mouseRelease(combo, Qt.LeftButton, pos=point)
 
 
-@pytest.mark.parametrize("field,target", [("bodyWorkflowId", "body"), ("conditionWorkflowId", "condition")])
-def testDoubleClickOpensWorkflowWithoutApplyingDraft(designerApplication, field, target):
+@pytest.mark.parametrize("field", ["targetWorkflowId", "bodyWorkflowId", "conditionWorkflowId"])
+def testDoubleClickNameOnlyEditsParametersWithoutNavigating(designerApplication, field):
     window = _window()
+    nodeId = window.addSubflowNode('body') if field == 'targetWorkflowId' else 'while'
     window.show()
-    window.openNodeParamDialog("while")
+    window.openNodeParamDialog(nodeId)
     editor = window.nodeParamDialog
     form = editor._schemaForm
-    form._controls["maxIterations"].setValue(321)
+    combo = form._controls[field]
+    assert type(combo) is QComboBox
+    assert '双击' not in combo.toolTip()
+    storedValue = combo.currentData()
+    draftValue = 'condition' if storedValue == 'body' else 'body'
+    combo.setCurrentIndex(combo.findData(draftValue))
+    if field != 'targetWorkflowId':
+        form._controls["maxIterations"].setValue(321)
+    history = list(window.workflowNavigation.history.entries), window.workflowNavigation.history.index
     designerApplication.processEvents()
-    _doubleClickName(form._controls[field])
+    _doubleClickName(combo)
     designerApplication.processEvents()
-    assert window.activeWorkflowId == target
-    assert not editor.isVisible()
-    assert editor.collectParams()["maxIterations"] == 321
-    storedLoop = next(n["loop"] for n in window.workflowStore.get("main").nodes if n["kind"] == "loop")
-    assert storedLoop["maxIterations"] == 10000
-    assert not form._controls[field]._popupTimer.isActive()
-    window.activateWorkflow("main")
-    window.openNodeParamDialog("while")
-    assert window.nodeParamDialog is editor
-    assert editor.collectParams()["maxIterations"] == 321
-    # Leave no dirty test dialog for the fixture to prompt about on shutdown.
-    form._controls["maxIterations"].setValue(10000)
+    assert window.activeWorkflowId == 'main'
+    assert editor.isVisible()
+    assert editor.collectParams()[field] == draftValue
+    assert (window.workflowNavigation.history.entries, window.workflowNavigation.history.index) == history
+    node = window.flowModel.nodes[nodeId]
+    assert (node.targetWorkflowId if field == 'targetWorkflowId' else node.loop[field]) == storedValue
+    if field != 'targetWorkflowId':
+        assert editor.collectParams()['maxIterations'] == 321
+        assert node.loop['maxIterations'] == 10000
+    combo.hidePopup()
+    editor.forceClose()
 
 
-def testDoubleClickSubflowNameNavigatesOnceWhenEditorReused(designerApplication, monkeypatch):
-    window = _window()
-    nodeId = window.addSubflowNode("body")
-    window.openNodeParamDialog(nodeId)
-    window.openNodeParamDialog(nodeId)
-    designerApplication.processEvents()
-    activations = []
-    activate = window.activateWorkflow
-
-    def record(workflowId):
-        activations.append(workflowId)
-        activate(workflowId)
-
-    monkeypatch.setattr(window, "activateWorkflow", record)
-    _doubleClickName(window.nodeParamDialog._schemaForm._controls["targetWorkflowId"])
-    assert activations == ["body"]
-    assert window.activeWorkflowId == "body"
-
-
-def testSingleClickAndArrowKeepSelectingWithoutNavigation(designerApplication):
+@pytest.mark.parametrize('subControl', [QStyle.SC_ComboBoxEditField, QStyle.SC_ComboBoxArrow])
+def testSingleClickOpensImmediatelyAndOnlySelectsWithoutNavigation(designerApplication, subControl):
     window = _window()
     window.openNodeParamDialog("while")
-    combo = window.nodeParamDialog._schemaForm._controls["bodyWorkflowId"]
+    editor = window.nodeParamDialog
+    combo = editor._schemaForm._controls["bodyWorkflowId"]
     designerApplication.processEvents()
-    QTest.mouseClick(combo, Qt.LeftButton, pos=_comboPoint(combo, QStyle.SC_ComboBoxEditField))
+    QTest.mouseClick(combo, Qt.LeftButton, pos=_comboPoint(combo, subControl))
+    # No double-click timer: the first click opens a normal combo immediately.
+    assert combo.view().isVisible()
+    assert window.activeWorkflowId == "main"
+    designerApplication.processEvents()
+    target = combo.model().index(combo.findData('condition'), combo.modelColumn())
+    point = combo.view().visualRect(target).center()
+    QTest.mouseMove(combo.view().viewport(), point)
+    # Qt guards the opening mouse release briefly; model a subsequent choice,
+    # not two complete mouse clicks sent within the same event-loop tick.
     wait = QEventLoop()
     QTimer.singleShot(QApplication.doubleClickInterval() + 80, wait.quit)
     wait.exec_()
-    assert combo.view().isVisible()
-    assert window.activeWorkflowId == "main"
-    combo.hidePopup()
-    QTest.mouseClick(combo, Qt.LeftButton, pos=_comboPoint(combo, QStyle.SC_ComboBoxArrow))
+    # Deferred editor layout may move the popup while events are processed.
+    point = combo.view().visualRect(target).center()
+    assert combo.view().indexAt(point) == target
+    QTest.mouseClick(combo.view().viewport(), Qt.LeftButton, pos=point)
     designerApplication.processEvents()
-    assert combo.view().isVisible()
+    assert not combo.view().isVisible()
+    assert combo.currentData() == 'condition'
     assert window.activeWorkflowId == "main"
+    assert editor.isVisible() and window.flowModel.nodes['while'].loop['bodyWorkflowId'] == 'body'
+    editor.forceClose()
+
+
+def testDoubleClickExpandedCandidateDoesNotNavigateOrApply(designerApplication):
+    window = _window()
+    nodeId = window.addSubflowNode('body')
+    window.openNodeParamDialog(nodeId)
+    editor = window.nodeParamDialog
+    combo = editor._schemaForm._controls['targetWorkflowId']
+    combo.showPopup()
+    designerApplication.processEvents()
+    target = combo.model().index(combo.findData('condition'), combo.modelColumn())
+    point = combo.view().visualRect(target).center()
+    QTest.mouseDClick(combo.view().viewport(), Qt.LeftButton, pos=point)
+    QTest.mouseRelease(combo.view().viewport(), Qt.LeftButton, pos=point)
+    designerApplication.processEvents()
+    assert window.activeWorkflowId == 'main'
+    assert editor.isVisible() and window.flowModel.nodes[nodeId].targetWorkflowId == 'body'
     combo.hidePopup()
+    editor.forceClose()
 
 
-def testMissingTargetDoesNotNavigateOrDiscardDraft(designerApplication):
+def testMissingTargetStaysEditableWithoutNavigation(designerApplication):
     window = _window()
     window.openNodeParamDialog("while")
     editor = window.nodeParamDialog
@@ -193,6 +214,7 @@ def testMissingTargetDoesNotNavigateOrDiscardDraft(designerApplication):
     _doubleClickName(form._controls["bodyWorkflowId"])
     assert window.activeWorkflowId == "main"
     assert editor.isVisible()
-    assert "工作流不存在" in editor._statusLabel.text()
     assert editor.collectParams()["bodyWorkflowId"] == "removed-id"
+    assert form._controls['bodyWorkflowId'].currentText() == '未找到工作流 (removed-id)'
+    form._controls['bodyWorkflowId'].hidePopup()
     form._controls["bodyWorkflowId"].setCurrentIndex(form._controls["bodyWorkflowId"].findData("body"))

@@ -164,11 +164,10 @@ def getFieldDefinitions(paramSchema: dict[str, object]) -> list[FieldDefinition]
 
 
 try:
-    from PySide2.QtCore import Qt, QTimer, Signal, QRegularExpression
+    from PySide2.QtCore import Qt, Signal, QRegularExpression
     from PySide2.QtGui import QRegularExpressionValidator
     from PySide2.QtWidgets import (
         QCheckBox,
-        QApplication,
         QComboBox,
         QDoubleSpinBox,
         QFileDialog,
@@ -179,8 +178,6 @@ try:
         QLineEdit,
         QPushButton,
         QSpinBox,
-        QStyle,
-        QStyleOptionComboBox,
         QTextEdit,
         QWidget,
     )
@@ -222,60 +219,6 @@ try:
                 return float(text)
             except ValueError:
                 return text
-
-    class _WorkflowComboBox(QComboBox):
-        workflowOpenRequested: Any = Signal(str)
-
-        def __init__(self):
-            super().__init__()
-            self._popupTimer = QTimer(self)
-            self._popupTimer.setSingleShot(True)
-            self._popupTimer.timeout.connect(self.showPopup)
-
-        def _overName(self, event):
-            option = QStyleOptionComboBox()
-            self.initStyleOption(option)
-            return self.style().subControlRect(
-                QStyle.CC_ComboBox, option, QStyle.SC_ComboBoxEditField, self,
-            ).contains(event.pos())
-
-        def mousePressEvent(self, event):
-            self._popupTimer.stop()
-            if event.button() == Qt.LeftButton and self._overName(event):
-                self.setFocus(Qt.MouseFocusReason)
-                # Let a second click reach the name before a popup grabs the mouse.
-                self._popupTimer.start(QApplication.doubleClickInterval())
-                event.accept()
-                return
-            super().mousePressEvent(event)
-
-        def mouseReleaseEvent(self, event):
-            if event.button() == Qt.LeftButton and self._overName(event):
-                event.accept()
-                return
-            super().mouseReleaseEvent(event)
-
-        def mouseDoubleClickEvent(self, event):
-            self._popupTimer.stop()
-            if event.button() == Qt.LeftButton and self._overName(event):
-                workflowId = self.currentData()
-                if isinstance(workflowId, str) and workflowId:
-                    self.workflowOpenRequested.emit(workflowId)
-                event.accept()
-                return
-            super().mouseDoubleClickEvent(event)
-
-        def showPopup(self):
-            self._popupTimer.stop()
-            super().showPopup()
-
-        def hideEvent(self, event):
-            self._popupTimer.stop()
-            super().hideEvent(event)
-
-        def focusOutEvent(self, event):
-            self._popupTimer.stop()
-            super().focusOutEvent(event)
 
     def applyParameterLabel(
         label: QLabel, control: QWidget, name: str,
@@ -352,8 +295,6 @@ try:
             self.setLayout(layout)
 
     class SchemaParamForm(QWidget):
-        workflowOpenRequested: Any = Signal(str)
-
         def __init__(self) -> None:
             super().__init__()
             self._layout = QFormLayout()
@@ -408,8 +349,6 @@ try:
                 from emo_master.apps.designer.ui.widgets import WrapLabel
                 label = WrapLabel()
                 applyParameterLabel(label, control, field.name, paramSchema)
-                if isinstance(control, _WorkflowComboBox):
-                    control.setToolTip(control.toolTip() + "\n双击名称打开工作流；单击选择工作流")
                 self._layout.addRow(label, control)
                 if field.name in {f"case{i}Value" for i in range(4)} and field.schema.get("xOptionalPresence"):
                     valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
@@ -437,6 +376,8 @@ try:
                 for control in self._controls.values():
                     if isinstance(control, QComboBox):
                         control.currentIndexChanged.connect(self._updateDependentFields)
+                    elif isinstance(control, QCheckBox):
+                        control.toggled.connect(self._updateDependentFields)
             self._updateDependentFields()
             if all(f"case{i}Value" in self._controls for i in range(4)):
                 self._buildSwitchPreview()
@@ -684,8 +625,9 @@ try:
                         initialPath=initialPath,
                     )
                 if widgetType in {"workflow-select", "workflow_select"}:
-                    combo = _WorkflowComboBox()
-                    combo.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
+                    # Reference fields configure targets; navigation belongs to
+                    # the canvas link and Designer navigation actions.
+                    combo = QComboBox()
                     rawOptions = field.schema.get("xOptions", self._workflowOptions)
                     options = (
                         [option for option in rawOptions if isinstance(option, str)]
@@ -739,7 +681,6 @@ try:
                 if isinstance(rawProperties, dict) and len(rawProperties) > 0:
                     groupBox = QGroupBox()
                     nestedForm = SchemaParamForm()
-                    nestedForm.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
                     nestedValue = (
                         selectedValue if isinstance(selectedValue, dict) else {}
                     )

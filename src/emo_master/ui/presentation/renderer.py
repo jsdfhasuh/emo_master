@@ -420,8 +420,12 @@ class RuntimePages(QWidget):
                 box.addWidget(widget, 1)
                 if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
-                    note = ('来源: ' + str(source.port)[:32] if source else
-                            '来源缺失' if component.bindings else '未选择来源 · 拖入流程结果')
+                    if source and source.kind == 'global_variable':
+                        note = '来源: 全局变量 ' + source.variableId
+                    elif source:
+                        note = '来源: ' + (source.port or source.name or source.kind)[:32]
+                    else:
+                        note = '来源缺失' if component.bindings else '未选择来源 · 拖入流程结果'
                     badge = QLabel(note)
                     badge.setObjectName('bindingHint')
                     badge.setWordWrap(True)
@@ -570,7 +574,9 @@ class RuntimePages(QWidget):
                 view.runtimeInstanceId != 'offline-simulation' or view.jobId != 'offline-simulation'):
             self.simulationState = None
         self.lastView = view
-        self.status.setText(self.displayMessage(f"{view.connection} · {view.detail or '连接健康，等待触发'}"))
+        connectionMessage = f"{view.connection} · {view.detail or '连接健康，等待触发'}"
+        self.status.setToolTip(connectionMessage)
+        self.status.setText(self.displayMessage(connectionMessage))
         from emo_master.ui.presentation.job_status import jobStatusText
         # Execution remains live even when business values below use a pin.
         self.jobStatus.setText(jobStatusText(getattr(view, 'job', None)))
@@ -677,7 +683,32 @@ class RuntimePages(QWidget):
             self.submit(self.hub.session.readSnapshot())
 
     def displayMessage(self, message):
-        """Hosts may simplify diagnostics without changing values or identity."""
+        """Explain unavailable results; raw diagnostics remain in tooltips."""
+        messages = {
+            'NODE_FAILED': '本次处理异常，请联系技术人员',
+            'EXECUTION_CANCELLED': '本次处理已停止，未取得结果',
+            'SOURCE_MISSING': '本次未取得所需结果，请联系技术人员',
+            'OPTIONAL_ABSENT': '本次未提供此项结果',
+            'BRANCH_SKIPPED': '本次未执行此项检测',
+            'EXPORT_TIMEOUT': '结果读取超时，请检查连接',
+            'EXPORT_FAILED': '结果读取失败，请联系技术人员',
+            'RESOURCE_EXPIRED': '此结果已过期，请等待新的结果',
+            'BUDGET_EXCEEDED': '结果超过显示容量，请联系技术人员',
+            'INVALID_VALUE': '结果数据异常，请联系技术人员',
+            'IPC_ERROR': '结果服务通信异常，请联系技术人员',
+            'IMAGE_UNAVAILABLE': '本次图像暂不可用',
+            'DISCONNECTED': '结果连接已中断，请检查连接',
+            'CONNECTING': '正在连接结果服务',
+            'OFFLINE': '尚未连接运行任务',
+            'PIN_EXPIRED': '固定的结果已过期，请继续更新',
+        }
+        # Match a complete diagnostic token, not arbitrary text with a similar
+        # prefix. Unknown diagnostics stay visible rather than becoming OK.
+        token = message.split(' · ', 1)[0].split(':', 1)[0]
+        if token in messages:
+            return messages[token]
+        if token == 'CONNECTED':
+            return message.replace('CONNECTED', '结果服务已连接', 1)
         return message
 
     def hideEvent(self, event):

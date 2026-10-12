@@ -31,6 +31,9 @@ def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, run
             assert button.accessibleName()
             if key == '停止运行' and not running:
                 assert button.toolTip() == '没有可停止的当前任务'
+            elif key == '开始运行' and not running:
+                assert button.toolTip() == window.runTargetsToolTip()
+                assert '工程启动列表' in button.toolTip()
             else:
                 assert '运行' in button.toolTip()
             assert window.mainToolbar.contentsRect().contains(button.geometry())

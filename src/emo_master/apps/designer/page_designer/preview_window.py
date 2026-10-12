@@ -98,7 +98,7 @@ class PreviewWindow(ObserverPages):
                              ('未绑定', '没有选择数据来源')]:
             if message.startswith(prefix):
                 return text
-        return message
+        return super().displayMessage(message)
 
     def submit(self, view):
         super().submit(view)

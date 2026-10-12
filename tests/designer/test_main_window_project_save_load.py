@@ -186,7 +186,7 @@ def testFailedProjectLoadPreservesCurrentWorkflowAndTabs(tmp_path: Path) -> None
 
     assert window.getWorkflowTabs() == previousTabs
     assert window.getActiveWorkflowId() == bodyWorkflowId
-    assert window.workflowTabs.count() == 3
+    assert window.workflowTabs.count() == 2
     assert window.workflowTabs.tabText(1) == "Body"
     assert window.loadedProjectPath == previousProjectPath
     assert window.currentProjectDir == previousProjectDir

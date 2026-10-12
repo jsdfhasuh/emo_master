@@ -16,7 +16,7 @@ def testAppQssUsesLightWorkstationPalette() -> None:
 
 def testAppQssHighlightsSelectedWorkflowTab() -> None:
     qss = readAppQss()
-    selected = qss.split("QTabWidget#workflowTabs QTabBar::tab:selected", 1)[1].split("}", 1)[0]
+    selected = qss.split("QWidget#workflowTabs QTabBar::tab:selected", 1)[1].split("}", 1)[0]
     assert "font-weight: 600" in selected
     assert "border-bottom-color: #2563eb" in selected
 

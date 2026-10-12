@@ -10,6 +10,31 @@ def cycles(owner, job):
     return [event for event in owner.runtime.eventStore.read(job) if event.eventType == "workflow.completed"]
 
 
+@pytest.mark.parametrize('roots', [['main', 'second'], ['second']])
+def testStartAllWithoutExplicitTargetsUsesSavedDefaultsAndLoadDoesNotStartJobs(tmp_path, roots):
+    root = tmp_path / 'engineering'
+    document = twoStationProject(root)
+    document.runtime.startupWorkflowIds = roots
+    saveDocument(root, document)
+    owner = ProductionRuntime(tmp_path / 'data')
+    try:
+        owner.load(root)
+        assert not owner.runtime.jobRepository.all()
+        assert set(owner.status()['workflows']) == set(roots)
+        with pytest.raises(ValueError, match='at least one'):
+            owner.startAll([])
+        assert not owner.runtime.jobRepository.all()
+        results = owner.startAll()
+        assert list(results) == roots and all(row['ok'] for row in results.values()), results
+        jobs = [row['jobId'] for row in results.values()]
+        waitFor(lambda: all(len(cycles(owner, job)) >= 2 for job in jobs))
+        assert all(owner.runtime.jobRepository.get(job).status == 'RUNNING' for job in jobs)
+        assert len(owner.runtime.jobRepository.all()) == len(roots)
+        assert list(owner.status()['workflows']) == roots
+    finally:
+        owner.close()
+
+
 @pytest.mark.parametrize('limit,count', [(4, 4), (None, 5)])
 def testMoreThanTwoActualWhileJobsWithImages(limit, count, tmp_path):
     from examples.runtime_pages_p2 import pluginRoots

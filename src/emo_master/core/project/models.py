@@ -28,6 +28,15 @@ class RuntimeSettings(StrictModel):
     gracefulStopTimeoutMs: int = Field(default=5000, ge=0)
     heartbeatTimeoutMs: int = Field(default=5000, ge=100)
     eventRetentionPerJob: int = Field(default=10000, ge=1)
+    # Missing means follow entryWorkflowId, preserving legacy single-entry files.
+    startupWorkflowIds: list[str] | None = Field(default=None, min_length=1)
+
+    @model_serializer(mode="wrap")
+    def serializeStartup(self, handler):
+        payload = handler(self)
+        if self.startupWorkflowIds is None:
+            payload.pop("startupWorkflowIds", None)
+        return payload
 
 
 class ProductionSettings(StrictModel):
@@ -158,6 +167,15 @@ class ProjectDocument(StrictModel):
             raise ValueError("workflowOrder must contain every workflow exactly once")
         if self.entryWorkflowId not in workflowIds:
             raise ValueError("entryWorkflowId must reference an existing workflow")
+        startup = self.runtime.startupWorkflowIds
+        if startup is not None:
+            if len(startup) != len(set(startup)):
+                raise ValueError("startupWorkflowIds must not contain duplicate workflow ids")
+            if any(key not in workflowIds for key in startup):
+                raise ValueError("startupWorkflowIds must reference existing workflows")
+            limit = self.runtime.maxConcurrentJobs
+            if limit is not None and len(startup) > limit:
+                raise ValueError("startupWorkflowIds exceeds maxConcurrentJobs")
 
         for sourceWorkflowId, workflow in self.workflows.items():
             seenNodeIds: set[str] = set()
@@ -194,6 +212,9 @@ class ProjectDocument(StrictModel):
 
     def toPayload(self) -> dict[str, object]:
         return self.model_dump(mode="python")
+
+    def startupWorkflows(self) -> list[str]:
+        return list(self.runtime.startupWorkflowIds or [self.entryWorkflowId])
 
 
 def parseProjectDocument(payload: dict[str, object]) -> ProjectDocument:

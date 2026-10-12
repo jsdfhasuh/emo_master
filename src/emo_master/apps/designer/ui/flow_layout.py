@@ -17,8 +17,62 @@ class LayoutNode:
     kind: str = "operator"
 
 
-def flowPositions(nodes: Mapping[str, LayoutNode], edges: Iterable[tuple[str, str]]) -> dict[str, tuple[float, float]]:
-    connections = [(source, target) for source, target in edges if source in nodes and target in nodes]
+@dataclass(frozen=True)
+class LayoutEdge:
+    """Port centres in node-local logical pixels, never saved scene positions."""
+    source: str
+    target: str
+    sourceY: float
+    targetY: float
+
+
+def _packLayer(layer: list[str], nodes: Mapping[str, LayoutNode],
+               desired: Mapping[str, tuple[float, float]]) -> dict[str, float]:
+    """Weighted isotonic packing: nearest port alignment without node overlap."""
+    offsets: dict[str, float] = {}
+    offset = 0.0
+    blocks: list[tuple[list[str], float, float]] = []
+    for node in layer:
+        offsets[node] = offset
+        y, weight = desired[node]
+        blocks.append(([node], (y - offset) * weight, weight))
+        while len(blocks) > 1 and blocks[-2][1] / blocks[-2][2] > blocks[-1][1] / blocks[-1][2]:
+            right, left = blocks.pop(), blocks.pop()
+            blocks.append((left[0] + right[0], left[1] + right[1], left[2] + right[2]))
+        offset += nodes[node].height + 64
+    return {node: value / weight + offsets[node]
+            for members, value, weight in blocks for node in members}
+
+
+def _weightedMedian(values: list[tuple[float, float]]) -> tuple[float, float]:
+    weight = sum(w for _, w in values)
+    remaining = weight / 2
+    for value, w in sorted(values):
+        remaining -= w
+        if remaining <= 0:
+            return value, weight
+    return values[-1][0], weight
+
+
+def flowPositions(nodes: Mapping[str, LayoutNode], edges: Iterable[tuple[str, str] | LayoutEdge]) -> dict[str, tuple[float, float]]:
+    links = []
+    for edge in edges:
+        if isinstance(edge, LayoutEdge):
+            link = edge
+        else:
+            source, target = edge
+            if source not in nodes or target not in nodes:
+                continue
+            link = LayoutEdge(source, target, nodes[source].height / 2, nodes[target].height / 2)
+        if link.source in nodes and link.target in nodes:
+            links.append(link)
+    links.sort(key=lambda edge: (edge.source, edge.target, edge.sourceY, edge.targetY))
+    connections = [(edge.source, edge.target) for edge in links]
+    incoming: dict[str, list[LayoutEdge]] = defaultdict(list)
+    outgoing: dict[str, list[LayoutEdge]] = defaultdict(list)
+    for edge in links:
+        incoming[edge.target].append(edge)
+        outgoing[edge.source].append(edge)
     forward: dict[str, set[str]] = {key: set() for key in nodes}
     backward: dict[str, set[str]] = {key: set() for key in nodes}
     for source, target in connections:
@@ -97,23 +151,57 @@ def flowPositions(nodes: Mapping[str, LayoutNode], edges: Iterable[tuple[str, st
         levels = sorted(layers)
         order = {node: float(i) for layer in layers.values() for i, node in enumerate(layer)}
         for _ in range(8):
-            for sweep, adjacent in ((levels, backward), (list(reversed(levels)), forward)):
+            for sweep, toRight in ((levels, True), (list(reversed(levels)), False)):
                 for level in sweep:
-                    def score(node: str) -> tuple[float, str]:
-                        neighbours = [order[n] for n in adjacent[node] if rank[n] != level]
-                        return (sum(neighbours) / len(neighbours) if neighbours else order[node], node)
+                    def score(node: str) -> tuple[float, float, str]:
+                        neighbours = []
+                        for edge in (incoming[node] if toRight else outgoing[node]):
+                            other = edge.source if toRight else edge.target
+                            if rank[other] == level:
+                                continue
+                            port = edge.sourceY if toRight else edge.targetY
+                            ownPort = edge.targetY if toRight else edge.sourceY
+                            weight = 1 / abs(rank[other] - level) ** 2
+                            neighbours.append((order[other] + (port - ownPort) /
+                                               max(1, nodes[other].height, nodes[node].height), weight))
+                        value = (sum(value * weight for value, weight in neighbours) / sum(weight for _, weight in neighbours)
+                                 if neighbours else order[node])
+                        return (value, order[node], node)
                     layers[level].sort(key=score)
                     order.update({node: float(i) for i, node in enumerate(layers[level])})
         heights = {level: sum(nodes[n].height for n in layers[level]) + 64 * (len(layers[level]) - 1)
                    for level in levels}
         height = max(heights.values())
-        left = 20.0
+        ys = {}
         for level in levels:
-            y = top + (height - heights[level]) / 2
+            y = (height - heights[level]) / 2
             for node in layers[level]:
-                positions[node] = (left, y)
+                ys[node] = y
                 y += nodes[node].height + 64
-            members = set(component)
+        # Short links dominate alignment. A distant workflow-output/bypass
+        # must not pull the whole main chain away from its connected ports.
+        for _ in range(8):
+            for sweep, toRight in ((levels, True), (list(reversed(levels)), False)):
+                for level in sweep:
+                    desired = {}
+                    for node in layers[level]:
+                        neighbours = []
+                        for edge in (incoming[node] if toRight else outgoing[node]):
+                            other = edge.source if toRight else edge.target
+                            if rank[other] == level:
+                                continue
+                            delta = edge.sourceY - edge.targetY
+                            y = ys[other] + (delta if toRight else -delta)
+                            neighbours.append((y, 1 / abs(rank[other] - level) ** 2))
+                        desired[node] = (_weightedMedian(neighbours) if neighbours else (ys[node], 1.0))
+                    ys.update(_packLayer(layers[level], nodes, desired))
+        minY = min(ys.values())
+        height = max(ys[node] + nodes[node].height for node in component) - minY
+        left = 20.0
+        members = set(component)
+        for level in levels:
+            for node in layers[level]:
+                positions[node] = (left, top + ys[node] - minY)
             demand = sum(1 for source, target in connections
                          if source in members and rank[source] <= level < rank[target])
             left += max(nodes[n].width for n in layers[level]) + 120 + max(0, demand - 3) * 10

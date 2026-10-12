@@ -158,6 +158,10 @@ def testFlowSceneSelectedEdgeStyleIsEnhanced(ownedFlowScene) -> None:
     assert isinstance(normalStyle.get("width"), (int, float))
     assert isinstance(selectedStyle.get("width"), (int, float))
     assert float(selectedStyle["width"]) > float(normalStyle["width"])
+    assert normalStyle["color"] == "#98a3af"
+    assert selectedStyle["color"] == "#d97706"
+    setEdgeSelected(edgeKey, False)
+    assert getEdgeStyle(edgeKey) == normalStyle
 
 
 def testFlowSceneDragPreviewSupportsSnapRadius(ownedFlowScene) -> None:

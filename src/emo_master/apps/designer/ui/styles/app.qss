@@ -45,7 +45,6 @@ QPushButton#sideCategoryButton { text-align: left; padding: 7px 6px; }
 QPushButton#sideCategoryButton:checked { background: #edf3ff; border-color: #c5d7fc; color: #1748b5; }
 QPushButton#sidebarToggleButton { background: transparent; padding: 0; border-color: transparent; }
 QPushButton#sidebarToggleButton:hover { background: #e7edf7; }
-QTabWidget#workflowTabs::pane { border: none; background: transparent; }
 QWidget#pagePropertyPanel { background: #ffffff; }
 QWidget#pagePropertyPanel QScrollArea { border: none; background: #ffffff; }
 QGroupBox#propertyGroup { border: none; border-top: 1px solid #edf0f4; margin-top: 20px; padding-top: 8px; }
@@ -55,12 +54,12 @@ QTabWidget#pageLibraryTabs QTabBar::tab { background: transparent; border: none;
 QTabWidget#pageLibraryTabs QTabBar::tab:selected { background: #ffffff; border-bottom-color: #2563eb; }
 QListWidget#pageList::item { padding: 5px 8px; }
 QToolButton#workspaceSelector { font-weight: 600; padding: 6px 14px; }
-QTabWidget#workflowTabs QTabBar::tab {
+QWidget#workflowTabs QTabBar::tab {
   background: transparent; border: none; border-bottom: 2px solid transparent;
   padding: 7px 12px; margin-right: 2px; color: #626b78; font-weight: 400;
 }
-QTabWidget#workflowTabs QTabBar::tab:selected { background: #ffffff; border-bottom-color: #2563eb; color: #20242b; font-weight: 600; }
-QTabWidget#workflowTabs QTabBar::tab:hover { background: #edf3ff; }
+QWidget#workflowTabs QTabBar::tab:selected { background: #ffffff; border-bottom-color: #2563eb; color: #20242b; font-weight: 600; }
+QWidget#workflowTabs QTabBar::tab:hover { background: #edf3ff; }
 QLineEdit, QSpinBox, QDoubleSpinBox, QComboBox, QTextEdit, QPlainTextEdit {
   background: #ffffff; border: 1px solid #d8dce3; border-radius: 4px;
   padding: 5px 7px; selection-background-color: #2563eb; selection-color: #ffffff;

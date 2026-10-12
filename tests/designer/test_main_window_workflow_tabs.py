@@ -78,12 +78,12 @@ def testWorkflowTabsUseTabBarMetadataAndSwitchWithoutCreating() -> None:
     window = MainWindow(_RuntimeClientStub())
     bodyWorkflowId = window.createWorkflow("Body")
 
-    assert window.workflowTabs.count() == 3
+    assert window.workflowTabs.count() == 2
     assert not hasattr(window.workflowTabs, "setTabData")
     tabBar = window.workflowTabs.tabBar()
     assert tabBar.tabData(0) == "main"
     assert tabBar.tabData(1) == bodyWorkflowId
-    assert tabBar.tabData(2) is None
+    assert window._workflowIdForTab(2) is None
 
     workflowCount = len(window.getWorkflowTabs())
     window.workflowTabs.setCurrentIndex(0)
@@ -104,6 +104,7 @@ def testWorkflowTabContextMenuSetsSelectedTabAsEntry() -> None:
     assert menu is not None
     actions = _menuActionsByText(menu)
     assert set(actions) == {
+        "查找调用来源",
         "打开工作流",
         "设为入口工作流",
         "重命名工作流",
@@ -182,17 +183,15 @@ def testWorkflowTabContextMenuActionsTargetClickedWorkflow(monkeypatch) -> None:
     assert window.getActiveWorkflowId() == "main"
 
 
-def testPlusTabPromptsForNameAndCancelRestoresActiveTab(monkeypatch) -> None:
+def testAddCommandPromptsForNameAndCancelPreservesActiveTab(monkeypatch) -> None:
     window = MainWindow(_RuntimeClientStub())
-    plusIndex = window.workflowTabs.count() - 1
     monkeypatch.setattr(
         mainWindowModule,
         "QInputDialog",
         _dialogReturning("ignored", False),
     )
 
-    window.workflowTabs.setCurrentIndex(plusIndex)
-    window.workflowTabs.tabBarClicked.emit(plusIndex)
+    window.workflowTabs.addRequested.emit()
 
     assert [item["name"] for item in window.getWorkflowTabs()] == ["Main"]
     assert window.workflowTabs.currentIndex() == 0
@@ -202,9 +201,7 @@ def testPlusTabPromptsForNameAndCancelRestoresActiveTab(monkeypatch) -> None:
         "QInputDialog",
         _dialogReturning("Body", True),
     )
-    plusIndex = window.workflowTabs.count() - 1
-    window.workflowTabs.setCurrentIndex(plusIndex)
-    window.workflowTabs.tabBarClicked.emit(plusIndex)
+    window.workflowTabs.addRequested.emit()
 
     assert [item["name"] for item in window.getWorkflowTabs()] == ["Main", "Body"]
     assert window.getActiveWorkflowId() == "body"

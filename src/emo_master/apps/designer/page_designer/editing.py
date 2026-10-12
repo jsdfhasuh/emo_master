@@ -3,10 +3,11 @@ from dataclasses import dataclass
 from uuid import uuid4
 
 from emo_master.core.plugin.models import PluginManifest
-from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, sourceType
+from emo_master.core.presentation.catalog import buildOutputCatalog, presentationType, resolveCallPath, sourceType
 from emo_master.core.presentation.models import Component, DataSource, ResultScope, Presentation, walkComponents
 from emo_master.apps.designer.state.presentation_store import _component
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
+from emo_master.ui.workflow_labels import workflowDisplayNames
 
 
 ACCEPTED = {'number': {'integer', 'number'}, 'text': {'integer', 'number', 'boolean', 'string', 'json'},
@@ -30,13 +31,47 @@ class Choice:
     hint: str
 
 
-def outputChoices(document, manifests, *, onUnsupported=None):
+def _workflowCalls(workflow):
+    for node in workflow.nodes:
+        if node.kind == 'subflow':
+            yield node.nodeId, 'subflow', node.targetWorkflowId
+        elif node.kind == 'loop':
+            for field in loopWorkflowReferenceFields(node.loop):
+                yield node.nodeId, 'loop_body' if field == 'bodyWorkflowId' else 'loop_condition', node.loop.get(field)
+
+
+def scopeTitle(document, scope):
+    names = workflowDisplayNames(document.workflows)
+    path = ' / '.join(step.nodeId + ':' + step.relation for step in scope.callPath) or '入口结束'
+    return f'入口 {names[scope.entryWorkflowId]} · 快照 {names[scope.scopeWorkflowId]} · {path}'
+
+
+def outputChoices(document, manifests, *, onUnsupported=None, entryWorkflowIds=()):
     entries = buildOutputCatalog(document, manifests)
     choices = []
+    scopes = []
+    seen = set()
+    names = workflowDisplayNames(document.workflows)
+    presentation = document.presentation
+    declared = list(presentation.resultScopes.values()) if presentation else []
+    referenced = {target for workflow in document.workflows.values() for _, _, target in _workflowCalls(workflow)}
+    # Discovery only: never persist a new entry/station configuration. Include
+    # fresh independent roots as well as explicitly selected/previously bound Jobs.
+    roots = dict.fromkeys([document.entryWorkflowId, *entryWorkflowIds,
+        *(scope.entryWorkflowId for scope in declared),
+        *(key for key in document.workflowOrder if key not in referenced)])
 
-    def visit(workflowId, path, ancestors):
+    def add(choice):
+        identity = (choice.source.model_dump_json(exclude={'resultScopeId'}), choice.scope.model_dump_json())
+        if identity not in seen:
+            seen.add(identity)
+            choices.append(choice)
+
+    def visit(root, workflowId, path, ancestors):
         if workflowId in ancestors or len(path) > 32:
             return
+        scope = ResultScope(entryWorkflowId=root, scopeWorkflowId=workflowId, callPath=path)
+        scopes.append(scope)
         for entry in entries:
             if entry.workflowId != workflowId:
                 continue
@@ -45,7 +80,7 @@ def outputChoices(document, manifests, *, onUnsupported=None):
             except ValueError as error:
                 if onUnsupported is not None:
                     location = '/'.join(step.nodeId + ':' + step.relation for step in path) or '入口'
-                    title = (f'{document.workflows[workflowId].name} / {entry.displayName} '
+                    title = (f'入口 {names[root]} / {names[workflowId]} / {entry.displayName} '
                              f'[{entry.nodeId or "出口"}] / {entry.port} · {location}')
                     onUnsupported(title, str(error))
                 continue
@@ -54,26 +89,57 @@ def outputChoices(document, manifests, *, onUnsupported=None):
                     resultScopeId='scope', workflowId=workflowId, nodeId=entry.nodeId, port=entry.port,
                     callPath=path, fieldPath=list(field), expectedType=kind)
                 location = '/'.join(step.nodeId + ':' + step.relation for step in source.callPath) or '入口'
-                choices.append(Choice(f'{document.workflows[workflowId].name} / {entry.displayName} '
+                add(Choice(f'入口 {names[root]} / {names[workflowId]} / {entry.displayName} '
                     f'[{entry.nodeId or "出口"}] / {entry.port}{"." + ".".join(field) if field else ""} '
                     f'({kind}) · {location}', source,
-                    ResultScope(entryWorkflowId=document.entryWorkflowId, scopeWorkflowId=workflowId, callPath=path),
+                    scope,
                     '; '.join([entry.hint, *(issue.message for issue in entry.issues)]).strip('; ')))
         from emo_master.core.presentation.models import CallStep
-        for node in document.workflows[workflowId].nodes:
-            targets = [('subflow', node.targetWorkflowId)] if node.kind == 'subflow' else (
-                [('loop_body' if field == 'bodyWorkflowId' else 'loop_condition', node.loop.get(field))
-                 for field in loopWorkflowReferenceFields(node.loop)]
-                if node.kind == 'loop' else [])
-            for relation, target in targets:
-                if target in document.workflows:
-                    visit(target, [*path, CallStep(nodeId=node.nodeId, relation=relation)], {*ancestors, workflowId})
-    visit(document.entryWorkflowId, [], set())
-    for key, variable in document.globalVariables.items():
-        choices.append(Choice(f"全局变量 / {variable.name} ({variable.type})",
-            DataSource(kind="global_variable", resultScopeId="scope", variableId=key, expectedType=variable.type),
-            ResultScope(entryWorkflowId=document.entryWorkflowId, scopeWorkflowId=document.entryWorkflowId),
-            "任务结果结束时的值快照；运行当前值可在全局变量窗口查看"))
+        for nodeId, relation, target in _workflowCalls(document.workflows[workflowId]):
+            if target in document.workflows:
+                visit(root, target, [*path, CallStep(nodeId=nodeId, relation=relation)], {*ancestors, workflowId})
+    for root in roots:
+        if root in document.workflows:
+            visit(root, root, [], set())
+    validDeclared = []
+    for scope in declared:
+        try:
+            if resolveCallPath(document, scope.entryWorkflowId, scope.callPath) == scope.scopeWorkflowId:
+                validDeclared.append(scope)
+        except ValueError:
+            pass  # Stale bindings remain visible to validateBindings, not new choices.
+    # Variables have no workflow output address. The scope supplies both Job
+    # identity and snapshot timing, including a frame inside a long-running loop.
+    for scope in [*scopes, *validDeclared]:
+        for key, variable in document.globalVariables.items():
+            add(Choice(f"全局变量 / {variable.name} [{key}] ({variable.type}) · {scopeTitle(document, scope)}",
+                DataSource(kind="global_variable", resultScopeId="scope", variableId=key, expectedType=variable.type),
+                scope, "所选入口 Job 在此工作流结束时采集的变量快照；不是节点实时值"))
+    # A saved output may legitimately use an ancestor subflow scope or numeric
+    # widening. Keep that exact choice rather than silently moving its snapshot.
+    for source in presentation.dataSources.values() if presentation else []:
+        scope = presentation.resultScopes.get(source.resultScopeId)
+        if scope not in validDeclared or source.kind not in {'node_output', 'workflow_output', 'global_variable'}:
+            continue
+        try:
+            if source.kind != 'global_variable':
+                if resolveCallPath(document, scope.entryWorkflowId, source.callPath) != source.workflowId:
+                    continue
+                prefix = scope.callPath
+                if source.callPath[:len(prefix)] != prefix or any(
+                        step.relation != 'subflow' for step in source.callPath[len(prefix):]):
+                    continue
+            actual = sourceType(source, entries, document.globalVariables)
+            if actual != source.expectedType and (actual, source.expectedType) != ('integer', 'number'):
+                continue
+        except ValueError:
+            continue
+        label = (f'全局变量 / {document.globalVariables[source.variableId].name} [{source.variableId}]'
+                 if source.kind == 'global_variable' else
+                 f'{names[source.workflowId]} / {source.nodeId or "出口"} / {source.port}'
+                 + ('.' + '.'.join(source.fieldPath) if source.fieldPath else ''))
+        add(Choice(f'{label} ({source.expectedType}) · {scopeTitle(document, scope)}', source, scope,
+                   '保留已有绑定的结果作用域和快照时机'))
     return choices
 
 

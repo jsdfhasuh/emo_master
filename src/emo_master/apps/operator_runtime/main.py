@@ -167,7 +167,8 @@ class OperatorWindow(QWidget):
         if (self.closing or self._deferCommand(self.stopDetection)
                 or self.state["state"] not in {"RUNNING", "STOPPING", "FAULT"}):
             return
-        if len(self.controller.sessions) > 1:
+        if (len(self.controller.sessions) > 1
+                or next(iter(self.controller.sessions), None) != self.controller.document.entryWorkflowId):
             return self.stopWorkflows()
         self.message.setText("正在停止")
         def stop():
@@ -181,7 +182,8 @@ class OperatorWindow(QWidget):
         from emo_master.ui.run_targets_dialog import RunTargetsDialog
         dialog = RunTargetsDialog(self.controller.workflows, self.selectedWorkflowIds,
             self.controller.document.runtime.maxConcurrentJobs, self, editLimit=False,
-            entryWorkflowId=self.controller.document.entryWorkflowId)
+            entryWorkflowId=self.controller.document.entryWorkflowId,
+            projectTargets=self.controller.document.startupWorkflows())
         if dialog.exec_():
             self.selectedWorkflowIds = dialog.selectedWorkflowIds()
             self._controls()
@@ -263,7 +265,8 @@ class OperatorWindow(QWidget):
         document = self.controller.document
         if document is None:
             return
-        if len(self.controller.sessions) > 1:
+        if (len(self.controller.sessions) > 1
+                or next(iter(self.controller.sessions), None) != document.entryWorkflowId):
             self._showWorkflowPages()
             return
         self._removePages()
@@ -406,7 +409,7 @@ class OperatorWindow(QWidget):
             self.shutdown()
             return
         if kind == "loaded" and self.controller.document:
-            self.selectedWorkflowIds = [self.controller.document.entryWorkflowId]
+            self.selectedWorkflowIds = self.controller.document.startupWorkflows()
         if kind in {"loaded", "started", "workflowsStarted"} and self.controller.document:
             document = self.controller.document
             self.projectPath = self.controller.runtime.loadedProjectFile

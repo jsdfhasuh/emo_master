@@ -205,10 +205,10 @@ def testStartupOpenProjectRefreshesWorkflowTabs(tmp_path: Path) -> None:
     )
 
     assert window.showStartupProjectEntry() is True
-    assert window.workflowTabs.count() == 3
+    assert window.workflowTabs.count() == 2
     assert window.workflowTabs.tabBar().tabData(0) == "main"
     assert window.workflowTabs.tabBar().tabData(1) == bodyWorkflowId
-    assert window.workflowTabs.tabBar().tabData(2) is None
+    assert window._workflowIdForTab(2) is None
     assert window.workflowTabs.tabText(1) == "Body"
 
 

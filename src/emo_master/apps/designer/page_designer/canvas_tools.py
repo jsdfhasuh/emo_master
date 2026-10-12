@@ -154,7 +154,13 @@ class Selection(QObject):
         self.valid = False
         item = _component(tools.w.store.snapshot(), tools.w.pageId, key)
         source = tools.w.store.snapshot().dataSources.get(next(iter(item.bindings.values()), ''))
-        summary = ('来源 ' + source.port) if source else '未选择来源' if item.type in ('image', 'number', 'table', 'indicator') else '静态内容'
+        if source and source.kind == 'global_variable':
+            variable = tools.w.session.document().globalVariables.get(source.variableId)
+            summary = '全局变量 ' + (variable.name if variable else source.variableId)
+        elif source:
+            summary = '来源 ' + (source.port or source.name or source.kind)
+        else:
+            summary = '未选择来源' if item.type in ('image', 'number', 'table', 'indicator') else '静态内容'
         self.outline = Outline(card, TITLES[item.type] + ' · ' + summary)
         self.handles = [ResizeHandle(self, axes) for axes in ('x', 'y', 'xy')]
         card.installEventFilter(self)

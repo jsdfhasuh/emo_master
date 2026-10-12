@@ -1,26 +1,32 @@
-"""Shared transient workflow selection; no persisted ownership schema."""
+"""Project startup defaults and explicitly temporary launch selection."""
 from PySide2.QtCore import Qt
 from PySide2.QtGui import QBrush, QColor
-from PySide2.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout,
-    QLabel, QListWidget, QListWidgetItem, QSpinBox, QVBoxLayout)
+from PySide2.QtWidgets import (QCheckBox, QDialog, QDialogButtonBox, QFormLayout, QHBoxLayout,
+    QLabel, QListWidget, QListWidgetItem, QPushButton, QSpinBox, QVBoxLayout)
 from emo_master.ui.workflow_labels import workflowEntryMarker, workflowEntryToolTip
 
 
 class RunTargetsDialog(QDialog):
-    def __init__(self, workflows, selected, limit, parent=None, *, editLimit=True, entryWorkflowId=None):
+    def __init__(self, workflows, selected, limit, parent=None, *, editLimit=True, entryWorkflowId=None,
+                 allowPersist=False, temporary=False, projectTargets=None):
         super().__init__(parent)
         self.entryWorkflowId = entryWorkflowId
+        self.allowPersist = allowPersist
+        self.editLimit = editLimit
+        self.projectTargets = list(projectTargets) if projectTargets is not None else None
+        self.originalLimit = limit
         self.workflowNames = {}
         self.setWindowTitle("运行目标与并发")
-        self.resize(560, 460)
+        self.resize(600, 560)
         layout = QVBoxLayout(self)
-        helpText = QLabel("“默认入口”是工程默认启动流程；勾选项是本次独立运行入口。\n"
-                         "勾选多个入口，点击一次“开始”并行运行；取消默认入口的勾选后，本次不启动它。\n"
-                         "只选择需要独立运行的入口；不要同时勾选它们的循环体或子流程。\n"
-                         "此选择仅用于本次打开的工程，不添加工位或页面归属配置。")
+        helpText = QLabel("勾选的入口会作为独立 Job 并行启动；不必勾选默认入口。\n"
+                         "不要同时勾选这些入口内部的循环体或子流程。")
         helpText.setWordWrap(True)
         layout.addWidget(helpText)
         self.targets = QListWidget()
+        self.targets.setMinimumHeight(110)
+        self.targets.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.targets.setTextElideMode(Qt.ElideRight)
         for key, workflow in workflows.items():
             name = workflow.name if hasattr(workflow, "name") else workflow.get("name", key)
             self.workflowNames[key] = name
@@ -32,6 +38,17 @@ class RunTargetsDialog(QDialog):
         self.targets.itemChanged.connect(self._refreshEntryMarkers)
         self._refreshEntryMarkers()
         layout.addWidget(self.targets, 1)
+        self.temporary = QCheckBox("仅本次临时使用（不保存）")
+        self.temporary.setToolTip("不修改工程启动列表或并发上限；重新打开工程时恢复工程配置。")
+        self.temporary.setChecked(temporary or not allowPersist)
+        self.temporary.setEnabled(allowPersist)
+        selectionMode = QHBoxLayout()
+        selectionMode.addWidget(self.temporary, 1)
+        self.restoreButton = QPushButton("恢复工程启动列表")
+        self.restoreButton.setEnabled(self.projectTargets is not None)
+        self.restoreButton.clicked.connect(self.restoreProjectTargets)
+        selectionMode.addWidget(self.restoreButton)
+        layout.addLayout(selectionMode)
         form = QFormLayout()
         self.unlimited = QCheckBox("不限制 Job 数量（仍受机器和设备资源限制）")
         self.unlimited.setChecked(limit is None)
@@ -40,7 +57,7 @@ class RunTargetsDialog(QDialog):
         self.limit.setValue(limit or 2)
         self.limit.setEnabled(editLimit and limit is not None)
         self.unlimited.setEnabled(editLimit)
-        self.unlimited.toggled.connect(lambda checked: self.limit.setEnabled(editLimit and not checked))
+        self.unlimited.toggled.connect(self._refreshMode)
         form.addRow("最大并发 Job", self.limit)
         form.addRow(self.unlimited)
         layout.addLayout(form)
@@ -48,12 +65,36 @@ class RunTargetsDialog(QDialog):
                              else "并发上限来自已加载的工程；请在 Designer 中修改。")
         self.notice.setWordWrap(True)
         layout.addWidget(self.notice)
+        self.temporary.toggled.connect(self._refreshMode)
+        self._refreshMode()
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("确定")
         buttons.button(QDialogButtonBox.Cancel).setText("取消")
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
+
+    def saveSelection(self):
+        return self.allowPersist and not self.temporary.isChecked()
+
+    def _refreshMode(self, *_args):
+        editable = self.editLimit and (not self.allowPersist or self.saveSelection())
+        self.unlimited.setEnabled(editable)
+        self.limit.setEnabled(editable and not self.unlimited.isChecked())
+        self.notice.setText("确定后修改启动配置；保存工程后保留，支持撤销。"
+                            if self.saveSelection() else
+                            "临时选择不写入工程；重开工程或恢复列表即可还原。")
+
+    def restoreProjectTargets(self):
+        if self.projectTargets is None:
+            return
+        for index in range(self.targets.count()):
+            item = self.targets.item(index)
+            item.setCheckState(Qt.Checked if item.data(Qt.UserRole) in self.projectTargets else Qt.Unchecked)
+        self.temporary.setChecked(not self.allowPersist)
+        self.unlimited.setChecked(self.originalLimit is None)
+        self.limit.setValue(self.originalLimit or 2)
+        self._refreshMode()
 
     def _refreshEntryMarkers(self, *_args):
         selected = self.selectedWorkflowIds()
@@ -82,6 +123,8 @@ class RunTargetsDialog(QDialog):
                 if self.targets.item(i).checkState() == Qt.Checked]
 
     def maximum(self):
+        if self.allowPersist and not self.saveSelection():
+            return self.originalLimit
         return None if self.unlimited.isChecked() else self.limit.value()
 
     def accept(self):

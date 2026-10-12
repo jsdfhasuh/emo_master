@@ -15,7 +15,8 @@ from emo_master.core.presentation.models import Props, Placement
 from emo_master.core.presentation.catalog import buildOutputCatalog
 from emo_master.core.presentation.validation import validateBindings, pageScopes
 from emo_master.apps.designer.state.presentation_store import _component
-from .editing import PageCommands, manifestsFromCatalog, outputChoices
+from .editing import PageCommands, manifestsFromCatalog, outputChoices, scopeTitle
+from emo_master.ui.workflow_labels import workflowDisplayNames
 from .palette import Palette
 from emo_master.apps.designer.ui.widgets import ElidedLabel
 from .property_adapters import (decodeIndicatorKey, indicatorStatesFromRows,
@@ -204,22 +205,42 @@ class EditingTools(QObject):
     def refreshCatalog(self):
         manifests = self.commands().manifests
         unsupported = []
-        self.choices = outputChoices(self.w.session.document(), manifests,
+        document = self.w.session.document()
+        self.choices = outputChoices(document, manifests,
+            entryWorkflowIds=[*self.w.coordinator.window.workflowStore.startupWorkflows(),
+                              *self.w.coordinator.window.effectiveRunTargetIds()],
             onUnsupported=lambda title, reason: unsupported.append((title, reason)))
         self.outputs.clear()
         self.binding.clear()
         groups = {}
         nodes = {}
-        document = self.w.session.document()
+        workflowNames = workflowDisplayNames(document.workflows)
         def friendly(node):
             manifest = manifests.get(node.operatorId)
             fallback = manifest.displayName if manifest else {'subflow': '子流程调用', 'loop': '循环调用'}.get(node.kind, '节点')
             return node.displayName or fallback + ' [' + node.nodeId[:8] + ']'
         for index, choice in enumerate(self.choices):
-            address = (choice.source.workflowId, tuple((step.nodeId, step.relation) for step in choice.source.callPath))
+            if choice.source.kind == 'global_variable':
+                address = ('global_variable', choice.scope.model_dump_json())
+                if address not in groups:
+                    group = QTreeWidgetItem(['全局变量 · ' + scopeTitle(document, choice.scope)])
+                    group.setToolTip(0, scopeTitle(document, choice.scope))
+                    group.setFlags(group.flags() & ~Qt.ItemIsDragEnabled)
+                    self.outputs.addTopLevelItem(group)
+                    groups[address] = group
+                variable = document.globalVariables[choice.source.variableId]
+                item = QTreeWidgetItem([f'{variable.name} [{choice.source.variableId}] · {choice.source.expectedType}'])
+                item.setData(0, Qt.UserRole, index)
+                item.setToolTip(0, choice.title + '\n' + choice.hint)
+                groups[address].addChild(item)
+                self.binding.addItem(choice.title, index)
+                self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
+                continue
+            address = (choice.scope.model_dump_json(), choice.source.workflowId,
+                       tuple((step.nodeId, step.relation) for step in choice.source.callPath))
             if address not in groups:
                 names = []
-                current = document.entryWorkflowId
+                current = choice.scope.entryWorkflowId
                 for step in choice.source.callPath:
                     caller = next((node for node in document.workflows[current].nodes if node.nodeId == step.nodeId), None)
                     names.append((friendly(caller) if caller else step.nodeId) + ' [' + step.nodeId[:8] + '] · ' + step.relation)
@@ -227,8 +248,11 @@ class EditingTools(QObject):
                         current = caller.targetWorkflowId if step.relation == 'subflow' else caller.loop.get(
                             'bodyWorkflowId' if step.relation == 'loop_body' else 'conditionWorkflowId')
                 path = ' / '.join(names) or '入口'
-                group = QTreeWidgetItem([document.workflows[choice.source.workflowId].name + ' · ' + path])
-                group.setToolTip(0, '/'.join(step.nodeId + ':' + step.relation for step in choice.source.callPath) or document.entryWorkflowId)
+                title = f'入口 {workflowNames[choice.scope.entryWorkflowId]} / {workflowNames[choice.source.workflowId]} · {path}'
+                if choice.scope.scopeWorkflowId != choice.source.workflowId or choice.scope.callPath != choice.source.callPath:
+                    title += ' · ' + scopeTitle(document, choice.scope)
+                group = QTreeWidgetItem([title])
+                group.setToolTip(0, scopeTitle(document, choice.scope) + '\n' + choice.title)
                 group.setFlags(group.flags() & ~Qt.ItemIsDragEnabled)
                 self.outputs.addTopLevelItem(group)
                 groups[address] = group
@@ -247,7 +271,11 @@ class EditingTools(QObject):
             item.setData(0, Qt.UserRole, index)
             item.setToolTip(0, choice.title + '\n' + choice.hint)
             nodes[nodeAddress].addChild(item)
-            readable = nodes[nodeAddress].text(0)[:24] + ' / ' + item.text(0)
+            readable = (f'入口 {workflowNames[choice.scope.entryWorkflowId]} / {workflowNames[choice.source.workflowId]} / '
+                        + nodes[nodeAddress].text(0) + ' / ' + item.text(0)
+                        + ' · ' + (' / '.join(step.nodeId + ':' + step.relation for step in choice.source.callPath) or '入口'))
+            if choice.scope.scopeWorkflowId != choice.source.workflowId or choice.scope.callPath != choice.source.callPath:
+                readable += ' · ' + scopeTitle(document, choice.scope)
             self.binding.addItem(readable, index)
             self.binding.setItemData(index, choice.title + '\n' + choice.hint, Qt.ToolTipRole)
         if unsupported:
@@ -404,13 +432,19 @@ class EditingTools(QObject):
         self.propertyGroups.select(component.type)
         self.title.setText(component.props.title or TITLES[component.type])
         self.title.setToolTip(self.title.text() + '\n组件编号：' + component.componentId)
-        source = self.w.store.snapshot().dataSources.get(next(iter(component.bindings.values()), ''))
+        snapshot = self.w.store.snapshot()
+        source = snapshot.dataSources.get(next(iter(component.bindings.values()), ''))
+        self.binding.setCurrentIndex(-1)
         if source:
             comparable = source.model_dump(exclude={'resultScopeId'})
+            scope = snapshot.resultScopes.get(source.resultScopeId)
             index = next((i for i, choice in enumerate(self.choices)
-                          if choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
+                          if choice.scope == scope and choice.source.model_dump(exclude={'resultScopeId'}) == comparable), -1)
             self.binding.setCurrentIndex(index)
-            self.title.setToolTip(self.title.toolTip() + '\n数据来源：' + str(source.nodeId or source.workflowId) + '.' + str(source.port))
+            description = (self.choices[index].title if index >= 0 else
+                           f'全局变量 [{source.variableId}] · 绑定不可用' if source.kind == 'global_variable' else
+                           str(source.nodeId or source.workflowId or source.name) + '.' + str(source.port or ''))
+            self.title.setToolTip(self.title.toolTip() + '\n数据来源：' + description)
             self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
             self.fields[name].setText(getattr(component.props, name))
@@ -543,9 +577,8 @@ class EditingTools(QObject):
             item = _component(self.w.store.snapshot(), self.w.pageId, self.selected)
             source = self.w.store.snapshot().dataSources.get(next(iter(item.bindings.values()), ''))
             if source and source.nodeId:
-                self.w.coordinator.window.activateWorkflow(source.workflowId)
                 self.w.coordinator.showFlow()
-                self.w.coordinator.window.navigateToNodeFromSidebar(source.nodeId)
+                self.w.coordinator.window.navigateToWorkflow(source.workflowId, source.nodeId)
 
     def componentAt(self, widget):
         while widget and widget is not self.w.renderer:

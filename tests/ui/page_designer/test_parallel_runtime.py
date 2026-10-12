@@ -18,7 +18,10 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
     monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
     QFontDatabase.addApplicationFont('C:/Windows/Fonts/msyh.ttc')
     root = tmp_path / 'engineering'
-    _, roots = whileProject(root)
+    document, roots = whileProject(root)
+    from tests.runtime.production_fixture import saveDocument
+    document.runtime.startupWorkflowIds = roots
+    saveDocument(root, document)
     runtime = RuntimeService(dbPath=tmp_path / 'data/runtime.sqlite3', workspaceRoot=tmp_path / 'data/jobs',
         pluginRootPaths=pluginRoots(tmp_path))
     window = MainWindow(RuntimeClient(runtime))
@@ -28,8 +31,8 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
         waitFor(lambda: window.operatorCatalogController.state == 'ready')
         window.activateWorkflow('second')
         window.autoLayoutNodes()
-        window.runTargetIds = roots
-        window._refreshWorkflowEntryMarkers()
+        assert not window.runTargetIds  # No manual selection after reopening.
+        assert window.runtimeController.targets() == roots
         sync = window.runtimeController.syncRuntimeProjectBeforeRun
         calls = []
         def synchronize():

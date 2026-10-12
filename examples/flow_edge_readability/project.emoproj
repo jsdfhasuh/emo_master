@@ -1,0 +1,2482 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "flow-edge-readability",
+    "name": "Flow edge readability",
+    "revision": 1,
+    "createdAt": "2026-10-12T00:00:00Z",
+    "updatedAt": "2026-10-12T00:00:00Z"
+  },
+  "entryWorkflowId": "fanout",
+  "workflowOrder": [
+    "fanout",
+    "sparse",
+    "dense",
+    "crossing",
+    "blocked"
+  ],
+  "workflows": {
+    "fanout": {
+      "name": "fanout",
+      "inputs": {},
+      "outputs": {
+        "result0": "boolean",
+        "result1": "boolean",
+        "result2": "boolean",
+        "result3": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "输入数值",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref1",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 8
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "check0",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check1",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check2",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_2",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check3",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_3",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result0": "boolean",
+            "result1": "boolean",
+            "result2": "boolean",
+            "result3": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check0",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result0"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check1",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result1"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check2",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result2"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check3",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result3"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": -360,
+            "y": 30
+          },
+          "output": {
+            "x": 1100,
+            "y": 30
+          },
+          "seed": {
+            "x": 20,
+            "y": 40
+          },
+          "ref1": {
+            "x": 20,
+            "y": 250
+          },
+          "check0": {
+            "x": 550,
+            "y": 30
+          },
+          "check1": {
+            "x": 550,
+            "y": 210
+          },
+          "check2": {
+            "x": 550,
+            "y": 390
+          },
+          "check3": {
+            "x": 550,
+            "y": 570
+          }
+        }
+      }
+    },
+    "sparse": {
+      "name": "sparse",
+      "inputs": {},
+      "outputs": {
+        "result0": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "输入数值",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref1",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 8
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "check0",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result0": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check0",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result0"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": -360,
+            "y": 30
+          },
+          "output": {
+            "x": 1100,
+            "y": 30
+          },
+          "seed": {
+            "x": 20,
+            "y": 40
+          },
+          "ref1": {
+            "x": 20,
+            "y": 250
+          },
+          "check0": {
+            "x": 550,
+            "y": 30
+          }
+        }
+      }
+    },
+    "dense": {
+      "name": "dense",
+      "inputs": {},
+      "outputs": {
+        "result0": "boolean",
+        "result1": "boolean",
+        "result2": "boolean",
+        "result3": "boolean",
+        "result4": "boolean",
+        "result5": "boolean",
+        "result6": "boolean",
+        "result7": "boolean",
+        "result8": "boolean",
+        "result9": "boolean",
+        "result10": "boolean",
+        "result11": "boolean",
+        "result12": "boolean",
+        "result13": "boolean",
+        "result14": "boolean",
+        "result15": "boolean",
+        "result16": "boolean",
+        "result17": "boolean",
+        "result18": "boolean",
+        "result19": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "输入数值",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref1",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 8
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref2",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 9
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref3",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 10
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref4",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 11
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "check0",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check1",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check2",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_2",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check3",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_3",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check4",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_4",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check5",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_5",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check6",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_6",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check7",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_7",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check8",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_8",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check9",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_9",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check10",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_10",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check11",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_11",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check12",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_12",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check13",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_13",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check14",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_14",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check15",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_15",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check16",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_16",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check17",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_17",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check18",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_18",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check19",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_19",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result0": "boolean",
+            "result1": "boolean",
+            "result2": "boolean",
+            "result3": "boolean",
+            "result4": "boolean",
+            "result5": "boolean",
+            "result6": "boolean",
+            "result7": "boolean",
+            "result8": "boolean",
+            "result9": "boolean",
+            "result10": "boolean",
+            "result11": "boolean",
+            "result12": "boolean",
+            "result13": "boolean",
+            "result14": "boolean",
+            "result15": "boolean",
+            "result16": "boolean",
+            "result17": "boolean",
+            "result18": "boolean",
+            "result19": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check0",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result0"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check1",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result1"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check2",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result2"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check3",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result3"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check4",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check4",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check4",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result4"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check5",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check5",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check5",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result5"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check6",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check6",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check6",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result6"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check7",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check7",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check7",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result7"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check8",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check8",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check8",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result8"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check9",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check9",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check9",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result9"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check10",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check10",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check10",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result10"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check11",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check11",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check11",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result11"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check12",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check12",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check12",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result12"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check13",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check13",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check13",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result13"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check14",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check14",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check14",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result14"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check15",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check15",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check15",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result15"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check16",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check16",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check16",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result16"
+        },
+        {
+          "fromNode": "ref2",
+          "fromPort": "value",
+          "toNode": "check17",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check17",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check17",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result17"
+        },
+        {
+          "fromNode": "ref3",
+          "fromPort": "value",
+          "toNode": "check18",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check18",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check18",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result18"
+        },
+        {
+          "fromNode": "ref4",
+          "fromPort": "value",
+          "toNode": "check19",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check19",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check19",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result19"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": -360,
+            "y": 30
+          },
+          "output": {
+            "x": 1100,
+            "y": 30
+          },
+          "seed": {
+            "x": 20,
+            "y": 40
+          },
+          "ref1": {
+            "x": 20,
+            "y": 250
+          },
+          "ref2": {
+            "x": 20,
+            "y": 460
+          },
+          "ref3": {
+            "x": 20,
+            "y": 670
+          },
+          "ref4": {
+            "x": 20,
+            "y": 880
+          },
+          "check0": {
+            "x": 550,
+            "y": 30
+          },
+          "check1": {
+            "x": 550,
+            "y": 210
+          },
+          "check2": {
+            "x": 550,
+            "y": 390
+          },
+          "check3": {
+            "x": 550,
+            "y": 570
+          },
+          "check4": {
+            "x": 550,
+            "y": 750
+          },
+          "check5": {
+            "x": 550,
+            "y": 930
+          },
+          "check6": {
+            "x": 550,
+            "y": 1110
+          },
+          "check7": {
+            "x": 550,
+            "y": 1290
+          },
+          "check8": {
+            "x": 550,
+            "y": 1470
+          },
+          "check9": {
+            "x": 550,
+            "y": 1650
+          },
+          "check10": {
+            "x": 550,
+            "y": 1830
+          },
+          "check11": {
+            "x": 550,
+            "y": 2010
+          },
+          "check12": {
+            "x": 550,
+            "y": 2190
+          },
+          "check13": {
+            "x": 550,
+            "y": 2370
+          },
+          "check14": {
+            "x": 550,
+            "y": 2550
+          },
+          "check15": {
+            "x": 550,
+            "y": 2730
+          },
+          "check16": {
+            "x": 550,
+            "y": 2910
+          },
+          "check17": {
+            "x": 550,
+            "y": 3090
+          },
+          "check18": {
+            "x": 550,
+            "y": 3270
+          },
+          "check19": {
+            "x": 550,
+            "y": 3450
+          }
+        }
+      }
+    },
+    "crossing": {
+      "name": "crossing",
+      "inputs": {},
+      "outputs": {
+        "result0": "boolean",
+        "result1": "boolean",
+        "result2": "boolean",
+        "result3": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "输入数值",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref1",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 8
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "check0",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check1",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check2",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_2",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "check3",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "检测结果与参考值比较_长中文名称_3",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result0": "boolean",
+            "result1": "boolean",
+            "result2": "boolean",
+            "result3": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check0",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result0"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check1",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check1",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result1"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check2",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check2",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result2"
+        },
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check3",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check3",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result3"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": -360,
+            "y": 30
+          },
+          "output": {
+            "x": 1100,
+            "y": 30
+          },
+          "seed": {
+            "x": 20,
+            "y": 40
+          },
+          "ref1": {
+            "x": 20,
+            "y": 250
+          },
+          "check0": {
+            "x": 550,
+            "y": 570
+          },
+          "check1": {
+            "x": 550,
+            "y": 210
+          },
+          "check2": {
+            "x": 550,
+            "y": 390
+          },
+          "check3": {
+            "x": 550,
+            "y": 30
+          }
+        }
+      }
+    },
+    "blocked": {
+      "name": "blocked",
+      "inputs": {},
+      "outputs": {
+        "result0": "boolean"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {}
+        },
+        {
+          "nodeId": "seed",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "输入数值",
+          "params": {
+            "value": 7
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "ref1",
+          "kind": "operator",
+          "operatorId": "vision.value.number",
+          "displayName": "参考数值",
+          "params": {
+            "value": 8
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "value": {
+                "title": "数值",
+                "type": "number",
+                "default": 0.0,
+                "xExample": 0.5,
+                "description": "填写有限数值，可使用整数、小数或科学计数法，例如 0.5 或 1e-6；不接受 NaN 或无穷大。"
+              }
+            }
+          },
+          "inputPorts": {},
+          "outputPorts": {
+            "value": "number"
+          }
+        },
+        {
+          "nodeId": "check0",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "displayName": "数值比较",
+          "params": {
+            "operator": "gte",
+            "rightValue": 0.0
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result0": "boolean"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "seed",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "ref1",
+          "fromPort": "value",
+          "toNode": "check0",
+          "toPort": "right"
+        },
+        {
+          "fromNode": "check0",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result0"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": -360,
+            "y": 30
+          },
+          "output": {
+            "x": 1100,
+            "y": 30
+          },
+          "seed": {
+            "x": 20,
+            "y": 40
+          },
+          "ref1": {
+            "x": 20,
+            "y": 250
+          },
+          "check0": {
+            "x": 20,
+            "y": 40
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from typing import Any, cast
+from typing import cast
 
 from emo_master.apps.designer.operator_editors.controller_protocol import (
     EditorContext,
@@ -26,7 +26,7 @@ def _validationMessage(value: object) -> str:
 
 
 try:
-    from PySide2.QtCore import Qt, QTimer, Signal
+    from PySide2.QtCore import Qt, QTimer
     from PySide2.QtWidgets import (
         QDialog,
         QHBoxLayout,
@@ -41,8 +41,6 @@ try:
     from emo_master.apps.designer.ui.icon_map import icon
 
     class OperatorWorkspaceWindow(QDialog):
-        workflowOpenRequested: Any = Signal(str)
-
         def __init__(
             self,
             *,
@@ -98,7 +96,6 @@ try:
                 controller.loadParams(dict(values))
             else:
                 form = SchemaParamForm()
-                form.workflowOpenRequested.connect(self.workflowOpenRequested.emit)
                 form.setWorkflowOptions(context.workflowOptions)
                 form.setSchema(schema, values)
                 self._schemaForm = form

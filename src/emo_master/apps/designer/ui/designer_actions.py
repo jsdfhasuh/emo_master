@@ -20,9 +20,12 @@ SHORTCUTS = {
     'workflow_debug': (),
     'run': ('F5',), 'stop': ('F6',), 'layout': ('Ctrl+L',),
     'fit': ('Home',), 'logs': ('Ctrl+Shift+L',), 'preview': ('Ctrl+Shift+P',),
+    'navigate_back': ('Alt+Left',), 'navigate_forward': ('Alt+Right',),
+    'definition': ('F12',), 'references': ('Shift+F12',),
 }
 CANVAS_KEYS = {'copy', 'delete', 'configure', 'results', 'layout', 'fit'}
-TEXT_KEYS = CANVAS_KEYS | {'undo', 'redo'}
+NAVIGATION_KEYS = {'navigate_back', 'navigate_forward', 'definition', 'references'}
+TEXT_KEYS = CANVAS_KEYS | NAVIGATION_KEYS | {'undo', 'redo'}
 INPUT_WIDGETS = (QLineEdit, QTextEdit, QPlainTextEdit, QAbstractSpinBox, QComboBox, QAbstractItemView)
 
 
@@ -67,6 +70,13 @@ class DesignerActions(QObject):
         for key in ('delete', 'configure', 'operator_debug', 'workflow_debug'):
             self.menus['编辑'].addAction(self.actions[key])
         self.menus['视图'].addAction(self.actions['results'])
+        navigation = window.workflowNavigation
+        for key, title, command in (
+                ('navigate_back', '后退', lambda: navigation.move(-1)),
+                ('navigate_forward', '前进', lambda: navigation.move(1)),
+                ('definition', '进入子工作流', navigation.goToDefinition),
+                ('references', '查找调用来源', navigation.showReferences)):
+            self.menus['视图'].addAction(self.create(key, title, command))
         if chrome:
             preview = chrome.previewAction
             oldFit = chrome.fit
@@ -156,6 +166,15 @@ class DesignerActions(QObject):
             return '' if editor.tools.selected else '请先选择页面组件'
         if pages:
             return '仅流程设计可用'
+        if key in NAVIGATION_KEYS:
+            navigation = w.workflowNavigation
+            if key == 'navigate_back':
+                return '' if navigation.canMove(-1) else '没有可后退的浏览位置'
+            if key == 'navigate_forward':
+                return '' if navigation.canMove(1) else '没有可前进的浏览位置'
+            if key == 'definition':
+                return '' if navigation.targets() else '请选择引用子工作流的调用或循环节点'
+            return ''
         if key == 'run':
             if w.hasActiveDebugSession():
                 return '请先结束当前调试'
@@ -195,7 +214,9 @@ class DesignerActions(QObject):
             reason = self.blockedReason(key)
             action.setEnabled(not reason)
             if key not in {'undo', 'redo'}:
-                action.setToolTip(reason or action.text())
+                shortcut = f' ({self.shortcutLabel(key)})' if key in NAVIGATION_KEYS else ''
+                title = self.window.runTargetsToolTip() if key == 'run' else action.text()
+                action.setToolTip((reason or title) + shortcut)
         self.window.deleteShortcut.setEnabled(False)
         self.window.backspaceDeleteShortcut.setEnabled(False)
 

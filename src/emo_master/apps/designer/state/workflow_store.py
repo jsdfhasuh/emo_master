@@ -146,6 +146,7 @@ class WorkflowStore:
         self.ensureBoundaryNodes(workflowId)
         rawNodes = graph.get("nodes", [])
         rawEdges = graph.get("edges", [])
+        previousNodes = {node.get("nodeId"): node for node in workflow.nodes}
         nodes: list[dict[str, object]] = []
         for rawNode in rawNodes if isinstance(rawNodes, list) else []:
             if not isinstance(rawNode, dict):
@@ -153,6 +154,15 @@ class WorkflowStore:
             node = dict(rawNode)
             node.pop("x", None)
             node.pop("y", None)
+            previous = previousNodes.get(node.get("nodeId"), {})
+            # The canvas uses an empty string for the absent operator of a
+            # control/boundary node. Merely visiting it must preserve an
+            # explicit JSON null, rather than create a spurious project edit.
+            if (node.get("kind") in {"subflow", "loop", "workflow_input", "workflow_output"}
+                    and previous.get("kind") == node.get("kind")
+                    and "operatorId" in previous and previous["operatorId"] is None
+                    and node.get("operatorId") == ""):
+                node["operatorId"] = None
             nodes.append(node)
         boundaryNodes = [
             deepcopy(node)
@@ -556,6 +566,13 @@ class WorkflowStore:
         self.workflowOrder = [item for item in self.workflowOrder if item != workflowId]
         if self.entryWorkflowId == workflowId:
             self.entryWorkflowId = self.workflowOrder[0]
+        startup = self.runtime.get("startupWorkflowIds")
+        if isinstance(startup, list) and workflowId in startup:
+            remaining = [key for key in startup if key != workflowId]
+            if remaining:
+                self.runtime["startupWorkflowIds"] = remaining
+            else:
+                self.runtime.pop("startupWorkflowIds")
         if self.activeWorkflowId == workflowId:
             self.activeWorkflowId = self.entryWorkflowId
 
@@ -565,6 +582,10 @@ class WorkflowStore:
     def setEntryWorkflow(self, workflowId: str) -> None:
         self.get(workflowId)
         self.entryWorkflowId = workflowId
+
+    def startupWorkflows(self) -> list[str]:
+        startup = self.runtime.get("startupWorkflowIds")
+        return list(startup) if isinstance(startup, list) and startup else [self.entryWorkflowId]
 
     def setActiveWorkflow(self, workflowId: str) -> None:
         self.get(workflowId)

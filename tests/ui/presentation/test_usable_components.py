@@ -31,9 +31,11 @@ def testLegalNullUsesEmptyTextButZeroFalseAndMissingDoNot(qtApp, tmp_path, kind)
         result = scope.result.model_copy(update={'sources': (ClosedSource(sourceId='count', state='UNAVAILABLE',
             reasonCode=reason, reason=reason),), 'status': 'INCOMPLETE'})
         window.submit(replace(view, scopes={'root': replace(scope, result=result)}))
-        assert reason in widget.text() and '未检测' not in widget.text()
+        assert widget.text() == window.displayMessage(reason) and '未检测' not in widget.text()
+        assert widget.toolTip() == reason
     window.submit(replace(view, connection='DISCONNECTED', detail='transport lost'))
-    assert 'DISCONNECTED' in widget.text() and 'transport lost' in widget.text()
+    assert widget.text() == '结果连接已中断，请检查连接'
+    assert 'DISCONNECTED' in widget.toolTip() and 'transport lost' in widget.toolTip()
     window.close()
 
 
@@ -183,7 +185,8 @@ def testExpiredScopeIsVisibleAndAnExpiryOnlyUpdateReachesGui(qtApp, tmp_path):
     assert '等待触发' in widget.text()
     current[0] = SimpleNamespace(**{**current[0].__dict__, 'expiredScopes': {'root': 1}})
     hub.tick()
-    assert 'RESOURCE_EXPIRED' in widget.text() and not window.displayed
+    assert widget.text() == '此结果已过期，请等待新的结果' and not window.displayed
+    assert widget.toolTip().startswith('RESOURCE_EXPIRED')
     current[0] = resultView(2, count='0', capture=window.expectedCapture)
     hub.tick()
     assert widget.text() == '0 个'

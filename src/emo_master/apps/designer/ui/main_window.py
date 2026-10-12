@@ -470,6 +470,7 @@ except Exception:  # pragma: no cover
     class QTabWidget(QWidget):  # type: ignore[no-redef]
         def __init__(self) -> None:
             self.currentChanged = _SignalStub()
+            self.addRequested = _SignalStub()
             self.tabBarClicked = _SignalStub()
             self.tabBarDoubleClicked = _SignalStub()
             self._tabs: list[tuple[object, str]] = []
@@ -772,6 +773,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowModel = FlowGraphModel()
         self.workflowStore = WorkflowStore()
         self.activeWorkflowId = self.workflowStore.activeWorkflowId
+        self.workflowNavigation = None
         self.runtimePanelState = RuntimePanelState()
         self.nodeDetailsPresenter = NodeDetailsPresenter(
             flowModel=self.flowModel,
@@ -805,7 +807,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.isJobRunning = False
         self.runTargetIds: list[str] = []
         self._lastRunBlockedReason = ""
-        self._addWorkflowTabIndex = -1
         self._menuActions: dict[str, QAction] = {}
         self._toolbarActions: dict[str, QAction] = {}
         self._focusedWorkflowId: tuple[str, str] | None = None
@@ -1003,12 +1004,22 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setWorkflowTabsName):
             setWorkflowTabsName("workflowTabs")
         leftPanel.addWidget(self.workflowTabs)
+        if _nativeQt:
+            from emo_master.apps.designer.ui.workflow_navigation_controls import WorkflowNavigationControls
+            self.workflowNavigationControls = WorkflowNavigationControls()
+            # Back/forward remain fixed beside the tabs, even when the optional
+            # location row is collapsed on a short/high-DPI window.
+            self.workflowTabs.layout().insertWidget(0, self.workflowNavigationControls.back)
+            self.workflowTabs.layout().insertWidget(1, self.workflowNavigationControls.forward)
+            leftPanel.addWidget(self.workflowNavigationControls)
         self.flowScene = FlowScene()
         # QGraphicsView borrows the scene; the window must own its GUI lifetime.
         if _nativeQt:
             self.flowScene.setParent(self)
         setSceneRect = getattr(self.flowScene, "setSceneRect", None)
         if callable(setSceneRect):
+            # Initial scene area only; DesignerGraphicsView extends its own
+            # navigation bounds with content, zoom and manual panning.
             setSceneRect(-2000.0, -2000.0, 4000.0, 4000.0)
         selectionChanged = getattr(self.flowScene, "selectionChanged", None)
         if selectionChanged is not None and hasattr(selectionChanged, "connect"):
@@ -1022,7 +1033,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.flowScene.setNodeDoubleClickHandler(self.openNodeParamDialog)
         if _nativeQt:
             self.flowScene.presentationProvider = self._controlFlowPresentation
-            self.flowScene.workflowOpenHandler = self.activateWorkflow
+            self.flowScene.workflowOpenHandler = self._deferWorkflowReference
         self.flowScene.setCanvasClickHandler(self.collapseOperatorBubble)
         self.flowScene.setOperatorDropHandler(self.addNodeFromOperatorDrop)
         self.flowView = DesignerGraphicsView(self.flowScene)
@@ -1319,7 +1330,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             workflowController=self.workflowController,
         )
         self.runtimeController = WorkflowRuntimeController(
-            getRunTargets=lambda: self.runTargetIds,
+            getRunTargets=self.effectiveRunTargetIds,
             getWorkflows=lambda: self.workflowStore.workflows,
             getMaxJobs=lambda: self.workflowStore.runtime.get('maxConcurrentJobs', 2),
             selectState=self._selectRuntimeState,
@@ -1383,9 +1394,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         workflowChanged = getattr(self.workflowTabs, "currentChanged", None)
         if workflowChanged is not None and hasattr(workflowChanged, "connect"):
             workflowChanged.connect(self._onWorkflowTabChanged)
-        workflowTabClicked = getattr(self.workflowTabs, "tabBarClicked", None)
-        if workflowTabClicked is not None and hasattr(workflowTabClicked, "connect"):
-            workflowTabClicked.connect(self._onWorkflowTabClicked)
+        self.workflowTabs.addRequested.connect(self.promptCreateWorkflow)
         workflowTabBar = self.workflowTabs.tabBar()
         setContextMenuPolicy = getattr(workflowTabBar, "setContextMenuPolicy", None)
         if callable(setContextMenuPolicy):
@@ -1441,8 +1450,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if _nativeQt:
             from emo_master.apps.designer.page_designer.coordinator import PageCoordinator
             self.pageCoordinator = PageCoordinator(self, rootWidget)
+            from emo_master.apps.designer.controllers.workflow_navigation_controller import WorkflowNavigationController
+            self.workflowNavigation = WorkflowNavigationController(self)
             from emo_master.apps.designer.ui.designer_actions import DesignerActions
             self.designerActions = DesignerActions(self)
+            self.workflowNavigationControls.bindActions(self.designerActions.actions)
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
 
     def _capturePresentationForRun(self, workflowId=None) -> bool | dict:
@@ -1656,6 +1668,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.activeWorkflowId = self.workflowController.activeWorkflowId
         self._restoreActiveWorkflowRuntimeState()
         self._refreshWorkflowTabs()
+        if self.workflowNavigation is not None:
+            self.workflowNavigation.reset()
         if self.operatorIconProvider is not None:
             self.flowScene.rebindOperatorIcons()
             self.refreshSidebarNodeList()
@@ -2151,26 +2165,27 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         labels = self.workflowController.getWorkflowTabLabels()
         names = workflowDisplayNames(self.workflowStore.workflows)
         self._workflowTabsUpdating = True
-        self._addWorkflowTabIndex = -1
         blockSignals = getattr(self.workflowTabs, "blockSignals", None)
         previousBlock = blockSignals(True) if callable(blockSignals) else None
         tabBarGetter = getattr(self.workflowTabs, "tabBar", None)
         tabBar = tabBarGetter() if callable(tabBarGetter) else None
         setTabData = getattr(tabBar, "setTabData", None)
         try:
-            self.workflowTabs.clear()
-            for label in labels:
-                title = names[str(label["workflowId"])]
-                index = self.workflowTabs.addTab(QWidget(), title)
-                if callable(setTabData):
-                    setTabData(index, str(label["workflowId"]))
-                self._setWorkflowEntryMarker(index, str(label["workflowId"]), title)
-            addTab = getattr(self.workflowTabs, "addTab", None)
-            if callable(addTab):
-                plusIndex = addTab(QWidget(), "+")
-                self._addWorkflowTabIndex = plusIndex
-                if callable(setTabData):
-                    setTabData(plusIndex, None)
+            if _nativeQt:
+                self.workflowTabs.syncWorkflows(
+                    [(str(label["workflowId"]), names[str(label["workflowId"])]) for label in labels],
+                    self.activeWorkflowId,
+                )
+            else:
+                self.workflowTabs.clear()
+                for label in labels:
+                    key = str(label["workflowId"])
+                    index = self.workflowTabs.addTab(QWidget(), names[key])
+                    if callable(setTabData):
+                        setTabData(index, key)
+            for index, label in enumerate(labels):
+                key = str(label["workflowId"])
+                self._setWorkflowEntryMarker(index, key, names[key])
             activeIndex = 0
             for index, label in enumerate(labels):
                 if bool(label.get("isActive", False)):
@@ -2184,6 +2199,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._workflowTabsUpdating = False
         self.refreshWorkflowDependencyTree()
         self._refreshWorkflowRuntimeMarkers()
+        if self.workflowNavigation is not None:
+            self.workflowNavigation.synchronize()
         if _nativeQt:
             self.flowScene.refreshPresentations()
             if not getattr(self, "_workflowSchemaRefreshPending", False):
@@ -2191,17 +2208,19 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 QTimer.singleShot(0, self._refreshWorkflowEditorSchemas)
 
     def _setWorkflowEntryMarker(self, index, workflowId, title):
-        selected = self.runTargetIds or [self.workflowStore.entryWorkflowId]
+        selected = self.effectiveRunTargetIds()
         role = workflowEntryMarker(workflowId, self.workflowStore.entryWorkflowId, selected)
         tooltip = workflowEntryToolTip(title, workflowId, self.workflowStore.entryWorkflowId, selected)
+        tooltip += ("\n当前使用临时运行目标，不修改工程启动列表。" if self.runTargetIds
+                    else "\n当前按工程启动列表运行；修改后随工程保存。")
         if _nativeQt:
             self.workflowTabs.setEntryMarker(index, role, tooltip)
         else:
             self.workflowTabs.setTabText(index, (f"【{role}】" if role else "") + title)
 
     def _refreshWorkflowEntryMarkers(self):
-        # Launch selection is session-only: don't rebuild tabs, switch the
-        # editing workflow, refresh schemas, or mark the project dirty.
+        # Derived badges must not rebuild tabs, switch the editing workflow,
+        # refresh schemas, or themselves mark the project dirty.
         names = workflowDisplayNames(self.workflowStore.workflows)
         for index in range(self.workflowTabs.count()):
             key = self._workflowIdForTab(index)
@@ -2267,7 +2286,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if isinstance(port, str):
                 inputs[port] = f"初始条件 ({port})"
                 outputs[port] = f"最终条件 ({port})"
-        return replace(model, summaryLines=lines, outputPortLabels=outputs, inputPortLabels=inputs)
+        model = replace(model, summaryLines=lines, outputPortLabels=outputs, inputPortLabels=inputs)
+        from emo_master.apps.designer.ui.coordinate_port_presentation import coordinatePortPresentation, OPERATOR_ID
+        if node.operatorId == OPERATOR_ID:
+            resources = self.workflowStore.projectExtensions.get("resources", {})
+            dynamic = set()
+            for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", [])):
+                target = binding.get("target", {})
+                if (target.get("workflowId") == self.activeWorkflowId
+                        and target.get("nodeId") == node.nodeId and target.get("parameterPath")):
+                    dynamic.add(target["parameterPath"][0])
+            model = coordinatePortPresentation(model, node, self.flowModel.edges, dynamic)
+        return model
 
     def _onWorkflowTabChanged(self, index: int) -> None:
         if getattr(self, "_workflowTabsUpdating", False):
@@ -2275,17 +2305,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         workflowId = self._workflowIdForTab(index)
         if not isinstance(workflowId, str) or workflowId == "":
             return
-        if workflowId == self.activeWorkflowId:
-            return
-        self.workflowController.switchWorkflow(workflowId)
-        self.activeWorkflowId = workflowId
-        self._restoreActiveWorkflowRuntimeState()
-        self._refreshWorkflowTabs()
-
-    def _onWorkflowTabClicked(self, index: int) -> None:
-        if index != self._addWorkflowTabIndex:
-            return
-        self.promptCreateWorkflow()
+        self.activateWorkflow(workflowId)
 
     def _onWorkflowTabContextMenuRequested(self, position) -> None:
         tabBar = self.workflowTabs.tabBar()
@@ -2317,6 +2337,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             lambda: self.activateWorkflow(workflowId),
             enabled=not isActive,
         )
+        if self.workflowNavigation is not None:
+            navigation = self.workflowNavigation
+            self._addContextMenuAction(menu, "查找调用来源", lambda: navigation.showReferences(workflowId))
         self._addContextMenuAction(
             menu,
             "当前入口工作流" if isEntry else "设为入口工作流",
@@ -2518,6 +2541,22 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         return self.activeWorkflowId
 
     def activateWorkflow(self, workflowId: str) -> None:
+        self.navigateToWorkflow(workflowId)
+
+    def navigateToWorkflow(self, workflowId: str, nodeId: str | None = None) -> None:
+        if self.workflowNavigation is not None:
+            self.workflowNavigation.navigate(workflowId, nodeId)
+        else:
+            self._activateWorkflow(workflowId)
+            if nodeId in self.flowModel.nodes:
+                self.flowModel.selectNode(nodeId)
+                self.flowScene.setNodeSelected(nodeId)
+
+    def _deferWorkflowReference(self, workflowId: str, sourceNodeId: str) -> None:
+        if self.workflowNavigation is not None:
+            self.workflowNavigation.deferReference(workflowId, sourceNodeId)
+
+    def _activateWorkflow(self, workflowId: str) -> None:
         if workflowId == self.activeWorkflowId:
             return
         try:
@@ -2527,7 +2566,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         self.activeWorkflowId = workflowId
         self._restoreActiveWorkflowRuntimeState()
-        self._refreshWorkflowTabs()
+        # Viewing another workflow is not a collection edit. Keep the tab
+        # instances, badges and scroll position; only synchronize selection.
+        block = getattr(self.workflowTabs, "blockSignals", None)
+        previous = block(True) if callable(block) else None
+        try:
+            for index in range(self.workflowTabs.count()):
+                if self._workflowIdForTab(index) == workflowId:
+                    self.workflowTabs.setCurrentIndex(index)
+                    break
+        finally:
+            if callable(block) and previous is not None:
+                block(previous)
+        self.refreshWorkflowDependencyTree()
+        self._refreshWorkflowEntryMarkers()
 
     @draftCommand
     def createWorkflow(self, name: str = "New Workflow") -> str:
@@ -2539,7 +2591,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def promptCreateWorkflow(self) -> str | None:
         name = self._promptWorkflowName("新建工作流", "New Workflow")
         if name is None:
-            self._refreshWorkflowTabs()
             return None
         return self.createWorkflow(name)
 
@@ -2899,6 +2950,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.layoutController.applyResponsiveLayout()
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
+        if _nativeQt and hasattr(self, 'workflowNavigationControls'):
+            self.workflowNavigationControls.setVisible(self.height() >= 460)
         if hasattr(self, "layoutController"):
             self.applyResponsiveLayout()
         try:
@@ -3120,11 +3173,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             or workflowId not in self.workflowStore.workflows
         ):
             return
-        self.activateWorkflow(workflowId)
-        if payload.get("itemType") == "call":
-            nodeId = payload.get("sourceNodeId")
-            if isinstance(nodeId, str) and nodeId in self.flowModel.nodes:
-                self.navigateToNodeFromSidebar(nodeId)
+        nodeId = payload.get("sourceNodeId") if payload.get("itemType") == "call" else None
+        self.navigateToWorkflow(workflowId, nodeId if isinstance(nodeId, str) else None)
 
     def selectNodeFromSidebar(self, item) -> None:
         getData = getattr(item, "data", None)
@@ -3147,14 +3197,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.navigateToNodeFromSidebar(nodeIdRaw)
 
     def navigateToNodeFromSidebar(self, nodeId: str) -> None:
-        self.flowModel.selectNode(nodeId)
-        self.flowScene.setNodeSelected(nodeId)
-        nodeCenter = self.flowScene.getNodeCenter(nodeId)
-        if nodeCenter is not None:
-            centerOn = getattr(self.flowView, "centerOn", None)
-            if callable(centerOn):
-                centerOn(nodeCenter[0], nodeCenter[1])
-        self.onNodeSelectionChanged()
+        self.navigateToWorkflow(self.activeWorkflowId, nodeId)
 
     def navigateToRuntimeLogEntry(self, entry: StructuredLogEntry) -> str:
         """Inspect a node only when the log has verified project provenance."""
@@ -3178,8 +3221,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         if not nodeExists:
             return "日志对应节点在当前工作流中已不存在，无法定位。请查看日志详情。"
-        self.activateWorkflow(entry.workflowId)
-        self.navigateToNodeFromSidebar(entry.nodeId)
+        self.navigateToWorkflow(entry.workflowId, entry.nodeId)
         return f"已定位到工作流“{workflow.name}”的节点 {entry.nodeId}。"
 
     def _buildProjectPayload(self, projectName: str) -> dict[str, object]:
@@ -3337,7 +3379,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     def startJob(self) -> None:
         self.workflowController.captureActiveWorkflow()
-        if not self._checkConditionalOutputs(self.workflowStore.toPayload(), self.runTargetIds or [self.workflowStore.entryWorkflowId]):
+        if not self._checkConditionalOutputs(self.workflowStore.toPayload(), self.effectiveRunTargetIds()):
             return
         self.runtimeController.startJob()
 
@@ -3349,31 +3391,54 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         first = problems[0]
         if QMessageBox.question(self, "条件输出配置冲突", first["message"] + "\n是否定位到相关参数？",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes) == QMessageBox.Yes:
-            self.activateWorkflow(first["workflowId"])
-            self.flowModel.selectNode(first["nodeId"])
-            self.flowScene.setNodeSelected(first["nodeId"])
-            self.onNodeSelectionChanged()
+            self.navigateToWorkflow(first["workflowId"], first["nodeId"])
             self.openNodeParamDialog(first["nodeId"])
         return False
 
     def stopAllJobs(self) -> None:
         self.runtimeController.stopAll()
 
+    def effectiveRunTargetIds(self) -> list[str]:
+        # Empty override follows the authoritative draft, including undo/redo.
+        return list(self.runTargetIds) if self.runTargetIds else self.workflowStore.startupWorkflows()
+
+    def runTargetsToolTip(self) -> str:
+        names = workflowDisplayNames(self.workflowStore.workflows)
+        targets = self.effectiveRunTargetIds()
+        return (("临时运行目标" if self.runTargetIds else "工程启动列表") + f"（{len(targets)} 个）：\n"
+                + "\n".join(names.get(key, key) for key in targets))
+
     def openRunTargetsDialog(self):
         if not _nativeQt:
             return None
         from emo_master.ui.run_targets_dialog import RunTargetsDialog
+        editable = not self.isJobRunning and not self.hasActiveDebugSession()
         dialog = RunTargetsDialog(self.workflowStore.workflows,
-            self.runTargetIds or [self.workflowStore.entryWorkflowId],
-            self.workflowStore.runtime.get('maxConcurrentJobs', 2), self, editLimit=not self.isJobRunning,
-            entryWorkflowId=self.workflowStore.entryWorkflowId)
+            self.effectiveRunTargetIds(),
+            self.workflowStore.runtime.get('maxConcurrentJobs', 2), self, editLimit=editable,
+            entryWorkflowId=self.workflowStore.entryWorkflowId,
+            allowPersist=editable, temporary=bool(self.runTargetIds),
+            projectTargets=self.workflowStore.startupWorkflows())
         if dialog.exec_():
-            self.runTargetIds = dialog.selectedWorkflowIds()
+            selected = dialog.selectedWorkflowIds()
+            if dialog.saveSelection():
+                self._setRunConfiguration(selected, dialog.maximum())
+                self.runTargetIds = []
+            else:
+                self.runTargetIds = selected if selected != self.workflowStore.startupWorkflows() else []
             self._refreshWorkflowEntryMarkers()
-            if not self.isJobRunning and dialog.maximum() != self.workflowStore.runtime.get('maxConcurrentJobs', 2):
-                self._setConcurrencyLimit(dialog.maximum())
             self.updateToolbarState()
         return dialog
+
+    @draftCommand
+    def _setRunConfiguration(self, targets, maximum):
+        if self.isJobRunning or (_nativeQt and self.hasActiveDebugSession()):
+            raise ValueError("请先停止所有流程并结束调试，再修改工程启动配置")
+        # Keep an unchanged legacy project free of a new field. This command
+        # and concurrency changes share one validated project undo checkpoint.
+        if targets != self.workflowStore.startupWorkflows():
+            self.workflowStore.runtime['startupWorkflowIds'] = list(targets)
+        self.workflowStore.runtime['maxConcurrentJobs'] = maximum
 
     @draftCommand
     def _setConcurrencyLimit(self, maximum):
@@ -3622,6 +3687,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             nodeId = self.flowScene.getSelectedNodeId()
         except RuntimeError:
             return
+        if self.workflowNavigation is not None:
+            self.workflowNavigation.refresh()
         if nodeId is None:
             self.flowModel.selectNode(None)
             self._refreshRuntimePanelView()
@@ -3642,7 +3709,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         sourceNodeId = selectedNodeIds[0]
         targetNodeId = selectedNodeIds[1]
         try:
-            edge = self.flowModel.connectNodesByDefaultPorts(sourceNodeId, targetNodeId)
+            outputs = self._connectableNodePorts(sourceNodeId, "output")
+            inputs = self._connectableNodePorts(targetNodeId, "input")
+            fromPort = self.flowModel._getFirstPortName(outputs, "source output")
+            toPort = self.flowModel._getFirstPortName(inputs, "target input")
+            edge = self.flowModel.connectNodes(sourceNodeId, fromPort, targetNodeId, toPort)
         except ValueError as err:
             self.appendRuntimeLog("ERROR", str(err))
             return
@@ -3659,11 +3730,30 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             f"连线成功：{edge.fromNode}.{edge.fromPort} -> {edge.toNode}.{edge.toPort}",
         )
 
+    def _connectableNodePorts(self, nodeId, direction):
+        from emo_master.apps.designer.ui.coordinate_port_presentation import OPERATOR_ID
+        node = self.flowModel.nodes.get(nodeId)
+        if node is None:
+            raise ValueError("connectNodes references unknown node")
+        if node.operatorId != OPERATOR_ID:
+            return node.inputPorts if direction == "input" else node.outputPorts
+        model = self._controlFlowPresentation(FlowNodeViewModel(
+            nodeId, node.displayName, 0, 0, node.inputPorts, node.outputPorts,
+            operatorId=node.operatorId,
+        ))
+        ports = model.inputPorts if direction == "input" else model.outputPorts
+        inactive = model.inputPortLabels if direction == "input" else model.outputPortLabels
+        return {key: value for key, value in ports.items() if key not in inactive}
+
     @draftCommand
     def connectPorts(
         self, fromNodeId: str, fromPort: str, toNodeId: str, toPort: str
     ) -> FlowEdgeViewModel | None:
         try:
+            if fromPort not in self._connectableNodePorts(fromNodeId, "output"):
+                raise ValueError(f"当前配置不支持输出引脚：{fromPort}")
+            if toPort not in self._connectableNodePorts(toNodeId, "input"):
+                raise ValueError(f"当前配置不支持输入引脚：{toPort}")
             edge = self.flowModel.connectNodes(
                 fromNode=fromNodeId,
                 fromPort=fromPort,
@@ -3701,7 +3791,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def deleteSelectedElements(self) -> None:
-        if not flowEditAllowed(self):
+        if not flowEditAllowed(self) or getattr(self.flowScene, 'isEdgeMenuOpen', lambda: False)():
             return
         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
         for fromNode, fromPort, toNode, toPort in selectedEdgeKeys:
@@ -3724,6 +3814,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
         deletedCount = len(selectedEdgeKeys) + len(selectedNodeIds)
         if deletedCount > 0:
+            if _nativeQt:
+                self.flowScene.refreshPresentations()
             self.appendRuntimeLog("INFO", f"已删除选中元素：{deletedCount}")
             self.refreshSidebarNodeList()
             self._refreshRuntimePanelView()
@@ -3776,6 +3868,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _saveWorkflowViewState(self):
         if not _nativeQt or self._focusedWorkflowId is None:
             return
+        if self.workflowNavigation is not None and self._focusedWorkflowId[1] == self.activeWorkflowId:
+            self.workflowNavigation.captureCurrent()
         center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
         zoom = self.flowView.getZoomFactor()
         self._workflowViewStates[self._focusedWorkflowId] = (zoom, center)
@@ -4073,6 +4167,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._refreshRunningWorkflows()
         if _nativeQt:
             self.runTargetsButton.setEnabled(self.loadedProjectPath is not None)
+            mode = "临时" if self.runTargetIds else "工程"
+            self.runTargetsButton.setText(f"运行目标（{mode} · {len(self.effectiveRunTargetIds())}）…")
             self.stopAllJobsButton.setEnabled(self.isJobRunning)
 
         self.startButton.setEnabled(canRun)
@@ -4097,11 +4193,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         elif not canRun and self.isJobRunning:
             blockedReason = "所选运行目标均已启动；可切换查看或单独停止，不会重复启动"
 
+        launchHint = self.runTargetsToolTip()
         setToolTip = getattr(self.startButton, "setToolTip", None)
         if callable(setToolTip):
-            setToolTip("开始运行" if canRun else blockedReason)
+            setToolTip(launchHint if canRun else blockedReason)
         if "开始运行" in self._toolbarActions:
-            self._toolbarActions["开始运行"].setToolTip("开始运行" if canRun else blockedReason)
+            self._toolbarActions["开始运行"].setToolTip(launchHint if canRun else blockedReason)
 
         if blockedReason != "" and blockedReason != self._lastRunBlockedReason:
             self.appendRuntimeLog("WARN", blockedReason)
@@ -4322,12 +4419,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         bindDebug = getattr(window, "bindDebug", None)
         if _nativeQt and node.kind == "operator" and callable(bindDebug):
             bindDebug(lambda: self._openOperatorDebug(window))
-        openRequested = getattr(window, "workflowOpenRequested", None)
-        if _nativeQt and openRequested is not None and not getattr(window, "_workflowNavigationConnected", False):
-            openRequested.connect(
-                lambda workflowId: self._openWorkflowFromEditor(window, workflowId)
-            )
-            setattr(window, "_workflowNavigationConnected", True)
         if self.operatorIconProvider is not None and node.kind == "operator":
             self.operatorIconProvider.bind(window, node.operatorId, mode="window", priority=0,
                                            context=(*self._iconContext(), nodeId))
@@ -4406,13 +4497,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     return isValid(self) and self._currentProjectId() == projectId and not self.runtimeController._closed
                 def navigate(target, node):
                     if valid() and target in self.workflowStore.workflows:
-                        self.activateWorkflow(target)
-                        if node in self.flowModel.nodes:
-                            self.flowModel.selectNode(node)
-                            self.flowScene.setNodeSelected(node)
-                            center = self.flowScene.getNodeCenter(node)
-                            if center is not None:
-                                self.flowView.centerOn(*center)
+                        self.navigateToWorkflow(target, node)
                 debug = WorkflowDebugWindow(self.runtimeClient, payload, workflowId, self, valid=valid, navigate=navigate,
                     currentDraft=lambda: self._livePreviewProject(EditorKey(projectId, workflowId, "")))
                 self._workflowDebugWindow = debug
@@ -4422,21 +4507,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         debug.show()
         debug.raise_()
         debug.activateWindow()
-
-    def _openWorkflowFromEditor(self, editor, workflowId: str) -> None:
-        if editor.key.projectId != self._currentProjectId():
-            editor.setError("无法打开：配置窗口不属于当前项目")
-            return
-        if workflowId not in self.workflowStore.workflows:
-            editor.setError(f"无法打开：工作流不存在 ({workflowId})")
-            return
-        self.activateWorkflow(workflowId)
-        if self.activeWorkflowId == workflowId:
-            # Keep the editor and its draft available when the caller is reopened.
-            editor.hide()
-            self.raise_()
-            self.activateWindow()
-            self.flowView.setFocus()
 
     @draftCommand
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:

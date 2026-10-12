@@ -1,0 +1,15 @@
+{
+  "os": "Windows-10-10.0.26200-SP0",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "interpreter": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "source": "C:\\Users\\jsdfhasuh\\.codex\\worktrees\\flow-edge-readability\\emo_master\\src\\emo_master\\__init__.py",
+  "pyside": "5.15.2.1",
+  "qt": "5.15.2",
+  "qpa": "windows",
+  "screen": [
+    1920,
+    1080
+  ],
+  "logicalDpi": 96.0,
+  "devicePixelRatio": 1.0
+}

@@ -1,0 +1,8 @@
+[designer] Python: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+[designer] Source: C:\Users\jsdfhasuh\.codex\worktrees\flow-edge-readability\emo_master\src
+[designer] Runtime: embedded
+[designer] Data: C:\Users\jsdfhasuh\.codex\worktrees\flow-edge-readability\emo_master\manual_test_workspace\runtime-embedded
+Source import: C:\Users\jsdfhasuh\.codex\worktrees\flow-edge-readability\emo_master\src\emo_master\__init__.py
+PySide2: 5.15.2.1
+gRPC: 1.78.0
+Designer startup check passed (no window or Job started).

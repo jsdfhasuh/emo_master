@@ -412,6 +412,12 @@ class PresentationService:
     def _diagnose(self, key, item, sources, terminal, stage, error=None):
         record = closureDiagnostic(key, item, sources, terminal, stage, error)
         record["exports"] = list(self.pending.get(key, {}).get("exportDiagnostics", {}).values())[:16]
+        exporter = getattr(self, "exporter", None)
+        if exporter is not None:
+            try:
+                record["laneOwnership"] = exporter.ownershipSnapshot(item["identity"]["jobId"])
+            except Exception as diagnosticError:
+                record["laneOwnership"] = {"unknown": type(diagnosticError).__name__}
         if not hasattr(self, "diagnostics"):
             self.diagnostics = deque(maxlen=64)
         self.diagnostics.append(record)

@@ -80,7 +80,7 @@ def testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement(tmp_path
     def callback(task, path, result):
         assert slot["busy"], "callback still owns the staging file and slab assignment"
         acquired = credit.acquire(False)
-        assert acquired == (snapshotAccepted and not successor and fault != "reap_failure"), "only the matching private snapshot ends raw ownership"
+        assert acquired == (not (snapshotAccepted and successor) and fault != "reap_failure"), "only a private snapshot, proved process exit, or no dispatch ends raw ownership"
         if acquired:
             credit.release()
         callbacks.append((task, path, result))
@@ -103,7 +103,10 @@ def testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement(tmp_path
         assert record["snapshotReplyNs"] <= record["laneReleasedNs"] <= record["callbackStartedNs"]
         assert waits == pytest.approx([.5, .3]), "snapshot wait must consume the original deadline"
     else:
-        assert record["callbackEndedNs"] <= record["laneReleasedNs"] <= record["retirementEndedNs"]
+        assert record["laneReleasedNs"] <= record["callbackStartedNs"] <= record["retirementEndedNs"]
+        assert record["laneReleaseProof"] == ("not_dispatched" if fault == "queued" else "encoder_reaped")
+        if fault != "queued":
+            assert record["reapedNs"] <= record["laneReleasedNs"]
     hasSuccessor = successor and snapshotAccepted
     assert record["laneReleased"] and slot["busy"] == (hasSuccessor or fault == "reap_failure")
     assert bool(slot["pending"]) == hasSuccessor

@@ -14,6 +14,9 @@ on:
       - tests/runtime/presentation/test_live_decisions.py
       - tests/ui/operator_view/test_five_display_sessions.py
       - tests/ui/presentation/test_latest_sampling_contract.py
+      - tests/runtime/presentation/test_failed_capture_retirement.py
+      - tests/runtime/presentation/test_capture_lane_lifetime.py
+      - tests/runtime/presentation/test_export_diagnostics.py
 
 permissions:
   contents: read
@@ -42,7 +45,7 @@ jobs:
           New-Item -ItemType Directory -Force display-evidence | Out-Null
           git rev-parse HEAD | Set-Content display-evidence/source-sha.txt
       - name: Five real Sessions and deterministic 96-frame live contract
-        run: python -m pytest -v tests/runtime/presentation/test_display_subscriptions.py tests/runtime/presentation/test_live_decisions.py tests/runtime/test_stop_all_dispatch.py tests/ui/operator_view/test_five_display_sessions.py tests/ui/presentation/test_latest_sampling_contract.py --junitxml=display-evidence/junit.xml -o faulthandler_timeout=90
+        run: python -m pytest -v tests/runtime/presentation/test_display_subscriptions.py tests/runtime/presentation/test_live_decisions.py tests/runtime/test_stop_all_dispatch.py tests/ui/operator_view/test_five_display_sessions.py tests/ui/presentation/test_latest_sampling_contract.py tests/runtime/presentation/test_failed_capture_retirement.py tests/runtime/presentation/test_capture_lane_lifetime.py tests/runtime/presentation/test_export_diagnostics.py --junitxml=display-evidence/junit.xml -o faulthandler_timeout=90
       - uses: actions/upload-artifact@v4
         if: always()
         with:

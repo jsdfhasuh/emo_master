@@ -41,7 +41,7 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
     second = np.full_like(first, 231)
 
     def callback(task, path, outcome):
-        assert outcome == "AVAILABLE"
+        assert outcome == "AVAILABLE", task.get("exportDiagnostic")
         results[task["key"]] = cv2.imdecode(np.frombuffer(path.read_bytes(), np.uint8), cv2.IMREAD_UNCHANGED)
 
     pool = ExportPool(tmp_path, callback, worker=partial(gatedEncoder, entered=entered, resume=resume))
@@ -70,7 +70,7 @@ def testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels(tmp_path, lan
             pool.releaseSlot(0)
         resume.set()
         waitFor(lambda: not pool.slots[0]["busy"])
-        assert not pool.errors and set(results) == {"first", "second"}
+        assert not pool.errors and set(results) == {"first", "second"}, list(pool.diagnostics)
         np.testing.assert_array_equal(results["first"], first)
         np.testing.assert_array_equal(results["second"], second)
         assert slot["free"].acquire(False) and not slot["free"].acquire(False)
@@ -169,7 +169,7 @@ def testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit(tmp_path, monkeypat
     second = np.full_like(first, 231)
 
     def callback(task, path, outcome):
-        assert outcome == "AVAILABLE"
+        assert outcome == "AVAILABLE", task.get("exportDiagnostic")
         if task["key"] == "first":
             originalBytes.append(path.read_bytes())
             entered.set()
@@ -213,10 +213,10 @@ def testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit(tmp_path, monkeypat
         assert not slot["free"].acquire(False), "queued image must retain its one raw reservation"
         resume.set()
         waitFor(lambda: not pool.slots[0]["busy"])
-        assert set(results) == {"first", "second"} and checks == [True]
+        assert set(results) == {"first", "second"} and checks == [True], list(pool.diagnostics)
         np.testing.assert_array_equal(results["first"], first)
         np.testing.assert_array_equal(results["second"], second)
-        assert pool.errors == (["callback: ValueError"] if callbackFails else [])
+        assert pool.errors == (["callback: ValueError"] if callbackFails else []), list(pool.diagnostics)
         assert [row["resultKey"] for row in pool.diagnostics] == ["first", "second"]
         assert all(row["snapshotReplyNs"] <= row["laneReleasedNs"] <= row["replyNs"] <= row["callbackStartedNs"]
                    for row in pool.diagnostics)

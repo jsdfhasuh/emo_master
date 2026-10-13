@@ -1756,11 +1756,14 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         self._removeOwnedWorkspace(jobId, workspace)
 
     def _removeOwnedWorkspace(self, jobId: str, workspace: Path) -> None:
+        from emo_master.apps.runtime.preview.store import _ioPath
         if self._workspacePaths.get(jobId) == workspace:
             self._workspacePaths.pop(jobId, None)
         try:
             if workspace.exists():
-                shutil.rmtree(workspace)
+                # The private preview writer uses extended Win32 paths. Its
+                # successfully written assets must be removable by retirement.
+                shutil.rmtree(_ioPath(workspace))
         except OSError:
             # Preserve existing deferred stale-workspace cleanup semantics.
             return
@@ -1781,6 +1784,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         return lambda: self._removeOwnedWorkspace(jobId, workspace)
 
     def _cleanupStaleWorkspaces(self) -> None:
+        from emo_master.apps.runtime.preview.store import _ioPath
         if not self.workspaceRoot.exists():
             return
         for workspace in self.workspaceRoot.iterdir():
@@ -1789,7 +1793,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             record = self.jobRepository.get(workspace.name)
             if record is None or record.isTerminal:
                 try:
-                    shutil.rmtree(workspace)
+                    shutil.rmtree(_ioPath(workspace))
                 except OSError:
                     continue
 

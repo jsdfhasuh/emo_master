@@ -88,7 +88,8 @@ class ExportPool:
         slot: dict = {"memory": memory, "free": self.context.BoundedSemaphore(1),
             "queue": queue.Queue(maxsize=2), "index": index, "process": None,
             "connection": None, "busy": False, "active": False, "pending": set(), "laneCount": 1,
-            "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False)}
+            "lock": threading.RLock(), "quarantined": self.context.Value("b", False, lock=False),
+            "pendingDescriptors": {}, "currentDiagnostic": None}
         slot["laneFree"] = [slot["free"], self.context.BoundedSemaphore(1)]
         self.slots.append(slot)
         try:
@@ -170,11 +171,16 @@ class ExportPool:
             slot["busy"] = True
             try:
                 submitted = time.monotonic()
-                slot["queue"].put_nowait(dict(descriptor, lane=lane,
+                task = dict(descriptor, lane=lane,
                     offset=layout["offset"], capacity=layout["capacity"],
-                    taskId=str(uuid4()), submittedNs=time.monotonic_ns(), deadline=submitted + .5))
+                    taskId=str(uuid4()), submittedNs=time.monotonic_ns(), deadline=submitted + .5)
+                slot["pendingDescriptors"][lane] = {name: task.get(name) for name in
+                    ("taskId", "key", "jobId", "sourceId", "invocationId", "resultScopeId", "resultOrdinal",
+                     "slot", "lane", "captureAcquiredNs", "submittedNs", "deadline")}
+                slot["queue"].put_nowait(task)
             except BaseException:
                 slot["pending"].remove(lane)
+                slot["pendingDescriptors"].pop(lane, None)
                 slot["busy"] = bool(slot["pending"]) or slot.get("active", False)
                 raise
 
@@ -196,12 +202,17 @@ class ExportPool:
         slot.update(process=None, connection=None)
         self.stats["reaped"] += 1
 
-    def _releaseLane(self, slot, task, diagnostic):
+    def _releaseLane(self, slot, task, diagnostic, proof="verified_private_snapshot"):
         with slot["lock"]:
+            if diagnostic.get("laneReleaseAttempted"):
+                raise RuntimeError("raw lane retirement already attempted")
+            diagnostic["laneReleaseAttempted"] = True
             slot["pending"].remove(task["lane"])
+            slot.get("pendingDescriptors", {}).pop(task["lane"], None)
             slot["laneFree"][task["lane"]].release()
             diagnostic["laneReleased"] = True
             diagnostic["laneReleasedNs"] = time.monotonic_ns()
+            diagnostic["laneReleaseProof"] = proof
             # busy includes the active callback/file owner. Clearing it here
             # would allow releaseSlot/configureLanes to reassign a live slab.
 
@@ -223,8 +234,11 @@ class ExportPool:
                 "invocationId": task.get("invocationId"), "resultScopeId": task.get("resultScopeId"),
                 "resultOrdinal": task.get("resultOrdinal"),
                 "budgetMs": 500, "frozenAt": task.get("frozenAt"), "copyMs": task.get("copyMs"),
+                "captureAcquiredNs": task.get("captureAcquiredNs"),
                 "submittedNs": task.get("submittedNs"), "ownerStartedNs": time.monotonic_ns(),
-                "deadline": task["deadline"], "laneReleased": False}
+                "deadline": task["deadline"], "laneReleased": False, "stage": stage, "ownerPhase": "export"}
+            with slot["lock"]:
+                slot["currentDiagnostic"] = diagnostic
             try:
                 if not reusable:
                     raise RuntimeError("image slab quarantined")
@@ -232,12 +246,17 @@ class ExportPool:
                     # Waiting behind another lane consumes the same deadline.
                     outcome = "EXPORT_TIMEOUT"
                     self.stats["timed_out"] += 1
+                    # This descriptor was never sent to a reader. Callback and
+                    # staging ownership must not retain its untouched raw lane.
+                    self._releaseLane(slot, task, diagnostic, "not_dispatched")
                 else:
                     stage = "dispatch"
+                    diagnostic["stage"] = stage
                     diagnostic["dispatchNs"] = time.monotonic_ns()
                     slot["connection"].send(dict(task, path=str(path)))
                     for phase in ("snapshot", "complete"):
                         stage = "snapshot_wait" if phase == "snapshot" else "completion_wait"
+                        diagnostic["stage"] = stage
                         prefix = "snapshot" if phase == "snapshot" else ""
                         diagnostic[prefix + "waitStartedNs"] = time.monotonic_ns()
                         remaining = max(0, task["deadline"] - time.monotonic())
@@ -247,6 +266,7 @@ class ExportPool:
                         if not ready:
                             raise TimeoutError("export deadline expired waiting for " + phase)
                         stage = "snapshot_reply" if phase == "snapshot" else "encoder_reply"
+                        diagnostic["stage"] = stage
                         reply = slot["connection"].recv()
                         diagnostic["snapshotReplyNs" if phase == "snapshot" else "replyNs"] = time.monotonic_ns()
                         if isinstance(reply, dict):
@@ -286,6 +306,7 @@ class ExportPool:
                     self.errors.append(repr(error))
                     self.errors[:] = self.errors[-32:]
                 try:
+                    diagnostic["ownerPhase"] = "reaping"
                     diagnostic["reapStartedNs"] = time.monotonic_ns()
                     self._reap(slot)
                     diagnostic["reapedNs"] = time.monotonic_ns()
@@ -294,7 +315,20 @@ class ExportPool:
                     reusable = False
                     self._quarantine(slot)
                     self.errors.append(repr(reapError))
-            diagnostic.update(stage=stage, outcome=outcome, callbackStartedNs=time.monotonic_ns())
+                else:
+                    if reusable and not diagnostic["laneReleased"]:
+                        # Actual process death, not a cancellation request, ends
+                        # raw ownership even if no valid snapshot ack arrived.
+                        # Return exactly this task's credit BEFORE its callback
+                        # or potentially slow replacement encoder startup.
+                        try:
+                            self._releaseLane(slot, task, diagnostic, "encoder_reaped")
+                        except Exception as releaseError:
+                            diagnostic["laneReleaseErrorType"] = type(releaseError).__name__
+                            reusable = False
+                            self._quarantine(slot)
+                            self.errors.append(repr(releaseError))
+            diagnostic.update(stage=stage, outcome=outcome, ownerPhase="callback", callbackStartedNs=time.monotonic_ns())
             task["exportDiagnostic"] = dict(diagnostic)
             try:
                 self.callback(task, path if outcome == "AVAILABLE" else None, outcome)
@@ -310,6 +344,7 @@ class ExportPool:
                     if reusable:
                         path.unlink(missing_ok=True)
                         if slot["process"] is None and not self.stop.is_set():
+                            diagnostic["ownerPhase"] = "restart"
                             self._spawn(slot)
                         with slot["lock"]:
                             if not diagnostic["laneReleased"]:
@@ -324,7 +359,36 @@ class ExportPool:
                     self.errors.append(repr(error))
                     self.errors[:] = self.errors[-32:]
                 diagnostic["retirementEndedNs"] = time.monotonic_ns()
+                diagnostic["ownerPhase"] = "quarantined" if slot["quarantined"].value else "retired"
                 self.diagnostics.append(diagnostic)
+                with slot["lock"]:
+                    slot["currentDiagnostic"] = None
+
+    def ownershipSnapshot(self, jobId):
+        """Bounded, read-only, nonblocking metadata; never probe a raw credit.
+
+        Sections have different observation times. Correlate them with the
+        producer's failed acquisition; this cannot reconstruct an old failure.
+        """
+        result = {"clock": "host_monotonic", "observedNs": time.monotonic_ns(),
+                  "semantics": "best-effort, not an atomic owner snapshot", "slots": []}
+        for slot in self.slots:
+            if not slot["lock"].acquire(False):
+                result["slots"].append({"slot": slot["index"], "unknown": "owner_lock_busy"})
+                continue
+            try:
+                active = slot.get("currentDiagnostic")
+                pending = [dict(row) for row in slot.get("pendingDescriptors", {}).values()
+                           if row.get("jobId") == jobId][:2]
+                if pending or (active is not None and active.get("jobId") == jobId):
+                    result["slots"].append({"slot": slot["index"], "busy": slot["busy"],
+                        "quarantined": bool(slot["quarantined"].value), "pendingRaw": pending,
+                        "active": dict(active) if active is not None and active.get("jobId") == jobId else None})
+            finally:
+                slot["lock"].release()
+        result["recentRetirements"] = [dict(row) for row in list(self.diagnostics)
+                                       if row.get("jobId") == jobId][-4:]
+        return result
 
     def close(self):
         self.stop.set()
@@ -337,6 +401,7 @@ class ExportPool:
             self._reap(slot)
             with slot["lock"]:
                 slot["pending"].clear()
+                slot.get("pendingDescriptors", {}).clear()
                 slot["active"] = False
                 slot["busy"] = False
                 slot["quarantined"].value = False

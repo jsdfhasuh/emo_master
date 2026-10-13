@@ -37,6 +37,9 @@ class ResultCollector:
         self.pendingSeals = {}
         self.ordinals = {}
         self.frames = FrameTracker(config.get("versions", {}))
+        # At most the configured raw lanes. This is a last producer acquisition,
+        # NOT proof that the parent still owns it at a later failure observation.
+        self.lastLaneCaptures = {}
         self.telemetry = {}
         self.traceIdentities = {}
         if config.get("phaseTrace") is not None:
@@ -180,9 +183,17 @@ class ResultCollector:
                     f"raw image {value.nbytes} bytes exceeds source lane limit {capacity}; no implicit resize")
             quarantined = slot.get("quarantined")
             if quarantined is not None and quarantined.value:
+                self._laneObservation(item, key, slot, "QUARANTINED")
                 return unavailable(key, "BUDGET_EXCEEDED", "image slab quarantined until actual owner retirement")
             if not slot["free"].acquire(False):
+                self._laneObservation(item, key, slot, "BUSY")
                 continue
+            acquiredNs = time.monotonic_ns()
+            self.lastLaneCaptures[(slot["index"], slot.get("lane", 0))] = {
+                name: item["identity"][name] for name in
+                ("jobId", "resultKey", "invocationId", "resultScopeId", "resultOrdinal") if name in item["identity"]}
+            acquisition = self.lastLaneCaptures[(slot["index"], slot.get("lane", 0))]
+            acquisition.update(sourceId=key, acquiredNs=acquiredNs)
             transferred = False
             try:
                 if quarantined is not None and quarantined.value:
@@ -199,6 +210,7 @@ class ResultCollector:
                               "offset": slot.get("offset", 0), "shape": list(value.shape), "sourceId": key,
                               "key": item["identity"]["resultKey"], "jobId": item["identity"]["jobId"],
                               "frozenAt": time.monotonic(), "rawBytes": value.nbytes,
+                              "captureAcquiredNs": acquiredNs,
                               "copyMs": (time.monotonic_ns() - copyStartedNs) / 1e6,
                               "invocationId": item["identity"].get("invocationId"),
                               "resultScopeId": item["identity"].get("resultScopeId"),
@@ -207,12 +219,22 @@ class ResultCollector:
                                   "coordinateSpaceId": str(uuid4()), "trust": "unknown"}}
                 self.emit({"eventType": "display.image", "descriptor": descriptor})
                 transferred = True
+                acquisition["publishedNs"] = time.monotonic_ns()
                 item["rawBytes"] += value.nbytes
                 return {"sourceId": key, "pendingImage": True}
             finally:
                 if not transferred and not (quarantined is not None and quarantined.value):
                     slot["free"].release()
+                    acquisition["localReleasedNs"] = time.monotonic_ns()
         return unavailable(key, "BUDGET_EXCEEDED", "source image lane is busy; capture never waits")
+
+    def _laneObservation(self, item, key, slot, state):
+        observation = {"state": state, "slot": slot.get("index"), "lane": slot.get("lane", 0),
+                       "observedNs": time.monotonic_ns(), "clock": "host_monotonic"}
+        previous = self.lastLaneCaptures.get((slot.get("index"), slot.get("lane", 0)))
+        if previous is not None:
+            observation["lastProducerAcquisition"] = dict(previous)
+        item.setdefault("sourceObservations", {}).setdefault(key, {})["capture"] = observation
 
     def event(self, eventType, context):
         if eventType not in {"node.skipped", "node.failed"}:

@@ -71,3 +71,32 @@ A02 是另一个边界：consumer0 全96已接收/解码，但旧2在新3已接�
 - D01–D08本轮人工复验、SQLite/O20、生产设备、系统DPI矩阵、完整产品性能、冻结包均不在本地结论内。
 - 32Job/64流为安全容器上界，不是该规模吞吐/内存性能合格证。超过上界仍明确拒绝；控制、资产、执行资源隔离不放宽。
 - 不合并PR、不发布、不部署、不连接生产设备。
+
+## 精确 SHA Windows Actions 与诊断报告后续修复
+
+产品修复 SHA：`d3f5c929f8eac1322d82e5b8511ae2986bb00478`。
+此节后的报告脚本修复不改变产品源码；前述 SOURCE_SHA256.json / evidence.zip
+仍标识原本地验证，不把它们改写成后续脚本的新验证。
+
+- [原生 Windows 专项 38344397274](https://github.com/jsdfhasuh/emo_master/actions/runs/38344397274)，
+  job `115122318901`：**17 passed in 41.83s**，成功，源身份为上述 SHA。
+- [冻结包只验证、不发布 38344404435](https://github.com/jsdfhasuh/emo_master/actions/runs/38344404435)：
+  成功；准备阶段解析 PR 的精确源码 SHA，而非拿合并提交替代。它不等于生产部署或设备验收。
+- [捕获诊断首次失败 38344397289](https://github.com/jsdfhasuh/emo_master/actions/runs/38344397289)：
+  四组原始摘要依次为 AVAILABLE 96；AVAILABLE 94 / BUDGET_EXCEEDED 2；
+  AVAILABLE 87 / BUDGET_EXCEEDED 7 / EXPORT_TIMEOUT 2；AVAILABLE 96。
+  原 measurement=INVALID / performance=NOT_ASSESSED，不能判捕获性能通过。
+  报告解析又报 `base_trace_file_denominator`，未写 artifact；该托管运行的原始 trace
+  没有留存，无法确定当时是缺失还是额外 trace，也不能据此断言进程替换是历史根因。
+  已保留可取得的完整失败日志，不以新运行替代。
+
+后续局部修复仅限诊断：trace 数不等于5时，保留原计数/角色失败条件并判 INVALID，
+但继续输出所有有界可读 trace 摘要、96编号、capture/parent记录和其余ABBA组。
+仍检查文件角色对应，保留20文件/组、64输入文件、256MiB读取及1MiB输出上界。
+不可安全解析时也独占写入脱敏拒绝报告；已有首份文件不覆盖。没有改 workload、
+measurement判据、分母、配额或期限。它修复证据丢失，不宣称修复额度拒绝。
+
+确定性回归首跑：缺/多trace两子案例和拒绝artifact案例失败；修复后报告及hosted guard
+回归 **40 passed / 1 skipped / 35 subtests passed**，20.98s；skip为无symlink创建权限。
+Ruff和diff检查通过。`actions-followup-evidence.zip`保存这次首失败、回归及托管日志/产物。
+同一产品源码的既有专项通过不得替代后续 HEAD 的精确 CI 状态；最终结果以新 run 链接报告。

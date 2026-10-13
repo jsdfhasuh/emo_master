@@ -459,6 +459,51 @@ class ReportTests(unittest.TestCase):
         self.assertFalse(result["truncated"])
         self.assertEqual(result["original_step_outcome"], "failure")
 
+    def test_abnormal_trace_count_keeps_all_records_but_remains_invalid(self):
+        arm = self.evidence / "trial-1-credit-on"
+        for extra in (False, True):
+            with self.subTest(extra=extra):
+                idle = arm / "trace-exporter-4.json"
+                original = idle.read_bytes()
+                try:
+                    if extra:
+                        write(arm / "trace-exporter-999.json", {
+                            "role": "exporter", "pid": 999, "row_limit": 24000,
+                            "dropped_rows": 0, "rows": []})
+                    else:
+                        idle.unlink()
+                    result = self.build()
+                    self.assertEqual(result["observation_status"], "INVALID")
+                    row = result["arms"][1]
+                    self.assertIn("base_trace_file_denominator", row["issues"])
+                    self.assertIn("base_trace_roles", row["issues"])
+                    self.assertEqual(len(row["base_traces"]), 6 if extra else 4)
+                    self.assertEqual(len(row["sources"]["rows"]), 192)
+                    self.assertEqual(len(row["capture_rows"]["rows"]), 96)
+                    self.assertEqual(len(result["arms"]), 4)
+                    reporter.transport(result)
+                finally:
+                    idle.write_bytes(original)
+                    (arm / "trace-exporter-999.json").unlink(missing_ok=True)
+
+    def test_rejected_report_is_also_exclusively_saved_for_artifact(self):
+        (self.evidence / "trial-1-credit-on/export-credit.json").unlink()
+        destination = self.evidence / "rejection.json"
+        output = io.StringIO()
+        args = ["--evidence", str(self.evidence), "--repo", str(self.repo),
+                "--expected-sha", SHA, "--original-step", "failure",
+                "--output-json", str(destination)]
+        with contextlib.redirect_stdout(output):
+            self.assertEqual(reporter.main(args), 1)
+        record = reporter.decode_report(output.getvalue())
+        self.assertEqual(json.loads(destination.read_bytes()), record)
+        self.assertTrue(record["report_rejected"])
+        self.assertEqual(record["error_code"], "missing_or_linked_raw_file")
+        first = destination.read_bytes()
+        with contextlib.redirect_stdout(io.StringIO()):
+            self.assertEqual(reporter.main(args), 1)
+        self.assertEqual(destination.read_bytes(), first)
+
     def test_raw_byte_and_aggregate_limits(self):
         reader = reporter.Reader(self.evidence)
         with self.assertRaisesRegex(reporter.InvalidEvidence, "oversized"):

@@ -790,11 +790,15 @@ def read_arm(reader, entry, position, repo, original_valid=False):
         require(len(arm_files) <= 20, "arm_file_count_budget")
     traces = sorted(path for path in arm_files if re.fullmatch(r"trace-(?:execution|job|owner|exporter)-[0-9]+\.json", path.name))
     require(not any(path.name.startswith("trace-") and path not in traces for path in arm_files), "unexpected_base_trace_file")
-    require(len(traces) == 5, "base_trace_file_denominator")
+    # A missing/crashed/replaced process is failed evidence, not a reason to
+    # discard all remaining capture identities. Keep the original denominator
+    # as an INVALID verdict; existing file/row/byte caps still bound parsing.
+    check(issues, len(traces) == 5, "base_trace_file_denominator")
     roles = Counter()
     trace_summaries, raw_traces = [], []
     for path in traces:
         raw = reader.read(prefix + path.name, 24 * MIB, 24000)
+        require(raw.get("role") == path.name.split("-")[1], "base_trace_role_schema")
         roles[raw.get("role")] += 1
         raw_traces.append(raw)
         check(issues, raw.get("dropped_rows") == 0, "base_trace_dropped")
@@ -992,11 +996,21 @@ def main(argv=None):
         emit(report)
         return int(report["observation_status"] != "COMPLETE")
     except Exception as error:
-        emit({"schema_version": 1, "role": "hosted_export_credit_diagnostic", "observation_status": "INVALID",
+        rejected = {"schema_version": 1, "role": "hosted_export_credit_diagnostic", "observation_status": "INVALID",
               "measurement_status": report.get("measurement_status") if report else "INVALID",
               "performance_status": "NOT_ASSESSED", "original_step_outcome": args.original_step,
               "error_code": str(error) if isinstance(error, InvalidEvidence) else "malformed_or_unavailable_evidence",
-              "report_rejected": True, "truncated": False})
+              "report_rejected": True, "truncated": False}
+        transport(rejected)
+        if args.output_json is not None:
+            try:
+                with args.output_json.open("xb") as stream:
+                    stream.write(encoded(rejected))
+            except OSError:
+                # Preserve any first artifact and always emit the sanitized
+                # failure on stdout, even if publication itself failed.
+                pass
+        emit(rejected)
         return 1
 
 

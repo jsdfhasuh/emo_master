@@ -1,5 +1,13 @@
 # P2 显式结果通道
 
+2026-10-13 当前订阅/显示边界：五路普通 Job 的真实 DisplaySession 不再长期独占
+两个同步工作槽。display 工作线程仍为2，长期订阅另按每Job2条、最多32Job/64条有界
+受理；切tab及共享窗口不增加订阅。元数据/图像缓存与执行Job额度并非该订阅额度。
+早期两Job软件profile不是当前普通并行运行的全局Job上限。取消必须等同步工作和
+gRPC真正退休；admission与释放有带身份的有界事件账本。实时latest允许新ClosedResult
+替代旧图，逐帧审计不能依赖GUI；原96显示覆盖失败不能因此改判。
+完整契约与证据边界见 `testing/2026-10-13-display-subscriptions/CONTRACT.md`。
+
 本通道属于正式模块 `apps/runtime/presentation`。R3 同任务接入见下节；原 P2 debug/release 通道仍保留。
 `PresentationService` 复用已有 Runtime、JobManager、Supervisor 和 spawn Worker，
 `prepare` 只生成稳定副本和编译记录；只有 `start(preparedId)` 创建任务。
@@ -190,7 +198,8 @@ Display Start 创建隔离/交付准备任务，R3 原 Runtime StartJob 也可�
 同一 Runtime 只能有一个展示所有者；关闭恢复原回调。显式 ReleaseJob 也清理该 Job
 拥有的旧预览工作目录和重放引用，有限租约所持资产继续存活；不删除正式输出或生产 DB。
 
-分类额度：control=4、events=2、display=2、camera=1、asset=2、bulk=2，cleanup=13。
+同步工作分类额度：control=4、events=2、display=2、camera=1、asset=2、bulk=2、
+sqlite=2、plc=2，cleanup=17。display长期流的受理额度与工作额度分离，见文首更新。
 超过分类额度返回 RESOURCE_EXHAUSTED。旧上传保持 64 MiB 内容上限，另限制分块数和
 framing 暂存；旧 RPC/客户端路径不变。所有同步构造、next、close、取消回调、上传临时
 文件操作均离开 aio loop。额度持有到真实工作、close/回调和 gRPC 完成回调全部结束。

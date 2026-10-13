@@ -1,0 +1,51 @@
+name: Windows display subscription and live contract
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths:
+      - .github/workflows/display-session-contract.yml
+      - src/emo_master/apps/runtime/grpc_server/**
+      - src/emo_master/apps/runtime/presentation/**
+      - src/emo_master/clients/runtime/**
+      - src/emo_master/apps/operator_runtime/**
+      - tests/runtime/presentation/test_display_subscriptions.py
+      - tests/runtime/presentation/test_live_decisions.py
+      - tests/ui/operator_view/test_five_display_sessions.py
+
+permissions:
+  contents: read
+
+jobs:
+  native:
+    runs-on: windows-latest
+    timeout-minutes: 15
+    env:
+      QT_QPA_PLATFORM: windows
+      PYTHONUTF8: '1'
+      PYTHONUNBUFFERED: '1'
+      EMO_DISPLAY_EVIDENCE: display-evidence
+      HUARAY_CAMERA_SMOKE: '0'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Exact source identity
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force display-evidence | Out-Null
+          git rev-parse HEAD | Set-Content display-evidence/source-sha.txt
+      - name: Five real Sessions and deterministic 96-frame live contract
+        run: python -m pytest -v tests/runtime/presentation/test_display_subscriptions.py tests/runtime/presentation/test_live_decisions.py tests/runtime/test_stop_all_dispatch.py tests/ui/operator_view/test_five_display_sessions.py --junitxml=display-evidence/junit.xml -o faulthandler_timeout=90
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: display-session-contract-${{ github.sha }}-${{ github.run_attempt }}
+          path: display-evidence
+          if-no-files-found: error
+          retention-days: 14

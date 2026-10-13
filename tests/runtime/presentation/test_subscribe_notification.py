@@ -497,19 +497,17 @@ def awaitRetirement(server):
     asyncio.run_coroutine_threadsafe(drained(), server.loop).result(GUARD)
 
 
-def testActualAioCancellationKeepsTwoAdmissionsUntilWaitersRetire(monkeypatch):
+def testActualAioCancellationKeepsTwoAdmissionsUntilSnapshotWorkRetires(monkeypatch):
     service = SimpleNamespace(store=ResultStore(), jobs={"job": {}},
                               runtimeInstanceId="runtime", supportsNormalCapture=False)
-    probe = WaitProbe(monkeypatch, service.store)
-    retiring = queue.Queue()
-    originalRetire = AioRuntimeServer._retire
-
-    def observeRetire(self, category, token, *args, **kwargs):
-        originalRetire(self, category, token, *args, **kwargs)
-        if category == "display":
-            retiring.put(token)
-
-    monkeypatch.setattr(AioRuntimeServer, "_retire", observeRetire)
+    entered = queue.Queue()
+    release = threading.Event()
+    original = display_rpc.DisplayRpc._snapshot
+    def blocked(self, request, context, incremental=False):
+        entered.put(context)
+        assert release.wait(GUARD)
+        return original(self, request, context, incremental)
+    monkeypatch.setattr(display_rpc.DisplayRpc, "_snapshot", blocked)
     server = AioRuntimeServer(rpc.RuntimeServiceServicer(), service)
     transport = grpc.insecure_channel(f"127.0.0.1:{server.port}")
     calls = []
@@ -517,24 +515,24 @@ def testActualAioCancellationKeepsTwoAdmissionsUntilWaitersRetire(monkeypatch):
         stub = rpc.DisplayServiceStub(transport)
         calls = [stub.Subscribe(pb.DisplayRequest(job_id="job", runtime_instance_id="runtime"))
                  for _ in range(2)]
-        for _ in calls:
-            probe.registration()
+        tokens = [entered.get(timeout=GUARD) for _ in calls]
         assert loopState(server)[0]["display"] == 2
+        assert server.displaySubscriptions.workActive == 2
         for call in calls:
             call.cancel()
-        tokens = [retiring.get(timeout=GUARD) for _ in calls]
+        assert all(token.cancelled.wait(GUARD) for token in tokens)
         assert all(token.cancelled.is_set() for token in tokens)
         assert loopState(server)[0]["display"] == 2
         with pytest.raises(grpc.RpcError) as error:
             next(stub.Subscribe(pb.DisplayRequest(job_id="job", runtime_instance_id="runtime"), timeout=GUARD))
         assert error.value.code() == grpc.StatusCode.RESOURCE_EXHAUSTED
         assert stub.Capabilities(pb.DisplayEmpty(), timeout=GUARD).protocol_version == "1.0"
-        probe.close()
+        release.set()
         awaitRetirement(server)
         assert loopState(server) == ({key: 0 for key in server.active}, 0)
         assert server.peak["display"] == 2 and not server.errors
     finally:
-        probe.close()
+        release.set()
         for call in calls:
             call.cancel()
         transport.close()
@@ -542,11 +540,17 @@ def testActualAioCancellationKeepsTwoAdmissionsUntilWaitersRetire(monkeypatch):
     assert not server.thread.is_alive()
 
 
-def testActualAioCloseRetiresIdleSubscriptionWithRealTimeout(monkeypatch):
+def testActualAioCloseRetiresIdleSubscriptionWithoutBlockingWorker(monkeypatch):
     service = SimpleNamespace(store=ResultStore(), jobs={"job": {}},
                               runtimeInstanceId="runtime", supportsNormalCapture=False)
     entered = threading.Event()
-    observeFiniteWait(monkeypatch, service.store, entered)
+    original = display_rpc.DisplayRpc._snapshot
+    def observe(self, request, context, incremental=False):
+        reply = original(self, request, context, incremental)
+        entered.set()
+        return reply
+    monkeypatch.setattr(display_rpc.DisplayRpc, "_snapshot", observe)
+    monkeypatch.setattr(service.store, "waitForChange", lambda _: pytest.fail("aio idle wait occupied a worker"))
     server = AioRuntimeServer(rpc.RuntimeServiceServicer(), service)
     transport = grpc.insecure_channel(f"127.0.0.1:{server.port}")
     call = rpc.DisplayServiceStub(transport).Subscribe(pb.DisplayRequest(

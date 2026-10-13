@@ -227,7 +227,9 @@ class AioRuntimeServer:
                         "OpenPlcDebugSession": "plc",
                         "InitializeSqliteTarget": "sqlite"}.get(name, "control")
             handler = getattr(implementation, name)
-            if name == "ExecutePlcDebugCommand":
+            if name == "Subscribe":
+                wrapper = self.displaySubscriptions.handler(handler)
+            elif name == "ExecutePlcDebugCommand":
                 wrapper = self._plcCommand(handler)
             elif method.client_streaming:
                 wrapper = self._upload(handler)
@@ -247,6 +249,8 @@ class AioRuntimeServer:
         return call
 
     async def _start(self):
+        from emo_master.apps.runtime.grpc_server.display_subscriptions import DisplaySubscriptions
+        self.displaySubscriptions = DisplaySubscriptions(self, workers=LIMITS["display"])
         self.server = grpc.aio.server(options=[("grpc.so_reuseport", 0),
                                               ("grpc.max_receive_message_length", 1024 * 1024),
                                               ("grpc.max_send_message_length", 9 * 1024 * 1024)])

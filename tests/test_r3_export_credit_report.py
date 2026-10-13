@@ -233,6 +233,48 @@ class ReportTests(unittest.TestCase):
             self.assertEqual(sum(row[column] == stage_index for group in parent["groups"] for row in group["rows"]), 96)
         self.assertEqual(len(result["arms"][1]["capture_rows"]["rows"]), 96)
 
+    def test_live_decisions_keep_warmup_high_watermark_and_original_verdict(self):
+        private = "C:/private/source detail must not be published"
+        def add(payload):
+            for consumer in payload["consumers"]:
+                keys = {r["ordinal"]: r["key"] for r in consumer["raw_records"]}
+                for rows in (consumer["raw_records"], consumer["rows"]):
+                    for row in rows:
+                        ordinal = row["ordinal"]
+                        row.update(live_decision="SUPERSEDED" if ordinal == 2 else "APPLIED",
+                            task_generation=1, decision_generation=1, decision_job_id="j" * 36,
+                            decision_runtime_instance_id="r" * 36, high_ordinal=3 if ordinal == 2 else ordinal,
+                            expired_ordinal=0, high_result_key=keys[3] if ordinal == 2 else row["key"],
+                            runtime_instance_id="r" * 36, job_id="j" * 36, scope_id="root", invocation_id=str(ordinal).zfill(36),
+                            result_status="COMPLETE", execution_terminal="COMPLETED",
+                            source_outcomes={"image": {"state": "AVAILABLE", "reason": private}},
+                            image_refs={"image": {"owner_result_key": row["key"], "sha256": "a" * 64}})
+                        if ordinal == 2:
+                            row.update(applied_to_live=False, model_ns=None)
+        for position, mode in enumerate(reporter.ORDER):
+            self.mutate(f"trial-{position}-credit-{mode}/trial.json", add)
+        result = self.build()
+        self.assertEqual(result["measurement_status"], "VALID")  # Formal 9..96 is unchanged.
+        self.assertLess(len(reporter.encoded(result)), reporter.REPORT_BYTES)
+        self.assertLess(len(reporter.transport(result).encode("ascii")), reporter.REPORT_BYTES)
+        self.assertNotIn(private, reporter.encoded(result).decode())
+        for arm in result["arms"]:
+            for consumer in arm["consumers"]:
+                decisions = consumer["live_decisions"]
+                self.assertEqual((decisions["recorded"], decisions["not_recorded"]), (96, 0))
+                columns = decisions["records"]["columns"]
+                old = dict(zip(columns, decisions["records"]["rows"][1]))
+                self.assertEqual((old["live_decision"], old["high_ordinal"]), ("SUPERSEDED", 3))
+                self.assertEqual(old["task_generation"], old["decision_generation"])
+                raw = dict(zip(consumer["raw_records"]["columns"], consumer["raw_records"]["rows"][1]))
+                self.assertFalse(raw["applied_to_live"])
+                self.assertIsNone(raw["model_ns"])
+
+    def test_legacy_report_never_infers_missing_decisions(self):
+        result = self.build()
+        decision = result["arms"][0]["consumers"][0]["live_decisions"]
+        self.assertEqual((decision["recorded"], decision["not_recorded"]), (0, 96))
+
     def test_refusal_is_complete_diagnostic_but_original_invalid_failure(self):
         other = self.root / "refusal"
         other.mkdir()

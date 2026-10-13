@@ -40,6 +40,13 @@ ACQUIRE_FIELDS = ("runtime_id", "job_id", "result_key", "result_ordinal", "sourc
 CONSUMER_FIELDS = ("key", "ordinal", "decoded", "failures", "read_decode_ms", "received_ns",
                    "decoded_ns", "model_ns", "applied_to_live", "scope_ended_ns",
                    "owner_age_at_send_ms", "received_to_model_ms")
+LIVE_FIELDS = ("live_decision", "task_generation", "decision_generation", "decision_job_id",
+               "decision_runtime_instance_id", "high_ordinal", "expired_ordinal", "high_result_key",
+               "runtime_instance_id", "job_id", "scope_id", "invocation_id", "result_status",
+               "execution_terminal", "source_outcomes", "image_refs")
+DECISION_FIELDS = ("key", "live_decision", "task_generation", "decision_generation", "high_ordinal",
+                   "expired_ordinal", "high_result_key", "identity_index", "result_status", "execution_terminal",
+                   "source_outcomes_sha256", "image_refs_sha256")
 UI_FIELDS = ("key", "ready_ns", "gui_ns", "scope_end_ns", "paint_ns")
 AGG_FIELDS = ("calls", "failures", "wall_sum_ns", "wall_max_ns", "thread_cpu_sum_ns",
               "thread_cpu_max_ns", "bytes", "max_chunk_bytes", "empty_calls")
@@ -217,6 +224,45 @@ def table(rows, fields, maximum):
     require(isinstance(rows, list) and len(rows) <= maximum, "table_row_bound")
     require(all(isinstance(row, dict) and set(row) <= set(fields) for row in rows), "unknown_table_field")
     return {"columns": list(fields), "rows": [[row.get(key) for key in fields] for row in rows]}
+
+
+def live_decisions(rows):
+    """Keep every new decision including warmup, without publishing free text.
+
+    Identity dictionaries and column tables keep the original 1 MiB report
+    bound. Source details/refs are digest-correlated, not silently discarded.
+    Legacy evidence explicitly has zero decision rows, not inferred decisions.
+    """
+    identities, decisions = [], []
+    identity_fields = ("runtime_instance_id", "job_id", "scope_id", "invocation_id",
+                       "decision_runtime_instance_id", "decision_job_id")
+    for row in rows:
+        if "live_decision" not in row:
+            continue
+        require(isinstance(row["live_decision"], str) and row["live_decision"] in {"APPLIED", "SUPERSEDED", "GENERATION_CHANGED", "JOB_CHANGED",
+                "RUNTIME_CHANGED", "SCOPE_EXPIRED"}, "live_decision_reason")
+        require((row["live_decision"] == "APPLIED") == row["applied_to_live"], "live_decision_applied_contradiction")
+        require(all(integer(row[k]) for k in ("task_generation", "decision_generation", "high_ordinal", "expired_ordinal")),
+                "live_decision_watermark")
+        identity = [row[k] for k in identity_fields]
+        require(all(isinstance(v, str) and SAFE_ID.fullmatch(v) for v in identity), "live_decision_identity")
+        require(row["high_result_key"] is None or isinstance(row["high_result_key"], str)
+                and SAFE_ID.fullmatch(row["high_result_key"]), "live_decision_high_key")
+        require(isinstance(row["result_status"], str) and row["result_status"] in {"COMPLETE", "INCOMPLETE", "FAILED", "CANCELLED"}
+                and isinstance(row["execution_terminal"], str) and row["execution_terminal"] in {"COMPLETED", "FAILED", "CANCELLED", "UNKNOWN"},
+                "live_decision_terminal")
+        if identity not in identities:
+            identities.append(identity)
+        decision = {k: row[k] for k in DECISION_FIELDS if k in row}
+        decision["identity_index"] = identities.index(identity)
+        for key in ("source_outcomes", "image_refs"):
+            require(isinstance(row[key], dict) and len(row[key]) <= 16
+                    and len(encoded(row[key])) <= 64 * 1024, "live_decision_source_budget")
+            decision[key + "_sha256"] = digest(encoded(row[key]))
+        decisions.append(decision)
+    return {"identity_columns": list(identity_fields), "identities": identities,
+            "records": table(decisions, DECISION_FIELDS, 128), "recorded": len(decisions),
+            "not_recorded": len(rows) - len(decisions)}
 
 
 def parent_table(rows):
@@ -543,7 +589,7 @@ def consumer_tables(payload, issues, original_valid=False):
                   "valid_consumer_formal_coverage")
         copied = []
         for row in raw:
-            require(set(row) == set(CONSUMER_FIELDS), "consumer_row_schema")
+            require(set(row) in (set(CONSUMER_FIELDS), set(CONSUMER_FIELDS + LIVE_FIELDS)), "consumer_row_schema")
             check(issues, row["key"] in observed and row["ordinal"] == observed[row["key"]]["ordinal"], "consumer_result_join")
             raw_key_ordinals[row["key"]] = row["ordinal"]
             for name in ("received_ns", "decoded_ns", "scope_ended_ns"):
@@ -555,7 +601,8 @@ def consumer_tables(payload, issues, original_valid=False):
             failures = row["failures"]
             require(isinstance(failures, dict) and set(failures) <= {"image", "count"}, "consumer_failure_schema")
             copied.append({**row, "failures": {key: text_digest(value) for key, value in failures.items()}})
-        consumers.append({"raw_records": table(copied, CONSUMER_FIELDS, 128),
+        consumers.append({"raw_records": table([pick(row, CONSUMER_FIELDS) for row in copied], CONSUMER_FIELDS, 128),
+                          "live_decisions": live_decisions(raw),
                           "raw_coverage": {"total_records": len(raw), "formal_records": len(measured),
                             "missing_total_ordinals": sorted(all_ordinals - {row["ordinal"] for row in raw}),
                             **reconstructed},

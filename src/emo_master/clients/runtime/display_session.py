@@ -622,10 +622,40 @@ class DisplaySession:
                     self._scheduled.discard((generation, result.identity.resultKey))
                     self._enqueueDemand()
 
+    def _liveDecision(self, generation, result):
+        """Decision-time fence, called only under lock; not historical inference."""
+        identity = result.identity
+        scope = identity.resultScopeId
+        candidate = self.loading.get(scope)
+        if candidate is None and scope in self.latest:
+            candidate = self.latest[scope][0]
+        reason = ("RUNTIME_CHANGED" if identity.runtimeInstanceId != self.instanceId
+                  else "JOB_CHANGED" if identity.jobId != self.jobId
+                  else "GENERATION_CHANGED" if generation != self.generation
+                  else "SCOPE_EXPIRED" if identity.resultOrdinal <= self.expired.get(scope, 0)
+                  else "SUPERSEDED" if identity.resultOrdinal < self.high.get(scope, 0)
+                  else "APPLIED")
+        return dict(live_decision=reason, task_generation=generation, decision_generation=self.generation,
+            decision_job_id=self.jobId, decision_runtime_instance_id=self.instanceId,
+            high_ordinal=self.high.get(scope, 0), expired_ordinal=self.expired.get(scope, 0),
+            high_result_key=candidate.identity.resultKey if candidate is not None else None,
+            runtime_instance_id=identity.runtimeInstanceId, job_id=identity.jobId, scope_id=scope,
+            invocation_id=identity.invocationId,
+            result_status=result.status, execution_terminal=result.executionTerminal,
+            source_outcomes={s.sourceId: dict(state=s.state, reason_code=s.reasonCode, reason=s.reason)
+                             for s in result.sources},
+            image_refs={s.sourceId: dict(owner_result_key=s.image.ownerResultKey, sha256=s.image.sha256,
+                                        resource_id=s.image.resourceId) for s in result.sources if s.image})
+
     def _decodeLive(self, generation, result, receivedAt, ownerAge):
         scopeId = result.identity.resultScopeId
         with self.lock:
             if generation != self.generation or result.identity.jobId != self.jobId:
+                self.records.append(dict(key=result.identity.resultKey, ordinal=result.identity.resultOrdinal,
+                    decoded=[], failures={}, applied_to_live=False, model_ns=None, received_ns=receivedAt,
+                    decoded_ns=None, scope_ended_ns=result.timing.scopeEndedNs if result.timing else None,
+                    owner_age_at_send_ms=ownerAge, read_decode_ms=0,
+                    received_to_model_ms=None, **self._liveDecision(generation, result)))
                 return
             existing = self.latest.get(scopeId)
             sameResult = existing is not None and existing[0].identity.resultKey == result.identity.resultKey
@@ -652,9 +682,8 @@ class DisplaySession:
                 failures[source.sourceId] = str(error)
                 self.stats["read_failed"] += 1
         with self.lock:
-            applied = (generation == self.generation
-                and result.identity.resultOrdinal >= self.high.get(scopeId, 0)
-                and result.identity.resultOrdinal > self.expired.get(scopeId, 0))
+            decision = self._liveDecision(generation, result)
+            applied = decision["live_decision"] == "APPLIED"
             decodedNs = time.perf_counter_ns()
             self.records.append({"key": result.identity.resultKey, "ordinal": result.identity.resultOrdinal,
                 "decoded": list(images), "failures": failures, "read_decode_ms": (time.monotonic() - started) * 1000,
@@ -662,7 +691,7 @@ class DisplaySession:
                 "model_ns": decodedNs if applied else None, "applied_to_live": applied,
                 "scope_ended_ns": result.timing.scopeEndedNs if result.timing else None,
                 "owner_age_at_send_ms": ownerAge,
-                "received_to_model_ms": (time.perf_counter_ns() - receivedAt) / 1e6})
+                "received_to_model_ms": (time.perf_counter_ns() - receivedAt) / 1e6, **decision})
             if not applied:
                 return
             self.latest[scopeId] = (result, images, failures)

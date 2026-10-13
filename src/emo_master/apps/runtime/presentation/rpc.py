@@ -134,6 +134,7 @@ class DisplayRpc(rpc.DisplayServiceServicer):
 
     def Subscribe(self, request, context):
         cursor = request.after_cursor
+        nonblocking = getattr(context, "nonblockingDisplay", False)
         while context.is_active():
             request.after_cursor = cursor
             result = self._snapshot(request, context, incremental=True)
@@ -141,7 +142,12 @@ class DisplayRpc(rpc.DisplayServiceServicer):
                 yield result
                 cursor = result.cursor
                 request.runtime_instance_id = result.runtime_instance_id
-                time.sleep(0.02)
+                if not nonblocking:
+                    time.sleep(0.02)
+            elif nonblocking:
+                # Internal sentinel consumed by the bounded aio adapter only.
+                # Never sleep/condition-wait in a shared display worker.
+                yield None
             else:
                 self.service.store.waitForChange(result.cursor)
 

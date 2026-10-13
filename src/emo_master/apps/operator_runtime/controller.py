@@ -248,39 +248,61 @@ class ProductionRuntime:
 
     def stop(self, workflowId=None):
         with self.operationLock:
-            key = self._workflowId(workflowId) if self.document is not None else None
-            if key is None:
-                return
-            session = self.sessions[key]
-            if session.startUncertain:
-                reply = self.runtime.GetStartRequest(pb.StartRequestLookup(
-                    runtime_instance_id=self.runtime.runtimeInstanceId, start_request_id=session.requestId), None)
-                if reply.job_id:
-                    session.jobId, session.startUncertain = reply.job_id, False
-                elif reply.status == "REJECTED":
-                    session.startUncertain = False
-                else:
-                    raise RuntimeError("Start outcome unknown; close Runtime instead of guessing the workflow Job")
-            self._stopSession(session)
+            session = self._stopTarget(workflowId)
+            if session is not None:
+                self._stopSession(session)
+
+    def _stopTarget(self, workflowId):
+        key = self._workflowId(workflowId) if self.document is not None else None
+        if key is None:
+            return None
+        session = self.sessions[key]
+        if session.startUncertain:
+            reply = self.runtime.GetStartRequest(pb.StartRequestLookup(
+                runtime_instance_id=self.runtime.runtimeInstanceId, start_request_id=session.requestId), None)
+            if reply.job_id:
+                session.jobId, session.startUncertain = reply.job_id, False
+            elif reply.status == "REJECTED":
+                session.startUncertain = False
+            else:
+                raise RuntimeError("Start outcome unknown; close Runtime instead of guessing the workflow Job")
+        return session
 
     def _stopSession(self, session):
+        deadline = self._requestStopSession(session)
+        if deadline is not None:
+            self._waitRetired(session, deadline)
+
+    def _requestStopSession(self, session):
         if not session.jobId:
             return
         reply = self.runtime.StopJob(pb.StopJobRequest(job_id=session.jobId, mode="graceful"), None)
         if not reply.ok:
             raise RuntimeError(reply.message)
         grace = self.document.runtime.gracefulStopTimeoutMs / 1000 if self.document else 5
-        self._waitRetired(session, time.monotonic() + grace + 5)
+        return time.monotonic() + grace + 5
 
     def stopAll(self):
         results = {}
+        pending = []
         with self.operationLock:
+            # Signal every owned Job before waiting for any one process. Five
+            # cold/slow workers must not accumulate five serial grace periods.
+            # Per-Job deadlines and failed/unknown ownership stay unchanged.
             for key in self.sessions:
                 try:
-                    self.stop(key)
+                    session = self._stopTarget(key)
+                    deadline = self._requestStopSession(session) if session is not None else None
+                    if deadline is not None:
+                        pending.append((key, session, deadline))
                     results[key] = dict(ok=True, jobId=self.sessions[key].jobId)
                 except Exception as error:
                     results[key] = dict(ok=False, jobId=self.sessions[key].jobId, message=str(error))
+            for key, session, deadline in pending:
+                try:
+                    self._waitRetired(session, deadline)
+                except Exception as error:
+                    results[key] = dict(ok=False, jobId=session.jobId, message=str(error))
         return results
 
     def _waitRetired(self, session, deadline):

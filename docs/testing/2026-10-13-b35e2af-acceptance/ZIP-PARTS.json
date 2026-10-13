@@ -1,0 +1,19 @@
+[
+  {
+    "original": "EmoMaster-b35e2af-evidence.zip",
+    "bytes": 12972331,
+    "sha256": "19427a52c47dc3999a5585aa1ec10fd5a792ce1d7af1ebfb2c909c98c7c39335",
+    "parts": [
+      {
+        "name": "EmoMaster-b35e2af-evidence.zip.part01",
+        "bytes": 8000000,
+        "sha256": "50d3f4ea8186ad73c16a1e09237d025c0360248c8eb9946b6924c325dadbcfcb"
+      },
+      {
+        "name": "EmoMaster-b35e2af-evidence.zip.part02",
+        "bytes": 4972331,
+        "sha256": "38292a0436b0ef585aef4357a15e8f8f2e0019c8955c9f6ca3380829ad235d12"
+      }
+    ]
+  }
+]

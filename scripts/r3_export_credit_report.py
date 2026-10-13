@@ -260,13 +260,64 @@ def live_decisions(rows):
                     and len(encoded(row[key])) <= 64 * 1024, "live_decision_source_budget")
             decision[key + "_sha256"] = digest(encoded(row[key]))
         decisions.append(decision)
-    return {"identity_columns": list(identity_fields), "identities": identities,
+    result = {"identity_columns": list(identity_fields), "identities": identities,
             "records": table(decisions, DECISION_FIELDS, 128), "recorded": len(decisions),
             "not_recorded": len(rows) - len(decisions)}
+    # Lossless local dictionary, shared by both identity and decision tables.
+    # Runtime/Job, outcome digest and result/high keys recur in every row. Keep
+    # all rows, original fields, integer clocks and the original transport cap.
+    strings = []
+    def reference(value):
+        if value is None:
+            return None
+        if value not in strings:
+            strings.append(value)
+        return strings.index(value)
+    string_columns = [key for key in DECISION_FIELDS if key in (
+        "key", "live_decision", "high_result_key", "result_status", "execution_terminal",
+        "source_outcomes_sha256", "image_refs_sha256")]
+    result["identities"] = [[reference(value) for value in row] for row in identities]
+    for row in result["records"]["rows"]:
+        for key in string_columns:
+            index = DECISION_FIELDS.index(key)
+            row[index] = reference(row[index])
+    result.update(encoding="shared-string-dictionary-v1", string_dictionary=strings,
+                  string_columns=string_columns)
+    return result
+
+
+def expand_live_decisions(value):
+    """Read old literal tables or reconstruct every cell of the compact form."""
+    if "encoding" not in value:
+        return value
+    require(value.get("encoding") == "shared-string-dictionary-v1", "decision_encoding")
+    strings = value.get("string_dictionary")
+    require(isinstance(strings, list) and len(strings) <= 2048
+            and all(isinstance(item, str) and len(item) <= 160 for item in strings), "decision_dictionary")
+    require(isinstance(value.get("identities"), list) and len(value["identities"]) <= 128
+            and all(isinstance(row, list) and len(row) == 6 for row in value["identities"]), "decision_identity_table")
+    def expand(index):
+        require(index is None or type(index) is int and 0 <= index < len(strings), "decision_dictionary_index")
+        return None if index is None else strings[index]
+    result = {key: item for key, item in value.items()
+              if key not in {"encoding", "string_dictionary", "string_columns"}}
+    result["identities"] = [[expand(index) for index in row] for row in value["identities"]]
+    require(all(isinstance(cell, str) for row in result["identities"] for cell in row), "decision_identity_cell")
+    records = value["records"]
+    require(len(records["rows"]) <= 128 and all(len(row) == len(DECISION_FIELDS) for row in records["rows"])
+            and records["columns"] == list(DECISION_FIELDS), "decision_table_schema")
+    require(value["string_columns"] == [key for key in DECISION_FIELDS if key in (
+        "key", "live_decision", "high_result_key", "result_status", "execution_terminal",
+        "source_outcomes_sha256", "image_refs_sha256")], "decision_string_columns")
+    result["records"] = {"columns": list(records["columns"]), "rows": [
+        [expand(cell) if records["columns"][i] in value["string_columns"] else cell
+         for i, cell in enumerate(row)] for row in records["rows"]]}
+    return result
 
 
 def parent_table(rows):
     groups = {}
+    clock_origin = min((row["start_ns"] for row in rows if integer(row.get("start_ns"))), default=0)
     stages = sorted({row.get("stage") for row in rows})
     threads = sorted({row.get("thread_id") for row in rows})
     require(all(integer(value) for value in threads), "parent_thread_schema")
@@ -277,15 +328,47 @@ def parent_table(rows):
         key = tuple(row.get(name) for name in IDENTITY)
         group = groups.setdefault(key, [])
         values = [row.get(name) for name in PARENT_FIELDS]
+        for position in (1, 2):
+            if type(values[position]) is int:
+                values[position] -= clock_origin
         values[0] = stages.index(row["stage"])
         values[5] = threads.index(row["thread_id"])
         if values[-1] is not None:
             require(isinstance(values[-1], dict) and set(values[-1]) == set(AGG_FIELDS), "aggregate_field_schema")
             values[-1] = [values[-1][name] for name in AGG_FIELDS]
-        group.append([index, *values])
+        packed = [index, *values]
+        while packed[-1] is None:
+            packed.pop()
+        group.append(packed)
     return {"identity_columns": list(IDENTITY), "row_columns": ["raw_row_index", *PARENT_FIELDS],
             "stage_dictionary": stages, "thread_id_dictionary": threads, "aggregate_columns": list(AGG_FIELDS),
+            "trailing_nulls_omitted": True, "clock_origin_ns": clock_origin,
             "groups": [{"identity": list(key), "rows": value} for key, value in groups.items()]}
+
+
+def expand_parent_rows(value):
+    """Restore explicit trailing null cells; no event or ordinal is omitted."""
+    if "trailing_nulls_omitted" not in value:
+        return value
+    require(value["trailing_nulls_omitted"] is True
+            and value["row_columns"] == ["raw_row_index", *PARENT_FIELDS], "parent_table_encoding")
+    width = len(value["row_columns"])
+    origin = value.get("clock_origin_ns", 0)
+    require(integer(origin), "parent_clock_origin")
+    result = {key: item for key, item in value.items() if key not in {"trailing_nulls_omitted", "clock_origin_ns"}}
+    result["groups"] = []
+    count = 0
+    for group in value["groups"]:
+        count += len(group["rows"])
+        require(count <= 6000 and all(8 <= len(row) <= width for row in group["rows"]), "parent_table_rows")
+        restored = [row + [None] * (width - len(row)) for row in group["rows"]]
+        for row in restored:
+            for field in ("start_ns", "end_ns"):
+                position = value["row_columns"].index(field)
+                if type(row[position]) is int:
+                    row[position] += origin
+        result["groups"].append({**group, "rows": restored})
+    return result
 
 
 def observer_metadata(raw, repo, issues, capture=False):

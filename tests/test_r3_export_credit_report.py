@@ -260,12 +260,18 @@ class ReportTests(unittest.TestCase):
         self.assertNotIn(private, reporter.encoded(result).decode())
         for arm in result["arms"]:
             for consumer in arm["consumers"]:
-                decisions = consumer["live_decisions"]
+                decisions = reporter.expand_live_decisions(consumer["live_decisions"])
                 self.assertEqual((decisions["recorded"], decisions["not_recorded"]), (96, 0))
                 columns = decisions["records"]["columns"]
                 old = dict(zip(columns, decisions["records"]["rows"][1]))
                 self.assertEqual((old["live_decision"], old["high_ordinal"]), ("SUPERSEDED", 3))
                 self.assertEqual(old["task_generation"], old["decision_generation"])
+                self.assertEqual(decisions["identities"][old["identity_index"]],
+                                 ["r" * 36, "j" * 36, "root", "2".zfill(36), "r" * 36, "j" * 36])
+                self.assertEqual(old["source_outcomes_sha256"], reporter.digest(reporter.encoded(
+                    {"image": {"state": "AVAILABLE", "reason": private}})))
+                self.assertEqual(old["image_refs_sha256"], reporter.digest(reporter.encoded(
+                    {"image": {"owner_result_key": old["key"], "sha256": "a" * 64}})))
                 raw = dict(zip(consumer["raw_records"]["columns"], consumer["raw_records"]["rows"][1]))
                 self.assertFalse(raw["applied_to_live"])
                 self.assertIsNone(raw["model_ns"])
@@ -274,6 +280,87 @@ class ReportTests(unittest.TestCase):
         result = self.build()
         decision = result["arms"][0]["consumers"][0]["live_decisions"]
         self.assertEqual((decision["recorded"], decision["not_recorded"]), (0, 96))
+        expanded = reporter.expand_live_decisions(decision)
+        self.assertEqual(expanded["records"]["rows"], [])
+        self.assertEqual(reporter.expand_live_decisions(expanded), expanded)
+
+    def test_decision_dictionary_does_not_accept_invalid_indices_or_schema(self):
+        value = reporter.live_decisions([])
+        for index in (-1, 0, True, "0"):
+            with self.subTest(index=index):
+                invalid = {**value, "identities": [[index] * 6]}
+                with self.assertRaisesRegex(reporter.InvalidEvidence, "decision_dictionary_index"):
+                    reporter.expand_live_decisions(invalid)
+        with self.assertRaisesRegex(reporter.InvalidEvidence, "decision_encoding"):
+            reporter.expand_live_decisions({**value, "encoding": "unknown"})
+
+    def test_realistic_source_identity_and_clock_width_keep_complete_report_under_cap(self):
+        # Serialization capacity only, NOT a synthetic performance/acceptance
+        # verdict. The earlier small fixture omitted the real 900+ source map,
+        # UUID result keys and long native perf-counter/metric representations.
+        self.test_live_decisions_keep_warmup_high_watermark_and_original_verdict()
+        result = self.build()
+        # Actual observer runs have 24 spans per export plus idle spans,
+        # rather than the minimal 21 required spans in the parser fixture.
+        for arm in result["arms"]:
+            if "parent_rows" in arm:
+                for ordinal, group in enumerate(arm["parent_rows"]["groups"], 1):
+                    group["rows"].extend([list(row) for row in group["rows"][:3]])
+                    for row in group["rows"]:
+                        for key in ("start_ns", "end_ns"):
+                            # Serialized clocks are offsets from the declared
+                            # (separately widened) 64-bit origin, not epochs.
+                            row[arm["parent_rows"]["row_columns"].index(key)] += ordinal * 200_000_000
+        def widen(value, field=""):
+            if isinstance(value, dict):
+                columns = value.get("columns", value.get("row_columns"))
+                changed = {key: widen(item, key) for key, item in value.items()}
+                if columns and "rows" in value:
+                    changed["rows"] = [[widen(item, columns[i]) for i, item in enumerate(row)]
+                                       for row in value["rows"]]
+                return changed
+            if isinstance(value, list):
+                return [widen(item, field) for item in value]
+            if isinstance(value, str) and value.startswith(("result-", "invocation-", "job-", "runtime-")):
+                return hashlib.sha256(value.encode()).hexdigest()[:36]
+            if type(value) is int and (field.endswith("_ns") or field.endswith("Ns")):
+                return 10 ** 18 + value
+            if type(value) is float:
+                return value + .12345678912345
+            return value
+        result = widen(result)
+        result["source_identity"]["before"] = {
+            f"src/emo_master/synthetic_capacity_only/module_{i:04d}.py": hashlib.sha256(str(i).encode()).hexdigest()
+            for i in range(1000)}
+        output = reporter.transport(result)
+        self.assertLessEqual(len(output.encode("ascii")), reporter.REPORT_BYTES)
+        self.assertEqual(reporter.decode_report(output), result)
+        for arm in result["arms"]:
+            for consumer in arm["consumers"]:
+                self.assertEqual(len(consumer["raw_records"]["rows"]), 96)
+                self.assertEqual(consumer["live_decisions"]["recorded"], 96)
+
+    def test_parent_compaction_restores_every_original_cell_and_row_identity(self):
+        for position in (1, 2):
+            raw = json.loads((self.evidence / f"trial-{position}-credit-on/export-credit.json").read_text())["rows"]
+            for row in raw:
+                row["start_ns"] += 2 ** 60
+                row["end_ns"] += 2 ** 60
+            table = reporter.expand_parent_rows(reporter.parent_table(raw))
+            seen = []
+            for group in table["groups"]:
+                for row in group["rows"]:
+                    index, *cells = row
+                    seen.append(index)
+                    self.assertEqual(group["identity"], [raw[index].get(key) for key in reporter.IDENTITY])
+                    cells[0] = table["stage_dictionary"][cells[0]]
+                    cells[5] = table["thread_id_dictionary"][cells[5]]
+                    if cells[-1] is not None:
+                        cells[-1] = dict(zip(table["aggregate_columns"], cells[-1]))
+                    self.assertEqual(dict(zip(reporter.PARENT_FIELDS, cells)),
+                                     {key: raw[index].get(key) for key in reporter.PARENT_FIELDS})
+            self.assertEqual(sorted(seen), list(range(len(raw))))
+            self.assertEqual(reporter.expand_parent_rows(table), table)
 
     def test_refusal_is_complete_diagnostic_but_original_invalid_failure(self):
         other = self.root / "refusal"

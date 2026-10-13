@@ -100,3 +100,33 @@ measurement判据、分母、配额或期限。它修复证据丢失，不宣称
 回归 **40 passed / 1 skipped / 35 subtests passed**，20.98s；skip为无symlink创建权限。
 Ruff和diff检查通过。`actions-followup-evidence.zip`保存这次首失败、回归及托管日志/产物。
 同一产品源码的既有专项通过不得替代后续 HEAD 的精确 CI 状态；最终结果以新 run 链接报告。
+
+### 报告完整性第二个首失败与无损编码
+
+`57ba9c114d13c2d8e3990db8feaa302c966cdca8` 的
+[Windows 专项 38345310591](https://github.com/jsdfhasuh/emo_master/actions/runs/38345310591)
+及 [冻结包验证 38345279210](https://github.com/jsdfhasuh/emo_master/actions/runs/38345279210) 成功。
+[捕获诊断 38345271683](https://github.com/jsdfhasuh/emo_master/actions/runs/38345271683)
+四组各96 AVAILABLE、原 measurement=VALID，但完整报告超过原1MiB上界，整个工作流仍FAIL。
+拒绝报告已成功保存为artifact；没有截断、漏号或把前一轮额度拒绝/超时冲销。
+这次和前一提交的产品源码相同，不能将单次96/96当作历史捕获故障的根因修复。
+
+首次容量测试未包含真实源码清单规模及长时钟；新增1000文件清单、UUID、64位时钟、
+高精度数值及每次export 24阶段的确定性序列化压力检查，修改前重现输出超限。
+修复只采用**可逆的表示压缩**：live身份/决策共用字符串字典；parent span行尾null按
+声明的完整列数还原，start/end按原点+精确整数偏移还原（不舍入、不减去推测开销）。
+`expand_live_decisions()`、`expand_parent_rows()`提供只读还原，
+兼容旧的字面表；逐单元格比对证明全部行、原索引、身份、哈希、时钟和空值均保留。
+JSON、分块framing和artifact仍受原1MiB限制，没有增加大小上界或删任何原始事件。
+详见 `report-wire-evidence.zip` 中首失败、容量字节数、最终JUnit及托管首次失败日志。
+
+为诊断报告尺寸另运行了一次本地原4GiB限制负载：首组仅观察45 AVAILABLE，后续因
+缺capture trace中止，guard报告INVALID且控制异常；峰值commit约3.60GB，**没有证据
+把原因确定为内存上限**。这是保留的本地失败，不是托管96/96的替代测试；没有重跑
+取绿，未扩大4GiB限制。之后只用纯数据序列化测试验证报告修复，没有再运行该负载。
+仍须保留 Windows 托管捕获稳定性未关闭项和原 A02 历史缺帧结论。
+
+完整回归43 passed / 1 skipped / 39 subtests passed，21.84s；其后补验证2^60纳秒
+原点的逐单元格还原（单独日志）。1000源码身份/24阶段压力报告含framing共
+1,041,404 bytes，原上界1,048,576 bytes；首次新增长parent时钟测试仍超限的失败
+也保存，之后增加可逆时钟原点表示。不是将原上限提高或缩小记录分母。

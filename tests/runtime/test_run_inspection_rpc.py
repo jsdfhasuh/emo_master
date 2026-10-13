@@ -17,7 +17,7 @@ from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.services.display_calls import DisplayCallContext
 from emo_master.apps.designer.state.project_store import saveProject
 from examples.flow_run_inspection import sampleProject
-from tests.runtime.runtime_test_utils import waitForTerminal
+from tests.runtime.runtime_test_utils import jobFailureDetails, waitForTerminal
 
 
 @contextmanager
@@ -67,7 +67,8 @@ def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_pa
     with running(tmp_path) as (runtime, client, project, session):
         first = client.startJob(project, inspectionSessionId=session)
         assert first.ok and first.project_revision == runtime.loadedDocument.project.revision
-        assert waitForTerminal(runtime, first.job_id).status == 'COMPLETED'
+        firstStatus = waitForTerminal(runtime, first.job_id)
+        assert firstStatus.status == 'COMPLETED', jobFailureDetails(runtime, first.job_id, firstStatus)
         try:
             listing = listed(client, project, session, first.job_id)
         except AssertionError:
@@ -84,7 +85,9 @@ def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_pa
         assert ok
         encoded.tofile(tmp_path / '本地 图片' / 'input.png')
         second = client.startJob(project, inspectionSessionId=session)
-        assert second.ok and waitForTerminal(runtime, second.job_id).status == 'COMPLETED'
+        assert second.ok
+        secondStatus = waitForTerminal(runtime, second.job_id)
+        assert secondStatus.status == 'COMPLETED', jobFailureDetails(runtime, second.job_id, secondStatus)
         b = listed(client, project, session, second.job_id).sources[0]
         after, _ = client.readInspectionAsset(project, session, a.sourceId, DisplayCallContext())
         current, _ = client.readInspectionAsset(project, session, b.sourceId, DisplayCallContext())

@@ -92,19 +92,25 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     from emo_master.core.plugin.registry import PluginRegistry
     root = Path('src/emo_master/plugins')
     legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
-    # The seven migration bridges intentionally require the current core too;
-    # do not lower their gates just to retain the old rejection-count fixture.
+    # Migration and numeric bridges intentionally require the current core too;
+    # do not lower their gates just to retain an old rejection-set fixture.
     migrationOperators = {
         "vision.analysis.minimum_enclosing_circle", "vision.geometry.detection_bbox",
         "vision.geometry.extract_points", "vision.geometry.reframe_points", "vision.flow.error",
         "communication.gateway.coordinate_format", "communication.gateway.ack_validate",
     }
-    assert set(legacy.rejectedOperators) == {
-        OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write", *migrationOperators}
-    assert legacy.rejectedOperators[OPERATOR_ID][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
-    assert OPERATOR_ID not in legacy.activeOperators and 'vision.value.number' in legacy.activeOperators
+    currentCoreOperators = {
+        OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write", *migrationOperators,
+        "vision.geometry.point_components", "vision.math.absolute",
+        "vision.math.exact_integer", "vision.collection.number_pair",
+    }
+    assert set(legacy.rejectedOperators) == currentCoreOperators
+    assert all(legacy.rejectedOperators[operator][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
+               for operator in currentCoreOperators)
+    assert currentCoreOperators.isdisjoint(legacy.activeOperators)
+    assert 'vision.value.number' in legacy.activeOperators
     current = PluginRegistry(coreVersion=__version__).scan(root)
-    assert current.rejectedOperators == {} and OPERATOR_ID in current.activeOperators
+    assert current.rejectedOperators == {} and currentCoreOperators <= set(current.activeOperators)
 
 
 def testIndependentJobsNeverReuseDelivery():

@@ -88,8 +88,12 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.render.annotate",
         "vision.state.counter",
         "vision.value.number",
+        "vision.geometry.point_components",
+        "vision.math.absolute",
+        "vision.math.exact_integer",
+        "vision.collection.number_pair",
     } <= operatorIds
-    assert len(operatorIds) == 61
+    assert len(operatorIds) == 65
     assert list(rejectedReply.rejected) == []
 
 

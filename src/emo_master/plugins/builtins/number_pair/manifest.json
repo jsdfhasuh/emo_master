@@ -1,0 +1,35 @@
+{
+  "operatorId": "vision.collection.number_pair",
+  "displayName": "数值对组装",
+  "version": "1.0.0",
+  "inputPorts": {
+    "first": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    },
+    "second": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "values": {
+      "type": "list<number>",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._numeric_bridges:NumberPairOperator",
+  "category": "数值与逻辑",
+  "iconKey": "calculator",
+  "summary": "按 first、second 顺序组装数值列表，保持数值和整数类型，不自动转换。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

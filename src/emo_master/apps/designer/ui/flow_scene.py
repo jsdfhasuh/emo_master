@@ -57,6 +57,7 @@ try:
     from emo_master.apps.designer.ui.theme import uiFont
     from emo_master.apps.designer.ui.icon_map import operatorIcon
     from PySide2.QtWidgets import (
+        QApplication,
         QGraphicsEllipseItem,
         QGraphicsItem,
         QGraphicsPathItem,
@@ -149,16 +150,39 @@ try:
             super().__init__(text, parent)
             self.workflowId = workflowId
             self.sceneRef = scene
+            self._ctrlClickPending = False
             self.setCursor(Qt.PointingHandCursor)
 
         def mousePressEvent(self, event):
+            self._ctrlClickPending = (
+                event.button() == Qt.LeftButton and event.modifiers() == Qt.ControlModifier
+            )
             event.accept()
 
-        def mouseDoubleClickEvent(self, event):
-            if event.button() == Qt.LeftButton and self.sceneRef.workflowOpenHandler:
+        def mouseReleaseEvent(self, event):
+            activate = (
+                self._ctrlClickPending
+                and event.button() == Qt.LeftButton
+                and event.modifiers() == Qt.ControlModifier
+                and self.contains(event.pos())
+                and (event.screenPos() - event.buttonDownScreenPos(Qt.LeftButton)).manhattanLength()
+                < QApplication.startDragDistance()
+            )
+            self._ctrlClickPending = False
+            if activate:
+                self._openWorkflow()
+            event.accept()
+
+        def _openWorkflow(self):
+            if self.sceneRef.workflowOpenHandler:
                 # The navigation controller captures the caller before deferring
                 # the scene replacement until this graphics event has returned.
                 self.sceneRef.workflowOpenHandler(self.workflowId, self.parentItem().model.nodeId)
+
+        def mouseDoubleClickEvent(self, event):
+            self._ctrlClickPending = False
+            if event.button() == Qt.LeftButton:
+                self._openWorkflow()
             event.accept()
 
     class _NodeItem(QGraphicsRectItem):
@@ -212,7 +236,7 @@ try:
                     summary.setAcceptedMouseButtons(Qt.NoButton)
                 summary.setFont(self.bodyFont)
                 summary.setBrush(QColor("#2563eb" if workflowId else "#626b78"))
-                summary.setToolTip(text + (f"\n工作流 ID：{workflowId}\n双击打开工作流" if workflowId else ""))
+                summary.setToolTip(text + (f"\n工作流 ID：{workflowId}\n双击或 Ctrl+单击打开工作流" if workflowId else ""))
                 summary.setPos(16, 14 + metrics.height() + index * (metrics.height() + 4))
             if variant == "if" and not model.summaryLines:
                 branchText = QGraphicsSimpleTextItem("条件分支", self)

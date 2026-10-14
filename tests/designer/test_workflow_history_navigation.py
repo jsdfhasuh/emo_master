@@ -205,7 +205,8 @@ def testDeferredCanvasJumpRecordsCallerAndRejectsOldProjectSession(window):
     assert w.activeWorkflowId == 'main' and len(nav.history.entries) == 1
 
 
-def testActualCanvasDoubleClickAndBackButtonReturnWithoutMovingNode(window):
+@pytest.mark.parametrize('gesture', ['double_click', 'ctrl_click'])
+def testActualCanvasReferenceClickAndBackButtonReturnWithoutMovingNode(window, gesture):
     from emo_master.apps.designer.ui.flow_scene import _WorkflowReferenceText
     w, nav = window, window.workflowNavigation
     # The minimal fixture deliberately has no layout; separate the call from
@@ -219,8 +220,11 @@ def testActualCanvasDoubleClickAndBackButtonReturnWithoutMovingNode(window):
     w.flowView.centerOn(item)
     point = w.flowView.mapFromScene(item.mapToScene(item.boundingRect().center()))
     assert w.flowView.itemAt(point) is item
-    QTest.mouseDClick(w.flowView.viewport(), Qt.LeftButton, pos=point)
-    QTest.mouseRelease(w.flowView.viewport(), Qt.LeftButton, pos=point)
+    if gesture == 'ctrl_click':
+        QTest.mouseClick(w.flowView.viewport(), Qt.LeftButton, Qt.ControlModifier, pos=point)
+    else:
+        QTest.mouseDClick(w.flowView.viewport(), Qt.LeftButton, pos=point)
+        QTest.mouseRelease(w.flowView.viewport(), Qt.LeftButton, pos=point)
     settle()
     assert w.activeWorkflowId == 'child'
     assert w.workflowNavigationControls.back.isEnabled()
@@ -229,6 +233,36 @@ def testActualCanvasDoubleClickAndBackButtonReturnWithoutMovingNode(window):
     assert w.activeWorkflowId == 'main' and w.flowScene.getSelectedNodeId() == 'second'
     assert w.flowScene.getNodePositions() == positions
     assert len(nav.history.entries) == 2
+
+
+@pytest.mark.parametrize('gesture', ['plain', 'shift', 'ctrl_shift', 'drag', 'node_body'])
+def testCanvasReferenceShortcutDoesNotNavigateForOtherGestures(window, gesture):
+    from PySide2.QtCore import QPoint, QPointF
+    from emo_master.apps.designer.ui.flow_scene import _WorkflowReferenceText
+    w = window
+    node = w.flowScene._nodeItems['second']
+    node.setPos(900, 500)
+    settle()
+    item = next(child for child in node.childItems() if isinstance(child, _WorkflowReferenceText))
+    w.flowView.setZoomFactor(1)
+    w.flowView.centerOn(item)
+    point = w.flowView.mapFromScene(item.mapToScene(item.boundingRect().center()))
+    assert w.flowView.itemAt(point) is item
+    if gesture == 'drag':
+        QTest.mousePress(w.flowView.viewport(), Qt.LeftButton, Qt.ControlModifier, pos=point)
+        QTest.mouseRelease(w.flowView.viewport(), Qt.LeftButton, Qt.ControlModifier,
+                           pos=point + QPoint(100, 0))
+    elif gesture == 'node_body':
+        point = w.flowView.mapFromScene(node.mapToScene(QPointF(10, 10)))
+        QTest.mouseClick(w.flowView.viewport(), Qt.LeftButton, Qt.ControlModifier, pos=point)
+        assert node.isSelected()
+    else:
+        modifiers = {'plain': Qt.NoModifier, 'shift': Qt.ShiftModifier,
+                     'ctrl_shift': Qt.ControlModifier | Qt.ShiftModifier}
+        QTest.mouseClick(w.flowView.viewport(), Qt.LeftButton, modifiers[gesture], pos=point)
+    settle()
+    assert w.activeWorkflowId == 'main'
+    assert len(w.workflowNavigation.history.entries) == 1
 
 
 def testLogAndRelationshipJumpsAreAtomicAndReturnToOriginalLocation(window):

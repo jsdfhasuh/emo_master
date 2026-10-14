@@ -9,7 +9,7 @@ from uuid import uuid4
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClientError
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
-from emo_master.apps.runtime.operator_debug.contracts import encode, parse, MAX_REQUEST_BYTES
+from emo_master.apps.runtime.operator_debug.contracts import digest, encode, parse, MAX_REQUEST_BYTES
 from emo_master.apps.runtime.operator_debug.assets import CHUNK_BYTES, VALUE_BYTES
 
 
@@ -91,7 +91,7 @@ class DebugConnection:
             assetId = result["assetId"]
         return {"assetRef": assetId}
 
-    def execute(self, params, inputs):
+    def execute(self, params, inputs, *, confirmSideEffects=False):
         if self.uncertain:
             raise RuntimeClientError("E_DEBUG_UNCERTAIN", "End this session before another execution")
         self.executionPhase = "preparing"
@@ -116,10 +116,18 @@ class DebugConnection:
         self.executionPhase = "submitted"
         try:
             result = self.call("ExecuteOperatorDebugNode", request_id=requestId,
-                input_set_id=inputSetId, params_json=raw)
+                input_set_id=inputSetId, params_json=raw,
+                control_json=encode({"confirmedInputSetId": inputSetId, "confirmedParamsDigest": digest(params)}
+                                    if confirmSideEffects else {}))
             if not result.get("executionId"):
                 raise ValueError("Execution acknowledgement has no identity")
-        except Exception:
+        except Exception as error:
+            if isinstance(error, RuntimeClientError) and error.code in {"E_DEBUG_CONFIRM_REQUIRED", "E_DEBUG_WRITE_RETRY_FORBIDDEN"}:
+                # These two guards precede dispatch by contract. Unlike generic
+                # failures they positively confirm that no execution was started.
+                self.executionPhase = "idle"
+                setattr(error, "debugPhase", "prepare")
+                raise
             # Even an E_* reply can follow Worker dispatch if Runtime fails while
             # recording acceptance. Reconcile once by the original request ID;
             # neither a missing ledger entry nor a transport failure permits replay.

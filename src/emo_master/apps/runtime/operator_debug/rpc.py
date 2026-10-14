@@ -26,6 +26,9 @@ class OperatorDebugRpcMixin:
                     manager.admitted = trustedEntries(runtime.pluginScanResult.activeOperators)
                     payload = manager.capabilities(runtime.pluginScanResult.activeOperators)
                     if debugKind == "workflow":
+                        for operator in payload["operators"]:
+                            if operator.get("singleNodeOnly"):
+                                operator.update(supported=False, reason="operator requires explicit single-node debugging")
                         payload.update(debugKind="workflow", commands=["continue", "pause", "into", "over", "out", "runTo", "breakpoints", "trial"],
                                        maxBreakpoints=256, maxSnapshots=32, fixedStartupDraft=True, preStartBreakpoints=True)
             else:

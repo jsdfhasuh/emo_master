@@ -71,7 +71,12 @@ def testSafetyExplanationIsChineseWithoutSuggestingBypass(operator):
     ('vision.io.result_writer', '不会为解除调试拒绝而自动启动正式任务'),
     ('vision.inference.yolo', '模型配置入口'),
 ])
-def testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources(runtime, operator, guidance):
+def testUntrustedOperatorRefusalUiExplainsSafetyWithoutOpeningResources(runtime, tmp_path, operator, guidance):
+    from dataclasses import replace
+    # Reviewed built-ins now have adapters; a same-ID replacement from another
+    # location must still be refused before any resource-owning worker starts.
+    registry = runtime.pluginScanResult.activeOperators
+    registry[operator] = replace(registry[operator], resourceRoot=tmp_path)
     editor, payload, before, calls = editorFor(runtime, operator)
     dialog = OperatorDebugWindow(editor)
     editor._debugWindow = dialog

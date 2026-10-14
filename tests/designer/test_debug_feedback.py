@@ -31,7 +31,7 @@ def testZeroInputArtifactPanelIsLaidOutBeforeOpenAndAfterReadyOrFault(runtime, m
         assert release.wait(5)
         return original(self, *args)
     monkeypatch.setattr(DebugConnection, "open", slow)
-    editor, *_ = editorFor(runtime, "vision.value.number" if supported else "vision.io.huaray_camera")
+    editor, *_ = editorFor(runtime, "vision.value.number" if supported else "untrusted.operator")
     dialog = OperatorDebugWindow(editor)
     editor._debugWindow = dialog
     dialog.show()

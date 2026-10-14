@@ -57,8 +57,9 @@ def testLoopbackGrpcNumericExecutionDoesNotLoadOrCreateJob(runtime):
         client = RuntimeClient(stub)
         capabilities = client.operatorDebugCall("GetOperatorDebugCapabilities", pb.OperatorDebugRequest())
         supported = [item["operatorId"] for item in json.loads(capabilities.snapshot_json)["operators"] if item["supported"]]
-        assert len(supported) == 47
-        assert {"vision.compare.number", "vision.value.number", "vision.image.absdiff"} <= set(supported)
+        assert len(supported) == 65
+        assert {"vision.compare.number", "vision.value.number", "vision.image.absdiff",
+                "communication.plc.slmp_read", "vision.io.image_loader"} <= set(supported)
         identity = ready(runtime, stub, "vision.compare.number")
         prepared = stub.PrepareOperatorDebugInputs(request(runtime, **identity, request_id="inputs",
             inputs={"left": pb.OperatorDebugValue(inline_json="3")}))
@@ -104,8 +105,7 @@ def testAssetsAndUnknownPortsAreNotSilentlyAccepted(runtime):
         assert not reply.ok and reply.code == code
 
 
-@pytest.mark.parametrize("operatorId", ["vision.io.huaray_camera", "communication.plc.slmp_write",
-                                       "vision.io.sqlite_writer", "vision.inference.yolo"])
+@pytest.mark.parametrize("operatorId", ["untrusted.operator", "third.party.writer"])
 def testUnreviewedOrSideEffectingOperatorsCannotOpen(runtime, operatorId):
     reply = runtime.OpenOperatorDebugSession(openRequest(runtime, operatorId), None)
     assert not reply.ok and reply.code == "E_DEBUG_UNSUPPORTED"

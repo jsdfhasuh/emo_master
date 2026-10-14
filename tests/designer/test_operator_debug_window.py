@@ -82,7 +82,7 @@ def testEditorCloseRetiresWorkerEvenWhileOpening(runtime):
 
 
 def testUnsupportedOperatorDoesNotStartWorker(runtime):
-    editor, *_ = editorFor(runtime, "vision.io.huaray_camera")
+    editor, *_ = editorFor(runtime, "untrusted.operator")
     dialog = OperatorDebugWindow(editor)
     editor._debugWindow = dialog
     try:
@@ -93,6 +93,62 @@ def testUnsupportedOperatorDoesNotStartWorker(runtime):
         wait(lambda: not isValid(dialog))
     finally:
         editor.forceClose()
+
+
+def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_property):
+    from emo_master.apps.designer.operator_editors.ui_loader import loadUiBytes
+    from emo_master.plugins.builtins._plc_editor import PlcEditorController
+    from tests.runtime.plc_debug_server import PlcDebugServer
+
+    operatorId = "communication.plc.slmp_read"
+    descriptor = runtime.pluginScanResult.activeOperators[operatorId]
+    payload = project(operatorId)
+    before = deepcopy(payload)
+    calls = []
+    with PlcDebugServer() as peer:
+        peer.words.update({800: 12, 801: 34, 802: 56})
+        params = peer.params(device="D", startAddress=800, count=2, dataType="uint16", outputIndex=1, retryCount=0)
+        context = EditorContext(key=EditorKey("draft", "main", "node"), operatorId=operatorId,
+            version=descriptor.manifest.version, previewMode="none", paramSchema=descriptor.manifest.paramSchema,
+            runtimeClient=RuntimeClient(runtime), applyParams=lambda *_: calls.append("apply"),
+            appendLog=lambda *_: None, getPreviewProject=lambda _: payload, variableDefinitions=lambda: {})
+        root = loadUiBytes((descriptor.resourceRoot / descriptor.manifest.editor.uiResource).read_bytes())
+        controller = PlcEditorController()
+        editor = OperatorWorkspaceWindow(key=context.key, title="PLC D800", context=context,
+            schema=context.paramSchema, values=params, customRoot=root, controller=controller)
+        editor.openController()
+        editor.show()
+        dialog = OperatorDebugWindow(editor)
+        editor._debugWindow = dialog
+        dialog.show()
+        try:
+            wait(lambda: dialog.run.isEnabled())
+            assert peer.connections == 0
+            QTest.mouseClick(dialog.run, Qt.LeftButton)
+            wait(lambda: len(dialog.records) == 1 and dialog.run.isEnabled())
+            assert dialog.records[0]["outputs"]["values"]["values"] == [12, 34]
+            assert dialog.records[0]["outputs"]["numberValue"] == 34
+            controller.paramForm._controls["startAddress"].setValue(801)
+            QTest.mouseClick(dialog.run, Qt.LeftButton)
+            wait(lambda: len(dialog.records) == 2 and dialog.run.isEnabled())
+            current, previous = dialog.records
+            assert current["outputs"]["values"]["values"] == [34, 56]
+            assert current["outputs"]["numberValue"] == 56
+            assert current["rawParams"]["startAddress"] == 801
+            assert previous["rawParams"]["startAddress"] == 800
+            assert [request.start for request in peer.requests] == [800, 801]
+            assert all(request.command == 0x0401 for request in peer.requests)
+            assert dialog.tabs.currentIndex() == 1 and dialog.outputTree.topLevelItemCount() > 0
+            assert payload == before and calls == [] and runtime.loadedDocument is None
+            assert editor.isDirty() and not runtime.jobRepository.all()
+            capture = tmp_path / "plc-read-debug-result.png"
+            assert dialog.grab().save(str(capture))
+            record_property("screenshot", str(capture))
+            QTest.mouseClick(dialog.end, Qt.LeftButton)
+            wait(lambda: not isValid(dialog))
+            assert not runtime.operatorDebugManager.ownsResources()
+        finally:
+            editor.forceClose()
 
 
 def testInputMissingNullAndFalseRemainDistinct():

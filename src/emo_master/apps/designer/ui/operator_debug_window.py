@@ -64,6 +64,11 @@ class OperatorDebugWindow(QDialog):
         layout = QVBoxLayout(self)
         self.status = WrapLabel("连接 Runtime…")
         layout.addWidget(self.status)
+        self.resourceNotice = WrapLabel("文件、文件夹、模型必须位于 Runtime 电脑并使用绝对路径，不自动上传。"
+            "结果写入与 SQLite 写入仅使用调试临时目录/隔离库，关闭会话后清理。"
+            "批量图片保留进度；会话坐标首次执行冻结，重置后重新读取。")
+        layout.addWidget(self.resourceNotice)
+        self.resourceNotice.hide()
         self.actionFeedback = DebugActionFeedback(self)
         self.actionStatus = self.actionFeedback.label
         layout.addWidget(self.actionStatus)
@@ -195,8 +200,16 @@ class OperatorDebugWindow(QDialog):
         variables = self.currentVariables()
         dynamic = variablePorts(self.editor.context.operatorId, params, definitions(variables))
         ports = dynamic[0] if dynamic is not None else self.capability["inputPorts"]
-        if {key: row.portType for key, row in self.rows.items()} == {key: normalizePortType(value) for key, value in ports.items()}:
+        from emo_master.apps.runtime.operator_debug.contracts import debugInputPorts
+        try:
+            ports = debugInputPorts(self.editor.context.operatorId, params, ports)
+        except ValueError:
+            # Incomplete editor configurations remain editable; execution reports
+            # their validation error instead of faulting an async UI callback.
+            pass
+        if getattr(self, "debugInputSpecs", None) == ports:
             return
+        self.debugInputSpecs = deepcopy(ports)
         while self.inputForm.rowCount():
             self.inputForm.removeRow(0)
         self.rows = {}
@@ -205,7 +218,8 @@ class OperatorDebugWindow(QDialog):
             self.rows[port] = row
             row.layout().addWidget(tool(row, "folder-open", "选择 PNG / JSON 文件", lambda _checked=False, port=port: self.selectFile(port)))
             row.layout().addWidget(tool(row, "logs", "选择历史完整数据 / 调试输出", lambda _checked=False, port=port: self.selectSource(port)))
-            label = QLabel(port + " : " + normalizePortType(spec))
+            title = spec.get("title", port) if isinstance(spec, dict) else port
+            label = QLabel(title + " : " + normalizePortType(spec))
             label.setWordWrap(True)
             self.inputForm.addRow(label, row)
 
@@ -225,6 +239,12 @@ class OperatorDebugWindow(QDialog):
                 raise ValueError("变量定义或绑定已变化，请结束并重新打开调试")
             self.buildInputs()
             params, inputs = deepcopy(self.editor.collectParams()), self.inputValues()
+            warning = (self.capability or {}).get("executionWarning", "")
+            if warning:
+                answer = QMessageBox.warning(self, "确认本次真实操作", warning + "\n\n仅确认本次执行；下次执行需重新确认。",
+                                             QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+                if answer != QMessageBox.Yes:
+                    return
             self.fingerprint = self.configuration(params, inputs)
             self.executionId = ""
             self.pixmap = None
@@ -232,7 +252,9 @@ class OperatorDebugWindow(QDialog):
             self.outputTree.clear()
             self.executionStatus = "正在准备输入与校验参数；尚未取得执行确认"
             self.updateResultLabel()
-            if not self.submit("execute", lambda: self.connection.execute(params, inputs)):
+            invoke = (lambda: self.connection.execute(params, inputs, confirmSideEffects=True)) if warning else (
+                lambda: self.connection.execute(params, inputs))
+            if not self.submit("execute", invoke):
                 raise ValueError("当前有操作处理中，请稍后重试")
         except Exception as error:
             self.executionStatus = "本次未启动执行"
@@ -411,6 +433,7 @@ class OperatorDebugWindow(QDialog):
             return
         if name == "open":
             self.capability = value["capability"]
+            self.resourceNotice.setVisible(bool(self.capability.get("singleNodeOnly")))
             self.state = value["session"]["state"]
             self.status.setText(self.state)
             self.buildInputs()

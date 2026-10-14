@@ -267,14 +267,28 @@ class OperatorDebugManager:
                     fail("E_DEBUG_LIMIT", "timeout must be within 1..30000 ms")
                 params, inputPorts, outputPorts = executionParams(session.spec, request.get("paramsJson", "{}"), session.variables)
                 prepared = session.prepared[inputId]
+                if session.spec.get("executionWarning"):
+                    if prepared.get("sideEffectConsumed"):
+                        fail("E_DEBUG_RESULT_EXPIRED", "本次操作确认已使用，请重新准备输入并确认。")
+                    control = parse(request.get("controlJson", "{}"))
+                    if (not isinstance(control, dict) or control.get("confirmedInputSetId") != inputId
+                            or control.get("confirmedParamsDigest") != digest(parse(request.get("paramsJson", "{}")))):
+                        fail("E_DEBUG_CONFIRM_REQUIRED", "本次真实设备/文件操作尚未确认，未启动执行。")
+                    if session.spec["operatorId"] == "communication.plc.slmp_write" and params.get("retryCount", 0) != 0:
+                        fail("E_DEBUG_WRITE_RETRY_FORBIDDEN", "PLC 单步写入禁止自动重试，请将 retryCount 设为 0。")
                 if prepared["ports"] != inputPorts:
                     fail("E_INPUT_TYPE", "parameter changes changed input ports; prepare inputs again")
                 executionId = uuid4().hex
                 command = dict(executionId=executionId, inputs=prepared["values"], params=params,
                     inputPorts=inputPorts, outputPorts=outputPorts, variables=session.variables,
+                    sideEffectConfirmed=bool(session.spec.get("executionWarning")),
                     outputBudget=CACHE_BYTES-session.assets.used)
                 encode(command)
                 session.worker.execute(command)
+                if session.spec.get("executionWarning"):
+                    # A confirmation authorizes one invocation, not reuse of the
+                    # prepared input under fresh request IDs.
+                    prepared["sideEffectConsumed"] = True
                 session.active = executionId
                 session.deadline = time.monotonic() + timeout/1000
                 session.cancelCode = ""
@@ -283,6 +297,7 @@ class OperatorDebugManager:
                 session.executions[executionId] = dict(executionId=executionId, status="RUNNING",
                     runtimeInstanceId=self.runtimeInstanceId, sessionId=session.sessionId, requestId=request["requestId"],
                     inputSetId=inputId, rawParams=parse(request.get("paramsJson", "{}")), effectiveParams=params,
+                    sideEffectWarning=session.spec.get("executionWarning", ""),
                     inputSources=prepared["sources"], bindingSources={binding["variableId"]: session.variables[binding["variableId"]]
                         for binding in session.spec.get("variableBindings", [])},
                     sourceIdentity=dict(projectId=session.spec["projectId"], workflowId=session.spec["workflowId"],

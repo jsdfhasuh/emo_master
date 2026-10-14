@@ -51,6 +51,8 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     from emo_master.apps.runtime.operator_debug.assets import DebugAssets, freezeOutputs
     from emo_master.apps.runtime.operator_debug.data import materialize
     from emo_master.apps.runtime.operator_debug.state import DebugVariables, DebugCounters
+    from emo_master.apps.runtime.operator_debug.resources import DebugImageBatchLoader, DebugResources
+    from emo_master.apps.runtime.operator_debug.contracts import fail
 
     spec = parse(specJson)
     os.chdir(spec["workspacePath"])
@@ -75,6 +77,7 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     executor = None
     variables = DebugVariables(spec.get("variableDefinitions", {}))
     counters = DebugCounters(variables)
+    resources = DebugResources(spec)
     context = RunContext("", spec["workflowId"], "", projectId=spec["projectId"], callerNodeId=spec["nodeId"],
                          workspacePath=spec["workspacePath"])
     primary = None
@@ -89,8 +92,11 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
     try:
         module, className = spec["entry"].split(":")
         operator = getattr(importlib.import_module(module), className)
+        if spec["operatorId"] == "vision.io.image_batch_loader":
+            operator = DebugImageBatchLoader
         registry = {spec["operatorId"]: operator}
-        executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters)
+        executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters,
+                                    coordinateSnapshots=resources.coordinates)
         lastParams = None
         send({"kind": "ready"})
         while not stop.is_set():
@@ -102,16 +108,30 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                                  workspacePath=spec["workspacePath"])
             started = time.monotonic()
             outputAssets = DebugAssets(spec["workspacePath"], budget=command["outputBudget"])
+            notes = {}
             try:
+                if spec.get("executionWarning") and not command.get("sideEffectConfirmed"):
+                    fail("E_DEBUG_CONFIRM_REQUIRED", "真实设备/文件操作未解锁。")
                 if lastParams is not None and lastParams != command["params"]:
                     executor.closeSession(context)
-                    executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters)
+                    resources = DebugResources(spec)
+                    executor = OperatorExecutor(registry, eventPublisher=publish, globalVariables=variables, globalCounters=counters,
+                                                coordinateSnapshots=resources.coordinates)
                 lastParams = command["params"]
                 variables.values = DebugVariables(spec.get("variableDefinitions", {}), command.get("variables", {})).values
-                node = CompiledNode(spec["nodeId"], "operator", spec["operatorId"], command["inputPorts"],
-                                    command["outputPorts"], command["params"], paramSchema=spec["paramSchema"])
-                outputs, metrics, diagnostics = executor.execute(node, materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context,
-                                                                  CancellationToken(cancellation))
+                token = CancellationToken(cancellation)
+                params, values, mapped, notes = resources.prepare(command["params"],
+                    materialize(command["inputs"], DebugAssets(spec["workspacePath"])), context, token)
+                ports = spec["inputPorts"] if spec["operatorId"] == "vision.io.sqlite_writer" else command["inputPorts"]
+                node = CompiledNode(spec["nodeId"], "operator", spec["operatorId"], ports,
+                                    command["outputPorts"], params, paramSchema=spec["paramSchema"])
+                executionContext = context
+                if spec["operatorId"] == "vision.io.result_writer":
+                    from dataclasses import replace
+                    executionContext = replace(context, workspacePath=str(Path(spec["workspacePath"]) / "file-output"))
+                    notes["debugWorkspace"] = executionContext.workspacePath
+                outputs, metrics, diagnostics = executor.execute(node, values, executionContext, token, mapped)
+                diagnostics = {**diagnostics, **notes}
                 inline, references = freezeOutputs(outputs, outputAssets,
                     dict(kind="debug-output", projectId=spec["projectId"], workflowId=spec["workflowId"], nodeId=spec["nodeId"],
                          executionId=command["executionId"], captureId=command["executionId"]))
@@ -120,7 +140,7 @@ def runOperatorDebug(specJson, commands, events, cancellation, stop, heartbeat):
                 outputAssets.discard()
                 code = getattr(error, "code", "E_EXEC_FAILED")
                 result = dict(status="CANCELLED" if code == "E_CANCELLED" else "FAILED", code=code,
-                              message=str(error)[:2048], diagnostics=getattr(error, "diagnostics", {}))
+                              message=str(error)[:2048], diagnostics={**notes, **getattr(error, "diagnostics", {})})
                 if code == "E_RESOURCE_CLEANUP_FAILED":
                     primary = error
                     stop.set()

@@ -26,7 +26,40 @@ SUPPORTED_FOLDERS = (
     "hough_circle", "hough_line", "in_range", "mask_logic", "minimum_enclosing_circle",
     "morphology", "perspective", "points_reframe", "resize", "rgb_statistics", "roi",
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
+    "coordinate_calculator", "value_select",
+    "point_components", "number_absolute", "number_exact_integer", "number_pair",
 )
+# Explicit user-triggered resource operations. Runtime owns file/socket access and
+# its debug reservation excludes competing execution owners.
+# These entries must not also admit automatic workflow execution or trials.
+SINGLE_NODE_FOLDERS = (
+    "plc_slmp_read", "image_loader", "coordinate_reader", "image_batch_loader",
+    "yolo_inference", "image_saver", "result_writer", "sqlite_writer",
+    "tcp_client", "tcp_receive_once", "plc_slmp_write", "huaray_camera",
+)
+
+EXECUTION_WARNINGS = {
+    "communication.plc.slmp_write": "本次将解锁一次 PLC 写入并真实写入配置的设备。取消或超时不能撤销已发送的数据；禁止自动重试。",
+    "communication.tcp.client": "本次将向配置的 TCP 地址真实发送数据。取消或超时不能撤销已发送的数据。",
+    "communication.tcp.receive_once": "本次将在 Runtime 监听 TCP 端口，并可能发送配置的应答。请确认监听地址及应答内容。",
+    "vision.io.image_saver": "本次将在 Runtime 电脑的指定绝对路径真实写入图片，可能覆盖原文件。取消不能撤销写入。",
+    "vision.io.huaray_camera": "本次将连接真实相机、应用当前配置并采集一帧。请确认设备可用于调试。",
+}
+
+
+def debugInputPorts(operatorId, params, ports):
+    """Debug-only mapped inputs; never change the persisted operator contract."""
+    if operatorId != "vision.io.sqlite_writer":
+        return ports
+    from emo_master.core.contracts.sqlite_writer import parseConfig
+    result = dict(ports)
+    for index, row in enumerate(parseConfig(params)["mappings"]):
+        if row["source"]["kind"] == "node_output":
+            kind = {"INTEGER": "number", "REAL": "number", "BOOLEAN": "boolean", "TEXT": "string", "UTC_TIME": "string"}.get(row["storageType"], "any")
+            source = row["source"]
+            result[f"mapping_{index + 1}"] = {"type": kind, "required": row.get("missing", "error") == "error",
+                "nullable": True, "title": f"字段 {row['column']}（{source['nodeId']}.{source['port']}）"}
+    return result
 
 
 class DebugError(ValueError):
@@ -104,7 +137,7 @@ def identifier(value):
 def trustedEntries(registry):
     admitted = {}
     root = Path(__file__).resolve().parents[3] / "plugins" / "builtins"
-    for folder in SUPPORTED_FOLDERS:
+    for folder in (*SUPPORTED_FOLDERS, *SINGLE_NODE_FOLDERS):
         original = json.loads((root / folder / "manifest.json").read_text(encoding="utf-8"))
         operatorId, entry = original["operatorId"], original["entry"]
         module, name = entry.split(":")
@@ -123,7 +156,9 @@ def trustedEntries(registry):
                 "entry": entry, "version": manifest.version,
                 "inputPorts": manifest.inputPorts, "outputPorts": manifest.outputPorts,
                 "paramSchema": manifest.paramSchema, "displayName": manifest.displayName,
-                "stateful": folder in {"global_counter", "variable_read", "variable_write"},
+                "stateful": folder in {"global_counter", "variable_read", "variable_write", "image_batch_loader", "coordinate_reader"},
+                "singleNodeOnly": folder in SINGLE_NODE_FOLDERS,
+                "executionWarning": EXECUTION_WARNINGS.get(operatorId, ""),
             }
     return admitted
 
@@ -171,8 +206,21 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
             target = binding.get("target", {})
             if target.get("workflowId") == workflowId and target.get("nodeId") == nodeId:
                 fail("E_DEBUG_UNSUPPORTED", "resource bindings require the A3 resource adapter")
+    protected = []
+    if operatorId == "vision.io.sqlite_writer":
+        # The rest of a draft need not be executable to debug this one node.
+        for workflow in payload["workflows"].values():
+            siblings = workflow.get("nodes", []) if isinstance(workflow, dict) else []
+            for sibling in siblings if isinstance(siblings, list) else []:
+                if not isinstance(sibling, dict) or sibling.get("operatorId") != operatorId:
+                    continue
+                params = sibling.get("params")
+                path = params.get("databasePath") if isinstance(params, dict) else None
+                if isinstance(path, str) and Path(path).is_absolute():
+                    protected.append(path)
     return dict(admitted[operatorId], nodeId=nodeId, operatorId=operatorId, projectId=projectId,
                 workflowId=workflowId, draftDigest=digest(payload), nodeParams=node.params,
+                sqliteProtected=protected,
                 variableDefinitions={key: value.model_dump() for key, value in variables.items()},
                 variableBindings=bindings)
 
@@ -189,7 +237,7 @@ def executionParams(spec, raw, values):
         raise DebugError("E_PARAM_INVALID", str(error)) from error
     ports = variablePorts(spec["operatorId"], effective, definitions(spec.get("variableDefinitions", {})))
     inputPorts, outputPorts = ports if ports is not None else (spec["inputPorts"], spec["outputPorts"])
-    return effective, inputPorts, outputPorts
+    return effective, debugInputPorts(spec["operatorId"], effective, inputPorts), outputPorts
 
 
 def parameters(raw, schema):

@@ -17,7 +17,9 @@ def workflowDraft(request, admitted):
     for key, workflow in document.workflows.items():
         for node in workflow.nodes:
             if node.kind == "operator":
-                draft(request["projectJson"], projectId, key, node.nodeId, node.operatorId, admitted)
+                spec = draft(request["projectJson"], projectId, key, node.nodeId, node.operatorId, admitted)
+                if spec.get("singleNodeOnly"):
+                    fail("E_DEBUG_UNSUPPORTED", "operator requires explicit single-node debugging: " + node.operatorId)
                 used.add(node.operatorId)
     if request.get("resourceRoot"):
         fail("E_DEBUG_UNSUPPORTED", "workflow resource roots are not admitted")

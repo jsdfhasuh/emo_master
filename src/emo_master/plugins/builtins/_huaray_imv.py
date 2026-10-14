@@ -113,6 +113,14 @@ class IMV_String(ctypes.Structure):
     _fields_ = [("str", ctypes.c_char * _MAX_STRING_LENGTH)]
 
 
+class _IMV_EnumEntryInfo(ctypes.Structure):
+    _fields_ = [("value", ctypes.c_uint64), ("name", ctypes.c_char * _MAX_STRING_LENGTH)]
+
+
+class _IMV_EnumEntryList(ctypes.Structure):
+    _fields_ = [("nEnumEntryBufferSize", ctypes.c_uint), ("pEnumEntryInfo", ctypes.POINTER(_IMV_EnumEntryInfo))]
+
+
 class IMV_FrameInfo(ctypes.Structure):
     _fields_ = [
         ("blockId", ctypes.c_uint64),
@@ -309,6 +317,30 @@ class ImvApi:
             "IMV_PixelConvert", [ctypes.c_void_p, ctypes.POINTER(IMV_PixelConvertParam)]
         )
 
+    def feature_access(self, handle: object, name: str) -> tuple[bool, bool, bool]:
+        # Optional configuration capability; older workflow-only SDKs still load.
+        available, readable, writable = (bool(self._configure(
+            "IMV_FeatureIs" + suffix, [ctypes.c_void_p, ctypes.c_char_p], ctypes.c_bool
+        )(handle, name.encode("ascii"))) for suffix in ("Available", "Readable", "Writeable"))
+        return available, readable, writable
+
+    def clear_buffer(self, handle: object) -> int:
+        return int(self._configure("IMV_ClearFrameBuffer", [ctypes.c_void_p])(handle))
+
+    def get_enum_values(self, handle: object, name: str) -> tuple[str, ...]:
+        count = ctypes.c_uint()
+        result = self._configure("IMV_GetEnumFeatureEntryNum", [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(ctypes.c_uint)])(
+            handle, name.encode("ascii"), ctypes.byref(count))
+        _checkSdkResult(result, "E_CAMERA_CONFIG_FAILED", "cannot enumerate " + name, "enum entries")
+        if not 0 < count.value <= 4096:
+            raise HuarayCameraError("E_CAMERA_CONFIG_FAILED", "invalid enum entry count for " + name)
+        entries = (_IMV_EnumEntryInfo * count.value)()
+        listing = _IMV_EnumEntryList(ctypes.sizeof(entries), entries)
+        result = self._configure("IMV_GetEnumFeatureEntrys", [ctypes.c_void_p, ctypes.c_char_p, ctypes.POINTER(_IMV_EnumEntryList)])(
+            handle, name.encode("ascii"), ctypes.byref(listing))
+        _checkSdkResult(result, "E_CAMERA_CONFIG_FAILED", "cannot enumerate " + name, "enum entries")
+        return tuple(entry.name.decode("utf-8", errors="strict") for entry in entries)
+
     def version(self) -> str:
         rawValue = self._getVersion()
         return rawValue.decode("utf-8", errors="replace") if rawValue else "unknown"
@@ -500,8 +532,10 @@ class CameraSession:
         self.handleCreated = False
         self.opened = False
         self.grabbing = False
+        self._streamInitialized = False
         self.leaseKey = _selectorLeaseKey(self.settings)
         self.leaseAcquired = False
+        self.identityLeaseKey = ""
         self.actualExposureUs = 0.0
         self.offsetX = 0
         self.offsetY = 0
@@ -509,6 +543,18 @@ class CameraSession:
 
     def open(self) -> None:
         if self.opened and self.grabbing:
+            return
+        self.connect()
+        try:
+            self._configureCamera()
+            self.startAcquisition()
+        except Exception:
+            self.close()
+            raise
+
+    def connect(self) -> None:
+        """Open a device without changing any feature or starting acquisition."""
+        if self.opened:
             return
         _acquireLease(self.leaseKey)
         self.leaseAcquired = True
@@ -549,20 +595,15 @@ class CameraSession:
                 "IMV_Open",
             )
             self.opened = True
-            self._configureCamera()
-            strategy = (
-                IMV_GRAB_LATEST_IMAGE
-                if self.settings["triggerMode"] == "freeRun"
-                else IMV_GRAB_SEQUENTIAL
-            )
-            startResult = self.api.start_grabbing_ex(self.handle, strategy)
-            _checkSdkResult(
-                startResult,
-                "E_CAMERA_IO",
-                f"IMV_StartGrabbingEx failed with SDK code {startResult}",
-                "IMV_StartGrabbingEx",
-            )
-            self.grabbing = True
+            try:
+                result, serial = self.api.get_string(self.handle, "DeviceSerialNumber")
+            except Exception:
+                result, serial = -1, ""
+            if result == IMV_OK and serial.strip():
+                self.sourceId = "huaray-imv:" + serial.strip()
+                key = "identity:" + self.sourceId
+                _acquireLease(key)
+                self.identityLeaseKey = key
         except Exception as err:
             cleanupError = self.close()
             if cleanupError is not None and isinstance(err, HuarayCameraError):
@@ -574,6 +615,34 @@ class CameraSession:
                 f"unexpected IMV initialization failure: {err}",
                 operation="initialize camera session",
             ) from err
+
+    def startAcquisition(self) -> None:
+        if self.grabbing:
+            return
+        if not self.opened:
+            raise HuarayCameraError("E_CAMERA_IO", "camera is not connected")
+        strategy = IMV_GRAB_LATEST_IMAGE if self.settings["triggerMode"] == "freeRun" else IMV_GRAB_SEQUENTIAL
+        result = self.api.start_grabbing_ex(self.handle, strategy)
+        _checkSdkResult(result, "E_CAMERA_IO", "failed to start acquisition", "IMV_StartGrabbingEx")
+        self.grabbing = True
+        self._streamInitialized = True
+
+    def stopAcquisition(self) -> None:
+        if self.grabbing:
+            result = self.api.stop_grabbing(self.handle)
+            _checkSdkResult(result, "E_CAMERA_IO", "failed to stop acquisition", "IMV_StopGrabbing")
+            self.grabbing = False
+
+    def clearBuffer(self) -> None:
+        # IMV has no stream buffer before the first StartGrabbingEx (-101).
+        # A fresh handle cannot contain frames from an earlier acquisition.
+        if not self._streamInitialized:
+            return
+        clear = getattr(self.api, "clear_buffer", None)
+        if not callable(clear):
+            raise HuarayCameraError("E_CAMERA_CONFIG_FAILED", "SDK cannot clear the frame buffer")
+        result = clear(self.handle)
+        _checkSdkResult(result, "E_CAMERA_IO", f"failed to clear frame buffer ({result})", "IMV_ClearFrameBuffer")
 
     def _configureCamera(self) -> None:
         if self.handle is None:
@@ -770,6 +839,8 @@ class CameraSession:
         outputColor: str,
         demosaic: str,
         raiseIfCancelled: Callable[[], object] | None = None,
+        *,
+        sendSoftwareTrigger: bool = True,
     ) -> CapturedFrame:
         if not self.opened or not self.grabbing or self.handle is None:
             raise HuarayCameraError(
@@ -777,7 +848,7 @@ class CameraSession:
             )
         checkCancellation = raiseIfCancelled if callable(raiseIfCancelled) else lambda: None
         checkCancellation()
-        if self.settings["triggerMode"] == "software":
+        if sendSoftwareTrigger and self.settings["triggerMode"] == "software":
             try:
                 triggerResult = self.api.execute_command(self.handle, "TriggerSoftware")
             except Exception as err:
@@ -929,9 +1000,13 @@ class CameraSession:
         if self.handle is None:
             self.grabbing = False
             self.opened = False
+            self._streamInitialized = False
             if self.leaseAcquired:
                 _releaseLease(self.leaseKey)
                 self.leaseAcquired = False
+            if self.identityLeaseKey:
+                _releaseLease(self.identityLeaseKey)
+                self.identityLeaseKey = ""
         if not errors:
             return None
         return HuarayCameraError(

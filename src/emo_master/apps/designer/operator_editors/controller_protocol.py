@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable
 from copy import copy, deepcopy
 from dataclasses import dataclass
 import importlib
+import json
 import logging
 import threading
 import time
@@ -76,6 +77,7 @@ class EditorContext:
         # Reconnection must not send a previous window's session to a new
         # Runtime. Cleanup remains pinned to the original transport.
         self._pureRuntimeClient = copy(runtimeClient)
+        self._cameraRuntimeClient = copy(runtimeClient)
         self._pureService = getattr(runtimeClient, "runtimeService", None)
         self._getCurrentJobId = getCurrentJobId or (lambda: None)
         self._getSqliteDraft = getSqliteDraft
@@ -457,6 +459,47 @@ class EditorContext:
 
     def streamLivePreview(self, sessionId: str) -> Iterable[object]:
         return self._runtimeMethod("streamOperatorPreviewFrames")(sessionId)
+
+    def prepareCameraConfiguration(self, params: dict[str, object]):
+        from functools import partial
+        if self.previewMode != "live":
+            raise EditorContextError("E_PREVIEW_UNSUPPORTED", "operator does not support live configuration")
+        client = self._cameraRuntimeClient
+        if getattr(self._runtimeClient, "runtimeService", None) is not getattr(client, "runtimeService", None):
+            raise EditorContextError("E_PREVIEW_CONTEXT_INVALID", "Runtime 连接已改变，请重新打开相机窗口")
+        # Freeze the current canvas on the GUI thread before dispatching SDK work.
+        if self._getPreviewProject is not None:
+            project = deepcopy(self._getPreviewProject(self.key))
+            operation = partial(self._runtimeMethod("openDraftOperatorPreviewSession", client=client),
+                self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+                deepcopy(params), project, configurationOnly=True)
+        else:
+            operation = partial(self._runtimeMethod("openOperatorPreviewSession", client=client),
+                self.key.projectId, self.key.workflowId, self.key.nodeId, self.operatorId,
+                deepcopy(params), configurationOnly=True)
+
+        def connect() -> str:
+            reply = operation()
+            self._requireOk(reply, "E_CAMERA_CONNECTION_FAILED")
+            sessionId = str(getattr(reply, "session_id", ""))
+            if not sessionId:
+                raise EditorContextError("E_CAMERA_CONNECTION_FAILED", "Runtime 未返回相机配置会话")
+            return sessionId
+        return connect
+
+    def openCameraConfiguration(self, params: dict[str, object]) -> str:
+        return self.prepareCameraConfiguration(params)()
+
+    def cameraConfiguration(self, sessionId: str, identity: str, requestId: str,
+                            action: str, payload: dict[str, object]) -> dict:
+        reply = self._runtimeMethod("configureOperatorSession", client=self._cameraRuntimeClient)(
+            sessionId, identity, requestId, action, payload)
+        return {"ok": bool(reply.ok), "code": str(reply.code), "message": str(reply.message),
+                "snapshot": json.loads(reply.state_json or "{}"),
+                "warnings": json.loads(reply.warnings_json or "[]")}
+
+    def streamCameraConfiguration(self, sessionId: str) -> Iterable[object]:
+        return self._runtimeMethod("streamOperatorPreviewFrames", client=self._cameraRuntimeClient)(sessionId)
 
     def closeLivePreview(self, sessionId: str) -> None:
         reply = self._runtimeMethod("closeOperatorPreviewSession")(sessionId)

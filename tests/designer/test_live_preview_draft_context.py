@@ -51,6 +51,38 @@ def testContextWithoutDraftProviderRetainsLegacyCompatibility():
     assert context(runtime).openLivePreview({}) == "legacy"
 
 
+def testConfigurationFreezesDraftOnCallingThreadAndPinsRuntime():
+    import threading
+    payload = draftProject()
+    params = {"ipAddress": "192.168.1.10"}
+    calls = []
+    thread = threading.get_ident()
+    originalService = object()
+
+    def provider(_key):
+        assert threading.get_ident() == thread
+        return payload
+
+    def openDraft(*args, **kwargs):
+        assert threading.get_ident() != thread
+        calls.append((args, kwargs))
+        return SimpleNamespace(ok=True, session_id="configuration")
+
+    runtime = SimpleNamespace(runtimeService=originalService, openDraftOperatorPreviewSession=openDraft)
+    editor = context(runtime, provider)
+    operation = editor.prepareCameraConfiguration(params)
+    payload["project"]["name"] = "changed after dispatch"
+    params["ipAddress"] = "192.168.1.20"
+    with ThreadPoolExecutor(max_workers=1) as pool:
+        assert pool.submit(operation).result() == "configuration"
+    assert calls[0][0][4] == {"ipAddress": "192.168.1.10"}
+    assert calls[0][0][5]["project"]["name"] != payload["project"]["name"]
+    assert calls[0][1] == {"configurationOnly": True}
+    runtime.runtimeService = object()
+    with pytest.raises(EditorContextError, match="Runtime"):
+        editor.prepareCameraConfiguration(params)
+
+
 def testRuntimeClientReportsOldRuntimeWithoutSilentlyStartingLegacyPreview():
     client = RuntimeClient(runtimeService=SimpleNamespace())
     with pytest.raises(RuntimeClientError, match="Runtime"):
@@ -93,26 +125,22 @@ def testEditorManagerWiresDraftSnapshotProvider(tmp_path):
         manager.closeAll()
 
 
-def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path):
-    from PySide2.QtWidgets import QPushButton
-
+def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path, monkeypatch):
     from emo_master.apps.designer.ui.main_window import MainWindow
     from emo_master.apps.runtime.grpc_server.service import RuntimeService
-    from emo_master.core.plugin.models import PluginDescriptor
+    from emo_master.plugins.builtins._huaray_imv import resetImvApiForTests
     from tests.designer.qt_wait import waitForCatalog, waitUntil
     from tests.runtime.test_global_counter_grpc import _writeCounterProject
-    from tests.runtime.test_live_operator_preview import _FakeLiveCamera
+    from tests.runtime.test_camera_configuration_session import TriggerApi
 
+    resetImvApiForTests()
+    api = TriggerApi()
+    monkeypatch.setattr("emo_master.plugins.builtins.huaray_camera.operator.getImvApi", lambda: api)
     service = RuntimeService(dbPath=tmp_path / "runtime.db")
-    descriptor = service.pluginScanResult.activeOperators["vision.io.huaray_camera"]
-    # Use the real built-in camera editor and manifest but never open camera SDK.
-    service.livePreviewManager.operatorRegistry = {
-        "vision.io.huaray_camera": PluginDescriptor(manifest=descriptor.manifest, operatorClass=_FakeLiveCamera)
-    }
-    _FakeLiveCamera.instances.clear()
     root = _writeCounterProject(tmp_path, "canvas-project")
     originalFile = (root / "project.json").read_bytes()
     window = MainWindow(RuntimeClient(runtimeService=service))
+    editor = controller = None
     try:
         waitForCatalog(window)
         assert window.loadProjectDirectory(str(root))
@@ -126,13 +154,14 @@ def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path):
         editor = window.nodeParamDialog
         controller = editor._controller
         assert controller is not None
-        values = controller.collectParams()
-        values["triggerMode"] = "software"
-        controller.loadParams(values)
-        controller.root.findChild(QPushButton, "singleFrameButton").click()
+        controller.form._controls["ipAddress"].setText("192.168.1.10")
+        controller.connectButton.click()
+        waitUntil(lambda: controller._sessionId and controller._pending is None)
+        assert api.writes == [] and api.startStrategies == []
+        controller.singleFrameButton.click()
         waitUntil(lambda: controller.blockIdLabel.text().split("：")[-1].strip().isdigit())
-        waitUntil(lambda: controller._sessionId == "")
-        assert _FakeLiveCamera.instances[-1].disposed == 1
+        waitUntil(lambda: controller._pending is None and controller._snapshot.get("state") == "connected")
+        assert controller._sessionId and api.openCount == 1
         assert service.loadedDocument is loadedDocument
         assert all(node.nodeId != nodeId for node in loadedDocument.workflows["main"].nodes)
         assert service.jobRepository.all() == []
@@ -143,6 +172,14 @@ def testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot(tmp_path):
         with pytest.raises(EditorContextError, match="工程已关闭"):
             window._livePreviewProject(EditorKey("closed-project", "main", nodeId))
     finally:
+        if controller is not None:
+            waitUntil(lambda: controller._pending is None)
+            if controller._sessionId:
+                assert controller._modalAction("close", {"decision": "restore"})["ok"]
+                controller._finishSession()
+        if editor is not None:
+            editor.forceClose()
         window.operatorEditorManager.closeAll()
         window.close()
         service.close()
+        resetImvApiForTests()

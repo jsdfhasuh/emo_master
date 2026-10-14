@@ -37,7 +37,8 @@ def doubleNode(window, nodeId):
     window.flowView.setZoomFactor(.7)
     window.flowView.centerOn(item)
     QApplication.processEvents()
-    point = window.flowView.mapFromScene(item.mapToScene(QPointF(item.rect().width() / 2, 20)))
+    # The title now edits the node name; configuration opens from the body.
+    point = window.flowView.mapFromScene(item.mapToScene(QPointF(item.rect().width() / 2, item.geometry.header + 10)))
     assert window.flowView.viewport().rect().contains(point), (point, window.flowView.viewport().rect(), item.pos())
     hit = window.flowView.itemAt(point)
     while hit is not None and hit.parentItem() is not None:

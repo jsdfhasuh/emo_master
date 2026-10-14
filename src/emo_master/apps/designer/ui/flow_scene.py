@@ -66,6 +66,8 @@ try:
         QGraphicsSceneContextMenuEvent,
         QGraphicsSceneMouseEvent,
         QGraphicsSimpleTextItem,
+        QGraphicsProxyWidget,
+        QLineEdit,
         QMenu,
     )
 
@@ -185,6 +187,36 @@ try:
                 self._openWorkflow()
             event.accept()
 
+    class _TitleEditor(QLineEdit):
+        def __init__(self, title: str, finish: Callable[[str], None]) -> None:
+            super().__init__(title)
+            self.original = title
+            self.finish = finish
+            self.finished = False
+            self.setMaxLength(128)
+
+        def event(self, event):
+            if event.type() == QEvent.ShortcutOverride:
+                event.accept()
+                return True
+            return super().event(event)
+
+        def _finish(self, cancel: bool = False) -> None:
+            if not self.finished:
+                self.finished = True
+                self.finish(self.original if cancel else self.text())
+
+        def keyPressEvent(self, event):
+            if event.key() in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Escape):
+                self._finish(event.key() == Qt.Key_Escape)
+                event.accept()
+                return
+            super().keyPressEvent(event)
+
+        def focusOutEvent(self, event):
+            super().focusOutEvent(event)
+            self._finish()
+
     class _NodeItem(QGraphicsRectItem):
         def __init__(self, model: FlowNodeViewModel, scene: object) -> None:
             self.bodyFont = uiFont()
@@ -211,6 +243,8 @@ try:
 
             title = QFontMetricsF(self.titleFont).elidedText(model.title, Qt.ElideRight, self.geometry.width - 60)
             titleText = QGraphicsSimpleTextItem(title, self)
+            self.titleText = titleText
+            self._titleProxy: QGraphicsProxyWidget | None = None
             titleText.setFont(self.titleFont)
             titleText.setBrush(QColor("#20242b"))
             tooltip = model.title
@@ -325,6 +359,11 @@ try:
             return result
 
         def mouseDoubleClickEvent(self, event: QGraphicsSceneMouseEvent) -> None:
+            titleRect = QRectF(40, 6, self.geometry.width - 46, QFontMetricsF(self.titleFont).height() + 8)
+            if event.button() == Qt.LeftButton and self.model.kind == "operator" and titleRect.contains(event.pos()):
+                self.beginRename()
+                event.accept()
+                return
             handleNodeDoubleClick = getattr(
                 self._sceneRef, "handleNodeDoubleClick", None
             )
@@ -343,6 +382,43 @@ try:
                 else:
                     handleNodeDoubleClick(self.model.nodeId)
             super().mouseDoubleClickEvent(event)
+
+        def setTitle(self, title: str) -> None:
+            self.model.title = title
+            self.titleText.setText(QFontMetricsF(self.titleFont).elidedText(title, Qt.ElideRight, self.geometry.width - 60))
+            self.titleText.setToolTip(title)
+            self.setToolTip(title)
+
+        def beginRename(self) -> None:
+            if self._titleProxy is not None or self.model.kind != "operator":
+                return
+            allowed = getattr(self._sceneRef, "nodeRenameAllowed", lambda: True)
+            if not allowed():
+                return
+            self.setFlag(QGraphicsItem.ItemIsMovable, False)
+            self.titleText.hide()
+            proxy = QGraphicsProxyWidget(self)
+            self._titleProxy = proxy
+            editor = _TitleEditor(self.model.title, self._finishRename)
+            editor.setFont(self.titleFont)
+            editor.setFixedSize(int(self.geometry.width - 48), int(QFontMetricsF(self.titleFont).height() + 12))
+            proxy.setWidget(editor)
+            proxy.setPos(40, 4)
+            proxy.setZValue(10)
+            editor.setFocus(Qt.MouseFocusReason)
+            editor.selectAll()
+
+        def _finishRename(self, text: str) -> None:
+            proxy = self._titleProxy
+            if proxy is None:
+                return
+            self._titleProxy = None
+            getattr(self._sceneRef, "renameNode")(self.model.nodeId, text)
+            if isValid(self) and isValid(proxy):
+                self.titleText.show()
+                self.setFlag(QGraphicsItem.ItemIsMovable, True)
+                proxy.hide()
+                proxy.deleteLater()
 
     class _PortItem(QGraphicsEllipseItem):
         def __init__(
@@ -777,6 +853,23 @@ try:
             self._iconContext = contextSupplier
             self.rebindOperatorIcons()
 
+        def setNodeRenameHandler(self, handler: Callable[[str, str], str]) -> None:
+            self._nodeRenameHandler = handler
+
+        def isRenamingNode(self) -> bool:
+            return any(item._titleProxy is not None for item in self._nodeItems.values())
+
+        def updateNodeTitle(self, nodeId: str, title: str) -> None:
+            self._nodeItems[nodeId].setTitle(title)
+
+        def renameNode(self, nodeId: str, name: str) -> str:
+            item = self._nodeItems[nodeId]
+            handler = getattr(self, "_nodeRenameHandler", None)
+            title = handler(nodeId, name) if callable(handler) else item.model.title
+            if isValid(item):
+                item.setTitle(title)
+            return title
+
         def rebindOperatorIcons(self) -> None:
             for item in self._nodeItems.values():
                 self._bindOperatorIcon(item)
@@ -813,6 +906,9 @@ try:
 
         def clearGraph(self) -> None:
             hadSelection = bool(self.selectedItems())
+            for item in self._nodeItems.values():
+                if item._titleProxy is not None:
+                    item._titleProxy.widget().finished = True
             self._closeEdgeMenu()
             self._routeTimer.stop()
             self._cancelRouteRefinement()
@@ -1761,6 +1857,21 @@ except Exception:  # pragma: no cover
                     return float(self._rect[3])
 
             return _Rect(self._sceneRect)
+
+        def setNodeRenameHandler(self, handler: Callable[[str, str], str]) -> None:
+            self._nodeRenameHandler = handler
+
+        def isRenamingNode(self) -> bool:
+            return False
+
+        def updateNodeTitle(self, nodeId: str, title: str) -> None:
+            self._nodes[nodeId].title = title
+
+        def renameNode(self, nodeId: str, name: str) -> str:
+            handler = getattr(self, "_nodeRenameHandler", None)
+            title = handler(nodeId, name) if callable(handler) else self._nodes[nodeId].title
+            self._nodes[nodeId].title = title
+            return title
 
         def setConnectionHandler(self, handler: ConnectionHandler | None) -> None:
             self._connectionHandler = handler

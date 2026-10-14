@@ -122,6 +122,8 @@ class PageCoordinator:
     def history(self, redo=False):
         if self.window.isJobRunning:
             return
+        if not self.window.operatorEditorManager.closeCameraConfigurations():
+            return
         if not self._canSync():
             return
         if (self.session.redo if redo else self.session.undo)():

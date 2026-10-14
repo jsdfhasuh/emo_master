@@ -1031,6 +1031,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if callable(setConnectionErrorHandler):
             setConnectionErrorHandler(self.onConnectionError)
         self.flowScene.setNodeDoubleClickHandler(self.openNodeParamDialog)
+        self.flowScene.setNodeRenameHandler(self.renameNode)
+        self.flowScene.nodeRenameAllowed = lambda: flowEditAllowed(self)
         if _nativeQt:
             self.flowScene.presentationProvider = self._controlFlowPresentation
             self.flowScene.workflowOpenHandler = self._deferWorkflowReference
@@ -1628,6 +1630,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return False
         if not self.operatorEditorManager.resolveSqlitePending(self):
             return False
+        if not self.operatorEditorManager.closeAll():
+            return False
         self._saveWorkflowViewState()
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.loadProjectDirectory(projectDirPath, confirmed=confirmed)
@@ -1692,6 +1696,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if node.kind in {"workflow_input", "workflow_output"}:
                 continue
             shortId = node.nodeId[:8]
+            self.operatorEditorManager.renameNode(self._currentProjectId(), self.activeWorkflowId, node.nodeId, node.displayName)
             item = QListWidgetItem(f"{node.displayName}\n{shortId}")
             setData = getattr(item, "setData", None)
             if callable(setData):
@@ -2642,6 +2647,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def deleteWorkflow(self, workflowId: str) -> None:
+        if not self.operatorEditorManager.closeWorkflow(self._currentProjectId(), workflowId):
+            return
         try:
             self.workflowController.deleteWorkflow(workflowId)
         except (KeyError, ValueError) as err:
@@ -2649,9 +2656,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", message)
             QMessageBox.warning(self, "无法删除工作流", message)
             return
-        self.operatorEditorManager.closeWorkflow(
-            self._currentProjectId(), workflowId
-        )
         self.activeWorkflowId = self.workflowController.activeWorkflowId
         self._refreshWorkflowTabs()
 
@@ -2984,12 +2988,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if not self.operatorEditorManager.resolveSqlitePending(self):
             event.ignore()
             return
+        if not self.operatorEditorManager.closeCameraConfigurations():
+            event.ignore()
+            return
         if self.pageCoordinator is not None:
             if not self.pageCoordinator.prepareClose():
                 event.ignore()
                 return
+        if not self.operatorEditorManager.closeAll():
+            event.ignore()
+            return
         self.shutdownOperatorDisplay()
-        self.operatorEditorManager.closeAll()
         counterDialog = self._globalCountersDialog
         if counterDialog is not None:
             shutdown = getattr(counterDialog, "shutdown", None)
@@ -3354,6 +3363,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def showStartupProjectEntry(self) -> bool:
         if not self._allowProjectReplacement():
             return False
+        if not self.operatorEditorManager.closeAll():
+            return False
         ok, loadedProjectPath, currentProjectDir = (
             self.projectController.handleStartupProjectEntry(
                 self,
@@ -3569,6 +3580,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.appendRuntimeLog("WARNING", f"算子目录无效：{err}")
                 continue
             provider.setCatalog(self.operatorCatalog)
+            warnings = getattr(self.runtimeClient, "cameraRecoveryWarnings", [])
+            if warnings and not getattr(self, "_cameraRecoveryWarningShown", False):
+                self._cameraRecoveryWarningShown = True
+                message = "检测到上次未完成的相机调整，请人工核查设备当前配置；系统不会自动重放写入。\n" + "\n".join(str(item) for item in warnings)
+                self.appendRuntimeLog("WARN", message)
+                QMessageBox.warning(self, "相机配置需要核查", message)
             self._setOperatorCatalogState("ready")
             self._refreshBubbleOperators()
             self._refreshNodeDetailsView()
@@ -3791,8 +3808,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
 
     @draftCommand
     def deleteSelectedElements(self) -> None:
-        if not flowEditAllowed(self) or getattr(self.flowScene, 'isEdgeMenuOpen', lambda: False)():
+        if (not flowEditAllowed(self) or getattr(self.flowScene, 'isEdgeMenuOpen', lambda: False)()
+                or self.flowScene.isRenamingNode()):
             return
+        selectedNodeIds = self.flowScene.getSelectedNodeIds()
+        for nodeId in selectedNodeIds:
+            if not self.flowModel.isBoundaryNode(nodeId) and not self.operatorEditorManager.closeNode(
+                    self._currentProjectId(), self.activeWorkflowId, nodeId):
+                return
         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
         for fromNode, fromPort, toNode, toPort in selectedEdgeKeys:
             self.flowModel.removeEdge(fromNode, fromPort, toNode, toPort)
@@ -3805,9 +3828,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 continue
             self.flowModel.removeNode(nodeId)
             self.flowScene.removeFlowNode(nodeId)
-            self.operatorEditorManager.closeNode(
-                self._currentProjectId(), self.activeWorkflowId, nodeId
-            )
             if self.activeParamNodeId == nodeId and self.nodeParamDialog is not None:
                 self.nodeParamDialog = None
                 self.activeParamNodeId = None
@@ -3820,6 +3840,22 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.refreshSidebarNodeList()
             self._refreshRuntimePanelView()
         self.updateToolbarState()
+
+    @draftCommand
+    def renameNode(self, nodeId: str, name: str) -> str:
+        original = self.flowModel.nodes[nodeId].displayName
+        if not flowEditAllowed(self):
+            return original
+        try:
+            title = self.flowModel.renameNode(nodeId, name)
+        except ValueError as err:
+            self.appendRuntimeLog("WARN", str(err))
+            return original
+        if title != original:
+            self.flowScene.updateNodeTitle(nodeId, title)
+            self.refreshSidebarNodeList()
+            self._refreshNodeDetailsView()
+        return title
 
     def handleDeleteShortcut(self) -> None:
         actions = getattr(self, 'designerActions', None)

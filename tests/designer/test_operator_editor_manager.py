@@ -115,3 +115,19 @@ def testEditorManagerFallsBackWhenRuntimeHasNoEditorRpc(tmp_path) -> None:
     assert manager.count() == 1
     assert any("回退通用表单" in message for _level, message in logs)
     manager.closeAll()
+
+
+def testDisposedEditorCloseNeverPromptsAgain(tmp_path, monkeypatch) -> None:
+    from PySide2.QtWidgets import QMessageBox
+    import pytest
+    manager = OperatorEditorManager(runtimeClient=_Runtime(), settingsStore=_Settings(),
+        applyParams=lambda *_: True, appendLog=lambda *_: None, cacheRoot=tmp_path)
+    window = manager.open(projectId="p", workflowId="main", nodeId="number",
+        operatorId="vision.value.number", displayName="Number",
+        schema={"properties": {"value": {"type": "number", "default": 1}}}, values={"value": 1})
+    window._schemaForm._controls["value"].setValue(2)
+    assert window.isDirty()
+    assert window.forceClose()
+    assert window._disposed and manager.count() == 0
+    monkeypatch.setattr(QMessageBox, "question", lambda *_args, **_kwargs: pytest.fail("disposed editor prompted"))
+    assert window.close()

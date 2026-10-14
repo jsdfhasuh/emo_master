@@ -182,8 +182,14 @@ class OperatorEditorManager:
     def count(self) -> int:
         return len(self._windows)
 
-    def closeNode(self, projectId: str, workflowId: str, nodeId: str) -> None:
-        self._closeKeys(
+    def renameNode(self, projectId: str, workflowId: str, nodeId: str, name: str) -> None:
+        window = self.get(EditorKey(projectId, workflowId, nodeId))
+        setter = getattr(window, "setWindowTitle", None)
+        if callable(setter):
+            setter(f"{name} · {nodeId}")
+
+    def closeNode(self, projectId: str, workflowId: str, nodeId: str) -> bool:
+        return self._closeKeys(
             key
             for key in self._windows
             if key.projectId == projectId
@@ -191,15 +197,15 @@ class OperatorEditorManager:
             and key.nodeId == nodeId
         )
 
-    def closeWorkflow(self, projectId: str, workflowId: str) -> None:
-        self._closeKeys(
+    def closeWorkflow(self, projectId: str, workflowId: str) -> bool:
+        return self._closeKeys(
             key
             for key in self._windows
             if key.projectId == projectId and key.workflowId == workflowId
         )
 
-    def closeProject(self, projectId: str) -> None:
-        self._closeKeys(key for key in self._windows if key.projectId == projectId)
+    def closeProject(self, projectId: str) -> bool:
+        return self._closeKeys(key for key in self._windows if key.projectId == projectId)
 
     def invalidatePreviewSources(self) -> None:
         for window in tuple(self._windows.values()):
@@ -219,9 +225,12 @@ class OperatorEditorManager:
             if key.projectId == projectId:
                 window.refreshSchema(window.context.paramSchema)
 
-    def closeAll(self) -> None:
-        self.invalidatePreviewSources()
-        self._closeKeys(tuple(self._windows))
+    def closeAll(self) -> bool:
+        return self._closeKeys(tuple(self._windows))
+
+    def closeCameraConfigurations(self) -> bool:
+        return self._closeKeys(key for key, window in self._windows.items()
+                               if callable(getattr(getattr(window, "_controller", None), "requestClose", None)))
 
     def resolveSqlitePending(self, parent=None) -> bool:
         """Keep SQLite's pending validation at save/project-switch/close boundaries."""
@@ -248,11 +257,15 @@ class OperatorEditorManager:
                 window._dirtyHint = False
         return True
 
-    def _closeKeys(self, keys) -> None:
+    def _closeKeys(self, keys) -> bool:
         for key in list(keys):
             window = self._windows.get(key)
             if window is not None:
-                window.forceClose()
+                controller = getattr(window, "_controller", None)
+                close = window.close if callable(getattr(controller, "requestClose", None)) else window.forceClose
+                if close() is False:
+                    return False
+        return True
 
     def _onWindowClosed(self, key: EditorKey, window: object) -> None:
         if self._windows.get(key) is window:

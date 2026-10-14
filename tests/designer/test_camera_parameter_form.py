@@ -65,5 +65,5 @@ def testCameraRetryAndRepeatedLoadPreserveValues() -> None:
         form._controls["retryCount"].setValue(2)
         assert form._controls["retryDelayMs"].isEnabled()
         assert form.getValues()["retryDelayMs"] == 350
-        assert form._layout.rowCount() == len(DEFAULTS) + 5
+        assert form._layout.rowCount() == len(DEFAULTS) + 5 + 4
     form.close()

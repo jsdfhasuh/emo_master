@@ -1,6 +1,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+import os
+from pathlib import Path
+import tempfile
 import threading
 import time
 from typing import Any, Callable, Iterator, Mapping
@@ -23,6 +27,10 @@ class LivePreviewFrame:
     actualExposureUs: float
     width: int
     height: int
+    state: str = "acquiring"
+    generation: int = 0
+    code: str = ""
+    message: str = ""
 
 
 class _LiveSession:
@@ -208,6 +216,7 @@ class LivePreviewManager:
         self,
         operatorRegistry: Mapping[str, object],
         eventPublisher: Callable[..., object] | None = None,
+        journalRoot: Path | None = None,
     ) -> None:
         self.operatorRegistry = operatorRegistry
         self.eventPublisher = eventPublisher
@@ -215,10 +224,26 @@ class LivePreviewManager:
         # Keep only bounded error summaries, never disposed operators or images.
         self._failures: dict[str, tuple[str, str]] = {}
         self._lock = threading.RLock()
+        self._configurationSessions: dict[str, Any] = {}
+        self.journalRoot = journalRoot or Path(os.environ.get("EMO_RUNTIME_DATA_DIR", tempfile.gettempdir())) / "camera-adjustments"
+        self.recoveryWarnings: list[dict] = []
+        if self.journalRoot.is_dir():
+            for path in self.journalRoot.glob("*.json"):
+                try:
+                    record = json.loads(path.read_text(encoding="utf-8"))
+                    if record.get("pending"):
+                        self.recoveryWarnings.append({"identity": record.get("identity"), "sessionId": record.get("sessionId"), "path": str(path)})
+                except (OSError, ValueError, AttributeError):
+                    self.recoveryWarnings.append({"path": str(path), "error": "unreadable adjustment record"})
 
     def ownsResources(self) -> bool:
         with self._lock:
-            return bool(self._sessions)
+            return bool(self._sessions) or self.hasConfigurationSession()
+
+    def hasConfigurationSession(self, projectId: str | None = None) -> bool:
+        with self._lock:
+            return any(session.ownsResources() and (projectId is None or session.projectId == projectId)
+                       for session in self._configurationSessions.values())
 
     def open(
         self,
@@ -227,7 +252,7 @@ class LivePreviewManager:
         workflowId: str,
         nodeId: str,
         params: dict[str, object],
-        *, globalVariables=None,
+        *, globalVariables=None, configurationOnly: bool = False,
     ) -> tuple[str | None, str | None]:
         descriptor = self.operatorRegistry.get(operatorId)
         if not isinstance(descriptor, PluginDescriptor):
@@ -236,6 +261,30 @@ class LivePreviewManager:
         if editor is None or descriptor.editorIssues or editor.previewMode != "live":
             return None, "operator does not allow live preview"
         operator = descriptor.operatorClass()
+        if configurationOnly:
+            if not callable(getattr(operator, "createConfiguration", None)):
+                return None, "operator does not support a configuration session"
+            from emo_master.apps.runtime.preview.configuration_session import ConfigurationSession
+            with self._lock:
+                for existing in self._configurationSessions.values():
+                    if existing.ownsResources() and (existing.projectId, existing.workflowId, existing.nodeId) == (projectId, workflowId, nodeId):
+                        return None, "close the existing camera configuration session before reconnecting"
+                closed = [key for key, item in self._configurationSessions.items() if not item.ownsResources()]
+                for key in closed[:-32]:
+                    self._configurationSessions.pop(key, None)
+                sessionId = str(uuid4())
+                configuration = ConfigurationSession(sessionId, projectId, workflowId, nodeId, operator,
+                                                     params, self.journalRoot, self.eventPublisher)
+                self._configurationSessions[sessionId] = configuration
+            try:
+                configuration.start()
+            except Exception as err:
+                cleanupError = configuration.terminate()
+                if not configuration.ownsResources():
+                    with self._lock:
+                        self._configurationSessions.pop(sessionId, None)
+                return None, str(err) + ("; cleanup failed: " + cleanupError if cleanupError else "")
+            return sessionId, None
         validator = getattr(operator, "validateParams", None)
         previewParams = dict(params)
         previewParams["triggerMode"] = "freeRun"
@@ -274,6 +323,9 @@ class LivePreviewManager:
 
     def stream(self, sessionId: str, context: object | None = None) -> Iterator[LivePreviewFrame]:
         with self._lock:
+            configuration = self._configurationSessions.get(sessionId)
+            if configuration is not None:
+                return configuration.frames(context)
             session = self._sessions.get(sessionId)
             failure = self._failures.get(sessionId)
         if session is None:
@@ -283,6 +335,12 @@ class LivePreviewManager:
         return session.frames(context)
 
     def close(self, sessionId: str, timeoutSeconds: float = 3.0) -> str | None:
+        with self._lock:
+            configuration = self._configurationSessions.get(sessionId)
+        if configuration is not None:
+            if configuration.snapshot().get("pending") and not configuration.closed:
+                return "E_CAMERA_ADJUSTMENTS_PENDING: camera adjustments require confirmation"
+            return configuration.close(timeoutSeconds)
         with self._lock:
             session = self._sessions.get(sessionId)
             self._failures.pop(sessionId, None)
@@ -295,6 +353,16 @@ class LivePreviewManager:
                 if self._sessions.get(sessionId) is session:
                     self._sessions.pop(sessionId, None)
         return error
+
+    def configurationRequest(self, sessionId: str, action: str, payload: dict,
+                             identity: str, requestId: str) -> dict:
+        with self._lock:
+            session = self._configurationSessions.get(sessionId)
+        if session is None:
+            return {"ok": False, "code": "E_CAMERA_SESSION_EXPIRED", "message": "configuration session not found"}
+        reply = session.request(action, payload, identity, requestId)
+        reply["warnings"] = self.recoveryWarnings
+        return reply
 
     def _sessionTerminated(self, session: _LiveSession) -> None:
         with self._lock:
@@ -340,6 +408,8 @@ class LivePreviewManager:
                 for sessionId, session in self._sessions.items()
                 if session.projectId == projectId
             ]
+            sessionIds.extend(key for key, session in self._configurationSessions.items()
+                              if session.projectId == projectId and session.ownsResources())
         errors = []
         deadline = time.monotonic() + max(0.0, timeoutSeconds)
         for sessionId in sessionIds:
@@ -349,12 +419,18 @@ class LivePreviewManager:
                 errors.append(error)
         return errors
 
-    def closeAll(self, timeoutSeconds: float | None = None) -> list[str]:
+    def closeAll(self, timeoutSeconds: float | None = None, *, terminate: bool = False) -> list[str]:
         with self._lock:
             self._failures.clear()
             sessionIds = list(self._sessions)
+            configurations = list(self._configurationSessions.values())
         deadline = time.monotonic() + max(0.0, timeoutSeconds) if timeoutSeconds is not None else None
         errors = []
+        for configuration in configurations:
+            remaining = max(0.0, deadline - time.monotonic()) if deadline is not None else 3.0
+            error = configuration.terminate(remaining) if terminate else self.close(configuration.sessionId, remaining)
+            if error:
+                errors.append(error)
         for sessionId in sessionIds:
             remaining = max(0.0, deadline - time.monotonic()) if deadline is not None else 3.0
             error = self.close(sessionId, remaining)

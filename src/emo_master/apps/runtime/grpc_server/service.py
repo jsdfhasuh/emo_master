@@ -184,6 +184,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         self.livePreviewManager = LivePreviewManager(
             self.pluginScanResult.activeOperators,
             eventPublisher=self.eventStore.append,
+            journalRoot=self.workspaceRoot.parent / "camera-adjustments",
         )
         self._jobPreviewKeys: dict[str, str] = {}
         self._loadedProjectPreviewKey = ""
@@ -233,6 +234,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 message="stop and release running Jobs before reloading the project")
         # A draft preview can exist before any formal project has been loaded.
         with self._previewJobLock:
+            if self.livePreviewManager.hasConfigurationSession():
+                return runtime_pb2.LoadProjectReply(ok=False, status="FAILED",
+                    message="E_RESOURCE_BUSY: close the camera configuration session before loading a project")
             cleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
             cleanupErrors.extend(self.plcDebugManager.closeSessions())
         if cleanupErrors:
@@ -426,6 +430,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         _ = context
         # Reject before inspecting production targets or preparing presentation capture.
         with self._previewJobLock:
+            if self.livePreviewManager.hasConfigurationSession():
+                return runtime_pb2.StartJobReply(ok=False, status="FAILED",
+                    message="E_RESOURCE_BUSY: close the camera configuration session before starting a workflow")
             if self.operatorDebugManager.ownsResources():
                 return runtime_pb2.StartJobReply(ok=False, status="FAILED",
                     message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
@@ -734,7 +741,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                     ),
                 )
             )
-        return runtime_pb2.ListOperatorsReply(operators=operators)
+        return runtime_pb2.ListOperatorsReply(operators=operators,
+            camera_recovery_warnings_json=json.dumps(
+                getattr(getattr(self, "livePreviewManager", None), "recoveryWarnings", []), ensure_ascii=False))
 
     def GetOperatorIconAsset(self, request, context):  # type: ignore[override]
         operatorId = request.operator_id
@@ -1186,9 +1195,17 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                                         runtime_instance_id=self.runtimeInstanceId, state="closed",
                                         code="E_PLC_RELEASE_FAILED" if error else "", message=error or "PLC debug session closed")
 
+    def OpenCameraConfigurationSession(self, request, context):  # type: ignore[override]
+        configurationRequest = runtime_pb2.OpenOperatorPreviewSessionRequest()
+        configurationRequest.CopyFrom(request)
+        configurationRequest.configuration_only = True
+        if configurationRequest.project_json:
+            return self.OpenDraftOperatorPreviewSession(configurationRequest, context)
+        return self.OpenOperatorPreviewSession(configurationRequest, context)
+
     @_withProjectStateLock
     def OpenOperatorPreviewSession(self, request, context):  # type: ignore[override]
-        _ = context
+        isActive = getattr(context, "is_active", lambda: True)
         requestedProjectId = str(getattr(request, "project_id", ""))
         workflowId = str(getattr(request, "workflow_id", ""))
         nodeId = str(getattr(request, "node_id", ""))
@@ -1210,14 +1227,16 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         except (ValueError, KeyError, StopIteration) as failure:
             return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code=getattr(failure, "code", "E_VARIABLE_BINDING"), message=str(failure))
         with self._previewJobLock:
-            if any(
-                record.projectId == self.loadedProjectId and not record.isTerminal
-                for record in self.jobRepository.all()
-            ):
+            if any(not record.isTerminal or self.jobSupervisor.ownsJobResources(record.jobId)
+                   for record in self.jobRepository.all()):
                 return runtime_pb2.OpenOperatorPreviewSessionReply(
                     ok=False,
                     code="E_RESOURCE_BUSY",
                     message="a project job is active",
+                )
+            if not isActive():
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_CANCELLED", message="相机预览请求已取消"
                 )
             sessionId, error = self.livePreviewManager.open(
                 operatorId,
@@ -1226,7 +1245,14 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 nodeId,
                 params,
                 globalVariables=variableSnapshot,
+                configurationOnly=bool(getattr(request, "configuration_only", False)),
             )
+            if sessionId is not None and not isActive():
+                error = self.livePreviewManager.close(sessionId)
+                return runtime_pb2.OpenOperatorPreviewSessionReply(
+                    ok=False, code="E_PREVIEW_RELEASE_FAILED" if error else "E_CANCELLED",
+                    message=error or "相机预览请求已取消，设备已释放",
+                )
         if sessionId is None:
             return runtime_pb2.OpenOperatorPreviewSessionReply(
                 ok=False, code="E_PREVIEW_SESSION_OPEN_FAILED", message=error or "open failed"
@@ -1265,6 +1291,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             sessionId, error = self.livePreviewManager.open(
                 str(request.operator_id), projectId, str(request.workflow_id), str(request.node_id), params,
                 globalVariables=variableSnapshot,
+                configurationOnly=bool(getattr(request, "configuration_only", False)),
             )
             if sessionId is not None and not isActive():
                 error = self.livePreviewManager.close(sessionId)
@@ -1279,6 +1306,10 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         return runtime_pb2.OpenOperatorPreviewSessionReply(ok=True, session_id=sessionId, message="ok")
 
     def _previewVariableParams(self, request, params):
+        if getattr(request, "configuration_only", False):
+            # The explicitly selected device is opened read-only. Saved node
+            # bindings must not silently select another target or apply values.
+            return params, None
         from emo_master.apps.runtime.preview.global_variables import previewParameters
         from emo_master.core.project.global_variables import VariableError
         document = self.loadedDocument
@@ -1311,12 +1342,31 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                     actual_exposure_us=frame.actualExposureUs,
                     width=frame.width,
                     height=frame.height,
+                    state=frame.state,
+                    generation=frame.generation,
+                    code=frame.code,
+                    message=frame.message,
                 )
         except RuntimeError as err:
             abort = getattr(context, "abort", None)
             if callable(abort):
                 abort(grpc.StatusCode.FAILED_PRECONDITION, str(err))
             raise
+
+    def ConfigureOperatorSession(self, request, context):  # type: ignore[override]
+        self.jobSupervisor.assertMutationAllowed()
+        if self._closing:
+            return runtime_pb2.ConfigureOperatorSessionReply(ok=False, code="E_RUNTIME_CLOSING", message="Runtime is closing")
+        payload, error = parsePreviewParams(str(getattr(request, "payload_json", "") or "{}"))
+        if payload is None:
+            return runtime_pb2.ConfigureOperatorSessionReply(ok=False, code="E_PARAM_INVALID", message=error or "invalid payload")
+        result = self.livePreviewManager.configurationRequest(
+            str(request.session_id), str(request.action), payload,
+            str(request.device_identity), str(request.request_id))
+        return runtime_pb2.ConfigureOperatorSessionReply(
+            ok=bool(result.get("ok")), code=str(result.get("code", "")), message=str(result.get("message", "")),
+            state_json=json.dumps(result.get("snapshot", {}), ensure_ascii=False),
+            warnings_json=json.dumps(result.get("warnings", []), ensure_ascii=False))
 
     def CloseOperatorPreviewSession(self, request, context):  # type: ignore[override]
         _ = context
@@ -1556,7 +1606,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             presentation.beginClosing()
         self._maintenanceStop.set()
         self.operatorDebugManager.close()
-        errors = list(self.livePreviewManager.closeAll())
+        errors = list(self.livePreviewManager.closeAll(terminate=True))
         errors.extend(self.plcDebugManager.closeAll())
         self._closeStep("preview-producers", self.previewExecutor.close)
         self._closeStep("sqlite-management", self.sqliteManagement.close, retryable=True)

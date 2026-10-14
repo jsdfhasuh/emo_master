@@ -29,6 +29,11 @@ try:
     from PySide2.QtCore import Qt, QTimer
     from PySide2.QtWidgets import (
         QDialog,
+        QDialogButtonBox,
+        QHeaderView,
+        QAbstractItemView,
+        QTableWidget,
+        QTableWidgetItem,
         QHBoxLayout,
         QMessageBox,
         QPushButton,
@@ -226,7 +231,10 @@ try:
                     if validation:
                         self.setError(validation)
                         return False
-                params = self.collectParams()
+                collector = getattr(self._controller, "collectParamsForSave", None)
+                params = collector() if callable(collector) else self.collectParams()
+                if params is None:
+                    return False
                 applied = (self.context.applyConfiguration(self.key, params, bindings)
                            if getattr(self.context, "applyConfiguration", None) is not None else self.context.applyParams(params))
                 if not applied:
@@ -236,6 +244,9 @@ try:
                 self.setError(str(err))
                 return False
             self._loadedParams = dict(params)
+            saved = getattr(self._controller, "onParamsSaved", None)
+            if callable(saved):
+                saved(params)
             self._loadedBindings = bindings
             self.context.variableBindings = bindings
             self._dirtyHint = False
@@ -245,9 +256,13 @@ try:
         def simulateApply(self) -> None:
             self.applyChanges()
 
-        def forceClose(self) -> None:
+        def forceClose(self) -> bool:
             self._forceClosing = True
-            self.close()
+            try:
+                return self.close()
+            finally:
+                if not self._waitingForDebug:
+                    self._forceClosing = False
 
         def done(self, result: int) -> None:
             # Esc and QDialog completion must respect unapplied edits and
@@ -310,19 +325,67 @@ try:
             debug.close()
             return True
 
-        def closeEvent(self, event) -> None:  # type: ignore[override]
-            if not self._forceClosing and not self._waitingForDebug and self.isDirty():
-                answer = QMessageBox.question(
+        def _confirmUnsavedParams(self):
+            describe = getattr(self._controller, "describeUnsavedChanges", None)
+            if not callable(describe):
+                return QMessageBox.question(
                     self,
                     "未保存的参数",
                     "参数已经修改。是否应用后关闭？",
                     QMessageBox.Save | QMessageBox.Discard | QMessageBox.Cancel,
                     QMessageBox.Save,
                 )
+            rows = describe(self._loadedParams, self.collectParams())
+            dialog = QDialog(self)
+            dialog.setWindowTitle("未保存的参数")
+            dialog.resize(760, 400)
+            layout = QVBoxLayout(dialog)
+            layout.addWidget(OptionalWrapLabel("节点参数尚未保存。相机运行参数的保留或恢复将在后续单独确认。"))
+            table = QTableWidget(len(rows), 4)
+            table.setHorizontalHeaderLabels(["参数", "修改前", "修改后", "值的来源"])
+            table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+            table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+            for row, values in enumerate(rows):
+                for column, value in enumerate(values):
+                    table.setItem(row, column, QTableWidgetItem(str(value)))
+            layout.addWidget(table)
+            buttons = QDialogButtonBox()
+            answer = [QMessageBox.Cancel]
+
+            def choose(value):
+                answer[0] = value
+                dialog.accept()
+
+            buttons.addButton("应用节点参数", QDialogButtonBox.AcceptRole).clicked.connect(lambda: choose(QMessageBox.Save))
+            buttons.addButton("放弃节点更改", QDialogButtonBox.DestructiveRole).clicked.connect(lambda: choose(QMessageBox.Discard))
+            back = buttons.addButton("继续编辑", QDialogButtonBox.RejectRole)
+            back.clicked.connect(dialog.reject)
+            back.setDefault(True)
+            layout.addWidget(buttons)
+            dialog.exec_()
+            dialog.deleteLater()
+            return answer[0]
+
+        def closeEvent(self, event) -> None:  # type: ignore[override]
+            if self._disposed:
+                event.accept()
+                return
+            if not self._forceClosing and not self._waitingForDebug and self.isDirty():
+                answer = self._confirmUnsavedParams()
                 if answer == QMessageBox.Cancel:
                     event.ignore()
                     return
                 if answer == QMessageBox.Save and not self.applyChanges():
+                    event.ignore()
+                    return
+            requestClose = getattr(self._controller, "requestClose", None)
+            if callable(requestClose):
+                try:
+                    if not requestClose():
+                        event.ignore()
+                        return
+                except Exception as err:
+                    self.setError(str(err))
                     event.ignore()
                     return
             if self._waitForDebugClose():

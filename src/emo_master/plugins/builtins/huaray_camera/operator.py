@@ -185,6 +185,10 @@ class HuarayCameraOperator:
         self._lifecycleLogger = getOperatorLogger(initContext)
         self._lifecycleLogger.info("Huaray camera operator initialized")
 
+    def createConfiguration(self, params: dict[str, object], persist: Callable):
+        from emo_master.plugins.builtins.huaray_camera.configuration import CameraConfiguration
+        return CameraConfiguration((self._apiFactory or getImvApi)(), params, persist)
+
     def validateParams(self, params: dict[str, object]) -> dict[str, str] | None:
         unknown = sorted(set(params) - set(DEFAULTS))
         if unknown:

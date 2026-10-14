@@ -158,6 +158,10 @@ class RuntimeServiceProtocol(Protocol):
 
     def CloseOperatorPreviewSession(self, request, context): ...
 
+    def OpenCameraConfigurationSession(self, request, context): ...
+
+    def ConfigureOperatorSession(self, request, context): ...
+
     def ListWorkflows(self, request, context): ...
 
     def ListGlobalCounters(self, request, context): ...
@@ -291,6 +295,7 @@ class RuntimeClient:
             from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import DisplayServiceStub
             self._displayService = DisplayServiceStub(ownedChannel)
 
+        self.cameraRecoveryWarnings: list[dict] = []
         self._displayLock = threading.RLock()
         self._displayCalls: dict[str, set[DisplayCallContext]] = {}
         self._closedDisplayOwners: set[str] = set()
@@ -333,6 +338,11 @@ class RuntimeClient:
         reply = (self._call("ListOperators", request) if timeoutMs is None and cancellationToken is None
                  else self._displayCall("ListOperators", request, timeoutMs or self.deadlineMs, cancellationToken, owner))
         parsed: list[OperatorDefinition] = []
+        try:
+            warnings = json.loads(str(getattr(reply, "camera_recovery_warnings_json", "") or "[]"))
+            self.cameraRecoveryWarnings = warnings if isinstance(warnings, list) else []
+        except (ValueError, TypeError):
+            self.cameraRecoveryWarnings = [{"error": "invalid camera recovery record"}]
         for operatorInfo in getattr(reply, "operators", []):
             rawCategory = str(getattr(operatorInfo, "category", "Other")).strip()
             inputPorts = self._toStrMap(
@@ -712,22 +722,25 @@ class RuntimeClient:
         nodeId: str,
         operatorId: str,
         params: dict[str, object],
+        configurationOnly: bool = False,
     ) -> object:
-        return self._call(
-            "OpenOperatorPreviewSession",
+        call = self._cameraConfigurationCall if configurationOnly else self._call
+        return call(
+            "OpenCameraConfigurationSession" if configurationOnly else "OpenOperatorPreviewSession",
             runtime_pb2.OpenOperatorPreviewSessionRequest(
                 project_id=projectId,
                 workflow_id=workflowId,
                 node_id=nodeId,
                 operator_id=operatorId,
                 params_json=json.dumps(params, ensure_ascii=True),
+                configuration_only=configurationOnly,
             ),
         )
 
     def openDraftOperatorPreviewSession(
         self, projectId: str, workflowId: str, nodeId: str, operatorId: str,
         params: dict[str, object], projectPayload: dict[str, object],
-        *, jobId: str = "",
+        *, jobId: str = "", configurationOnly: bool = False,
     ) -> object:
         from emo_master.apps.runtime.preview.draft import MAX_DRAFT_PREVIEW_BYTES
         if not callable(getattr(self.runtimeService, "OpenDraftOperatorPreviewSession", None)):
@@ -739,9 +752,12 @@ class RuntimeClient:
             params_json=json.dumps(params, ensure_ascii=False, allow_nan=False),
             project_json=json.dumps(projectPayload, ensure_ascii=False, allow_nan=False),
             job_id=jobId,
+            configuration_only=configurationOnly,
         )
         if request.ByteSize() > MAX_DRAFT_PREVIEW_BYTES:
             raise RuntimeClientError("E_PREVIEW_CONTEXT_INVALID", "相机预览草稿请求不得超过 768 KiB")
+        if configurationOnly:
+            return self._cameraConfigurationCall("OpenCameraConfigurationSession", request)
         try:
             return self._call("OpenDraftOperatorPreviewSession", request)
         except RuntimeClientError as error:
@@ -750,6 +766,22 @@ class RuntimeClient:
             raise RuntimeClientError(
                 "E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持草稿相机预览，请更新并重启 Runtime"
             ) from error
+
+    def _cameraConfigurationCall(self, methodName: str, request: object):
+        if not callable(getattr(self.runtimeService, methodName, None)):
+            raise RuntimeClientError("E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持相机实时调参，请更新并重启 Runtime")
+        try:
+            return self._call(methodName, request)
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" not in error.code:
+                raise
+            raise RuntimeClientError("E_PREVIEW_UNSUPPORTED", "当前 Runtime 不支持相机实时调参，请更新并重启 Runtime") from error
+
+    def configureOperatorSession(self, sessionId: str, identity: str, requestId: str,
+                                 action: str, payload: dict[str, object]) -> object:
+        return self._cameraConfigurationCall("ConfigureOperatorSession", runtime_pb2.ConfigureOperatorSessionRequest(
+            session_id=sessionId, device_identity=identity, request_id=requestId,
+            action=action, payload_json=json.dumps(payload, ensure_ascii=True, allow_nan=False)))
 
     def streamOperatorPreviewFrames(self, sessionId: str) -> Iterable[object]:
         stream = self._call(

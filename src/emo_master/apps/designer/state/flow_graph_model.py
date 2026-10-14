@@ -132,6 +132,18 @@ class FlowGraphModel:
             raise ValueError(f"unknown node: {nodeId}")
         self.nodes[nodeId].params = dict(params)
 
+    def renameNode(self, nodeId: str, name: str) -> str:
+        node = self._getNodeOrRaise(nodeId)
+        if node.kind != "operator":
+            raise ValueError("只有算子节点支持修改标题")
+        normalized = name.strip()
+        if not normalized:
+            return node.displayName
+        if len(normalized) > 64 or not normalized.isprintable():
+            raise ValueError("节点名称必须是 1-64 个可显示字符，且只能有一行")
+        node.displayName = normalized
+        return normalized
+
     def removeNode(self, nodeId: str) -> None:
         if nodeId not in self.nodes:
             return

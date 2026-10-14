@@ -153,6 +153,7 @@ message GetOperatorIconAssetReply {
 
 message ListOperatorsReply {
   repeated OperatorInfo operators = 1;
+  string camera_recovery_warnings_json = 2;
 }
 
 message GetOperatorEditorAssetRequest {
@@ -296,6 +297,7 @@ message OpenOperatorPreviewSessionRequest {
   // Required by draft preview open RPCs; never replaces the loaded project.
   string project_json = 6;
   string job_id = 7;
+  bool configuration_only = 8;
 }
 
 message OpenOperatorPreviewSessionReply {
@@ -318,6 +320,26 @@ message OperatorPreviewFrame {
   double actual_exposure_us = 6;
   int32 width = 7;
   int32 height = 8;
+  string state = 9;
+  int64 generation = 10;
+  string code = 11;
+  string message = 12;
+}
+
+message ConfigureOperatorSessionRequest {
+  string session_id = 1;
+  string device_identity = 2;
+  string request_id = 3;
+  string action = 4;
+  string payload_json = 5;
+}
+
+message ConfigureOperatorSessionReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string state_json = 4;
+  string warnings_json = 5;
 }
 
 message CloseOperatorPreviewSessionRequest {
@@ -487,6 +509,8 @@ service RuntimeService {
   rpc CancelOperatorPreview(CancelOperatorPreviewRequest) returns (CancelOperatorPreviewReply);
   rpc OpenOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
   rpc OpenDraftOperatorPreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc OpenCameraConfigurationSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
+  rpc ConfigureOperatorSession(ConfigureOperatorSessionRequest) returns (ConfigureOperatorSessionReply);
   rpc OpenDraftPurePreviewSession(OpenOperatorPreviewSessionRequest) returns (OpenOperatorPreviewSessionReply);
   rpc CloseDraftPurePreviewSession(CloseOperatorPreviewSessionRequest) returns (CloseOperatorPreviewSessionReply);
   rpc StreamOperatorPreviewFrames(StreamOperatorPreviewFramesRequest) returns (stream OperatorPreviewFrame);

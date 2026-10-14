@@ -131,7 +131,7 @@ def testCameraEditorShowsOriginalStreamFailure(singleFrame) -> None:
 
     controller = HuarayCameraEditorController()
     controller.context = SimpleNamespace(
-        streamLivePreview=fail,
+        streamCameraConfiguration=fail,
         closeLivePreview=closed.append,
         setError=errors.append,
         log=lambda *_args: None,
@@ -142,4 +142,7 @@ def testCameraEditorShowsOriginalStreamFailure(singleFrame) -> None:
     controller._pollFrame()
     assert len(errors) == 1
     assert "E_CAMERA_DEVICE_NOT_FOUND" in errors[0] and "-106" in errors[0]
-    assert closed == ["failed-session"]
+    assert closed == []
+    assert controller._sessionId == "failed-session"
+    assert controller._snapshot["state"] == "fault"
+    controller.dispose()

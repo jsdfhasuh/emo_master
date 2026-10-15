@@ -493,6 +493,8 @@ service RuntimeService {
   rpc RenewRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
   rpc CloseRunInspectionSession(RunInspectionSessionRequest) returns (RunInspectionSessionReply);
   rpc LoadProject(LoadProjectRequest) returns (LoadProjectReply);
+  rpc GetCommunicationState(CommunicationRequest) returns (CommunicationReply);
+  rpc ControlCommunication(CommunicationRequest) returns (CommunicationReply);
   rpc ValidateProject(ValidateProjectRequest) returns (ValidateProjectReply);
   rpc StartJob(StartJobRequest) returns (StartJobReply);
   rpc GetStartRequest(StartRequestLookup) returns (StartJobReply);
@@ -521,6 +523,27 @@ service RuntimeService {
   rpc GetGlobalCounter(GetGlobalCounterRequest) returns (GetGlobalCounterReply);
   rpc SetGlobalCounter(SetGlobalCounterRequest) returns (SetGlobalCounterReply);
   rpc ResetGlobalCounter(ResetGlobalCounterRequest) returns (ResetGlobalCounterReply);
+}
+
+// Project-owned managed TCP, protocol v1. No workflow send RPC is exposed.
+message CommunicationRequest {
+  string protocol_version = 1;
+  string project_id = 2;
+  string runtime_instance_id = 3;
+  string project_load_generation = 4;
+  string request_id = 5;
+  string action = 6; // SYNC, START, STOP, UNLOAD, PREPARE_DISABLE, ABORT_DISABLE.
+  string config_json = 7;
+  string expected_config_revision = 8;
+  uint64 after_sequence = 9;
+  string project_path = 10; // Required on controls; canonical Runtime project file.
+  string save_token = 11; // Owner capability for a protected disable/save transaction.
+}
+message CommunicationReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string state_json = 4;
 }
 
 // Isolated operator debugging protocol v1. Never starts a production Job.

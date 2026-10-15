@@ -33,6 +33,9 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "communication.plc.slmp_read",
         "communication.plc.slmp_write",
         "communication.tcp.client",
+        "communication.tcp.session",
+        "communication.tcp.session_send",
+        "communication.coordinate_message_format",
         "communication.tcp.receive_once",
         "communication.gateway.coordinate_format",
         "communication.gateway.ack_validate",
@@ -93,7 +96,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.math.exact_integer",
         "vision.collection.number_pair",
     } <= operatorIds
-    assert len(operatorIds) == 65
+    assert len(operatorIds) == 68
     assert list(rejectedReply.rejected) == []
 
 

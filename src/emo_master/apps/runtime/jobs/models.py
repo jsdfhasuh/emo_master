@@ -62,6 +62,7 @@ class JobProcessSpec:
     continuous: bool = False
     cycleIntervalMs: int = 100
     copyArtifacts: bool = True
+    usesCommunication: bool = False
 
     @property
     def inputs_json(self) -> str:

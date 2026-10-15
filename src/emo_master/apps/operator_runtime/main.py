@@ -11,7 +11,7 @@ import time
 
 from PySide2.QtCore import QSettings, QTimer, Qt
 from PySide2.QtWidgets import (
-    QApplication, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QTabWidget, QVBoxLayout, QWidget,
+    QApplication, QDialog, QFileDialog, QHBoxLayout, QLabel, QPushButton, QStyle, QTabWidget, QVBoxLayout, QWidget,
 )
 
 from emo_master.apps.operator_runtime.controller import ProductionRuntime
@@ -39,6 +39,7 @@ class OperatorWindow(QWidget):
         self.operationKind = None
         self.pendingCommand = None
         self.nextStatus = 0.0
+        self.communication = self.communicationDialog = None
         layout = QVBoxLayout(self)
         toolbar = QHBoxLayout()
         self.projectLabel = QLabel("未加载工程")
@@ -51,9 +52,14 @@ class OperatorWindow(QWidget):
         self.targetsButton = self._button("运行目标…", QStyle.SP_FileDialogListView, self.chooseTargets)
         self.startButton = self._button("开始", QStyle.SP_MediaPlay, self.startDetection)
         self.stopButton = self._button("停止", QStyle.SP_MediaStop, self.stopDetection)
+        self.communicationButton = self._button("通信服务…", QStyle.SP_ComputerIcon, self.showCommunication)
         for button in (self.openButton, self.reloadButton, self.updateButton, self.targetsButton, self.startButton, self.stopButton):
             toolbar.addWidget(button)
         layout.addLayout(toolbar)
+        communicationRow = QHBoxLayout()
+        communicationRow.addStretch()
+        communicationRow.addWidget(self.communicationButton)
+        layout.addLayout(communicationRow)
         self.message = QLabel("正在准备 Runtime")
         self.message.setTextFormat(Qt.PlainText)
         self.message.setWordWrap(True)
@@ -77,6 +83,38 @@ class OperatorWindow(QWidget):
         button.setToolTip(text)
         button.clicked.connect(action)
         return button
+
+    def _communicationProject(self):
+        from emo_master.core.project.communication import CommunicationSettings, projectCommunication
+        document = self.controller.document if self.controller else None
+        return dict(projectId=document.project.projectId if document else "", name=document.project.name if document else "未加载项目",
+            path=self.controller.runtime.loadedProjectFile if document else "",
+            token=self.controller.runtime.communicationManager.projectLoadGeneration if self.controller else "",
+            config=(projectCommunication(document) if document else CommunicationSettings()).model_dump())
+
+    def _ensureCommunication(self):
+        if (self.communication is not None or not self.controller
+                or not hasattr(getattr(self.controller, "runtime", None), "communicationManager")):
+            return
+        from emo_master.ui.communication_panel import CommunicationPanel
+        from emo_master.ui.communication_controller import CommunicationController
+        from emo_master.clients.runtime.communication import CommunicationClient
+        self.communicationDialog = QDialog(self)
+        self.communicationDialog.setWindowTitle("项目通信服务（配置由项目提供）")
+        self.communicationDialog.resize(950, 600)
+        panel = CommunicationPanel(self.communicationDialog)
+        layout = QVBoxLayout(self.communicationDialog)
+        layout.addWidget(panel)
+        self.communication = CommunicationController(CommunicationClient(self.controller.runtime), panel,
+            self._communicationProject, parent=self)
+        self.communication.changed.connect(self.communicationButton.setText)
+
+    def showCommunication(self):
+        self._ensureCommunication()
+        if self.communicationDialog is not None:
+            self.communicationDialog.show()
+            self.communicationDialog.raise_()
+            self.communication.nextPoll = 0
 
     def launch(self, kind, operation):
         if self.busy:
@@ -405,6 +443,7 @@ class OperatorWindow(QWidget):
             self.close()
             return
         self.state = value
+        self._ensureCommunication()
         if self.closing:
             self.shutdown()
             return
@@ -431,6 +470,10 @@ class OperatorWindow(QWidget):
 
     def shutdown(self):
         if self.busy:
+            return
+        if self.communication is not None and not self.communication.close():
+            self.message.setText("正在结束通信查询/控制，尚未确认服务释放。")
+            QTimer.singleShot(100, self.shutdown)
             return
         self._removePages()
         self.pendingCommand = None

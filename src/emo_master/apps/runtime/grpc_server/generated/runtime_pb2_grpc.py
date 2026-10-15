@@ -244,6 +244,16 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.LoadProjectRequest.SerializeToString,
                 response_deserializer=runtime__pb2.LoadProjectReply.FromString,
                 _registered_method=True)
+        self.GetCommunicationState = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/GetCommunicationState',
+                request_serializer=runtime__pb2.CommunicationRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CommunicationReply.FromString,
+                _registered_method=True)
+        self.ControlCommunication = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/ControlCommunication',
+                request_serializer=runtime__pb2.CommunicationRequest.SerializeToString,
+                response_deserializer=runtime__pb2.CommunicationReply.FromString,
+                _registered_method=True)
         self.ValidateProject = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/ValidateProject',
                 request_serializer=runtime__pb2.ValidateProjectRequest.SerializeToString,
@@ -641,6 +651,18 @@ class RuntimeServiceServicer(object):
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def GetCommunicationState(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def ControlCommunication(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
     def ValidateProject(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
@@ -1021,6 +1043,16 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     servicer.LoadProject,
                     request_deserializer=runtime__pb2.LoadProjectRequest.FromString,
                     response_serializer=runtime__pb2.LoadProjectReply.SerializeToString,
+            ),
+            'GetCommunicationState': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetCommunicationState,
+                    request_deserializer=runtime__pb2.CommunicationRequest.FromString,
+                    response_serializer=runtime__pb2.CommunicationReply.SerializeToString,
+            ),
+            'ControlCommunication': grpc.unary_unary_rpc_method_handler(
+                    servicer.ControlCommunication,
+                    request_deserializer=runtime__pb2.CommunicationRequest.FromString,
+                    response_serializer=runtime__pb2.CommunicationReply.SerializeToString,
             ),
             'ValidateProject': grpc.unary_unary_rpc_method_handler(
                     servicer.ValidateProject,
@@ -2297,6 +2329,60 @@ class RuntimeService(object):
             '/emo_master.runtime.RuntimeService/LoadProject',
             runtime__pb2.LoadProjectRequest.SerializeToString,
             runtime__pb2.LoadProjectReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetCommunicationState(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/GetCommunicationState',
+            runtime__pb2.CommunicationRequest.SerializeToString,
+            runtime__pb2.CommunicationReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ControlCommunication(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/ControlCommunication',
+            runtime__pb2.CommunicationRequest.SerializeToString,
+            runtime__pb2.CommunicationReply.FromString,
             options,
             channel_credentials,
             insecure,

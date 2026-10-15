@@ -7,12 +7,13 @@ import struct
 from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import TypeAlias
+from emo_master.core.contracts.tcp_service import TcpSessionRef, TcpSendReceipt
 
 
 COMMUNICATION_PAYLOAD_SCHEMA_VERSION = "1.0"
 SUPPORTED_COMMUNICATION_PAYLOAD_SCHEMA_VERSIONS = frozenset({"1.0"})
 COMMUNICATION_PAYLOAD_PORT_TYPES = frozenset(
-    {"plcValueCollection", "plcWriteReceipt", "tcpMessage"}
+    {"plcValueCollection", "plcWriteReceipt", "tcpMessage", "tcpSessionRef", "tcpSendReceipt"}
 )
 PLC_PROTOCOL = "mitsubishiSlmp3e"
 PLC_DATA_TYPES = frozenset(
@@ -509,7 +510,7 @@ class TcpMessage:
         )
 
 
-CommunicationPayload: TypeAlias = PlcValueCollection | PlcWriteReceipt | TcpMessage
+CommunicationPayload: TypeAlias = PlcValueCollection | PlcWriteReceipt | TcpMessage | TcpSessionRef | TcpSendReceipt
 
 
 def parseCommunicationPayload(value: object) -> CommunicationPayload:
@@ -521,6 +522,10 @@ def parseCommunicationPayload(value: object) -> CommunicationPayload:
         return PlcWriteReceipt.fromPayload(payload)
     if payloadType == "tcpMessage":
         return TcpMessage.fromPayload(payload)
+    if payloadType == "tcpSessionRef":
+        return TcpSessionRef.fromPayload(payload)
+    if payloadType == "tcpSendReceipt":
+        return TcpSendReceipt.fromPayload(payload)
     raise CommunicationPayloadValidationError(
         f"unsupported communication payload type: {payloadType!r}"
     )

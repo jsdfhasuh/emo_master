@@ -1,0 +1,68 @@
+{
+  "operatorId": "communication.coordinate_message_format",
+  "displayName": "坐标报文格式化",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._managed_tcp:CoordinateMessageFormatOperator",
+  "category": "通讯",
+  "iconKey": "tcp-client",
+  "summary": "坐标 round 后转文本，保留引号与后缀；默认兼容 LN5 正常 EY 报文。",
+  "inputPorts": {
+    "x": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    },
+    "y": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "data": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "decimals": {
+        "title": "舍入小数位数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 9,
+        "default": 3
+      },
+      "numberFormat": {
+        "title": "数值表示",
+        "type": "string",
+        "enum": [
+          "round",
+          "fixed"
+        ],
+        "default": "round"
+      },
+      "quote": {
+        "title": "包围引号",
+        "type": "string",
+        "enum": [
+          "single",
+          "double",
+          "none"
+        ],
+        "default": "single"
+      },
+      "suffix": {
+        "title": "报文后缀",
+        "type": "string",
+        "default": "EY",
+        "maxLength": 80
+      }
+    }
+  },
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

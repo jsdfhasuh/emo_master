@@ -45,6 +45,7 @@ class WorkflowRunner:
         retainOperators: bool = False,
         globalVariables: object | None = None,
         debugController: Any = None,
+        communication: Any = None,
     ) -> None:
         self.compiledProject = compiledProject
         self.operatorRegistry = operatorRegistry
@@ -81,6 +82,7 @@ class WorkflowRunner:
             globalCounters=self.globalCounters,
             coordinateSnapshots=self.coordinateSnapshots,
             logManager=self._operatorLogManager,
+            communication=communication,
         )
         # Preserve the existing lifecycle inspection hooks while ownership moves.
         self._lifecycleOperators = self.operatorExecutor._lifecycleOperators

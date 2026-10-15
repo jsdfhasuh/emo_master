@@ -28,6 +28,7 @@ SUPPORTED_FOLDERS = (
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
     "coordinate_calculator", "value_select",
     "point_components", "number_absolute", "number_exact_integer", "number_pair",
+    "coordinate_message_format",
 )
 # Explicit user-triggered resource operations. Runtime owns file/socket access and
 # its debug reservation excludes competing execution owners.
@@ -168,7 +169,7 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
         identifier(value)
     payload = parse(raw, MAX_REQUEST_BYTES)
     try:
-        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4"}:
+        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5"}:
             raise ValueError("unsupported project version")
         if payload["project"]["projectId"] != projectId:
             raise ValueError("project identity changed")

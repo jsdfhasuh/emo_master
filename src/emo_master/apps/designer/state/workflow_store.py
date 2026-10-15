@@ -96,8 +96,10 @@ class WorkflowStore:
         )
         if document.production is not None:
             self.projectExtensions["production"] = document.production.model_dump()
-        if document.schemaVersion == "2.4":
+        if document.schemaVersion in {"2.4", "2.5"}:
             self.projectExtensions["globalVariables"] = {key: value.model_dump() for key, value in document.globalVariables.items()}
+        if document.communication is not None:
+            self.projectExtensions["communication"] = document.communication.model_dump()
         self.workflowOrder = list(document.workflowOrder)
         self.entryWorkflowId = document.entryWorkflowId
         self.activeWorkflowId = self.entryWorkflowId
@@ -600,7 +602,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": ("2.4" if "globalVariables" in self.projectExtensions
+            "schemaVersion": ("2.5" if "communication" in self.projectExtensions
+                              else "2.4" if "globalVariables" in self.projectExtensions
                               else "2.3" if "production" in self.projectExtensions
                               else "2.2" if self.projectExtensions else "2.1"),
             **deepcopy(self.projectExtensions),

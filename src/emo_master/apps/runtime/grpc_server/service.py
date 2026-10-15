@@ -39,6 +39,8 @@ from emo_master.apps.runtime.preview.store import PreviewAssetStore, PreviewTran
 from emo_master.apps.runtime.preview.run_inspection import RunInspectionStore
 from emo_master.apps.runtime.preview.plc_debug import PLC_OPERATORS, PlcDebugManager, parseParams as parsePlcDebugParams
 from emo_master.apps.runtime.operator_debug.rpc import OperatorDebugRpcMixin
+from emo_master.apps.runtime.communication.manager import CommunicationManager
+from emo_master.apps.runtime.communication.rpc import CommunicationRpcMixin
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _runtime_pb2
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.core.contracts.port_types import canonicalPortTypes
@@ -47,6 +49,7 @@ from emo_master.core.plugin.models import RegistryScanResult
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument
+from emo_master.core.project.tcp_dependencies import communicationNodes
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError
 
@@ -83,7 +86,7 @@ def _withProjectStateLock(method: Any) -> Any:
     return locked
 
 
-class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
+class RuntimeService(CommunicationRpcMixin, OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServicer):
     @property
     def supportsLegacySnapshotPolicy(self) -> bool:
         # The opt-in normal-Run policy must not widen restricted test hosts.
@@ -190,6 +193,9 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         self._loadedProjectPreviewKey = ""
         self._projectStateLock = threading.RLock()
         self._previewJobLock = threading.RLock()
+        self.runtimeInstanceId = str(uuid4())
+        self.communicationManager = CommunicationManager(self.runtimeInstanceId)
+        self._communicationRequests: dict = {}
         self.jobSupervisor = JobSupervisor(
             self.jobRepository,
             self.eventStore,
@@ -197,6 +203,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             heartbeatTimeoutMs=5000,
             terminalCallback=self._onJobTerminal,
             retiredCallback=self._onJobRetired,
+            communication=self.communicationManager,
         )
         self.jobSupervisor.retirementRepairFactory = self._retirementRepair
         self.jobManager = JobManager(self.jobRepository, self.eventStore, self.jobSupervisor)
@@ -206,7 +213,6 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         self.loadedDocument: ProjectDocument | None = None
         self.loadedPayload: dict[str, object] | None = None
         self.jobMessages: dict[str, str] = {}
-        self.runtimeInstanceId = str(uuid4())
         self.plcDebugManager = PlcDebugManager(self.runtimeInstanceId)
         from emo_master.apps.runtime.operator_debug.contracts import trustedEntries
         from emo_master.apps.runtime.operator_debug.manager import OperatorDebugManager
@@ -250,7 +256,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         try:
             projectFile = resolveProjectFile(Path(projectPathRaw))
         except (OSError, ValueError) as err:
-            self._clearLoadedProject(str(err))
+            self._failedProjectCandidate(str(err))
             return runtime_pb2.LoadProjectReply(
                 ok=False,
                 status="FAILED",
@@ -278,7 +284,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             ProjectGlobalVariables(self.sqliteStore, document.project.projectId, document.globalVariables).synchronize()
         except WorkflowCompileError as err:
-            self._clearLoadedProject(str(err))
+            self._failedProjectCandidate(str(err))
             # LoadProject has a textual error contract. Retain the compiler's
             # existing code/location instead of discarding them via str(err),
             # so a startup chooser can explain which legacy node needs repair.
@@ -288,11 +294,15 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                 details.append(f"{issue.code} [{location}]: {issue.message}")
             return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message="\n".join(details) or str(err))
         except Exception as err:
-            self._clearLoadedProject(str(err))
+            self._failedProjectCandidate(str(err))
             return runtime_pb2.LoadProjectReply(
                 ok=False, status="FAILED", message=f"invalid project file: {err}"
             )
 
+        try:
+            self.communicationManager.load(document, os.path.normcase(str(projectFile.resolve())))
+        except Exception as error:
+            return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message=str(error))
         self.loadedProjectPath = str(projectFile.parent)
         self.loadedProjectFile = str(projectFile)
         self.loadedPayload = document.model_dump(mode="json")
@@ -508,6 +518,18 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                     ),
                 )
 
+            try:
+                from emo_master.core.project.communication import projectCommunication
+                config = projectCommunication(document)
+                with self.jobSupervisor._lock:
+                    limit = self.jobSupervisor.maxConcurrentJobs
+                    if (config.enabled and config.startupPolicy == "on_project_run" and self.communicationManager.state != "LISTENING"
+                            and limit is not None and len(self.jobSupervisor._ownedJobs()) >= limit):
+                        raise ValueError("E_MAX_CONCURRENT_JOBS: maximum concurrent jobs reached")
+                self.communicationManager.preflight(document, workflowId)
+            except Exception as error:
+                return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                    message=f"{getattr(error, 'code', 'E_TCP_PREFLIGHT')}: {error}")
             record = self.jobManager.createJob(
                 projectId=document.project.projectId,
                 projectRevision=document.project.revision,
@@ -553,6 +575,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
                     jobWorkspacePath=str(workspacePath),
                     heartbeatTimeoutMs=document.runtime.heartbeatTimeoutMs,
                     runtimeDbPath=str(self.sqliteStore.dbPath),
+                    usesCommunication=bool(communicationNodes(document, workflowId)),
                     legacySnapshotPolicy=legacyPolicy,
                     continuous=(self.productionMode and document.production is not None
                                 and document.production.mode == "continuous"),
@@ -1601,6 +1624,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             return
         self._closing = True
         self.jobSupervisor.beginClosing()
+        self.communicationManager.beginClosing()
         presentation = getattr(self, "_presentationOwner", None)
         if presentation is not None:
             presentation.beginClosing()
@@ -1619,6 +1643,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         errors.extend(self.jobSupervisor.recoverFinalizations())
         self.jobSupervisor.waitForRetirement(deadline=deadline)
         errors.extend(self.jobSupervisor.finishRetirements())
+        self._closeStep("communication", self.communicationManager.close, retryable=True)
         with self.previewExecutor._stateLock:
             if self.previewExecutor._cancellations:
                 errors.append("Preview work still owns Runtime assets")
@@ -1779,6 +1804,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         return snapshot, workspace
 
     def _onJobTerminal(self, jobId: str, status: str) -> None:
+        self.communicationManager.revokeJob(jobId)
         self.jobMessages.pop(jobId, None)
         previewKey = self._jobPreviewKeys.pop(jobId, "")
         workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
@@ -1819,6 +1845,7 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
             return
 
     def _onJobRetired(self, jobId: str) -> None:
+        self.communicationManager.revokeJob(jobId)
         record = self.jobRepository.get(jobId)
         if record is not None and record.status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
             workspace = self._workspacePaths.get(jobId, self.workspaceRoot / jobId)
@@ -1905,6 +1932,8 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         return None
 
     def _clearLoadedProject(self, message: str) -> None:
+        from emo_master.core.project.communication import CommunicationSettings
+        self.communicationManager.configure("", "", CommunicationSettings())
         if self.loadedProjectId:
             self.livePreviewManager.closeProject(self.loadedProjectId)
             self.plcDebugManager.closeProject(self.loadedProjectId)
@@ -1915,6 +1944,13 @@ class RuntimeService(OperatorDebugRpcMixin, runtime_pb2_grpc.RuntimeServiceServi
         self.loadedDocument = None
         self.loadedPayload = None
         self.jobMessages["__load__"] = message
+
+    def _failedProjectCandidate(self, message):
+        # Do not tear down a live project's listener for an invalid candidate.
+        if self.communicationManager.desired.enabled:
+            self.jobMessages["__load__"] = message
+        else:
+            self._clearLoadedProject(message)
 
 
 def _defaultDbPath() -> Path:

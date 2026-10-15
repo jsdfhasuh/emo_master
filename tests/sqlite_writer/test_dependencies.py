@@ -103,6 +103,7 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
         OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write", *migrationOperators,
         "vision.geometry.point_components", "vision.math.absolute",
         "vision.math.exact_integer", "vision.collection.number_pair",
+        "communication.coordinate_message_format", "communication.tcp.session", "communication.tcp.session_send",
     }
     assert set(legacy.rejectedOperators) == currentCoreOperators
     assert all(legacy.rejectedOperators[operator][0].code == 'E_CORE_VERSION_INCOMPATIBLE'

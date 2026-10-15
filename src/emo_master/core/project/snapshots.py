@@ -296,7 +296,8 @@ def freezeProjectSnapshot(
     capture = captureDefinition(presentationForWorkflow(project, project.entryWorkflowId))
     execution = {"entry": project.entryWorkflowId, "workflows": algorithms, "plugins": versions,
                  **({"globalVariables": {key: value.model_dump() for key, value in project.globalVariables.items()}}
-                    if project.schemaVersion == "2.4" else {}),
+                    if project.schemaVersion in {"2.4", "2.5"} else {}),
+                 **({"communication": project.communication.model_dump()} if project.communication is not None else {}),
                  "resources": {key: item.model_dump(exclude={"path"})
                                for key, item in project.resources.items.items()
                                if item.purpose in {"input_image", "model"}}}

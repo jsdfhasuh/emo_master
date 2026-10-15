@@ -1249,6 +1249,52 @@ class RuntimeClient:
                 raise RuntimeClientError(str(code), detail) from err
             raise
 
+    def communicationState(self, projectId="", afterSequence=0, *, projectPath="", cancellation=None):
+        request = runtime_pb2.CommunicationRequest(protocol_version="1.1", project_id=projectId,
+                                                   after_sequence=afterSequence, project_path=projectPath)
+        return self._communicationCall("GetCommunicationState", request, cancellation)
+
+    def releaseCommunicationForReplacement(self, projectPath, projectId):
+        """Draft opening bypasses LoadProject; it must still retire the old listener."""
+        import os
+        from pathlib import Path
+        try:
+            state = self.communicationState()
+        except RuntimeClientError as error:
+            if error.code == "E_TCP_UNSUPPORTED":
+                return
+            raise
+        if not state.get("projectId"):
+            return
+        key = os.path.normcase(str(Path(projectPath).resolve()))
+        if state["projectId"] == projectId and state.get("projectPath") == key:
+            return
+        self.controlCommunication("UNLOAD", state)
+
+    def controlCommunication(self, action, state, *, config=None, requestId=None, saveToken="", cancellation=None):
+        request = runtime_pb2.CommunicationRequest(protocol_version="1.1", project_id=state["projectId"], project_path=state["projectPath"], save_token=saveToken,
+            runtime_instance_id=state["runtimeInstanceId"], project_load_generation=state["projectLoadGeneration"],
+            expected_config_revision=state["desiredRevision"], request_id=requestId or uuid4().hex,
+            action=action, config_json=json.dumps(config, ensure_ascii=True) if config is not None else "")
+        return self._communicationCall("ControlCommunication", request, cancellation)
+
+    def _communicationCall(self, method, request, cancellation):
+        if not callable(getattr(self.runtimeService, method, None)):
+            raise RuntimeClientError("E_TCP_UNSUPPORTED", "此 Runtime 不支持项目 TCP 通信服务，请更新 Runtime")
+        try:
+            reply = self._displayCall(method, request, 5000, cancellation, "project-communication")
+        except RuntimeClientError as error:
+            if "UNIMPLEMENTED" in error.code:
+                raise RuntimeClientError("E_TCP_UNSUPPORTED", "此 Runtime 不支持项目 TCP 通信服务，请更新 Runtime") from error
+            raise
+        if not reply.ok:
+            code = "E_TCP_PROTOCOL_MISMATCH" if reply.code == "E_TCP_UNSUPPORTED" else reply.code
+            raise RuntimeClientError(code, reply.message)
+        value = json.loads(reply.state_json)
+        if not isinstance(value, dict) or value.get("protocolVersion") != "1.1":
+            raise RuntimeClientError("E_TCP_PROTOCOL", "无效通信状态，请更新 Runtime")
+        return value
+
     def _toEventDTO(self, event: object) -> RuntimeEventDTO:
         payloadJson = getattr(event, "payload_json", "{}")
         payload: dict[str, object] = {}

@@ -28,11 +28,13 @@ class OperatorExecutor:
         globalCounters: object | None = None,
         coordinateSnapshots: CoordinateSnapshots | None = None,
         logManager: OperatorLogManager | None = None,
+        communication: Any = None,
     ) -> None:
         self.operatorRegistry = operatorRegistry
         self.eventPublisher = eventPublisher
         self.globalVariables = globalVariables if globalVariables is not None else ReadOnlyVariables({})
         self.globalCounters = globalCounters
+        self.communication = communication
         self.coordinateSnapshots = coordinateSnapshots if coordinateSnapshots is not None else CoordinateSnapshots()
         self._operatorLogManager = logManager if logManager is not None else OperatorLogManager(
             self.publish if eventPublisher is not None else None
@@ -65,6 +67,8 @@ class OperatorExecutor:
     @staticmethod
     def failureDiagnostics(node, context, nodeDiagnostics, error):
         diagnostics = getattr(error, "diagnostics", {})
+        if node.operatorId == "communication.tcp.session_send" and "tcpReceipt" in nodeDiagnostics:
+            diagnostics = {**diagnostics, "tcpReceipt": nodeDiagnostics["tcpReceipt"]}
         if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
             # A later validation/cancellation failure cannot undo an external commit.
             from emo_master.core.contracts.sqlite_writer import receiptSummary
@@ -141,6 +145,7 @@ class OperatorExecutor:
             "globalVariables": self.globalVariables,
             "mappedOutputs": dict(boundValues or {}),
             "coordinateSnapshots": self.coordinateSnapshots,
+            "communication": self.communication,
         }
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert

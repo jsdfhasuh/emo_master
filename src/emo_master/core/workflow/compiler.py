@@ -55,6 +55,8 @@ class WorkflowCompiler:
         for workflowId, workflow in document.workflows.items():
             for node in workflow.nodes:
                 try:
+                    from emo_master.core.project.tcp_dependencies import validateCommunicationNode
+                    validateCommunicationNode(document, node)
                     resourceBindings: list[ResourceBinding | SiteBinding] = (
                         [*document.resources.parameterBindings, *document.resources.siteBindings] if document.resources else [])
                     occupied = [binding.target.parameterPath for binding in resourceBindings

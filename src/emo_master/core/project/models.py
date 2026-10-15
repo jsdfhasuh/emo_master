@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator, model_serial
 
 from emo_master.core.presentation.models import Presentation
 from emo_master.core.project.resources import ResourcePlan
+from emo_master.core.project.communication import CommunicationSettings
 from emo_master.core.project.global_variables import VariableDefinition, VariableBinding
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
@@ -98,7 +99,7 @@ class ProjectDevices(StrictModel):
 
 
 class ProjectDocument(StrictModel):
-    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4"]
+    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -110,26 +111,32 @@ class ProjectDocument(StrictModel):
     resources: ResourcePlan | None = None
     production: ProductionSettings | None = None
     globalVariables: dict[str, VariableDefinition] = Field(default_factory=dict)
+    communication: CommunicationSettings | None = None
 
     @model_validator(mode="after")
     def validateVersion(self) -> "ProjectDocument":
-        if self.schemaVersion not in {"2.2", "2.3", "2.4"}:
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5"}:
             if {"presentation", "resources"} & self.model_fields_set:
                 raise ValueError("presentation/resources require explicit project 2.2 migration")
         elif self.presentation is None or self.resources is None:
             raise ValueError("project 2.2/2.3 requires presentation and resources")
-        if self.schemaVersion in {"2.3", "2.4"}:
+        if self.schemaVersion in {"2.3", "2.4", "2.5"}:
             if self.production is None:
                 raise ValueError("project 2.3 requires production settings")
         elif "production" in self.model_fields_set:
             raise ValueError("production requires explicit project 2.3 migration")
-        if self.schemaVersion != "2.4" and (self.globalVariables or
+        if self.schemaVersion not in {"2.4", "2.5"} and (self.globalVariables or
             (self.presentation and any(source.kind == "global_variable" for source in self.presentation.dataSources.values())) or any(
             node.globalVariableBindings or node.loop.get("conditionMode") == "globalVariable"
             or node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}
             for workflow in self.workflows.values() for node in workflow.nodes
         )):
             raise ValueError("global variables require explicit project 2.4 migration")
+        if self.schemaVersion == "2.5":
+            if self.communication is None:
+                raise ValueError("project 2.5 requires communication settings")
+        elif "communication" in self.model_fields_set:
+            raise ValueError("communication requires explicit project 2.5 migration")
         names = [value.name for value in self.globalVariables.values()]
         if len(names) != len(set(names)):
             raise ValueError("global variable names must be unique")
@@ -143,16 +150,18 @@ class ProjectDocument(StrictModel):
     @model_serializer(mode="wrap")
     def serializeVersion(self, handler):
         payload = handler(self)
-        if self.schemaVersion not in {"2.2", "2.3", "2.4"}:
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5"}:
             payload.pop("presentation", None)
             payload.pop("resources", None)
-        if self.schemaVersion not in {"2.3", "2.4"}:
+        if self.schemaVersion not in {"2.3", "2.4", "2.5"}:
             payload.pop("production", None)
-        if self.schemaVersion != "2.4":
+        if self.schemaVersion not in {"2.4", "2.5"}:
             payload.pop("globalVariables", None)
             for workflow in payload["workflows"].values():
                 for node in workflow["nodes"]:
                     node.pop("globalVariableBindings", None)
+        if self.schemaVersion != "2.5":
+            payload.pop("communication", None)
         return payload
 
     @model_validator(mode="after")

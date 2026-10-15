@@ -28,6 +28,7 @@ class JobSupervisor:
         heartbeatTimeoutMs: int = 5000,
         terminalCallback: Callable[[str, str], None] | None = None,
         retiredCallback: Callable[[str], None] | None = None,
+        communication: Any = None,
     ) -> None:
         self.jobRepository = jobRepository
         self.eventStore = eventStore
@@ -38,6 +39,7 @@ class JobSupervisor:
         self._callbackEpoch = 0
         self._presentationEpoch: int | None = None
         self.retiredCallback = retiredCallback
+        self.communication = communication
         self.presentationCallback: Callable | None = None
         self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
@@ -87,17 +89,24 @@ class JobSupervisor:
                 spec = replace(spec, heartbeatIntervalMs=heartbeatIntervalMs)
             process = None
             bridge: EventBridge | None = None
+            communicationPipe = None
             try:
                 cell = HeartbeatCell(self._context)
                 spec = replace(spec, heartbeatCell=cell)
+                if self.communication is not None and spec.usesCommunication:
+                    communicationPipe = self.communication.openWorker(spec.jobId, cancelEvent, self._context)
                 process = self._context.Process(
                     target=runJobProcess,
-                    args=(spec, cancelEvent, eventQueue),
+                    args=((spec, cancelEvent, eventQueue, communicationPipe) if communicationPipe is not None
+                          else (spec, cancelEvent, eventQueue)),
                     name=f"emo-master-job-{spec.jobId}",
                 )
                 self._heartbeatCells[spec.jobId] = cell
                 self._heartbeatMonotonic[spec.jobId] = monotonicMs()
                 process.start()
+                if communicationPipe is not None:
+                    communicationPipe.close()
+                    communicationPipe = None
                 self._handles[spec.jobId] = (process, cancelEvent, eventQueue)
                 self._heartbeat[spec.jobId] = nowMs()
                 # Match the legacy startup grace: process.start() itself is
@@ -123,6 +132,11 @@ class JobSupervisor:
                     bridge,
                 )
                 raise
+            finally:
+                if communicationPipe is not None:
+                    communicationPipe.close()
+                if spec.jobId not in self._handles and self.communication is not None:
+                    self.communication.revokeJob(spec.jobId)
 
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:
         self.assertMutationAllowed()

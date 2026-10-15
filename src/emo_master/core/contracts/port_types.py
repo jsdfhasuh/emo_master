@@ -31,6 +31,8 @@ _ALIASES = {
     "plcvaluecollection": "plcValueCollection",
     "plcwritereceipt": "plcWriteReceipt",
     "tcpmessage": "tcpMessage",
+    "tcpsessionref": "tcpSessionRef",
+    "tcpsendreceipt": "tcpSendReceipt",
 }
 
 JSON_PAYLOAD_PORT_TYPES = VISION_PAYLOAD_PORT_TYPES | COMMUNICATION_PAYLOAD_PORT_TYPES

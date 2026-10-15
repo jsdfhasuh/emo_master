@@ -1458,6 +1458,79 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.designerActions = DesignerActions(self)
             self.workflowNavigationControls.bindActions(self.designerActions.actions)
             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
+        self.communicationController = None
+        self.communicationDock = None
+        if _nativeQt:
+            from PySide2.QtWidgets import QDockWidget
+            from emo_master.ui.communication_panel import CommunicationPanel
+            from emo_master.ui.communication_controller import CommunicationController
+            self.communicationDock = QDockWidget("通信服务", self)
+            self.communicationDock.setObjectName("projectCommunicationDock")
+            panel = CommunicationPanel(self.communicationDock)
+            self.communicationDock.setWidget(panel)
+            self.addDockWidget(Qt.BottomDockWidgetArea, self.communicationDock)
+            if self.logDock is not None:
+                self.tabifyDockWidget(self.logDock, self.communicationDock)
+            self.communicationDock.hide()
+            self.communicationStatus = QPushButton("TCP · 请先打开项目")
+            self.communicationStatus.setFlat(True)
+            self.communicationStatus.setToolTip("打开项目通信面板；关闭面板不停止服务")
+            self.communicationStatus.clicked.connect(self.openCommunicationPanel)
+            self.statusBar().addPermanentWidget(self.communicationStatus)
+            self.communicationController = CommunicationController(self.runtimeClient, panel,
+                self._communicationProject, self._saveCommunicationConfig, self._navigateCommunicationSource, self)
+            cast(Any, self.communicationController.changed).connect(self.communicationStatus.setText)
+
+    def _communicationProject(self):
+        from emo_master.core.project.communication import CommunicationSettings
+        return dict(projectId=self._currentProjectId(), name=str(self.workflowStore.project.get("name", "未命名项目")),
+            path=str(self.projectController.currentProjectFile or self.loadedProjectPath or ""),
+            token=self._projectInstanceToken,
+            config=self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
+
+    def openCommunicationPanel(self):
+        dock = getattr(self, "communicationDock", None)
+        if dock is not None:
+            dock.show()
+            dock.raise_()
+            self.communicationController.nextPoll = 0
+
+    def _saveCommunicationConfig(self, config):
+        from copy import deepcopy
+        from emo_master.core.project.migration import migrateProjectPayload
+        from emo_master.core.project.models import ProjectDocument
+        from emo_master.core.project.tcp_dependencies import validateCommunicationNode
+        if self.hasActiveDebugSession():
+            return "请先结束当前调试再保存项目通信配置。"
+        self.workflowController.captureActiveWorkflow()
+        payload = migrateProjectPayload(self.workflowStore.toPayload(), enableCommunication=True)
+        payload["communication"] = config
+        candidate = ProjectDocument.model_validate(payload)
+        for workflow in candidate.workflows.values():
+            for node in workflow.nodes:
+                validateCommunicationNode(candidate, node)
+        target = self.projectController.currentProjectFile
+        if target is None:
+            path, _filter = QFileDialog.getSaveFileName(self, "保存通信配置前先保存项目", "项目.emoproj", "EmoMaster project (*.emoproj)")
+            if not path:
+                return "已取消项目保存；通信草稿保留，Runtime 未改变。"
+            target = Path(path)
+        previousExtensions = deepcopy(self.workflowStore.projectExtensions)
+        self.workflowStore.projectExtensions.update({key: deepcopy(payload[key]) for key in
+            ("presentation", "resources", "production", "globalVariables", "communication")})
+        if not self.saveProjectToDirectory(str(target)):
+            self.workflowStore.projectExtensions.clear()
+            self.workflowStore.projectExtensions.update(previousExtensions)
+            return "项目保存失败。草稿仍保留，Runtime 配置未改变；请检查日志中的路径、权限或配置错误。"
+        return ""
+
+    def _navigateCommunicationSource(self, source):
+        workflowId, nodeId = source.get("workflowId"), source.get("nodeId")
+        workflow = self.workflowStore.workflows.get(workflowId)
+        if workflow is None or not any(n.get("nodeId") == nodeId for n in workflow.nodes):
+            self.appendRuntimeLog("WARN", "通信记录的来源节点已不存在；记录仅作为历史保留。")
+            return
+        self.navigateToWorkflow(workflowId, nodeId)
 
     def _capturePresentationForRun(self, workflowId=None) -> bool | dict:
         """Explicit Run only: request capture without changing normal run semantics."""
@@ -1622,7 +1695,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             except ValueError as error:
                 self.pageCoordinator.offerDraftRecovery(error)
             else:
-                QMessageBox.warning(self, "项目保存失败", "项目未保存；请检查运行日志中的具体路径、权限或配置错误。原有文件未因失败而覆盖。")
+                QMessageBox.warning(self, "项目保存失败", self.projectController.lastSaveError or
+                                    "项目未保存；请检查运行日志中的具体路径、权限或配置错误。原有文件未因失败而覆盖。")
         return bool(ok)
 
     def loadProjectDirectory(self, projectDirPath: str, *, confirmed: bool = False) -> bool:
@@ -1996,6 +2070,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
         self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
         self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
+        self._addMenuAction(runMenu, "通信服务…", self.openCommunicationPanel)
         self._addMenuAction(runMenu, "停止全部", self.stopAllJobs)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
@@ -2996,6 +3071,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 event.ignore()
                 return
         if not self.operatorEditorManager.closeAll():
+            event.ignore()
+            return
+        communication = getattr(self, "communicationController", None)
+        if communication is not None and not communication.close():
+            self.statusBar().showMessage("正在结束通信状态查询/控制；服务状态未确认，请稍后再次关闭。")
             event.ignore()
             return
         self.shutdownOperatorDisplay()
@@ -4756,6 +4836,15 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             # Remote catalogs may arrive after a minimal project was opened.
             schema = (deepcopy(catalogSchema) if not node.paramSchema else
                       mergeParameterTitles(node.paramSchema, catalogSchema))
+            if node.operatorId == "communication.tcp.session":
+                from emo_master.core.project.communication import CommunicationSettings
+                config = cast(dict, self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
+                server = config["tcpServer"]
+                for tcpField, options, labels in (
+                    ("serviceId", [server["serviceId"]], {server["serviceId"]: server["name"]}),
+                    ("channelId", [c["channelId"] for c in server["channels"]], {c["channelId"]: c["name"] for c in server["channels"]})):
+                    tcpSpec = cast(dict, schema.setdefault("properties", {})).setdefault(tcpField, dict(type="string", title=tcpField))
+                    tcpSpec.update(xWidget="workflow-select", xOptions=options, xOptionLabels=labels)
             if node.operatorId == "vision.state.variable_write":
                 # Saved 1.0 nodes only carried variableId. Offer the new modes
                 # without mutating the saved node merely by opening its editor.

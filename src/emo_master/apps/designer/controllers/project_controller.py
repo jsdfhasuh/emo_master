@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Callable
+from typing import Callable, cast
 from uuid import uuid4
 
 from emo_master.apps.designer.state.project_store import (
@@ -46,6 +46,7 @@ class ProjectController:
         self.editCoordinator = None
         self.currentProjectFile: Path | None = None
         self.lastLoadError = ""
+        self.lastSaveError = ""
         self._fallbackProjectMetadata: dict[str, object] = {
             "projectId": str(uuid4()),
             "name": "project",
@@ -164,7 +165,7 @@ class ProjectController:
             self.lastLoadError = f"加载项目失败：{projectDirPath}\n{err}"
             self.appendLog("ERROR", self.lastLoadError)
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4'}:
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
             loaded, runtimePath = True, str(projectFile)
@@ -180,6 +181,15 @@ class ProjectController:
         if self.editCoordinator is not None:
             # Minimal projects of any version may omit registered operator metadata.
             payload = self.editCoordinator.normalizeDraft(payload)
+            release = getattr(self.runtimeClient, "releaseCommunicationForReplacement", None)
+            if (callable(release)
+                    and payload.get("schemaVersion") in {"2.2", "2.3", "2.4", "2.5"}):
+                try:
+                    release(str(projectFile), payload["project"]["projectId"])
+                except Exception as error:
+                    self.lastLoadError = f"切换项目未完成，旧 TCP 服务状态请在通信面板确认：{error}"
+                    self.appendLog("ERROR", self.lastLoadError)
+                    return False, None, None
         self._captureFallbackProjectMetadata(payload)
         if self.workflowController is not None:
             if self.editCoordinator is not None:
@@ -198,6 +208,7 @@ class ProjectController:
     def saveProjectToDirectory(
         self, projectDirPath: str, projectName: str, loadedProjectPath: str | None
     ) -> tuple[bool, Path | None]:
+        self.lastSaveError = ""
         try:
             selected = Path(projectDirPath)
             if self.currentProjectFile is not None and selected == self.currentProjectFile.parent:
@@ -211,8 +222,18 @@ class ProjectController:
             payload = self._buildProjectPayload(projectName, loadedProjectPath)
             saveProject(projectFile, payload)
         except Exception as err:
-            self.appendLog("ERROR", f"项目保存失败：{err}")
+            self.lastSaveError = f"项目保存失败：{err}"
+            self.appendLog("ERROR", self.lastSaveError)
             return False, None
+        if self.currentProjectFile is not None and projectFile.resolve() != self.currentProjectFile.resolve():
+            release = getattr(self.runtimeClient, "releaseCommunicationForReplacement", None)
+            if callable(release):
+                try:
+                    release(str(projectFile), str(cast(dict[str, object], payload["project"])["projectId"]))
+                except Exception as error:
+                    self.lastSaveError = f"副本已写入 {projectFile}，但旧运行上下文未释放；仍保留原项目：{error}"
+                    self.appendLog("ERROR", self.lastSaveError)
+                    return False, None
         if self.workflowController is not None:
             self.workflowController.commitSavedPayload(payload)
         else:

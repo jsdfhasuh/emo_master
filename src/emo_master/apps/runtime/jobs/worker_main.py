@@ -24,7 +24,9 @@ from emo_master.apps.runtime.jobs.models import JobProcessSpec
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
 
 
-def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
+def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPipe=None) -> None:
+    from emo_master.apps.runtime.communication.ipc import CommunicationProxy
+    communication = CommunicationProxy(communicationPipe, cancelEvent) if communicationPipe is not None else None
     heartbeatStop = threading.Event()
     heartbeatEventsStopped = threading.Event()
     heartbeatEmissionLock = threading.Lock()
@@ -92,6 +94,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
             globalVariables=globalVariables,
             resultCollector=_collector(spec, eventQueue),
             retainOperators=spec.continuous,
+            communication=communication,
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
@@ -119,6 +122,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue) -> None:
         )
         raise
     finally:
+        if communication is not None:
+            communication.close()
         try:
             with heartbeatEmissionLock:
                 heartbeatEventsStopped.set()

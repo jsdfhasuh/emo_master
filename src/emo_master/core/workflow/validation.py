@@ -179,7 +179,7 @@ def validateProjectDocument(
                     )
                 if (
                     node.loop.get("contractVersion") == CURRENT_LOOP_CONTRACT_VERSION
-                    and document.schemaVersion not in {"2.1", "2.2", "2.3", "2.4"}
+                    and document.schemaVersion not in {"2.1", "2.2", "2.3", "2.4", "2.5"}
                 ):
                     issues.append(
                         ValidationIssue(

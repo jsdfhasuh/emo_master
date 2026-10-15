@@ -169,7 +169,7 @@ def _extract(package, stage, registry):
         if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
             raise ValueError("runtime package metadata limit")
         manifest = readJson(archive.read("manifest.json"))
-        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4"}:
+        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5"}:
             raise ValueError("unsupported runtime package format")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):

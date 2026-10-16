@@ -28,7 +28,7 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
     properties = json.loads(blur.param_schema_json)["properties"]
     assert properties["kernelSize"]["title"] == "卷积核大小"
     assert properties["kernelSize"]["default"] == 5
-    assert properties["mode"]["enum"] == ["gaussian", "median", "bilateral"]
+    assert properties["mode"]["enum"] == ["gaussian", "median", "bilateral", "mean"]
     assert {
         "communication.plc.slmp_read",
         "communication.plc.slmp_write",
@@ -94,9 +94,10 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.geometry.point_components",
         "vision.math.absolute",
         "vision.math.exact_integer",
+        "vision.math.truncate",
         "vision.collection.number_pair",
     } <= operatorIds
-    assert len(operatorIds) == 68
+    assert len(operatorIds) == 69
     assert list(rejectedReply.rejected) == []
 
 

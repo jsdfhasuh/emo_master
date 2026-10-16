@@ -102,7 +102,7 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     currentCoreOperators = {
         OPERATOR_ID, "vision.state.variable_read", "vision.state.variable_write", *migrationOperators,
         "vision.geometry.point_components", "vision.math.absolute",
-        "vision.math.exact_integer", "vision.collection.number_pair",
+        "vision.math.exact_integer", "vision.math.truncate", "vision.collection.number_pair",
         "communication.coordinate_message_format", "communication.tcp.session", "communication.tcp.session_send",
     }
     assert set(legacy.rejectedOperators) == currentCoreOperators

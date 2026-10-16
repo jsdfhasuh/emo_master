@@ -27,7 +27,7 @@ SUPPORTED_FOLDERS = (
     "morphology", "perspective", "points_reframe", "resize", "rgb_statistics", "roi",
     "rotate", "shape_measurement", "template_match", "threshold", "variable_read", "variable_write",
     "coordinate_calculator", "value_select",
-    "point_components", "number_absolute", "number_exact_integer", "number_pair",
+    "point_components", "number_absolute", "number_exact_integer", "number_pair", "number_truncate",
     "coordinate_message_format",
 )
 # Explicit user-triggered resource operations. Runtime owns file/socket access and

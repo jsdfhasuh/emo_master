@@ -57,7 +57,7 @@ def testLoopbackGrpcNumericExecutionDoesNotLoadOrCreateJob(runtime):
         client = RuntimeClient(stub)
         capabilities = client.operatorDebugCall("GetOperatorDebugCapabilities", pb.OperatorDebugRequest())
         supported = [item["operatorId"] for item in json.loads(capabilities.snapshot_json)["operators"] if item["supported"]]
-        assert len(supported) == 66
+        assert len(supported) == 67
         assert {"vision.compare.number", "vision.value.number", "vision.image.absdiff",
                 "communication.plc.slmp_read", "vision.io.image_loader"} <= set(supported)
         identity = ready(runtime, stub, "vision.compare.number")

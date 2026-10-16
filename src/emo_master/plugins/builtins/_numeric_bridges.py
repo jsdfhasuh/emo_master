@@ -91,3 +91,12 @@ class NumberPairOperator(_NumericOperator):
 
     def _calculate(self, inputs):
         return dict(values=[_number(inputs[name], name) for name in ("first", "second")])
+
+
+class NumberTruncateOperator(_NumericOperator):
+    meta = _meta("vision.math.truncate", "截去小数", dict(value="number"), dict(value="integer"))
+
+    def _calculate(self, inputs):
+        # Toward zero, not floor or nearest. Sign decisions belong upstream:
+        # -0.8 becomes 0 here and must not erase a caller's original sign.
+        return dict(value=int(_number(inputs["value"], "value")))

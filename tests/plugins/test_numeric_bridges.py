@@ -6,13 +6,14 @@ import pytest
 
 from emo_master.core.contracts.geometry2d import CoordinateSpace2D, Point2D
 from emo_master.plugins.builtins._numeric_bridges import (
-    PointComponentsOperator, NumberAbsoluteOperator, NumberExactIntegerOperator, NumberPairOperator,
+    PointComponentsOperator, NumberAbsoluteOperator, NumberExactIntegerOperator, NumberPairOperator, NumberTruncateOperator,
 )
 
 
 @pytest.mark.parametrize("folder,cls", [
     ("point_components", PointComponentsOperator), ("number_absolute", NumberAbsoluteOperator),
     ("number_exact_integer", NumberExactIntegerOperator), ("number_pair", NumberPairOperator),
+    ("number_truncate", NumberTruncateOperator),
 ])
 def testManifestAndParameters(folder, cls):
     path = Path(__file__).resolve().parents[2] / "src/emo_master/plugins/builtins" / folder / "manifest.json"
@@ -45,7 +46,7 @@ def testExactIntegerAndAbsoluteKeepIntegers(value):
 
 
 @pytest.mark.parametrize("value", [True, None, "1", float("nan"), float("inf"), -float("inf")])
-@pytest.mark.parametrize("cls", [NumberExactIntegerOperator, NumberAbsoluteOperator, NumberPairOperator])
+@pytest.mark.parametrize("cls", [NumberExactIntegerOperator, NumberAbsoluteOperator, NumberPairOperator, NumberTruncateOperator])
 def testInvalidNumbersProduceNoStaleOutput(cls, value):
     operator = cls()
     good = dict(first=1, second=2) if cls is NumberPairOperator else dict(value=1)
@@ -69,3 +70,11 @@ def testPairPreservesOrderTypesAndHasNoPersistentList():
     assert new == [-.5, 1.0] and all(type(v) is float for v in new)
     assert old == [120, 2] and new is not old
     assert operator.executeNode(dict(first=1), {}, {})["status"] == "error"
+
+
+@pytest.mark.parametrize("value,expected", [(123.8, 123), (-123.8, -123), (-.8, 0), (.8, 0),
+                                          (0, 0), (65535.999, 65535), (10**100, 10**100)])
+def testTruncateIsTowardZeroNotFloorOrRound(value, expected):
+    result = NumberTruncateOperator().executeNode(dict(value=value), {}, {})
+    assert result["outputs"] == dict(value=expected)
+    assert type(result["outputs"]["value"]) is int

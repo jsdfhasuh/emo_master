@@ -1,13 +1,17 @@
 {
   "operatorId": "vision.preprocess.blur",
   "displayName": "Blur / Denoise",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "entry": "emo_master.plugins.builtins.blur.operator:BlurOperator",
   "category": "预处理",
   "iconKey": "blur",
-  "summary": "执行 Gaussian、Median 或 Bilateral 平滑去噪。",
+  "summary": "执行 Gaussian、Median、Bilateral 或 Mean 平滑去噪。",
   "inputPorts": {
-    "image": {"type": "image", "required": true, "nullable": false},
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
     "frame": {
       "type": "bbox2d",
       "required": false,
@@ -16,7 +20,11 @@
     }
   },
   "outputPorts": {
-    "image": {"type": "image", "required": true, "nullable": false},
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
     "frame": {
       "type": "bbox2d",
       "required": true,
@@ -33,15 +41,17 @@
         "enum": [
           "gaussian",
           "median",
-          "bilateral"
+          "bilateral",
+          "mean"
         ],
         "default": "gaussian",
         "xOptionLabels": {
           "gaussian": "高斯滤波",
           "median": "中值滤波",
-          "bilateral": "双边滤波"
+          "bilateral": "双边滤波",
+          "mean": "均值滤波"
         },
-        "description": "高斯适合一般平滑，中值适合椒盐噪声，双边滤波可保留边缘。"
+        "description": "高斯适合一般平滑，中值适合椒盐噪声，双边滤波可保留边缘，均值滤波对邻域等权平均。"
       },
       "kernelSize": {
         "title": "卷积核大小",

@@ -22,21 +22,22 @@ class OperatorMeta:
     paramSchema: dict[str, object]
 
 
-_MODES = ("gaussian", "median", "bilateral")
+_MODES = ("gaussian", "median", "bilateral", "mean")
 _PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
     "properties": {
         "mode": {
             "title": "滤波模式",
             "type": "string",
-            "enum": ["gaussian", "median", "bilateral"],
+            "enum": ["gaussian", "median", "bilateral", "mean"],
             "default": "gaussian",
             "xOptionLabels": {
                 "gaussian": "高斯滤波",
                 "median": "中值滤波",
                 "bilateral": "双边滤波",
+                "mean": "均值滤波",
             },
-            "description": "高斯适合一般平滑，中值适合椒盐噪声，双边滤波可保留边缘。",
+            "description": "高斯适合一般平滑，中值适合椒盐噪声，双边滤波可保留边缘，均值滤波对邻域等权平均。",
         },
         "kernelSize": {
             "title": "卷积核大小",
@@ -101,7 +102,7 @@ class BlurOperator:
     meta = OperatorMeta(
         operatorId="vision.preprocess.blur",
         displayName="Blur / Denoise",
-        version="1.0.0",
+        version="1.1.0",
         inputPorts={
             "image": {"type": "image", "required": True, "nullable": False},
             "frame": {
@@ -176,6 +177,9 @@ class BlurOperator:
                     float(cast(int | float, params.get("sigmaX", 0.0))),
                     sigmaY=float(cast(int | float, params.get("sigmaY", 0.0))),
                 )
+            elif mode == "mean":
+                kernelSize = cast(int, params.get("kernelSize", 5))
+                result = cv2.blur(image, (kernelSize, kernelSize))
             elif mode == "median":
                 result = cv2.medianBlur(
                     image,

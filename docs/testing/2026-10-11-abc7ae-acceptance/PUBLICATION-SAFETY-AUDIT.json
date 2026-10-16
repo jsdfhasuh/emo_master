@@ -1,0 +1,39 @@
+{
+  "utc": "2026-10-11T11:05:00.623396+00:00",
+  "method": "Read-only scan of every decompressed main ZIP member, all diagnosis files, and staged top-level files; also recursively decodes ZIP-shaped nested artifacts up to depth five. No extraction or probe execution. No matched values emitted.",
+  "patterns": [
+    "private_key_header",
+    "aws_access_key",
+    "openai_key",
+    "github_token",
+    "bearer_token",
+    "jwt",
+    "signed_url",
+    "internal_transfer_url",
+    "url_embedded_credentials"
+  ],
+  "files_scanned_including_nested_and_duplicates": 9943,
+  "bytes_scanned": 460026739,
+  "nested_archives_decoded": 136,
+  "findings": [],
+  "candidate_count": 0,
+  "limitations": "Heuristic static bytes scan, not a proof of absence of every secret. No OCR or non-ZIP compressed-stream decoding. Original files unmodified.",
+  "final_incremental_scan": {
+    "path": "CODEX_HANDOFF_PROMPT.md",
+    "bytes": 8880,
+    "sha256": "c65add7d8de2a888f0208f254d0ec9a65dd03f60cd65ac1ccf8d96f963debb26",
+    "patterns": [
+      "private_key_header",
+      "aws_access_key",
+      "openai_key",
+      "github_token",
+      "bearer_token",
+      "jwt",
+      "signed_url",
+      "internal_transfer_url",
+      "url_embedded_credentials"
+    ],
+    "findings": [],
+    "candidate_count": 0
+  }
+}

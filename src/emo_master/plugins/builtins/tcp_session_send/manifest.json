@@ -1,0 +1,55 @@
+{
+  "operatorId": "communication.tcp.session_send",
+  "displayName": "TCP 会话发送",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._managed_tcp:TcpSessionSendOperator",
+  "category": "通讯",
+  "iconKey": "tcp-client",
+  "summary": "仅向输入会话的原连接发送；无自动重试，回执不表示设备执行完成。",
+  "inputPorts": {
+    "session": {
+      "type": "tcpSessionRef",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "data": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "receipt": {
+      "type": "tcpSendReceipt",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "encoding": {
+        "title": "发送编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8"
+      },
+      "appendNewline": {
+        "title": "追加换行",
+        "type": "boolean",
+        "default": false
+      }
+    }
+  },
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

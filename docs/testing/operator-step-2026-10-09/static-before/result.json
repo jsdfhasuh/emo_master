@@ -1,0 +1,43 @@
+{
+  "steps": [
+    {
+      "name": "proto",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "returnCode": 0
+    },
+    {
+      "name": "ruff",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "src",
+        "tests"
+      ],
+      "returnCode": 0
+    },
+    {
+      "name": "mypy",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "--config-file",
+        "mypy.ini",
+        "--no-incremental",
+        "--shadow-file",
+        "src/emo_master/apps/runtime/workflow/runner.py",
+        "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\testing\\operator-step-2026-10-09\\static-baseline\\runner-before.py.txt",
+        "src"
+      ],
+      "returnCode": 1
+    }
+  ],
+  "returnCode": 1,
+  "sourceChangedDuringRun": []
+}

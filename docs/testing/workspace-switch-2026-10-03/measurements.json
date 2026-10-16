@@ -1,0 +1,75 @@
+{
+  "head": "842d87a97efb62ac20364ff248e5a0c4db105831",
+  "dirty": " M docs/development-guide.md\n M scripts/validate_page_editor.py\n M src/emo_master/apps/designer/page_designer/canvas_tools.py\n M src/emo_master/apps/designer/page_designer/coordinator.py\n M src/emo_master/apps/designer/page_designer/grid_geometry.py\n M src/emo_master/apps/designer/page_designer/palette.py\n M src/emo_master/apps/designer/page_designer/preview.py\n M src/emo_master/apps/designer/page_designer/property_panel.py\n M src/emo_master/apps/designer/page_designer/tools.py\n M src/emo_master/apps/designer/page_designer/workspace.py\n M src/emo_master/apps/designer/ui/main_window.py\n M src/emo_master/apps/designer/ui/styles/app.qss\n M src/emo_master/ui/presentation/design_examples.py\n M src/emo_master/ui/presentation/renderer.py\n M tests/designer/test_visual_layout.py\n M tests/ui/page_designer/test_current_job_viewing.py\n M tests/ui/page_designer/test_delivery_path.py\n M tests/ui/page_designer/test_normal_run_path.py\n M tests/ui/page_designer/test_normal_run_viewing.py\n M tests/ui/page_designer/test_page_navigation.py\n M tests/ui/page_designer/test_preview.py\n M tests/ui/page_designer/test_retained_acceptance_multiscope.py\n M tests/ui/page_designer/test_two_job_observation.py\n M tests/ui/page_designer/test_usable_properties.py\n M tests/ui/page_designer/test_user_path.py\n M tests/ui/page_designer/test_visual_editor.py\n?? docs/testing/workspace-ui-2026-10-03.md\n?? docs/testing/workspace-ui-2026-10-03/\n?? scripts/validate_designer_workspaces.py\n?? src/emo_master/apps/designer/page_designer/chrome.py\n?? src/emo_master/apps/designer/page_designer/preview_window.py\n?? src/emo_master/apps/designer/page_designer/workspace_switch.py\n?? tests/ui/page_designer/test_palette.py\n?? tests/ui/page_designer/test_workspace_modes.py\n?? tests/ui/page_designer/test_workspace_switch.py\n",
+  "dpr": 1.0,
+  "animationMs": 180,
+  "frames": [
+    {
+      "file": "slide-00.png",
+      "elapsed": 0,
+      "position": 0.0
+    },
+    {
+      "file": "slide-01.png",
+      "elapsed": 0,
+      "position": 0.0
+    },
+    {
+      "file": "slide-02.png",
+      "elapsed": 34,
+      "position": 0.46636899862825787
+    },
+    {
+      "file": "slide-03.png",
+      "elapsed": 65,
+      "position": 0.7392189643347051
+    },
+    {
+      "file": "slide-04.png",
+      "elapsed": 98,
+      "position": 0.9054581618655693
+    },
+    {
+      "file": "slide-05.png",
+      "elapsed": 129,
+      "position": 0.9772546296296296
+    },
+    {
+      "file": "slide-06.png",
+      "elapsed": 161,
+      "position": 0.99882390260631
+    },
+    {
+      "file": "slide-07.png",
+      "elapsed": 180,
+      "position": 1.0
+    },
+    {
+      "file": "slide-08.png",
+      "elapsed": 180,
+      "position": 1.0
+    },
+    {
+      "file": "slide-09.png",
+      "elapsed": 180,
+      "position": 1.0
+    }
+  ],
+  "buttons": [
+    {
+      "text": "流程设计",
+      "width": 92,
+      "visible": 92
+    },
+    {
+      "text": "页面设计",
+      "width": 92,
+      "visible": 92
+    }
+  ],
+  "noRuntimeOrJob": true,
+  "sourceSha256": {
+    "src/emo_master/apps/designer/page_designer/chrome.py": "a54bfe05fa3eead26576986131646cc57964dbdaa6694034e8b6eb31f764517b",
+    "src/emo_master/apps/designer/page_designer/workspace_switch.py": "d8f93800bc0f5771b98c67f4cc5d9ee589e5432a7b657d18f29b2d477868e8bd"
+  }
+}

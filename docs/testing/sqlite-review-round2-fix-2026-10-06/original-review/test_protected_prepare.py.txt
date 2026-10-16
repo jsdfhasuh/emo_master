@@ -1,0 +1,121 @@
+"""Verify every formal entry protects the Runtime-owned SQLite state file."""
+from pathlib import Path
+from copy import deepcopy
+import json
+import multiprocessing
+import sqlite3
+import sys
+import tempfile
+import traceback
+
+import grpc
+import pytest
+
+REPO = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+sys.path.insert(0, str(REPO))
+sys.path.insert(0, str(REPO / 'src'))
+
+
+def protectedProbe(directory, mode, sender):
+    from emo_master.apps.runtime.grpc_server.service import RuntimeService
+    from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc as rpc
+    from emo_master.apps.runtime.main import createRuntimeServer
+    from emo_master.core.project.migration import migrateProjectPayload
+    from emo_master.core.project.models import ProjectDocument
+    from tests.sqlite_writer.test_dependencies import project
+    from tests.runtime.runtime_test_utils import waitForTerminal
+    root = Path(directory)
+    root.mkdir(parents=True)
+    state = root / 'control-state.sqlite3'
+    service = RuntimeService(dbPath=state, workspaceRoot=root / 'jobs')
+    server = channel = None
+    try:
+        server, port, _ = createRuntimeServer(port=0, runtimeService=service)
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        grpc.channel_ready_future(channel).result(timeout=5)
+        stub = rpc.RuntimeServiceStub(channel)
+        inspected = stub.InspectSqliteTarget(pb.InspectSqliteTargetRequest(database_path=str(state),
+            project_directory=str(root), table='globalCounters'), timeout=3)
+        mappings = [
+            {'column': column, 'source': {'kind': 'constant', 'value': value}, 'storageType': kind, 'missing': 'error'}
+            for column, value, kind in [('projectId', 'review-owned', 'TEXT'), ('name', 'probe', 'TEXT'),
+                                      ('value', 123, 'INTEGER'), ('updatedAtMs', 1, 'INTEGER')]]
+        payload = project(rows=mappings)
+        flow = payload['workflows']['main']
+        flow['inputs'] = {}
+        writer = flow['nodes'][0]
+        writer['params'].update(databasePath=str(state), table='globalCounters')
+        (root / 'project.json').write_text(json.dumps(payload), encoding='utf-8')
+        loaded = stub.LoadProject(pb.LoadProjectRequest(project_path=str(root)), timeout=3)
+        normal = stub.StartJob(pb.StartJobRequest(project_id='sqlite-test'), timeout=3)
+        document = ProjectDocument.model_validate(migrateProjectPayload(payload, enablePresentation=True))
+        prepared = None
+        prepareError = None
+        options = {'mode': mode}
+        if mode == 'release':
+            options['releaseRevision'] = 'review-temp-only'
+        try:
+            prepared = service._presentationOwner.prepare(document, root, **options)
+        except Exception as failure:
+            prepareError = {'type': type(failure).__name__, 'code': getattr(failure, 'code', ''), 'message': str(failure)}
+        evidence = {'mode': mode, 'dbPath': str(state), 'managementAccepted': inspected.ok,
+            'managementCode': inspected.code, 'normalAccepted': normal.ok, 'normalMessage': normal.message,
+            'loaded': loaded.ok, 'prepareAccepted': prepared is not None, 'prepareError': prepareError}
+        if prepared is not None:
+            frozen = ProjectDocument.model_validate_json(prepared.projectPath.read_text(encoding='utf-8'))
+            evidence['frozenWriterTarget'] = frozen.workflows['main'].nodes[0].params['databasePath']
+            job = service._presentationOwner.start(prepared.snapshot.snapshotId)
+            terminal = waitForTerminal(service, job, timeoutSeconds=12)
+            evidence['jobId'] = job
+            evidence['jobStatus'] = terminal.status
+            for row in service.eventStore.readMerged(job):
+                if row.eventType == 'sqlite.write.finished':
+                    evidence['receipt'] = json.loads(row.payloadJson)['receipt']
+        with sqlite3.connect(state) as connection:
+            evidence['runtimeInternalRows'] = connection.execute("SELECT projectId,name,value FROM globalCounters WHERE projectId='review-owned'").fetchall()
+        with sqlite3.connect(evidence.get('frozenWriterTarget', state)) as connection:
+            evidence['frozenRows'] = connection.execute("SELECT projectId,name,value FROM globalCounters WHERE projectId='review-owned'").fetchall()
+        sender.send(evidence)
+    except BaseException:
+        sender.send({'mode': mode, 'probeError': traceback.format_exc()})
+        raise
+    finally:
+        if channel is not None:
+            channel.close()
+        if server is not None:
+            server.stop(0).wait()
+        service.close()
+        assert not multiprocessing.active_children()
+        sender.close()
+
+
+@pytest.mark.parametrize('mode', ['debug', 'release'])
+def testPreparedPathRejectsSameProtectedTargetAsNormalStart(tmp_path, mode):
+    # Keep Runtime namespace names below Windows MAX_PATH. Preserve the earlier
+    # long-path raw log separately; it did not validate rejection in debug mode.
+    dataRoot = Path(tempfile.mkdtemp(prefix='sqlite-r2-', dir='D:/'))
+    context = multiprocessing.get_context('spawn')
+    receive, send = context.Pipe(duplex=False)
+    process = context.Process(target=protectedProbe, args=(str(dataRoot / mode), mode, send))
+    process.start()
+    send.close()
+    try:
+        assert receive.poll(25), 'outer watchdog; final terminate/kill/join still required'
+        result = receive.recv()
+        process.join(5)
+        print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'protected-prepare', **result}, ensure_ascii=True))
+        assert not process.is_alive() and process.exitcode == 0
+        assert 'probeError' not in result
+        assert result['managementAccepted'] is False and result['normalAccepted'] is False
+        assert result['prepareAccepted'] is False, 'formal prepared path bypassed Runtime state-file protection'
+        assert result['prepareError']['code'] == 'E_SQLITE_TARGET', 'unrelated errors are not proof of protected-target rejection'
+    finally:
+        if process.is_alive():
+            process.terminate()
+            process.join(3)
+        if process.is_alive():
+            process.kill()
+            process.join(3)
+        receive.close()
+        process.close()

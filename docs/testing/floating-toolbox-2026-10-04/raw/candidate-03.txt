@@ -1,0 +1,142 @@
+..........FFFF..................................F....................... [ 98%]
+.                                                                        [100%]
+================================== FAILURES ===================================
+_____________ testPositionRestoreAndMalformedPreferences[stored1] _____________
+
+stored = ['nan', 3]
+designerApplication = <PySide2.QtWidgets.QApplication(0x28675a0dc60) at 0x000002867645D680>
+
+    @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+    def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+        settings = Settings()
+        settings.setValue(FloatingToolbox.positionKey, stored)
+        window, _ = makeWindow(settings)
+        window.expandSidebar()
+        QApplication.processEvents()
+        assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+        if stored == [200, 80]:
+            assert window.floatingToolbox.x() == 200
+        else:
+>           assert window.floatingToolbox.pos() == QPoint(12, 12)
+E           assert PySide2.QtCore.QPoint(13, 13) == PySide2.QtCore.QPoint(12, 12)
+E            +  where PySide2.QtCore.QPoint(13, 13) = <built-in method pos of FloatingToolbox object at 0x0000028679F44540>()
+E            +    where <built-in method pos of FloatingToolbox object at 0x0000028679F44540> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d58940, name="floatingToolbox") at 0x0000028679F44540>.pos
+E            +      where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d58940, name="floatingToolbox") at 0x0000028679F44540> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2867910e3a0) at 0x0000028677205680>.floatingToolbox
+E            +  and   PySide2.QtCore.QPoint(12, 12) = QPoint(12, 12)
+
+tests\designer\test_floating_toolbox.py:214: AssertionError
+_____________ testPositionRestoreAndMalformedPreferences[stored2] _____________
+
+stored = [inf, 2]
+designerApplication = <PySide2.QtWidgets.QApplication(0x28675a0dc60) at 0x000002867645D680>
+
+    @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+    def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+        settings = Settings()
+        settings.setValue(FloatingToolbox.positionKey, stored)
+        window, _ = makeWindow(settings)
+        window.expandSidebar()
+        QApplication.processEvents()
+        assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+        if stored == [200, 80]:
+            assert window.floatingToolbox.x() == 200
+        else:
+>           assert window.floatingToolbox.pos() == QPoint(12, 12)
+E           assert PySide2.QtCore.QPoint(13, 13) == PySide2.QtCore.QPoint(12, 12)
+E            +  where PySide2.QtCore.QPoint(13, 13) = <built-in method pos of FloatingToolbox object at 0x0000028679EFD280>()
+E            +    where <built-in method pos of FloatingToolbox object at 0x0000028679EFD280> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d4e610, name="floatingToolbox") at 0x0000028679EFD280>.pos
+E            +      where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d4e610, name="floatingToolbox") at 0x0000028679EFD280> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2867910a040) at 0x0000028679F1D7C0>.floatingToolbox
+E            +  and   PySide2.QtCore.QPoint(12, 12) = QPoint(12, 12)
+
+tests\designer\test_floating_toolbox.py:214: AssertionError
+_____________ testPositionRestoreAndMalformedPreferences[stored3] _____________
+
+stored = [1]
+designerApplication = <PySide2.QtWidgets.QApplication(0x28675a0dc60) at 0x000002867645D680>
+
+    @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+    def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+        settings = Settings()
+        settings.setValue(FloatingToolbox.positionKey, stored)
+        window, _ = makeWindow(settings)
+        window.expandSidebar()
+        QApplication.processEvents()
+        assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+        if stored == [200, 80]:
+            assert window.floatingToolbox.x() == 200
+        else:
+>           assert window.floatingToolbox.pos() == QPoint(12, 12)
+E           assert PySide2.QtCore.QPoint(13, 13) == PySide2.QtCore.QPoint(12, 12)
+E            +  where PySide2.QtCore.QPoint(13, 13) = <built-in method pos of FloatingToolbox object at 0x0000028679F3E4C0>()
+E            +    where <built-in method pos of FloatingToolbox object at 0x0000028679F3E4C0> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d4c9a0, name="floatingToolbox") at 0x0000028679F3E4C0>.pos
+E            +      where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d4c9a0, name="floatingToolbox") at 0x0000028679F3E4C0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2867910a970) at 0x0000028679EE4A00>.floatingToolbox
+E            +  and   PySide2.QtCore.QPoint(12, 12) = QPoint(12, 12)
+
+tests\designer\test_floating_toolbox.py:214: AssertionError
+_______________ testPositionRestoreAndMalformedPreferences[bad] _______________
+
+stored = 'bad'
+designerApplication = <PySide2.QtWidgets.QApplication(0x28675a0dc60) at 0x000002867645D680>
+
+    @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+    def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+        settings = Settings()
+        settings.setValue(FloatingToolbox.positionKey, stored)
+        window, _ = makeWindow(settings)
+        window.expandSidebar()
+        QApplication.processEvents()
+        assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+        if stored == [200, 80]:
+            assert window.floatingToolbox.x() == 200
+        else:
+>           assert window.floatingToolbox.pos() == QPoint(12, 12)
+E           assert PySide2.QtCore.QPoint(13, 13) == PySide2.QtCore.QPoint(12, 12)
+E            +  where PySide2.QtCore.QPoint(13, 13) = <built-in method pos of FloatingToolbox object at 0x0000028679EAA500>()
+E            +    where <built-in method pos of FloatingToolbox object at 0x0000028679EAA500> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d508a0, name="floatingToolbox") at 0x0000028679EAA500>.pos
+E            +      where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x28675d508a0, name="floatingToolbox") at 0x0000028679EAA500> = <emo_master.apps.designer.ui.main_window.MainWindow(0x28679106ca0) at 0x0000028676C08BC0>.floatingToolbox
+E            +  and   PySide2.QtCore.QPoint(12, 12) = QPoint(12, 12)
+
+tests\designer\test_floating_toolbox.py:214: AssertionError
+_____________ testSidebarStaysCollapsedAcrossShowResizeAndRestore _____________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x28675a0dc60) at 0x000002867645D680>
+
+    def testSidebarStaysCollapsedAcrossShowResizeAndRestore(styledApp):
+        window = makeWindow()
+        try:
+            window.show()
+            for width, height in ((1280, 720), (960, 540), (1800, 900)):
+                window.resize(width, height)
+                window.restoreMainSplitterSizes()
+                styledApp.processEvents()
+                assert window.sidebarContainer.isHidden()
+                assert window.getMainSplitterSizes()[0] == 0
+                assert not window.floatingToolbox.isExpanded()
+                assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+            window.expandSidebar()
+            styledApp.processEvents()
+            canvasSize = window.flowView.viewport().size()
+            window.saveMainSplitterSizes([260, 850, 320])
+            stored = window.getMainSplitterSizes()
+            window.collapseSidebar()
+            window.resize(1200, 680)
+            styledApp.processEvents()
+            window.expandSidebar()
+            styledApp.processEvents()
+            assert window.floatingToolbox.isExpanded()
+            assert window.sidebarContainer.isHidden()
+            assert canvasSize.width() > window.floatingToolbox.width()
+>           assert window.layoutController._expandedSplitterSizes == stored
+E           assert [260, 850, 320] == [0, 1284, 484]
+E             
+E             At index 0 diff: 260 != 0
+E             Use -v to get more diff
+
+tests\designer\test_visual_layout.py:102: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored1]
+FAILED tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored2]
+FAILED tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored3]
+FAILED tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[bad]
+FAILED tests/designer/test_visual_layout.py::testSidebarStaysCollapsedAcrossShowResizeAndRestore
+5 failed, 68 passed in 10.03s

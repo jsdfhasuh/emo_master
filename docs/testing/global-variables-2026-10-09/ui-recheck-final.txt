@@ -1,0 +1,23 @@
+..................................FF                                     [100%]
+================================== FAILURES ===================================
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+tests\designer\test_minimal_project_metadata.py:94: in testEditorUsesLateCatalogWithoutMutatingSavedGraph
+    assert node.paramSchema == {}
+E   AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E     Left contains 3 more items:
+E     {'properties': {'colorMode': {'default': 'color',
+E                                   'enum': ['color', 'grayscale'],
+E                                   'title': '��ɫģʽ',
+E                                   'type': 'string'},
+E                     'folderPath': {'default': '',...
+E
+E     ...Full output truncated (10 lines hidden), use '-vv' to show
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+tests\designer\test_minimal_project_metadata.py:125: in testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+    hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E   KeyError: 'folderPath'
+=========================== short test summary info ===========================
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+2 failed, 34 passed in 5.26s

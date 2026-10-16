@@ -1,7 +1,9 @@
 from dataclasses import dataclass, field
+from copy import deepcopy
 from uuid import uuid4
 
 from emo_master.apps.designer.state.schema_utils import collectSchemaErrors
+from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.graph.validator import validateFlowGraph
 
 
@@ -14,6 +16,10 @@ class FlowNode:
     outputPorts: dict[str, str]
     paramSchema: dict[str, object] = field(default_factory=dict)
     params: dict[str, object] = field(default_factory=dict)
+    kind: str = "operator"
+    targetWorkflowId: str | None = None
+    loop: dict[str, object] = field(default_factory=dict)
+    globalVariableBindings: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -37,16 +43,42 @@ class FlowGraphModel:
         inputPorts: dict[str, str],
         outputPorts: dict[str, str],
         paramSchema: dict[str, object] | None = None,
+        kind: str = "operator",
+        targetWorkflowId: str | None = None,
+        loop: dict[str, object] | None = None,
     ) -> str:
         nodeId = f"node-{uuid4().hex[:8]}"
-        self.nodes[nodeId] = FlowNode(
+        node = FlowNode(
             nodeId=nodeId,
             operatorId=operatorId,
             displayName=displayName,
             inputPorts=dict(inputPorts),
             outputPorts=dict(outputPorts),
             paramSchema={} if paramSchema is None else dict(paramSchema),
+            kind=kind,
+            targetWorkflowId=targetWorkflowId,
+            loop={} if loop is None else dict(loop),
         )
+        if kind in {"workflow_input", "workflow_output"}:
+            self.nodes[nodeId] = node
+            return nodeId
+
+        # Keep user-created nodes first so existing selection and navigation
+        # callers do not accidentally select an invisible system boundary.
+        regularNodes = {
+            nodeId: value
+            for nodeId, value in self.nodes.items()
+            if value.kind not in {"workflow_input", "workflow_output"}
+        }
+        boundaryNodes = {
+            nodeId: value
+            for nodeId, value in self.nodes.items()
+            if value.kind in {"workflow_input", "workflow_output"}
+        }
+        regularNodes[nodeId] = node
+        self.nodes.clear()
+        self.nodes.update(regularNodes)
+        self.nodes.update(boundaryNodes)
         return nodeId
 
     def selectNode(self, nodeId: str | None) -> None:
@@ -73,7 +105,7 @@ class FlowGraphModel:
             raise ValueError(f"unknown target port: {toNode}.{toPort}")
         sourceType = sourceNode.outputPorts[fromPort]
         targetType = targetNode.inputPorts[toPort]
-        if sourceType != targetType:
+        if not arePortTypesCompatible(sourceType, targetType):
             raise ValueError(
                 f"port type mismatch: {fromNode}.{fromPort}({sourceType}) -> {toNode}.{toPort}({targetType})"
             )
@@ -100,8 +132,22 @@ class FlowGraphModel:
             raise ValueError(f"unknown node: {nodeId}")
         self.nodes[nodeId].params = dict(params)
 
+    def renameNode(self, nodeId: str, name: str) -> str:
+        node = self._getNodeOrRaise(nodeId)
+        if node.kind != "operator":
+            raise ValueError("只有算子节点支持修改标题")
+        normalized = name.strip()
+        if not normalized:
+            return node.displayName
+        if len(normalized) > 64 or not normalized.isprintable():
+            raise ValueError("节点名称必须是 1-64 个可显示字符，且只能有一行")
+        node.displayName = normalized
+        return normalized
+
     def removeNode(self, nodeId: str) -> None:
         if nodeId not in self.nodes:
+            return
+        if self.isBoundaryNode(nodeId):
             return
         del self.nodes[nodeId]
         self.edges = [
@@ -111,6 +157,10 @@ class FlowGraphModel:
         ]
         if self.selectedNodeId == nodeId:
             self.selectedNodeId = None
+
+    def isBoundaryNode(self, nodeId: str) -> bool:
+        node = self.nodes.get(nodeId)
+        return node is not None and node.kind in {"workflow_input", "workflow_output"}
 
     def removeEdge(
         self, fromNode: str, fromPort: str, toNode: str, toPort: str
@@ -190,6 +240,10 @@ class FlowGraphModel:
                     "outputPorts": dict(node.outputPorts),
                     "paramSchema": dict(node.paramSchema),
                     "params": dict(node.params),
+                    "kind": node.kind,
+                    "targetWorkflowId": node.targetWorkflowId,
+                    "loop": dict(node.loop),
+                    **({"globalVariableBindings": deepcopy(node.globalVariableBindings)} if node.globalVariableBindings else {}),
                 }
                 for node in self.nodes.values()
             ],
@@ -222,15 +276,24 @@ class FlowGraphModel:
                 outputPorts = item.get("outputPorts", {})
                 paramSchema = item.get("paramSchema", {})
                 params = item.get("params", {})
-                if not isinstance(nodeId, str) or not isinstance(operatorId, str):
+                kind = item.get("kind", "operator")
+                targetWorkflowId = item.get("targetWorkflowId")
+                loop = item.get("loop", {})
+                if not isinstance(nodeId, str):
                     continue
+                if not isinstance(operatorId, str):
+                    operatorId = ""
                 if not isinstance(displayName, str):
-                    displayName = operatorId
+                    displayName = operatorId or str(kind) if isinstance(kind, str) else nodeId
                 if not isinstance(inputPorts, dict) or not isinstance(
                     outputPorts, dict
                 ):
                     continue
                 if not isinstance(paramSchema, dict) or not isinstance(params, dict):
+                    continue
+                if not isinstance(kind, str) or not isinstance(loop, dict):
+                    continue
+                if targetWorkflowId is not None and not isinstance(targetWorkflowId, str):
                     continue
                 self.nodes[nodeId] = FlowNode(
                     nodeId=nodeId,
@@ -248,7 +311,25 @@ class FlowGraphModel:
                     },
                     paramSchema=dict(paramSchema),
                     params=dict(params),
+                    kind=kind,
+                    targetWorkflowId=targetWorkflowId,
+                    loop=dict(loop),
+                    globalVariableBindings=deepcopy(item.get("globalVariableBindings", [])),
                 )
+
+        regularNodes = {
+            nodeId: node
+            for nodeId, node in self.nodes.items()
+            if node.kind not in {"workflow_input", "workflow_output"}
+        }
+        boundaryNodes = {
+            nodeId: node
+            for nodeId, node in self.nodes.items()
+            if node.kind in {"workflow_input", "workflow_output"}
+        }
+        self.nodes.clear()
+        self.nodes.update(regularNodes)
+        self.nodes.update(boundaryNodes)
 
         if isinstance(rawEdges, list):
             for edgeItem in rawEdges:

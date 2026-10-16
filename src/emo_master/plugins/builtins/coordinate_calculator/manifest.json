@@ -1,0 +1,164 @@
+{
+  "operatorId": "vision.geometry.coordinate_calculator",
+  "displayName": "Coordinate Calculator",
+  "version": "1.2.0",
+  "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateCalculatorOperator",
+  "category": "几何",
+  "iconKey": "measure",
+  "summary": "Measure, transform, add, subtract, dot, or scalar-multiply strongly typed point2d coordinates.",
+  "inputPorts": {
+    "points": {"type": "list<point2d>", "required": true, "nullable": false, "schemaVersion": "1.x"},
+    "otherPoints": {"type": "list<point2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "scalar": {"type": "number", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "points": {"type": "list<point2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "centroid": {"type": "point2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "bounds": {"type": "bbox2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "segmentLengths": {"type": "list<number>", "required": false, "nullable": false},
+    "pathLength": {"type": "number", "required": false, "nullable": false},
+    "perimeter": {"type": "number", "required": false, "nullable": false},
+    "signedArea": {"type": "number", "required": false, "nullable": false},
+    "area": {"type": "number", "required": false, "nullable": false},
+    "firstToLastDistance": {"type": "number", "required": false, "nullable": false},
+    "firstToLastAngleDegrees": {"type": "number", "required": false, "nullable": false},
+    "polygon": {"type": "polygon2d", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "vectors": {"type": "list<vector2d>", "required": false, "nullable": false, "schemaVersion": "1.x"},
+    "magnitudes": {"type": "list<number>", "required": false, "nullable": false},
+    "values": {"type": "list<number>", "required": false, "nullable": false},
+    "dotSum": {"type": "number", "required": false, "nullable": false},
+    "resultCount": {"type": "integer", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "mode": {
+        "title": "计算模式",
+        "type": "string",
+        "enum": [
+          "measure",
+          "transform",
+          "add",
+          "subtract",
+          "dot",
+          "scalarMultiply"
+        ],
+        "default": "transform",
+        "xOptionLabels": {
+          "measure": "测量",
+          "transform": "坐标变换",
+          "add": "坐标相加",
+          "subtract": "坐标相减",
+          "dot": "点积",
+          "scalarMultiply": "标量乘法"
+        },
+        "description": "选择测量、几何变换或坐标运算；参数和输出含义随模式变化。"
+      },
+      "pairing": {
+        "title": "坐标配对方式",
+        "type": "string",
+        "enum": [
+          "strict",
+          "broadcast"
+        ],
+        "default": "strict",
+        "xOptionLabels": {
+          "strict": "逐项配对（数量相同）",
+          "broadcast": "单点广播"
+        },
+        "description": "相加、相减、点积使用此配对方式；广播允许一侧仅有一个点。"
+      },
+      "scalarValue": {
+        "title": "标量值",
+        "type": "number",
+        "default": 1.0,
+        "xExample": 1.5,
+        "description": "标量乘法的备用系数；连接 scalar 输入时优先使用输入值。"
+      },
+      "closed": {
+        "title": "闭合路径",
+        "type": "boolean",
+        "default": false,
+        "description": "测量时将末点与首点相连，计算闭合路径的周长与面积。"
+      },
+      "offsetX": {
+        "title": "水平偏移",
+        "type": "number",
+        "default": 0.0,
+        "xUnit": "坐标单位",
+        "xExample": 10.0,
+        "description": "坐标变换的水平平移量，单位与输入坐标一致。"
+      },
+      "offsetY": {
+        "title": "垂直偏移",
+        "type": "number",
+        "default": 0.0,
+        "xUnit": "坐标单位",
+        "xExample": -5.0,
+        "description": "坐标变换的垂直平移量，单位与输入坐标一致。"
+      },
+      "scaleX": {
+        "title": "水平缩放比例",
+        "type": "number",
+        "default": 1.0,
+        "xUnit": "倍",
+        "xExample": 1.0,
+        "description": "水平缩放系数；1 表示保持原大小。"
+      },
+      "scaleY": {
+        "title": "垂直缩放比例",
+        "type": "number",
+        "default": 1.0,
+        "xUnit": "倍",
+        "xExample": 1.0,
+        "description": "垂直缩放系数；1 表示保持原大小。"
+      },
+      "rotationDegrees": {
+        "title": "旋转角度（度）",
+        "type": "number",
+        "minimum": -360.0,
+        "maximum": 360.0,
+        "default": 0.0,
+        "xUnit": "°",
+        "xExample": 90.0,
+        "description": "绕选定中心旋转的角度；图像坐标中正角度为顺时针。"
+      },
+      "pivot": {
+        "title": "旋转中心模式",
+        "type": "string",
+        "enum": [
+          "origin",
+          "centroid",
+          "first",
+          "custom"
+        ],
+        "default": "origin",
+        "xOptionLabels": {
+          "origin": "坐标原点",
+          "centroid": "点集中心",
+          "first": "第一个点",
+          "custom": "自定义坐标"
+        },
+        "description": "选择缩放和旋转所使用的中心。"
+      },
+      "pivotX": {
+        "title": "旋转中心 X 坐标",
+        "type": "number",
+        "default": 0.0,
+        "xUnit": "坐标单位",
+        "xExample": 0.0,
+        "description": "自定义中心的 X 坐标，单位与输入坐标一致。"
+      },
+      "pivotY": {
+        "title": "旋转中心 Y 坐标",
+        "type": "number",
+        "default": 0.0,
+        "xUnit": "坐标单位",
+        "xExample": 0.0,
+        "description": "自定义中心的 Y 坐标，单位与输入坐标一致。"
+      }
+    }
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

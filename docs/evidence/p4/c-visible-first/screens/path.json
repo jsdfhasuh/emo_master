@@ -1,0 +1,68 @@
+{
+  "platform": "windows",
+  "steps": [
+    "01-component-drop",
+    "02-output-drop",
+    "03-saved-reopened",
+    "04-real-overview",
+    "05-real-detail",
+    "06-new-explicit-debug",
+    "07-final-reopen"
+  ],
+  "results": [
+    {
+      "key": "1437215e-7824-4bac-998e-3a9c39f83936",
+      "job": "08d34fba-43b0-4c4c-9f57-0e1dbd710b1f",
+      "count": "2",
+      "image_sha": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3"
+    },
+    {
+      "key": "ccd3ec1e-7c65-465a-908a-c436679c8027",
+      "job": "7187656b-d989-412d-93b7-245d61ea77ee",
+      "count": "3"
+    }
+  ],
+  "incremental_reload_ms": [
+    32.2645,
+    23.8273,
+    25.7584,
+    22.1425,
+    26.5939,
+    29.5074,
+    32.724,
+    30.5569,
+    29.678,
+    33.0306,
+    30.4903,
+    31.1192
+  ],
+  "hub": {
+    "windows": 1,
+    "qt_image_bytes": 57600,
+    "qt_image_limit": 25165824,
+    "conversions": 1,
+    "coalesced_results": 0,
+    "pending_gui_notifications": 0,
+    "live_decoded_bytes": 57600,
+    "ui_decoded_reference_bytes": 57600,
+    "live_ui_decoded_bytes": 57600,
+    "decoded_retention_accounted_bytes": 57600,
+    "decoded_retention_reserved": 50331648,
+    "pin_decoded_bytes": 0,
+    "pin_limit": 16777216,
+    "conversion_scratch_limit": 8388608,
+    "window_surface_reserved": 16777216,
+    "table_bytes": 0,
+    "table_limit": 8388608
+  },
+  "session_stats": {
+    "received": 1,
+    "decoded": 1,
+    "dropped": 0,
+    "read_failed": 0,
+    "resets": 1
+  },
+  "saved_project_sha256": "9861c0954fb344b744d50bd3b0b47d4c198f827f9301540b2fcb71b228f447cc",
+  "saved_reopen": true,
+  "shutdown_confirmed": true
+}

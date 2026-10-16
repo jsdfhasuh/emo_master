@@ -1,0 +1,22 @@
+{
+  "verifiedAt": "2026-10-06T18:00:03.2939002+08:00",
+  "executableSha256": "f71f83e52627f2cd9c77c02921c10cc514f83bc1931c6f8b71bb798f3ab14be1",
+  "status": "PASS",
+  "executable": "D:\\jsdfhasuh\\documents\\my_project\\python_build_script\\dist\\EmoMasterRuntime\\EmoMasterRuntime.exe",
+  "normalization": "Ignore file names and line metadata; compare module and nested code, constants, imports and arguments.",
+  "checks": [
+    {
+      "module": "emo_master.apps.runtime.jobs.worker_main",
+      "sourceCodeSha256": "d241140102371441f14b0b3b6403c0c584f1327f5810fc5c60e0f1a571b86c8c",
+      "packagedCodeSha256": "d241140102371441f14b0b3b6403c0c584f1327f5810fc5c60e0f1a571b86c8c",
+      "match": true
+    },
+    {
+      "module": "emo_master.apps.operator_runtime.controller",
+      "sourceCodeSha256": "2846a2f09a2fb6beae848b51fbbcaeda9e821159b9d47ca02cb8091f2803c57c",
+      "packagedCodeSha256": "2846a2f09a2fb6beae848b51fbbcaeda9e821159b9d47ca02cb8091f2803c57c",
+      "match": true
+    }
+  ],
+  "caveat": "Comparison covers the two repaired production modules only, not all packaged modules."
+}

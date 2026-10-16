@@ -1,0 +1,9 @@
+src\emo_master\apps\runtime\workflow\runner.py:70: error: Value of type "object" is not indexable  [index]
+src\emo_master\apps\runtime\workflow\runner.py:71: error: Value of type "object" is not indexable  [index]
+src\emo_master\core\workflow\compiler.py:57: error: "Model" has no attribute "target"  [attr-defined]
+src\emo_master\core\workflow\compiler.py:60: error: "Model" has no attribute "target"  [attr-defined]
+src\emo_master\core\workflow\compiler.py:61: error: Argument 1 to "get" of "Mapping" has incompatible type "str | None"; expected "str"  [arg-type]
+src\emo_master\core\workflow\compiler.py:124: error: Argument 1 to "get" of "Mapping" has incompatible type "str | None"; expected "str"  [arg-type]
+src\emo_master\apps\designer\controllers\workflow_controller.py:305: error: Argument 1 to "definitions" has incompatible type "object"; expected "Mapping[str, object]"  [arg-type]
+src\emo_master\apps\designer\controllers\workflow_controller.py:372: error: Argument 6 to "deriveLoopContract" has incompatible type "object"; expected "Mapping[str, object] | None"  [arg-type]
+Found 8 errors in 3 files (checked 14 source files)

@@ -1,0 +1,391 @@
+Windows fatal exception: access violation
+
+Current thread 0x0000a454 (most recent call first):
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 1176 in create_module
+  File "<frozen importlib._bootstrap>", line 571 in module_from_spec
+  File "<frozen importlib._bootstrap>", line 674 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\onnxruntime\capi\_pybind_state.py", line 32 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\onnxruntime\__init__.py", line 24 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\__init__.py", line 7 in _preloadOnnxRuntimeBeforeQt
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\__init__.py", line 14 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_floating_toolbox.py", line 8 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\assertion\rewrite.py", line 188 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_category_selection.py", line 7 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\assertion\rewrite.py", line 188 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1050 in _gcd_import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\importlib\__init__.py", line 126 in import_module
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\pathlib.py", line 596 in import_path
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 508 in importtestmodule
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 561 in _getobj
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 290 in obj
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 577 in _register_setup_module_fixture
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 564 in collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 406 in collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 361 in from_call
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 408 in pytest_make_collect_report
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 589 in collect_one_node
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 895 in _collect_one_node
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 1032 in genitems
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 869 in perform_collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 394 in pytest_collection
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 383 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 330 in wrap_session
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 377 in pytest_cmdline_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 229 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 253 in _console_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pytest\__main__.py", line 9 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 86 in _run_code
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 196 in _run_module_as_main
+FFFFFFFF                                                                 [100%]
+================================== FAILURES ===================================
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u5168\u90e8] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e271e4d860) at 0x000001E27379F8C0>, [])
+category = '全部'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e271e4d860) at 0x000001E27379F8C0>
+category = '检测'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '检测', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u9884\u5904\u7406] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bf0c0) at 0x000001E2737E5880>, [])
+category = '预处理'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bf0c0) at 0x000001E2737E5880>
+category = '预处理'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '预处理', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u68c0\u6d4b] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bbf50) at 0x000001E2737C2940>, [])
+category = '检测'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bbf50) at 0x000001E2737C2940>
+category = '检测'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '检测', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u6d4b\u91cf] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bba80) at 0x000001E27131AA40>, [])
+category = '测量'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728bba80) at 0x000001E27131AA40>
+category = '测量'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '测量', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u8f93\u51fa] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728b6fb0) at 0x000001E2738CBEC0>, [])
+category = '输出'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728b6fb0) at 0x000001E2738CBEC0>
+category = '输出'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '输出', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u63a7\u5236\u6d41] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728b7800) at 0x000001E27388F080>, [])
+category = '控制流'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728b7800) at 0x000001E27388F080>
+category = '控制流'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '控制流', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+_ testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u5176\u4ed6] _
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728c4990) at 0x000001E2739BCE80>, [])
+category = '其他'
+
+    @pytest.mark.parametrize('category', ['全部', '预处理', '检测', '测量', '输出', '控制流', '其他'])
+    def testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection(categoryWindow, category):
+        window, calls = categoryWindow
+        for name in ('全部', category, category, '检测', '全部'):
+            QTest.mouseClick(window.categoryButtons[name], Qt.LeftButton)
+>           assertSelection(window, name)
+
+tests\designer\test_category_selection.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728c4990) at 0x000001E2739BCE80>
+category = '其他'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '其他', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+___________ testKeyboardSelectionSurvivesTabsSearchAndToolboxReopen ___________
+
+categoryWindow = (<emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728c0e10) at 0x000001E2737E7C40>, [])
+
+    def testKeyboardSelectionSurvivesTabsSearchAndToolboxReopen(categoryWindow):
+        window, calls = categoryWindow
+        button = window.categoryButtons['预处理']
+        button.setFocus()
+        QTest.keyClick(button, Qt.Key_Space)
+>       assertSelection(window, '预处理')
+
+tests\designer\test_category_selection.py:49: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+window = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e2728c0e10) at 0x000001E2737E7C40>
+category = '预处理'
+
+    def assertSelection(window, category):
+        # Move away from the buttons so hover does not obscure the selected state.
+        viewport = window.flowView.viewport()
+        QTest.mouseMove(viewport, QPoint(viewport.width() - 3, viewport.height() - 3))
+        QApplication.processEvents()
+        assert window.activeOperatorCategory == category
+        for name, button in window.categoryButtons.items():
+            assert button.isChecked() is (name == category)
+            image = button.grab().toImage()
+            ratio = image.devicePixelRatio()
+            color = image.pixelColor(round((button.width() - 10) * ratio),
+                                     round(button.height() / 2 * ratio)).name()
+>           assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+E           AssertionError: ('全部', '预处理', '#edf3ff')
+E           assert '#edf3ff' == '#ffffff'
+E             
+E             - #ffffff
+E             + #edf3ff
+
+tests\designer\test_category_selection.py:30: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u5168\u90e8]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u9884\u5904\u7406]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u68c0\u6d4b]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u6d4b\u91cf]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u8f93\u51fa]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u63a7\u5236\u6d41]
+FAILED tests/designer/test_category_selection.py::testCategoryClickPaintsExactlyOneSelectionAndKeepsRepeatedSelection[\u5176\u4ed6]
+FAILED tests/designer/test_category_selection.py::testKeyboardSelectionSurvivesTabsSearchAndToolboxReopen
+8 failed in 5.59s

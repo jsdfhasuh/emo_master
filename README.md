@@ -1,81 +1,135 @@
 # emo_master
 
-emo_master 是一个参考 VisionMaster 思路实现的机器视觉平台骨架项目，当前包含：
+EmoMaster 是一个参考 VisionMaster 思路实现的机器视觉流程设计与运行平台，当前代码版本为 `0.6.1`。
 
-> 当前项目处于实验性 MVP 阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
+> 项目仍处于实验性阶段，适合学习、验证和二次开发，尚未面向生产环境。它是独立实现，与 VisionMaster 及其厂商不存在隶属或官方关联。
+>
+> 本文描述 `agent/runtime-workflow-architecture-v1` 分支的代码。开发该版本时请明确切换分支，不要将本页能力视为尚未合入的 `main` 已具备的能力。
 
-- Designer（PySide2 / Qt5）
-- Runtime（gRPC 服务）
-- 插件算子框架（含 Empty 与 Canny 示例）
-- 项目目录格式、打包与回滚基础能力
+## 联合验收交付（2026-10-10）
 
-## Conda 环境准备
+当前分支新增单算子调试、流程断点/单步控制，以及普通工作流多 Job 运行、硬件触发等待和几何/坐标桥接能力。调试器只开放已审查的 47 个内置算子；设备、外部写入和模型资源不因支持流程暂停而自动开放。
 
-项目建议使用 Python 3.10。
+- 从 [三个可直接打开的调试范例](examples/workflow_debugger/README.md) 开始，不需要相机、PLC 或模型。
+- 联合测试按 [dot 实机验收交接](docs/testing/2026-10-10-dot-joint-acceptance.md) 分层进行；双工位夹具不是可直接投产的现场工程。
+- 本次源码验证与范围见 [联合交付记录](docs/testing/2026-10-10-joint-delivery.md)。Designer 和 Runtime 必须使用同一提交；未发布新安装包。
 
-### 1) 创建并激活环境
+## 历史检查版本（2026-10-02）
 
-```bash
+已实现代码基准为 [`cc76cade`](https://github.com/jsdfhasuh/emo_master/commit/cc76cadec3339ee07e20da668ad4b66ae4176aa7)，后续本次说明更新不改变生产代码。R3 正常 Designer 页面设计、同 Job 观看、分页、冻结/恢复、实时任务状态和共享只读弹窗已实现；**整个计划尚未验收完成**。
+
+49 个内置算子都有直接软件测试，本轮补充 46 例。精确版本的 push CI 两平台通过，但同树 PR CI 有 Ubuntu 原生 Qt 崩溃和 Windows A18 线程身份断言失败，不能称全绿。用户真实 ONNX 工程在较早 `425f04d` 版本完成两轮推理、明确选择第二个 Job、冻结/恢复与全部关闭；不代表当前版本已在本机重新验收。
+
+请先看 [当前验收与算子覆盖说明](docs/testing/remaining-software-acceptance-2026-10-02.md)，其中列出准确 CI、实际样例结果与未完成项；[R3 计划](docs/plans/2026-09-25-qt-runtime-pages-v1.md)保留验收门槛。
+
+## 项目由什么组成
+
+| 部分 | 职责 | 代码位置 |
+| --- | --- | --- |
+| Designer | 项目管理、流程编排、算子参数编辑，以及运行状态、日志和结果展示 | `src/emo_master/apps/designer` |
+| Runtime | 加载项目、扫描算子、调度工作流、管理 Job、记录事件及提供预览服务 | `src/emo_master/apps/runtime` |
+| core | 项目、工作流、插件和执行数据的共享契约与校验 | `src/emo_master/core` |
+| plugins | 具体算法、设备和通信算子，以及可选编辑器与图标资源 | `src/emo_master/plugins` |
+
+使用上是 **Designer 设计端 + Runtime 执行端**，不是必须分别打开的两个软件：
+
+- **默认内嵌模式**：只启动 Designer，由它直接创建并调用 `RuntimeService`，不经过网络 gRPC。每个正式 Job 仍使用独立的 `multiprocessing.spawn` 子进程。
+- **外部服务模式**：独立启动 Runtime，Designer 设置 `EMO_RUNTIME_TARGET` 后通过 gRPC 连接。源码入口默认监听 `127.0.0.1:50051`。
+
+当前 Windows 包无参数启动 `EmoMaster.exe` 会进入 Designer，未提供 `EmoMaster.exe --runtime` 模式。独立 Runtime 启动后等待请求，不会自动加载并循环运行现场项目。详情见 [工程架构](docs/engineer-guide.md) 和 [部署与发布](docs/deployment-guide.md)。
+
+## 从源码开始开发
+
+以下命令用于 **Windows PowerShell**，需要先安装 Git 和 Conda，并在能够执行 `conda activate` 的终端中操作。当前项目要求 **Python 3.10**，不是任意 Python 3.x。
+
+```powershell
+git clone --branch agent/runtime-workflow-architecture-v1 --single-branch https://github.com/jsdfhasuh/emo_master.git
+Set-Location .\emo_master
+
 conda create -n emo_master python=3.10 -y
 conda activate emo_master
-python -m pip install --upgrade pip
+python -m pip install -r requirements-dev.txt
+if ($LASTEXITCODE -ne 0) { throw "依赖安装失败，请先解决错误。" }
+
+# dev.py 自动选择当前仓库源码；--local 配置可见窗口和隔离的内嵌 Runtime。
+python scripts/dev.py run-designer --local
 ```
 
-### 2) 安装依赖
+环境已经安装时，直接双击仓库根目录的 **`start_designer.cmd`**，或在 PowerShell 执行 `./start_designer.cmd`。它默认使用 `%USERPROFILE%\.conda\envs\emo_master\python.exe`，不要求激活 Conda、不安装依赖；解释器在其他位置时可设置 `EMO_MASTER_PYTHON`。启动失败会保留错误供查看。
 
-如果你使用单文件依赖：
+该入口使用 `manual_test_workspace/runtime-embedded` 存放本机开发数据，不自动开始检测。需要只检查而不开窗口时执行 `./start_designer.cmd --check`。外部 Runtime 调试仍使用不带 `--local` 的原命令，保留显式环境配置。
 
-```bash
-pip install -r requirements.txt
-```
+`requirements-dev.txt` 已包含运行依赖，不需要重复安装。已有仓库和环境跳过上述克隆、创建环境及安装步骤；不要为切换分支丢弃本地修改。
 
-如果你拆分了开发依赖（可选）：
+完整的新环境准备、双终端分离运行、IDE 配置、Linux 检查及故障排查见 [开发指南](docs/development-guide.md)。
 
-```bash
-pip install -r requirements-dev.txt
-```
+## 第一次运行项目
 
-## 初始化与校验
+在项目入口新建空白项目，使用自定义名称保存为 `.emoproj`（例如 `图片检测.emoproj`），或打开已有 `.emoproj` / 旧版 `project.json`。添加算子并连接端口，双击节点设置参数并应用，保存后点击“开始运行”，在节点详情、结果预览和日志中检查输出。文件输出位置由对应算子参数决定。
 
-```bash
-python scripts/gen_proto.py
+“保存”写回当前文件；“文件 → 项目另存为…”（`Ctrl+Shift+S`）保存为新的 `.emoproj`，不自动重命名旧项目。最近项目保留实际文件路径。同一文件夹中有多个项目文件时，必须选中具体文件，不能只指定文件夹。扩展名不改变内部 JSON 格式或项目版本校验，图片和模型等资源仍是外部文件或工程资源；发布包内部继续使用 `project.json`。
+
+需要检查运行页面时，在正常 Designer 中打开工程，进入“页面设计”，配置两页与当前流程输出绑定并保存，然后点击“开始运行”。点击“观看当前工程任务”；同工程存在多个 Job 时必须明确选择本次 Job。分页、冻结/恢复和“弹出只读观察窗口”只观察同一任务；再次开始运行前应确认上一任务及资源已退休。新增绑定仅对下一次明确运行生效。
+
+原生 Job 标签显示执行状态，无绑定的 `runtime_status` 组件显示连接状态；把 `runtime_status` 配成采集输出目前会被明确拒绝。算法 OK/NG 应绑定算法的类型化输出。
+
+通用源码入口是上述 `scripts/dev.py run-designer`。仓库中的 `scripts/p4_demo.py` 是受限合成演示，不是用户私有 ONNX 工程的构建器；私有模型、图片和本机演示脚本未随代码上传。
+
+第一次验证应使用本地图像或不涉及设备的流程。相机预览需要显式点击连接，不会自动连接现场设备；执行包含相机、PLC 或 TCP 算子的正式流程则可能产生真实设备操作。不要把常规软件自检当作现场联调许可。
+
+## 当前能力与边界
+
+- `project.json v2.1` 多工作流、入口工作流、Subflow、类型化 Loop，以及项目和工作流包的保存、导入导出与迁移基础能力。
+- 异步 Job、spawn worker 隔离、SQLite 事件重放、实时 follow 事件流、结构化算子日志、滚动 JSONL 与可浮动日志 Dock。
+- manifest 自动发现的插件算子；schema 1.2/Homography、经典视觉、强类型集合、TXT/CSV 坐标读取、点序列变换和几何测量。
+- 三菱 SLMP/MC 3E PLC 读写、有界 TCP 客户端与单次接收、内嵌标量和文本输出；华睿 IMV 单帧采集、作业内连接复用和可取消硬件触发等待。
+- 可选 `.ui + Controller` 算子编辑器、作业快照、纯计算预览、相机实时预览、浅色 Designer、高 DPI 适配、离线 Lucide 与插件自定义图标。
+- ONNX Runtime CPU 驱动的 YOLOv8/YOLO11 detect 推理、NMS 和原图坐标叠加。
+
+YOLO 算子使用 `onnxruntime==1.23.2`，模型路径只接受 `.onnx`，设备只接受 `auto` 或 `cpu`。支持 batch 1、3 通道 float32、NCHW、未内置 NMS 的 YOLOv8/YOLO11 detect 输出；不支持端到端 NMS、pose、segmentation、INT8、DirectML 或 CUDA。动态输入模型使用 `imageSize`，固定输入模型以模型尺寸为准。
+
+## 检查与开发入口
+
+在已配置开发环境的仓库根目录运行：
+
+```powershell
 python scripts/ci_check.py
 ```
 
-## 常用开发命令
+该命令依次执行 protobuf 一致性检查、Ruff、mypy 和 pytest。修改 `proto/runtime.proto` 后才需要运行 `python scripts/gen_proto.py` 重新生成，并连同生成文件一起提交；不要为掩盖一致性检查失败而直接覆盖生成文件。
 
-```bash
-python scripts/dev.py proto
-python scripts/dev.py test
-python scripts/dev.py run-runtime
-python scripts/dev.py run-designer
+新增算子不需要修改中央注册表，见 [算子注册与执行流程](docs/plugin-registration-flow.md)。自定义图片、分类兜底和冻结资源说明见 [算子图标资源](docs/operator-icon-assets.md)。截图检查和真实硬件验收是不同层次，见 [Designer 验证记录](docs/designer-ui-validation.md)。
+
+## Windows 部署与打包
+
+现场使用者使用便携 ZIP 或当前用户安装包，无需另行配置源码开发环境。便携包必须完整解压，不能只复制 `EmoMaster.exe`；华睿 MV Viewer/MVSDK 仍需单独安装。安装程序默认目录为 `%LOCALAPPDATA%\Programs\EmoMaster`，应用安装不需要管理员权限，设备驱动安装权限另行处理。
+
+本地打包在独立的 `jsdfhasuh/python_build_scripts` 仓库完成，而不是在本仓运行向导：
+
+```powershell
+# 在 python_build_scripts 根目录，完成打包环境准备后执行。
+python scripts\release_wizard_emo_master.py
 ```
 
-## 运行与图片测试
+仅测试交付包时使用 `-BuildOnly`，不要上传 Release。正式发布由本仓匹配应用版本的 `v*` tag 触发，经过源码检查、中央构建和产物验证后生成：
 
-1) 启动 Designer（当前内嵌 Runtime）
-
-```bash
-python scripts/dev.py run-designer
+```text
+emo-master-windows-${TAG}.zip
+emo-master-setup-${TAG}.exe
+manifest.json
 ```
 
-如果要连接外部 Runtime（默认地址 127.0.0.1:50051）：
+环境要求、本地只构建命令、冻结包自检、正式发布、数据备份和部署限制见 [部署与发布指南](docs/deployment-guide.md)。文档描述已有流程，不表示某个 tag 已经成功构建或完成硬件验收。
 
-```bash
-set EMO_RUNTIME_TARGET=127.0.0.1:50051
-python scripts/dev.py run-designer
-```
+## 文档导航
 
-2) 在 Designer 中点击 `Import Image` 选择本地图片（png/jpg/jpeg/bmp/tif）
-
-3) 点击 `Start` 触发最小运行流程（内置 Canny）
-
-4) 在原图同目录查看输出：`<原文件名>.edges.png`
-
-5) 运行日志通过 Designer 中的 `Open Logs` 按钮打开日志窗口查看。
-
-## 测试
-
-```bash
-pytest -q
-```
+| 文档 | 用途 |
+| --- | --- |
+| [开发指南](docs/development-guide.md) | 源码环境、启动、调试、检查和常见错误 |
+| [部署与发布指南](docs/deployment-guide.md) | Windows 交付、本地构建、CI 发布、自检与数据保留 |
+| [工程师导读](docs/engineer-guide.md) | Designer、Runtime、core 边界与执行主线 |
+| [项目格式](docs/project-json-spec.md) / [工作流包](docs/workflow-package-spec.md) | 文件契约、迁移和交换格式 |
+| [算子注册](docs/plugin-registration-flow.md) / [输入输出契约](docs/operator-io-contracts.md) / [图标资源](docs/operator-icon-assets.md) | 扩展算子与排查注册、类型、图标问题 |
+| [Designer / Runtime 时序](docs/runtime-designer-sequences.md) / [事件流](docs/runtime-event-flow.md) | 项目、Job、预览和事件交互 |
+| [工作区约定](docs/workspace-guide.md) / [UI 规范](docs/qt-widgets-qss-guidelines.md) | 源码、测试数据和界面开发规范 |
+| [验证记录](docs/designer-ui-validation.md) / [截图归档](docs/testing/designer-ui-2026-09-10/README.md) | 已有验证证据及未完成项，不代表当前提交重新验收 |

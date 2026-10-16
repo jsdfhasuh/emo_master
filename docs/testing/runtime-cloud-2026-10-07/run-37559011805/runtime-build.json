@@ -1,0 +1,13 @@
+{
+  "source_repo": "jsdfhasuh/emo_master",
+  "source_commit": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "packager_repo": "jsdfhasuh/python_build_scripts",
+  "packager_commit": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "requested_source_ref": "88ae05a55ed03e2eb9ab84928fe8af9f2870505c",
+  "requested_packager_ref": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "workflow_sha": "29b375fcd368b1f88be14b3356fe182b8e4e02e0",
+  "workflow_ref": "jsdfhasuh/python_build_scripts/.github/workflows/release-windows.yml@refs/heads/master",
+  "run_url": "https://github.com/jsdfhasuh/python_build_scripts/actions/runs/37559011805",
+  "publish_requested": false,
+  "fieldAcceptance": "NOT_RUN"
+}

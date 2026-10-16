@@ -1,0 +1,49 @@
+FF.F                                                                     [100%]
+================================== FAILURES ===================================
+______________ testAllBuiltinParameterTitlesSurviveRegistration _______________
+
+    def testAllBuiltinParameterTitlesSurviveRegistration():
+        root = Path(__file__).resolve().parents[3] / "src/emo_master/plugins/builtins"
+        scan = PluginRegistry("0.6.1").scan(root)
+        assert not scan.rejectedOperators
+>       assert len(scan.activeOperators) == len(list(root.rglob("manifest.json"))) == 51
+E       AssertionError: assert 53 == 51
+E        +  where 53 = len([WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/absdiff/manifest.json'), Wi...sPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/blob_analysis/manifest.json'), ...])
+E        +    where [WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/absdiff/manifest.json'), Wi...sPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins/blob_analysis/manifest.json'), ...] = list(<generator object Path.rglob at 0x0000028D873B1690>)
+E        +      where <generator object Path.rglob at 0x0000028D873B1690> = rglob('manifest.json')
+E        +        where rglob = WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/src/emo_master/plugins/builtins').rglob
+
+tests\core\plugin\test_builtin_parameter_titles.py:20: AssertionError
+_____________ testBuiltinSqlitePreservesActualCoreCapabilityGate ______________
+
+    def testBuiltinSqlitePreservesActualCoreCapabilityGate():
+        from pathlib import Path
+        from emo_master import __version__
+        from emo_master.core.plugin.registry import PluginRegistry
+        root = Path('src/emo_master/plugins')
+        legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
+>       assert set(legacy.rejectedOperators) == {OPERATOR_ID}
+E       AssertionError: assert {'vision.io.s...riable_write'} == {'vision.io.sqlite_writer'}
+E
+E         Extra items in the left set:
+E         'vision.state.variable_write'
+E         'vision.state.variable_read'
+E         Use -v to get more diff
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\sqlite_writer\test_dependencies.py:95: AssertionError
+_____________ testPackageGuiGateRequiresNineCustomRenderedSamples _____________
+
+    def testPackageGuiGateRequiresNineCustomRenderedSamples():
+        result = runSelfTest(guiIcons=True)
+>       assert result["status"] == "ok"
+E       AssertionError: assert 'error' == 'ok'
+E
+E         - ok
+E         + error
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_package_gui_icons.py:9: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/core/plugin/test_builtin_parameter_titles.py::testAllBuiltinParameterTitlesSurviveRegistration
+FAILED tests/sqlite_writer/test_dependencies.py::testBuiltinSqlitePreservesActualCoreCapabilityGate
+FAILED tests/designer/test_package_gui_icons.py::testPackageGuiGateRequiresNineCustomRenderedSamples
+3 failed, 1 passed in 6.06s

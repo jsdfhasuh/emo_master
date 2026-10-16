@@ -1,0 +1,23 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "tests/designer/test_visual_layout.py",
+    "tests/designer/test_toolbar_width.py",
+    "tests/designer/test_designer_shortcuts.py",
+    "tests/designer/test_node_context_menu.py",
+    "tests/ui/page_designer/test_workspace_modes.py",
+    "tests/ui/page_designer/test_workspace_switch.py",
+    "-q"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 18.391000000061467,
+  "outerWatchdogSeconds": 180,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\toolbar-width-20261007-002955-281239\\test-runtime"
+}

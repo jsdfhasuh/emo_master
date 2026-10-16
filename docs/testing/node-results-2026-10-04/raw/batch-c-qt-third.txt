@@ -1,0 +1,87 @@
+.F                                                                       [100%]
+================================== FAILURES ===================================
+__ testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime __
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-893/testTwoRealRunsFollowSelection0')
+designerApplication = <PySide2.QtWidgets.QApplication(0x1fe0092ea60) at 0x000001FE01AC07E0>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001FE01AC2620>
+
+    def testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime(tmp_path, designerApplication,
+                                                                                  ownedDesignerWindow):
+        with running(tmp_path) as (runtime, client, project, unusedSession):
+            # The helper's explicit test lease is closed before Designer opens its
+            # own lease. Viewing never creates another Job or subscriber.
+            client.inspectionSession('close', project, unusedSession)
+            window = ownedDesignerWindow(client)
+            window.resize(1280, 720)
+            window.show()
+            try:
+                wait(designerApplication, lambda: window.operatorCatalogController.state == 'ready')
+                assert window.loadProjectDirectory(project)
+                coordinator = window.nodeResultCoordinator
+                panel = coordinator.panel
+                window.navigateToNodeFromSidebar('load')
+                assert not coordinator.history.current and len(runtime.jobRepository.all()) == 0
+                window.startJob()
+                wait(designerApplication, lambda: coordinator.imagePacket is not None)
+                wait(designerApplication, lambda: not window.runtimeController._jobActive)
+                first = window.currentJobId
+                assert coordinator.imagePacket['source'].originJobId == first
+                assert coordinator.image.pixelColor(210, 20).red() == 0
+                panel.enlarge.click()
+                viewer = coordinator.viewer
+                reads = coordinator.images.reads
+                panel.enlarge.click()
+                assert coordinator.viewer is viewer and coordinator.images.reads == reads
+                assert viewer.view.item.pixmap().cacheKey() == panel.image.pixmap().cacheKey()
+                assert viewer.identity == coordinator.imageSelection
+                assert len(runtime.jobRepository.all()) == 1
+                pixels = cv2.imdecode(np.fromfile(tmp_path / '本地 图片/input.png', np.uint8), cv2.IMREAD_COLOR)
+                pixels[10:30, 200:220] = 255
+                ok, encoded = cv2.imencode('.png', pixels)
+                assert ok
+                encoded.tofile(tmp_path / '本地 图片/input.png')
+                window.startJob()
+                wait(designerApplication, lambda: window.currentJobId not in (None, first))
+                second = window.currentJobId
+                wait(designerApplication, lambda: coordinator.imagePacket is not None
+                     and coordinator.imagePacket['source'].originJobId == second)
+                wait(designerApplication, lambda: not window.runtimeController._jobActive)
+                assert coordinator.image.pixelColor(210, 20).red() == 255
+                panel.previous.click()
+                assert coordinator.pixmap.isNull() and viewer.view.item.pixmap().isNull()
+                wait(designerApplication, lambda: coordinator.imagePacket is not None)
+                assert coordinator.image.pixelColor(210, 20).red() == 0
+                assert viewer.identity == coordinator.imageSelection and viewer.identity[0] == first
+                assert coordinator.imagePacket['source'].nodeRunId == coordinator.history.previous.inspection.get('main', 'load', first)['nodeRunId']
+                window.navigateToNodeFromSidebar('count')
+                assert 'count = 2' in panel.values.toPlainText()
+                assert not panel.tabs.isTabVisible(0) and viewer.view.item.pixmap().isNull()
+                assert window.currentJobId == second
+                panel.live.click()
+                assert 'count = 3' in panel.values.toPlainText()
+                window.navigateToNodeFromSidebar('blob')
+                panel.ports.setCurrentIndex(panel.ports.findData('overlay'))
+                wait(designerApplication, lambda: coordinator.imagePacket is not None)
+                assert coordinator.imagePacket['source'].port == 'overlay'
+                assert viewer.view.item.pixmap().cacheKey() == coordinator.pixmap.cacheKey()
+                assert coordinator.qtBytes <= 24 * 1024 * 1024 and coordinator.images.peakScratchBytes <= 8 * 1024 * 1024
+                beforeClose = coordinator.images.reads
+                viewer.close()
+                assert coordinator.viewer is None and coordinator.imagePacket is not None
+                QTest.mouseDClick(panel.image, Qt.LeftButton)
+                assert coordinator.viewer is not None and coordinator.images.reads == beforeClose
+                assert len(runtime.jobRepository.all()) == 2 and not runtime._closed
+                coordinator.viewer.close()
+                window.close()
+                assert coordinator.images._thread is not None and not coordinator.images._thread.is_alive()
+>               assert runtime.runInspectionStore.stats()['sessions'] == 0
+E               assert 1 == 0
+
+tests\designer\test_node_image_viewer.py:135: AssertionError
+---------------------------- Captured stdout call -----------------------------
+UI DIAGNOSTIC {'job': '166e2bfd-8180-4a54-a6cf-7c0d2f73d64e', 'selectedNode': 'blob', 'jobStatus': 'COMPLETED', 'imageText': '检查已关闭', 'selection': ('166e2bfd-8180-4a54-a6cf-7c0d2f73d64e', 'main', 'blob', 'c0ae42fd-8cd5-41c3-aea7-31870841bd93', 'overlay', 'COMPLETED', 'COMPLETED'), 'reads': 4, 'session': '', 'notice': '明确运行后提供真实节点图片', 'history': OrderedDict(), 'store': {'sessions': 1, 'readers': 0, 'encodedBytes': 11835, 'jobs': 2, 'retiredJobs': 0, 'pendingFiles': 0}}
+LOG TAIL [('node.completed', 'node completed: blob'), ('node.started', 'node started: count'), ('node.completed', 'node completed: count'), ('node.started', 'node started: save'), ('artifact.created', 'artifact created: C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-893\\testTwoRealRunsFollowSelection0\\本地 图片\\result.png'), ('node.completed', 'node completed: save'), ('node.started', 'node started: presence'), ('node.completed', 'node completed: presence'), ('workflow.completed', 'workflow completed: main'), ('job.completed', 'job.completed'), ('', '作业状态：COMPLETED | job.completed'), ('', '节点提示 count：输入[blobs:blobCollection, detections:detectionCollection, contours:contourCollection, measurements:shapeMeasurementCollection, lines:lineCollection, circles:circleCollection, matches:templateMatchCollection] 输出[count:integer] 必填[]'), ('', '节点提示 count：输入[blobs:blobCollection, detections:detectionCollection, contours:contourCollection, measurements:shapeMeasurementCollection, lines:lineCollection, circles:circleCollection, matches:templateMatchCollection] 输出[count:integer] 必填[]'), ('', '节点提示 blob：输入[image:image, mask:image, frame:bbox2d] 输出[blobs:blobCollection, mask:image, overlay:image, frame:bbox2d] 必填[]'), ('', '节点提示 blob：输入[image:image, mask:image, frame:bbox2d] 输出[blobs:blobCollection, mask:image, overlay:image, frame:bbox2d] 必填[]')]
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_image_viewer.py::testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime
+1 failed, 1 passed in 3.67s

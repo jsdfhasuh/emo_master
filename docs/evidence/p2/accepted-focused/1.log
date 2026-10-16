@@ -1,0 +1,63 @@
+...........E............................................................ [ 66%]
+...................................                                      [100%]
+=================================== ERRORS ====================================
+___________ ERROR at teardown of testForceKillFencesUnsealedResult ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-375/testForceKillFencesUnsealedRes0')
+
+    @pytest.fixture
+    def channel(tmp_path):
+        runtime = RuntimeService(dbPath=tmp_path / "runtime.sqlite3", workspaceRoot=tmp_path / "legacy-jobs")
+        service = PresentationService(runtime, tmp_path / "display")
+        try:
+            yield service
+        finally:
+            runtime.close()
+>           service.close()
+
+tests\runtime\presentation\conftest.py:18: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\presentation\service.py:283: in close
+    self.release(job)
+src\emo_master\apps\runtime\presentation\service.py:240: in release
+    shutil.rmtree(workspace)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\shutil.py:750: in rmtree
+    return _rmtree_unsafe(path, onerror)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\shutil.py:615: in _rmtree_unsafe
+    _rmtree_unsafe(fullname, onerror)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\shutil.py:615: in _rmtree_unsafe
+    _rmtree_unsafe(fullname, onerror)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\shutil.py:620: in _rmtree_unsafe
+    onerror(os.unlink, fullname, sys.exc_info())
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+path = 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-375\\testForceKillFencesUnsealedRes0\\display\\jobs\\288c49a4-f444-469d-b2d8-02ce0b78536f\\preview_staging\\assets'
+onerror = <function rmtree.<locals>.onerror at 0x000002694282A560>
+
+    def _rmtree_unsafe(path, onerror):
+        try:
+            with os.scandir(path) as scandir_it:
+                entries = list(scandir_it)
+        except OSError:
+            onerror(os.scandir, path, sys.exc_info())
+            entries = []
+        for entry in entries:
+            fullname = entry.path
+            if _rmtree_isdir(entry):
+                try:
+                    if entry.is_symlink():
+                        # This can only happen if someone replaces
+                        # a directory with a symlink after the call to
+                        # os.scandir or entry.is_dir above.
+                        raise OSError("Cannot call rmtree on a symbolic link")
+                except OSError:
+                    onerror(os.path.islink, fullname, sys.exc_info())
+                    continue
+                _rmtree_unsafe(fullname, onerror)
+            else:
+                try:
+>                   os.unlink(fullname)
+E                   FileNotFoundError: [WinError 3] 系统找不到指定的路径。: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-375\\testForceKillFencesUnsealedRes0\\display\\jobs\\288c49a4-f444-469d-b2d8-02ce0b78536f\\preview_staging\\assets\\.0c908fe54d2fa7873a629b74a4871e79c9a487a37f631a8acfb9773f18ed3472.json.c372250ab13848c8929f4ca681c7624b.tmp'
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\shutil.py:618: FileNotFoundError
+106 passed, 1 error in 57.18s

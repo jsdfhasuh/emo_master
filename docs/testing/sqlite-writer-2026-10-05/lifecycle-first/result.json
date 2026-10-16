@@ -1,0 +1,11 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/sqlite_writer/test_editor.py::testProjectCloseDuringModalRejectsCallbacksAndInitialization"
+  ],
+  "exitCode": 3221225477,
+  "seconds": 6.3600000001024455
+}

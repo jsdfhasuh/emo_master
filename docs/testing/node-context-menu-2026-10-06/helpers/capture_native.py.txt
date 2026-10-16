@@ -1,0 +1,77 @@
+"""Visible isolated Qt fixture. No embedded Runtime, camera or actual Job."""
+from pathlib import Path
+import json
+import os
+import tempfile
+import sys
+
+ROOT = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+sys.path[:0] = [str(ROOT / 'src'), str(ROOT)]
+os.environ['QT_QPA_PLATFORM'] = 'windows'
+os.environ['HUARAY_CAMERA_SMOKE'] = '0'
+import emo_master  # noqa: F401 - Windows DLL bootstrap precedes Qt
+from PySide2.QtCore import QCoreApplication, QEvent, QPointF, QSettings, Qt
+from PySide2.QtGui import QContextMenuEvent
+from PySide2.QtTest import QTest
+from PySide2.QtWidgets import QApplication, QMessageBox
+from emo_master.apps.designer.main import applyDesignerStyle
+from tests.designer.test_node_context_menu import Client, PAYLOAD, actions
+from tests.qt_widget_owner import OwnedDesignerWindows
+
+output = ROOT / 'docs/testing/node-context-menu-2026-10-06/native'
+output.mkdir(exist_ok=False)
+with tempfile.TemporaryDirectory(prefix='emo-node-menu-native-') as isolated:
+    QSettings.setDefaultFormat(QSettings.IniFormat)
+    QSettings.setPath(QSettings.IniFormat, QSettings.UserScope, isolated)
+    app = QApplication.instance() or QApplication([])
+    applyDesignerStyle(app)
+    question = QMessageBox.question
+    QMessageBox.question = lambda parent, title, *args, **kwargs: (
+        QMessageBox.Discard if title == '项目有未保存修改' else question(parent, title, *args, **kwargs))
+    client = Client()
+    with OwnedDesignerWindows(app) as owner:
+        window = owner(client)
+        window.operatorCatalogController.refreshOperators(window._classifyOperator)
+        for title in ('计数算子（Qt 测试，未运行检测）', '后续算子'):
+            window.addNodeFromOperatorPayload({**PAYLOAD, 'displayName': title})
+        node = next(key for key, value in window.flowModel.nodes.items() if value.kind == 'operator')
+        window.resize(1280, 720)
+        window.show()
+        for _ in range(10):
+            app.processEvents()
+        item = window.flowScene._nodeItems[node]
+        window.flowView.centerOn(item)
+        point = window.flowView.mapFromScene(item.mapToScene(QPointF(55, 18)))
+        viewport = window.flowView.viewport()
+        event = QContextMenuEvent(QContextMenuEvent.Mouse, point, viewport.mapToGlobal(point))
+        QApplication.sendEvent(viewport, event)
+        for _ in range(8):
+            app.processEvents()
+        menu = window.nodeContextMenu.menu
+        assert menu.isVisible() and window.flowModel.selectedNodeId == node
+        assert window.grab().save(str(output / 'designer-selected-node.png'))
+        assert menu.grab().save(str(output / 'node-menu.png'))
+        copied = set(window.flowModel.nodes)
+        QTest.mouseClick(menu, Qt.LeftButton, pos=menu.actionGeometry(actions(menu)['copy']).center())
+        app.processEvents()
+        assert len(set(window.flowModel.nodes) - copied) == 1
+        assert not menu.isVisible()
+        history = len(window.pageCoordinator.session._undo)
+        window._setIsJobRunning(True)
+        window.nodeContextMenu.open(node, *[viewport.mapToGlobal(point).x(), viewport.mapToGlobal(point).y()])
+        app.processEvents()
+        assert menu.grab().save(str(output / 'running-menu.png'))
+        assert actions(menu)['results'].isEnabled() and not actions(menu)['delete'].isEnabled()
+        QTest.keyClick(menu, Qt.Key_Escape)
+        window._setIsJobRunning(False)
+        screen = window.screen()
+        report = {'platform': app.platformName(), 'windowLogicalSize': [window.width(), window.height()],
+                  'devicePixelRatio': window.devicePixelRatioF(), 'screenLogicalDpi': screen.logicalDotsPerInch(),
+                  'menuActions': list(actions(menu)), 'rightClickTarget': node, 'mouseCopy': 'PASS',
+                  'runningReadOnly': 'PASS', 'starts': client.starts, 'stops': client.stops,
+                  'undoDepth': history, 'fixture': 'UI test nodes; no Runtime or detection Job'}
+        assert client.starts == client.stops == 0
+    QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+    report['windowAndWorkersRetired'] = True
+    (output / 'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+    print(json.dumps(report, ensure_ascii=False))

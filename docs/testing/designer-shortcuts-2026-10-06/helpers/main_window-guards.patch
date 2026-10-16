@@ -1,0 +1,31 @@
+--- a/src/emo_master/apps/designer/ui/main_window.py
++++ b/src/emo_master/apps/designer/ui/main_window.py
+@@ -1,2 +1,3 @@
+ from emo_master.apps.designer.page_designer.commands import draftCommand
++from emo_master.apps.designer.ui.action_state import flowEditAllowed
+ from datetime import datetime
+@@ -3197,2 +3198,4 @@
+     def deleteSelectedElements(self) -> None:
++        if not flowEditAllowed(self):
++            return
+         selectedEdgeKeys = self.flowScene.getSelectedEdgeKeys()
+@@ -3230,2 +3233,4 @@
+     def autoLayoutNodes(self) -> None:
++        if not flowEditAllowed(self):
++            return
+         self.flowScene.layoutNodesFlow()
+@@ -3716,2 +3721,4 @@
+     def openNodeParamDialog(self, nodeId: str) -> None:
++        if not flowEditAllowed(self):
++            return
+         node = self.flowModel.nodes.get(nodeId)
+@@ -3794,2 +3801,4 @@
+     def duplicateSelectedNode(self):
++        if not flowEditAllowed(self):
++            return None
+         selected = self.flowModel.selectedNodeId
+@@ -3808,2 +3817,4 @@
+     def duplicateCurrentWorkflow(self):
++        if not flowEditAllowed(self):
++            return None
+         workflowId = self.workflowController.duplicateWorkflow(self.activeWorkflowId)

@@ -1,0 +1,13 @@
+
+=================================== ERRORS ====================================
+____________ ERROR collecting tests/runtime/test_run_inspection.py ____________
+import file mismatch:
+imported module 'test_run_inspection' has this __file__ attribute:
+  D:\jsdfhasuh\documents\my_project\emo_master\tests\core\test_run_inspection.py
+which is not the same as the test file we want to collect:
+  D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_run_inspection.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+=========================== short test summary info ===========================
+ERROR tests/runtime/test_run_inspection.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 0.87s

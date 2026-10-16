@@ -1,0 +1,27 @@
+[
+  {
+    "name": "EmoMaster-5410737-Debian-acceptance-zh.docx",
+    "bytes": 238553,
+    "sha256": "5b2050dbe6f3b43ff95b3a27b40ae339d62cbc9f6606b59e5a0af4684a799906"
+  },
+  {
+    "name": "EmoMaster-5410737-Debian-acceptance-zh.pdf",
+    "bytes": 800757,
+    "sha256": "d466395a5f0723633856fdb9bc70b8e34fa174dc9077928eb1d6be38e47ed675"
+  },
+  {
+    "name": "EmoMaster-5410737-evidence-1.zip",
+    "bytes": 10204520,
+    "sha256": "f1620a82d1afcd292d9758d659633d5b2d91ed5d1cdf8b9d34ccecdc990da6c7"
+  },
+  {
+    "name": "EmoMaster-5410737-evidence-2.zip",
+    "bytes": 14132600,
+    "sha256": "791969ddf2686eb0d6b947399ce188c83b7f40d9b13c315e689fd8021b77f2a6"
+  },
+  {
+    "name": "EmoMaster-5410737-evidence-3.zip",
+    "bytes": 12329862,
+    "sha256": "68d7a258f691007ad7df4279cc79deb2be6bbdc7c907621acb76e842617e4e29"
+  }
+]

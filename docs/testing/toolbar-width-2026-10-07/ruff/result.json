@@ -1,0 +1,20 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "src",
+    "tests",
+    "scripts/validate_designer_toolbar.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 0.1559999999590218,
+  "outerWatchdogSeconds": 90,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\toolbar-width-20261007-002955-281239\\test-runtime"
+}

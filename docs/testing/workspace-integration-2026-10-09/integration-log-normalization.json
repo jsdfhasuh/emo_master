@@ -1,0 +1,26 @@
+[
+  {
+    "file": "docs/testing/workspace-integration-2026-10-09/ci-initial.txt",
+    "raw": "docs/testing/workspace-integration-2026-10-09/ci-initial.txt.raw.gz",
+    "originalSha256": "78359781d53047e8bed38b74155da4515a64e8ed15abf944f9072771a22acbe0",
+    "normalizedSha256": "31e8af1a5369dfc6c9b56eb319b5b8d9addeab90c745565fcb9222b2b8499389"
+  },
+  {
+    "file": "docs/testing/workspace-integration-2026-10-09/designer-final.txt",
+    "raw": "docs/testing/workspace-integration-2026-10-09/designer-final.txt.raw.gz",
+    "originalSha256": "77ee15397b7f2287e20b27e17388114d4f78cba41b114ed7d27e7a56e85aa704",
+    "normalizedSha256": "a1978b94e87a18df037857045562123d37ada8b24a0896d0a973794fb4788ee5"
+  },
+  {
+    "file": "docs/testing/workspace-integration-2026-10-09/clean-snapshot-final.txt",
+    "raw": "docs/testing/workspace-integration-2026-10-09/clean-snapshot-final.txt.raw.gz",
+    "originalSha256": "61d7daea763c7505bbf7f7900b4419cc5d840c4761f558831b79ca430d78ce1e",
+    "normalizedSha256": "1b4601c476a98a3ca73514793d4543df419660ca1d810fae3c1b1e6f8ef30771"
+  },
+  {
+    "file": "docs/testing/workspace-integration-2026-10-09/portable-example-final.txt",
+    "raw": "docs/testing/workspace-integration-2026-10-09/portable-example-final.txt.raw.gz",
+    "originalSha256": "b6b51fd2a42a8d0ff0d1a758e0a3f555696bf70a6d08b8ff5214089370ccc143",
+    "normalizedSha256": "d6811f044594df029307bb8f0f46fce167f47ed06cd670327c0b12e5808e1010"
+  }
+]

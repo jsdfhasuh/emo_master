@@ -1,0 +1,25 @@
+................F.....................                                   [100%]
+================================== FAILURES ===================================
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x190f10fbce0) at 0x00000190C9B68870>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x00000190F3EB1700>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x00000190F3EB1700> = <PySide2.QtWidgets.QToolButton(0x190f1817cf0, name="primaryButton") at 0x00000190F3EB1700>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x190f1817cf0, name="primaryButton") at 0x00000190F3EB1700> = <emo_master.apps.designer.ui.main_window.MainWindow(0x190f145d550) at 0x00000190F3D7E600>.startButton
+
+tests\designer\test_visual_layout.py:296: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+1 failed, 37 passed in 11.20s

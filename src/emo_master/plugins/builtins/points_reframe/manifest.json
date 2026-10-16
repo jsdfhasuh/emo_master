@@ -1,0 +1,38 @@
+{
+  "operatorId": "vision.geometry.reframe_points",
+  "displayName": "点坐标回源／换图像空间",
+  "version": "1.0.0",
+  "inputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._geometry_bridges:PointsReframeOperator",
+  "category": "几何",
+  "summary": "按同一来源的变换映射点到目标图像空间，不进行单位转换。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

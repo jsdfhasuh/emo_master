@@ -1,0 +1,54 @@
+{
+  "commit": "55863779cbaa43153c9bc553ee448076f99b6a86",
+  "comparison": "Raw screenshot digest equals working bytes; CRLF/LF normalized content equals Git commit.",
+  "matches": {
+    "scripts/validate_flow_layout.py": {
+      "screenshotRawSha256": "ffd56322551f047c4428aff1e80df2755b6445f555746991e22ddbb42ec2e333",
+      "workingRawSha256": "ffd56322551f047c4428aff1e80df2755b6445f555746991e22ddbb42ec2e333",
+      "lfNormalizedSha256": "ffd56322551f047c4428aff1e80df2755b6445f555746991e22ddbb42ec2e333",
+      "committedSha256": "ffd56322551f047c4428aff1e80df2755b6445f555746991e22ddbb42ec2e333"
+    },
+    "src/emo_master/apps/designer/ui/flow_layout.py": {
+      "screenshotRawSha256": "80a0dfe009664a903768a2382a13fb1c807e5cc082ec6a5ccf5443b34201977f",
+      "workingRawSha256": "80a0dfe009664a903768a2382a13fb1c807e5cc082ec6a5ccf5443b34201977f",
+      "lfNormalizedSha256": "80a0dfe009664a903768a2382a13fb1c807e5cc082ec6a5ccf5443b34201977f",
+      "committedSha256": "80a0dfe009664a903768a2382a13fb1c807e5cc082ec6a5ccf5443b34201977f"
+    },
+    "src/emo_master/apps/designer/ui/flow_routing.py": {
+      "screenshotRawSha256": "571d6ab3772f3dfe40b1060ff06fccf24eced8c0c91cd9177e87cf078f09fb55",
+      "workingRawSha256": "571d6ab3772f3dfe40b1060ff06fccf24eced8c0c91cd9177e87cf078f09fb55",
+      "lfNormalizedSha256": "571d6ab3772f3dfe40b1060ff06fccf24eced8c0c91cd9177e87cf078f09fb55",
+      "committedSha256": "571d6ab3772f3dfe40b1060ff06fccf24eced8c0c91cd9177e87cf078f09fb55"
+    },
+    "tests/designer/test_flow_layout_qt.py": {
+      "screenshotRawSha256": "6cf274dac53b0b2577bc2b7822bd3127133437addd0964f2fa1b8d647e5d9d56",
+      "workingRawSha256": "6cf274dac53b0b2577bc2b7822bd3127133437addd0964f2fa1b8d647e5d9d56",
+      "lfNormalizedSha256": "6cf274dac53b0b2577bc2b7822bd3127133437addd0964f2fa1b8d647e5d9d56",
+      "committedSha256": "6cf274dac53b0b2577bc2b7822bd3127133437addd0964f2fa1b8d647e5d9d56"
+    },
+    "tests/designer/test_flow_layout_routing.py": {
+      "screenshotRawSha256": "ae6098b35b1e447b42fc15295ad6787e842bb7207559b4a5ba3d09f4b3e279f2",
+      "workingRawSha256": "ae6098b35b1e447b42fc15295ad6787e842bb7207559b4a5ba3d09f4b3e279f2",
+      "lfNormalizedSha256": "ae6098b35b1e447b42fc15295ad6787e842bb7207559b4a5ba3d09f4b3e279f2",
+      "committedSha256": "ae6098b35b1e447b42fc15295ad6787e842bb7207559b4a5ba3d09f4b3e279f2"
+    },
+    "src/emo_master/apps/designer/ui/flow_scene.py": {
+      "screenshotRawSha256": "47141af7c51b64a6cda6555b5c043ed3c745501ef8b299d742f06f996158befe",
+      "workingRawSha256": "47141af7c51b64a6cda6555b5c043ed3c745501ef8b299d742f06f996158befe",
+      "lfNormalizedSha256": "74830321795d35aa769a6130efc47eab64f7196597282bca2e208bc03893b325",
+      "committedSha256": "74830321795d35aa769a6130efc47eab64f7196597282bca2e208bc03893b325"
+    },
+    "src/emo_master/apps/designer/ui/main_window.py": {
+      "screenshotRawSha256": "7900e2291c0099fc40774ffefc4d9018a6cd804599bc244b096bbebfec2ab147",
+      "workingRawSha256": "7900e2291c0099fc40774ffefc4d9018a6cd804599bc244b096bbebfec2ab147",
+      "lfNormalizedSha256": "d617f2ea2e25fd1a8ccd7c4a7a474c8c8ff6f5feec922030eb162a723fdd3c3e",
+      "committedSha256": "d617f2ea2e25fd1a8ccd7c4a7a474c8c8ff6f5feec922030eb162a723fdd3c3e"
+    },
+    "tests/designer/test_flow_scene_interactions.py": {
+      "screenshotRawSha256": "c27d81900fd784fa07c5ae8503b92afcd88a380b79cb8443f4824dc4905de398",
+      "workingRawSha256": "c27d81900fd784fa07c5ae8503b92afcd88a380b79cb8443f4824dc4905de398",
+      "lfNormalizedSha256": "9aea701b70b4be1cb7b1136975ef214f15a96be98fed7c2974fc89ab564880d5",
+      "committedSha256": "9aea701b70b4be1cb7b1136975ef214f15a96be98fed7c2974fc89ab564880d5"
+    }
+  }
+}

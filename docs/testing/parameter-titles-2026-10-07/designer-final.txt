@@ -1,0 +1,36 @@
+........................................................................ [ 10%]
+........................................................................ [ 20%]
+........................................................................ [ 30%]
+........................................................................ [ 40%]
+........................................................................ [ 50%]
+........................................................................ [ 60%]
+........................................................................ [ 70%]
+........................................................................ [ 81%]
+....................F
+================================== FAILURES ===================================
+__ test_second_designer_explains_busy_directory_and_can_retry_after_release ___
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_startup_directory_lock.py:52: in test_second_designer_explains_busy_directory_and_can_retry_after_release
+    assert "Traceback" not in result.stderr
+E   TypeError: argument of type 'NoneType' is not iterable
+============================== warnings summary ===============================
+tests/designer/test_startup_directory_lock.py::test_second_designer_explains_busy_directory_and_can_retry_after_release
+  C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-38 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016, in _bootstrap_inner
+      self.run()
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953, in run
+      self._target(*self._args, **self._kwargs)
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py", line 1515, in _readerthread
+      buffer.append(fh.read())
+  UnicodeDecodeError: 'gbk' codec can't decode byte 0xa1 in position 15: illegal multibyte sequence
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/designer/test_startup_directory_lock.py::test_second_designer_explains_busy_directory_and_can_retry_after_release
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 596 passed, 1 warning in 64.91s (0:01:04)

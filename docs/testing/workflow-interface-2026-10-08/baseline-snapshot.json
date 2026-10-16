@@ -1,0 +1,22 @@
+{
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-interface-baseline-kb8jw5ww",
+  "omittedTaskFiles": [
+    "workflow_interface_dialog.py",
+    "test_workflow_interface_dialog.py",
+    "validate_workflow_interface.py"
+  ],
+  "transformed": {
+    "src\\emo_master\\apps\\designer\\ui\\main_window.py": {
+      "liveSha256": "9e49ca2c49f278407bca5decfa64ca5c8acc88e2187ff456ff31841548dbbd79",
+      "baselineSha256": "6de1d48083a358c487dbe4453b8df3154f4464642b702caa23eed904f302ca1a"
+    },
+    "src\\emo_master\\apps\\designer\\ui\\flow_scene.py": {
+      "liveSha256": "62f1ac841e9fb991af903c6edd45d77d72ba7d4499f39382291d66833acb3e97",
+      "baselineSha256": "433733dff24506e44b76d6a873fa4dbb24c696ee3731977007db8f96e97517f4"
+    }
+  },
+  "tests": [
+    "tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph",
+    "tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema"
+  ]
+}

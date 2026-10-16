@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="5" time="8.302" timestamp="2026-10-07T09:26:15.463750+08:00" hostname="视觉电脑"><testcase classname="tests.test_runtime_package_verifier" name="testMissingFrozenReportRetainsExitAndRawLogs" time="5.973"><failure message="FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-1101\\testMissingFrozenReportRetains0\\missing.json.stderr.log'">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1101/testMissingFrozenReportRetains0')
+
+    def testMissingFrozenReportRetainsExitAndRawLogs(tmp_path):
+        report = tmp_path / "missing.json"
+        result = invoke("verify_runtime_package.ps1", ["-Executable", sys.executable,
+            "-ReportPath", report, "-TimeoutSeconds", "20"])
+        assert result.returncode != 0
+        execution = json.loads(Path(str(report) + ".execution.json").read_text(encoding="utf-8-sig"))
+        assert execution["status"] == "FAIL" and execution["phase"] == "self-test"
+        assert execution["exitCode"] != 0
+        assert "Runtime report missing" in execution["error"]
+&gt;       assert Path(str(report) + ".stderr.log").read_text().strip()
+
+tests\test_runtime_package_verifier.py:32: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py:1134: in read_text
+    with self.open(mode='r', encoding=encoding, errors=errors) as f:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1101/testMissingFrozenReportRetains0/missing.json.stderr.log')
+mode = 'r', buffering = -1, encoding = 'locale', errors = None, newline = None
+
+    def open(self, mode='r', buffering=-1, encoding=None,
+             errors=None, newline=None):
+        """
+        Open the file pointed by this path and return a file object, as
+        the built-in open() function does.
+        """
+        if "b" not in mode:
+            encoding = io.text_encoding(encoding)
+&gt;       return self._accessor.open(self, mode, buffering, encoding, errors,
+                                   newline)
+E       FileNotFoundError: [Errno 2] No such file or directory: 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-1101\\testMissingFrozenReportRetains0\\missing.json.stderr.log'
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\pathlib.py:1119: FileNotFoundError</failure></testcase><testcase classname="tests.test_runtime_package_verifier" name="testBadArchiveRetainsPreparationFailure" time="0.822"><failure message="AssertionError: assert (None is None and '')">tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1101/testBadArchiveRetainsPreparati0')
+
+    def testBadArchiveRetainsPreparationFailure(tmp_path):
+        archive = tmp_path / "broken.zip"
+        archive.write_bytes(b"not a zip")
+        report = tmp_path / "broken.json"
+        result = invoke("verify_runtime_package.ps1", ["-Archive", archive, "-ReportPath", report])
+        assert result.returncode != 0
+        execution = json.loads(Path(str(report) + ".execution.json").read_text(encoding="utf-8-sig"))
+        assert execution["status"] == "FAIL" and execution["phase"] == "prepare"
+&gt;       assert execution["exitCode"] is None and execution["error"]
+E       AssertionError: assert (None is None and '')
+
+tests\test_runtime_package_verifier.py:44: AssertionError</failure></testcase><testcase classname="tests.test_runtime_package_verifier" name="testCloudIdentityMismatchFailsBeforeLaunchingExecutable[packager]" time="0.585" /><testcase classname="tests.test_runtime_package_verifier" name="testCloudIdentityMismatchFailsBeforeLaunchingExecutable[zip]" time="0.597" /><testcase classname="tests.test_operator_runtime_validation" name="testRuntimeWorkflowBuildsExplicitRevisionsWithoutPublishing" time="0.012" /></testsuite></testsuites>

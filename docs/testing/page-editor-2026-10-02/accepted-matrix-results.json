@@ -1,0 +1,446 @@
+[
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "dpr": 1.0,
+    "screen": [
+      1920,
+      1032
+    ],
+    "splitter": [
+      260,
+      654,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 1417872
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1280x720-1",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1600,
+      900
+    ],
+    "actual": [
+      1600,
+      900
+    ],
+    "dpr": 1.0,
+    "screen": [
+      1920,
+      1032
+    ],
+    "splitter": [
+      260,
+      974,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 2812912
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1600x900-1",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1920,
+      1080
+    ],
+    "actual": [
+      1896,
+      984
+    ],
+    "dpr": 1.0,
+    "screen": [
+      1920,
+      1032
+    ],
+    "splitter": [
+      260,
+      1270,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 4094480
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1920x1080-1",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1280,
+      720
+    ],
+    "actual": [
+      1280,
+      720
+    ],
+    "dpr": 1.25,
+    "screen": [
+      1536,
+      826
+    ],
+    "splitter": [
+      260,
+      654,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 2247864
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1280x720-1.25",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1600,
+      900
+    ],
+    "actual": [
+      1512,
+      778
+    ],
+    "dpr": 1.25,
+    "screen": [
+      1536,
+      826
+    ],
+    "splitter": [
+      260,
+      886,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 3363888
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1600x900-1.25",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1920,
+      1080
+    ],
+    "actual": [
+      1512,
+      778
+    ],
+    "dpr": 1.25,
+    "screen": [
+      1536,
+      826
+    ],
+    "splitter": [
+      260,
+      886,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 3363888
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1920x1080-1.25",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1280,
+      720
+    ],
+    "actual": [
+      1256,
+      640
+    ],
+    "dpr": 1.5,
+    "screen": [
+      1280,
+      688
+    ],
+    "splitter": [
+      260,
+      630,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 2661120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1280x720-1.5",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1600,
+      900
+    ],
+    "actual": [
+      1256,
+      640
+    ],
+    "dpr": 1.5,
+    "screen": [
+      1280,
+      688
+    ],
+    "splitter": [
+      260,
+      630,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 2661120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1600x900-1.5",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1920,
+      1080
+    ],
+    "actual": [
+      1256,
+      640
+    ],
+    "dpr": 1.5,
+    "screen": [
+      1280,
+      688
+    ],
+    "splitter": [
+      260,
+      630,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 2661120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1920x1080-1.5",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1280,
+      720
+    ],
+    "actual": [
+      936,
+      468
+    ],
+    "dpr": 2.0,
+    "screen": [
+      960,
+      516
+    ],
+    "splitter": [
+      260,
+      310,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 1473120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1280x720-2",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1600,
+      900
+    ],
+    "actual": [
+      936,
+      468
+    ],
+    "dpr": 2.0,
+    "screen": [
+      960,
+      516
+    ],
+    "splitter": [
+      260,
+      310,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 1473120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1600x900-2",
+    "exit": 0
+  },
+  {
+    "head": "d88a15bcdcae2c016550e3194bd073a82503b296",
+    "requested": [
+      1920,
+      1080
+    ],
+    "actual": [
+      936,
+      468
+    ],
+    "dpr": 2.0,
+    "screen": [
+      960,
+      516
+    ],
+    "splitter": [
+      260,
+      310,
+      340
+    ],
+    "workspaceFitsWindow": true,
+    "propertyInputVisible": true,
+    "propertyInputFits": true,
+    "propertyPanelWidth": 330,
+    "propertyViewportWidth": 330,
+    "horizontalScrollMaximum": 0,
+    "resources": {
+      "design_image_bytes": 230400,
+      "table_bytes": 0,
+      "surface_bytes": 1473120
+    },
+    "saveReopen": true,
+    "noJob": true,
+    "closeAccepted": true,
+    "name": "accepted-1920x1080-2",
+    "exit": 0
+  }
+]

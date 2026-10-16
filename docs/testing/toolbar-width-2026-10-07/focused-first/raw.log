@@ -1,0 +1,190 @@
+.FFFFFF........                                                          [100%]
+================================== FAILURES ===================================
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-480] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 480, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53BFDC8C0>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53BFDC8C0> = <PySide2.QtWidgets.QToolButton(0x1a53b297ee0, name="dangerButton") at 0x000001A53BFDC8C0>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-640] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 640, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C07FC40>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C07FC40> = <PySide2.QtWidgets.QToolButton(0x1a53b295520, name="dangerButton") at 0x000001A53C07FC40>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-800] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 800, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C07E1C0>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C07E1C0> = <PySide2.QtWidgets.QToolButton(0x1a53b0fcbd0, name="dangerButton") at 0x000001A53C07E1C0>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-900] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 900, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C0CD580>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C0CD580> = <PySide2.QtWidgets.QToolButton(0x1a53b5b20a0, name="dangerButton") at 0x000001A53C0CD580>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-960] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 960, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C085F40>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53C085F40> = <PySide2.QtWidgets.QToolButton(0x1a53b290ee0, name="dangerButton") at 0x000001A53C085F40>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+__________ testRunAndStopRemainVisibleAtSupportedWidths[False-1280] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a5396785e0) at 0x000001A53AA06910>
+width = 1280, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.show()
+            settle(designerApplication)
+            window.resize(width, 500)
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+                assert button.isVisible()
+                assert button.defaultAction() is window._toolbarActions[key]
+                assert not button.icon().isNull()
+                assert button.accessibleName()
+>               assert '运行' in button.toolTip()
+E               assert '运行' in '没有可停止的当前任务'
+E                +  where '没有可停止的当前任务' = <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53BFDF140>()
+E                +    where <built-in method toolTip of PySide2.QtWidgets.QToolButton object at 0x000001A53BFDF140> = <PySide2.QtWidgets.QToolButton(0x1a53b2929a0, name="dangerButton") at 0x000001A53BFDF140>.toolTip
+
+tests\designer\test_toolbar_width.py:32: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-480]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-640]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-800]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-900]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-960]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-1280]
+6 failed, 9 passed in 3.38s

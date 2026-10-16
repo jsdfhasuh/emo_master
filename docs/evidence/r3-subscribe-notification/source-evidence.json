@@ -1,0 +1,135 @@
+{
+  "purpose": "Provenance index for externally retained cloud evidence; raw ABBA trials are not bundled in the repository.",
+  "comparison": {
+    "root": "/workspace/scratch/a6c68496e0bc/evidence-subscribe-abba-20261002",
+    "baseline_commit": "655eeac84d0602aa670c76af67679509782bbd7f",
+    "candidate_commit": "7d8c9e9af0901253fce15d7bd65efa66f14e12a8",
+    "order": [
+      "A1",
+      "B1",
+      "B2",
+      "A2"
+    ],
+    "measurement_status": "COMPLETE",
+    "performance_status": "NOT_ASSESSED",
+    "files": {
+      "report.md": {
+        "sha256": "e7df718be5f7df655851b27cb0b2399fd63d5ab3dfaba259facd651c267812de",
+        "bytes": 13121
+      },
+      "REVIEW-AFTER.md": {
+        "sha256": "051d44fde2b9508c2debfab1f8f9b9dc6b841924813af8b328e3afd697a8aa97",
+        "bytes": 649
+      },
+      "REVIEW-BEFORE.md": {
+        "sha256": "d901ec993e34835925043ecd01d13d5b3512ed2f3a49444e978340f7d3802fa6",
+        "bytes": 1167
+      },
+      "DESIGN.md": {
+        "sha256": "c6e0aafbaace3edbd3bce29ac4752382043bf3ceb99fec76b5cc31e0bb8053a3",
+        "bytes": 12085
+      },
+      "run/manifest.json": {
+        "sha256": "a510670d403b514d79f212b230541d8315ed2a69a5ba1d72da73953b6cfdaabe",
+        "bytes": 2186046
+      },
+      "run/report.json": {
+        "sha256": "36368473352851e956522e315924b301162c21db7aba57ffc3073ea80483582b",
+        "bytes": 2405395
+      },
+      "analysis-summary.json": {
+        "sha256": "c60b0b0a2e4a87579704a94fb7d305e2cb0fe4d1cd7571652b5faa3ae44be0bf",
+        "bytes": 3573
+      },
+      "observer.py": {
+        "sha256": "1cc098ce30a662cd20d6e3895533dd315beb08c64ccbda1d582e7e3a06a86ae7",
+        "bytes": 6398
+      },
+      "compare.py": {
+        "sha256": "765b504ac7c3e2ea2bc60582960e9d012ce91efa63267e90332e3293455c8797",
+        "bytes": 10524
+      },
+      "analyze.py": {
+        "sha256": "ba985552957e37de9f4021554f9e7c52ef240d50f6988c58d7a77eff4b8ad579",
+        "bytes": 15525
+      },
+      "pure_checks.py": {
+        "sha256": "0b4d1bbfdf30df276afef5e80d2c23ced4a316789a3e622a9dd0fc395781e7ca",
+        "bytes": 8034
+      },
+      "pure-checks.json": {
+        "sha256": "8bc69166a64f2aa08b112fedbe033dcd68785a6f69327e4142d682c91723cf31",
+        "bytes": 1219
+      },
+      "post-analysis-verification.json": {
+        "sha256": "4d628e30ac89b69d484bd3312256c08e23a94b0a18d398efc7216cb2bae2bda4",
+        "bytes": 846
+      },
+      "SHA256SUMS": {
+        "sha256": "44058d3466b733c08e33364bc8ff0c779d9ea157189518d9af2190e61b2a5873",
+        "bytes": 5639
+      }
+    }
+  },
+  "candidate_full_ci": {
+    "root": "/workspace/scratch/a6c68496e0bc/evidence-subscribe-notification-20261002",
+    "head": "7d8c9e9af0901253fce15d7bd65efa66f14e12a8",
+    "command": [
+      "/workspace/scratch/a6c68496e0bc/emo_master/.venv/bin/python",
+      "scripts/ci_check.py"
+    ],
+    "started_utc": "2026-10-02T01:52:36Z",
+    "finished_utc": "2026-10-02T01:59:36Z",
+    "exit_code": 0,
+    "tracked_files": 1371,
+    "source_stable": true,
+    "owners_before": [],
+    "owners_after": [],
+    "files": {
+      "7d8c9e9-full-ci.log": {
+        "sha256": "7c4fc6b54d1324460c61d1ad32f938464ff01196830dcdc76b3abc709971ea66",
+        "bytes": 6113
+      },
+      "7d8c9e9-full-ci-result.json": {
+        "sha256": "481628b611dfa2434614c56a6a63b56c1965fe0df64f8f044a92b9f1ef4fb808",
+        "bytes": 341136
+      },
+      "7d8c9e9-full-ci-supervisor.py": {
+        "sha256": "e1f4053431626047c40d13c7c12ce45f68e644aa9584edf9846952dd2620ab73",
+        "bytes": 3271
+      }
+    }
+  },
+  "integration": {
+    "base_commit": "ecf8bcfcf193e05807556340d670f05c0f3d9e15",
+    "diagnostic_files_unchanged": 5,
+    "evidence_root": "/workspace/scratch/a6c68496e0bc/evidence-subscribe-integration-20261002",
+    "validation_policy": "Final integration validation is recorded externally against its frozen local commit; candidate CI is not an integration CI result.",
+    "reviewed_files": {
+      "src/emo_master/apps/runtime/presentation/rpc.py": {
+        "git_blob": "172cd358ce3b3211f6603930560bc9a3f44967c0",
+        "sha256": "46186aba8a9f07360ef2c81028974cd081e9132976ee626b5a9f965cd994cc91"
+      },
+      "src/emo_master/apps/runtime/presentation/store.py": {
+        "git_blob": "b4f74edca88dd004a18d1d47b2cb5d8150aa24a3",
+        "sha256": "148f66b69c2ed776de5df74d4911c3b902961d3afaa7a388cbda6f394b1e197c"
+      },
+      "tests/runtime/presentation/test_subscribe_notification.py": {
+        "git_blob": "396b4b6cba095bb75a76ba82bee7ae06f769c7d0",
+        "sha256": "2b9144afbd19334dbe79d4e6dfd242f7e0720df696bb88b9d910d38814180160"
+      }
+    },
+    "original_workflow_files_unchanged": 9,
+    "no_capture_followup_commit": "4db426f24dd4cc8466a7a1eb7d14c93860aa66fa",
+    "no_capture_followup_files": {
+      "scripts/diagnostics/windows_commit_trace_fixtures.py": {
+        "git_blob": "0501836c17fff65ba6e154a84a3dbcd342a64e4d",
+        "sha256": "64c82d4de2e816f48a1eba82d7224ebd0d8ce1d2f4dc51321f48422b3c8acc44"
+      },
+      ".github/workflows/runtime-kernel-preflight-only.yml": {
+        "git_blob": "4c0dd4ab54c48aa4fa5e2ff6d5453d0d5ec67218",
+        "sha256": "3467cff70654c5681aafa493331e5bfbd19c67762d2b11c75f52505e2b73deb1"
+      }
+    }
+  }
+}

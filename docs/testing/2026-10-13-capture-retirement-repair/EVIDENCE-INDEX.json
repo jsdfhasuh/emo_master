@@ -1,0 +1,140 @@
+{
+  "base_sha": "417f8782117ac10a0c3d714f78e4d3021c658bfd",
+  "archive": "capture-retirement-evidence.zip",
+  "sha256": "ce748677c48c019dcb3d62845d3d7a694fa582792f0fa7082e39ec785cc6ffd9",
+  "bytes": 203036,
+  "entries": {
+    "local/baseline.log": {
+      "sha256": "a08621b97719893f69625c21edf1deeb6f3f9fb9a2268db54304063cb941c847",
+      "bytes": 29388
+    },
+    "local/baseline.xml": {
+      "sha256": "cbe045d108cb4cfd30a390f6df32c4d73a1d959df228596c5042a3cd04fdbc7b",
+      "bytes": 30913
+    },
+    "local/first-fix.log": {
+      "sha256": "f277c16be1094a267fe38abf8d140508944310ca310b4d510001d58e98626a55",
+      "bytes": 391
+    },
+    "local/first-fix.xml": {
+      "sha256": "be4b6afb69d4f784ae1df7f2b0056a43307f95818ac2edae63afe3468729375b",
+      "bytes": 9030
+    },
+    "local/focused.log": {
+      "sha256": "519dda8383998ff99069ecf3eedae07e2b1e72ecffe398fb0cc2b72130ae252e",
+      "bytes": 25562
+    },
+    "local/focused.xml": {
+      "sha256": "06f7ae1e68ec3751257a76744d177f88eb8699dd1ad0bec637c7ba1e8d66a55f",
+      "bytes": 44032
+    },
+    "local/native.log": {
+      "sha256": "102b5db5378ee992cea6431db3697739f129963dc607f63cc2a1411e1d4fc7eb",
+      "bytes": 8951
+    },
+    "local/native.xml": {
+      "sha256": "e46a116abc8b31374c905ac01f015629a2360c8b12039356118a1db217997000",
+      "bytes": 47615
+    },
+    "local/longpath-baseline.log": {
+      "sha256": "dc147157698ea2fd9fdfaeb018a5a7b975a5f7184014f21b0edb03a10597b200",
+      "bytes": 6221
+    },
+    "local/longpath-baseline.xml": {
+      "sha256": "4bf9827b7303cc6bad340fe5764bde9d305950ed4211725e01a0695adbf408be",
+      "bytes": 7362
+    },
+    "local/native-final.log": {
+      "sha256": "773035e869f736d2611a35cadacc5249651e3c96e80c198d41ab183311fe7163",
+      "bytes": 193
+    },
+    "local/native-final.xml": {
+      "sha256": "e4b30ecbdf7378848ab4294ddbf796c38475d06b7db48dba91d42767fcb52f1d",
+      "bytes": 14020
+    },
+    "local/ruff-final.log": {
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0",
+      "bytes": 20
+    },
+    "local/mypy-final.log": {
+      "sha256": "7648c6ed6d7d6514943de72fc1a41d66927a609b087dca987fc01ffe1e3e6471",
+      "bytes": 5756
+    },
+    "local/proto.log": {
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "bytes": 0
+    },
+    "local/candidate-manifest.json": {
+      "sha256": "d8aa2178047670307dfa791150ab8ecff44289e1bb0f918b271aefd4668890b6",
+      "bytes": 2149
+    },
+    "native-evidence/changing-96.json": {
+      "sha256": "a1fd897424ffae8f45541ce45b03fe8f3813666f8a67ea1c5dcc9d999615333e",
+      "bytes": 282838
+    },
+    "native-evidence/close-while-running/five-native-sessions.json": {
+      "sha256": "8212d71d8330e90955357413dae43185cbf0880c03c1fe294804968268db3014",
+      "bytes": 5485
+    },
+    "native-evidence/five-sessions.json": {
+      "sha256": "592c0dc9b7ec96f9b27e2fb57fc83b13c370ea62e6ec3d9be8757902f168ce6d",
+      "bytes": 2166
+    },
+    "native-evidence/full-lifecycle/five-native-sessions.json": {
+      "sha256": "5a3b01467ac404b7c3fd69970cf72997e839ef34d4ccd5cfb7e2dd93b81216f0",
+      "bytes": 8051
+    },
+    "native-evidence/full-lifecycle/tab-0.png": {
+      "sha256": "d5de7654fb5f4d2afd64ad1d6973498578397fe16302a462f7eee5446d1b1138",
+      "bytes": 29114
+    },
+    "native-evidence/full-lifecycle/tab-1.png": {
+      "sha256": "a9920c98184e353bf53ab0cf922f53198eccaccb02ff306a566ec01095bae03a",
+      "bytes": 29782
+    },
+    "native-evidence/full-lifecycle/tab-2.png": {
+      "sha256": "b5c59bad67e270a250f0c937a511928e16fc30e617c9609180ef5f8592e6488e",
+      "bytes": 29163
+    },
+    "native-evidence/full-lifecycle/tab-3.png": {
+      "sha256": "c72dd9762edde6c4dc9ad80c2590d49b8ccfcb1c06051841f8ef9f5d5da936b8",
+      "bytes": 27883
+    },
+    "native-evidence/full-lifecycle/tab-4.png": {
+      "sha256": "56ffd1b5f4ce77d81103859bf27538f38b695748a2127ba39b6e5194ef83a65f",
+      "bytes": 29034
+    },
+    "original/ci-38356368865-linux-first-failure.log": {
+      "sha256": "257568aa0101283cc005ce6117be61a08f15a23966c125a04adcccd4b3755509",
+      "bytes": 89058
+    },
+    "notes.txt": {
+      "sha256": "787e443ce1a2095fd63173b20ee107388a01c04a6c3f7bdb76c1ed18072a62b2",
+      "bytes": 588
+    },
+    "SHA256SUMS.txt": {
+      "sha256": "7e5d6366f7f18aab028215c5406ee1e7bb9cf4b4051dc35b9eff62d26be59008",
+      "bytes": 2570
+    }
+  },
+  "historical_original": {
+    "run": 38356368865,
+    "job": 115160103834,
+    "actual_sha": "b003905d2945a05d621cb8c2bb964be798316d56",
+    "source": "UNAVAILABLE/BUDGET_EXCEEDED",
+    "cause": "OPEN"
+  },
+  "verification": {
+    "baseline_capture": "7 failed",
+    "baseline_longpath": "2 failed",
+    "first_native": "243 passed / 2 failed",
+    "final_native": "75 passed / 92.05s",
+    "exact_push_ci": "PENDING at archive freeze",
+    "new_native_workflow": "PENDING at archive freeze"
+  },
+  "remaining": [
+    "historical capture owner unknown",
+    "local intermittent export failures cause NOT_PROVEN",
+    "historical Windows Job/startup/GUI gaps remain separate"
+  ]
+}

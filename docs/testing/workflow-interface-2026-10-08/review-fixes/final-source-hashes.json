@@ -1,0 +1,10 @@
+{
+  "src/emo_master/apps/designer/ui/main_window.py": "a000ebf9f2fa744d44e4fed642bc89b815bde147fb9e20176707560bc3d1dcc3",
+  "src/emo_master/apps/designer/ui/flow_scene.py": "b8af67d75efaffca15afc5dcb4cf7d80eb78587a4084a672686dc58e6b97c6ae",
+  "src/emo_master/apps/designer/ui/workflow_interface_dialog.py": "1e1ce2d4a9a5fb1277a93440db43b3230458f3a779f7ac0bab54ced83ab85a54",
+  "src/emo_master/apps/designer/state/project_edit_session.py": "5ce369f66bc306efcc10305002e0e89d4e0fe05b4adecb54e79c910ebe91048f",
+  "tests/designer/test_workflow_interface_dialog.py": "329385f9c764ff9092c8d669b3c49a2bc5d03c9b8cf994214258aa45c6647209",
+  "tests/designer/test_main_window_workflow_tabs.py": "2e43c8b07d180ccdf6e228a8baee36d47bc8be89b6b6d91e77aa947025857853",
+  "tests/core/presentation/test_workflow_interface_order.py": "c650def6e55b8f603dae1d34026e659ee5d1554114e81d7c7dd0e6f7191f362e",
+  "scripts/validate_workflow_interface.py": "99ce6cb8c62f05d6d56543aa01bc18ea36013987956e9131dd2594ebabdb2bfa"
+}

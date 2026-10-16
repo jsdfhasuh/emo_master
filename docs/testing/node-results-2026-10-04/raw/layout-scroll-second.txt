@@ -1,0 +1,78 @@
+......................F.....F.........................                   [100%]
+================================== FAILURES ===================================
+_______ testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible ________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1986c8a2160) at 0x000001986E5A4F90>
+
+    def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
+        from tests.designer.qt_wait import waitForCatalog
+    
+        window = makeWindow()
+        try:
+            window.show()
+            waitForCatalog(window)
+            window.addNodeFromOperatorPayload({'operatorId': 'test.layout', 'displayName': '布局检查',
+                'inputPorts': {}, 'outputPorts': {'image': 'image'}, 'paramSchema': {}})
+            panel = window.nodeResultCoordinator.panel
+            # Keep the 80-line, unchanged-font and last-line-reachability constraints
+            # on the visible result tabs replacing the old hidden detail section.
+            details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
+            panel.execution.setPlainText(details)
+            fontSize = panel.execution.font().pointSizeF()
+            window.resize(1000, 499)
+            styledApp.processEvents()
+    
+            assert window.height() == 499
+            assert window.minimumSizeHint().height() < 500
+            assert panel.execution.toPlainText() == details
+            assert panel.execution.font().pointSizeF() == fontSize
+            assert window.rightPanelContainer.rect().contains(window.summarySection.geometry())
+            assert window.rightPanelContainer.rect().contains(panel.geometry())
+            assert panel.tabs.isTabVisible(0)
+            panel.tabs.setCurrentWidget(panel.imagePage)
+            styledApp.processEvents()
+            assert panel.tabs.rect().contains(panel.imagePage.geometry())
+            assert window.jobStatusCard.height() >= window.jobStatusCard.minimumSizeHint().height()
+            assert window.jobMessageCard.height() >= window.jobMessageCard.minimumSizeHint().height()
+            assert window.previewImageLabel.height() >= 90
+    
+            panel.tabs.setCurrentWidget(panel.execution)
+            styledApp.processEvents()
+            bar = panel.execution.verticalScrollBar()
+            assert bar.maximum() > 0
+>           assert panel.execution.height() >= panel.execution.minimumSizeHint().height()
+E           assert 60 >= 74
+E            +  where 60 = <built-in method height of PySide2.QtWidgets.QTextEdit object at 0x000001986FA96BC0>()
+E            +    where <built-in method height of PySide2.QtWidgets.QTextEdit object at 0x000001986FA96BC0> = <PySide2.QtWidgets.QTextEdit(0x1986f20d350) at 0x000001986FA96BC0>.height
+E            +      where <PySide2.QtWidgets.QTextEdit(0x1986f20d350) at 0x000001986FA96BC0> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x1986ebe3160, name="nodeResultPanel") at 0x000001986FA76800>.execution
+E            +  and   74 = <built-in method height of PySide2.QtCore.QSize object at 0x000001986FA00EC0>()
+E            +    where <built-in method height of PySide2.QtCore.QSize object at 0x000001986FA00EC0> = PySide2.QtCore.QSize(74, 74).height
+E            +      where PySide2.QtCore.QSize(74, 74) = <built-in method minimumSizeHint of PySide2.QtWidgets.QTextEdit object at 0x000001986FA96BC0>()
+E            +        where <built-in method minimumSizeHint of PySide2.QtWidgets.QTextEdit object at 0x000001986FA96BC0> = <PySide2.QtWidgets.QTextEdit(0x1986f20d350) at 0x000001986FA96BC0>.minimumSizeHint
+E            +          where <PySide2.QtWidgets.QTextEdit(0x1986f20d350) at 0x000001986FA96BC0> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x1986ebe3160, name="nodeResultPanel") at 0x000001986FA76800>.execution
+
+tests\designer\test_visual_layout.py:192: AssertionError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1986c8a2160) at 0x000001986E5A4F90>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001986F6E6D80>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001986F6E6D80> = <PySide2.QtWidgets.QToolButton(0x1986effa4e0, name="primaryButton") at 0x000001986F6E6D80>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x1986effa4e0, name="primaryButton") at 0x000001986F6E6D80> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1986cbd7850) at 0x000001986F710240>.startButton
+
+tests\designer\test_visual_layout.py:311: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+2 failed, 52 passed in 7.79s

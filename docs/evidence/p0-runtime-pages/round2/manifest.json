@@ -1,0 +1,383 @@
+{
+  "created_utc": "2026-09-26T03:00:15.676571+00:00",
+  "starting_head": "e19a9202e9d904cd07a6165ecc00d76b71639a7d",
+  "measurement_head": "e09e657f26cf9abf1f510f556f853d24098b7f46",
+  "measurement_clean": true,
+  "measurement_code_unchanged": true,
+  "source_differences_after_measurement": [
+    {
+      "path": "prototypes/runtime_pages_p0/pipeline_faults.py",
+      "measurement_sha256": "418be883ff98a655db4c1e7562a8625079c6b24624e03ae0f2f2322d33b6f924",
+      "final_sha256": "7bc2146edf0b0b20a49d9d1bc2dfd534d714543e537ebaeb17a82e6ee5ec46f6"
+    }
+  ],
+  "difference_reason": "Only added real Pin/Unpin/expiry RPC assertions to pipeline-faults. No benchmark, pipeline, RPC server, consumer, exporter or production code changed after the final 3-round measurement. Final 39 tests and four risk scenarios exercised this additional assertion.",
+  "logs": {
+    "baseline": "baseline-ci.txt and baseline-preview.txt used the starting production source; new prototype files were not reached by the crashing CI.",
+    "production_fix": "runtime-final.txt: 356 passed, 1 skipped; source content matches commit 323f35d and final measured source hashes.",
+    "qt": "Designer production/test source unchanged throughout round2. Combined run crashes; designer-isolated has all 49 files and 333 passed.",
+    "final_gate": "final-gate-p0.txt: 39 passed; final-gate-ruff.txt PASS; final-risks-after-pin.json records exact dirty/source identity for the last test-only delta."
+  },
+  "files": {
+    "raw/baseline-ci.txt": {
+      "bytes": 14059,
+      "sha256": "f52c11ef17527e7a636ec3072b01226fcbbca982ddbfd1fb65e559614360cd75"
+    },
+    "raw/baseline-designer-verbose.txt": {
+      "bytes": 34742,
+      "sha256": "c0b69ae78a04f45e89fc6a735071c5d5dac0b9bc4fb132c55586a7f863bd0dc2"
+    },
+    "raw/baseline-main-window-group.txt": {
+      "bytes": 7452,
+      "sha256": "12d6d215a8f74680f662da5f61ea9aaec20da21adc21384ada010d4ad89c8849"
+    },
+    "raw/baseline-preview.txt": {
+      "bytes": 2183,
+      "sha256": "5807ca5e3c5d7a4f51b6e65d0454a44d19024042f7a66f69daf9007285ff3931"
+    },
+    "raw/baseline-qt-file.txt": {
+      "bytes": 101,
+      "sha256": "1f2a54daf8a911cf9368612e1fddba9303fad34098a558fd91335a7f229753b0"
+    },
+    "raw/baseline-qt-pair.txt": {
+      "bytes": 4393,
+      "sha256": "57efc2a465de127915a0567c606d0ef04fa7f4b2f51f11826292a916b9b0334d"
+    },
+    "raw/baseline-qt-prefix-a.txt": {
+      "bytes": 13271,
+      "sha256": "7c2385609197d5197339654a21de661a4fdc70769874ea111337828c76913ed0"
+    },
+    "raw/baseline-qt-prefix-b.txt": {
+      "bytes": 9683,
+      "sha256": "5bb10a522a1ca727547949be0f68e387e0f87feba82238e18958cd5d73769b3e"
+    },
+    "raw/batch1-all.txt": {
+      "bytes": 102,
+      "sha256": "293d037088422e0ebddf7ac224ab921d4294b47d0fef5e5bd68ea2d605186471"
+    },
+    "raw/batch1-final.txt": {
+      "bytes": 102,
+      "sha256": "55974c8d56280cefcd0b884bbbcef49b612d66678189db8c5f7c19c2a598d891"
+    },
+    "raw/batch1.txt": {
+      "bytes": 101,
+      "sha256": "1318b610c272edfc827d717f35cc1c13620f29ec670f873a1eb554cc9a5e4c78"
+    },
+    "raw/batch2-final.txt": {
+      "bytes": 102,
+      "sha256": "d4c7c4eb523fec439e3e0a5df7afcb43b7b4ec2211793ab355c78ee509fa44d8"
+    },
+    "raw/batch2-first.txt": {
+      "bytes": 102,
+      "sha256": "b004fd3e3324c70d807408eeae6b45c1aee87a850ff1a376254ec4ae9dbd5dd4"
+    },
+    "raw/ci-after-preview-fix.txt": {
+      "bytes": 10837,
+      "sha256": "b8bcac30646722c0a33813d8ff9ac469f5835c8c7dd56ce443d258d80b6b4485"
+    },
+    "raw/designer-isolated/index.json": {
+      "bytes": 6001,
+      "sha256": "f5ab87c23dac581f6b4673382d35d19c1e93e63407be425d671c2b872e5810e0"
+    },
+    "raw/designer-isolated/test_app_qss.txt": {
+      "bytes": 7852,
+      "sha256": "ca468d453b27b81fcac88a118196db41ee9b94ad3bd5bef3e314cae0258ff2d9"
+    },
+    "raw/designer-isolated/test_builtin_operator_editor_ui.txt": {
+      "bytes": 100,
+      "sha256": "05dfe817be7a4a71ca41288bdf9ae5af2d434cf9010707a8ce0edf3af76c1a3e"
+    },
+    "raw/designer-isolated/test_camera_parameter_form.txt": {
+      "bytes": 101,
+      "sha256": "eca19c56b5c1b94ab355781c6afe9004728b0272e0265e3a8616d905dc0e05a9"
+    },
+    "raw/designer-isolated/test_canvas_area.txt": {
+      "bytes": 100,
+      "sha256": "4414f1058f1280d647a469f6dd0470b4e1218b3b8ed2cac6a93b896ddb7ba853"
+    },
+    "raw/designer-isolated/test_canvas_view_navigation.txt": {
+      "bytes": 100,
+      "sha256": "10a27bf68a39eb3d9f92d953fc82c2daf00fb8da2c430f8ca81b2bf9ac397a89"
+    },
+    "raw/designer-isolated/test_current_node_details.txt": {
+      "bytes": 101,
+      "sha256": "03a8b81d3465ce774028dc289094a00aa2f7bb07bec3068d561286768a0cc51c"
+    },
+    "raw/designer-isolated/test_delete_shortcut.txt": {
+      "bytes": 100,
+      "sha256": "604ad87756724bb897894ca29e6ad257b51a1992e5d2148e7faeeec1d9f5d182"
+    },
+    "raw/designer-isolated/test_designer_bootstrap.txt": {
+      "bytes": 100,
+      "sha256": "25e63d6f891f66dc89d9a43921e0ba41e41b27bc2693e310f8fbad617c5f6a2d"
+    },
+    "raw/designer-isolated/test_flow_graph_model.txt": {
+      "bytes": 100,
+      "sha256": "2c7f74bad6e53153f1cfec2f82af6d3c1e9f4c0457f382fcd013a348610e2d34"
+    },
+    "raw/designer-isolated/test_flow_graph_project_codec.txt": {
+      "bytes": 100,
+      "sha256": "3e6705d9b482122c846b6953a52e1b922c210e610c0b10a149bce6dad46ffa7e"
+    },
+    "raw/designer-isolated/test_flow_scene_interactions.txt": {
+      "bytes": 101,
+      "sha256": "671c98e754a435d4a0da605f9f11825c5c567f4c79d0d657b1f4a0494a384926"
+    },
+    "raw/designer-isolated/test_global_counter_client.txt": {
+      "bytes": 100,
+      "sha256": "fb23dca02bcd3ea283afc96d31de4fbf2512ce4a6872d0624bdfc21e47f20615"
+    },
+    "raw/designer-isolated/test_global_counter_worker.txt": {
+      "bytes": 100,
+      "sha256": "b19c27519a4a0b880c790b3794779108c48c0a21e7c8aaf2a4649583f58f9762"
+    },
+    "raw/designer-isolated/test_global_counters_dialog.txt": {
+      "bytes": 100,
+      "sha256": "75f1cd62ad0af16100d8b931db12be5e0ab94d5564b5bd233239cb2f8a29cc48"
+    },
+    "raw/designer-isolated/test_log_dialog.txt": {
+      "bytes": 100,
+      "sha256": "24500b4c22e0c9b8890d038d43d38d549dd1dcf982912e7fb695f00e3f98eccc"
+    },
+    "raw/designer-isolated/test_main_window_layout.txt": {
+      "bytes": 101,
+      "sha256": "24863d60424b62e572f7e1f03578b6a8b6ca500dd7f405c11e4a785bc2d100b9"
+    },
+    "raw/designer-isolated/test_main_window_menubar.txt": {
+      "bytes": 100,
+      "sha256": "d67270ea1c273ccb29949a47e9953abdb90e2c85ae25358650408cdc191a6b47"
+    },
+    "raw/designer-isolated/test_main_window_project_save_load.txt": {
+      "bytes": 100,
+      "sha256": "b7849058c50ee29d00a15055c9906a56cba039d5a1f905c20709fb30cc669ce7"
+    },
+    "raw/designer-isolated/test_main_window_workflow_tabs.txt": {
+      "bytes": 101,
+      "sha256": "5f9a35ed783bd4e0969d253626bf616e6cb8f168747487a7f5a84c511f07c48c"
+    },
+    "raw/designer-isolated/test_node_param_dialog.txt": {
+      "bytes": 100,
+      "sha256": "85e706aa16433f8f0d89305e7077ae4cc25f716f106185c39a8e935d02d1ef2c"
+    },
+    "raw/designer-isolated/test_operator_bubble.txt": {
+      "bytes": 101,
+      "sha256": "fdcbc9d38386f72bf601f23c0073aa8e9951caf1bbf5b4a7c6cc0c3139e02974"
+    },
+    "raw/designer-isolated/test_operator_bubble_mouse_events.txt": {
+      "bytes": 100,
+      "sha256": "7bb04bba980fb83acff6292e82a1ede18ec1ba6dcec5bbe657cd4dddc3fcc71b"
+    },
+    "raw/designer-isolated/test_operator_catalog_controller.txt": {
+      "bytes": 100,
+      "sha256": "0028b606c075f76cdf23bf827f20bfa76a810f9bb715a28e497f8f67cc643223"
+    },
+    "raw/designer-isolated/test_operator_catalog_worker.txt": {
+      "bytes": 100,
+      "sha256": "3b1d4f2d5fcf76bdf770cedfa8af676d4f13e05ea4a69f5634ff663fb69a5269"
+    },
+    "raw/designer-isolated/test_operator_editor_manager.txt": {
+      "bytes": 100,
+      "sha256": "3cfea9f641e19b8d4f878db36812bc3992375e6be42bcbe67cd972d424373c70"
+    },
+    "raw/designer-isolated/test_operator_icon_cache.txt": {
+      "bytes": 101,
+      "sha256": "aa94e4d4f1c3a2c76bf43e44bd6d7c76e0305b410b41e4b00643242e12297f99"
+    },
+    "raw/designer-isolated/test_operator_icon_integration.txt": {
+      "bytes": 100,
+      "sha256": "128aea81af31fb9ab88d170aa1101b832f8a7518c2ca657a1d1536a9537c767e"
+    },
+    "raw/designer-isolated/test_operator_icon_provider.txt": {
+      "bytes": 101,
+      "sha256": "d6b5ab0405752681e1fa76d6b2beaa6ff4bee8c4288d754fb475983681d15817"
+    },
+    "raw/designer-isolated/test_operator_icon_worker.txt": {
+      "bytes": 100,
+      "sha256": "0942eaf44206b4258358ee11622d2db85e00c330704f29bab8bc2b53d679ee4a"
+    },
+    "raw/designer-isolated/test_package_gui_icons.txt": {
+      "bytes": 100,
+      "sha256": "951021ecca1977cc9a700a0c396457e710fa58d60a69ddd5466ac116b5d75334"
+    },
+    "raw/designer-isolated/test_param_form.txt": {
+      "bytes": 100,
+      "sha256": "c81ef3a0b17e3cf90ac4e0fd0e4a4d1ae93cbbb1508058cc34e16a9313c55ec8"
+    },
+    "raw/designer-isolated/test_param_form_file_picker.txt": {
+      "bytes": 100,
+      "sha256": "88fb6dce50ef47dba7fea8a5ce390791863ac76e1373fc90a08fd3832005dcf0"
+    },
+    "raw/designer-isolated/test_project_store.txt": {
+      "bytes": 100,
+      "sha256": "4c1fbcacac95b2a1a0e502182ebed299030e88a936971fa87e5efeeac03dd0a3"
+    },
+    "raw/designer-isolated/test_recent_projects.txt": {
+      "bytes": 101,
+      "sha256": "d5141e2af11787f5ebe8dd80dad2d5645a7a26e928b80e8f1475936796523851"
+    },
+    "raw/designer-isolated/test_runtime_client.txt": {
+      "bytes": 101,
+      "sha256": "bab43104d8cb040cbfbe5c67e835ee97e4ae2a3e7f39421844d3fe20314e8235"
+    },
+    "raw/designer-isolated/test_runtime_controller.txt": {
+      "bytes": 101,
+      "sha256": "4d7ef66bcc89d2c12d6edc6a067c51d1a1ff43de74984b10d65d698a5105f698"
+    },
+    "raw/designer-isolated/test_runtime_panel.txt": {
+      "bytes": 101,
+      "sha256": "323e209327482bb8e7fda4a9f9077a661b20ac7180e09d79597a6bcc65996f38"
+    },
+    "raw/designer-isolated/test_runtime_worker.txt": {
+      "bytes": 7774,
+      "sha256": "a2b105f1bd9cc0f7cda7a28dd128c5cc546086c80e7cf1d89197c928f771693c"
+    },
+    "raw/designer-isolated/test_schema_utils.txt": {
+      "bytes": 100,
+      "sha256": "4f760bfc36b14a4214ac74e1a1b575dccaca58ca4fd44468be2a047234ff20bd"
+    },
+    "raw/designer-isolated/test_sidebar_collapse.txt": {
+      "bytes": 100,
+      "sha256": "604ad87756724bb897894ca29e6ad257b51a1992e5d2148e7faeeec1d9f5d182"
+    },
+    "raw/designer-isolated/test_sidebar_node_navigation.txt": {
+      "bytes": 100,
+      "sha256": "9373371347e8883d07527bdb03f8cf0e822141a907be18be997bfc8f8e9dca8a"
+    },
+    "raw/designer-isolated/test_startup_project_entry.txt": {
+      "bytes": 101,
+      "sha256": "9188873148502ae693156bb2b870b5fca3ffa45012415adc2f7fc774c068003a"
+    },
+    "raw/designer-isolated/test_system_nodes.txt": {
+      "bytes": 100,
+      "sha256": "164f9ba46f84c62945f00cbdd8d48a053147302dfaa0b6bbd5c88712aca8867f"
+    },
+    "raw/designer-isolated/test_visual_layout.txt": {
+      "bytes": 101,
+      "sha256": "08db7ea144d889f92555488b75d24685ad2fe789ce1ba95e17dabc0534e2be67"
+    },
+    "raw/designer-isolated/test_workflow_boundary_nodes.txt": {
+      "bytes": 100,
+      "sha256": "164f9ba46f84c62945f00cbdd8d48a053147302dfaa0b6bbd5c88712aca8867f"
+    },
+    "raw/designer-isolated/test_workflow_dependency_tree.txt": {
+      "bytes": 100,
+      "sha256": "d5f50a73c9a27a41bff4a2d95c97514f790e5cdb1a0ca2a0049ac9fe0102b8e7"
+    },
+    "raw/designer-isolated/test_workflow_package.txt": {
+      "bytes": 101,
+      "sha256": "2e0f243ac1155d1b27843f6a9e9d631d2a2a1d82085cc68f23d6c6a5b2ba4573"
+    },
+    "raw/designer-isolated/test_workflow_package_preview_dialog.txt": {
+      "bytes": 100,
+      "sha256": "db518bef77b7fff65041e929a54f8237e785a252accd9bcad309c07225ba6ff2"
+    },
+    "raw/designer-isolated/test_workflow_store.txt": {
+      "bytes": 101,
+      "sha256": "214739f782468b9eb10e16c33f447629ccad5e8d5b22df98feac20bf7582036f"
+    },
+    "raw/designer-isolated-console.txt": {
+      "bytes": 1516,
+      "sha256": "79e199847f21dbd8b5f83e45cc9fad36d32ff0c7addeebbebd92205db606f0cf"
+    },
+    "raw/diagnose_preview.py": {
+      "bytes": 1957,
+      "sha256": "f72e23feee69131fa5965e0b7e9af3e25afc298db9a970c681b202257d694c08"
+    },
+    "raw/diagnose_preview_long.py": {
+      "bytes": 2053,
+      "sha256": "6ab5a77f4e47fbf521d454ae2e46cb9b7aca27e89343df308fb26f32221a41db"
+    },
+    "raw/final-code-evidence.json": {
+      "bytes": 2464411,
+      "sha256": "5dd346a51c20ddc4df1595e7b1ceec3078d78b804ce33f686fd5be1ab30d4517"
+    },
+    "raw/final-code-validation-console.txt": {
+      "bytes": 87,
+      "sha256": "b12d94e9fd4c0f1457635925adf7a5625a773ec3a6b767029b0b1c97437da5f9"
+    },
+    "raw/final-evidence.json": {
+      "bytes": 2461680,
+      "sha256": "315bc65964fe6e6b19cdbf331a56b918fa6dd59542aebd2d394f30320a85e51a"
+    },
+    "raw/final-gate-p0.txt": {
+      "bytes": 102,
+      "sha256": "628f93ccfaf397a5104b51f15b8eb2c4e9f3d75e47e01bdefd9c6a322dcc8baf"
+    },
+    "raw/final-gate-ruff.txt": {
+      "bytes": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    "raw/final-p0-before-measurement.txt": {
+      "bytes": 102,
+      "sha256": "9534f8dce10cb331e569db05a14e247e6696a90c01de712901e030c5b998f1df"
+    },
+    "raw/final-p0.txt": {
+      "bytes": 3421,
+      "sha256": "105bddfe6e372a9b5eedb0fb87d68bbb21cf0b6659d0dd8f4d12e5f48e9e716e"
+    },
+    "raw/final-risks-after-pin-console.txt": {
+      "bytes": 2861,
+      "sha256": "974ed3043f675b6103741ce064fbef911af3103bb3691c15f8697c0b096f0877"
+    },
+    "raw/final-risks-after-pin.json": {
+      "bytes": 47268,
+      "sha256": "a51ed7d3c25672401f5d538bc4053c2faab769bf1329e43db62a110713059e04"
+    },
+    "raw/final-ruff.txt": {
+      "bytes": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    "raw/final-validation-console.txt": {
+      "bytes": 87,
+      "sha256": "b12d94e9fd4c0f1457635925adf7a5625a773ec3a6b767029b0b1c97437da5f9"
+    },
+    "raw/measurement-gate.txt": {
+      "bytes": 101,
+      "sha256": "0a1742a23727fb9bca81a0aae780e7068311e2aba8f6eef22344541186f4f7e3"
+    },
+    "raw/network-faults-first.txt": {
+      "bytes": 100,
+      "sha256": "12f66ac48cd38e0bad5a1774a013d47031821487ea317305aa843ac5a29cc44f"
+    },
+    "raw/p0-after-client-recovery.txt": {
+      "bytes": 102,
+      "sha256": "97a92b5437e51176b950aaae28bd69ec00709be8795148f0ee64f6bbaa7d3d82"
+    },
+    "raw/preview-diagnosis-after-status-fix.txt": {
+      "bytes": 2785,
+      "sha256": "25e3d08b27af494f2eda2ce0e4d6237e552360062b0203790ee58f53659b96a9"
+    },
+    "raw/preview-diagnosis-long.txt": {
+      "bytes": 1057,
+      "sha256": "b759ba3c094958dd2c12d2717bb0bb1a7bf16b93d6618fd2ae7d764cc153ddf2"
+    },
+    "raw/preview-diagnosis.txt": {
+      "bytes": 130,
+      "sha256": "36e98a3effb6da966bb3595494600f573a595cc72403f8ffdf49ffec417faaeb"
+    },
+    "raw/preview-fix-focused.txt": {
+      "bytes": 2194,
+      "sha256": "e0ce58660327e7fde73fa2dc00ebee4bb6b9f6b2a571cafa4068ee9e1d9482f5"
+    },
+    "raw/preview-fix-path.txt": {
+      "bytes": 101,
+      "sha256": "3d3f31524be52062fc5133e6085e666529c77ee17a783828bdd73f49503e43f0"
+    },
+    "raw/ruff-after-client-recovery.txt": {
+      "bytes": 20,
+      "sha256": "a4443afdcfb6d7363adb285762515ccf7cf50473b1a05c20c1a50f6bed4d26b0"
+    },
+    "raw/run_designer_isolated.py": {
+      "bytes": 849,
+      "sha256": "35266f9535a20b05ef420849364c95c18253357c3fcd486858fdb1235b3fd326"
+    },
+    "raw/runtime-after-fix.txt": {
+      "bytes": 2531,
+      "sha256": "3601b4fd1e4739482c772d2d1668f8584367d268d506ed6c53915e301af08471"
+    },
+    "raw/runtime-final.txt": {
+      "bytes": 438,
+      "sha256": "6ad6cb9c45c69a9a625ca5ba5b2626a6d9430d6f18e79f353f40d5ee6dec9a3a"
+    }
+  }
+}

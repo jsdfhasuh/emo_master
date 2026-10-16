@@ -1,0 +1,36 @@
+
+=================================== ERRORS ====================================
+________ ERROR collecting tests/sqlite_writer/test_review_encoding.py _________
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py:512: in __call__
+    return self._hookexec(self.name, self._hookimpls.copy(), kwargs, firstresult)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:250: in pytest_pycollect_makeitem
+    return list(collector._genfunctions(name, obj))
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:476: in _genfunctions
+    self.ihook.pytest_generate_tests.call_extra(methods, dict(metafunc=metafunc))
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py:573: in call_extra
+    return self._hookexec(self.name, hookimpls, kwargs, firstresult)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py:120: in _hookexec
+    return self._inner_hookexec(hook_name, methods, kwargs, firstresult)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:124: in pytest_generate_tests
+    metafunc.parametrize(*marker.args, **marker.kwargs, _param_mark=marker)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:1346: in parametrize
+    ids = self._resolve_parameter_set_ids(
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:1466: in _resolve_parameter_set_ids
+    return id_maker.make_unique_parameterset_ids()
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:913: in make_unique_parameterset_ids
+    resolved_ids = list(self._resolve_ids())
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:991: in _resolve_ids
+    yield "-".join(
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:992: in <genexpr>
+    self._idval(val, argname, idx)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:1006: in _idval
+    idval = self._idval_from_value(val)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py:1043: in _idval_from_value
+    return str(val)
+E   ValueError: Exceeds the limit (4300) for integer string conversion; use sys.set_int_max_str_digits() to increase the limit
+=========================== short test summary info ===========================
+ERROR tests/sqlite_writer/test_review_encoding.py - ValueError: Exceeds the l...
+!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!
+1 error in 1.10s

@@ -1,0 +1,337 @@
+Pre-fix module overlay count: 10
+FFFFF                                                                    [100%]
+================================== FAILURES ===================================
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027D82AD1420>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000027D82AD1600>
+
+    def testEditorUsesLateCatalogWithoutMutatingSavedGraph(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        assert window.loadProjectDirectory(str(EXAMPLE))
+        assert not window.pageCoordinator.session.dirty
+        window.activateWorkflow("body")
+        node = window.flowModel.nodes["load"]
+>       assert node.paramSchema == {}
+E       AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E         Left contains 3 more items:
+E         {'properties': {'colorMode': {'default': 'color',
+E                                       'enum': ['color', 'grayscale'],
+E                                       'title': '颜色模式',
+E                                       'type': 'string'},
+E                         'folderPath': {'default': '',...
+E
+E         ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests\designer\test_minimal_project_metadata.py:94: AssertionError
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027D82AD04F0>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000027D82AF6FB0>
+
+    def testNormalizationPreservesSavedContractsAndOwnsFallbackSchema(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        manifest = json.loads((EXAMPLE.parents[2] / (
+            "src/emo_master/plugins/builtins/image_batch_loader/manifest.json"
+        )).read_text(encoding="utf-8"))
+        _catalog(window, [SimpleNamespace(**manifest)])
+        payload = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+        original = deepcopy(payload)
+        resolved = window.pageCoordinator.normalizeDraft(payload)
+        hydrated = resolved["workflows"]["body"]["nodes"][1]
+>       hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E       KeyError: 'folderPath'
+
+tests\designer\test_minimal_project_metadata.py:125: KeyError
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[1] ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1338/testRealWhileProcessesEveryIma0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027D82D2FF10>
+count = 1
+
+    @pytest.mark.parametrize("count", [1, 3])
+    def testRealWhileProcessesEveryImageAndResetsForNewRun(tmp_path, monkeypatch, count):
+        images = tmp_path / "images"
+        images.mkdir()
+        for index in range(count):
+            assert cv2.imwrite(str(images / f"{index}.png"), np.full((8, 12, 3), index, np.uint8))
+        registry = _registry()
+        document = prepareRuntimeProject(_project(), tmp_path, registry)
+        compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+        processed = []
+        execute = BlurOperator.executeNode
+
+        def record(self, inputs, params, context):
+            processed.append(int(inputs["image"][0, 0, 0]))
+            return execute(self, inputs, params, context)
+
+        monkeypatch.setattr(BlurOperator, "executeNode", record)
+        runner = WorkflowRunner(compiled, registry)
+        for job in ("first", "second"):
+>           result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+
+tests\runtime\test_image_batch_while.py:68:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000027D82D2C0D0>
+node = CompiledNode(nodeId='node-1c1d7ac2', kind='operator', operatorId='vision.io.huaray_camera', inputPorts=mappingproxy({}...'roiMode': 'keep', 'width': 1, 'height': 1, 'offsetX': 0, 'offsetY': 0}), targetWorkflowId=None, loop=mappingproxy({}))
+nodeInput = {}, supplied = {}
+context = RunContext(jobId='first', workflowId='main', workflowRunId='3920d01b-4a6a-4ea4-b902-4ced7c16b588', parentWorkflowRunId...nId='759ab2cc-d077-4eb8-832c-47acb8450e2f', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000027D82F30100>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+            invalidInputs = _invalidTypes(node.inputPorts, nodeInput)
+            if invalidInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_TYPE",
+                    f"node inputs have invalid types: {', '.join(invalidInputs)}",
+                    node.nodeId,
+                )
+        if node.kind == "workflow_input":
+            return {
+                key: supplied[key]
+                for key in node.outputPorts
+                if key in supplied
+            }, {}, {}
+        if node.kind == "workflow_output":
+            return dict(nodeInput), {}, {}
+        if node.kind == "subflow":
+            result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        if node.kind == "loop":
+            result = self.loopRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        operator = self._operatorForNode(node, context, cancellation)
+        if operator is None or not hasattr(operator, "executeNode"):
+            raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
+        logger = self._operatorLogManager.createLogger(
+            context,
+            str(node.operatorId or ""),
+            "execute",
+        )
+        runtimeContext = {
+            "jobId": context.jobId,
+            "projectId": context.projectId,
+            "workflowId": context.workflowId,
+            "workflowRunId": context.workflowRunId,
+            "parentWorkflowRunId": context.parentWorkflowRunId,
+            "nodeId": node.nodeId,
+            "nodeRunId": context.nodeRunId,
+            "iterationPath": list(context.iterationPath),
+            "workspacePath": context.workspacePath,
+            "isCancellationRequested": cancellation.isCancellationRequested,
+            "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
+            "logger": logger,
+            "globalCounters": self.globalCounters,
+            "mappedOutputs": dict(boundValues or {}),
+        }
+        if node.operatorId == "vision.io.sqlite_writer":
+            from emo_master.apps.runtime.business_sqlite.backend import insert
+            runtimeContext["sqliteInsert"] = insert
+            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
+            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
+                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
+        try:
+            result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
+        except Exception as err:
+            loggingDiagnostics = logger.close()
+            if loggingDiagnostics:
+                _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
+            raise
+        loggingDiagnostics = logger.close()
+        if not isinstance(result, dict) or result.get("status") != "ok":
+            error = result.get("error", {}) if isinstance(result, dict) else {}
+            code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
+            message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
+            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
+            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
+            normalizedDiagnostics = (
+                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
+            )
+            if loggingDiagnostics:
+                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+>           raise WorkflowExecutionError(
+                str(code),
+                str(message),
+                node.nodeId,
+                failedMetrics if isinstance(failedMetrics, dict) else {},
+                normalizedDiagnostics,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+
+src\emo_master\apps\runtime\workflow\runner.py:378: WorkflowExecutionError
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[3] ____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1338/testRealWhileProcessesEveryIma1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000027D82FB99F0>
+count = 3
+
+    @pytest.mark.parametrize("count", [1, 3])
+    def testRealWhileProcessesEveryImageAndResetsForNewRun(tmp_path, monkeypatch, count):
+        images = tmp_path / "images"
+        images.mkdir()
+        for index in range(count):
+            assert cv2.imwrite(str(images / f"{index}.png"), np.full((8, 12, 3), index, np.uint8))
+        registry = _registry()
+        document = prepareRuntimeProject(_project(), tmp_path, registry)
+        compiled = WorkflowCompiler(operatorRegistry=registry).compile(document)
+        processed = []
+        execute = BlurOperator.executeNode
+
+        def record(self, inputs, params, context):
+            processed.append(int(inputs["image"][0, 0, 0]))
+            return execute(self, inputs, params, context)
+
+        monkeypatch.setattr(BlurOperator, "executeNode", record)
+        runner = WorkflowRunner(compiled, registry)
+        for job in ("first", "second"):
+>           result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+
+tests\runtime\test_image_batch_while.py:68:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\workflow\runner.py:95: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:176: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x0000027D82FB9510>
+node = CompiledNode(nodeId='node-1c1d7ac2', kind='operator', operatorId='vision.io.huaray_camera', inputPorts=mappingproxy({}...'roiMode': 'keep', 'width': 1, 'height': 1, 'offsetX': 0, 'offsetY': 0}), targetWorkflowId=None, loop=mappingproxy({}))
+nodeInput = {}, supplied = {}
+context = RunContext(jobId='first', workflowId='main', workflowRunId='df4d6d32-2b0f-4fbc-9ec9-0b57ffb27f76', parentWorkflowRunId...nId='1e4412c0-6532-4e19-8867-912f201ba713', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x0000027D82FB9C30>
+boundValues = {}
+
+    def _runNode(self, node, nodeInput, supplied, context, cancellation, boundValues=None):
+        if node.kind == "operator":
+            missingInputs = _missingRequiredKeys(
+                node.inputPorts,
+                nodeInput,
+                defaultRequired=False,
+                descriptorDefaultRequired=True,
+            )
+            if missingInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_MISSING",
+                    f"node inputs are missing: {', '.join(missingInputs)}",
+                    node.nodeId,
+                )
+            invalidInputs = _invalidTypes(node.inputPorts, nodeInput)
+            if invalidInputs:
+                raise WorkflowExecutionError(
+                    "E_INPUT_TYPE",
+                    f"node inputs have invalid types: {', '.join(invalidInputs)}",
+                    node.nodeId,
+                )
+        if node.kind == "workflow_input":
+            return {
+                key: supplied[key]
+                for key in node.outputPorts
+                if key in supplied
+            }, {}, {}
+        if node.kind == "workflow_output":
+            return dict(nodeInput), {}, {}
+        if node.kind == "subflow":
+            result = self.subflowRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        if node.kind == "loop":
+            result = self.loopRunner.run(node, nodeInput, context, cancellation)
+            return result.outputs, result.metrics, result.diagnostics
+        operator = self._operatorForNode(node, context, cancellation)
+        if operator is None or not hasattr(operator, "executeNode"):
+            raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
+        logger = self._operatorLogManager.createLogger(
+            context,
+            str(node.operatorId or ""),
+            "execute",
+        )
+        runtimeContext = {
+            "jobId": context.jobId,
+            "projectId": context.projectId,
+            "workflowId": context.workflowId,
+            "workflowRunId": context.workflowRunId,
+            "parentWorkflowRunId": context.parentWorkflowRunId,
+            "nodeId": node.nodeId,
+            "nodeRunId": context.nodeRunId,
+            "iterationPath": list(context.iterationPath),
+            "workspacePath": context.workspacePath,
+            "isCancellationRequested": cancellation.isCancellationRequested,
+            "raiseIfCancellationRequested": cancellation.raise_if_cancelled,
+            "logger": logger,
+            "globalCounters": self.globalCounters,
+            "mappedOutputs": dict(boundValues or {}),
+        }
+        if node.operatorId == "vision.io.sqlite_writer":
+            from emo_master.apps.runtime.business_sqlite.backend import insert
+            runtimeContext["sqliteInsert"] = insert
+            runtimeContext["sqliteCancelled"] = lambda: cancellation.isCancellationRequested
+            runtimeContext["publishSqliteWrite"] = lambda event, receipt: self.publish(
+                event, context, str(receipt.get("status", "")), payload={"receipt": deepcopy(receipt)})
+        try:
+            result = operator.executeNode(nodeInput, dict(node.params), runtimeContext)
+        except Exception as err:
+            loggingDiagnostics = logger.close()
+            if loggingDiagnostics:
+                _attachOperatorLoggingDiagnostics(err, loggingDiagnostics)
+            raise
+        loggingDiagnostics = logger.close()
+        if not isinstance(result, dict) or result.get("status") != "ok":
+            error = result.get("error", {}) if isinstance(result, dict) else {}
+            code = error.get("code", "E_EXEC_FAILED") if isinstance(error, dict) else "E_EXEC_FAILED"
+            message = error.get("message", f"node execute failed: {node.nodeId}") if isinstance(error, dict) else str(error)
+            failedMetrics = result.get("metrics", {}) if isinstance(result, dict) else {}
+            failedDiagnostics = result.get("diagnostics", {}) if isinstance(result, dict) else {}
+            normalizedDiagnostics = (
+                dict(failedDiagnostics) if isinstance(failedDiagnostics, dict) else {}
+            )
+            if loggingDiagnostics:
+                normalizedDiagnostics["operatorLogging"] = loggingDiagnostics
+>           raise WorkflowExecutionError(
+                str(code),
+                str(message),
+                node.nodeId,
+                failedMetrics if isinstance(failedMetrics, dict) else {},
+                normalizedDiagnostics,
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+
+src\emo_master\apps\runtime\workflow\runner.py:378: WorkflowExecutionError
+___________ testDirectoryResolvedRelativeToProjectAndDraftUnchanged ___________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1338/testDirectoryResolvedRelativeT0')
+
+    def testDirectoryResolvedRelativeToProjectAndDraftUnchanged(tmp_path):
+        (tmp_path / "images").mkdir()
+        document = _project()
+        prepared = prepareRuntimeProject(document, tmp_path, _registry())
+>       assert document.workflows["body"].nodes[1].params["folderPath"] == "images"
+E       KeyError: 'folderPath'
+
+tests\runtime\test_image_batch_while.py:78: KeyError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[1]
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[3]
+FAILED tests/runtime/test_image_batch_while.py::testDirectoryResolvedRelativeToProjectAndDraftUnchanged
+5 failed in 11.34s

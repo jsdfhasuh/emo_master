@@ -1,0 +1,56 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\jsdfhasuh\my_scripts\emo_master
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 46 items
+
+tests/designer/test_flow_graph_model.py::testAddNodeAndSelectNode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [  2%]
+tests/designer/test_flow_graph_model.py::testConnectNodesAndValidateGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [  4%]
+tests/designer/test_flow_graph_model.py::testParameterBindingForSelectedNode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [  6%]
+tests/designer/test_flow_graph_model.py::testConnectNodesByDefaultPortsRejectsTypeMismatch <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [  8%]
+tests/designer/test_flow_graph_model.py::testConnectNodesReplacesExistingInputEdge <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 10%]
+tests/designer/test_flow_graph_model.py::testValidateGraphIncludesSchemaErrors <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 13%]
+tests/designer/test_flow_graph_model.py::testRemoveNodeRemovesConnectedEdges <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 15%]
+tests/designer/test_flow_graph_model.py::testRemoveEdgeByIdentity <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 17%]
+tests/designer/test_flow_graph_project_codec.py::testFlowGraphModelCanExportProjectGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_project_codec.py PASSED [ 19%]
+tests/designer/test_flow_graph_project_codec.py::testFlowGraphModelCanLoadProjectGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_project_codec.py PASSED [ 21%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneNodeDoubleClickHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 23%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneCanvasClickHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 26%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneOperatorDropHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 28%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneConnectionReasonShowsTypeMismatch <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 30%]
+tests/designer/test_flow_scene_interactions.py::testFlowScenePreviewConnectionTargetWithSnapHint <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 32%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneSelectedEdgeStyleIsEnhanced <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 34%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDragPreviewSupportsSnapRadius <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 36%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDragHintOnlyVisibleDuringDrag <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 39%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneIfNodeStyleUsesSpecialPalette <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 41%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneSwitchNodeStyleUsesSpecialPalette <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 43%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDoesNotInferSwitchVariantForOtherOperator <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 45%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneNodeRuntimeStateChangesVisualStyle <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 47%]
+tests/designer/test_global_counter_client.py::testRuntimeClientMapsGlobalCounterDtosAndRequests <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_client.py PASSED [ 50%]
+tests/designer/test_global_counter_client.py::testRuntimeClientRaisesStableGlobalCounterReplyError <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_client.py PASSED [ 52%]
+tests/designer/test_global_counter_worker.py::testGlobalCounterWorkerRunsBlockingRpcOffCallingThread <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_worker.py PASSED [ 54%]
+tests/designer/test_global_counter_worker.py::testGlobalCounterWorkerDispatchesMutationMethods <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_worker.py PASSED [ 56%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogRefreshIsNonBlockingAndSkipsOverlap <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 58%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogNewSetAndResetUseBackgroundClient <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 60%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogIgnoresReplyFromPreviousProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 63%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogSurfacesRpcFailure <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 65%]
+tests/designer/test_log_dialog.py::testLogDialogSetAndAppendLogs <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 67%]
+tests/designer/test_log_dialog.py::testStructuredLogEntryPreservesRuntimeContextAndPayload <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 69%]
+tests/designer/test_log_dialog.py::testRuntimeLogDockClearOnlyClearsCurrentView <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 71%]
+tests/designer/test_log_dialog.py::testStructuredLogViewRestoresFiltersBeforeHistoricalEntriesArrive <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 73%]
+tests/designer/test_log_dialog.py::testStructuredLogViewBatchesAndBoundsEntries <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 76%]
+tests/designer/test_log_dialog.py::testClearViewResetsDynamicFiltersAndClearsOwnerCache <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 78%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabsUseTabBarMetadataAndSwitchWithoutCreating <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 80%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuSetsSelectedTabAsEntry <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 82%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuActionsTargetClickedWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 84%]
+tests/designer/test_main_window_workflow_tabs.py::testPlusTabPromptsForNameAndCancelRestoresActiveTab <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 86%]
+tests/designer/test_main_window_workflow_tabs.py::testReferencedWorkflowDeleteFailureShowsReasonAndPreservesState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 89%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageExportDialogWritesDedicatedPackage <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 91%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 93%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackagePreviewCancelDoesNotCaptureOrImport <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 95%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportCanInsertMappedSubflowIntoCurrentWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 97%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportFailureWarnsWithoutChangingProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [100%]
+
+============================= 46 passed in 5.15s ==============================

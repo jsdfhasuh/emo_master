@@ -1,0 +1,49 @@
+{
+  "job": "facb9caa-04af-46e2-8eb1-60bb73bb8b6e",
+  "result_key": "7f31123e-8c6f-4b90-8cfd-46ff1a3b5910",
+  "viewer_exit_and_reconnect_preserved_runtime": true,
+  "no_implicit_job_before_start": true,
+  "package": "test-3fa86f4a0ce86e4a-38645ebd.vxpkg",
+  "package_sha256": "69448e1bcf31a340ab95d39eed9cc7ab7c9fe783aa9c36ee42aa27eb83b2a515",
+  "revision": "3fa86f4a0ce86e4a5d85911f7268728e2386c433a203f6823567e235908e137d",
+  "designer_saved_reopened": true,
+  "exported_draft_is_frozen": true,
+  "original_resource_path_unavailable": true,
+  "imported_presentation_unchanged": true,
+  "non_project_cwd": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-432\\testDesignerExportRelocatedSta0",
+  "imported_root": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-432\\testDesignerExportRelocatedSta0\\\u72ec\u7acb \u7a7a\u76ee\u5f55",
+  "explicit_host_stop_confirmed": true,
+  "manifest": {
+    "compatibility": {
+      "application": "0.6.1",
+      "components": {
+        "image": "1.0",
+        "navigation_button": "1.0",
+        "number": "1.0",
+        "text": "1.0"
+      },
+      "deliveryFormat": "emo-pages-test-1",
+      "operators": {
+        "vision.analysis.blob": "1.2.0",
+        "vision.collection.count": "1.1.0",
+        "vision.io.image_loader": "1.1.0"
+      },
+      "presentationSchema": "1.0",
+      "projectSchema": "2.2"
+    },
+    "files": {
+      "input.png": {
+        "sha256": "b6ac8f65cd4d89bbb52322b6eb9e07ed4e5d592b364bac49cb6ee8337d085ec6",
+        "size": 577
+      },
+      "project.json": {
+        "sha256": "7e286253e7171d7230f9ed6504f0d1eda7f8860054e3c90e7bf15ba2a70d5139",
+        "size": 8159
+      }
+    },
+    "format": "emo-pages-test-1",
+    "projectId": "p2-fixture",
+    "purpose": "development-test-only",
+    "revision": "3fa86f4a0ce86e4a5d85911f7268728e2386c433a203f6823567e235908e137d"
+  }
+}

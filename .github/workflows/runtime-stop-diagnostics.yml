@@ -1,0 +1,107 @@
+name: Windows stop diagnostics (not acceptance)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-stop-diagnostics-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Instrumented original order / Windows / Python 3.10
+    # Same standard hosted machine class as CI; no larger runner or
+    # altered thread counts, process priority, persistence or test deadlines.
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install the existing test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record the hosted runner resource boundary
+        shell: python
+        run: |
+          import ctypes, json, os
+          from ctypes import wintypes
+          class Memory(ctypes.Structure):
+              _fields_ = [("length", wintypes.DWORD), ("load", wintypes.DWORD)] + [
+                  (name, ctypes.c_ulonglong) for name in (
+                      "total_physical", "available_physical", "total_commit",
+                      "available_commit", "total_virtual", "available_virtual", "extended_virtual")]
+          kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+          kernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]
+          kernel.GlobalMemoryStatusEx.restype = wintypes.BOOL
+          memory = Memory()
+          memory.length = ctypes.sizeof(memory)
+          if not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):
+              raise ctypes.WinError(ctypes.get_last_error())
+          print(json.dumps({"role": "diagnostic_only", "runner": "windows-latest standard",
+              "job_timeout_minutes": 30, "cpu_count": os.cpu_count(),
+              **{name: getattr(memory, name) for name in (
+                  "total_physical", "available_physical", "total_commit", "available_commit")}}))
+      - name: Run original pytest order with the explicit stop observer
+        id: observed_tests
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'runtime-stop-diagnostics.json'
+          $nativeEvidence = Join-Path $env:RUNNER_TEMP 'runtime-native-thread-origins.json'
+          python -m pytest -q -p scripts.r3_sqlite_stop_diagnostics --sqlite-stop-diagnostics $evidence -p scripts.r3_a18_thread_diagnostics --native-thread-origins $nativeEvidence
+          exit $LASTEXITCODE
+      - name: Print optional bounded post-failure native evidence
+        if: always()
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-native-thread-origins.json"
+          if not evidence.exists():
+              print("NATIVE_ORIGINS_NOT_CAPTURED: no evidence; do not infer thread acceptance")
+          else:
+              if not evidence.is_file() or not 0 < evidence.stat().st_size <= 32 * 1024:
+                  raise RuntimeError("NATIVE_ORIGINS_INVALID: empty or oversized evidence")
+              content = evidence.read_text(encoding="ascii")
+              record = json.loads(content)
+              if record.get("trigger") != "original_assertNoNewThreads_failed":
+                  raise RuntimeError("NATIVE_ORIGINS_INVALID: unknown failure trigger")
+              print("NATIVE_ORIGINS_JSON_BEGIN")
+              print(content)
+              print("NATIVE_ORIGINS_JSON_END")
+      - name: Print bounded synthetic evidence to this job log
+        if: always()
+        shell: python
+        env:
+          ORIGINAL_TEST_STEP: ${{ steps.observed_tests.outcome }}
+        run: |
+          import json, os
+          from pathlib import Path
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-stop-diagnostics.json"
+          if not evidence.is_file() or evidence.stat().st_size == 0:
+              raise RuntimeError('STOP_DIAGNOSTIC_UNAVAILABLE: target may not have completed; do not infer PASS')
+          elif evidence.stat().st_size > 1024 * 1024:
+              raise RuntimeError("Stop diagnostic evidence exceeds its original 1 MiB budget")
+          else:
+              print("STOP_DIAGNOSTIC_JSON_BEGIN")
+              content = evidence.read_text(encoding="utf-8")
+              print(content)
+              print("STOP_DIAGNOSTIC_JSON_END")
+              record = json.loads(content)
+              source = record.get("source", {})
+              valid = (source.get("diagnostic_valid") is True
+                  and source.get("source_stable") is True
+                  and record.get("observer_retired") is True
+                  and record.get("errors") == []
+                  and source.get("pytest_outcome") in ("passed", "failed"))
+              if os.environ.get("ORIGINAL_TEST_STEP") == "success":
+                  valid = valid and source.get("pytest_outcome") == "passed"
+              if not valid:
+                  raise RuntimeError("STOP_DIAGNOSTIC_INVALID: missing, changed or unfinished observations")

@@ -1,0 +1,8 @@
+{
+  "utc": "2026-10-11T10:36:26.532619+00:00",
+  "scan": "Credential-like token/private-key/signed-URL patterns across appendix files; not a proof against arbitrary secrets",
+  "hits": [],
+  "source_sha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "tracked_diff": "",
+  "git_status": "?? docs.emofixture\n"
+}

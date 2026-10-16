@@ -1,0 +1,16 @@
+Process emo-master-job-6927dc91-02f8-491c-9126-17a0afdc9c0a:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 91, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 169, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: image file not found: D:\jsdfhasuh\documents\my_project\emo_master\manual_test_workspace\flow-run-inspector-20261004\native-150\project\missing.png
+{"status": "PASS", "retainedInspectionBytes": 5368, "jobsBeforeStart": 0, "jobsAfterSelectingNodes": 1, "windowClosed": true, "runtimeClosed": true}

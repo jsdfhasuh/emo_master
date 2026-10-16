@@ -1,0 +1,11 @@
+{
+  "codeCommit": "4ed4330064727e25c8dff8dc265b3eb0376aa4ba",
+  "codeTree": "6fe1dda1da8e193f43b6bfccc2e2a27da790be9f",
+  "originalStagedPatchUnchanged": true,
+  "paths": [
+    "src/emo_master/apps/designer/ui/designer_actions.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/node_context_menu.py",
+    "tests/designer/test_designer_shortcuts.py"
+  ]
+}

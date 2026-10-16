@@ -1,0 +1,142 @@
+{
+  "scope": "Four control-flow execution/configuration repairs only",
+  "status": "IMPLEMENTED_AND_SCOPED_VERIFIED; mixed workspace is NOT all-pass",
+  "generatedAt": "2026-10-09T09:25:30.416894+08:00",
+  "workspaceEntry": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master",
+  "resolvedWorkspace": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "baselineDirectory": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\codex-control-flow-before-q_yjp_b3",
+  "scopedCandidate": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\codex-control-flow-candidate-tlikr3dj",
+  "fixes": [
+    "Invocation-local If/Switch branch activation and skip propagation, independent of shared data and ordinary optional absence",
+    "Reject ForEach item/index collision; retain explicit stale mappings and cached connections until explicitly repaired",
+    "Preserve absent Switch case keys versus configured empty strings through editor Apply/undo/redo/save/reload",
+    "Only executable loop workflow references affect validation/call graph/reachability/deletion/package remapping/result-source choices and paths"
+  ],
+  "compatibility": [
+    "Existing If truthiness and Switch string comparison unchanged",
+    "Internal node IDs and port keys unchanged",
+    "Legacy workflow-condition While and Boolean While retained",
+    "Dormant Repeat/ForEach fields retained",
+    "User example projects were not edited"
+  ],
+  "checks": {
+    "finalNewRegressionBaseline": {
+      "passed": 22,
+      "failed": 38,
+      "log": "baseline-final-accepted.txt"
+    },
+    "finalNewRegressionsInLiveWorkspace": {
+      "passed": 60,
+      "failed": 0,
+      "log": "workspace-new-regressions-last.txt"
+    },
+    "scopedFocused": {
+      "passed": 149,
+      "failed": 0,
+      "log": "scoped-focused.txt"
+    },
+    "scopedExpanded": {
+      "passed": 1580,
+      "failed": 6,
+      "skipped": 1,
+      "log": "scoped-expanded-final.txt",
+      "classification": "5 independently reproduced pre-existing example/metadata failures; 1 isolated-fixture setup failure due to missing p5_project.py"
+    },
+    "isolatedFixtureRepairRecheck": {
+      "passed": 1,
+      "failed": 0,
+      "log": "scoped-delivery-fixture-recheck.txt",
+      "note": "Only the temporary candidate fixture was repaired, not live source or checks"
+    },
+    "nativeUi": {
+      "passed": 8,
+      "scales": [
+        "100%",
+        "150%"
+      ],
+      "widths": [
+        460,
+        640
+      ],
+      "realQtPlatform": "windows",
+      "font": "Microsoft YaHei UI",
+      "runtimeCalls": 0,
+      "reports": [
+        "native-100-final/report.json",
+        "native-150-final/report.json"
+      ],
+      "visualInspection": "PASS"
+    },
+    "scopedRuff": {
+      "status": "PASS",
+      "log": "scoped-ruff.txt"
+    },
+    "scopedMypy": {
+      "status": "PASS",
+      "files": 14,
+      "log": "scoped-mypy.txt"
+    },
+    "taskOnlyDiffCheck": {
+      "status": "PASS",
+      "files": 21,
+      "log": "task-diff-check-final.json"
+    },
+    "liveDesignerExpanded": {
+      "passed": 858,
+      "failed": 3,
+      "log": "workspace-designer-final.txt"
+    },
+    "liveCoreRuntimeSqliteExpanded": {
+      "passed": 710,
+      "failed": 6,
+      "skipped": 1,
+      "log": "workspace-expanded-final.txt"
+    },
+    "concurrentChangeFailuresRecheck": {
+      "passed": 1,
+      "failed": 3,
+      "log": "workspace-concurrent-failures-recheck.txt",
+      "remaining": [
+        "Old fixed operator count 51 versus 53 after adding variable read/write",
+        "Old capability-gate rejection set excludes new variable read/write",
+        "Self-test expects migrations 1-4 while current runtime has migration 5"
+      ],
+      "resolved": "Sqlite editor path with variableDefinitions keyword passes on recheck"
+    },
+    "liveMypyLast": {
+      "status": "FAIL",
+      "errors": 12,
+      "files": 14,
+      "log": "workspace-mypy-last.txt",
+      "classification": "Changes made concurrently for global variable/2.4 support; accepted scoped patch has zero errors"
+    },
+    "liveRuffLast": {
+      "status": "FAIL",
+      "errors": 1,
+      "log": "workspace-ruff-last.txt",
+      "classification": "Concurrent replacement of global-counters UI leaves GlobalCountersDialog imported but unused; not changed by this patch"
+    }
+  },
+  "preExistingFailures": [
+    "tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[1]",
+    "tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[3]",
+    "tests/runtime/test_image_batch_while.py::testDirectoryResolvedRelativeToProjectAndDraftUnchanged",
+    "tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph",
+    "tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema"
+  ],
+  "patch": {
+    "file": "task-only-final.patch",
+    "sha256": "21ba07200b60951f2b3127a3d2253e4c0e30c71c4ce8f67a8f025c45531c429c",
+    "note": "Derived from captured originals and accepted isolated candidate, excluding concurrent global-variable changes"
+  },
+  "acceptance": {
+    "commit": "NOT_RUN",
+    "push": "NOT_RUN",
+    "build": "NOT_RUN",
+    "deployment": "NOT_RUN",
+    "liveAppRestart": "NOT_RUN",
+    "realCameraOrPlc": "NOT_RUN",
+    "packagedRelease": "NOT_RUN"
+  },
+  "memoryUpdate": "NOT_RUN; not requested"
+}

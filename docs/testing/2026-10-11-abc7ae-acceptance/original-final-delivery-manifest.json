@@ -1,0 +1,61 @@
+{
+  "frozenAtUtc": "2026-10-11T10:19:09.423531+00:00",
+  "primaryEntry": "report/acceptance-report.pdf",
+  "editableEntry": "report/acceptance-report.docx",
+  "machineReadableEntry": "report/case-matrix-final.json",
+  "codexFollowupEntry": "targeted/CODEX_HANDOFF.md",
+  "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "overallGate": "FAIL",
+  "executionAndEvidenceComplete": true,
+  "productAccepted": false,
+  "pageCount": 14,
+  "visualQaComplete": true,
+  "originalCases": 41,
+  "keywordGroups": 8,
+  "nativeFullScopePassCases": [
+    "D01",
+    "D02",
+    "D03",
+    "D04",
+    "D05",
+    "D06",
+    "D07",
+    "D08",
+    "O20"
+  ],
+  "nativeRemainingOriginalCases": "32 NOT_RUN, including partially completed representative paths",
+  "files": [
+    {
+      "path": "report/acceptance-report.pdf",
+      "bytes": 782444,
+      "sha256": "eef00ff7db104d84487411f2907a64dfec1e4f2ecf067cdbb1b9feb3160acf3f"
+    },
+    {
+      "path": "report/acceptance-report.docx",
+      "bytes": 58310,
+      "sha256": "0f43ada441453bfd2486efd423ff90ccf15715d54e668744d2d886c0ad871066"
+    },
+    {
+      "path": "report/case-matrix-final.json",
+      "bytes": 206414,
+      "sha256": "97dad3b0bab5e4314ef32a78e4e634bc702a448f41ec0d310728c1eca399ea70"
+    },
+    {
+      "path": "report/report-final-zh.md",
+      "bytes": 28163,
+      "sha256": "8b8acf05c9a80d535248e60272c8647485c622862e5acd4c988d773f51e674fd"
+    },
+    {
+      "path": "report/render-qa.json",
+      "bytes": 7951,
+      "sha256": "e282c69b9ff63d59a353504d8b37b266c6d81fb42dceeb8ef92c34788023023c"
+    },
+    {
+      "path": "report/authoring-manifest.json",
+      "bytes": 4379,
+      "sha256": "f65bd02aaf8eadccbe8668de65a9b8e57feacff20289ef27e364899347e9aefc"
+    }
+  ],
+  "intermediatePolicy": "review/draft files are retained historical intermediates, not final entry points",
+  "noFurtherMutationsAfterFreeze": true
+}

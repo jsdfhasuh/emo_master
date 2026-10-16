@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/sqlite_writer",
+    "tests/runtime/test_runtime_grpc_network.py",
+    "tests/runtime/test_runtime_project_execution.py",
+    "tests/runtime/test_runner_io_summary.py"
+  ],
+  "exitCode": 0,
+  "seconds": 28.890999999828637
+}

@@ -1,0 +1,141 @@
+name: Windows SQL failure diagnostics (not acceptance)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths:
+      - .github/workflows/runtime-sqlite-failure-diagnostics.yml
+      - scripts/r3_sqlite_failure_diagnostics.py
+      - scripts/r3_sqlite_phases.py
+      - scripts/r3_sqlite_wal_metadata.py
+      - scripts/r3_sqlite_controls.py
+      - tests/test_r3_sqlite_failure_diagnostics.py
+      - tests/test_r3_sqlite_phases.py
+      - tests/test_r3_sqlite_wal_metadata.py
+      - tests/test_r3_sqlite_controls.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: windows-sqlite-failure-diagnostics-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  observe:
+    name: Failure points / original order / Windows / Python 3.10
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+      - name: Install the existing test dependencies
+        run: python -m pip install -r requirements-dev.txt
+      - name: Record the hosted runner resource boundary
+        shell: python
+        run: |
+          import ctypes, json, os
+          from ctypes import wintypes
+          class Memory(ctypes.Structure):
+              _fields_ = [("length", wintypes.DWORD), ("load", wintypes.DWORD)] + [
+                  (name, ctypes.c_ulonglong) for name in (
+                      "total_physical", "available_physical", "total_commit",
+                      "available_commit", "total_virtual", "available_virtual", "extended_virtual")]
+          kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+          kernel.GlobalMemoryStatusEx.argtypes = [ctypes.POINTER(Memory)]
+          kernel.GlobalMemoryStatusEx.restype = wintypes.BOOL
+          memory = Memory()
+          memory.length = ctypes.sizeof(memory)
+          if not kernel.GlobalMemoryStatusEx(ctypes.byref(memory)):
+              raise ctypes.WinError(ctypes.get_last_error())
+          print(json.dumps({"role": "diagnostic_only", "runner": "windows-latest standard",
+              "job_timeout_minutes": 30, "cpu_count": os.cpu_count(),
+              **{name: getattr(memory, name) for name in (
+                  "total_physical", "available_physical", "total_commit", "available_commit")}}))
+      - name: Run original full pytest order with only the failure observer
+        id: observed_tests
+        shell: pwsh
+        run: |
+          $evidence = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-failure-diagnostics.json'
+          python -m pytest -q -p scripts.r3_sqlite_failure_diagnostics --sqlite-failure-diagnostics $evidence --sqlite-failure-call-details
+          exit $LASTEXITCODE
+      - name: Print and validate bounded failure evidence in this job log
+        if: always()
+        shell: python
+        env:
+          ORIGINAL_TEST_STEP: ${{ steps.observed_tests.outcome }}
+        run: |
+          import json, os, sys
+          from pathlib import Path
+          sys.path.insert(0, os.environ["GITHUB_WORKSPACE"])
+          from scripts.r3_sqlite_failure_diagnostics import validDetailScope
+          evidence = Path(os.environ["RUNNER_TEMP"]) / "runtime-sqlite-failure-diagnostics.json"
+          if not evidence.exists():
+              if os.environ.get("ORIGINAL_TEST_STEP") != "success":
+                  raise RuntimeError("SQLITE_FAILURE_DIAGNOSTIC_INVALID: failed or incomplete run without failure evidence; inspect pytest summary for coverage gaps")
+              print("NO_FAILURE_OBSERVED: no failure helper ran; inconclusive, not proof that uninstrumented Windows is fixed")
+          else:
+              if not evidence.is_file() or not 0 < evidence.stat().st_size <= 1024 * 1024:
+                  raise RuntimeError("SQLITE_FAILURE_DIAGNOSTIC_INVALID: empty or oversized failure file")
+              content = evidence.read_text(encoding="utf-8")
+              print("SQLITE_FAILURE_DIAGNOSTIC_JSON_BEGIN")
+              print(content)
+              print("SQLITE_FAILURE_DIAGNOSTIC_JSON_END")
+              record = json.loads(content)
+              valid = (validDetailScope(record) and record.get("role") == "diagnostic_only"
+                  and record.get("status") == "FAILURE_OBSERVED"
+                  and record.get("session_finished") is True and record.get("source_stable") is True
+                  and record.get("observer_retired") is True and record.get("errors") == []
+                  and record.get("original_pytest_exit") in (0, 1)
+                  and record.get("selected_tests") == record.get("started_tests")
+                  and record.get("failures") and len(record["failures"]) <= 16
+                  and record.get("failed_tests_without_helper") == 0
+                  and record.get("dropped_failure_records") == 0)
+              if valid:
+                  valid = all(row.get("status") == "OBSERVED" and row.get("observer_retired") is True
+                      and row.get("errors") == [] and row.get("gaps") == []
+                      and row.get("process_run_token") == record.get("process_run_token")
+                      and isinstance(row.get("test_epoch"), int) and isinstance(row.get("store_token"), int)
+                      and row.get("sql", {}).get("enabled") is True
+                      and row.get("sql", {}).get("errors") == [] for row in record["failures"])
+              if not valid:
+                  raise RuntimeError("SQLITE_FAILURE_DIAGNOSTIC_INVALID: missing, unobserved, changed or unfinished evidence")
+      - name: Run isolated durable SQLite controls after original pytest exits
+        id: durable_controls
+        if: ${{ always() && !cancelled() && (steps.observed_tests.outcome == 'success' || steps.observed_tests.outcome == 'failure') }}
+        shell: pwsh
+        run: |
+          $controls = Join-Path $env:RUNNER_TEMP 'runtime-sqlite-control-evidence'
+          python scripts/r3_sqlite_controls.py --repo $env:GITHUB_WORKSPACE --output $controls --case-timeout 30
+          exit $LASTEXITCODE
+      - name: Print bounded independent control evidence
+        if: ${{ always() && !cancelled() && (steps.durable_controls.outcome == 'success' || steps.durable_controls.outcome == 'failure') }}
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          root = Path(os.environ["RUNNER_TEMP"]) / "runtime-sqlite-control-evidence"
+          summary = root / "summary.json"
+          if not summary.is_file():
+              raise RuntimeError("SQLITE_CONTROLS_UNAVAILABLE: standalone controls did not produce a summary")
+          limit = 1024 * 1024
+          if not 0 < summary.stat().st_size <= limit:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: summary size outside bound")
+          record = json.loads(summary.read_text(encoding="utf-8"))
+          if record.get("schema_version") != 1 or len(record.get("cases", [])) != 5:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: missing five-case summary")
+          # Summary already embeds each bounded case result; do not duplicate it.
+          text = json.dumps(record, ensure_ascii=True)
+          if len(text.encode("utf-8")) > limit:
+              raise RuntimeError("SQLITE_CONTROLS_INVALID: combined log quota")
+          print("SQLITE_CONTROLS_JSON_BEGIN")
+          print(text)
+          print("SQLITE_CONTROLS_JSON_END")
+          print("Standalone controls ran after pytest on the same VM; they do not describe failure-time conditions or prove a hosted fsync cause. Original pytest outcome is unchanged.")

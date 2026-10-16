@@ -1,0 +1,269 @@
+.F.......................................                                [100%]
+================================== FAILURES ===================================
+______________ testSamplesAreTransientAndRealStatesNeverFallback ______________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x140f02509a0) at 0x00000140EEF76680>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-671/testSamplesAreTransientAndReal0')
+
+    def testSamplesAreTransientAndRealStatesNeverFallback(designer, tmp_path):  # noqa: F811
+        import json
+        from emo_master.clients.runtime.view_state import SessionView
+        c, e, image = setupPage(designer, 'image')
+        number = e.tools.commands().add(e.pageId, 'number', 1, 0)
+        table = e.tools.commands().add(e.pageId, 'table', 2, 0)
+        e.refresh()
+        before, history = c.session.payload(), len(c.session._undo)
+        r = e.renderer
+        assert r.designExamples and e.tools.examples.isChecked()
+        assert not r.widgets[e.pageId][image][1].image.isNull()
+>       assert r.widgets[e.pageId][number][1].text() == '128'
+E       AssertionError: assert '128.50' == '128'
+E         
+E         - 128
+E         + 128.50
+
+tests\ui\page_designer\test_visual_editor.py:42: AssertionError
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\page_designer\tools.py", line 641, in eventFilter
+    if self.preview.isChecked():
+RuntimeError: Internal C++ object (PySide2.QtWidgets.QPushButton) already deleted.
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_visual_editor.py::testSamplesAreTransientAndRealStatesNeverFallback
+1 failed, 40 passed in 9.92s

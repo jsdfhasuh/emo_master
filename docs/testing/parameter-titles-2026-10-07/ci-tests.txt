@@ -1,0 +1,157 @@
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+All checks passed!
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+src\emo_master\apps\designer\state\run_result_history.py:39: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\state\run_result_history.py:40: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\ui\run_result_tools.py:15: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:68: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:69: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:856: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 336 source files
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+...................................................................s.... [  1%]
+........................................................................ [  3%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [  9%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+........................................................................ [ 17%]
+........................................................................ [ 19%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 25%]
+........................................................................ [ 27%]
+....F................................................................... [ 29%]
+........................................................................ [ 31%]
+........................................................................ [ 33%]
+........................................................................ [ 35%]
+...............................................................s........ [ 37%]
+........................................................................ [ 39%]
+........................................................................ [ 41%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 51%]
+........................................................................ [ 53%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 59%]
+........................................................................ [ 61%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 67%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+........................................................................ [ 73%]
+........................................................................ [ 75%]
+........................................................................ [ 77%]
+........................................................................ [ 79%]
+........................................................... [ 80%]
+.......................................................... [ 82%]
+........................................................................ [ 84%]
+........................................................................ [ 86%]
+........................................................................ [ 88%]
+........................................................................ [ 90%]
+..................ssss.................................................. [ 92%]
+....s................................................................. [ 94%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+.............................................................            [100%]
+================================== FAILURES ===================================
+__ test_second_designer_explains_busy_directory_and_can_retry_after_release ___
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1165/test_second_designer_explains_0')
+
+    def test_second_designer_explains_busy_directory_and_can_retry_after_release(tmp_path):
+        directory = tmp_path / "runtime-data"
+        lock = RuntimeDataLock(directory / ".jobs.runtime.lock")
+        lock.acquire()
+        # The dialog interception lets the real Qt bootstrap exit under an outer deadline.
+        code = """
+    import sys
+    from pathlib import Path
+    import emo_master
+    from PySide2.QtWidgets import QMessageBox
+    from emo_master.apps.designer import main
+    def show_warning(self):
+        title, message = self.windowTitle(), self.text()
+        assert 'Designer' in title
+        assert sys.argv[1] in message
+        assert '不要删除锁文件' in message
+        print('BUSY_DIALOG_SHOWN', flush=True)
+        return QMessageBox.Ok
+    QMessageBox.exec_ = show_warning
+    main.runDesigner()
+    raise AssertionError('busy startup unexpectedly continued')
+    """
+        environment = dict(os.environ, PYTHONPATH=str(ROOT / "src"),
+                           EMO_RUNTIME_DATA_DIR=str(directory), QT_QPA_PLATFORM="offscreen")
+        for name in ("EMO_RUNTIME_TARGET", "EMO_RUNTIME_DB_PATH", "EMO_MASTER_RUNTIME_DB_PATH"):
+            environment.pop(name, None)
+        try:
+            result = subprocess.run(
+                [sys.executable, "-c", code, str(directory)], cwd=ROOT, env=environment,
+                capture_output=True, text=True, timeout=30,
+            )
+            assert result.returncode == 2, result.stdout + result.stderr
+            assert "BUSY_DIALOG_SHOWN" in result.stdout
+>           assert "Traceback" not in result.stderr
+E           TypeError: argument of type 'NoneType' is not iterable
+
+tests\designer\test_startup_directory_lock.py:52: TypeError
+============================== warnings summary ===============================
+tests/designer/test_startup_directory_lock.py::test_second_designer_explains_busy_directory_and_can_retry_after_release
+  C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-45 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016, in _bootstrap_inner
+      self.run()
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953, in run
+      self._target(*self._args, **self._kwargs)
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py", line 1515, in _readerthread
+      buffer.append(fh.read())
+  UnicodeDecodeError: 'gbk' codec can't decode byte 0xa1 in position 15: illegal multibyte sequence
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+tests/test_r3_sqlite_event_probe.py::testDiagnosticRefusesExistingOutputWithoutChangingIt
+  C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread Thread-878 (_readerthread)
+
+  Traceback (most recent call last):
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016, in _bootstrap_inner
+      self.run()
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953, in run
+      self._target(*self._args, **self._kwargs)
+    File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py", line 1515, in _readerthread
+      buffer.append(fh.read())
+  UnicodeDecodeError: 'gbk' codec can't decode byte 0x80 in position 541: illegal multibyte sequence
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/designer/test_startup_directory_lock.py::test_second_designer_explains_busy_directory_and_can_retry_after_release
+1 failed, 3624 passed, 8 skipped, 2 warnings, 28 subtests passed in 972.36s (0:16:12)
+[ci-check] failed pytest with code 1

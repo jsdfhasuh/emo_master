@@ -1,0 +1,27 @@
+{
+  "operatorId": "vision.io.sqlite_writer",
+  "displayName": "SQLite 数据库写入",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.sqlite_writer.operator:SqliteWriterOperator",
+  "category": "输入输出",
+  "iconKey": "save",
+  "summary": "通过字段映射将同次流程输出写入明确选择的本地 SQLite 业务表。",
+  "inputPorts": {"enabled": {"type": "boolean", "required": false, "nullable": false}},
+  "outputPorts": {"receipt": {"type": "json", "required": true, "nullable": false}},
+  "paramSchema": {"type": "object", "properties": {
+    "configVersion": {"title": "配置版本", "type": "integer", "default": 1},
+    "databasePath": {"title": "SQLite 文件", "type": "string", "default": ""},
+    "debugDatabasePath": {"title": "专用测试库（可选）", "type": "string"},
+    "table": {"title": "目标表", "type": "string", "default": "records"},
+    "mappings": {"title": "字段映射", "type": "array", "items": {"type": "object"}, "default": []},
+    "failurePolicy": {"title": "失败策略", "type": "string", "enum": ["stop", "continue"], "default": "stop"}
+  }},
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "editor": {
+    "schemaVersion": "1.0", "kind": "customUi", "openMode": "window",
+    "uiResource": "ui/editor.ui",
+    "controllerEntry": "emo_master.plugins.builtins.sqlite_writer.editor:SqliteWriterEditorController",
+    "fallback": "schemaForm", "previewMode": "none"
+  }
+}

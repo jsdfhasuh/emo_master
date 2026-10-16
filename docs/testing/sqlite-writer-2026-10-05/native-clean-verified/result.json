@@ -1,0 +1,13 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-c",
+    "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp=QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q','tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-writer-20261005-092443-038925\\clean-candidate-20261005-111441-208843",
+  "exitCode": 0,
+  "seconds": 6.186999999918044,
+  "indexedTree": "8ad183489ec7666ffcf3c44f9de8c2196cd0bc2f",
+  "mode": "native-windows",
+  "excludedOriginalDirty": true
+}

@@ -1,0 +1,70 @@
+"""Verify exact preservation of pre-existing files and index, without editing them."""
+from pathlib import Path
+import hashlib
+import importlib.util
+import json
+import subprocess
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+backup = Path(__file__).parent
+original = json.loads((backup / 'candidate-start.json').read_text(encoding='utf-8'))
+main = 'src/emo_master/apps/designer/ui/main_window.py'
+coordinator = 'src/emo_master/apps/designer/page_designer/coordinator.py'
+
+def sha(value):
+    return hashlib.sha256(value).hexdigest()
+
+others = []
+for relative, expected in original['dirtyHashes'].items():
+    if relative not in (main, coordinator):
+        assert sha((root / relative).read_bytes()) == expected, relative
+        others.append(relative)
+
+source = (root / main).read_bytes()
+second = (backup / 'phase2-before' / main).read_bytes()
+newline = b'\r\n' if b'\r\n' in source else b'\n'
+text = source.decode().replace('\r\n', '\n')
+for addition, count in [
+    ('            from emo_master.apps.designer.ui.designer_actions import DesignerActions\n'
+     '            self.designerActions = DesignerActions(self)\n', 1),
+    ("        actions = getattr(self, 'designerActions', None)\n"
+     '        if actions is not None:\n            actions.refresh()\n', 2),
+    ("        actions = getattr(self, 'designerActions', None)\n"
+     "        if actions is not None:\n            actions.invoke('delete')\n            return\n", 1),
+]:
+    assert text.count(addition) == count
+    text = text.replace(addition, '')
+assert text.replace('\n', newline.decode()).encode() == second
+text = text.replace('from emo_master.apps.designer.ui.action_state import flowEditAllowed\n', '', 1)
+for method, result in [('deleteSelectedElements(self) -> None', 'return'),
+    ('autoLayoutNodes(self) -> None', 'return'), ('openNodeParamDialog(self, nodeId: str) -> None', 'return'),
+    ('duplicateSelectedNode(self)', 'return None'), ('duplicateCurrentWorkflow(self)', 'return None')]:
+    anchor = '    def ' + method + ':\n'
+    guarded = anchor + '        if not flowEditAllowed(self):\n            ' + result + '\n'
+    assert text.count(guarded) == 1
+    text = text.replace(guarded, anchor, 1)
+assert text.replace('\n', newline.decode()).encode() == (backup / 'before' / main).read_bytes()
+
+value = (root / coordinator).read_bytes()
+newline = b'\r\n' if b'\r\n' in value else b'\n'
+text = value.decode().replace('\r\n', '\n')
+guarded = '    def history(self, redo=False):\n        if self.window.isJobRunning:\n            return\n'
+assert text.count(guarded) == 1
+text = text.replace(guarded, '    def history(self, redo=False):\n', 1)
+assert text.replace('\n', newline.decode()).encode() == (backup / 'before' / coordinator).read_bytes()
+staged = subprocess.check_output(['git', 'diff', '--cached', '--binary'], cwd=root)
+assert staged == (backup / 'original-staged.patch').read_bytes()
+spec = importlib.util.spec_from_file_location('identity', root / 'scripts/sqlite_writer_validate.py')
+identity = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(identity)
+current = identity.candidate()
+report = {'originalHead': original['head'], 'currentHead': current['head'],
+    'originalDirtyFileCount': len(original['dirtyHashes']), 'unchangedOtherFileCount': len(others),
+    'unchangedOtherFiles': others, 'mainWindowAfterRemovingOnlyTaskAdditionsMatchesOriginal': True,
+    'coordinatorAfterRemovingOnlyTaskAdditionsMatchesOriginal': True,
+    'originalStagedPatchUnchanged': True, 'originalStagedPatchSha256': sha(staged),
+    'currentSourceDigest': current['sourceDigest'], 'remainingDirty': current['dirty']}
+output = root / 'docs/testing/designer-shortcuts-2026-10-06/workspace-preservation.json'
+output.write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+print(json.dumps({key: value for key, value in report.items()
+                  if key not in ('unchangedOtherFiles', 'remainingDirty')}, ensure_ascii=False))

@@ -1,0 +1,52 @@
+{
+  "operatorId": "communication.gateway.ack_validate",
+  "displayName": "校验网关关联 ACK",
+  "version": "1.0.0",
+  "inputPorts": {
+    "request": {
+      "type": "tcpMessage",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "response": {
+      "type": "tcpMessage",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "acknowledged": {
+      "type": "boolean",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "channel": {
+        "title": "网关输入通道",
+        "type": "string",
+        "enum": [
+          "plc",
+          "robot"
+        ],
+        "default": "robot",
+        "xGlobalVariableBindingDisabled": true,
+        "xOptionLabels": {
+          "plc": "PLC 正常坐标",
+          "robot": "机器人正常坐标"
+        }
+      }
+    }
+  },
+  "entry": "emo_master.plugins.builtins._gateway_coordinates:GatewayAckValidateOperator",
+  "category": "通信",
+  "summary": "按本次请求校验正常网关 ACK，不仅匹配 OK 前缀；不确认设备动作完成。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

@@ -1,0 +1,2230 @@
+EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEF........... [ 87%]
+.FFFFEEEEF                                                               [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6642D960>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f63f0b4d0) at 0x0000013F664CBA80>
+old = <PySide2.QtWidgets.QAction(0x13f64e29310 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66436380>
+new = <PySide2.QtWidgets.QAction(0x13f63f0ae50 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F66436AC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_______ ERROR at setup of testDeleteKeyUsesSingleUndoTransaction[key0] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6642C700>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6334e2d0) at 0x0000013F646B18C0>
+old = <PySide2.QtWidgets.QAction(0x13f64e26c70 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646C3000>
+new = <PySide2.QtWidgets.QAction(0x13f6334e2b0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646C5540>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_______ ERROR at setup of testDeleteKeyUsesSingleUndoTransaction[key1] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F3C1F1DB0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6524e180) at 0x0000013F65D39E40>
+old = <PySide2.QtWidgets.QAction(0x13f64e241f0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6458ED00>
+new = <PySide2.QtWidgets.QAction(0x13f6524e5c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F65DB0140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testCopyUndoAndBothRedoKeys[redoKey0-modifiers0] ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66763130>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e23770) at 0x0000013F667BE040>
+old = <PySide2.QtWidgets.QAction(0x13f64e2c390 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667BD8C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e23530 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646DB5C0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testCopyUndoAndBothRedoKeys[redoKey1-modifiers1] ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F30850>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65254c00) at 0x0000013F646B3500>
+old = <PySide2.QtWidgets.QAction(0x13f6524dd40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646B23C0>
+new = <PySide2.QtWidgets.QAction(0x13f65254880 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666ADD40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+______________ ERROR at setup of testF2OpensActualExistingEditor ______________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66247190>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2d570) at 0x0000013F6458F600>
+old = <PySide2.QtWidgets.QAction(0x13f64e25d50 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66419D00>
+new = <PySide2.QtWidgets.QAction(0x13f64e2d710 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6651C200>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+__ ERROR at setup of testResultKeysReuseReadonlyZeroResultWhileRunning[key0] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F3C1DEE00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652571e0) at 0x0000013F646DB480>
+old = <PySide2.QtWidgets.QAction(0x13f652504a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F666AF840>
+new = <PySide2.QtWidgets.QAction(0x13f65257400 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666AC500>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+__ ERROR at setup of testResultKeysReuseReadonlyZeroResultWhileRunning[key1] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F664C5450>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e1ee70) at 0x0000013F6661CAC0>
+old = <PySide2.QtWidgets.QAction(0x13f64e26f30 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6661DEC0>
+new = <PySide2.QtWidgets.QAction(0x13f64e1ebd0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646B0100>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testOpenAndSaveKeysUseExistingDialogsAndSaveActualProject _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F663C42B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652513c0) at 0x0000013F6660F600>
+old = <PySide2.QtWidgets.QAction(0x13f6525a240 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665B8600>
+new = <PySide2.QtWidgets.QAction(0x13f65251440 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667AEDC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[line] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65E129B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2d3b0) at 0x0000013F664E5AC0>
+old = <PySide2.QtWidgets.QAction(0x13f64e25250 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646C3E00>
+new = <PySide2.QtWidgets.QAction(0x13f64e2d0b0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F66437300>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[spin] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F667122C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652569e0) at 0x0000013F6459CF80>
+old = <PySide2.QtWidgets.QAction(0x13f6524ffc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66444540>
+new = <PySide2.QtWidgets.QAction(0x13f65256e20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F62EEAA80>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key0-modifiers0] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6456BBE0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e23d90) at 0x0000013F646C7600>
+old = <PySide2.QtWidgets.QAction(0x13f64e2c3f0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667BE700>
+new = <PySide2.QtWidgets.QAction(0x13f64e23a50 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667BC740>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key1-modifiers1] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F64693D00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652555c0) at 0x0000013F667E0840>
+old = <PySide2.QtWidgets.QAction(0x13f6524e400 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665F2680>
+new = <PySide2.QtWidgets.QAction(0x13f65255280 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667E0140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key2-modifiers2] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F666F4FD0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e20410) at 0x0000013F664D7600>
+old = <PySide2.QtWidgets.QAction(0x13f64e28890 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667AD500>
+new = <PySide2.QtWidgets.QAction(0x13f64e204f0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F65D3A140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key3-modifiers3] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F95D50>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65259d20) at 0x0000013F6661DAC0>
+old = <PySide2.QtWidgets.QAction(0x13f652528a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665BB300>
+new = <PySide2.QtWidgets.QAction(0x13f65259ba0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666D7D00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key4-modifiers4] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F31480>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e244b0) at 0x0000013F65D39E40>
+old = <PySide2.QtWidgets.QAction(0x13f64e2cbf0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667E3B80>
+new = <PySide2.QtWidgets.QAction(0x13f64e24050 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667E2680>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key5-modifiers5] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66509870>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6524d300) at 0x0000013F66444540>
+old = <PySide2.QtWidgets.QAction(0x13f652566a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667AF400>
+new = <PySide2.QtWidgets.QAction(0x13f6524d540 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667AFD00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningKeysDoNotMutateGraphOrHistory[key6-modifiers6] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F666C2170>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e26010) at 0x0000013F664D7600>
+old = <PySide2.QtWidgets.QAction(0x13f64e1ee30 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667BF640>
+new = <PySide2.QtWidgets.QAction(0x13f64e26150 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646B0140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5 _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F666FD360>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6524e180) at 0x0000013F6457DAC0>
+old = <PySide2.QtWidgets.QAction(0x13f65256f80 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667AD680>
+new = <PySide2.QtWidgets.QAction(0x13f6524dc20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666D9080>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_______ ERROR at setup of testLayoutFitAndLogsKeysCallExistingCommands ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F3C1EA650>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e24bf0) at 0x0000013F66833F00>
+old = <PySide2.QtWidgets.QAction(0x13f64e2d3d0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667A0480>
+new = <PySide2.QtWidgets.QAction(0x13f64e24770 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667A2700>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+______ ERROR at setup of testPageCopyDeleteUndoNeverModifyHiddenWorkflow ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F666F53C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65259040) at 0x0000013F665FDAC0>
+old = <PySide2.QtWidgets.QAction(0x13f652524c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F666DAD40>
+new = <PySide2.QtWidgets.QAction(0x13f652591e0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646C5D80>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F667239D0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e29150) at 0x0000013F3C2C9E40>
+old = <PySide2.QtWidgets.QAction(0x13f64e21230 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F660C4A80>
+new = <PySide2.QtWidgets.QAction(0x13f64e29110 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6647FD00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+______ ERROR at setup of testPageFlowOnlyKeysAndPreviewKeepTaskOwnership ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F662D1FF0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6525a6c0) at 0x0000013F665B9E40>
+old = <PySide2.QtWidgets.QAction(0x13f652530a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667AE9C0>
+new = <PySide2.QtWidgets.QAction(0x13f652599c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F65D3A140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+____ ERROR at setup of testModalAndOtherDesignerWindowDoNotShareShortcuts _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66246B60>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2d350) at 0x0000013F6651FF80>
+old = <PySide2.QtWidgets.QAction(0x13f64e253f0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667A3180>
+new = <PySide2.QtWidgets.QAction(0x13f64e2d3d0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6651F200>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testClickPageCardTransfersPropertyFocusBeforeCopy _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F49450>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6525cb20) at 0x0000013F664D4FC0>
+old = <PySide2.QtWidgets.QAction(0x13f65255b20 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F645A85C0>
+new = <PySide2.QtWidgets.QAction(0x13f6525cac0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667BFA00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testPageSidebarAndTableDoNotDeleteCanvasSelection _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6642D1B0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e21ad0) at 0x0000013F667CA440>
+old = <PySide2.QtWidgets.QAction(0x13f64e29c90 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665B97C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e21e50 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6647FD00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+______ ERROR at setup of testPendingRefreshIsBoundedAndRetiredWithWindow ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F662315D0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65255fe0) at 0x0000013F646B0840>
+old = <PySide2.QtWidgets.QAction(0x13f6524ed80 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646B05C0>
+new = <PySide2.QtWidgets.QAction(0x13f65255f40 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6641BF80>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+____ ERROR at setup of testCloseInProgressBlocksKeyboardAndRetainedActions ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66720700>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e292b0) at 0x0000013F6660E600>
+old = <PySide2.QtWidgets.QAction(0x13f64e21610 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F666D4A40>
+new = <PySide2.QtWidgets.QAction(0x13f64e29110 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666D7D00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testRunningDeleteKeysCannotRemoveDraftNodes[key0] _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F667979D0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65252540) at 0x0000013F6687B900>
+old = <PySide2.QtWidgets.QAction(0x13f6525b600 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F65E5AA80>
+new = <PySide2.QtWidgets.QAction(0x13f65252520 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6647FE40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testRunningDeleteKeysCannotRemoveDraftNodes[key1] _____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F646931C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2a2d0) at 0x0000013F6459C3C0>
+old = <PySide2.QtWidgets.QAction(0x13f64e23170 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6672B280>
+new = <PySide2.QtWidgets.QAction(0x13f64e2a5f0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6651FD00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66762E30>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65255b20) at 0x0000013F667BE680>
+old = <PySide2.QtWidgets.QAction(0x13f6524eac0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66606640>
+new = <PySide2.QtWidgets.QAction(0x13f65255620 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6689CF40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66707C70>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e288b0) at 0x0000013F664E6700>
+old = <PySide2.QtWidgets.QAction(0x13f64e20d50 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665F08C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e27d70 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F665F2700>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6677ADA0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6525a960) at 0x0000013F6689C240>
+old = <PySide2.QtWidgets.QAction(0x13f65253a40 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66606840>
+new = <PySide2.QtWidgets.QAction(0x13f6525adc0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6687A680>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65E10D60>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e203d0) at 0x0000013F646C4240>
+old = <PySide2.QtWidgets.QAction(0x13f64e28370 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667F3880>
+new = <PySide2.QtWidgets.QAction(0x13f64e20770 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667E0140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6642EC50>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6525a480) at 0x0000013F65EC4A80>
+old = <PySide2.QtWidgets.QAction(0x13f65253360 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66437D40>
+new = <PySide2.QtWidgets.QAction(0x13f6525a740 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6660DEC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_________ ERROR at setup of testRunningConfigurationDoesNotOpenEditor _________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6456ADD0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e27870) at 0x0000013F665BA780>
+old = <PySide2.QtWidgets.QAction(0x13f64e20150 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646C7B00>
+new = <PySide2.QtWidgets.QAction(0x13f64e26f30 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6661FE40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+____________ ERROR at setup of testRunningHistoryCannotMutateDraft ____________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F4AFB0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65255220) at 0x0000013F664C95C0>
+old = <PySide2.QtWidgets.QAction(0x13f6524e0a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6660F180>
+new = <PySide2.QtWidgets.QAction(0x13f652556c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F66428140>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F662325F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e23990) at 0x0000013F668798C0>
+old = <PySide2.QtWidgets.QAction(0x13f64e2c730 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66879540>
+new = <PySide2.QtWidgets.QAction(0x13f64e24010 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F66879AC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F664C5750>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65259c60) at 0x0000013F664343C0>
+old = <PySide2.QtWidgets.QAction(0x13f65252c20 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646B0B40>
+new = <PySide2.QtWidgets.QAction(0x13f652594c0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667E1440>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F667064A0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2abb0) at 0x0000013F668A8840>
+old = <PySide2.QtWidgets.QAction(0x13f64e23250 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F664BB100>
+new = <PySide2.QtWidgets.QAction(0x13f64e2a990 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F65DB1080>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F662D1900>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65257ee0) at 0x0000013F667E0840>
+old = <PySide2.QtWidgets.QAction(0x13f65251000 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6641D100>
+new = <PySide2.QtWidgets.QAction(0x13f65257e20 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6689D340>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testConfigurationUsesRealExistingEditorWithoutEditingDraft _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65FDAB00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e27ab0) at 0x0000013F6661C240>
+old = <PySide2.QtWidgets.QAction(0x13f64e20f30 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F665FF540>
+new = <PySide2.QtWidgets.QAction(0x13f64e27c70 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F668AA640>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65FD8AF0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65256cc0) at 0x0000013F666D7F80>
+old = <PySide2.QtWidgets.QAction(0x13f6524f920 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646B3040>
+new = <PySide2.QtWidgets.QAction(0x13f65256a00 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667F1080>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+__ ERROR at setup of testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F667113F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e23ed0) at 0x0000013F667AC340>
+old = <PySide2.QtWidgets.QAction(0x13f64e2c750 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6687A340>
+new = <PySide2.QtWidgets.QAction(0x13f64e23bd0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F65F00E40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[configure] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F1CB80>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f6525ac20) at 0x0000013F6458E700>
+old = <PySide2.QtWidgets.QAction(0x13f652539c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646AA1C0>
+new = <PySide2.QtWidgets.QAction(0x13f6525ade0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F665F1A00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[copy] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6642D930>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e1f9d0) at 0x0000013F6661C180>
+old = <PySide2.QtWidgets.QAction(0x13f64e276b0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6672A4C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e1fab0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6457DC80>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testRunningDisablesMutationAndTriggerRechecksState[delete] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66797A00>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65258e20) at 0x0000013F666E7540>
+old = <PySide2.QtWidgets.QAction(0x13f652518e0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66607CC0>
+new = <PySide2.QtWidgets.QAction(0x13f652587a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667BFD00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66760520>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e211f0) at 0x0000013F665FC540>
+old = <PySide2.QtWidgets.QAction(0x13f64e29610 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F664E58C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e21190 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6689CA00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66778A90>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65256b40) at 0x0000013F6458C340>
+old = <PySide2.QtWidgets.QAction(0x13f6524fee0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646B0580>
+new = <PySide2.QtWidgets.QAction(0x13f65256560 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666D4F40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F6645FCD0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e25530) at 0x0000013F62F02400>
+old = <PySide2.QtWidgets.QAction(0x13f64e29930 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667ACD40>
+new = <PySide2.QtWidgets.QAction(0x13f64e251f0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667F1080>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop] _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F666F6C50>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652591e0) at 0x0000013F667A3700>
+old = <PySide2.QtWidgets.QAction(0x13f65252d00 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F666D9280>
+new = <PySide2.QtWidgets.QAction(0x13f65259480 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F664E53C0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage _
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F4B3A0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e21450) at 0x0000013F66832780>
+old = <PySide2.QtWidgets.QAction(0x13f64e295b0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667F30C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e217f0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F66831EC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[clear] ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F947F0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65253a00) at 0x0000013F67CA26C0>
+old = <PySide2.QtWidgets.QAction(0x13f6525cdc0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F664C95C0>
+new = <PySide2.QtWidgets.QAction(0x13f65253b40 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F67CA2680>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[reload] ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66722080>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e269d0) at 0x0000013F667C9E40>
+old = <PySide2.QtWidgets.QAction(0x13f64e1f7b0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66729900>
+new = <PySide2.QtWidgets.QAction(0x13f64e266d0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F67D3CAC0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+__ ERROR at setup of testOldActionCannotOperateAfterContextChanges[project] ___
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66763520>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65253280) at 0x0000013F65D93600>
+old = <PySide2.QtWidgets.QAction(0x13f6525c1c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F666ACFC0>
+new = <PySide2.QtWidgets.QAction(0x13f65253200 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F646C7D00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testOldActionCannotOperateAfterContextChanges[workspace] __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F66706AD0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e272f0) at 0x0000013F6459EC40>
+old = <PySide2.QtWidgets.QAction(0x13f64e1fbf0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F66832C40>
+new = <PySide2.QtWidgets.QAction(0x13f64e26c70 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6689C780>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+___ ERROR at setup of testOldActionCannotOperateAfterContextChanges[close] ____
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65D897E0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65250160) at 0x0000013F6647FF80>
+old = <PySide2.QtWidgets.QAction(0x13f652593c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667FF900>
+new = <PySide2.QtWidgets.QAction(0x13f652502a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666DAE00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testActualMenuMouseClickCopiesOnceAndClosesPopup ______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65F96380>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2cbb0) at 0x0000013F6641C340>
+old = <PySide2.QtWidgets.QAction(0x13f64e254d0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F67CA84C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e2cf90 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F67CAA680>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_______ ERROR at setup of testRightClickOnConnectionKeepsNodeMenuClosed _______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65D896C0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652597c0) at 0x0000013F665F0680>
+old = <PySide2.QtWidgets.QAction(0x13f652526c0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6646A480>
+new = <PySide2.QtWidgets.QAction(0x13f65258900 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6661E4C0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_ ERROR at setup of testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions __
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000013F65D8B8E0>
+
+    @pytest.fixture
+    def canvas(ownedDesignerWindow):
+        client = Client()
+>       window = ownedDesignerWindow(client)
+
+tests\designer\test_node_context_menu.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:36: in __call__
+    window = MainWindow(runtimeClient, **kwargs)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e253b0) at 0x0000013F663DB900>
+old = <PySide2.QtWidgets.QAction(0x13f64e2e010 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646AA800>
+new = <PySide2.QtWidgets.QAction(0x13f64e25790 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666D7D00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_________ ERROR at setup of testSaveCommitsVisibleUnappliedProperties _________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x13f636fe520) at 0x0000013F3C1F1290>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000013F66778DC0>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e28490) at 0x0000013F667C9E40>
+old = <PySide2.QtWidgets.QAction(0x13f64e20dd0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667CB4C0>
+new = <PySide2.QtWidgets.QAction(0x13f64e27c10 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6672BC40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+__ ERROR at setup of testInvalidPendingInputBlocksSaveWithoutDiscardingText ___
+
+qtApp = <PySide2.QtWidgets.QApplication(0x13f636fe520) at 0x0000013F3C1F1290>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000013F66509E10>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65255680) at 0x0000013F64577D00>
+old = <PySide2.QtWidgets.QAction(0x13f6524e6a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F646E2780>
+new = <PySide2.QtWidgets.QAction(0x13f65255220 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F668AA680>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_____ ERROR at setup of testSelectingAnotherComponentCommitsPendingInput ______
+
+qtApp = <PySide2.QtWidgets.QApplication(0x13f636fe520) at 0x0000013F3C1F1290>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000013F663D0E20>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e28290) at 0x0000013F667ACAC0>
+old = <PySide2.QtWidgets.QAction(0x13f64e21030 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F67CA1400>
+new = <PySide2.QtWidgets.QAction(0x13f64e285f0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F667CBA00>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_________ ERROR at setup of testInvalidInputBlocksComponentSelection __________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x13f636fe520) at 0x0000013F3C1F1290>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000013F65F95510>
+
+    @pytest.fixture
+    def designer(qtApp, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Yes)
+>       window = MainWindow(Client())
+
+tests\ui\page_designer\test_workspace.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65257c00) at 0x0000013F6647FCC0>
+old = <PySide2.QtWidgets.QAction(0x13f65250980 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F65FB8880>
+new = <PySide2.QtWidgets.QAction(0x13f652578a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6660E400>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+================================== FAILURES ===================================
+_______________ testDeleteUsesShortcutHandlerAndNoDeleteButton ________________
+
+    def testDeleteUsesShortcutHandlerAndNoDeleteButton() -> None:
+        ensureQApp()
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_delete_shortcut.py:22: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f65257640) at 0x0000013F67D3FF80>
+old = <PySide2.QtWidgets.QAction(0x13f65250720 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F663DBE40>
+new = <PySide2.QtWidgets.QAction(0x13f652568a0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F67D13E80>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+________________ testMainWindowCanSaveAndLoadProjectDirectory _________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1081/testMainWindowCanSaveAndLoadPr0')
+
+    def testMainWindowCanSaveAndLoadProjectDirectory(tmp_path: Path) -> None:
+        ensureQApp()
+        saveDir = tmp_path / "demo_project"
+    
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:48: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e2add0) at 0x0000013F667E18C0>
+old = <PySide2.QtWidgets.QAction(0x13f64e232b0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F667E1EC0>
+new = <PySide2.QtWidgets.QAction(0x13f64e2ad50 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6689D8C0>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_________ testSaveProjectActionOverwritesLoadedProjectWithoutChooser __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1081/testSaveProjectActionOverwrite0')
+
+    def testSaveProjectActionOverwritesLoadedProjectWithoutChooser(tmp_path: Path) -> None:
+        ensureQApp()
+        projectDir = tmp_path / "loaded_project"
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:133: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652543c0) at 0x0000013F6641C540>
+old = <PySide2.QtWidgets.QAction(0x13f6524d5e0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6660C3C0>
+new = <PySide2.QtWidgets.QAction(0x13f65253ac0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6642B640>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+_________________ testFailedProjectSaveDoesNotAdvanceRevision _________________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1081/testFailedProjectSaveDoesNotAd0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000013F664F6B90>
+
+    def testFailedProjectSaveDoesNotAdvanceRevision(tmp_path: Path, monkeypatch) -> None:
+>       window = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:150: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e25c50) at 0x0000013F67CFB740>
+old = <PySide2.QtWidgets.QAction(0x13f64e2e510 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F67CFBDC0>
+new = <PySide2.QtWidgets.QAction(0x13f64e25f30 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F6647FE40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+____________ testFailedProjectLoadPreservesCurrentWorkflowAndTabs _____________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1081/testFailedProjectLoadPreserves0')
+
+    def testFailedProjectLoadPreservesCurrentWorkflowAndTabs(tmp_path: Path) -> None:
+        targetProjectDir = tmp_path / "target-project"
+>       targetWindow = MainWindow(RuntimeClientStub())
+
+tests\designer\test_main_window_project_save_load.py:172: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f652596a0) at 0x0000013F666E6A40>
+old = <PySide2.QtWidgets.QAction(0x13f652520a0 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F6647DDC0>
+new = <PySide2.QtWidgets.QAction(0x13f65258ba0 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F666E7540>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x13f636fe520) at 0x0000013F3C1F1290>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+>       window = makeWindow()
+
+tests\designer\test_visual_layout.py:306: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\designer\test_visual_layout.py:30: in makeWindow
+    window = MainWindow(SimpleNamespace(listOperators=lambda: []), settingsStore=settings)
+src\emo_master\apps\designer\ui\main_window.py:1398: in __init__
+    self.designerActions = DesignerActions(self)
+src\emo_master\apps\designer\ui\designer_actions.py:55: in __init__
+    self.replaceMenuAction('复制所选算子', self.actions['copy'])
+src\emo_master\apps\designer\ui\designer_actions.py:101: in replaceMenuAction
+    self.replaceAction(old, action)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.designer_actions.DesignerActions(0x13f64e288b0) at 0x0000013F6687A500>
+old = <PySide2.QtWidgets.QAction(0x13f64e21390 text="������ѡ����" toolTip="������ѡ����" menuRole=TextHeuristicRole visible=true) at 0x0000013F668A9C40>
+new = <PySide2.QtWidgets.QAction(0x13f64e28350 text="������ѡ����" toolTip="������ѡ����" shortcut=QKeySequence("Ctrl+D") menuRole=TextHeuristicRole visible=true) at 0x0000013F67D3CE40>
+
+    def replaceAction(self, old, new):
+        for menu in self.menus.values():
+>           if old in menu.actions():
+E           RuntimeError: Internal C++ object (PySide2.QtWidgets.QMenu) already deleted.
+
+src\emo_master\apps\designer\ui\designer_actions.py:106: RuntimeError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_delete_shortcut.py::testDeleteUsesShortcutHandlerAndNoDeleteButton
+FAILED tests/designer/test_main_window_project_save_load.py::testMainWindowCanSaveAndLoadProjectDirectory
+FAILED tests/designer/test_main_window_project_save_load.py::testSaveProjectActionOverwritesLoadedProjectWithoutChooser
+FAILED tests/designer/test_main_window_project_save_load.py::testFailedProjectSaveDoesNotAdvanceRevision
+FAILED tests/designer/test_main_window_project_save_load.py::testFailedProjectLoadPreservesCurrentWorkflowAndTabs
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+ERROR tests/designer/test_designer_shortcuts.py::testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem
+ERROR tests/designer/test_designer_shortcuts.py::testDeleteKeyUsesSingleUndoTransaction[key0]
+ERROR tests/designer/test_designer_shortcuts.py::testDeleteKeyUsesSingleUndoTransaction[key1]
+ERROR tests/designer/test_designer_shortcuts.py::testCopyUndoAndBothRedoKeys[redoKey0-modifiers0]
+ERROR tests/designer/test_designer_shortcuts.py::testCopyUndoAndBothRedoKeys[redoKey1-modifiers1]
+ERROR tests/designer/test_designer_shortcuts.py::testF2OpensActualExistingEditor
+ERROR tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key0]
+ERROR tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key1]
+ERROR tests/designer/test_designer_shortcuts.py::testOpenAndSaveKeysUseExistingDialogsAndSaveActualProject
+ERROR tests/designer/test_designer_shortcuts.py::testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[line]
+ERROR tests/designer/test_designer_shortcuts.py::testInputDeleteAndUndoRemainNativeAndNeverChangeGraph[spin]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key0-modifiers0]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key1-modifiers1]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key2-modifiers2]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key3-modifiers3]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key4-modifiers4]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key5-modifiers5]
+ERROR tests/designer/test_designer_shortcuts.py::testRunningKeysDoNotMutateGraphOrHistory[key6-modifiers6]
+ERROR tests/designer/test_designer_shortcuts.py::testRunStopKeysUseOriginalControllerAndDoNotRepeatOnHeldF5
+ERROR tests/designer/test_designer_shortcuts.py::testLayoutFitAndLogsKeysCallExistingCommands
+ERROR tests/designer/test_designer_shortcuts.py::testPageCopyDeleteUndoNeverModifyHiddenWorkflow
+ERROR tests/designer/test_designer_shortcuts.py::testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField
+ERROR tests/designer/test_designer_shortcuts.py::testPageFlowOnlyKeysAndPreviewKeepTaskOwnership
+ERROR tests/designer/test_designer_shortcuts.py::testModalAndOtherDesignerWindowDoNotShareShortcuts
+ERROR tests/designer/test_designer_shortcuts.py::testClickPageCardTransfersPropertyFocusBeforeCopy
+ERROR tests/designer/test_designer_shortcuts.py::testPageSidebarAndTableDoNotDeleteCanvasSelection
+ERROR tests/designer/test_designer_shortcuts.py::testPendingRefreshIsBoundedAndRetiredWithWindow
+ERROR tests/designer/test_designer_shortcuts.py::testCloseInProgressBlocksKeyboardAndRetainedActions
+ERROR tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key0]
+ERROR tests/designer/test_shortcut_guards.py::testRunningDeleteKeysCannotRemoveDraftNodes[key1]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[handleDeleteShortcut]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[deleteSelectedElements]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateSelectedNode]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[duplicateCurrentWorkflow]
+ERROR tests/designer/test_shortcut_guards.py::testRunningLegacyMutationEntryCannotBypassGuard[autoLayoutNodes]
+ERROR tests/designer/test_shortcut_guards.py::testRunningConfigurationDoesNotOpenEditor
+ERROR tests/designer/test_shortcut_guards.py::testRunningHistoryCannotMutateDraft
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5]
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0]
+ERROR tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75]
+ERROR tests/designer/test_node_context_menu.py::testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu
+ERROR tests/designer/test_node_context_menu.py::testConfigurationUsesRealExistingEditorWithoutEditingDraft
+ERROR tests/designer/test_node_context_menu.py::testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout
+ERROR tests/designer/test_node_context_menu.py::testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[configure]
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[copy]
+ERROR tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[delete]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow]
+ERROR tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop]
+ERROR tests/designer/test_node_context_menu.py::testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[clear]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[reload]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[project]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[workspace]
+ERROR tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[close]
+ERROR tests/designer/test_node_context_menu.py::testActualMenuMouseClickCopiesOnceAndClosesPopup
+ERROR tests/designer/test_node_context_menu.py::testRightClickOnConnectionKeepsNodeMenuClosed
+ERROR tests/designer/test_node_context_menu.py::testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions
+ERROR tests/ui/page_designer/test_pending_inputs.py::testSaveCommitsVisibleUnappliedProperties
+ERROR tests/ui/page_designer/test_pending_inputs.py::testInvalidPendingInputBlocksSaveWithoutDiscardingText
+ERROR tests/ui/page_designer/test_pending_inputs.py::testSelectingAnotherComponentCommitsPendingInput
+ERROR tests/ui/page_designer/test_pending_inputs.py::testInvalidInputBlocksComponentSelection
+6 failed, 12 passed, 64 errors in 20.16s

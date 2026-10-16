@@ -1,0 +1,180 @@
+{
+  "sha": "8c1340461d9675ab3a5f078135f17407fa027cc7",
+  "date": "2026-10-13",
+  "overall": "NOT_FULLY_ACCEPTED",
+  "performance_status": "NOT_ASSESSED",
+  "historical_root_cause_status": "OPEN",
+  "cases": [
+    {
+      "id": "S01",
+      "status": "PASS",
+      "scope": "固定 SHA 与独立环境",
+      "evidence": "environment/identity.txt",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "S02",
+      "status": "PASS",
+      "scope": "13 renderer 原断言",
+      "evidence": "renderer-pytest.log",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "S03",
+      "status": "PASS",
+      "scope": "180 capture 原断言",
+      "evidence": "capture-pytest.log",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "S04",
+      "status": "PASS",
+      "scope": "6 runtime paths",
+      "evidence": "paths-pytest.log",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "A01",
+      "status": "PASS",
+      "scope": "四 arm 正式 9 至 96 完整",
+      "evidence": "independent-bgr-raw-audit.json",
+      "boundary": "只限正式9–96；原measurement_status VALID"
+    },
+    {
+      "id": "A02",
+      "status": "FAIL",
+      "scope": "含预热全 96 显示完整性",
+      "evidence": "trial0-warmup-ordinal2-timeline.json",
+      "boundary": "trial0预热序号2；保留全96分母",
+      "severity": "P2",
+      "requirement_boundary": "全96显示覆盖验收缺口；实时latest supersession兼容性待需求界定，不直接视为源数据丢失"
+    },
+    {
+      "id": "P01",
+      "status": "PASS",
+      "scope": "独立 probe 双端身份与记录像素",
+      "evidence": "independent-pixel-contract/",
+      "boundary": "静态同图不能单独判跨ordinal新鲜度；非原ABBA性能"
+    },
+    {
+      "id": "P02",
+      "status": "PASS",
+      "scope": "Qt gallery 16 组合",
+      "evidence": "native-bgr-gallery/",
+      "boundary": "独立辅助Qt，预览基准220x132，DPR1，非Designer/系统DPI"
+    },
+    {
+      "id": "D01",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D02",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D03",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D04",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D05",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D06",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D07",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "D08",
+      "status": "PASS",
+      "scope": "全部真实调试与导出",
+      "evidence": "ui-exports/ 与各 D 审计",
+      "boundary": "以正文对应 D 用例的实际操作与完整导出为限"
+    },
+    {
+      "id": "N01",
+      "status": "PASS",
+      "scope": "两 Job 连续 NG 与 40 图核验",
+      "evidence": "native-product-pixel-audit.json",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "W01",
+      "status": "FAIL",
+      "scope": "五路真实 UI Subscribe 健康",
+      "evidence": "five-while-display-quota-audit.json",
+      "boundary": "显示Subscribe容量冲突；未逐次实测active admission占槽者",
+      "severity": "P1"
+    },
+    {
+      "id": "W02",
+      "status": "PASS",
+      "scope": "22 个五路保存样本图像正确",
+      "evidence": "native-product-pixel-audit.json",
+      "boundary": "22份保存样本正确不等于5条Subscribe流健康"
+    },
+    {
+      "id": "R01",
+      "status": "PASS",
+      "scope": "最终追踪进程消失与录屏封装",
+      "evidence": "final-process-check.json",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "L01",
+      "status": "NOT_RUN",
+      "scope": "实际系统 DPI 150%",
+      "evidence": "本轮仅 DPR1 预览缩放",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "L02",
+      "status": "NOT_RUN",
+      "scope": "Windows 与现场设备",
+      "evidence": "本轮 Debian 限定",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "L03",
+      "status": "NOT_RUN",
+      "scope": "全产品 SQLite P0 性能关闭",
+      "evidence": "范围外；性能 NOT_ASSESSED",
+      "boundary": "仅限正文明确方法与样本"
+    },
+    {
+      "id": "H01",
+      "status": "NOT_RUN",
+      "scope": "历史捕获根因关闭",
+      "evidence": "root_cause_status OPEN",
+      "boundary": "本轮没有验证历史根因关闭；仍OPEN"
+    }
+  ]
+}

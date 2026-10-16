@@ -1,0 +1,55 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "image-batch-while", "name": "Image Batch While", "revision": 1,
+    "createdAt": "2026-10-08T00:00:00Z", "updatedAt": "2026-10-08T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": ["main", "condition", "body"],
+  "workflows": {
+    "main": {
+      "name": "Main", "inputs": {}, "outputs": {"hasNext": "boolean"},
+      "nodes": [
+        {"nodeId": "input", "kind": "workflow_input"},
+        {"nodeId": "one", "kind": "operator", "operatorId": "vision.value.number", "params": {"value": 1}, "inputPorts": {}, "outputPorts": {"value": "number"}},
+        {"nodeId": "initial", "kind": "operator", "operatorId": "vision.compare.number", "params": {"operator": "eq", "rightValue": 1}, "inputPorts": {"left": "number", "right": "number"}, "outputPorts": {"result": "boolean"}},
+        {
+          "nodeId": "while", "kind": "loop",
+          "inputPorts": {"hasNext": "boolean"}, "outputPorts": {"hasNext": "boolean"},
+          "loop": {
+            "contractVersion": 2, "mode": "while", "conditionWorkflowId": "condition",
+            "bodyWorkflowId": "body", "maxIterations": 10000, "timeoutMs": 0
+          }
+        },
+        {"nodeId": "output", "kind": "workflow_output"}
+      ],
+      "edges": [
+        {"fromNode": "one", "fromPort": "value", "toNode": "initial", "toPort": "left"},
+        {"fromNode": "initial", "fromPort": "result", "toNode": "while", "toPort": "hasNext"},
+        {"fromNode": "while", "fromPort": "hasNext", "toNode": "output", "toPort": "hasNext"}
+      ],
+      "layout": {"nodePositions": {"input": {"x": 40, "y": 20}, "one": {"x": 40, "y": 180}, "initial": {"x": 300, "y": 180}, "while": {"x": 560, "y": 180}, "output": {"x": 820, "y": 180}}}
+    },
+    "condition": {
+      "name": "Continue While Images Remain", "inputs": {"hasNext": "boolean"}, "outputs": {"continue": "boolean"},
+      "nodes": [{"nodeId": "input", "kind": "workflow_input"}, {"nodeId": "output", "kind": "workflow_output"}],
+      "edges": [{"fromNode": "input", "fromPort": "hasNext", "toNode": "output", "toPort": "continue"}],
+      "layout": {"nodePositions": {"input": {"x": 40, "y": 120}, "output": {"x": 400, "y": 120}}}
+    },
+    "body": {
+      "name": "Load And Process One Image", "inputs": {"hasNext": "boolean"}, "outputs": {"hasNext": "boolean"},
+      "nodes": [
+        {"nodeId": "input", "kind": "workflow_input"},
+        {"nodeId": "load", "kind": "operator", "operatorId": "vision.io.image_batch_loader", "params": {"folderPath": "images", "colorMode": "color", "recursive": false}, "inputPorts": {"reset": "boolean"}, "outputPorts": {"image": "image", "frame": "bbox2d", "imagePath": "string", "index": "integer", "total": "integer", "hasNext": "boolean"}},
+        {"nodeId": "blur", "kind": "operator", "operatorId": "vision.preprocess.blur", "params": {"mode": "gaussian", "kernelSize": 3}, "inputPorts": {"image": "image", "frame": "bbox2d"}, "outputPorts": {"image": "image", "frame": "bbox2d"}},
+        {"nodeId": "output", "kind": "workflow_output"}
+      ],
+      "edges": [
+        {"fromNode": "load", "fromPort": "image", "toNode": "blur", "toPort": "image"},
+        {"fromNode": "load", "fromPort": "frame", "toNode": "blur", "toPort": "frame"},
+        {"fromNode": "load", "fromPort": "hasNext", "toNode": "output", "toPort": "hasNext"}
+      ],
+      "layout": {"nodePositions": {"input": {"x": 40, "y": 40}, "load": {"x": 40, "y": 200}, "blur": {"x": 380, "y": 200}, "output": {"x": 720, "y": 40}}}
+    }
+  }
+}

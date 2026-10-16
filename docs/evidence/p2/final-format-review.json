@@ -1,0 +1,16 @@
+[
+  {
+    "path": "examples/runtime_pages_p2.py",
+    "before_sha256": "b81161a5f4639750f8237d86071817c645a4267c4bfeace1a50e0bdfc3b9e00a",
+    "after_sha256": "d8e55065e8693cca5e9ad64cee4ed8d90d5981f6ccdd2e665f07795cf7b28b15",
+    "ast_identical": true,
+    "change": "remove trailing empty line only"
+  },
+  {
+    "path": "scripts/p2_resources.py",
+    "before_sha256": "54cf497d885eecb1611a6f0cde25f9b614b70fee23fc39961130ada4f356838e",
+    "after_sha256": "ce5be4aed926cbb758b2e0aa880ea4340714e85cd46d67f22ca73dc73fc5241f",
+    "ast_identical": true,
+    "change": "remove trailing empty line only"
+  }
+]

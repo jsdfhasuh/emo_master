@@ -1,0 +1,20 @@
+{
+  "operatorId": "vision.flow.select_value",
+  "displayName": "条件选值",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.value_select.operator:ValueSelectOperator",
+  "category": "数值与逻辑",
+  "iconKey": "switch",
+  "summary": "根据布尔条件输出 trueValue 或 falseValue；选中的输入缺失时报错，不回退到另一分支。只选择数据，不控制上游执行。",
+  "inputPorts": {
+    "condition": {"type": "boolean", "required": true, "nullable": false},
+    "trueValue": {"type": "any", "required": false, "nullable": false},
+    "falseValue": {"type": "any", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "value": {"type": "any", "required": true, "nullable": false}
+  },
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

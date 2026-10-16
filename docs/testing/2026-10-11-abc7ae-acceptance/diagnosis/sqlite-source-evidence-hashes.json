@@ -1,0 +1,11 @@
+{
+  "source/src/emo_master/apps/runtime/context/sqlite_transactions.py": "3f7d50b93199afbc5345c763bcdead0d92af9d5070d06c5706cbb8cb63ad9a48",
+  "source/src/emo_master/apps/runtime/context/sqlite_store.py": "b611ec67ea5481c6f3a48bfd1637556dcd1c40e726c22c36dff886f7893b9abe",
+  "source/src/emo_master/apps/runtime/context/global_variables.py": "614d862ceea1f85920acc834b27d6b6dc086f55481b57f659307061a243515d6",
+  "source/scripts/r3_sqlite_phases.py": "0cc40af9933b8303f99ec76ed4eb627dd32bc252b74963fbec4e621fda21214d",
+  "source/tests/test_r3_sqlite_phases.py": "747ad5ef2129e5bbf3e259d63ec54e6525eecb5eff2e27a7ffa2b003488325b6",
+  "evidence/automation/full/pytest.log": "654afe27bc415d5b2c60784f8205b099456bb5b586e4511c88d3e3432cb43f56",
+  "evidence/automation/full/junit.xml": "84d625f02ebbb4a3494ab316bd1695be9d0f334ee8c7d74d3ab8c7e4fdc43969",
+  "evidence/targeted/phase-observation/report.json": "c06369c339edca6f61a8c8a6026187f51b2d9b9897c263a7d47daadc1e8d9fc8",
+  "evidence/targeted/original-full-failure-db-readonly.json": "39d5e1653f98ecaa0123871af52e491fc6a51d7dbe4ed706a7ea71112511c09c"
+}

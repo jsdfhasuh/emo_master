@@ -1,0 +1,12 @@
+{
+  "exitCode": 1,
+  "seconds": 19.438000000081956,
+  "watchdogSeconds": 180,
+  "scale": "1",
+  "mode": "native-windows",
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-c",
+    "import emo_master\nfrom PySide2.QtCore import Qt\nfrom PySide2.QtWidgets import QApplication\nQApplication.setAttribute(Qt.AA_EnableHighDpiScaling)\nQApplication.setAttribute(Qt.AA_UseHighDpiPixmaps)\napp = QApplication([])\nfrom emo_master.apps.designer.ui.theme import configureTheme\nconfigureTheme(app)\nimport pytest\nraise SystemExit(pytest.main(['-q', 'tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath']))\n"
+  ]
+}

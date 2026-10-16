@@ -1,0 +1,85 @@
+..FFF.....FF....F.F........FFF                                           [100%]
+================================== FAILURES ===================================
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[1] ____________
+tests\runtime\test_image_batch_while.py:68: in testRealWhileProcessesEveryImageAndResetsForNewRun
+    result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+src\emo_master\apps\runtime\workflow\runner.py:106: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:192: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:407: in _runNode
+    raise WorkflowExecutionError(
+E   emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+____________ testRealWhileProcessesEveryImageAndResetsForNewRun[3] ____________
+tests\runtime\test_image_batch_while.py:68: in testRealWhileProcessesEveryImageAndResetsForNewRun
+    result = runner.run("main", {}, RunContext.root(job, "main"), CancellationToken())
+src\emo_master\apps\runtime\workflow\runner.py:106: in run
+    result = self._runWorkflow(
+src\emo_master\apps\runtime\workflow\runner.py:192: in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+src\emo_master\apps\runtime\workflow\runner.py:407: in _runNode
+    raise WorkflowExecutionError(
+E   emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: Huaray IMV runtime was not found; install MV Viewer or set HUARAY_MV_VIEWER_ROOT
+___________ testDirectoryResolvedRelativeToProjectAndDraftUnchanged ___________
+tests\runtime\test_image_batch_while.py:78: in testDirectoryResolvedRelativeToProjectAndDraftUnchanged
+    assert document.workflows["body"].nodes[1].params["folderPath"] == "images"
+E   KeyError: 'folderPath'
+_________ testCleanupFailureIsReportedWithoutReplacingPrimaryFailure __________
+tests\runtime\test_production_continuous.py:78: in testCleanupFailureIsReportedWithoutReplacingPrimaryFailure
+    runner = WorkflowRunner(SimpleNamespace(), {}, retainOperators=True)
+src\emo_master\apps\runtime\workflow\runner.py:71: in __init__
+    key: value.initialValue for key, value in definitions(compiledProject.globalVariables).items()
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'globalVariables'
+_______ testDisposalFailureDuringStopIsFailureNotSuccessfulCancellation _______
+tests\runtime\test_production_continuous.py:91: in testDisposalFailureDuringStopIsFailureNotSuccessfulCancellation
+    runner = WorkflowRunner(SimpleNamespace(), {}, retainOperators=True)
+src\emo_master\apps\runtime\workflow\runner.py:71: in __init__
+    key: value.initialValue for key, value in definitions(compiledProject.globalVariables).items()
+E   AttributeError: 'types.SimpleNamespace' object has no attribute 'globalVariables'
+________________________ testSqliteStoreCreatesTables _________________________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\runtime\test_sqlite_store.py:26: in testSqliteStoreCreatesTables
+    assert expected.issubset(tableNames)
+E   AssertionError: assert False
+E    +  where False = <built-in method issubset of set object at 0x000002090CE90E40>({'deviceBindings', 'globalCountersLegacy', 'jobEvents', 'jobs', 'pluginDiagnostics', 'projectReleases', ...})
+E    +    where <built-in method issubset of set object at 0x000002090CE90E40> = {'deviceBindings', 'globalCounters', 'jobEvents', 'jobs', 'pluginDiagnostics', 'projectReleases', ...}.issubset
+______________________ testMainWindowBuildsMenuBarGroups ______________________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py:44: in testMainWindowBuildsMenuBarGroups
+    assert "ȫ�ּ�������" in window._menuActions
+E   assert '\u5168\u5c40\u8ba1\u6570\u5668\u2026' in {'\u6253\u5f00\u9879\u76ee': <PySide2.QtWidgets.QAction(0x2093606bd60 text="\ufffd\ufffd\ufffd\ufffd\u013f" toolTip="\ufffd\ufffd\ufffd\ufffd\u013f" shortcut=QKeySequence("Ctrl+O") menuRol...\ufffd\ufffd\ufffd\ufffd\ufffd\u013f\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd" shortcut=QKeySequence("F5") menuRole=TextHeuristicRole visible=true) at 0x0000020935D4A400>, ...}
+E    +  where {'\u6253\u5f00\u9879\u76ee': <PySide2.QtWidgets.QAction(0x2093606bd60 text="\ufffd\ufffd\ufffd\ufffd\u013f" toolTip="\ufffd\ufffd\ufffd\ufffd\u013f" shortcut=QKeySequence("Ctrl+O") menuRol...\ufffd\ufffd\ufffd\ufffd\ufffd\u013f\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd\ufffd" shortcut=QKeySequence("F5") menuRole=TextHeuristicRole visible=true) at 0x0000020935D4A400>, ...} = <emo_master.apps.designer.ui.main_window.MainWindow(0x20933fd5a30) at 0x0000020935BB4140>._menuActions
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+tests\designer\test_minimal_project_metadata.py:94: in testEditorUsesLateCatalogWithoutMutatingSavedGraph
+    assert node.paramSchema == {}
+E   AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E     Left contains 3 more items:
+E     {'properties': {'colorMode': {'default': 'color',
+E                                   'enum': ['color', 'grayscale'],
+E                                   'title': '��ɫģʽ',
+E                                   'type': 'string'},
+E                     'folderPath': {'default': '',...
+E
+E     ...Full output truncated (10 lines hidden), use '-vv' to show
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+tests\designer\test_minimal_project_metadata.py:125: in testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+    hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E   KeyError: 'folderPath'
+_____________ testPackageGuiGateRequiresNineCustomRenderedSamples _____________
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_package_gui_icons.py:9: in testPackageGuiGateRequiresNineCustomRenderedSamples
+    assert result["status"] == "ok"
+E   AssertionError: assert 'error' == 'ok'
+E
+E     - ok
+E     + error
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[1]
+FAILED tests/runtime/test_image_batch_while.py::testRealWhileProcessesEveryImageAndResetsForNewRun[3]
+FAILED tests/runtime/test_image_batch_while.py::testDirectoryResolvedRelativeToProjectAndDraftUnchanged
+FAILED tests/runtime/test_production_continuous.py::testCleanupFailureIsReportedWithoutReplacingPrimaryFailure
+FAILED tests/runtime/test_production_continuous.py::testDisposalFailureDuringStopIsFailureNotSuccessfulCancellation
+FAILED tests/runtime/test_sqlite_store.py::testSqliteStoreCreatesTables - Ass...
+FAILED tests/designer/test_main_window_menubar.py::testMainWindowBuildsMenuBarGroups
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+FAILED tests/designer/test_package_gui_icons.py::testPackageGuiGateRequiresNineCustomRenderedSamples
+10 failed, 20 passed in 16.56s

@@ -1,0 +1,37 @@
+......F..                                                                [100%]
+================================== FAILURES ===================================
+____ testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-882/testDifferentRealJobsRetainSam0')
+
+    def testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion(tmp_path):
+        with running(tmp_path) as (runtime, client, project, session):
+            first = client.startJob(project, inspectionSessionId=session)
+            assert first.ok and first.project_revision == runtime.loadedDocument.project.revision
+            assert waitForTerminal(runtime, first.job_id).status == 'COMPLETED'
+>           listing = listed(client, project, session, first.job_id)
+
+tests\runtime\test_run_inspection_rpc.py:60: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+client = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000153C0616590>
+project = 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-882\\testDifferentRealJobsRetainSam0\\本地 图片'
+session = '56774d62-5400-4be6-860c-2cf789ccf7f2'
+job = '4d4a2336-8a4f-4df2-b5c3-bdae4c70e477', node = 'load'
+
+    def listed(client, project, session, job, node='load'):
+        deadline = time.monotonic() + 5
+        while True:
+            listing = client.listNodePreviewSourcesWithMetadata(project, 'main', node, jobId=job, inspectionSessionId=session)
+            if listing.captureState != 'PREPARING':
+                return listing
+>           assert time.monotonic() < deadline, listing
+E           AssertionError: PreviewSourceListing(sources=(), jobId='4d4a2336-8a4f-4df2-b5c3-bdae4c70e477', legacySnapshotPolicy='ALL', captureState='PREPARING', message='节点图片接管尚未封闭；任务终态不等于资产已经就绪')
+E           assert 1319209.093 < 1319209.078
+E            +  where 1319209.093 = <built-in function monotonic>()
+E            +    where <built-in function monotonic> = time.monotonic
+
+tests\runtime\test_run_inspection_rpc.py:51: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_run_inspection_rpc.py::testDifferentRealJobsRetainSameInvocationImageAndCountAcrossPromotion
+1 failed, 8 passed in 9.40s

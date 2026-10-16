@@ -1,0 +1,132 @@
+[
+  {
+    "path": "README.txt",
+    "size_bytes": 650,
+    "sha256": "4e22a0d4fce76364c46c65fcf578f6dc81961515f06d89027a332d514279d6b2"
+  },
+  {
+    "path": "SHA256SUMS.txt",
+    "size_bytes": 1692,
+    "sha256": "e4ee3be16bf49760018e25e6dc42e716c1c0396d5635687a47937b1e6d49e07c"
+  },
+  {
+    "path": "archives.json",
+    "size_bytes": 2882,
+    "sha256": "545dc08ca9087708c19b4dfa9296d7751e0e470ff3de59e277c23acb331cf64c"
+  },
+  {
+    "path": "excluded-files.json",
+    "size_bytes": 18396,
+    "sha256": "00e36c87c10dec02e541da2c7e8a53b16acd9ed4ed92737f710bcab0316b68e2"
+  },
+  {
+    "path": "included-files.json",
+    "size_bytes": 6934384,
+    "sha256": "7e5d4a121a59632bf945c2493d6c879633c5ef39a35af0ff78d7bf031fb0bc45"
+  },
+  {
+    "path": "privacy-audit.json",
+    "size_bytes": 5527,
+    "sha256": "587f62de5521f6df05bcf2b1e657ec2ec1d6a158c181b4ffd8e07bdde6d8c205"
+  },
+  {
+    "path": "privacy-audit.txt",
+    "size_bytes": 1123,
+    "sha256": "b1701ec0c171b426db414be758b019bcd1f2b7c28b924321a4fd17825310b0f9"
+  },
+  {
+    "path": "public-evidence-part-01.zip",
+    "size_bytes": 4999473,
+    "sha256": "8050d6638e59d5f6d61441f5f21a33c021d24a3f92f2adafb93d6f384c3447e3"
+  },
+  {
+    "path": "public-evidence-part-02.zip",
+    "size_bytes": 4997752,
+    "sha256": "87fc3b05f1324c5c7bd565bc6f49d73caa6ae86c12c6ff3ec40af65c75b4f112"
+  },
+  {
+    "path": "public-evidence-part-03.zip",
+    "size_bytes": 4996971,
+    "sha256": "49cfe95c1dc297dab5bc650d4c41ffc304cd127f0041d708f3cbe10669300cd0"
+  },
+  {
+    "path": "public-evidence-part-04.zip",
+    "size_bytes": 4999967,
+    "sha256": "a4b29a34b8a0bbf9fdd56820752a145899566b917f11ba56b91e1286ad532e83"
+  },
+  {
+    "path": "public-evidence-part-05.zip",
+    "size_bytes": 4999913,
+    "sha256": "70151da128081c764a395db30d3bac15016121723f91d511353afd315b43fc12"
+  },
+  {
+    "path": "public-evidence-part-06.zip",
+    "size_bytes": 4999717,
+    "sha256": "6ab0fe4a3a4d9416a0895dc33e7e051bb0d7b2a3fb26cb7e9052ea1ce4f600e1"
+  },
+  {
+    "path": "public-evidence-part-07.zip",
+    "size_bytes": 4929779,
+    "sha256": "b7b549d5dc3a961238d1a5544250b3cfc23812a130d2d590853c1a41593338ac"
+  },
+  {
+    "path": "public-evidence-part-08.zip",
+    "size_bytes": 4999848,
+    "sha256": "54c74a128e6ef70fff2835b8c0d496db9b19fdfba7d162e594b2dc53c2286e7c"
+  },
+  {
+    "path": "public-evidence-part-09.zip",
+    "size_bytes": 4995813,
+    "sha256": "f685d6efc55aa53960eac70db7e71b71f9aa0b7eb184de610ddf1a9e2bda8c26"
+  },
+  {
+    "path": "public-evidence-part-10.zip",
+    "size_bytes": 4976897,
+    "sha256": "2b2631393af755eec079a7bc24686d6834b9a3f3b3d5391bb7c024f74f30ef48"
+  },
+  {
+    "path": "public-evidence-part-11.zip",
+    "size_bytes": 4993504,
+    "sha256": "c61f19c2b47ad399f56e4243ea6599ef3b3a27fd0332e6e56fdacdad407c224a"
+  },
+  {
+    "path": "public-evidence-part-12.zip",
+    "size_bytes": 4994215,
+    "sha256": "d04f6404a0b3df31736adc351db14f99b2d9d2dde901e7f1caad8779f85cde12"
+  },
+  {
+    "path": "public-evidence-part-13.zip",
+    "size_bytes": 4998176,
+    "sha256": "43e247e918d5ebc70d9c9450eeda54eb7cf946906a2bc466d3443e4f8a04efa0"
+  },
+  {
+    "path": "public-evidence-part-14.zip",
+    "size_bytes": 4839515,
+    "sha256": "4e32977cc4efe5c630e1a82f8e51464bbf08ab7278f024b6f14e90f7238dc751"
+  },
+  {
+    "path": "public-evidence-part-15.zip",
+    "size_bytes": 4953745,
+    "sha256": "f212021a4579faa603bc9027467d10d8f1cb8ae45868eddbcd012174067c267e"
+  },
+  {
+    "path": "public-evidence-part-16.zip",
+    "size_bytes": 4937900,
+    "sha256": "dec0a56fe89a66aaa96cc3fe16d83f63ec315f7cdc477b1dff3a14ebaff2494a"
+  },
+  {
+    "path": "public-evidence-part-17.zip",
+    "size_bytes": 4964351,
+    "sha256": "27c5e13dc22a0e135f86d165071e145d2664c73f09dc2e84f1abb2d09debe2e2"
+  },
+  {
+    "path": "public-evidence-part-18.zip",
+    "size_bytes": 760348,
+    "sha256": "fcfb40af7b3ca35ddc0dd75428f010d01b993b3f30c8136cce9600a942db5a69"
+  },
+  {
+    "path": "publication-summary.json",
+    "size_bytes": 1040,
+    "sha256": "b710f4e760a0cc77235376221bf9ce1a83d231d903a65939aaccc4bc9222fb56"
+  }
+]

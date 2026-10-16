@@ -1,0 +1,126 @@
+{
+  "base_sha": "36b46175caab896d337bdb21644935832ee875d1",
+  "scope": "P0 client total budget and R3 observer repair; no src product changes",
+  "source_sha256": {
+    ".github/workflows/runtime-credit-diagnostics.yml": "cbe8b60462500c36656bf56f075aa2a1150c38d9a66c0bde6d7128d4236b6d84",
+    "prototypes/runtime_pages_p0/continuous.py": "2bb0226f2bda3a8216992fa809f213610381fe0d3c8d8391ed8ee6bc2bb96adb",
+    "prototypes/runtime_pages_p0/contracts.py": "a847633a151ed681e0bee6c8e29c0140a2368bf463e5d2b76f7778e152f433cd",
+    "scripts/p0_validate.py": "419c95b88c58503c1e9f1f0d5fce3eb33a0547add9fbc0cd279e436180753d95",
+    "scripts/r3_export_credit_report.py": "8e0af3a5a22a95ce14fa07198f2130ef1c8b61d53c802303d88a53399faa549c",
+    "scripts/r3_measure.py": "75893b7baccc70925b775dd371b0bcc805f14c70e480b95a6f2140e214612b13",
+    "scripts/r3_policy_measure.py": "00f469617e077adb00d1cae0f8d6fbd071e2d9b011d8ffc46a99e1e9ada2cc89",
+    "tests/runtime/presentation/test_r3_measure.py": "f9dee8400aeb917b9a210a4907ef12eac22e75d85287ddbff63e7bd420479b28",
+    "tests/runtime/presentation/test_r3_policy_measure.py": "99b99a0c89c6bbf04d8b838e12da2f9ac3f0ebee4d1afb98153d4994c5874a0d",
+    "tests/test_r3_export_credit_report.py": "6c64bb66d6b7406f0c0fb2513967b51dd74302e59677773b1869f6a95507a7d9",
+    "tests/p0/test_client_deadline.py": "ef71042dbf113de17de56a017882493a587b86d6a69fc8a65112c2b2d4752157"
+  },
+  "validation": {
+    "proto_exit": 0,
+    "ruff_src_tests_and_changed_scripts_exit": 0,
+    "mypy_exit": 0,
+    "mypy_files": 403,
+    "focused_final": {
+      "passed": 101,
+      "skipped": 1,
+      "subtests_passed": 12,
+      "seconds": 14.45,
+      "exit": 0
+    },
+    "adjacent_regression": {
+      "passed": 591,
+      "skipped": 1,
+      "subtests_passed": 26,
+      "seconds": 346.53,
+      "exit": 0,
+      "note": "Only two additional fault-injection parameter cases added afterwards; final focused run covers them."
+    },
+    "full_pytest": "NOT_RUN_THIS_TURN",
+    "strict_p0_performance": "NOT_RUN_THIS_TURN; shared host had unrelated pytest; original FAIL retained",
+    "skip_details": [
+      {
+        "suite": "focused-final",
+        "test": "test_path_traversal_and_symlink_escape_rejected",
+        "reason": "symlink creation is unavailable"
+      },
+      {
+        "suite": "regression",
+        "test": "test_path_traversal_and_symlink_escape_rejected",
+        "reason": "symlink creation is unavailable"
+      }
+    ]
+  },
+  "local_diagnostics": {
+    "original_wrapper": {
+      "job_status": [
+        "FAILED",
+        "FAILED",
+        "FAILED"
+      ],
+      "executed": [
+        0,
+        0,
+        0
+      ],
+      "category": "OBSERVER_RUN_NODE_SIGNATURE_MISMATCH"
+    },
+    "fixed_reduced": {
+      "total_per_arm": 4,
+      "warmup_per_arm": 1,
+      "measured_executed": [
+        3,
+        3,
+        3
+      ],
+      "job_status": [
+        "COMPLETED",
+        "COMPLETED",
+        "COMPLETED"
+      ],
+      "exit": 0
+    },
+    "fixed_abba": {
+      "qt_platform": "offscreen",
+      "total_inputs_per_arm": 96,
+      "warmup_per_arm": 8,
+      "measured_executed": [
+        88,
+        88,
+        88,
+        88
+      ],
+      "decoded_measured": [
+        [
+          88,
+          88
+        ],
+        [
+          88,
+          88
+        ],
+        [
+          87,
+          87
+        ],
+        [
+          88,
+          88
+        ]
+      ],
+      "missing_ordinal": 75,
+      "reason": "BUDGET_EXCEEDED",
+      "measurement_status": "INVALID",
+      "performance_status": "NOT_ASSESSED",
+      "exit": 1,
+      "source_stable": true
+    },
+    "path_cleanup_first_failure": "Retained; Windows path too long after first successful reduced arm. Shorter output path used, no product/test changes or relaxed checks."
+  },
+  "budget_change": {
+    "approval": "User 2026-10-12 explicit 550ms request",
+    "client_result_ms": 550,
+    "asset_rpc_read_export_seal_ms": 500,
+    "performance_gates": "unchanged",
+    "old_failure": "remains FAIL under 500ms"
+  },
+  "delivery": "normal push intended; no merge/release/deploy"
+}

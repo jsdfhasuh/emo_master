@@ -1,0 +1,26 @@
+from pathlib import Path
+import json
+import os
+import subprocess
+import sys
+import time
+
+backup = Path(__file__).parent
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+candidate = backup / 'clean-candidate'
+output = root / 'docs/testing/node-context-menu-2026-10-06/clean-run'
+output.mkdir(exist_ok=False)
+command = [sys.executable, '-m', 'pytest', '-q', 'tests/designer/test_node_context_menu.py',
+           'tests/designer/test_flow_scene_interactions.py', 'tests/designer/test_main_window_project_save_load.py']
+env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONPATH': str(candidate / 'src'),
+       'QT_QPA_PLATFORM': 'offscreen', 'HUARAY_CAMERA_SMOKE': '0',
+       'PYTEST_ADDOPTS': '--ignore=manual_test_workspace'}
+begin = time.monotonic()
+with (output / 'raw.log').open('wb') as log:
+    result = subprocess.run(command, cwd=candidate, env=env, stdout=log, stderr=subprocess.STDOUT)
+record = {'command': command, 'cwd': str(candidate), 'exitCode': result.returncode,
+          'seconds': time.monotonic() - begin, 'identity': '../clean-candidate.json'}
+(output / 'result.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+print(json.dumps(record))
+print((output / 'raw.log').read_text(encoding='utf-8')[-8500:])
+raise SystemExit(result.returncode)

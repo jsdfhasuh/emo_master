@@ -1,0 +1,2488 @@
+{
+  "base_sha": "29209392b37bd0b95df511f0c2ca89c9b03f058a",
+  "recorded_at": "2026-10-12T13:46:47.211852+00:00",
+  "environment": "Windows / Python 3.10 conda emo_master; pytest offscreen; ABBA native windows Qt",
+  "baseline_ci": {
+    "run": 38244847162,
+    "status": "INVALID",
+    "artifact_json_sha256": "3f96beb3a912b91906e4bc7f824d1f43b1874727f659b7aa79a21366ee93ee8a"
+  },
+  "tests": [
+    {
+      "name": "deterministic baseline",
+      "failed": 1,
+      "passed": 0,
+      "file": "tests/before.log"
+    },
+    {
+      "name": "initial focused",
+      "passed": 122,
+      "failed": 1,
+      "skipped": 1,
+      "subtests_passed": 12,
+      "file": "tests/focused.log"
+    },
+    {
+      "name": "first broad attempt",
+      "status": "ABORTED_TEST_HARNESS_HANG",
+      "file": "tests/regression-aborted.json"
+    },
+    {
+      "name": "fault and capture",
+      "passed": 38,
+      "failed": 0,
+      "file": "tests/faults.log"
+    },
+    {
+      "name": "final presentation/report/guard regression",
+      "passed": 821,
+      "failed": 0,
+      "skipped": 1,
+      "subtests_passed": 26,
+      "seconds": 378.49,
+      "file": "tests/regression-final.log"
+    }
+  ],
+  "test_count_scope": "Overlapping groups; do not sum. Full local pytest NOT_RUN.",
+  "static": {
+    "ruff": "PASS",
+    "mypy": "PASS (411 source files)",
+    "proto_drift": "PASS"
+  },
+  "abba": {
+    "head": "29209392b37bd0b95df511f0c2ca89c9b03f058a",
+    "configuration": {
+      "count": 96,
+      "warmup": 8,
+      "observer_order": [
+        "off",
+        "on",
+        "on",
+        "off"
+      ],
+      "qt_platform": "windows"
+    },
+    "measurement_status": "INVALID",
+    "performance_status": "NOT_ASSESSED",
+    "source_stable": true,
+    "source_digest": "50b5761b2abd81bdf685c8a82274203c8ef27bf41ae7fe8dcaddf5828dc10187",
+    "arms": [
+      {
+        "index": 0,
+        "observer": "off",
+        "job_status": "COMPLETED",
+        "export": {
+          "completed": 96,
+          "timed_out": 0,
+          "reaped": 0,
+          "failed": 0
+        },
+        "trial_sha256": "ca3b662b79dba64c8bfce439a8c09cd41b900e31e6c31780f4d4778299d12a3c",
+        "qt_platform": "windows",
+        "pace": [
+          {
+            "due": 297082.3863138,
+            "actual": 297082.3972583,
+            "index": 1
+          },
+          {
+            "due": 297082.5863138,
+            "actual": 297082.6010753,
+            "index": 2
+          },
+          {
+            "due": 297082.7863138,
+            "actual": 297082.787163,
+            "index": 3
+          },
+          {
+            "due": 297082.9863138,
+            "actual": 297082.9904132,
+            "index": 4
+          },
+          {
+            "due": 297083.1863138,
+            "actual": 297083.193943,
+            "index": 5
+          },
+          {
+            "due": 297083.3863138,
+            "actual": 297083.3969014,
+            "index": 6
+          },
+          {
+            "due": 297083.5863138,
+            "actual": 297083.5979717,
+            "index": 7
+          },
+          {
+            "due": 297083.7863138,
+            "actual": 297083.8003389,
+            "index": 8
+          },
+          {
+            "due": 297083.9863138,
+            "actual": 297083.9870754,
+            "index": 9
+          },
+          {
+            "due": 297084.1863138,
+            "actual": 297084.1889536,
+            "index": 10
+          },
+          {
+            "due": 297084.3863138,
+            "actual": 297084.3921166,
+            "index": 11
+          },
+          {
+            "due": 297084.5863138,
+            "actual": 297084.5942974,
+            "index": 12
+          },
+          {
+            "due": 297084.7863138,
+            "actual": 297084.7966959,
+            "index": 13
+          },
+          {
+            "due": 297084.9863138,
+            "actual": 297084.9986268,
+            "index": 14
+          },
+          {
+            "due": 297085.1863138,
+            "actual": 297085.1990552,
+            "index": 15
+          },
+          {
+            "due": 297085.3863138,
+            "actual": 297085.4014711,
+            "index": 16
+          },
+          {
+            "due": 297085.5863138,
+            "actual": 297085.5874497,
+            "index": 17
+          },
+          {
+            "due": 297085.7863138,
+            "actual": 297085.7900575,
+            "index": 18
+          },
+          {
+            "due": 297085.9863138,
+            "actual": 297085.9921817,
+            "index": 19
+          },
+          {
+            "due": 297086.1863138,
+            "actual": 297086.1948636,
+            "index": 20
+          },
+          {
+            "due": 297086.3863138,
+            "actual": 297086.3964745,
+            "index": 21
+          },
+          {
+            "due": 297086.5863138,
+            "actual": 297086.5970334,
+            "index": 22
+          },
+          {
+            "due": 297086.7863138,
+            "actual": 297086.8000686,
+            "index": 23
+          },
+          {
+            "due": 297086.9863138,
+            "actual": 297086.9884785,
+            "index": 24
+          },
+          {
+            "due": 297087.1863138,
+            "actual": 297087.1891428,
+            "index": 25
+          },
+          {
+            "due": 297087.3863138,
+            "actual": 297087.3908358,
+            "index": 26
+          },
+          {
+            "due": 297087.5863138,
+            "actual": 297087.5920907,
+            "index": 27
+          },
+          {
+            "due": 297087.7863138,
+            "actual": 297087.7932454,
+            "index": 28
+          },
+          {
+            "due": 297087.9863138,
+            "actual": 297087.9955705,
+            "index": 29
+          },
+          {
+            "due": 297088.1863138,
+            "actual": 297088.1972758,
+            "index": 30
+          },
+          {
+            "due": 297088.3863138,
+            "actual": 297088.3982747,
+            "index": 31
+          },
+          {
+            "due": 297088.5863138,
+            "actual": 297088.5983007,
+            "index": 32
+          },
+          {
+            "due": 297088.7863138,
+            "actual": 297088.7991836,
+            "index": 33
+          },
+          {
+            "due": 297088.9863138,
+            "actual": 297089.0006926,
+            "index": 34
+          },
+          {
+            "due": 297089.1863138,
+            "actual": 297089.1877138,
+            "index": 35
+          },
+          {
+            "due": 297089.3863138,
+            "actual": 297089.3897496,
+            "index": 36
+          },
+          {
+            "due": 297089.5863138,
+            "actual": 297089.5898799,
+            "index": 37
+          },
+          {
+            "due": 297089.7863138,
+            "actual": 297089.7921804,
+            "index": 38
+          },
+          {
+            "due": 297089.9863138,
+            "actual": 297089.9962375,
+            "index": 39
+          },
+          {
+            "due": 297090.1863138,
+            "actual": 297090.19691,
+            "index": 40
+          },
+          {
+            "due": 297090.3863138,
+            "actual": 297090.3988351,
+            "index": 41
+          },
+          {
+            "due": 297090.5863138,
+            "actual": 297090.6007236,
+            "index": 42
+          },
+          {
+            "due": 297090.7863138,
+            "actual": 297090.7884648,
+            "index": 43
+          },
+          {
+            "due": 297090.9863138,
+            "actual": 297090.9886787,
+            "index": 44
+          },
+          {
+            "due": 297091.1863138,
+            "actual": 297091.1900946,
+            "index": 45
+          },
+          {
+            "due": 297091.3863138,
+            "actual": 297091.3910994,
+            "index": 46
+          },
+          {
+            "due": 297091.5863138,
+            "actual": 297091.594106,
+            "index": 47
+          },
+          {
+            "due": 297091.7863138,
+            "actual": 297091.7970662,
+            "index": 48
+          },
+          {
+            "due": 297091.9863138,
+            "actual": 297092.0005121,
+            "index": 49
+          },
+          {
+            "due": 297092.1863138,
+            "actual": 297092.1871274,
+            "index": 50
+          },
+          {
+            "due": 297092.3863138,
+            "actual": 297092.392002,
+            "index": 51
+          },
+          {
+            "due": 297092.5863138,
+            "actual": 297092.5948962,
+            "index": 52
+          },
+          {
+            "due": 297092.7863138,
+            "actual": 297092.7982943,
+            "index": 53
+          },
+          {
+            "due": 297092.9863138,
+            "actual": 297093.0006277,
+            "index": 54
+          },
+          {
+            "due": 297093.1863138,
+            "actual": 297093.1881235,
+            "index": 55
+          },
+          {
+            "due": 297093.3863138,
+            "actual": 297093.3909081,
+            "index": 56
+          },
+          {
+            "due": 297093.5863138,
+            "actual": 297093.5944255,
+            "index": 57
+          },
+          {
+            "due": 297093.7863138,
+            "actual": 297093.7967923,
+            "index": 58
+          },
+          {
+            "due": 297093.9863138,
+            "actual": 297094.0007107,
+            "index": 59
+          },
+          {
+            "due": 297094.1863138,
+            "actual": 297094.1867358,
+            "index": 60
+          },
+          {
+            "due": 297094.3863138,
+            "actual": 297094.3916345,
+            "index": 61
+          },
+          {
+            "due": 297094.5863138,
+            "actual": 297094.5928111,
+            "index": 62
+          },
+          {
+            "due": 297094.7863138,
+            "actual": 297094.794165,
+            "index": 63
+          },
+          {
+            "due": 297094.9863138,
+            "actual": 297094.9975223,
+            "index": 64
+          },
+          {
+            "due": 297095.1863138,
+            "actual": 297095.200838,
+            "index": 65
+          },
+          {
+            "due": 297095.3863138,
+            "actual": 297095.4015513,
+            "index": 66
+          },
+          {
+            "due": 297095.5863138,
+            "actual": 297095.5889101,
+            "index": 67
+          },
+          {
+            "due": 297095.7863138,
+            "actual": 297095.7910062,
+            "index": 68
+          },
+          {
+            "due": 297095.9863138,
+            "actual": 297095.9924182,
+            "index": 69
+          },
+          {
+            "due": 297096.1863138,
+            "actual": 297096.1941263,
+            "index": 70
+          },
+          {
+            "due": 297096.3863138,
+            "actual": 297096.3968337,
+            "index": 71
+          },
+          {
+            "due": 297096.5863138,
+            "actual": 297096.5973115,
+            "index": 72
+          },
+          {
+            "due": 297096.7863138,
+            "actual": 297096.8013114,
+            "index": 73
+          },
+          {
+            "due": 297096.9863138,
+            "actual": 297096.9880262,
+            "index": 74
+          },
+          {
+            "due": 297097.1863138,
+            "actual": 297097.1903524,
+            "index": 75
+          },
+          {
+            "due": 297097.3863138,
+            "actual": 297097.3944412,
+            "index": 76
+          },
+          {
+            "due": 297097.5863138,
+            "actual": 297097.5962673,
+            "index": 77
+          },
+          {
+            "due": 297097.7863138,
+            "actual": 297097.7990646,
+            "index": 78
+          },
+          {
+            "due": 297097.9863138,
+            "actual": 297098.0002524,
+            "index": 79
+          },
+          {
+            "due": 297098.1863138,
+            "actual": 297098.1882586,
+            "index": 80
+          },
+          {
+            "due": 297098.3863138,
+            "actual": 297098.3907066,
+            "index": 81
+          },
+          {
+            "due": 297098.5863138,
+            "actual": 297098.5929286,
+            "index": 82
+          },
+          {
+            "due": 297098.7863138,
+            "actual": 297098.7961014,
+            "index": 83
+          },
+          {
+            "due": 297098.9863138,
+            "actual": 297098.9989014,
+            "index": 84
+          },
+          {
+            "due": 297099.1863138,
+            "actual": 297099.2020318,
+            "index": 85
+          },
+          {
+            "due": 297099.3863138,
+            "actual": 297099.3904614,
+            "index": 86
+          },
+          {
+            "due": 297099.5863138,
+            "actual": 297099.5925743,
+            "index": 87
+          },
+          {
+            "due": 297099.7863138,
+            "actual": 297099.7957165,
+            "index": 88
+          },
+          {
+            "due": 297099.9863138,
+            "actual": 297099.9982202,
+            "index": 89
+          },
+          {
+            "due": 297100.1863138,
+            "actual": 297100.201578,
+            "index": 90
+          },
+          {
+            "due": 297100.3863138,
+            "actual": 297100.3881668,
+            "index": 91
+          },
+          {
+            "due": 297100.5863138,
+            "actual": 297100.5907747,
+            "index": 92
+          },
+          {
+            "due": 297100.7863138,
+            "actual": 297100.7938224,
+            "index": 93
+          },
+          {
+            "due": 297100.9863138,
+            "actual": 297100.9962313,
+            "index": 94
+          },
+          {
+            "due": 297101.1863138,
+            "actual": 297101.1970826,
+            "index": 95
+          },
+          {
+            "due": 297101.3863138,
+            "actual": 297101.3996473,
+            "index": 96
+          }
+        ],
+        "cleanup_errors": [],
+        "export_errors": [],
+        "supervisor_errors": [],
+        "available": 96,
+        "unobserved": [],
+        "unavailable": [],
+        "consumers": [
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          },
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          },
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          }
+        ],
+        "reservation_peak": {
+          "total_reserved": 201326592,
+          "shared_capacity": 16777216,
+          "export_reserved": 100663296,
+          "limit": 268435456
+        },
+        "process_peak_rss": {
+          "owner": 264560640,
+          "job": 121503744,
+          "exporter-0": 104640512,
+          "exporter-1": 78925824
+        },
+        "owner_retirement_verified": true
+      },
+      {
+        "index": 1,
+        "observer": "on",
+        "job_status": "COMPLETED",
+        "export": {
+          "completed": 96,
+          "timed_out": 0,
+          "reaped": 0,
+          "failed": 0
+        },
+        "trial_sha256": "6c4ff2b16e85e3c95760c37c0351a710858975fb5833f1344e0cd336dcd8f2a7",
+        "qt_platform": "windows",
+        "pace": [
+          {
+            "due": 297107.2138187,
+            "actual": 297107.2242735,
+            "index": 1
+          },
+          {
+            "due": 297107.4138187,
+            "actual": 297107.4263012,
+            "index": 2
+          },
+          {
+            "due": 297107.6138187,
+            "actual": 297107.6140881,
+            "index": 3
+          },
+          {
+            "due": 297107.8138187,
+            "actual": 297107.814895,
+            "index": 4
+          },
+          {
+            "due": 297108.0138187,
+            "actual": 297108.0160202,
+            "index": 5
+          },
+          {
+            "due": 297108.2138187,
+            "actual": 297108.2178746,
+            "index": 6
+          },
+          {
+            "due": 297108.4138187,
+            "actual": 297108.4196529,
+            "index": 7
+          },
+          {
+            "due": 297108.6138187,
+            "actual": 297108.6211211,
+            "index": 8
+          },
+          {
+            "due": 297108.8138187,
+            "actual": 297108.8252119,
+            "index": 9
+          },
+          {
+            "due": 297109.0138187,
+            "actual": 297109.0276825,
+            "index": 10
+          },
+          {
+            "due": 297109.2138187,
+            "actual": 297109.2288388,
+            "index": 11
+          },
+          {
+            "due": 297109.4138187,
+            "actual": 297109.4153954,
+            "index": 12
+          },
+          {
+            "due": 297109.6138187,
+            "actual": 297109.6167292,
+            "index": 13
+          },
+          {
+            "due": 297109.8138187,
+            "actual": 297109.8200227,
+            "index": 14
+          },
+          {
+            "due": 297110.0138187,
+            "actual": 297110.0231927,
+            "index": 15
+          },
+          {
+            "due": 297110.2138187,
+            "actual": 297110.2251755,
+            "index": 16
+          },
+          {
+            "due": 297110.4138187,
+            "actual": 297110.4275428,
+            "index": 17
+          },
+          {
+            "due": 297110.6138187,
+            "actual": 297110.6147496,
+            "index": 18
+          },
+          {
+            "due": 297110.8138187,
+            "actual": 297110.8169269,
+            "index": 19
+          },
+          {
+            "due": 297111.0138187,
+            "actual": 297111.0196291,
+            "index": 20
+          },
+          {
+            "due": 297111.2138187,
+            "actual": 297111.2210342,
+            "index": 21
+          },
+          {
+            "due": 297111.4138187,
+            "actual": 297111.4237334,
+            "index": 22
+          },
+          {
+            "due": 297111.6138187,
+            "actual": 297111.6254539,
+            "index": 23
+          },
+          {
+            "due": 297111.8138187,
+            "actual": 297111.8275141,
+            "index": 24
+          },
+          {
+            "due": 297112.0138187,
+            "actual": 297112.014219,
+            "index": 25
+          },
+          {
+            "due": 297112.2138187,
+            "actual": 297112.217034,
+            "index": 26
+          },
+          {
+            "due": 297112.4138187,
+            "actual": 297112.4197822,
+            "index": 27
+          },
+          {
+            "due": 297112.6138187,
+            "actual": 297112.6229051,
+            "index": 28
+          },
+          {
+            "due": 297112.8138187,
+            "actual": 297112.8239447,
+            "index": 29
+          },
+          {
+            "due": 297113.0138187,
+            "actual": 297113.0277225,
+            "index": 30
+          },
+          {
+            "due": 297113.2138187,
+            "actual": 297113.2297661,
+            "index": 31
+          },
+          {
+            "due": 297113.4138187,
+            "actual": 297113.4156801,
+            "index": 32
+          },
+          {
+            "due": 297113.6138187,
+            "actual": 297113.617288,
+            "index": 33
+          },
+          {
+            "due": 297113.8138187,
+            "actual": 297113.8183412,
+            "index": 34
+          },
+          {
+            "due": 297114.0138187,
+            "actual": 297114.020825,
+            "index": 35
+          },
+          {
+            "due": 297114.2138187,
+            "actual": 297114.2240615,
+            "index": 36
+          },
+          {
+            "due": 297114.4138187,
+            "actual": 297114.4247298,
+            "index": 37
+          },
+          {
+            "due": 297114.6138187,
+            "actual": 297114.6239594,
+            "index": 38
+          },
+          {
+            "due": 297114.8138187,
+            "actual": 297114.8260629,
+            "index": 39
+          },
+          {
+            "due": 297115.0138187,
+            "actual": 297115.0292917,
+            "index": 40
+          },
+          {
+            "due": 297115.2138187,
+            "actual": 297115.215993,
+            "index": 41
+          },
+          {
+            "due": 297115.4138187,
+            "actual": 297115.4176961,
+            "index": 42
+          },
+          {
+            "due": 297115.6138187,
+            "actual": 297115.6203975,
+            "index": 43
+          },
+          {
+            "due": 297115.8138187,
+            "actual": 297115.8218556,
+            "index": 44
+          },
+          {
+            "due": 297116.0138187,
+            "actual": 297116.0249788,
+            "index": 45
+          },
+          {
+            "due": 297116.2138187,
+            "actual": 297116.2263055,
+            "index": 46
+          },
+          {
+            "due": 297116.4138187,
+            "actual": 297116.4271275,
+            "index": 47
+          },
+          {
+            "due": 297116.6138187,
+            "actual": 297116.6284487,
+            "index": 48
+          },
+          {
+            "due": 297116.8138187,
+            "actual": 297116.8149809,
+            "index": 49
+          },
+          {
+            "due": 297117.0138187,
+            "actual": 297117.0180473,
+            "index": 50
+          },
+          {
+            "due": 297117.2138187,
+            "actual": 297117.2203075,
+            "index": 51
+          },
+          {
+            "due": 297117.4138187,
+            "actual": 297117.4248677,
+            "index": 52
+          },
+          {
+            "due": 297117.6138187,
+            "actual": 297117.6277217,
+            "index": 53
+          },
+          {
+            "due": 297117.8138187,
+            "actual": 297117.8148685,
+            "index": 54
+          },
+          {
+            "due": 297118.0138187,
+            "actual": 297118.0153481,
+            "index": 55
+          },
+          {
+            "due": 297118.2138187,
+            "actual": 297118.2156429,
+            "index": 56
+          },
+          {
+            "due": 297118.4138187,
+            "actual": 297118.4183408,
+            "index": 57
+          },
+          {
+            "due": 297118.6138187,
+            "actual": 297118.6207954,
+            "index": 58
+          },
+          {
+            "due": 297118.8138187,
+            "actual": 297118.8217841,
+            "index": 59
+          },
+          {
+            "due": 297119.0138187,
+            "actual": 297119.0234548,
+            "index": 60
+          },
+          {
+            "due": 297119.2138187,
+            "actual": 297119.2249856,
+            "index": 61
+          },
+          {
+            "due": 297119.4138187,
+            "actual": 297119.4274686,
+            "index": 62
+          },
+          {
+            "due": 297119.6138187,
+            "actual": 297119.6291966,
+            "index": 63
+          },
+          {
+            "due": 297119.8138187,
+            "actual": 297119.8146726,
+            "index": 64
+          },
+          {
+            "due": 297120.0138187,
+            "actual": 297120.0164214,
+            "index": 65
+          },
+          {
+            "due": 297120.2138187,
+            "actual": 297120.2190278,
+            "index": 66
+          },
+          {
+            "due": 297120.4138187,
+            "actual": 297120.4205929,
+            "index": 67
+          },
+          {
+            "due": 297120.6138187,
+            "actual": 297120.6234191,
+            "index": 68
+          },
+          {
+            "due": 297120.8138187,
+            "actual": 297120.8246887,
+            "index": 69
+          },
+          {
+            "due": 297121.0138187,
+            "actual": 297121.0259094,
+            "index": 70
+          },
+          {
+            "due": 297121.2138187,
+            "actual": 297121.226127,
+            "index": 71
+          },
+          {
+            "due": 297121.4138187,
+            "actual": 297121.4286538,
+            "index": 72
+          },
+          {
+            "due": 297121.6138187,
+            "actual": 297121.616282,
+            "index": 73
+          },
+          {
+            "due": 297121.8138187,
+            "actual": 297121.8183319,
+            "index": 74
+          },
+          {
+            "due": 297122.0138187,
+            "actual": 297122.0696303,
+            "index": 75
+          },
+          {
+            "due": 297122.2138187,
+            "actual": 297122.2230626,
+            "index": 76
+          },
+          {
+            "due": 297122.4138187,
+            "actual": 297122.4233342,
+            "index": 77
+          },
+          {
+            "due": 297122.6138187,
+            "actual": 297122.6555675,
+            "index": 78
+          },
+          {
+            "due": 297122.8138187,
+            "actual": 297122.8890416,
+            "index": 79
+          },
+          {
+            "due": 297123.0138187,
+            "actual": 297123.1696069,
+            "index": 80
+          },
+          {
+            "due": 297123.2138187,
+            "actual": 297123.5260124,
+            "index": 81
+          },
+          {
+            "due": 297123.4138187,
+            "actual": 297123.6517769,
+            "index": 82
+          },
+          {
+            "due": 297123.6138187,
+            "actual": 297123.765362,
+            "index": 83
+          },
+          {
+            "due": 297123.8138187,
+            "actual": 297123.8802669,
+            "index": 84
+          },
+          {
+            "due": 297124.0138187,
+            "actual": 297124.0265537,
+            "index": 85
+          },
+          {
+            "due": 297124.2138187,
+            "actual": 297124.2289689,
+            "index": 86
+          },
+          {
+            "due": 297124.4138187,
+            "actual": 297124.4153664,
+            "index": 87
+          },
+          {
+            "due": 297124.6138187,
+            "actual": 297124.6158001,
+            "index": 88
+          },
+          {
+            "due": 297124.8138187,
+            "actual": 297124.817303,
+            "index": 89
+          },
+          {
+            "due": 297125.0138187,
+            "actual": 297125.0195922,
+            "index": 90
+          },
+          {
+            "due": 297125.2138187,
+            "actual": 297125.2223503,
+            "index": 91
+          },
+          {
+            "due": 297125.4138187,
+            "actual": 297125.4244859,
+            "index": 92
+          },
+          {
+            "due": 297125.6138187,
+            "actual": 297125.6251536,
+            "index": 93
+          },
+          {
+            "due": 297125.8138187,
+            "actual": 297125.8273015,
+            "index": 94
+          },
+          {
+            "due": 297126.0138187,
+            "actual": 297126.0294294,
+            "index": 95
+          },
+          {
+            "due": 297126.2138187,
+            "actual": 297126.2148885,
+            "index": 96
+          }
+        ],
+        "cleanup_errors": [],
+        "export_errors": [],
+        "supervisor_errors": [],
+        "available": 96,
+        "unobserved": [],
+        "unavailable": [],
+        "consumers": [
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          },
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 84,
+            "unique_painted": 84,
+            "missing_committed_ordinals": [
+              71,
+              73,
+              82,
+              84
+            ],
+            "missing_painted_ordinals": [
+              71,
+              73,
+              82,
+              84
+            ]
+          },
+          {
+            "unique_committed": 84,
+            "unique_painted": 84,
+            "missing_committed_ordinals": [
+              71,
+              73,
+              82,
+              84
+            ],
+            "missing_painted_ordinals": [
+              71,
+              73,
+              82,
+              84
+            ]
+          }
+        ],
+        "reservation_peak": {
+          "total_reserved": 201326592,
+          "shared_capacity": 16777216,
+          "export_reserved": 100663296,
+          "limit": 268435456
+        },
+        "process_peak_rss": {
+          "owner": 266539008,
+          "job": 122318848,
+          "exporter-0": 104660992,
+          "exporter-1": 78934016
+        },
+        "owner_retirement_verified": true,
+        "snapshot_release_completion_order": {
+          "proved": 96,
+          "issues": []
+        },
+        "export_trace": {
+          "enabled": true,
+          "file": "export-credit.json",
+          "complete": true,
+          "observer_retired": true,
+          "rows": 2306,
+          "dropped_rows": 0,
+          "source_complete": true,
+          "source_unchanged": true,
+          "diagnostic_errors": 0,
+          "counter_failures": {},
+          "stage_coverage": {
+            "observed_exports": 96,
+            "admitted_exports": 96,
+            "incomplete_admitted_stages": {},
+            "available_callbacks": 96,
+            "missing_available_stages": {},
+            "successful_adoptions": 96,
+            "missing_adopt_phases": {}
+          },
+          "observer_cost": {
+            "calls": 23904,
+            "wall_ns": 81102400,
+            "thread_cpu_ns": 31250000,
+            "interpretation": "Observer callbacks only; excludes forwarding and clock/accounting overhead. Inclusive when nested; not total instrumentation cost."
+          },
+          "performance_verdict": "NOT_EVALUATED"
+        },
+        "capture_trace": {
+          "enabled": true,
+          "files": [
+            {
+              "file": "capture-credit-70528.json",
+              "enabled": true,
+              "complete": true,
+              "rows": 96,
+              "dropped_rows": 0,
+              "actual_attempts": {
+                "attempts": 96,
+                "accepted": 96,
+                "refused": 0,
+                "failed": 0,
+                "invalid_return": 0
+              },
+              "identity_counts": {
+                "recorded_image_identities": 96,
+                "recorded_results": 96,
+                "recorded_sources": 1,
+                "recorded_jobs": 1,
+                "unattributed_attempts": 0
+              },
+              "diagnostic_errors": 0,
+              "counter_failures": {},
+              "instrumentation_disabled": false,
+              "restored": true,
+              "observer_retired": true,
+              "source_complete": true,
+              "source_unchanged": true,
+              "observer_cost": {
+                "calls": 292,
+                "wall_ns": 6503900,
+                "thread_cpu_ns": 0,
+                "max_wall_ns": 986700,
+                "max_thread_cpu_ns": 0,
+                "interpretation": "Observer callbacks only; excludes native forwarding and clock/accounting overhead. Maxima bound observed callback samples, not total perturbation; nested callbacks are inclusive."
+              },
+              "performance_verdict": "NOT_EVALUATED"
+            }
+          ],
+          "complete": true
+        }
+      },
+      {
+        "index": 2,
+        "observer": "on",
+        "job_status": "COMPLETED",
+        "export": {
+          "completed": 96,
+          "timed_out": 0,
+          "reaped": 0,
+          "failed": 0
+        },
+        "trial_sha256": "550c7d237521ae434b44c696a9929c7bf8d57b7f01177764aba5f4fafd0ba1fa",
+        "qt_platform": "windows",
+        "pace": [
+          {
+            "due": 297132.1106917,
+            "actual": 297132.1224269,
+            "index": 1
+          },
+          {
+            "due": 297132.3106917,
+            "actual": 297132.3240978,
+            "index": 2
+          },
+          {
+            "due": 297132.51069170004,
+            "actual": 297132.5258127,
+            "index": 3
+          },
+          {
+            "due": 297132.7106917,
+            "actual": 297132.7123571,
+            "index": 4
+          },
+          {
+            "due": 297132.9106917,
+            "actual": 297132.9152508,
+            "index": 5
+          },
+          {
+            "due": 297133.1106917,
+            "actual": 297133.1173798,
+            "index": 6
+          },
+          {
+            "due": 297133.3106917,
+            "actual": 297133.3201093,
+            "index": 7
+          },
+          {
+            "due": 297133.51069170004,
+            "actual": 297133.5227486,
+            "index": 8
+          },
+          {
+            "due": 297133.7106917,
+            "actual": 297133.7254465,
+            "index": 9
+          },
+          {
+            "due": 297133.9106917,
+            "actual": 297133.9248806,
+            "index": 10
+          },
+          {
+            "due": 297134.1106917,
+            "actual": 297134.1117761,
+            "index": 11
+          },
+          {
+            "due": 297134.3106917,
+            "actual": 297134.3148176,
+            "index": 12
+          },
+          {
+            "due": 297134.51069170004,
+            "actual": 297134.5164432,
+            "index": 13
+          },
+          {
+            "due": 297134.7106917,
+            "actual": 297134.7193837,
+            "index": 14
+          },
+          {
+            "due": 297134.9106917,
+            "actual": 297134.9220754,
+            "index": 15
+          },
+          {
+            "due": 297135.1106917,
+            "actual": 297135.125452,
+            "index": 16
+          },
+          {
+            "due": 297135.3106917,
+            "actual": 297135.3259456,
+            "index": 17
+          },
+          {
+            "due": 297135.51069170004,
+            "actual": 297135.5122717,
+            "index": 18
+          },
+          {
+            "due": 297135.7106917,
+            "actual": 297135.7143192,
+            "index": 19
+          },
+          {
+            "due": 297135.9106917,
+            "actual": 297135.9167979,
+            "index": 20
+          },
+          {
+            "due": 297136.1106917,
+            "actual": 297136.1190252,
+            "index": 21
+          },
+          {
+            "due": 297136.3106917,
+            "actual": 297136.323292,
+            "index": 22
+          },
+          {
+            "due": 297136.51069170004,
+            "actual": 297136.5113719,
+            "index": 23
+          },
+          {
+            "due": 297136.7106917,
+            "actual": 297136.7125512,
+            "index": 24
+          },
+          {
+            "due": 297136.9106917,
+            "actual": 297136.9155904,
+            "index": 25
+          },
+          {
+            "due": 297137.1106917,
+            "actual": 297137.1185259,
+            "index": 26
+          },
+          {
+            "due": 297137.3106917,
+            "actual": 297137.3219386,
+            "index": 27
+          },
+          {
+            "due": 297137.51069170004,
+            "actual": 297137.5227332,
+            "index": 28
+          },
+          {
+            "due": 297137.7106917,
+            "actual": 297137.7230344,
+            "index": 29
+          },
+          {
+            "due": 297137.9106917,
+            "actual": 297137.9112959,
+            "index": 30
+          },
+          {
+            "due": 297138.1106917,
+            "actual": 297138.1131972,
+            "index": 31
+          },
+          {
+            "due": 297138.3106917,
+            "actual": 297138.3131758,
+            "index": 32
+          },
+          {
+            "due": 297138.51069170004,
+            "actual": 297138.5164291,
+            "index": 33
+          },
+          {
+            "due": 297138.7106917,
+            "actual": 297138.719339,
+            "index": 34
+          },
+          {
+            "due": 297138.9106917,
+            "actual": 297138.9222888,
+            "index": 35
+          },
+          {
+            "due": 297139.1106917,
+            "actual": 297139.113449,
+            "index": 36
+          },
+          {
+            "due": 297139.3106917,
+            "actual": 297139.3169827,
+            "index": 37
+          },
+          {
+            "due": 297139.51069170004,
+            "actual": 297139.5197845,
+            "index": 38
+          },
+          {
+            "due": 297139.7106917,
+            "actual": 297139.7229969,
+            "index": 39
+          },
+          {
+            "due": 297139.9106917,
+            "actual": 297139.9263781,
+            "index": 40
+          },
+          {
+            "due": 297140.1106917,
+            "actual": 297140.1115982,
+            "index": 41
+          },
+          {
+            "due": 297140.3106917,
+            "actual": 297140.3132768,
+            "index": 42
+          },
+          {
+            "due": 297140.51069170004,
+            "actual": 297140.5154167,
+            "index": 43
+          },
+          {
+            "due": 297140.7106917,
+            "actual": 297140.7175704,
+            "index": 44
+          },
+          {
+            "due": 297140.9106917,
+            "actual": 297140.9185149,
+            "index": 45
+          },
+          {
+            "due": 297141.1106917,
+            "actual": 297141.121436,
+            "index": 46
+          },
+          {
+            "due": 297141.3106917,
+            "actual": 297141.323485,
+            "index": 47
+          },
+          {
+            "due": 297141.51069170004,
+            "actual": 297141.511487,
+            "index": 48
+          },
+          {
+            "due": 297141.7106917,
+            "actual": 297141.7149588,
+            "index": 49
+          },
+          {
+            "due": 297141.9106917,
+            "actual": 297141.9179363,
+            "index": 50
+          },
+          {
+            "due": 297142.1106917,
+            "actual": 297142.1220512,
+            "index": 51
+          },
+          {
+            "due": 297142.3106917,
+            "actual": 297142.3228714,
+            "index": 52
+          },
+          {
+            "due": 297142.51069170004,
+            "actual": 297142.52404,
+            "index": 53
+          },
+          {
+            "due": 297142.7106917,
+            "actual": 297142.7253514,
+            "index": 54
+          },
+          {
+            "due": 297142.9106917,
+            "actual": 297142.9268216,
+            "index": 55
+          },
+          {
+            "due": 297143.1106917,
+            "actual": 297143.1133975,
+            "index": 56
+          },
+          {
+            "due": 297143.3106917,
+            "actual": 297143.3152798,
+            "index": 57
+          },
+          {
+            "due": 297143.51069170004,
+            "actual": 297143.518082,
+            "index": 58
+          },
+          {
+            "due": 297143.7106917,
+            "actual": 297143.7210363,
+            "index": 59
+          },
+          {
+            "due": 297143.9106917,
+            "actual": 297143.923155,
+            "index": 60
+          },
+          {
+            "due": 297144.1106917,
+            "actual": 297144.1107217,
+            "index": 61
+          },
+          {
+            "due": 297144.3106917,
+            "actual": 297144.3129858,
+            "index": 62
+          },
+          {
+            "due": 297144.51069170004,
+            "actual": 297144.5154254,
+            "index": 63
+          },
+          {
+            "due": 297144.7106917,
+            "actual": 297144.7190543,
+            "index": 64
+          },
+          {
+            "due": 297144.9106917,
+            "actual": 297144.9199244,
+            "index": 65
+          },
+          {
+            "due": 297145.1106917,
+            "actual": 297145.1237084,
+            "index": 66
+          },
+          {
+            "due": 297145.3106917,
+            "actual": 297145.3120893,
+            "index": 67
+          },
+          {
+            "due": 297145.51069170004,
+            "actual": 297145.5158084,
+            "index": 68
+          },
+          {
+            "due": 297145.7106917,
+            "actual": 297145.719184,
+            "index": 69
+          },
+          {
+            "due": 297145.9106917,
+            "actual": 297145.9228798,
+            "index": 70
+          },
+          {
+            "due": 297146.1106917,
+            "actual": 297146.1231801,
+            "index": 71
+          },
+          {
+            "due": 297146.3106917,
+            "actual": 297146.3260328,
+            "index": 72
+          },
+          {
+            "due": 297146.51069170004,
+            "actual": 297146.5132777,
+            "index": 73
+          },
+          {
+            "due": 297146.7106917,
+            "actual": 297146.7166373,
+            "index": 74
+          },
+          {
+            "due": 297146.9106917,
+            "actual": 297146.9192689,
+            "index": 75
+          },
+          {
+            "due": 297147.1106917,
+            "actual": 297147.121887,
+            "index": 76
+          },
+          {
+            "due": 297147.3106917,
+            "actual": 297147.3249045,
+            "index": 77
+          },
+          {
+            "due": 297147.51069170004,
+            "actual": 297147.5126312,
+            "index": 78
+          },
+          {
+            "due": 297147.7106917,
+            "actual": 297147.7147258,
+            "index": 79
+          },
+          {
+            "due": 297147.9106917,
+            "actual": 297147.9175673,
+            "index": 80
+          },
+          {
+            "due": 297148.1106917,
+            "actual": 297148.1198193,
+            "index": 81
+          },
+          {
+            "due": 297148.3106917,
+            "actual": 297148.3208714,
+            "index": 82
+          },
+          {
+            "due": 297148.51069170004,
+            "actual": 297148.5230916,
+            "index": 83
+          },
+          {
+            "due": 297148.7106917,
+            "actual": 297148.7253907,
+            "index": 84
+          },
+          {
+            "due": 297148.9106917,
+            "actual": 297148.9135875,
+            "index": 85
+          },
+          {
+            "due": 297149.1106917,
+            "actual": 297149.1155099,
+            "index": 86
+          },
+          {
+            "due": 297149.3106917,
+            "actual": 297149.3159156,
+            "index": 87
+          },
+          {
+            "due": 297149.51069170004,
+            "actual": 297149.5185035,
+            "index": 88
+          },
+          {
+            "due": 297149.7106917,
+            "actual": 297149.7203798,
+            "index": 89
+          },
+          {
+            "due": 297149.9106917,
+            "actual": 297149.9241429,
+            "index": 90
+          },
+          {
+            "due": 297150.1106917,
+            "actual": 297150.125561,
+            "index": 91
+          },
+          {
+            "due": 297150.3106917,
+            "actual": 297150.3131351,
+            "index": 92
+          },
+          {
+            "due": 297150.51069170004,
+            "actual": 297150.5163533,
+            "index": 93
+          },
+          {
+            "due": 297150.7106917,
+            "actual": 297150.7179835,
+            "index": 94
+          },
+          {
+            "due": 297150.9106917,
+            "actual": 297150.9200549,
+            "index": 95
+          },
+          {
+            "due": 297151.1106917,
+            "actual": 297151.1215637,
+            "index": 96
+          }
+        ],
+        "cleanup_errors": [],
+        "export_errors": [],
+        "supervisor_errors": [],
+        "available": 96,
+        "unobserved": [],
+        "unavailable": [],
+        "consumers": [
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          },
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          },
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          }
+        ],
+        "reservation_peak": {
+          "total_reserved": 201326592,
+          "shared_capacity": 16777216,
+          "export_reserved": 100663296,
+          "limit": 268435456
+        },
+        "process_peak_rss": {
+          "owner": 262922240,
+          "job": 122335232,
+          "exporter-0": 104755200,
+          "exporter-1": 79069184
+        },
+        "owner_retirement_verified": true,
+        "snapshot_release_completion_order": {
+          "proved": 96,
+          "issues": []
+        },
+        "export_trace": {
+          "enabled": true,
+          "file": "export-credit.json",
+          "complete": true,
+          "observer_retired": true,
+          "rows": 2306,
+          "dropped_rows": 0,
+          "source_complete": true,
+          "source_unchanged": true,
+          "diagnostic_errors": 0,
+          "counter_failures": {},
+          "stage_coverage": {
+            "observed_exports": 96,
+            "admitted_exports": 96,
+            "incomplete_admitted_stages": {},
+            "available_callbacks": 96,
+            "missing_available_stages": {},
+            "successful_adoptions": 96,
+            "missing_adopt_phases": {}
+          },
+          "observer_cost": {
+            "calls": 23936,
+            "wall_ns": 80602800,
+            "thread_cpu_ns": 15625000,
+            "interpretation": "Observer callbacks only; excludes forwarding and clock/accounting overhead. Inclusive when nested; not total instrumentation cost."
+          },
+          "performance_verdict": "NOT_EVALUATED"
+        },
+        "capture_trace": {
+          "enabled": true,
+          "files": [
+            {
+              "file": "capture-credit-73316.json",
+              "enabled": true,
+              "complete": true,
+              "rows": 96,
+              "dropped_rows": 0,
+              "actual_attempts": {
+                "attempts": 96,
+                "accepted": 96,
+                "refused": 0,
+                "failed": 0,
+                "invalid_return": 0
+              },
+              "identity_counts": {
+                "recorded_image_identities": 96,
+                "recorded_results": 96,
+                "recorded_sources": 1,
+                "recorded_jobs": 1,
+                "unattributed_attempts": 0
+              },
+              "diagnostic_errors": 0,
+              "counter_failures": {},
+              "instrumentation_disabled": false,
+              "restored": true,
+              "observer_retired": true,
+              "source_complete": true,
+              "source_unchanged": true,
+              "observer_cost": {
+                "calls": 292,
+                "wall_ns": 7010400,
+                "thread_cpu_ns": 0,
+                "max_wall_ns": 1305800,
+                "max_thread_cpu_ns": 0,
+                "interpretation": "Observer callbacks only; excludes native forwarding and clock/accounting overhead. Maxima bound observed callback samples, not total perturbation; nested callbacks are inclusive."
+              },
+              "performance_verdict": "NOT_EVALUATED"
+            }
+          ],
+          "complete": true
+        }
+      },
+      {
+        "index": 3,
+        "observer": "off",
+        "job_status": "COMPLETED",
+        "export": {
+          "completed": 96,
+          "timed_out": 0,
+          "reaped": 0,
+          "failed": 0
+        },
+        "trial_sha256": "9b24a0b42d1b04754df6e09f8ef9b1400f1b8ad4fb3c194cb617248d72be50e0",
+        "qt_platform": "windows",
+        "pace": [
+          {
+            "due": 297157.0833716,
+            "actual": 297157.0857939,
+            "index": 1
+          },
+          {
+            "due": 297157.28337160003,
+            "actual": 297157.2878302,
+            "index": 2
+          },
+          {
+            "due": 297157.48337160004,
+            "actual": 297157.4924863,
+            "index": 3
+          },
+          {
+            "due": 297157.6833716,
+            "actual": 297157.6939854,
+            "index": 4
+          },
+          {
+            "due": 297157.8833716,
+            "actual": 297157.8941828,
+            "index": 5
+          },
+          {
+            "due": 297158.0833716,
+            "actual": 297158.0966662,
+            "index": 6
+          },
+          {
+            "due": 297158.28337160003,
+            "actual": 297158.2993093,
+            "index": 7
+          },
+          {
+            "due": 297158.48337160004,
+            "actual": 297158.4835999,
+            "index": 8
+          },
+          {
+            "due": 297158.6833716,
+            "actual": 297158.6851789,
+            "index": 9
+          },
+          {
+            "due": 297158.8833716,
+            "actual": 297158.8878184,
+            "index": 10
+          },
+          {
+            "due": 297159.0833716,
+            "actual": 297159.0922372,
+            "index": 11
+          },
+          {
+            "due": 297159.28337160003,
+            "actual": 297159.2939126,
+            "index": 12
+          },
+          {
+            "due": 297159.48337160004,
+            "actual": 297159.4942795,
+            "index": 13
+          },
+          {
+            "due": 297159.6833716,
+            "actual": 297159.6950405,
+            "index": 14
+          },
+          {
+            "due": 297159.8833716,
+            "actual": 297159.8985616,
+            "index": 15
+          },
+          {
+            "due": 297160.0833716,
+            "actual": 297160.0852266,
+            "index": 16
+          },
+          {
+            "due": 297160.28337160003,
+            "actual": 297160.2858392,
+            "index": 17
+          },
+          {
+            "due": 297160.48337160004,
+            "actual": 297160.4880214,
+            "index": 18
+          },
+          {
+            "due": 297160.6833716,
+            "actual": 297160.6902571,
+            "index": 19
+          },
+          {
+            "due": 297160.8833716,
+            "actual": 297160.8924451,
+            "index": 20
+          },
+          {
+            "due": 297161.0833716,
+            "actual": 297161.0930583,
+            "index": 21
+          },
+          {
+            "due": 297161.28337160003,
+            "actual": 297161.2957856,
+            "index": 22
+          },
+          {
+            "due": 297161.48337160004,
+            "actual": 297161.4846329,
+            "index": 23
+          },
+          {
+            "due": 297161.6833716,
+            "actual": 297161.6878431,
+            "index": 24
+          },
+          {
+            "due": 297161.8833716,
+            "actual": 297161.8914411,
+            "index": 25
+          },
+          {
+            "due": 297162.0833716,
+            "actual": 297162.0931973,
+            "index": 26
+          },
+          {
+            "due": 297162.28337160003,
+            "actual": 297162.2941377,
+            "index": 27
+          },
+          {
+            "due": 297162.48337160004,
+            "actual": 297162.4829498,
+            "index": 28
+          },
+          {
+            "due": 297162.6833716,
+            "actual": 297162.6843955,
+            "index": 29
+          },
+          {
+            "due": 297162.8833716,
+            "actual": 297162.8843711,
+            "index": 30
+          },
+          {
+            "due": 297163.0833716,
+            "actual": 297163.0869655,
+            "index": 31
+          },
+          {
+            "due": 297163.28337160003,
+            "actual": 297163.288752,
+            "index": 32
+          },
+          {
+            "due": 297163.48337160004,
+            "actual": 297163.4922044,
+            "index": 33
+          },
+          {
+            "due": 297163.6833716,
+            "actual": 297163.6938849,
+            "index": 34
+          },
+          {
+            "due": 297163.8833716,
+            "actual": 297163.896352,
+            "index": 35
+          },
+          {
+            "due": 297164.0833716,
+            "actual": 297164.0843127,
+            "index": 36
+          },
+          {
+            "due": 297164.28337160003,
+            "actual": 297164.2857997,
+            "index": 37
+          },
+          {
+            "due": 297164.48337160004,
+            "actual": 297164.4887346,
+            "index": 38
+          },
+          {
+            "due": 297164.6833716,
+            "actual": 297164.6906101,
+            "index": 39
+          },
+          {
+            "due": 297164.8833716,
+            "actual": 297164.8947116,
+            "index": 40
+          },
+          {
+            "due": 297165.0833716,
+            "actual": 297165.0959865,
+            "index": 41
+          },
+          {
+            "due": 297165.28337160003,
+            "actual": 297165.2837616,
+            "index": 42
+          },
+          {
+            "due": 297165.48337160004,
+            "actual": 297165.486896,
+            "index": 43
+          },
+          {
+            "due": 297165.6833716,
+            "actual": 297165.6881412,
+            "index": 44
+          },
+          {
+            "due": 297165.8833716,
+            "actual": 297165.8911284,
+            "index": 45
+          },
+          {
+            "due": 297166.0833716,
+            "actual": 297166.092667,
+            "index": 46
+          },
+          {
+            "due": 297166.28337160003,
+            "actual": 297166.2946176,
+            "index": 47
+          },
+          {
+            "due": 297166.48337160004,
+            "actual": 297166.497738,
+            "index": 48
+          },
+          {
+            "due": 297166.6833716,
+            "actual": 297166.6851501,
+            "index": 49
+          },
+          {
+            "due": 297166.8833716,
+            "actual": 297166.8867375,
+            "index": 50
+          },
+          {
+            "due": 297167.0833716,
+            "actual": 297167.0890702,
+            "index": 51
+          },
+          {
+            "due": 297167.28337160003,
+            "actual": 297167.2907216,
+            "index": 52
+          },
+          {
+            "due": 297167.48337160004,
+            "actual": 297167.4935074,
+            "index": 53
+          },
+          {
+            "due": 297167.6833716,
+            "actual": 297167.695458,
+            "index": 54
+          },
+          {
+            "due": 297167.8833716,
+            "actual": 297167.8832722,
+            "index": 55
+          },
+          {
+            "due": 297168.0833716,
+            "actual": 297168.0862182,
+            "index": 56
+          },
+          {
+            "due": 297168.28337160003,
+            "actual": 297168.2901714,
+            "index": 57
+          },
+          {
+            "due": 297168.48337160004,
+            "actual": 297168.4905024,
+            "index": 58
+          },
+          {
+            "due": 297168.6833716,
+            "actual": 297168.6929146,
+            "index": 59
+          },
+          {
+            "due": 297168.8833716,
+            "actual": 297168.8952283,
+            "index": 60
+          },
+          {
+            "due": 297169.0833716,
+            "actual": 297169.0973261,
+            "index": 61
+          },
+          {
+            "due": 297169.28337160003,
+            "actual": 297169.2980541,
+            "index": 62
+          },
+          {
+            "due": 297169.48337160004,
+            "actual": 297169.4846874,
+            "index": 63
+          },
+          {
+            "due": 297169.6833716,
+            "actual": 297169.7485062,
+            "index": 64
+          },
+          {
+            "due": 297169.8833716,
+            "actual": 297170.010152,
+            "index": 65
+          },
+          {
+            "due": 297170.0833716,
+            "actual": 297170.3750105,
+            "index": 66
+          },
+          {
+            "due": 297170.28337160003,
+            "actual": 297170.4679078,
+            "index": 67
+          },
+          {
+            "due": 297170.48337160004,
+            "actual": 297170.8354008,
+            "index": 68
+          },
+          {
+            "due": 297170.6833716,
+            "actual": 297170.9279707,
+            "index": 69
+          },
+          {
+            "due": 297170.8833716,
+            "actual": 297171.3772127,
+            "index": 70
+          },
+          {
+            "due": 297171.0833716,
+            "actual": 297171.8568037,
+            "index": 71
+          },
+          {
+            "due": 297171.28337160003,
+            "actual": 297172.1859804,
+            "index": 72
+          },
+          {
+            "due": 297171.48337160004,
+            "actual": 297172.5567325,
+            "index": 73
+          },
+          {
+            "due": 297171.6833716,
+            "actual": 297173.0292762,
+            "index": 74
+          },
+          {
+            "due": 297171.8833716,
+            "actual": 297173.3579461,
+            "index": 75
+          },
+          {
+            "due": 297172.0833716,
+            "actual": 297173.7253699,
+            "index": 76
+          },
+          {
+            "due": 297172.28337160003,
+            "actual": 297174.2462367,
+            "index": 77
+          },
+          {
+            "due": 297172.48337160004,
+            "actual": 297174.3909475,
+            "index": 78
+          },
+          {
+            "due": 297172.6833716,
+            "actual": 297174.5351309,
+            "index": 79
+          },
+          {
+            "due": 297172.8833716,
+            "actual": 297174.6397131,
+            "index": 80
+          },
+          {
+            "due": 297173.0833716,
+            "actual": 297174.702904,
+            "index": 81
+          },
+          {
+            "due": 297173.28337160003,
+            "actual": 297174.8638704,
+            "index": 82
+          },
+          {
+            "due": 297173.48337160004,
+            "actual": 297174.9467042,
+            "index": 83
+          },
+          {
+            "due": 297173.6833716,
+            "actual": 297175.1012341,
+            "index": 84
+          },
+          {
+            "due": 297173.8833716,
+            "actual": 297175.2353822,
+            "index": 85
+          },
+          {
+            "due": 297174.0833716,
+            "actual": 297175.3534171,
+            "index": 86
+          },
+          {
+            "due": 297174.28337160003,
+            "actual": 297175.4708728,
+            "index": 87
+          },
+          {
+            "due": 297174.48337160004,
+            "actual": 297175.5901025,
+            "index": 88
+          },
+          {
+            "due": 297174.6833716,
+            "actual": 297175.7072534,
+            "index": 89
+          },
+          {
+            "due": 297174.8833716,
+            "actual": 297175.8182072,
+            "index": 90
+          },
+          {
+            "due": 297175.0833716,
+            "actual": 297175.9421769,
+            "index": 91
+          },
+          {
+            "due": 297175.28337160003,
+            "actual": 297176.0620129,
+            "index": 92
+          },
+          {
+            "due": 297175.48337160004,
+            "actual": 297176.174462,
+            "index": 93
+          },
+          {
+            "due": 297175.6833716,
+            "actual": 297176.2879282,
+            "index": 94
+          },
+          {
+            "due": 297175.8833716,
+            "actual": 297176.3703185,
+            "index": 95
+          },
+          {
+            "due": 297176.0833716,
+            "actual": 297176.5175538,
+            "index": 96
+          }
+        ],
+        "cleanup_errors": [],
+        "export_errors": [],
+        "supervisor_errors": [],
+        "available": 96,
+        "unobserved": [],
+        "unavailable": [],
+        "consumers": [
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          },
+          {
+            "total_record_count": 96,
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": [],
+            "missing_decoded_ordinals": [],
+            "missing_applied_ordinals": [],
+            "errors": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 80,
+            "unique_painted": 78,
+            "missing_committed_ordinals": [
+              57,
+              66,
+              77,
+              81,
+              85,
+              89,
+              91,
+              93
+            ],
+            "missing_painted_ordinals": [
+              56,
+              57,
+              66,
+              77,
+              81,
+              85,
+              87,
+              89,
+              91,
+              93
+            ]
+          },
+          {
+            "unique_committed": 80,
+            "unique_painted": 78,
+            "missing_committed_ordinals": [
+              57,
+              66,
+              77,
+              81,
+              85,
+              89,
+              91,
+              93
+            ],
+            "missing_painted_ordinals": [
+              56,
+              57,
+              66,
+              77,
+              81,
+              85,
+              87,
+              89,
+              91,
+              93
+            ]
+          }
+        ],
+        "reservation_peak": {
+          "total_reserved": 201326592,
+          "shared_capacity": 16777216,
+          "export_reserved": 100663296,
+          "limit": 268435456
+        },
+        "process_peak_rss": {
+          "owner": 265322496,
+          "job": 121655296,
+          "exporter-0": 104775680,
+          "exporter-1": 79261696
+        },
+        "owner_retirement_verified": true
+      }
+    ]
+  },
+  "limitations": [
+    "Native scripted Qt is not manual Designer/Runtime acceptance.",
+    "Local ABBA has complete source/consumer/live coverage, but incomplete Qt commit/paint in arms 1 and 3.",
+    "No rerun of ABBA. Measurement INVALID; performance NOT_ASSESSED.",
+    "Hosted exact delivery SHA must be checked separately. No full product or historical root cause closure."
+  ]
+}

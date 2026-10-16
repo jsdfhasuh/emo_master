@@ -1,0 +1,84 @@
+{
+  "head": "842d87a97efb62ac20364ff248e5a0c4db105831",
+  "dirty": " M docs/development-guide.md\n M scripts/validate_page_editor.py\n M src/emo_master/apps/designer/page_designer/canvas_tools.py\n M src/emo_master/apps/designer/page_designer/coordinator.py\n M src/emo_master/apps/designer/page_designer/grid_geometry.py\n M src/emo_master/apps/designer/page_designer/palette.py\n M src/emo_master/apps/designer/page_designer/preview.py\n M src/emo_master/apps/designer/page_designer/property_panel.py\n M src/emo_master/apps/designer/page_designer/tools.py\n M src/emo_master/apps/designer/page_designer/workspace.py\n M src/emo_master/apps/designer/ui/main_window.py\n M src/emo_master/apps/designer/ui/styles/app.qss\n M src/emo_master/apps/designer/ui/widgets.py\n M src/emo_master/ui/presentation/design_examples.py\n M src/emo_master/ui/presentation/renderer.py\n M tests/designer/test_visual_layout.py\n M tests/ui/page_designer/test_current_job_viewing.py\n M tests/ui/page_designer/test_delivery_path.py\n M tests/ui/page_designer/test_normal_run_path.py\n M tests/ui/page_designer/test_normal_run_viewing.py\n M tests/ui/page_designer/test_page_navigation.py\n M tests/ui/page_designer/test_preview.py\n M tests/ui/page_designer/test_retained_acceptance_multiscope.py\n M tests/ui/page_designer/test_two_job_observation.py\n M tests/ui/page_designer/test_usable_properties.py\n M tests/ui/page_designer/test_user_path.py\n M tests/ui/page_designer/test_visual_editor.py\n?? docs/testing/workspace-switch-2026-10-03.md\n?? docs/testing/workspace-switch-2026-10-03/\n?? docs/testing/workspace-ui-2026-10-03.md\n?? docs/testing/workspace-ui-2026-10-03/\n?? scripts/validate_designer_workspaces.py\n?? src/emo_master/apps/designer/page_designer/chrome.py\n?? src/emo_master/apps/designer/page_designer/preview_window.py\n?? src/emo_master/apps/designer/page_designer/workspace_switch.py\n?? tests/designer/test_workflow_tab_add_button.py\n?? tests/ui/page_designer/test_palette.py\n?? tests/ui/page_designer/test_workspace_modes.py\n?? tests/ui/page_designer/test_workspace_switch.py\n",
+  "measurements": [
+    {
+      "name": "single",
+      "width": 1000,
+      "dpr": 1.5,
+      "lastTab": [
+        0,
+        0,
+        136,
+        36
+      ],
+      "button": [
+        142,
+        2,
+        32,
+        32
+      ],
+      "gap": 6,
+      "buttonInside": true
+    },
+    {
+      "name": "two",
+      "width": 1000,
+      "dpr": 1.5,
+      "lastTab": [
+        136,
+        0,
+        136,
+        36
+      ],
+      "button": [
+        278,
+        2,
+        32,
+        32
+      ],
+      "gap": 6,
+      "buttonInside": true
+    },
+    {
+      "name": "overflow",
+      "width": 320,
+      "dpr": 1.5,
+      "lastTab": [
+        1100,
+        0,
+        100,
+        36
+      ],
+      "button": [
+        288,
+        2,
+        32,
+        32
+      ],
+      "gap": -912,
+      "buttonInside": true
+    },
+    {
+      "name": "rtl",
+      "width": 1000,
+      "dpr": 1.5,
+      "lastTab": [
+        728,
+        0,
+        136,
+        36
+      ],
+      "button": [
+        690,
+        2,
+        32,
+        32
+      ],
+      "gap": 6,
+      "buttonInside": true
+    }
+  ],
+  "noRuntimeOrJob": true,
+  "widgetsSha256": "a9e172f415069c8b83bf2a26dedf858ed7d28771a5bc324c66b9f99271146009"
+}

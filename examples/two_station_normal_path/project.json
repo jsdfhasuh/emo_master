@@ -1,0 +1,1116 @@
+{
+  "schemaVersion": "2.4",
+  "project": {
+    "projectId": "two-station-normal-path-example",
+    "name": "双工位正常两拍离线控制骨架",
+    "revision": 1,
+    "createdAt": "2026-10-09T00:00:00Z",
+    "updatedAt": "2026-10-09T00:00:00Z"
+  },
+  "entryWorkflowId": "station1",
+  "workflowOrder": [
+    "station1",
+    "station2",
+    "first",
+    "second1",
+    "second2",
+    "mock_a",
+    "mock_b",
+    "mock_holes"
+  ],
+  "workflows": {
+    "station1": {
+      "name": "工位 1 正常两拍控制骨架",
+      "inputs": {
+        "image": "image",
+        "mockA": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "mockB": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "mockHoles": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "fixedPoints": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "shot": "integer",
+        "plcPoints": {
+          "type": "list<point2d>",
+          "required": false,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "robotPoints": {
+          "type": "list<point2d>",
+          "required": false,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "unexpectedShot": {
+          "type": "integer",
+          "required": false,
+          "nullable": false
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "increment",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "有效帧后原子自增",
+          "params": {
+            "variableId": "station1-shot-count",
+            "operation": "increment",
+            "delta": 1
+          }
+        },
+        {
+          "nodeId": "switch",
+          "kind": "operator",
+          "operatorId": "vision.flow.switch",
+          "displayName": "按本帧拍次分派",
+          "params": {
+            "case1Value": "1",
+            "case2Value": "2"
+          }
+        },
+        {
+          "nodeId": "first",
+          "kind": "subflow",
+          "targetWorkflowId": "first",
+          "displayName": "第一拍：两路模拟识别与坐标"
+        },
+        {
+          "nodeId": "second",
+          "kind": "subflow",
+          "targetWorkflowId": "second1",
+          "displayName": "第二拍：先归零再处理螺钉孔"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        },
+        {
+          "nodeId": "invalid_count",
+          "kind": "operator",
+          "operatorId": "vision.flow.error",
+          "displayName": "非法拍次停止，要求周期同步",
+          "params": {
+            "code": "E_SHOT_COUNTER",
+            "message": "拍次不在 1、2，停止并重新同步，不继续发送"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "increment",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "increment",
+          "fromPort": "value",
+          "toNode": "switch",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "increment",
+          "fromPort": "value",
+          "toNode": "output",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "case1",
+          "toNode": "first",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "case2",
+          "toNode": "second",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "default",
+          "toNode": "output",
+          "toPort": "unexpectedShot"
+        },
+        {
+          "fromNode": "first",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "plcPoints"
+        },
+        {
+          "fromNode": "second",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "robotPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "first",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "first",
+          "toPort": "fixedPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "second",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "second",
+          "toPort": "fixedPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockA",
+          "toNode": "first",
+          "toPort": "mockA"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockB",
+          "toNode": "first",
+          "toPort": "mockB"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockHoles",
+          "toNode": "second",
+          "toPort": "mockHoles"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "default",
+          "toNode": "invalid_count",
+          "toPort": "after"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "increment": {
+            "x": 300,
+            "y": 40
+          },
+          "switch": {
+            "x": 560,
+            "y": 40
+          },
+          "first": {
+            "x": 820,
+            "y": 40
+          },
+          "second": {
+            "x": 1080,
+            "y": 40
+          },
+          "output": {
+            "x": 1340,
+            "y": 40
+          }
+        }
+      }
+    },
+    "second1": {
+      "name": "工位 1 第二拍处理",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "mockHoles": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "fixedPoints": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "reset",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "第二拍确定后恢复计数 0",
+          "params": {
+            "variableId": "station1-shot-count",
+            "operation": "reset"
+          }
+        },
+        {
+          "nodeId": "holes",
+          "kind": "subflow",
+          "targetWorkflowId": "mock_holes",
+          "displayName": "螺钉孔模拟识别接口（待替换 YOLO）"
+        },
+        {
+          "nodeId": "add",
+          "kind": "operator",
+          "operatorId": "vision.geometry.coordinate_calculator",
+          "displayName": "孔坐标与固定坐标相加（模拟）",
+          "params": {
+            "mode": "add",
+            "pairing": "broadcast"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "reset",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "reset",
+          "fromPort": "value",
+          "toNode": "holes",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "holes",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "holes",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockHoles",
+          "toNode": "holes",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "holes",
+          "fromPort": "points",
+          "toNode": "add",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "add",
+          "toPort": "otherPoints"
+        },
+        {
+          "fromNode": "add",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "reset": {
+            "x": 300,
+            "y": 40
+          },
+          "holes": {
+            "x": 560,
+            "y": 40
+          },
+          "add": {
+            "x": 820,
+            "y": 40
+          },
+          "output": {
+            "x": 1080,
+            "y": 40
+          }
+        }
+      }
+    },
+    "station2": {
+      "name": "工位 2 正常两拍控制骨架",
+      "inputs": {
+        "image": "image",
+        "mockA": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "mockB": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "mockHoles": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "fixedPoints": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "shot": "integer",
+        "plcPoints": {
+          "type": "list<point2d>",
+          "required": false,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "robotPoints": {
+          "type": "list<point2d>",
+          "required": false,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "unexpectedShot": {
+          "type": "integer",
+          "required": false,
+          "nullable": false
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "increment",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "有效帧后原子自增",
+          "params": {
+            "variableId": "station2-shot-count",
+            "operation": "increment",
+            "delta": 1
+          }
+        },
+        {
+          "nodeId": "switch",
+          "kind": "operator",
+          "operatorId": "vision.flow.switch",
+          "displayName": "按本帧拍次分派",
+          "params": {
+            "case1Value": "1",
+            "case2Value": "2"
+          }
+        },
+        {
+          "nodeId": "first",
+          "kind": "subflow",
+          "targetWorkflowId": "first",
+          "displayName": "第一拍：两路模拟识别与坐标"
+        },
+        {
+          "nodeId": "second",
+          "kind": "subflow",
+          "targetWorkflowId": "second2",
+          "displayName": "第二拍：先归零再处理螺钉孔"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        },
+        {
+          "nodeId": "invalid_count",
+          "kind": "operator",
+          "operatorId": "vision.flow.error",
+          "displayName": "非法拍次停止，要求周期同步",
+          "params": {
+            "code": "E_SHOT_COUNTER",
+            "message": "拍次不在 1、2，停止并重新同步，不继续发送"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "increment",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "increment",
+          "fromPort": "value",
+          "toNode": "switch",
+          "toPort": "value"
+        },
+        {
+          "fromNode": "increment",
+          "fromPort": "value",
+          "toNode": "output",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "case1",
+          "toNode": "first",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "case2",
+          "toNode": "second",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "default",
+          "toNode": "output",
+          "toPort": "unexpectedShot"
+        },
+        {
+          "fromNode": "first",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "plcPoints"
+        },
+        {
+          "fromNode": "second",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "robotPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "first",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "first",
+          "toPort": "fixedPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "second",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "second",
+          "toPort": "fixedPoints"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockA",
+          "toNode": "first",
+          "toPort": "mockA"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockB",
+          "toNode": "first",
+          "toPort": "mockB"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockHoles",
+          "toNode": "second",
+          "toPort": "mockHoles"
+        },
+        {
+          "fromNode": "switch",
+          "fromPort": "default",
+          "toNode": "invalid_count",
+          "toPort": "after"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "increment": {
+            "x": 300,
+            "y": 40
+          },
+          "switch": {
+            "x": 560,
+            "y": 40
+          },
+          "first": {
+            "x": 820,
+            "y": 40
+          },
+          "second": {
+            "x": 1080,
+            "y": 40
+          },
+          "output": {
+            "x": 1340,
+            "y": 40
+          }
+        }
+      }
+    },
+    "second2": {
+      "name": "工位 2 第二拍处理",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "mockHoles": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "fixedPoints": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "reset",
+          "kind": "operator",
+          "operatorId": "vision.state.variable_write",
+          "displayName": "第二拍确定后恢复计数 0",
+          "params": {
+            "variableId": "station2-shot-count",
+            "operation": "reset"
+          }
+        },
+        {
+          "nodeId": "holes",
+          "kind": "subflow",
+          "targetWorkflowId": "mock_holes",
+          "displayName": "螺钉孔模拟识别接口（待替换 YOLO）"
+        },
+        {
+          "nodeId": "add",
+          "kind": "operator",
+          "operatorId": "vision.geometry.coordinate_calculator",
+          "displayName": "孔坐标与固定坐标相加（模拟）",
+          "params": {
+            "mode": "add",
+            "pairing": "broadcast"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "reset",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "reset",
+          "fromPort": "value",
+          "toNode": "holes",
+          "toPort": "after"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "holes",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "holes",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockHoles",
+          "toNode": "holes",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "holes",
+          "fromPort": "points",
+          "toNode": "add",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "add",
+          "toPort": "otherPoints"
+        },
+        {
+          "fromNode": "add",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "reset": {
+            "x": 300,
+            "y": 40
+          },
+          "holes": {
+            "x": 560,
+            "y": 40
+          },
+          "add": {
+            "x": 820,
+            "y": 40
+          },
+          "output": {
+            "x": 1080,
+            "y": 40
+          }
+        }
+      }
+    },
+    "first": {
+      "name": "第一拍正常矫正流程（模拟公式）",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "mockA": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "mockB": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "fixedPoints": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "detectA",
+          "kind": "subflow",
+          "targetWorkflowId": "mock_a",
+          "displayName": "第一路模拟识别接口（待替换 YOLO）"
+        },
+        {
+          "nodeId": "detectB",
+          "kind": "subflow",
+          "targetWorkflowId": "mock_b",
+          "displayName": "第二路模拟识别接口（待替换 YOLO）"
+        },
+        {
+          "nodeId": "combine",
+          "kind": "operator",
+          "operatorId": "vision.geometry.coordinate_calculator",
+          "displayName": "两路坐标相加（模拟公式）",
+          "params": {
+            "mode": "add",
+            "pairing": "broadcast"
+          }
+        },
+        {
+          "nodeId": "reference",
+          "kind": "operator",
+          "operatorId": "vision.geometry.coordinate_calculator",
+          "displayName": "引入固定坐标（模拟公式）",
+          "params": {
+            "mode": "add",
+            "pairing": "broadcast"
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "detectA",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "detectA",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockA",
+          "toNode": "detectA",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "shot",
+          "toNode": "detectB",
+          "toPort": "shot"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "image",
+          "toNode": "detectB",
+          "toPort": "image"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "mockB",
+          "toNode": "detectB",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "detectA",
+          "fromPort": "points",
+          "toNode": "combine",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "detectB",
+          "fromPort": "points",
+          "toNode": "combine",
+          "toPort": "otherPoints"
+        },
+        {
+          "fromNode": "combine",
+          "fromPort": "points",
+          "toNode": "reference",
+          "toPort": "points"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "fixedPoints",
+          "toNode": "reference",
+          "toPort": "otherPoints"
+        },
+        {
+          "fromNode": "reference",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "detectA": {
+            "x": 300,
+            "y": 40
+          },
+          "detectB": {
+            "x": 560,
+            "y": 40
+          },
+          "combine": {
+            "x": 820,
+            "y": 40
+          },
+          "reference": {
+            "x": 1080,
+            "y": 40
+          },
+          "output": {
+            "x": 1340,
+            "y": 40
+          }
+        }
+      }
+    },
+    "mock_a": {
+      "name": "第一路识别结果输入接口（模拟透传，不执行 YOLO）",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "output": {
+            "x": 300,
+            "y": 40
+          }
+        }
+      }
+    },
+    "mock_b": {
+      "name": "第二路识别结果输入接口（模拟透传，不执行 YOLO）",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "output": {
+            "x": 300,
+            "y": 40
+          }
+        }
+      }
+    },
+    "mock_holes": {
+      "name": "螺钉孔识别结果输入接口（模拟透传，不执行 YOLO）",
+      "inputs": {
+        "shot": "integer",
+        "image": "image",
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        },
+        "after": "integer"
+      },
+      "outputs": {
+        "points": {
+          "type": "list<point2d>",
+          "required": true,
+          "nullable": false,
+          "schemaVersion": "1.x"
+        }
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output"
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "points",
+          "toNode": "output",
+          "toPort": "points"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 40,
+            "y": 40
+          },
+          "output": {
+            "x": 300,
+            "y": 40
+          }
+        }
+      }
+    }
+  },
+  "globalVariables": {
+    "station1-shot-count": {
+      "name": "工位 1 拍照计数",
+      "type": "integer",
+      "kind": "variable",
+      "lifetime": "job",
+      "initialValue": 0
+    },
+    "station2-shot-count": {
+      "name": "工位 2 拍照计数",
+      "type": "integer",
+      "kind": "variable",
+      "lifetime": "job",
+      "initialValue": 0
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2
+  },
+  "dependencies": {
+    "operators": [
+      "vision.state.variable_write",
+      "vision.flow.switch",
+      "vision.geometry.coordinate_calculator"
+    ]
+  },
+  "devices": {
+    "bindings": {}
+  },
+  "presentation": {},
+  "resources": {},
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100
+  }
+}

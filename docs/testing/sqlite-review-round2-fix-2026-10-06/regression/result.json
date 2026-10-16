@@ -1,0 +1,22 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_flow_scene_interactions.py",
+    "tests/designer/test_flow_layout_qt.py",
+    "tests/designer/test_flow_layout_routing.py",
+    "tests/designer/test_node_run_inspection.py",
+    "tests/designer/test_node_result_panel.py",
+    "tests/designer/test_operator_editor_manager.py",
+    "tests/designer/test_builtin_operator_editor_ui.py",
+    "tests/designer/test_workflow_package.py",
+    "tests/core/project/test_package_builder.py",
+    "tests/runtime/test_runtime_grpc_network.py",
+    "tests/runtime/test_runtime_project_execution.py",
+    "tests/runtime/test_runner_io_summary.py"
+  ],
+  "exitCode": 0,
+  "seconds": 8.718000000109896
+}

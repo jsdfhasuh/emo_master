@@ -1,0 +1,56 @@
+F.F.....                                                                 [100%]
+================================== FAILURES ===================================
+________________ testNativeResizeIsSingleUndoAndSaveReopen[x] _________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2ccf92c1870) at 0x000002CCFAA9A400>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-679/testNativeResizeIsSingleUndoAn0')
+axes = 'x'
+
+    @pytest.mark.parametrize('axes', ['x', 'y', 'xy'])
+    def testNativeResizeIsSingleUndoAndSaveReopen(designer, tmp_path, axes):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+        c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+        e.refresh()
+        QApplication.processEvents()
+        e.tools.select(key)
+        selection = e.tools.selection
+        handle = next(h for h in selection.handles if h.axes == axes)
+        before, history = c.session.payload(), len(c.session._undo)
+        QTest.mousePress(handle, Qt.LeftButton, pos=handle.rect().center())
+        delta = QPoint(round(selection.grid.width()/3), 90)
+        motion(handle, delta)
+>       assert selection.valid, e.message.text()
+E       AssertionError:   Value error, component exceeds grid columns [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E       assert False
+E        +  where False = <emo_master.apps.designer.page_designer.canvas_tools.Selection(0x2ccfaec1ae0) at 0x000002CCF8B9D340>.valid
+
+tests\ui\page_designer\test_canvas_resize.py:32: AssertionError
+________________ testNativeResizeIsSingleUndoAndSaveReopen[xy] ________________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x2ccfabbc200) at 0x000002CCFAAE8D40>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-679/testNativeResizeIsSingleUndoAn2')
+axes = 'xy'
+
+    @pytest.mark.parametrize('axes', ['x', 'y', 'xy'])
+    def testNativeResizeIsSingleUndoAndSaveReopen(designer, tmp_path, axes):  # noqa: F811
+        c, e, key = setupPage(designer, 'number')
+        c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 3))
+        e.refresh()
+        QApplication.processEvents()
+        e.tools.select(key)
+        selection = e.tools.selection
+        handle = next(h for h in selection.handles if h.axes == axes)
+        before, history = c.session.payload(), len(c.session._undo)
+        QTest.mousePress(handle, Qt.LeftButton, pos=handle.rect().center())
+        delta = QPoint(round(selection.grid.width()/3), 90)
+        motion(handle, delta)
+>       assert selection.valid, e.message.text()
+E       AssertionError:   Value error, component exceeds grid columns [type=value_error, input_value={'schemaVersion': '1.0', ... 'resultScopeIds': []}}}, input_type=dict]
+E       assert False
+E        +  where False = <emo_master.apps.designer.page_designer.canvas_tools.Selection(0x2ccfac332d0) at 0x000002CCFBE69840>.valid
+
+tests\ui\page_designer\test_canvas_resize.py:32: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/ui/page_designer/test_canvas_resize.py::testNativeResizeIsSingleUndoAndSaveReopen[x]
+FAILED tests/ui/page_designer/test_canvas_resize.py::testNativeResizeIsSingleUndoAndSaveReopen[xy]
+2 failed, 6 passed in 1.60s

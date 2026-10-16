@@ -1,0 +1,58 @@
+src\emo_master\plugins\builtins\_communication_operators.py:802: error: Unpacked dict entry 0 has incompatible type "object"; expected "SupportsKeysAndGetItem[str, bool | str]"  [dict-item]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: error: No overload variant of "pop" of "dict" matches argument type "Sequence[str]"  [call-overload]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note: Possible overload variants:
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, str, /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, str, str, /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, str, _T, /) -> str | _T
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str], /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str], str, /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, tuple[str, str], _T, /) -> str | _T
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str], /) -> tuple[int, ...]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str], tuple[int, ...], /) -> tuple[int, ...]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, tuple[str, str], _T, /) -> tuple[int, ...] | _T
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], str, /) -> str
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, tuple[str, str, str], _T, /) -> str | _T
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], /) -> tuple[int, ...]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], tuple[int, ...], /) -> tuple[int, ...]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, tuple[str, str, str], _T, /) -> tuple[int, ...] | _T
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], /) -> dict[str, object]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def pop(self, tuple[str, str, str], dict[str, object], /) -> dict[str, object]
+src\emo_master\apps\designer\ui\runtime_panel.py:102: note:     def [_T] pop(self, tuple[str, str, str], _T, /) -> dict[str, object] | _T
+src\emo_master\apps\designer\state\run_result_history.py:39: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\state\run_result_history.py:40: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\ui\run_result_tools.py:15: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\core\workflow\compiler.py:182: error: Incompatible types in assignment (expression has type "CompiledNode", variable has type "WorkflowNode")  [assignment]
+src\emo_master\apps\runtime\presentation\exporter.py:51: error: Need type annotation for "slots" (hint: "slots: list[<type>] = ...")  [var-annotated]
+src\emo_master\apps\runtime\presentation\exporter.py:67: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:68: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:70: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\rpc.py:16: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\rpc.py:114: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\rpc.py:145: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:86: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:87: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:127: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:128: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:129: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:164: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:165: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:215: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:216: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:274: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:275: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:331: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\worker.py:139: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\worker.py:140: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\manager.py:64: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\operator_debug\manager.py:65: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:900: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\ui\main_window.py:2973: error: Argument 1 to "pop" of "dict" has incompatible type "tuple[str, ...]"; expected "tuple[str, str]"  [arg-type]
+src\emo_master\apps\designer\ui\main_window.py:2973: error: Argument 1 to "pop" of "dict" has incompatible type "tuple[str, ...]"; expected "tuple[str, str, str]"  [arg-type]
+src\emo_master\apps\designer\ui\main_window.py:4380: error: Item "object" of "Any | object" has no attribute "update"  [union-attr]
+src\emo_master\apps\designer\ui\main_window.py:4396: error: Item "object" of "Any | object" has no attribute "setdefault"  [union-attr]
+src\emo_master\apps\designer\ui\main_window.py:4396: error: Value of type "object" is not indexable  [index]
+src\emo_master\apps\designer\ui\main_window.py:4416: error: Incompatible types in assignment (expression has type "Any | None", variable has type "str")  [assignment]
+Found 10 errors in 5 files (checked 384 source files)

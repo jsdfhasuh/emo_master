@@ -1,0 +1,69 @@
+{
+  "operatorId": "vision.geometry.extract_points",
+  "displayName": "几何特征取点",
+  "version": "1.0.0",
+  "inputPorts": {
+    "circles": {
+      "type": "circleCollection",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.2"
+    },
+    "measurements": {
+      "type": "shapeMeasurementCollection",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.2"
+    },
+    "bbox": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "pointCount": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "feature": {
+        "title": "取点特征",
+        "type": "string",
+        "default": "circleCenter",
+        "enum": [
+          "circleCenter",
+          "bboxCenter",
+          "bboxTopLeft",
+          "minAreaRectCenter",
+          "centroid"
+        ],
+        "xOptionLabels": {
+          "circleCenter": "圆心",
+          "bboxCenter": "轴对齐包围框中心",
+          "bboxTopLeft": "轴对齐包围框左上角",
+          "minAreaRectCenter": "最小面积旋转矩形中心",
+          "centroid": "轮廓质心（不是 Blob 内心）"
+        }
+      }
+    }
+  },
+  "entry": "emo_master.plugins.builtins._geometry_bridges:GeometryPointsOperator",
+  "category": "几何",
+  "summary": "提取圆心、指定矩形特征或明确的质心；不推测 Blob 内心。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

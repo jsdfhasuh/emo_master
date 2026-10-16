@@ -1,0 +1,1874 @@
+{
+  "createdAt": "2026-10-06T21:51:03.320975+08:00",
+  "repository": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "head": "dce541532909e18ec8113abbe643deba87b67d64",
+  "status": [
+    "M  .gitignore",
+    " M docs/development-guide.md",
+    " M docs/evidence/p4/a-first/evidence.json",
+    "AM docs/plans/2026-10-06-standalone-runtime-production-v1.md",
+    " M docs/project-json-spec.md",
+    " M scripts/validate_page_editor.py",
+    " M src/emo_master/apps/designer/controllers/project_controller.py",
+    " M src/emo_master/apps/designer/page_designer/canvas_tools.py",
+    " M src/emo_master/apps/designer/page_designer/coordinator.py",
+    " M src/emo_master/apps/designer/page_designer/grid_geometry.py",
+    " M src/emo_master/apps/designer/page_designer/palette.py",
+    " M src/emo_master/apps/designer/page_designer/preview.py",
+    " M src/emo_master/apps/designer/page_designer/property_panel.py",
+    " M src/emo_master/apps/designer/page_designer/tools.py",
+    " M src/emo_master/apps/designer/page_designer/workspace.py",
+    " M src/emo_master/apps/designer/state/project_edit_session.py",
+    " M src/emo_master/apps/designer/state/workflow_store.py",
+    " M src/emo_master/apps/designer/ui/main_window.py",
+    " M src/emo_master/apps/designer/ui/styles/app.qss",
+    " M src/emo_master/apps/runtime/context/sqlite_store.py",
+    " M src/emo_master/apps/runtime/grpc_server/service.py",
+    " M src/emo_master/apps/runtime/jobs/models.py",
+    " M src/emo_master/apps/runtime/jobs/supervisor.py",
+    " M src/emo_master/apps/runtime/jobs/worker_main.py",
+    " M src/emo_master/apps/runtime/workflow/runner.py",
+    " M src/emo_master/apps/windows_entry.py",
+    " M src/emo_master/core/project/delivery_store.py",
+    " M src/emo_master/core/project/migration.py",
+    " M src/emo_master/core/project/models.py",
+    " M src/emo_master/core/project/package_builder.py",
+    " M src/emo_master/core/project/test_delivery.py",
+    " M src/emo_master/core/workflow/validation.py",
+    " M src/emo_master/ui/presentation/design_examples.py",
+    " M src/emo_master/ui/presentation/renderer.py",
+    " M tests/designer/test_visual_layout.py",
+    " M tests/runtime/test_heartbeat_liveness.py",
+    " M tests/runtime/test_worker_heartbeat_finalization.py",
+    " M tests/ui/page_designer/test_current_job_viewing.py",
+    " M tests/ui/page_designer/test_delivery_path.py",
+    " M tests/ui/page_designer/test_normal_run_path.py",
+    " M tests/ui/page_designer/test_normal_run_viewing.py",
+    " M tests/ui/page_designer/test_page_navigation.py",
+    " M tests/ui/page_designer/test_preview.py",
+    " M tests/ui/page_designer/test_retained_acceptance_multiscope.py",
+    " M tests/ui/page_designer/test_two_job_observation.py",
+    " M tests/ui/page_designer/test_usable_properties.py",
+    " M tests/ui/page_designer/test_user_path.py",
+    " M tests/ui/page_designer/test_visual_editor.py",
+    "?? .github/workflows/runtime-windows.yml",
+    "?? docs/operator-runtime-build.md",
+    "?? docs/operator-runtime.md",
+    "?? docs/testing/runtime-delivery-2026-10-06.md",
+    "?? docs/testing/runtime-delivery-2026-10-06/archive.json",
+    "?? docs/testing/runtime-delivery-2026-10-06/candidate.json",
+    "?? docs/testing/runtime-delivery-2026-10-06/frozen.json",
+    "?? docs/testing/runtime-delivery-2026-10-06/measurement.json",
+    "?? docs/testing/runtime-delivery-2026-10-06/native.json",
+    "?? docs/testing/runtime-delivery-2026-10-06/operator-runtime-native.png",
+    "?? docs/testing/runtime-review-fixes-2026-10-06.md",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/action-regression.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/archive.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/archive.json.png",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/candidate.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/frozen.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-01.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-02.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-03.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-04.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-05.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-06.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-07.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-08.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-09.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/identity-10.xml",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/manifest.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/measurement.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/native.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/operator-runtime-native.png",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/packaged-bytecode.json",
+    "?? docs/testing/runtime-review-fixes-2026-10-06/source-regression.xml",
+    "?? docs/testing/standalone-runtime-2026-10-06.md",
+    "?? docs/testing/standalone-runtime-2026-10-06/operator-runtime-native.png",
+    "?? docs/testing/workspace-switch-2026-10-03.md",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-00.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-01.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-02.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-03.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-04.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-05.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-06.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-07.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-08.png",
+    "?? docs/testing/workspace-switch-2026-10-03/buttons-09.png",
+    "?? docs/testing/workspace-switch-2026-10-03/check-0.txt",
+    "?? docs/testing/workspace-switch-2026-10-03/check-1.txt",
+    "?? docs/testing/workspace-switch-2026-10-03/check-2.txt",
+    "?? docs/testing/workspace-switch-2026-10-03/checks.json",
+    "?? docs/testing/workspace-switch-2026-10-03/flow-buttons.png",
+    "?? docs/testing/workspace-switch-2026-10-03/flow.png",
+    "?? docs/testing/workspace-switch-2026-10-03/geometry-1280-200.json",
+    "?? docs/testing/workspace-switch-2026-10-03/geometry-1600-100.json",
+    "?? docs/testing/workspace-switch-2026-10-03/manifest.json",
+    "?? docs/testing/workspace-switch-2026-10-03/measurements.json",
+    "?? docs/testing/workspace-switch-2026-10-03/pages-buttons.png",
+    "?? docs/testing/workspace-switch-2026-10-03/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03.md",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/compact-library.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/compact-library.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/empty.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/flow.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/geometry.json",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/invalid-property.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview-many-pages.png",
+    "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview.png",
+    "?? docs/testing/workspace-ui-2026-10-03/candidate.json",
+    "?? docs/testing/workspace-ui-2026-10-03/ci-check.txt",
+    "?? docs/testing/workspace-ui-2026-10-03/lifecycle-isolated.txt",
+    "?? docs/testing/workspace-ui-2026-10-03/manifest.json",
+    "?? scripts/configure_runtime_project.py",
+    "?? scripts/run_operator.py",
+    "?? scripts/validate_designer_workspaces.py",
+    "?? scripts/validate_operator_runtime.py",
+    "?? scripts/verify_runtime_package.ps1",
+    "?? src/emo_master/apps/designer/page_designer/chrome.py",
+    "?? src/emo_master/apps/designer/page_designer/preview_window.py",
+    "?? src/emo_master/apps/designer/page_designer/workspace_switch.py",
+    "?? src/emo_master/apps/operator_runtime/__init__.py",
+    "?? src/emo_master/apps/operator_runtime/controller.py",
+    "?? src/emo_master/apps/operator_runtime/main.py",
+    "?? src/emo_master/apps/operator_runtime/validation.py",
+    "?? src/emo_master/core/project/runtime_directory.py",
+    "?? src/emo_master/core/project/runtime_package.py",
+    "?? start_runtime.cmd",
+    "?? tests/core/test_runtime_directory.py",
+    "?? tests/core/test_runtime_package.py",
+    "?? tests/runtime/production_fixture.py",
+    "?? tests/runtime/test_production_boundaries.py",
+    "?? tests/runtime/test_production_continuous.py",
+    "?? tests/test_operator_runtime_validation.py",
+    "?? tests/ui/operator_view/test_production_window.py",
+    "?? tests/ui/page_designer/test_palette.py",
+    "?? tests/ui/page_designer/test_workspace_modes.py",
+    "?? tests/ui/page_designer/test_workspace_switch.py"
+  ],
+  "files": [
+    {
+      "path": ".gitignore",
+      "status": "M ",
+      "size": 716,
+      "sha256": "a87081a2c384133ea9bb2e310675d422fe5871ccc9017e2a40858f882c2c52e9",
+      "gitBlob": "1b142de9484c96faa90ff2b1be649a3cea6556ab"
+    },
+    {
+      "path": "docs/development-guide.md",
+      "status": " M",
+      "size": 29641,
+      "sha256": "77ad3f23b6ebb153f2a0075151f6a7c020585e3d13ead9e02c040a68ea082030",
+      "gitBlob": "e2602b3b0e592d2aa312988da5de0eb0c8db707a"
+    },
+    {
+      "path": "docs/evidence/p4/a-first/evidence.json",
+      "status": " M",
+      "size": 134028,
+      "sha256": "4af91a06cf25a8f9e58b6f9544fedcdb7181e696bee30dfff02379b350de9539",
+      "gitBlob": "75e83c35eb434eb2288fcb9a914a3c0468c60a04"
+    },
+    {
+      "path": "docs/plans/2026-10-06-standalone-runtime-production-v1.md",
+      "status": "AM",
+      "size": 16329,
+      "sha256": "3530aaf4e86a78c28dc8924a563bd8aa93c080757046848e3257237e80b21185",
+      "gitBlob": "351e0019992ab7ed79c8f0fbe7da61e8a1daab0e"
+    },
+    {
+      "path": "docs/project-json-spec.md",
+      "status": " M",
+      "size": 5278,
+      "sha256": "e54d26181b4137d3a76acf2f28a5f65f3049f17ae341cff66fa5307b84b65fc7",
+      "gitBlob": "6e5c34853980286f21b837410d79f978d3e2faae"
+    },
+    {
+      "path": "scripts/validate_page_editor.py",
+      "status": " M",
+      "size": 10637,
+      "sha256": "8c07f894d98e845f984f2cc8eab7beeb85f0983b20980277cb503fa1bebb6878",
+      "gitBlob": "f547bb51f260cdce0d2ba63e520f60efc838d46a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/project_controller.py",
+      "status": " M",
+      "size": 17279,
+      "sha256": "603ad40e6a5f7a99e8899d9d4ab545df6745e9154dad0553f60b850bdfc71855",
+      "gitBlob": "f40a632ce4a80b9b3643bb4a95ff7a3a80a8f414"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/canvas_tools.py",
+      "status": " M",
+      "size": 11603,
+      "sha256": "411088113f289d0456ac086ced7961cf32dcdb382b5242d14ceb119dbf09639c",
+      "gitBlob": "f7e6093ae28e374fe322860a3cffefed6b92f995"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "status": " M",
+      "size": 12424,
+      "sha256": "f2698a946f16055d0909f96db4bcbc96213061758f8c3788ceef1f3a840ac52f",
+      "gitBlob": "885b4b7aa2c57a9c4ff543c8d50a98025f4fc499"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/grid_geometry.py",
+      "status": " M",
+      "size": 5295,
+      "sha256": "dfb24fa7ffd2aa22ff41035d8691fdd432eb99efc636dc83fcb219e852071fc5",
+      "gitBlob": "3e4c68918a9120fb199acb02925fc063ee231e27"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/palette.py",
+      "status": " M",
+      "size": 5292,
+      "sha256": "2c7d78cdbf23a84fcf629d433ab422b305a5fc2c4dd200c60bc6b370947a3c43",
+      "gitBlob": "953df0763a605689ba6f94dcae774f1d016adcf7"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "status": " M",
+      "size": 29159,
+      "sha256": "54f742f2a7b2e2660cdfee9c41b5db1dfe97847fdd5a48ac378f5d2501d43f7a",
+      "gitBlob": "7cad7e0aee2eb890c316ccd21779245c2559f1ea"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/property_panel.py",
+      "status": " M",
+      "size": 7337,
+      "sha256": "ab84f8eccd219d25e0093f3a1e7b77924defbb3e8d6bee25645bbc85c28b4944",
+      "gitBlob": "61bcbbcebc9393b59ee7bcd3749e842453fe1967"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/tools.py",
+      "status": " M",
+      "size": 42342,
+      "sha256": "559225430823263992a8cc075bb2f50b8e3ad71fa972827f40d7d31641d9c52d",
+      "gitBlob": "101571215e718b63b73127a235aa640b5144947b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/workspace.py",
+      "status": " M",
+      "size": 14312,
+      "sha256": "c163b69450b37ca826e6dfa414657d9ff3ef9baca64e2404a94415320dcb3f9c",
+      "gitBlob": "dade6dabffc4be0415853ca5250c75a0798eb359"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/project_edit_session.py",
+      "status": " M",
+      "size": 6214,
+      "sha256": "083ee22a410999fa9b5cf4cb6a4c04b341654f27d4d8610b93c68fcf1a2af3f4",
+      "gitBlob": "2ad3be5b5f39de4942b9fdb9d1ad0afa6d70e97b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/workflow_store.py",
+      "status": " M",
+      "size": 32277,
+      "sha256": "451fd41138c1fe3395f7277725d7657f6779484a675eb2dd9949fd6a48d22319",
+      "gitBlob": "c4bd88f74cec95a2aa53677e11697b633e9dc6fa"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "status": " M",
+      "size": 164637,
+      "sha256": "b517c9e22f60f67c6c2507ca7b300d690ce8583dcead56c0285a42e27233939a",
+      "gitBlob": "3ee0d2d066b6ee05547eb8dffc3aa0353da6837e"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/styles/app.qss",
+      "status": " M",
+      "size": 8576,
+      "sha256": "c300eb250e29bbeb1c5e1f97967afe0ba48c71d6e2bb6f928dc5ad5abfec1ec7",
+      "gitBlob": "4fe71b9177227dd72a4a22b2489b1b073f6d92bb"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/context/sqlite_store.py",
+      "status": " M",
+      "size": 26411,
+      "sha256": "ddb4172a4e25cd361360d614b399bb7508895b7ff765fcbf4dfd51e3348ff693",
+      "gitBlob": "2cf9a5fbce4a783f6a298b12db7031152388b8de"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "status": " M",
+      "size": 75038,
+      "sha256": "3e00d49bfa9c2ec2bb10a69ac950571059c663692a0d4dbd205b25b92eb76f01",
+      "gitBlob": "9eb377de2dbc73216be8fa7e34997dedebd86a9e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/models.py",
+      "status": " M",
+      "size": 1901,
+      "sha256": "42937e703cf42329b3ee027bb95243b13e98f92f868b84b334b113662a9abbad",
+      "gitBlob": "6146018f052077414cf8929428065e7640b866a0"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+      "status": " M",
+      "size": 51848,
+      "sha256": "6fe88be4da95542e2426a451a9ee4da359f2c2e0a6f30cffdc262e19050cbb78",
+      "gitBlob": "542441299bd9f57ba9da42fce76bb3c6e61c350c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "status": " M",
+      "size": 9835,
+      "sha256": "e359d132ea6e1a351b3b59e0dc51ad60352864b47b370e0b9fe84a729024aed0",
+      "gitBlob": "eb937b6c6a50d20b910e39fcc1070b535df5801b"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "status": " M",
+      "size": 33231,
+      "sha256": "12bdc51d5c5ada47d6a83d64f8bc174f42c8c99a2c2bf8065a8dc1c1527fa1df",
+      "gitBlob": "934a8115748433a33c197717397e648221349906"
+    },
+    {
+      "path": "src/emo_master/apps/windows_entry.py",
+      "status": " M",
+      "size": 1261,
+      "sha256": "b342af2a7c7f9e1bf4f8d650a6865fdce93dd9749ad4a366345c8bdc56258516",
+      "gitBlob": "f5e3bef07940b3a7f93616237d6445c5aac3cdca"
+    },
+    {
+      "path": "src/emo_master/core/project/delivery_store.py",
+      "status": " M",
+      "size": 11903,
+      "sha256": "c3b5b30a0f376fcf799da2f2b1661370f6cb881b8d3a860cf529f112d882125c",
+      "gitBlob": "dbc8a85643af5329e7fc9ef71f1709d78cca4e27"
+    },
+    {
+      "path": "src/emo_master/core/project/migration.py",
+      "status": " M",
+      "size": 19184,
+      "sha256": "058545272f050951af7031ba4cee7970a1bcced97422a22802dc0296adaaba74",
+      "gitBlob": "f71b921aff0393875e0d112f2217d9b76a6ea114"
+    },
+    {
+      "path": "src/emo_master/core/project/models.py",
+      "status": " M",
+      "size": 6903,
+      "sha256": "b47e2d5c32e8364f0df9e11b677eb64a44cf63ca2429b1f7846795bbc44e71fe",
+      "gitBlob": "b2add9d0b035eecf25a0dad996dcb5796a0093c5"
+    },
+    {
+      "path": "src/emo_master/core/project/package_builder.py",
+      "status": " M",
+      "size": 7598,
+      "sha256": "510cceacf2684d3119f6920dda5d9c4cda9c46a94e16d40d0ef8c6f867d28f57",
+      "gitBlob": "e13a433169d106ab3667d29a687d84f776834baf"
+    },
+    {
+      "path": "src/emo_master/core/project/test_delivery.py",
+      "status": " M",
+      "size": 8180,
+      "sha256": "8344568cfa9749d3529b6789bb6c62d9a8dde5a8b8c46d43cdfcc5d7ad8d92a2",
+      "gitBlob": "80992c0a38680c2ea94c0d8383a45d0505bd2253"
+    },
+    {
+      "path": "src/emo_master/core/workflow/validation.py",
+      "status": " M",
+      "size": 13662,
+      "sha256": "d998f579bb0a9059fd4399824c3ac22d7445adaa31494dec8321dd0ac3b81430",
+      "gitBlob": "bdb8d73ee7c05ea9b9c2b52e345ac1b551d0ec84"
+    },
+    {
+      "path": "src/emo_master/ui/presentation/design_examples.py",
+      "status": " M",
+      "size": 4203,
+      "sha256": "8e9d65f83078d1e0ddd557f633dd924bc00cc66b5c3d6300ea9fd6cebfbcb970",
+      "gitBlob": "2ca2545db86c633756c1b51f84c210e91e7af8dc"
+    },
+    {
+      "path": "src/emo_master/ui/presentation/renderer.py",
+      "status": " M",
+      "size": 37999,
+      "sha256": "5f2eb421629e600162b524e8354c65af33cf4b8dc1a6d940c7f36e12ef1a823e",
+      "gitBlob": "7caa457e64b3693f197f00177f159a83e2c99a42"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "status": " M",
+      "size": 16066,
+      "sha256": "47057c0e0dfcae58496fbb9eb835801d873f66564a48408af9ab70a80f8ea96e",
+      "gitBlob": "2a8475d8863aeb1e1ca7f80bac0c6d884b76578c"
+    },
+    {
+      "path": "tests/runtime/test_heartbeat_liveness.py",
+      "status": " M",
+      "size": 14918,
+      "sha256": "f64ec9c3fb706cf22bb9f9ca9f26c9cf7a916e0baa47b6110cf446a1c9144638",
+      "gitBlob": "b6096aeac1fdf389fe9f0fe40db50c41a3fb9ccd"
+    },
+    {
+      "path": "tests/runtime/test_worker_heartbeat_finalization.py",
+      "status": " M",
+      "size": 11675,
+      "sha256": "e7e45a2e6c5c9ac6a2a4eff7bfbb8198ff6154632b8e264d9a8a807c7c1107e6",
+      "gitBlob": "a814b5ebde978ed8ec13b02b3dcdb0f2da8d2c24"
+    },
+    {
+      "path": "tests/ui/page_designer/test_current_job_viewing.py",
+      "status": " M",
+      "size": 20895,
+      "sha256": "2a8600ca364b5857111b259cec6cddfedf517ca8cbffdb15cd573cb3946fdbbf",
+      "gitBlob": "8b14ace12a48a963397d24afce4cae17fd4c12c8"
+    },
+    {
+      "path": "tests/ui/page_designer/test_delivery_path.py",
+      "status": " M",
+      "size": 8811,
+      "sha256": "5c08bcd3c3b4cc9fb3da1726f58b9ce42247f8d8db80c9660eab0682fb543118",
+      "gitBlob": "fec9b12d0ff455bad62967e2d365d3facb656760"
+    },
+    {
+      "path": "tests/ui/page_designer/test_normal_run_path.py",
+      "status": " M",
+      "size": 9492,
+      "sha256": "e7049f24061e8d0e936cc43b7c8597b026206ea1a8b97ddedaeef32737646a93",
+      "gitBlob": "89b2622d8421af6f22e95ab96d355a83416068e5"
+    },
+    {
+      "path": "tests/ui/page_designer/test_normal_run_viewing.py",
+      "status": " M",
+      "size": 10688,
+      "sha256": "5facde23245b758c8fe12c954eab61ab7799c9a7addbd80ad14ad031dc2fbb8c",
+      "gitBlob": "af26051d0a28f15f6792caa09af3564d45cfe725"
+    },
+    {
+      "path": "tests/ui/page_designer/test_page_navigation.py",
+      "status": " M",
+      "size": 11252,
+      "sha256": "83013527a0e1f2364ad07144bf7ed8df0f68eacb9ddac4fe10be6aef86701183",
+      "gitBlob": "52012bbc23d7c7efe95d2e73e1f5989fbfceddb0"
+    },
+    {
+      "path": "tests/ui/page_designer/test_preview.py",
+      "status": " M",
+      "size": 7982,
+      "sha256": "a6de4acbaa76cfe56f24109c98549d56e42f3100ee6f0c6723375d157e20dada",
+      "gitBlob": "7342f07ab34e791f6d29c27e171efa1e727ad6a4"
+    },
+    {
+      "path": "tests/ui/page_designer/test_retained_acceptance_multiscope.py",
+      "status": " M",
+      "size": 20012,
+      "sha256": "5e6a96fbcc0bd30af45e9af55351d40d49f95718a242528a028257a08a475273",
+      "gitBlob": "bedbe9af6a056c4213e76ce77f410192ed41fdf0"
+    },
+    {
+      "path": "tests/ui/page_designer/test_two_job_observation.py",
+      "status": " M",
+      "size": 9236,
+      "sha256": "192e8425635f9f58b43462cc3e3736bb36ab933b1788a6023b55bdcd168bf273",
+      "gitBlob": "67cd56ea9f270cd3dc57a6da093d5b5a96644e96"
+    },
+    {
+      "path": "tests/ui/page_designer/test_usable_properties.py",
+      "status": " M",
+      "size": 6073,
+      "sha256": "98d2c4930264684f9de200d054fc1cbbe04d3887030d2ae6ea900b57d3115040",
+      "gitBlob": "f810df0bd6e58118305d32a6e492ed9d6bb3c877"
+    },
+    {
+      "path": "tests/ui/page_designer/test_user_path.py",
+      "status": " M",
+      "size": 13155,
+      "sha256": "69c2e21667c27232b36ed23faf77e7c2f0729511d555e39b2e97527d376c7b3a",
+      "gitBlob": "c07a6d2b3e63f1a0500f6025bb0a9c5f39e641b9"
+    },
+    {
+      "path": "tests/ui/page_designer/test_visual_editor.py",
+      "status": " M",
+      "size": 6594,
+      "sha256": "568b18e2b6deea766a23052879b465bb8baf68bbe78aab512c94c66e4fc33ca4",
+      "gitBlob": "1b2afdbe14f5973ff12d3c177cfe7fd703911652"
+    },
+    {
+      "path": ".github/workflows/runtime-windows.yml",
+      "status": "??",
+      "size": 3867,
+      "sha256": "19097c00021b5de7d9a9696974e4dab5033af804c07c9c3d3645f0856d1cd443",
+      "gitBlob": "f079445bfe1207e9f6f4023a645d3f3ca711d93e"
+    },
+    {
+      "path": "docs/operator-runtime-build.md",
+      "status": "??",
+      "size": 8086,
+      "sha256": "defd4bc6d249ab39f559045c61c12f4796e77fb701b53d8473839ddb421e6b6c",
+      "gitBlob": "5b794cdc3e93a29188ac7022c15d1a3c6cb72754"
+    },
+    {
+      "path": "docs/operator-runtime.md",
+      "status": "??",
+      "size": 8729,
+      "sha256": "55a24bdfa286a3ff49c1cf1d0e62da6c7ac533f45c43340713f7da648feef7c3",
+      "gitBlob": "1a07df3fc778cc3fa05755dcbdbb4a419db77014"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06.md",
+      "status": "??",
+      "size": 8923,
+      "sha256": "3200b29b0aa8cde93f6d52aa71372e525a3588cb5061393c41374a5d021875f2",
+      "gitBlob": "8715b013ffacce6aa2ec8f5ebba6a282dd4e1c2e"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/archive.json",
+      "status": "??",
+      "size": 1179,
+      "sha256": "3fb7bb0bd645cf272adb10463bccf96daf65e9021a66abc8a7fad72bdc9a7059",
+      "gitBlob": "85cb993dab85d60c08e648d3e56a1f95e79ae0ce"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/candidate.json",
+      "status": "??",
+      "size": 21105,
+      "sha256": "a073c7d4b34d1ace4990ce1457ba196a42c518903a861d8d85c5bd7a9d92c35d",
+      "gitBlob": "ae824b4fddd57bb7f8e47405dbb8ae7eece5aff0"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/frozen.json",
+      "status": "??",
+      "size": 1179,
+      "sha256": "7b331465a06d388b50bffe80eedd7cc41a616af643ebe89bfa4fbf3c37f0a842",
+      "gitBlob": "0c3de6684d416d118371d68275c94ea66bf742ac"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/measurement.json",
+      "status": "??",
+      "size": 106040,
+      "sha256": "5ad8fbf768415ac179d8d7c1caa8a3073640cf9567e6c9d85c5f171c308303ae",
+      "gitBlob": "77201c77b0b68a8880a979b49d3b4869d783dc15"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/native.json",
+      "status": "??",
+      "size": 2154,
+      "sha256": "c4102a04070e87c42650fe2e2a20bc55d7da8df8ef154038a31657c879c918d9",
+      "gitBlob": "e0dea3af4cbe7e82cf3ad9710ef379bf7dd079c5"
+    },
+    {
+      "path": "docs/testing/runtime-delivery-2026-10-06/operator-runtime-native.png",
+      "status": "??",
+      "size": 25135,
+      "sha256": "e0d52a6ceaed29fb7c28b1277f2e119a0270788e09adde916e38eb53ac63acec",
+      "gitBlob": "04fc6b3070d4695997396fc2b0d481929d962d62"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06.md",
+      "status": "??",
+      "size": 8950,
+      "sha256": "8e2a6aa3e0c205bc48f8853d13b94d26e7c18ee76f5b0055b35e1d833674a2ef",
+      "gitBlob": "4dc233b4b4ae5ae6cf74ae0cf9bc64f0a4c80ea4"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/action-regression.xml",
+      "status": "??",
+      "size": 15075,
+      "sha256": "fa7cf013bd3d1b22e2743ae791e47b67250d612100611f108d6c3b8f056c693e",
+      "gitBlob": "dbb04542a7614ee792fca01bc82770d7b3db23fc"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/archive.json",
+      "status": "??",
+      "size": 1179,
+      "sha256": "4a1d9f8efbd31ddf32ad9f79ea5e812d50d0b61aa80e5766770f6b33aea4cc8f",
+      "gitBlob": "0a452f8635a2ae6b3eab2c937094d94c84c533b4"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/archive.json.png",
+      "status": "??",
+      "size": 8270,
+      "sha256": "d0b8721e41d0000de3c3add8cba444ced426910dfe0a52140dd85bd8fbb79f0f",
+      "gitBlob": "74d580f0f89caa68fce4c99a250f6d04028d4a28"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/candidate.json",
+      "status": "??",
+      "size": 15846,
+      "sha256": "eb7becdaf3f6ba666496a681e65ad9cc4ceb1f72b37a0d7c965ee75559172966",
+      "gitBlob": "41e2b35b935092cc977142fe602c2d696b7a8d87"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/frozen.json",
+      "status": "??",
+      "size": 1180,
+      "sha256": "5c4f971a03e52a7bce309119a82215a2ed397d4d744de8318d85fbb7416db6f4",
+      "gitBlob": "904fc3fe80823e36f32b496da70eaa8b03829acd"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-01.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "eda578c274ca197e18a3e816e3a1159e82747724b35c20378b6646a222745fbf",
+      "gitBlob": "0eb6ed0424172558eb216e860b5b7898887a11a1"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-02.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "c1ce96eaad53d7d4766c1935a42a426f4e6d921b5f7b2306a7978f6841014195",
+      "gitBlob": "3361297abc141974bb3ba1e2c90cdfeeb63bd839"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-03.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "25f29e078e0ec34cea5854ced7533a921b076601ae7c2b2031456a06b9c84cb5",
+      "gitBlob": "4decc42958e4d48634dc9026520eb695311af434"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-04.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "cd57c6373145d34bfba4c4376b8fee47be76f1473d678a546983417c4443e496",
+      "gitBlob": "0b4f1f61327ba09eabbf81324be87a3337c78ca9"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-05.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "b8275d836cfb4396b1dedbd7b538471cb527a777edc049bb0bece44125212ada",
+      "gitBlob": "459f92f864089f77dbfe2ba5638e688bf16ddb63"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-06.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "88df7f8642ffb364cf718c5a2b96a367ae9c4d871f77af41e45f64d1aed9f95f",
+      "gitBlob": "4ede93c1f5d60569e0f4a441a4bc95ae8a2f66fa"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-07.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "3ebbe53b08c62ab4bddca8cb9e7002a073f505487a25bb168dbcc7f9260e51a6",
+      "gitBlob": "82946f2b7f0ad0e90c8f8905e9aced5ea552bcce"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-08.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "a88cd5179931a653738a3e4920473434f64e590421b40e5211be842212a9bb6f",
+      "gitBlob": "56fa8579fc4bc9e4c9baca0b21d0046e67223c7e"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-09.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "cd1f89d006d7b26d82f7956dfe5a81390591d0b3d2ee64ce2b0ba84d6b346872",
+      "gitBlob": "b84cea5317a0d9b2c7e11d3775cc7e31b57a54de"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/identity-10.xml",
+      "status": "??",
+      "size": 395,
+      "sha256": "ce5c4a945bb53467e131c76b104b4b7c0ab1506836a24746e722a62ecd76d0ee",
+      "gitBlob": "a99a435c1604b25ffba096bf2580cf306ad34c75"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/manifest.json",
+      "status": "??",
+      "size": 633,
+      "sha256": "154dff2e6be958fa0dc83e3e12232b8a5df946abf09084ccedefa5e018916259",
+      "gitBlob": "4f4f9af27ceb5a4e1d778253a1cd335fb5c66cba"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/measurement.json",
+      "status": "??",
+      "size": 105539,
+      "sha256": "b31b88deb3f25a5bd5319279b2f730105abba2ef5f8ce4775967430b1b9744ba",
+      "gitBlob": "f4be96c302940635105d66c8d6ca057c3814e39f"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/native.json",
+      "status": "??",
+      "size": 2141,
+      "sha256": "2456f50782bd9f199344ff6beff686a853c3a7deb63f20c9f4fd91aa32b1d3a3",
+      "gitBlob": "260d046ae83319825d4abb64abe2c11649f0b2e9"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/operator-runtime-native.png",
+      "status": "??",
+      "size": 25072,
+      "sha256": "ea355ad4bbdb6d5bcc569234b3a865be483800233cd6e5624d32f8c811bb7c62",
+      "gitBlob": "cba29b2823fcdddd85fd00ab352746223e5334a6"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/packaged-bytecode.json",
+      "status": "??",
+      "size": 1102,
+      "sha256": "4f1a10b88f6c82d408e94bcfd10266e9cdcd30cf1bacb19e0d3a9ab5dfe25a36",
+      "gitBlob": "9f112d8e0a74b6b4cf1ec1eb5070ac83753b8a90"
+    },
+    {
+      "path": "docs/testing/runtime-review-fixes-2026-10-06/source-regression.xml",
+      "status": "??",
+      "size": 204343,
+      "sha256": "06cda446e37995c3136e548329bcbf610022d208e06396797f88f59b3782d602",
+      "gitBlob": "d0d98a971cbc8d35aecf3d266f9adf20404af3d8"
+    },
+    {
+      "path": "docs/testing/standalone-runtime-2026-10-06.md",
+      "status": "??",
+      "size": 6577,
+      "sha256": "1670b1a0084f1837d2d38ca8c6b70b00f1560d4f6a888ccef5e1bc42f8ca1f0a",
+      "gitBlob": "fd5e027394020233883017593c8db1105911d0e5"
+    },
+    {
+      "path": "docs/testing/standalone-runtime-2026-10-06/operator-runtime-native.png",
+      "status": "??",
+      "size": 23799,
+      "sha256": "7256c70fb9e82e4baac454b9f2fe2bfd063f8747a8d00a168f0a4f1a3842aa26",
+      "gitBlob": "e70a722e30a209e082e8341bf58c81f927b451d1"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03.md",
+      "status": "??",
+      "size": 4024,
+      "sha256": "04eb7eb923dbf4f2d45b37c259416a667cdc7f8e7ded057dbcbcd0cc43df581a",
+      "gitBlob": "8e96366046f487d0ac481315831dc691cc5daadf"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-00.png",
+      "status": "??",
+      "size": 2621,
+      "sha256": "171d3a8bf001d8bb76fb06e4821cfc29c4465cf44c1ec62146d4691aaa941e7a",
+      "gitBlob": "49cca801eb3de11569547d4a4324fad3b8186326"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-01.png",
+      "status": "??",
+      "size": 2621,
+      "sha256": "171d3a8bf001d8bb76fb06e4821cfc29c4465cf44c1ec62146d4691aaa941e7a",
+      "gitBlob": "49cca801eb3de11569547d4a4324fad3b8186326"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-02.png",
+      "status": "??",
+      "size": 2862,
+      "sha256": "0be8793fb1bff03577284b02287679cb9f406d90c9729952b5a3559f42986e3c",
+      "gitBlob": "cc445ded0e0b81a117d84b515886d6c599ad886a"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-03.png",
+      "status": "??",
+      "size": 2727,
+      "sha256": "a9ade065c7f08acf28cd824f32cb5299192aa9cd7947a27279a5228a64dc4c87",
+      "gitBlob": "ab8a2a14e7398a6e0777bedbdb36dcd83f1512f8"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-04.png",
+      "status": "??",
+      "size": 2680,
+      "sha256": "f4eea4dda613a53a1c148265376b65ed9e181468eef9fdb0286447766f5841eb",
+      "gitBlob": "1c99fd57d21357ebc78be949fd288198be6fb850"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-05.png",
+      "status": "??",
+      "size": 2613,
+      "sha256": "a92c6b95ea5a4986f4f12084502da3aa11b7c5a5adfa30b443adc670f80b9552",
+      "gitBlob": "ad1dad9e2097f5d36102517600591eb6c3bdbd4a"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-06.png",
+      "status": "??",
+      "size": 2532,
+      "sha256": "2cc265761161b8916feef1b500f7212cf8c100542aa20448718ad2a7a885ec86",
+      "gitBlob": "9b72ea5b1866a54b475df77bc81b666a27acee53"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-07.png",
+      "status": "??",
+      "size": 2513,
+      "sha256": "3be3a847c6ac094d65a9b8c95bd3245e02defeadfaa414209db1f4aca0d7a95d",
+      "gitBlob": "b4b3f04d843b5bcc487620669d31b6067f155c37"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-08.png",
+      "status": "??",
+      "size": 2513,
+      "sha256": "3be3a847c6ac094d65a9b8c95bd3245e02defeadfaa414209db1f4aca0d7a95d",
+      "gitBlob": "b4b3f04d843b5bcc487620669d31b6067f155c37"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/buttons-09.png",
+      "status": "??",
+      "size": 2513,
+      "sha256": "3be3a847c6ac094d65a9b8c95bd3245e02defeadfaa414209db1f4aca0d7a95d",
+      "gitBlob": "b4b3f04d843b5bcc487620669d31b6067f155c37"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/check-0.txt",
+      "status": "??",
+      "size": 102,
+      "sha256": "15e0d8c5d391c73c8b1782060227d6e1f84a200cb19d0e153a6be64168b624ad",
+      "gitBlob": "92361d9099ec7aa55e4a4448a0d5551e85b76e3e"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/check-1.txt",
+      "status": "??",
+      "size": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "gitBlob": "1f5f344d054fae10f39140fb7199c99321d9190a"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/check-2.txt",
+      "status": "??",
+      "size": 44,
+      "sha256": "0c37c4158c91ef55c724ba017bf6465f26018199badb08e3ff13f98acdf056c2",
+      "gitBlob": "fbb7cd758cf8517329575cda94fc29173eb6db5f"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/checks.json",
+      "status": "??",
+      "size": 79441,
+      "sha256": "223028e8d8b7a16f3a1a03272ae50325d50f6f8b5117b7a0bfd9fff3ca8e1e71",
+      "gitBlob": "2a1be9d514454d05b074cc72fe5d0a8c320f24db"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/flow-buttons.png",
+      "status": "??",
+      "size": 2485,
+      "sha256": "43fd993c30bb5dd255aba0eaf5a3e0c74d267077cea6a93b6b6c8eaeb307bd4a",
+      "gitBlob": "b6fedf97cc34d36eb823b1fc1bfe9375812e3c80"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/flow.png",
+      "status": "??",
+      "size": 30161,
+      "sha256": "3c76405842d786e2bdd32ac9caadcc0c0e0b61cf13338ae47c34b748f3ddf5de",
+      "gitBlob": "f8e57df14783f5a7eeb50c24c4cb4fc7227fc0bf"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/geometry-1280-200.json",
+      "status": "??",
+      "size": 4863,
+      "sha256": "d860213d24e2d351db83ff69d668a468506e65d33ed336ab173b4c8711850475",
+      "gitBlob": "3dc8d13d7b1f5416fda8b9a58229f93653eb99c3"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/geometry-1600-100.json",
+      "status": "??",
+      "size": 4872,
+      "sha256": "cbf3d17f92987d888485b2014e7f58c211d735dc64ac38cf3464b1cce8da5ab0",
+      "gitBlob": "d55eb0461f6d37111e0d1819064a397747d7bd61"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/manifest.json",
+      "status": "??",
+      "size": 1873,
+      "sha256": "7b0e52766dadd6b95c478fc7b502eb0919976ff364cc6cb1411cda7e6dfdd0a8",
+      "gitBlob": "25ffd945a9c85c09965d0462d2c77ec1660cc504"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/measurements.json",
+      "status": "??",
+      "size": 3467,
+      "sha256": "0aaafdad678bdd739830af1ba724ebbb7116d5d39c7bc66b1855791d6bea9e56",
+      "gitBlob": "fbbb6c8adb16d37e4c36c9dad871328f92008938"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/pages-buttons.png",
+      "status": "??",
+      "size": 2365,
+      "sha256": "c34f6f06e5863d315d778d3f8c5bbba67ffc32e457515b3d47866ea7aeac030a",
+      "gitBlob": "70ef94e2af4b5b5068c8f3bd287e9aef9bb1e1ad"
+    },
+    {
+      "path": "docs/testing/workspace-switch-2026-10-03/pages.png",
+      "status": "??",
+      "size": 58418,
+      "sha256": "66881255fcc76ed7d8955eaab8740f22ec13a6a47fd9e4f40df03669606ce796",
+      "gitBlob": "f920eadcd8babca79b60e5da00d16f843f69dee0"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03.md",
+      "status": "??",
+      "size": 8190,
+      "sha256": "19204e5234374046407bcb83001c5d33727c40c3918a8d5cc0eb9361507c3170",
+      "gitBlob": "8a07218a7bc0599aacd652898123144f2d567058"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/empty.png",
+      "status": "??",
+      "size": 48148,
+      "sha256": "6ac171c59a4a8234097b5f3d3fa9e0b8fafb9e35d4653e1a1535a2442a183375",
+      "gitBlob": "2d9c507986731c40bcc3be1ad761f719dde1a635"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/flow.png",
+      "status": "??",
+      "size": 33916,
+      "sha256": "e1b5db6db119e0d5bd97ca3fd233983d6172e657863ba91b26fe69143b4c1eff",
+      "gitBlob": "f088517c8cb356f5b9b9f670c876c1472ee03a1b"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/geometry.json",
+      "status": "??",
+      "size": 4568,
+      "sha256": "657326d56d8704242283b1441438b43a7fc7a8d15003dde0d69cf42df119ce41",
+      "gitBlob": "32e1750a3c324cc314aeb750a8c9837b7ac34339"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/invalid-property.png",
+      "status": "??",
+      "size": 85507,
+      "sha256": "8ad22b62d246c848fd17220a1125a7f8e3d5d13e1122637583f45c02f2b4864e",
+      "gitBlob": "aba3991ac1a843528fbfe4d1224d505e95f58e86"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/many-pages.png",
+      "status": "??",
+      "size": 80711,
+      "sha256": "169ee2d2866e7d0d4ef97ce4b04d7c0ebbc919a5e09d48d9c738c2622ba1703b",
+      "gitBlob": "ccb9ba98d532de1405ba34d0cee89768382405e1"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/pages.png",
+      "status": "??",
+      "size": 71446,
+      "sha256": "bb984674190baa7b06498b6b997457abef4bf950ffb2d6f5871a9469274de1f6",
+      "gitBlob": "58ba511012e7761bbd45e7181894250de1a7d0d4"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview-many-pages.png",
+      "status": "??",
+      "size": 46431,
+      "sha256": "4ab9800b16415bf8e424c74fcce8e6a90a4477da5d3d2f40f800a42556835227",
+      "gitBlob": "3f2e750bea40da0b9b4a301fbc2490e8bd85039b"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview.png",
+      "status": "??",
+      "size": 36019,
+      "sha256": "e993261aaa6d18b3f63ba1a41d0fd597aa505d050f3002ab08ffb8168e84048c",
+      "gitBlob": "b09ced162003449fd4fc9db8a0596880cd674b83"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/empty.png",
+      "status": "??",
+      "size": 46542,
+      "sha256": "1f53ba45b99898a4f8d84b5f51bcb5e7f7f3e4038a3c219ce17975b9f4a95401",
+      "gitBlob": "2523edd92561d10de7e82ed4ca7d7ab67b962ddc"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/flow.png",
+      "status": "??",
+      "size": 34179,
+      "sha256": "b76ea666c36c0b4df16c3de1bb4a2b4b83b3e09b31d0e60eb10ce49d3750df96",
+      "gitBlob": "0c388a7cfc11f0e03918d5079769af1b6a0007f1"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/geometry.json",
+      "status": "??",
+      "size": 4562,
+      "sha256": "9a4c71eeb76d233e00ecfe46677c63c0c57cba5b78014a7f0f01cf47c883be63",
+      "gitBlob": "427f15e8556bc0cf34bba2dd023016aab60537d6"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/invalid-property.png",
+      "status": "??",
+      "size": 74322,
+      "sha256": "6b4ffea5681cb4835693831a224dffd2b78540d9f7bb268d0242899452f1e4c6",
+      "gitBlob": "c02fc80608f94f14089edc697740e0df3f4b0eb0"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/many-pages.png",
+      "status": "??",
+      "size": 68771,
+      "sha256": "09f85a359edda52ae38a4885b761062463aeaa996bcc3dc1bb2d094a092e0d78",
+      "gitBlob": "8da6a2cc4ea286ec8cfe8210191fb4cb36631ac3"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/pages.png",
+      "status": "??",
+      "size": 61456,
+      "sha256": "ae41f131dfa910651146a4ba15e1dc12ccd5daa7283df6afea24be1115826993",
+      "gitBlob": "56486e355d9e32758c685ab6e7972ea65ea4c57f"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview-many-pages.png",
+      "status": "??",
+      "size": 48475,
+      "sha256": "0ff011e3538440ebb924ed8f3770d6597ba877849b3a249a7503ac1dab3056e8",
+      "gitBlob": "8829d97dc1f6a3480fcc4066f0f50de63dafb75a"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview.png",
+      "status": "??",
+      "size": 39923,
+      "sha256": "88ef7f6a7176d0e1ac2b2027417fe543163d23c84ece2238e3391fddb5f967cd",
+      "gitBlob": "5318ba0d197dabd6186e82f30ebc585373d37669"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/empty.png",
+      "status": "??",
+      "size": 41072,
+      "sha256": "4f6aa7c3b74664e4a920ecfe48b0139d6d0a75e5147bf2132996eac32a0f8e40",
+      "gitBlob": "dcd97e3d65966900bc5fd3a477284991a884a8ce"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/flow.png",
+      "status": "??",
+      "size": 28321,
+      "sha256": "343c22c9205f1109d4107649e5fff3c5c7b2e51adc4e659a2087e424821c678c",
+      "gitBlob": "1ed63a6cff0a78166a76cc1483f9a6cf1478f904"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/geometry.json",
+      "status": "??",
+      "size": 4568,
+      "sha256": "82f63d7ffce735d0381eccf34924030349a2b5e28524bcf40c14f2a96b90d285",
+      "gitBlob": "5dce0e6e6fc59247b8e1d54c47cb97d4d6ee20b2"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/invalid-property.png",
+      "status": "??",
+      "size": 71804,
+      "sha256": "1c8ea07be26ab5d03fbc971bd639a6ff37972c6b359323def066fdd84690b502",
+      "gitBlob": "3d24f2e1a3d845bff763f389d57a099114c0a16d"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/many-pages.png",
+      "status": "??",
+      "size": 66559,
+      "sha256": "9961dcf16405603b6e63d79a98003efc850ad6e3e4f44f8c386330034ffd26de",
+      "gitBlob": "4160cef4a92bb117d0376cad9f7d752709d38afb"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/pages.png",
+      "status": "??",
+      "size": 60110,
+      "sha256": "1969203b625818e6c8143f26fa1e21afc9b57498665291fabc96d7666392a114",
+      "gitBlob": "b375930f0a123aef7800ea6de7541d22fa589de3"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/preview-many-pages.png",
+      "status": "??",
+      "size": 35332,
+      "sha256": "57627f811d4a49dd1bd0666a7cd137095a2ae44f4f862592289eecb98a224cb8",
+      "gitBlob": "91b27c0237e6b1883b67d0852625fd1a127379a6"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-1/preview.png",
+      "status": "??",
+      "size": 30257,
+      "sha256": "21bffc57235532b24cf8ea70bc6896fce0ed2e762bbfb4d2d606cdf452559563",
+      "gitBlob": "7c8a455da0b5f289b8f8d708e4a7216d1b87d3dd"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/compact-library.png",
+      "status": "??",
+      "size": 49721,
+      "sha256": "6c2fac939921b085115dddfeda6171598567627fe848134e3b7e84dc2247c2fe",
+      "gitBlob": "aa60cae0bfad35992df607555e01ddc402d74b6a"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/empty.png",
+      "status": "??",
+      "size": 36998,
+      "sha256": "21d85e4176d666357a03a70286fe9e27d3ade7e2dfa99852c5982a90a4e89cfe",
+      "gitBlob": "cc1ad66a25aa1d720ea06c047355994da783f822"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/flow.png",
+      "status": "??",
+      "size": 31858,
+      "sha256": "be47d54a363a5c2c45363650c33609d8e9942cab5d072ca25db4309bd91ed46b",
+      "gitBlob": "bef337e84ae5af77f5d598253d69d0a0c6a1bbac"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/geometry.json",
+      "status": "??",
+      "size": 4559,
+      "sha256": "e5afd23dbffccdaeb2f4203d55e5d32b1543d07ab20288902bd661a55546027b",
+      "gitBlob": "6bddf3ad3a51db849775661d042ae56fec5deca9"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/invalid-property.png",
+      "status": "??",
+      "size": 58349,
+      "sha256": "86ff5a54eb60dc5bbbdfd6f1bbb27b5b978cc8de78a5de322c98938d9dd4bdfa",
+      "gitBlob": "25ab9ce91b2004e71920f0a23342348f8cb99ba5"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/many-pages.png",
+      "status": "??",
+      "size": 52455,
+      "sha256": "2f925dbec778ca33dd943ed5147e477b73acbb7c9ad7b84c8b31282adfd6faa3",
+      "gitBlob": "6064c428ecca70309c32e52f560b479fcd35faf2"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/pages.png",
+      "status": "??",
+      "size": 48942,
+      "sha256": "64837bc3ff3bfca12f4cd5e12d59c8d397396caec6601a5b27d0383921240559",
+      "gitBlob": "60168d4395c143b3642f8a6e98ba806105c3069f"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/preview-many-pages.png",
+      "status": "??",
+      "size": 56106,
+      "sha256": "5fdabdfddf07e708b72cde2629e39a072f1db6acc9673f928f9acb2dd7e1af90",
+      "gitBlob": "2f13aaae505805f35e39d1941ac238b210015917"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1280x720-2/preview.png",
+      "status": "??",
+      "size": 43224,
+      "sha256": "946d0e9e2e73f83206498cdf0f4fdf1a5469b56131e0511823bda2c31845f9e8",
+      "gitBlob": "4f2a8dff43032db347051438f4ff161673a55e43"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/empty.png",
+      "status": "??",
+      "size": 56838,
+      "sha256": "369d0bfafbdd8c48c0c5a8218253f5fd2be454a1f7d253c00910f3fbfff1f4f2",
+      "gitBlob": "2467abb2e4de004613d2813bc42aa878dad71a77"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/flow.png",
+      "status": "??",
+      "size": 38003,
+      "sha256": "3d32732f0caa6a39aa1dc6681f7b6828f9ef1857ac1761db612ccfb286c7cb15",
+      "gitBlob": "d36ad52c05ea7735755a2d092d0edfc3830e6201"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/geometry.json",
+      "status": "??",
+      "size": 4568,
+      "sha256": "44ba5446bee772419787b61581692f10f6f8cb1dc746c5aba62b3a5a47381e3d",
+      "gitBlob": "0fefcdca3a34c40da5031c70dee860d4764029bf"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/invalid-property.png",
+      "status": "??",
+      "size": 99825,
+      "sha256": "9cf846eef2fbf5de2b827c4b02784949eb95ad7cd3eb8f5ff762e5327e5005b9",
+      "gitBlob": "7e28f47ceee90016621e1020a9e0d9f61d8c8368"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/many-pages.png",
+      "status": "??",
+      "size": 93469,
+      "sha256": "adbdab483c52676a088d4ce53658ee7aff42be01d33a7f9321ff5be2b18ad516",
+      "gitBlob": "90cc34f5599074a461855f42ba4effccaa201042"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/pages.png",
+      "status": "??",
+      "size": 83332,
+      "sha256": "dec071367bc4daa3f76ba8bd2670535fadda6d955b824722db91d3ecd24b646c",
+      "gitBlob": "439e252f56a50729ee5d1a2eddc717aea7901beb"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview-many-pages.png",
+      "status": "??",
+      "size": 51809,
+      "sha256": "5977f026a6c4e17e3ead8c844942f2d0113afe0c6e3bb03b37668df3e6eb0f8f",
+      "gitBlob": "0b77b1b21a578220bde199dedb7acfbcd6de5d58"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview.png",
+      "status": "??",
+      "size": 39168,
+      "sha256": "030063fe2edcca9d0a2446dc99cd3e53a03bfb7f34092c0567f57f785a8063d1",
+      "gitBlob": "27811482a2849f66518530662d17544e321abfbe"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/empty.png",
+      "status": "??",
+      "size": 59727,
+      "sha256": "f522d060468a7686e2a563af4b134a1cdc5978d851511faa9bf0dbdc09ad11a1",
+      "gitBlob": "73aee8ecf8d0206194470501361768ae2eb248d2"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/flow.png",
+      "status": "??",
+      "size": 42316,
+      "sha256": "f77c55f13f1a302c90106660aff2ddd13be127abf314daec1b6f63637cc07236",
+      "gitBlob": "8086df91a600c54f2a17b98e52677f71a0248705"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/geometry.json",
+      "status": "??",
+      "size": 4567,
+      "sha256": "40e33e89de5f9030ce10c0cd3132683e6e74551ec7abf025c73af08d783677a2",
+      "gitBlob": "4bebd466c1d2f3980c5c120301f45b488159dc0d"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/invalid-property.png",
+      "status": "??",
+      "size": 108432,
+      "sha256": "cdea4ac580c5da53e3eb42405324dc158bc6360deccdc08c108f66b0840edde7",
+      "gitBlob": "9f696009fd54bf8059666f92fef85d0a13ca062f"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/many-pages.png",
+      "status": "??",
+      "size": 100385,
+      "sha256": "21ade48279b070444f7f2e97f2f44f3d7c49eda3b0361b20c961d507f91f2b4e",
+      "gitBlob": "848a1772edd12f3185c04ac50cbb8274ed81043d"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/pages.png",
+      "status": "??",
+      "size": 88475,
+      "sha256": "b2f1045571d34e82a1e18890d5961d7f6ad52da2beb0eeac5440cbc0ee234482",
+      "gitBlob": "67a92172258ee2ccdf1ca83de05b8ef38f617711"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview-many-pages.png",
+      "status": "??",
+      "size": 52520,
+      "sha256": "bee0671dc908ada872425ea98eba3ea6aa376e1436bcf2a6ae289e809863bd39",
+      "gitBlob": "830521addbdb3697fa0ce3f59fa6b601c815aa12"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview.png",
+      "status": "??",
+      "size": 43320,
+      "sha256": "5cb12a34a883c907e13b358b3a758262edb00d5f0246264da38b6cd1a30f039d",
+      "gitBlob": "f8f969655816fa622ff81c73de6f21edd11e03ab"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/empty.png",
+      "status": "??",
+      "size": 45244,
+      "sha256": "654d6e8bbf5373254dbc836ba561931b7848861a51264a6ab2a4a4733e30a6a3",
+      "gitBlob": "edb0756572e3ee357c19e63502bc8a498a750f48"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/flow.png",
+      "status": "??",
+      "size": 30749,
+      "sha256": "073554c152fb5daebce0d327e4ae89682218a7cddb7ce939ee17bf942c4daf93",
+      "gitBlob": "17a8db752d64e054a3978619f9d933385b413143"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/geometry.json",
+      "status": "??",
+      "size": 4568,
+      "sha256": "d2f2d559ce0b1691e3e17bcb96c2d01a3cca6219c4fd28b975c4d83728616c6a",
+      "gitBlob": "b8c5fcd1e94639e54fc56cb78e501266faa3d5df"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/invalid-property.png",
+      "status": "??",
+      "size": 83840,
+      "sha256": "40428008b936be7e28fc7dcbee199f8d186bb6a9655539511b1516de08ce527d",
+      "gitBlob": "25978d611c225d6c58add70eb4b988c34e2dace7"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/many-pages.png",
+      "status": "??",
+      "size": 77784,
+      "sha256": "ce5e3e91a45027821a45598872266e90d38db56eb20df1f53967362bbfe71b80",
+      "gitBlob": "a12b8a24c9dba8e705f0f7d7d7290e86d1ce9890"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/pages.png",
+      "status": "??",
+      "size": 68648,
+      "sha256": "12b98ce4b71fd96e12e8da2375be28e27a7e77ffa1e31683709abfb732a52e2e",
+      "gitBlob": "ea8e978fc6fd7530c27426c2f8fbe564ca8006bc"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/preview-many-pages.png",
+      "status": "??",
+      "size": 38714,
+      "sha256": "8b3212605ec0f5a264f1b7584cf154be4222f92b6cacbaff4e16c892db3af823",
+      "gitBlob": "efe780aa6d8c541c2fea553536ecc769987a2dc0"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-1/preview.png",
+      "status": "??",
+      "size": 33581,
+      "sha256": "2c5d99e29e8ce0acc42d3d28eced866ddbcaab4af19060fee7f37544a5bc14f6",
+      "gitBlob": "da8e9ac4c44b8ff06105722f09509e50019dcc3c"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/compact-library.png",
+      "status": "??",
+      "size": 81242,
+      "sha256": "13f21513a2291c65c65a3d70520de53e69c83ef4d55a0a2922c1071e1a7b90ef",
+      "gitBlob": "c558ea1c4a14489466d70e07d5d6d80b5e9a3986"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/empty.png",
+      "status": "??",
+      "size": 41211,
+      "sha256": "f5a5dbaa18bfa0191afddfe1d082383d247421b03ebae3416bf7e9c84f996d2b",
+      "gitBlob": "8338a8ef929a960e7d2187119149ad0a3a715f0d"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/flow.png",
+      "status": "??",
+      "size": 40686,
+      "sha256": "2693865a16aa476fbe040699a05e0212e8ae37994cccded8703a5cb7650044eb",
+      "gitBlob": "0741d49014293ca9ab0464506a9e349d4e1dc64f"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/geometry.json",
+      "status": "??",
+      "size": 4559,
+      "sha256": "da84407f32b053e9b41d85e394ef8c60e0ee02c4a8925134f5207830140259b0",
+      "gitBlob": "298161658b674d2d06c2516cf6df66d0b01b579b"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/invalid-property.png",
+      "status": "??",
+      "size": 88387,
+      "sha256": "4dedb3658cfc5967c9695b84bb6a340f653f599da8ef4a3627bdc8478f2e707a",
+      "gitBlob": "f18f65a1adc4f47e49e13c59857f886b63a98ff4"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/many-pages.png",
+      "status": "??",
+      "size": 79485,
+      "sha256": "7e3059aac4eb541b6235adc3d901e1ddf49bef6acb1ecb44e77486c7da5d2829",
+      "gitBlob": "3ab27336597f050ccd5aca835403fbcf23747156"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/pages.png",
+      "status": "??",
+      "size": 70055,
+      "sha256": "6f13f7c7fbe6007933e9bb76fb1801a427ebc901a6474622c9c0b18cc63bfe85",
+      "gitBlob": "a5f4cfab0b15a61f75dfc66272565469ad12334c"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/preview-many-pages.png",
+      "status": "??",
+      "size": 61296,
+      "sha256": "b816a94d22172bbc0c16f4a2f85c93866c1a8b7ba27afbc6ee0d87465e4c2a8e",
+      "gitBlob": "81374fd3cbbdb5c796cf16de143be5e6aeb2c580"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1600x900-2/preview.png",
+      "status": "??",
+      "size": 50983,
+      "sha256": "aa6765f78922fc5960c0bc094216f2a44a75a70caa8ff264c34ffdd7d9daafc3",
+      "gitBlob": "38e0457c25721c8aa95883a6dab868c1b18508bf"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/empty.png",
+      "status": "??",
+      "size": 59764,
+      "sha256": "45431b737969c253480f8fc979d2c29410463ad1b24bb8842839f14413f13060",
+      "gitBlob": "3e7cb1684b48849528df1ed2510aa1879430b673"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/flow.png",
+      "status": "??",
+      "size": 40975,
+      "sha256": "1ea4b5957c32f38d8dc06a21c018e5ca5d89fc593a2a1eaaa3253ced5ec02980",
+      "gitBlob": "6dd179e16ebcd7c3511430029dca428e91f3ad18"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/geometry.json",
+      "status": "??",
+      "size": 4569,
+      "sha256": "07c78d55cb871155f05eadf789c270cf1fe8aa0175dc70ee3b5990d4d4a6f74e",
+      "gitBlob": "5afa2cea99885a15ddd6c6143525cf0c542896ba"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/invalid-property.png",
+      "status": "??",
+      "size": 114456,
+      "sha256": "f701b36c78c0fa5a03a822600c242cfb2dc39a93874f8f6959b3ffdc6829b0cc",
+      "gitBlob": "c838ccb0e6ca54ccfbeb506e6c7fcc60200b4e5c"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/many-pages.png",
+      "status": "??",
+      "size": 107477,
+      "sha256": "eac4d4a6b75be36b9bc93a9965066667ea36b1e7e2a7305b4d89f2725fe52632",
+      "gitBlob": "cce1556d274afe044755511f8b0b6ceb3aa2629d"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/pages.png",
+      "status": "??",
+      "size": 93967,
+      "sha256": "5051c50db11515f6f571619615c1e3dc1625ae938e3c014152b99629ff144b4d",
+      "gitBlob": "0648dbc9d828d8e4eb64c463d9c6af30240b1bc2"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview-many-pages.png",
+      "status": "??",
+      "size": 55532,
+      "sha256": "00ce9eb89ea747748ad7f4d5cb44cfe4fb63d768e5e463c5462acbaf9057b46e",
+      "gitBlob": "7c1cce1a824706c5e25b07fb0cbd3d39c7f0e3bf"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview.png",
+      "status": "??",
+      "size": 42034,
+      "sha256": "10d30b7c07bb3ba8b0ac4176a12a8e90857f6593560a9ed0ffae0d5bf96ac884",
+      "gitBlob": "db3a160bd0eca720aa68d30925a83231c297dcc4"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/empty.png",
+      "status": "??",
+      "size": 68370,
+      "sha256": "b952279e6a7cec59a0727d4d2afb700b49ac80a97b9481d9237a215de2c9d035",
+      "gitBlob": "ccaa463bef3625fd8e6f91c44dcf99d808192ac0"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/flow.png",
+      "status": "??",
+      "size": 46214,
+      "sha256": "091750c6d5aac604bd98664b774d213cf3b01cf80616d5732a87a70e14fe2002",
+      "gitBlob": "dbb97185860d2b3484e801e007b767d020d3b885"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/geometry.json",
+      "status": "??",
+      "size": 4568,
+      "sha256": "ee10133bcd261b21c361f7d6996e6294fffbb09900806fe5db5f83faa16221f6",
+      "gitBlob": "09724f8efa0ae5c374a4364b25b4723f6859d567"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/invalid-property.png",
+      "status": "??",
+      "size": 120981,
+      "sha256": "b4358d49d4a6a3e07cbeb326dd3acd3e7501f1dd4d99eaca7d8c59ff78e58bfe",
+      "gitBlob": "a2e6e052f8f443350ee0efb9b55f0a2742e30527"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/many-pages.png",
+      "status": "??",
+      "size": 112583,
+      "sha256": "3d402e8e8d7871698d3c71d6f5cb94018167b6e005a70ab0747a8b1cbfb90c3a",
+      "gitBlob": "34ea0d8e08d0bb2a38c2a1b5bc14e72950cd03a4"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/pages.png",
+      "status": "??",
+      "size": 101572,
+      "sha256": "b88c20b0df93bae870aedcdf2da17f9f8a73797dfec6e98f2997171d98c9459e",
+      "gitBlob": "98747ab578000cc388fdc901e559c33c91155fee"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview-many-pages.png",
+      "status": "??",
+      "size": 59187,
+      "sha256": "adc316327e5113c961d5da851eed5f0f04ec69bb318d121cd7c994e00fc1ff0e",
+      "gitBlob": "2dc1c1bf5f1286c33766eb724bf1f53f8f961f56"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview.png",
+      "status": "??",
+      "size": 46888,
+      "sha256": "c7f85e72855d1180d1e81f09e8fd02764fc54a807f9bcdb2ed94ff15ca8d7ca0",
+      "gitBlob": "ff6546364183b7edc8fca6597372b431e82cfb23"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/empty.png",
+      "status": "??",
+      "size": 48073,
+      "sha256": "88c44171bf4239883dbcad9fa919fbcdcd706fc98f4d22e6de9c5e21fff1035b",
+      "gitBlob": "41a036de9c6b1960497d5b60be7e699cc1138b22"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/flow.png",
+      "status": "??",
+      "size": 33052,
+      "sha256": "99e0770c0712267f9641f8268d406343ffe362500c170bbc305cf10af6e02384",
+      "gitBlob": "f4ea2121473654c21ec7cbb25c36c2c8588c6f90"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/geometry.json",
+      "status": "??",
+      "size": 4574,
+      "sha256": "2d4adf4f556cb681a0785f56d0003a0fe04ec3a6c45c7b4ea8824efa3ad22cac",
+      "gitBlob": "180b7500d16b69bb0765e7245ee5f5cfcff79115"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/invalid-property.png",
+      "status": "??",
+      "size": 89830,
+      "sha256": "f9d54559e2d961fa8e5ac9882f651d271cafe5d0706610740624a3afa138781c",
+      "gitBlob": "5da2c26ba0049b93a9cf5134badc9bb80a57ca8e"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/many-pages.png",
+      "status": "??",
+      "size": 86410,
+      "sha256": "f230c37bce225e0e95afde9b8c273e0901647c30e9203cabebbf6c1d972370eb",
+      "gitBlob": "2e41b13fd1d19990496a6f44f0644f3c3db3deb6"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/pages.png",
+      "status": "??",
+      "size": 76787,
+      "sha256": "029d9c2938e44c75b6444e23fb5a0d7a426f012d79da8db021536300fea4fee9",
+      "gitBlob": "d46fcba87474c8db0bad0763e7ad641e15a31764"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview-many-pages.png",
+      "status": "??",
+      "size": 41663,
+      "sha256": "e4b106d327946f99dd91a38bb15b514243a5d65c3c719b060c058cb6ff9e529e",
+      "gitBlob": "a4e2d509a615c7a9f9263acc2b94e4b158d2b643"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview.png",
+      "status": "??",
+      "size": 36284,
+      "sha256": "9c9adb7d6b9ab6b45be9ccbdf3d80d50a4497c3d3685c2c2a6f92745d5ff5489",
+      "gitBlob": "fb598c97c93508451b00277060c14e81828c1d3b"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/empty.png",
+      "status": "??",
+      "size": 72997,
+      "sha256": "f7630b0978d104775b12ddff89fc6dde2d1e274618387bf04d771a48ff92fc96",
+      "gitBlob": "f9ce708a8ea30181a9028c4432e13ed963ef01ec"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/flow.png",
+      "status": "??",
+      "size": 51081,
+      "sha256": "a103d825359bcc9fde7b2ee1dbb808457e2dabfa1196861ca6a45910d4f3bfe1",
+      "gitBlob": "72845b98d8e7a972dbac0f6ab00f225defd46bcf"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/geometry.json",
+      "status": "??",
+      "size": 4563,
+      "sha256": "20df23a7575ed3f02a8038c3dcbd8971aa2c51764ce562034adf33a2ed31a654",
+      "gitBlob": "4b7b97477b1857152213d4ca5b0981f7c865d55c"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/invalid-property.png",
+      "status": "??",
+      "size": 124925,
+      "sha256": "19985b076a6a1a9c397b3979ef7e2a4eb79aa4476e9e2e6de12e22718e6eb829",
+      "gitBlob": "e2fcd22754e6b7066be376e2ff9c456e5f577928"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/many-pages.png",
+      "status": "??",
+      "size": 116990,
+      "sha256": "5ee92973c83fa53625fd12e683bcd8238082a9cc25a7b3cf396d20898c1c1469",
+      "gitBlob": "0f608f7cf109c1ddb7e87a4eeb80fcf637024534"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/pages.png",
+      "status": "??",
+      "size": 105966,
+      "sha256": "4779eafc74e28f41e928f7d40bc591c19da828e7fee4f02ebdbe1e8ab45d8282",
+      "gitBlob": "6b45189c67cada08e69fd5fae5a24ad52d96e848"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview-many-pages.png",
+      "status": "??",
+      "size": 68546,
+      "sha256": "bbf9022f13b94c784b2ea7e4b21a8d8469be0a2bc4d7698db98b38cccc7b5062",
+      "gitBlob": "a8fac9ac3ce241ee4ed95fcd2acc8fada161ff82"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview.png",
+      "status": "??",
+      "size": 58228,
+      "sha256": "461c32abdfbaf211be3bc649c5b09d87b9e3e40cb43b08f1465b6bb9f00d11d8",
+      "gitBlob": "4dd42e08cde1c92081ace70f67b0b96ff6908abb"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/candidate.json",
+      "status": "??",
+      "size": 4001,
+      "sha256": "c9f1164c17af4348b4bcb50b1bd01235754feb6027304aa3bc2fa1294eae5ae6",
+      "gitBlob": "645c189ad6c314815b7ede2b7963640e20ab9675"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/ci-check.txt",
+      "status": "??",
+      "size": 6304,
+      "sha256": "118d85b8b20b0501caac261e8ce56bf7f9472d59eeed74590695b145434f0d5f",
+      "gitBlob": "74147b247a6aa5ddb74999ac44e4c49c914eed84"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/lifecycle-isolated.txt",
+      "status": "??",
+      "size": 102,
+      "sha256": "95c8c0b351d3d0406c7b4259485500b7c672dc9fffa5fd12b3ab699bed774e15",
+      "gitBlob": "5ebd05cfb4960ce81d1fa3579954e377e2f3fa0e"
+    },
+    {
+      "path": "docs/testing/workspace-ui-2026-10-03/manifest.json",
+      "status": "??",
+      "size": 13504,
+      "sha256": "7eec7026f9e3c1c441e98ef2b75fabc6ca5fb4eff9b10874ddcde0896afe9c25",
+      "gitBlob": "c7ca4c71acb7579d3877da9beedf1e19d6707bb0"
+    },
+    {
+      "path": "scripts/configure_runtime_project.py",
+      "status": "??",
+      "size": 1921,
+      "sha256": "e1263c679aee3129d225614c4e1f0fee1c2418be624c8bb11c2011866c1b4b3b",
+      "gitBlob": "b5bcea6024089deef75a50595408aa2324ea52d2"
+    },
+    {
+      "path": "scripts/run_operator.py",
+      "status": "??",
+      "size": 405,
+      "sha256": "0fa68ef89fbb129bc8130dcf83d0183df70a197a3cf793444c6798ec148aeeb4",
+      "gitBlob": "2e3ecd617a57846a2858020f7d58e9ca4aa9a0d4"
+    },
+    {
+      "path": "scripts/validate_designer_workspaces.py",
+      "status": "??",
+      "size": 7732,
+      "sha256": "989441dd148a3b3a569f979b3adb2af76d7ee2a96623026486ed582fc496cf73",
+      "gitBlob": "16f6b7647798e5ee081dfe39cd0f6c0339104d86"
+    },
+    {
+      "path": "scripts/validate_operator_runtime.py",
+      "status": "??",
+      "size": 3645,
+      "sha256": "d6d97f134153962c5df76669572477011831220baf48f1c081dff57884ce67c5",
+      "gitBlob": "49711adb45fdc9ac1148c34a806dbef077c47b15"
+    },
+    {
+      "path": "scripts/verify_runtime_package.ps1",
+      "status": "??",
+      "size": 2879,
+      "sha256": "5d979ae570dd5ceb9cae32fcb9474590519d1e10ffcc7158f2df0478794d6226",
+      "gitBlob": "c5c0f863aa265f2571358e45a6cbc00a8778e2be"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "status": "??",
+      "size": 12521,
+      "sha256": "a54bfe05fa3eead26576986131646cc57964dbdaa6694034e8b6eb31f764517b",
+      "gitBlob": "2d258481b699901168b3a0152c54183fdfab7153"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview_window.py",
+      "status": "??",
+      "size": 7563,
+      "sha256": "d0a85c3d0ec6aec035a4448e9b43806f5c35f850103ba07dd2fa5c5258ff9e36",
+      "gitBlob": "0f3f74bf97f794d7d235d20fd1d0a9c7f2ae6819"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/workspace_switch.py",
+      "status": "??",
+      "size": 4371,
+      "sha256": "d8f93800bc0f5771b98c67f4cc5d9ee589e5432a7b657d18f29b2d477868e8bd",
+      "gitBlob": "a31acf976eb36c9eac16b9755b3ec7a4596ea117"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/__init__.py",
+      "status": "??",
+      "size": 85,
+      "sha256": "986812786db42eeaf159b3039cb17e109c08a33855da5da307f085caa495b5f7",
+      "gitBlob": "70081d5a3b52383ca5505cb4fd215b1927bb5f1c"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/controller.py",
+      "status": "??",
+      "size": 7843,
+      "sha256": "589c914a245c900e5ce0fd6ba4ef26bec362130d9338ce1c03cd7d3e07d38838",
+      "gitBlob": "dd22bac0f2692db326a0862b8cbdca176c676429"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/main.py",
+      "status": "??",
+      "size": 13219,
+      "sha256": "6559f6f493ca0c6fb1a2f51c03bfed14055ead9831cbd4bfb24fafcafb2f0680",
+      "gitBlob": "0b914c6d5643255ffe691eba71ee1924dccfce05"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/validation.py",
+      "status": "??",
+      "size": 11709,
+      "sha256": "6ef9b3881013bd79a161aad500ec2f9a1ef0a78e6320a9f4b7db8a4590ee161a",
+      "gitBlob": "f95698762b56411e4505f5fc2b8e2dba7e080716"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "status": "??",
+      "size": 4948,
+      "sha256": "74d86fb3653da47d753f1dfa4ae59a2b56e32a61a7331ee7dd78184e16322205",
+      "gitBlob": "6d74f5f28f762100af8da581277cdfff6bc1ad29"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_package.py",
+      "status": "??",
+      "size": 13911,
+      "sha256": "e353c7a2bce3b337d14dad302fce7b61f2a8c02eec2bfe46475be3579383dc32",
+      "gitBlob": "961c170630ed4ab8359f488992cbb7be755be11c"
+    },
+    {
+      "path": "start_runtime.cmd",
+      "status": "??",
+      "size": 460,
+      "sha256": "4f2e0e41235782206b8e73f73243d2f2762b3f7962c602038ac8a16b3fbed0b9",
+      "gitBlob": "689405c637dbe9fd1dce703df9737d4470e01293"
+    },
+    {
+      "path": "tests/core/test_runtime_directory.py",
+      "status": "??",
+      "size": 5689,
+      "sha256": "7e5c1f946a855b731320471f6f48eef2d9392011a4f7dfeafa15fa83cb9659d0",
+      "gitBlob": "2d63a0276063aaea439d680169d74bfbfd5b319d"
+    },
+    {
+      "path": "tests/core/test_runtime_package.py",
+      "status": "??",
+      "size": 8318,
+      "sha256": "1fdbc806fd6cd42f964ec040670e09c5ce97dbc6ad9409cc6d47059934c39dfd",
+      "gitBlob": "6a17b426b8923489d8f292b6bb967d9272a3485d"
+    },
+    {
+      "path": "tests/runtime/production_fixture.py",
+      "status": "??",
+      "size": 1555,
+      "sha256": "ee4b88a4c3e6eccb3112e67db20bbce319f7d7f9723e1eae15f5b1bf9b5503e1",
+      "gitBlob": "6608d0cc1000a3b132b684cdee0a4de72cccfd47"
+    },
+    {
+      "path": "tests/runtime/test_production_boundaries.py",
+      "status": "??",
+      "size": 12146,
+      "sha256": "bea1e1674d959ef5d9f51301fb28159edebeefc89528e0a79fb0ca4047d5c800",
+      "gitBlob": "a335c5e932298c97a59fdca90f496ec4ed44db63"
+    },
+    {
+      "path": "tests/runtime/test_production_continuous.py",
+      "status": "??",
+      "size": 9570,
+      "sha256": "feb25c149688c124fb0c1dda2e30ad1b30dfff1430766fbe2185c111dbafb641",
+      "gitBlob": "a270397eb48623aba1750c85b7fff7c950a93556"
+    },
+    {
+      "path": "tests/test_operator_runtime_validation.py",
+      "status": "??",
+      "size": 2175,
+      "sha256": "71ad56074f47c2ef78b2e00ef0c3d34c2141977b13763cc29f0dc13d8b0f9d87",
+      "gitBlob": "604c7130db3025da539026908317ff0aedc0ab22"
+    },
+    {
+      "path": "tests/ui/operator_view/test_production_window.py",
+      "status": "??",
+      "size": 11233,
+      "sha256": "3e6a43b6067bfec5258edd74eeb696fa2ed1ec158b8da1cae209c34c568ad3af",
+      "gitBlob": "f9f8772a8c6071458db37d3b36d5f28e9beb9d1f"
+    },
+    {
+      "path": "tests/ui/page_designer/test_palette.py",
+      "status": "??",
+      "size": 2152,
+      "sha256": "c2f6590c23fd013307017b9e34ccc50ff6ed92c2b6e8929dbc1fb0faea437041",
+      "gitBlob": "e2de2b17b017b2d82487ea440a554ab4ebaa4456"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "status": "??",
+      "size": 8855,
+      "sha256": "eec11bac3620b74b92b5d5e291dea601d595d4be45c6925214499204d111ad30",
+      "gitBlob": "1b08d11ebf68c16dd1bfcc2f61598e2213a8c245"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_switch.py",
+      "status": "??",
+      "size": 5732,
+      "sha256": "c7d9dc5eebec6ecbb0dc4283c051af1b5d2bbb54ab82522e64a3e51cf5f04110",
+      "gitBlob": "3c58614ad983d3a068071ef20986d4c42322a923"
+    }
+  ]
+}

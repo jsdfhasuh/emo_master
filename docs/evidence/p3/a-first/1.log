@@ -1,0 +1,31 @@
+F......                                                                  [100%]
+================================== FAILURES ===================================
+___________ testRealAlternatingImagesOneJobTwoPagesAndSharedWindows ___________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1f0faeac5a0) at 0x000001F0A5FBD050>
+
+    def testRealAlternatingImagesOneJobTwoPagesAndSharedWindows(qtApp):
+        backend=LocalDemo(count=4)
+        session=DisplaySession(backend.address,backend.jobId)
+        windows=[]
+        try:
+>           until(qtApp,lambda:bool(session.readSnapshot().scopes))
+
+tests\ui\presentation\test_real.py:26: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+app = <PySide2.QtWidgets.QApplication(0x1f0faeac5a0) at 0x000001F0A5FBD050>
+condition = <function testRealAlternatingImagesOneJobTwoPagesAndSharedWindows.<locals>.<lambda> at 0x000001F0A658C9D0>
+timeout = 20
+
+    def until(app, condition, timeout=20):
+        deadline=time.monotonic()+timeout
+        while time.monotonic()<deadline:
+            app.processEvents()
+            if condition():
+                return
+>           QTest.qWait(10)
+E           AttributeError: type object 'PySide2.QtTest.QTest' has no attribute 'qWait'
+
+tests\ui\presentation\test_real.py:17: AttributeError
+1 failed, 6 passed in 4.08s

@@ -1,0 +1,146 @@
+FFFFFF...F..                                                             [100%]
+================================== FAILURES ===================================
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction0-titles0] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['Main'], direction = PySide2.QtCore.Qt.LayoutDirection.LeftToRight
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(0, 0, 100, 36), PySide2.QtCore.QRect(968, 2, 32, 32), 868)
+E       assert 868 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction0-titles1] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['Main', 'Body']
+direction = PySide2.QtCore.Qt.LayoutDirection.LeftToRight
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(100, 0, 100, 36), PySide2.QtCore.QRect(968, 2, 32, 32), 768)
+E       assert 768 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction0-titles2] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 ']
+direction = PySide2.QtCore.Qt.LayoutDirection.LeftToRight
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(0, 0, 280, 36), PySide2.QtCore.QRect(968, 2, 32, 32), 688)
+E       assert 688 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction1-titles0] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['Main'], direction = PySide2.QtCore.Qt.LayoutDirection.RightToLeft
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(900, 0, 100, 36), PySide2.QtCore.QRect(0, 2, 32, 32), 868)
+E       assert 868 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction1-titles1] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['Main', 'Body']
+direction = PySide2.QtCore.Qt.LayoutDirection.RightToLeft
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(800, 0, 100, 36), PySide2.QtCore.QRect(0, 2, 32, 32), 768)
+E       assert 768 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_________ testAddButtonFollowsLastTabWhenTabsFit[direction1-titles2] __________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+titles = ['很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 很长的工作流名称 ']
+direction = PySide2.QtCore.Qt.LayoutDirection.RightToLeft
+
+    @pytest.mark.parametrize('titles', [['Main'], ['Main', 'Body'], ['很长的工作流名称 ' * 12]])
+    @pytest.mark.parametrize('direction', [Qt.LeftToRight, Qt.RightToLeft])
+    def testAddButtonFollowsLastTabWhenTabsFit(designerApplication, titles, direction):
+        tabs = makeTabs(designerApplication, titles, 1000, direction)
+        bar = tabs.tabBar()
+        rect = bar.tabRect(len(titles) - 1)
+        rect.translate(bar.mapTo(tabs, QPoint()))
+        button = tabs._addButton.geometry()
+        gap = button.left() - rect.right() - 1 if direction == Qt.LeftToRight else rect.left() - button.right() - 1
+>       assert 0 <= gap <= 8, (rect, button, gap)
+E       AssertionError: (PySide2.QtCore.QRect(720, 0, 280, 36), PySide2.QtCore.QRect(0, 2, 32, 32), 688)
+E       assert 688 <= 8
+
+tests\designer\test_workflow_tab_add_button.py:41: AssertionError
+_______ testResizeRenameRemovalAndClearRecomputeButtonWithoutCallbacks ________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x2036ccdf570) at 0x000002036E076F40>
+
+    def testResizeRenameRemovalAndClearRecomputeButtonWithoutCallbacks(designerApplication):
+        tabs = makeTabs(designerApplication, ['Main', 'Body'], 1000)
+        bar = tabs.tabBar()
+        original = tabs._addButton.x()
+        tabs.setTabText(1, '子流程长名称 ' * 20)
+        settle(designerApplication)
+>       assert tabs._addButton.x() > original
+E       assert 968 > 968
+E        +  where 968 = <built-in method x of PySide2.QtWidgets.QToolButton object at 0x000002036E64EE00>()
+E        +    where <built-in method x of PySide2.QtWidgets.QToolButton object at 0x000002036E64EE00> = <PySide2.QtWidgets.QToolButton(0x2036cb3fae0) at 0x000002036E64EE00>.x
+E        +      where <PySide2.QtWidgets.QToolButton(0x2036cb3fae0) at 0x000002036E64EE00> = <emo_master.apps.designer.ui.widgets.WorkflowTabs(0x2036cb4b540, name="workflowTabs") at 0x000002036E64C080>._addButton
+
+tests\designer\test_workflow_tab_add_button.py:77: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction0-titles0]
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction0-titles1]
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction0-titles2]
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction1-titles0]
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction1-titles1]
+FAILED tests/designer/test_workflow_tab_add_button.py::testAddButtonFollowsLastTabWhenTabsFit[direction1-titles2]
+FAILED tests/designer/test_workflow_tab_add_button.py::testResizeRenameRemovalAndClearRecomputeButtonWithoutCallbacks
+7 failed, 5 passed in 1.32s

@@ -1,0 +1,422 @@
+{
+  "createdAt": "2026-10-06T17:54:30.4025193+08:00",
+  "verifiedAt": "2026-10-06T18:00:03.2939002+08:00",
+  "fixture": "synthetic-two-blobs",
+  "published": false,
+  "cloudActions": "NOT_RUN",
+  "cleanWindows": "NOT_RUN",
+  "fieldAcceptance": "NOT_RUN",
+  "resourceAcceptance": "NOT_RUN: actual workload and budgets not supplied",
+  "source": {
+    "workspace": "C:/Users/jsdfhasuh/my_scripts/emo_master",
+    "referenceHead": "9737f04312a2803f824e4bbeab6ea845549edaf7",
+    "dirty": true,
+    "changedCode": [
+      {
+        "path": ".github/workflows/runtime-windows.yml",
+        "size": 3867,
+        "sha256": "19097c00021b5de7d9a9696974e4dab5033af804c07c9c3d3645f0856d1cd443"
+      },
+      {
+        "path": "scripts/configure_runtime_project.py",
+        "size": 1921,
+        "sha256": "e1263c679aee3129d225614c4e1f0fee1c2418be624c8bb11c2011866c1b4b3b"
+      },
+      {
+        "path": "scripts/run_operator.py",
+        "size": 405,
+        "sha256": "0fa68ef89fbb129bc8130dcf83d0183df70a197a3cf793444c6798ec148aeeb4"
+      },
+      {
+        "path": "scripts/validate_designer_workspaces.py",
+        "size": 7732,
+        "sha256": "989441dd148a3b3a569f979b3adb2af76d7ee2a96623026486ed582fc496cf73"
+      },
+      {
+        "path": "scripts/validate_operator_runtime.py",
+        "size": 3645,
+        "sha256": "d6d97f134153962c5df76669572477011831220baf48f1c081dff57884ce67c5"
+      },
+      {
+        "path": "scripts/validate_page_editor.py",
+        "size": 10637,
+        "sha256": "8c07f894d98e845f984f2cc8eab7beeb85f0983b20980277cb503fa1bebb6878"
+      },
+      {
+        "path": "scripts/verify_runtime_package.ps1",
+        "size": 2879,
+        "sha256": "5d979ae570dd5ceb9cae32fcb9474590519d1e10ffcc7158f2df0478794d6226"
+      },
+      {
+        "path": "src/emo_master/apps/designer/controllers/project_controller.py",
+        "size": 17279,
+        "sha256": "603ad40e6a5f7a99e8899d9d4ab545df6745e9154dad0553f60b850bdfc71855"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/canvas_tools.py",
+        "size": 11603,
+        "sha256": "411088113f289d0456ac086ced7961cf32dcdb382b5242d14ceb119dbf09639c"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+        "size": 12521,
+        "sha256": "a54bfe05fa3eead26576986131646cc57964dbdaa6694034e8b6eb31f764517b"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+        "size": 12366,
+        "sha256": "103390fb52174d8f5ca43bd5b117f581001d32c7b7648a4cc0d77a937c6a456f"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/grid_geometry.py",
+        "size": 5295,
+        "sha256": "dfb24fa7ffd2aa22ff41035d8691fdd432eb99efc636dc83fcb219e852071fc5"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/palette.py",
+        "size": 5292,
+        "sha256": "2c7d78cdbf23a84fcf629d433ab422b305a5fc2c4dd200c60bc6b370947a3c43"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/preview_window.py",
+        "size": 7563,
+        "sha256": "d0a85c3d0ec6aec035a4448e9b43806f5c35f850103ba07dd2fa5c5258ff9e36"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/preview.py",
+        "size": 29159,
+        "sha256": "54f742f2a7b2e2660cdfee9c41b5db1dfe97847fdd5a48ac378f5d2501d43f7a"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/property_panel.py",
+        "size": 7337,
+        "sha256": "ab84f8eccd219d25e0093f3a1e7b77924defbb3e8d6bee25645bbc85c28b4944"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/tools.py",
+        "size": 42342,
+        "sha256": "559225430823263992a8cc075bb2f50b8e3ad71fa972827f40d7d31641d9c52d"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/workspace_switch.py",
+        "size": 4371,
+        "sha256": "d8f93800bc0f5771b98c67f4cc5d9ee589e5432a7b657d18f29b2d477868e8bd"
+      },
+      {
+        "path": "src/emo_master/apps/designer/page_designer/workspace.py",
+        "size": 14312,
+        "sha256": "c163b69450b37ca826e6dfa414657d9ff3ef9baca64e2404a94415320dcb3f9c"
+      },
+      {
+        "path": "src/emo_master/apps/designer/state/project_edit_session.py",
+        "size": 6214,
+        "sha256": "083ee22a410999fa9b5cf4cb6a4c04b341654f27d4d8610b93c68fcf1a2af3f4"
+      },
+      {
+        "path": "src/emo_master/apps/designer/state/workflow_store.py",
+        "size": 32277,
+        "sha256": "451fd41138c1fe3395f7277725d7657f6779484a675eb2dd9949fd6a48d22319"
+      },
+      {
+        "path": "src/emo_master/apps/designer/ui/main_window.py",
+        "size": 163580,
+        "sha256": "694441772a34dbdbdff4913c974cac1b9c3545d22d3a5fbd87d8fca4559d8ab6"
+      },
+      {
+        "path": "src/emo_master/apps/designer/ui/styles/app.qss",
+        "size": 8576,
+        "sha256": "c300eb250e29bbeb1c5e1f97967afe0ba48c71d6e2bb6f928dc5ad5abfec1ec7"
+      },
+      {
+        "path": "src/emo_master/apps/operator_runtime/__init__.py",
+        "size": 85,
+        "sha256": "986812786db42eeaf159b3039cb17e109c08a33855da5da307f085caa495b5f7"
+      },
+      {
+        "path": "src/emo_master/apps/operator_runtime/controller.py",
+        "size": 7843,
+        "sha256": "589c914a245c900e5ce0fd6ba4ef26bec362130d9338ce1c03cd7d3e07d38838"
+      },
+      {
+        "path": "src/emo_master/apps/operator_runtime/main.py",
+        "size": 13219,
+        "sha256": "6559f6f493ca0c6fb1a2f51c03bfed14055ead9831cbd4bfb24fafcafb2f0680"
+      },
+      {
+        "path": "src/emo_master/apps/operator_runtime/validation.py",
+        "size": 11709,
+        "sha256": "6ef9b3881013bd79a161aad500ec2f9a1ef0a78e6320a9f4b7db8a4590ee161a"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/context/sqlite_store.py",
+        "size": 26411,
+        "sha256": "ddb4172a4e25cd361360d614b399bb7508895b7ff765fcbf4dfd51e3348ff693"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+        "size": 75038,
+        "sha256": "3e00d49bfa9c2ec2bb10a69ac950571059c663692a0d4dbd205b25b92eb76f01"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/jobs/models.py",
+        "size": 1901,
+        "sha256": "42937e703cf42329b3ee027bb95243b13e98f92f868b84b334b113662a9abbad"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+        "size": 51848,
+        "sha256": "6fe88be4da95542e2426a451a9ee4da359f2c2e0a6f30cffdc262e19050cbb78"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+        "size": 9835,
+        "sha256": "e359d132ea6e1a351b3b59e0dc51ad60352864b47b370e0b9fe84a729024aed0"
+      },
+      {
+        "path": "src/emo_master/apps/runtime/workflow/runner.py",
+        "size": 33231,
+        "sha256": "12bdc51d5c5ada47d6a83d64f8bc174f42c8c99a2c2bf8065a8dc1c1527fa1df"
+      },
+      {
+        "path": "src/emo_master/apps/windows_entry.py",
+        "size": 1261,
+        "sha256": "b342af2a7c7f9e1bf4f8d650a6865fdce93dd9749ad4a366345c8bdc56258516"
+      },
+      {
+        "path": "src/emo_master/core/project/delivery_store.py",
+        "size": 11903,
+        "sha256": "c3b5b30a0f376fcf799da2f2b1661370f6cb881b8d3a860cf529f112d882125c"
+      },
+      {
+        "path": "src/emo_master/core/project/migration.py",
+        "size": 19184,
+        "sha256": "058545272f050951af7031ba4cee7970a1bcced97422a22802dc0296adaaba74"
+      },
+      {
+        "path": "src/emo_master/core/project/models.py",
+        "size": 6903,
+        "sha256": "b47e2d5c32e8364f0df9e11b677eb64a44cf63ca2429b1f7846795bbc44e71fe"
+      },
+      {
+        "path": "src/emo_master/core/project/package_builder.py",
+        "size": 7598,
+        "sha256": "510cceacf2684d3119f6920dda5d9c4cda9c46a94e16d40d0ef8c6f867d28f57"
+      },
+      {
+        "path": "src/emo_master/core/project/runtime_directory.py",
+        "size": 4948,
+        "sha256": "74d86fb3653da47d753f1dfa4ae59a2b56e32a61a7331ee7dd78184e16322205"
+      },
+      {
+        "path": "src/emo_master/core/project/runtime_package.py",
+        "size": 13911,
+        "sha256": "e353c7a2bce3b337d14dad302fce7b61f2a8c02eec2bfe46475be3579383dc32"
+      },
+      {
+        "path": "src/emo_master/core/project/test_delivery.py",
+        "size": 8180,
+        "sha256": "8344568cfa9749d3529b6789bb6c62d9a8dde5a8b8c46d43cdfcc5d7ad8d92a2"
+      },
+      {
+        "path": "src/emo_master/core/workflow/validation.py",
+        "size": 13662,
+        "sha256": "d998f579bb0a9059fd4399824c3ac22d7445adaa31494dec8321dd0ac3b81430"
+      },
+      {
+        "path": "src/emo_master/ui/presentation/design_examples.py",
+        "size": 4203,
+        "sha256": "8e9d65f83078d1e0ddd557f633dd924bc00cc66b5c3d6300ea9fd6cebfbcb970"
+      },
+      {
+        "path": "src/emo_master/ui/presentation/renderer.py",
+        "size": 37999,
+        "sha256": "5f2eb421629e600162b524e8354c65af33cf4b8dc1a6d940c7f36e12ef1a823e"
+      },
+      {
+        "path": "start_runtime.cmd",
+        "size": 460,
+        "sha256": "4f2e0e41235782206b8e73f73243d2f2762b3f7962c602038ac8a16b3fbed0b9"
+      }
+    ],
+    "changedTests": [
+      {
+        "path": "tests/runtime/test_heartbeat_liveness.py",
+        "size": 14918,
+        "sha256": "f64ec9c3fb706cf22bb9f9ca9f26c9cf7a916e0baa47b6110cf446a1c9144638"
+      },
+      {
+        "path": "tests/runtime/test_worker_heartbeat_finalization.py",
+        "size": 11675,
+        "sha256": "e7e45a2e6c5c9ac6a2a4eff7bfbb8198ff6154632b8e264d9a8a807c7c1107e6"
+      },
+      {
+        "path": "tests/runtime/test_production_boundaries.py",
+        "size": 12146,
+        "sha256": "bea1e1674d959ef5d9f51301fb28159edebeefc89528e0a79fb0ca4047d5c800"
+      },
+      {
+        "path": "tests/ui/operator_view/test_production_window.py",
+        "size": 11233,
+        "sha256": "3e6a43b6067bfec5258edd74eeb696fa2ed1ec158b8da1cae209c34c568ad3af"
+      }
+    ],
+    "hashScope": "Changed/untracked src, scripts, workflow and launcher code, plus the four review regression test modules; not a whole-tree archive.",
+    "postBuildVerification": {
+      "status": "PASS",
+      "checkedFiles": 45,
+      "mismatches": []
+    }
+  },
+  "packager": {
+    "workspace": "D:/jsdfhasuh/documents/my_project/python_build_script",
+    "referenceHead": "fe4921772287cb5d2f5946283f5a4122f5067f89",
+    "dirty": true,
+    "code": [
+      {
+        "path": "build.py",
+        "size": 20145,
+        "sha256": "ef16ed2f2fbc18ece21c1131474deddd645c5ae62b5dab705173f87345842b32"
+      },
+      {
+        "path": ".github/workflows/release-windows.yml",
+        "size": 14098,
+        "sha256": "7885177a2e60e0a12c01e34dca508ec2fd79f7ac12ba6d54ba3e93cbaf634b28"
+      },
+      {
+        "path": "scripts/publish-local-release.ps1",
+        "size": 3388,
+        "sha256": "5530fc850cab79f7e54a8d805ffb3b58a96bae460b1a75020b761558b69536fa"
+      },
+      {
+        "path": "scripts/publish-local-release-legacy.ps1",
+        "size": 35257,
+        "sha256": "ad6b2c6447f22770c7b47d02fdc9c6f065b4b98f512fb39f40dcb83ef1c355cb"
+      }
+    ],
+    "postBuildVerification": {
+      "status": "PASS",
+      "checkedFiles": 4,
+      "referenceHead": "fe4921772287cb5d2f5946283f5a4122f5067f89",
+      "mismatches": []
+    }
+  },
+  "files": [
+    {
+      "path": "D:/jsdfhasuh/documents/my_project/python_build_script/dist/EmoMasterRuntime/EmoMasterRuntime.exe",
+      "size": 5888067,
+      "sha256": "f71f83e52627f2cd9c77c02921c10cc514f83bc1931c6f8b71bb798f3ab14be1"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/manual_test_workspace/runtime-review-fixes-20261006/final-delivery/emo-master-runtime-windows-v0.6.1.zip",
+      "size": 126468381,
+      "sha256": "876dc699cc7a7f071ed1b9914b6e615595c116b32968ee5e7550fe7b50b67600"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/docs/testing/runtime-review-fixes-2026-10-06/frozen.json",
+      "size": 1180,
+      "sha256": "5c4f971a03e52a7bce309119a82215a2ed397d4d744de8318d85fbb7416db6f4"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/docs/testing/runtime-review-fixes-2026-10-06/archive.json",
+      "size": 1179,
+      "sha256": "4a1d9f8efbd31ddf32ad9f79ea5e812d50d0b61aa80e5766770f6b33aea4cc8f"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/docs/testing/runtime-review-fixes-2026-10-06/native.json",
+      "size": 2141,
+      "sha256": "2456f50782bd9f199344ff6beff686a853c3a7deb63f20c9f4fd91aa32b1d3a3"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/docs/testing/runtime-review-fixes-2026-10-06/measurement.json",
+      "size": 105539,
+      "sha256": "b31b88deb3f25a5bd5319279b2f730105abba2ef5f8ce4775967430b1b9744ba"
+    },
+    {
+      "path": "C:/Users/jsdfhasuh/my_scripts/emo_master/docs/testing/runtime-review-fixes-2026-10-06/operator-runtime-native.png",
+      "size": 25072,
+      "sha256": "ea355ad4bbdb6d5bcc569234b3a865be483800233cd6e5624d32f8c811bb7c62"
+    },
+    {
+      "path": "D:/jsdfhasuh/documents/my_project/python_build_script/configs/emo-master-runtime.json",
+      "size": 1432,
+      "sha256": "807b1fc522523b7dd7e977ba46556890d31029328ddd1b14c0b9633a9178c75b"
+    }
+  ],
+  "archiveExecutableIdentity": {
+    "status": "PASS",
+    "archive": "C:\\Users\\jsdfhasuh\\my_scripts\\emo_master\\manual_test_workspace\\runtime-review-fixes-20261006\\final-delivery\\emo-master-runtime-windows-v0.6.1.zip",
+    "archiveSha256": "876dc699cc7a7f071ed1b9914b6e615595c116b32968ee5e7550fe7b50b67600",
+    "member": "EmoMasterRuntime/EmoMasterRuntime.exe",
+    "memberSize": 5888067,
+    "memberSha256": "f71f83e52627f2cd9c77c02921c10cc514f83bc1931c6f8b71bb798f3ab14be1",
+    "executable": "D:\\jsdfhasuh\\documents\\my_project\\python_build_script\\dist\\EmoMasterRuntime\\EmoMasterRuntime.exe",
+    "executableSha256": "f71f83e52627f2cd9c77c02921c10cc514f83bc1931c6f8b71bb798f3ab14be1",
+    "match": true
+  },
+  "packagedBytecodeReport": "packaged-bytecode.json",
+  "provenanceCaveat": "Legacy manifest source_commit is the reference HEAD, not a clean commit containing dirty source. Generated URLs do not imply upload or publication.",
+  "regression": {
+    "addedCases": 11,
+    "oldImplementationProbe": {
+      "failed": 6,
+      "passed": 1,
+      "evidence": "Task command history; selected new regression cases, not full suite."
+    },
+    "focusedModules": {
+      "passed": 39
+    },
+    "actionSourceCollection": {
+      "passed": 105,
+      "failed": 0,
+      "skipped": 0,
+      "report": "action-regression.xml"
+    },
+    "broadSourceCollection": {
+      "passed": 1286,
+      "failed": 0,
+      "skipped": 1,
+      "report": "source-regression.xml"
+    },
+    "skip": {
+      "test": "tests.core.plugin.test_icon_resources::testSymlinkCannotEscapeRoot",
+      "reason": "Symlinks unavailable in the current environment."
+    },
+    "identityIndependentRuns": {
+      "passed": 10,
+      "failed": 0,
+      "reports": "identity-01.xml through identity-10.xml"
+    },
+    "packagerFocusedUnittest": {
+      "passed": 27,
+      "failed": 0
+    },
+    "ruff": "PASS",
+    "mypy": {
+      "status": "PASS",
+      "sourceFiles": 331,
+      "caveat": "Repository configuration; untyped function bodies are not all checked."
+    }
+  },
+  "frozen": {
+    "packageGate": {
+      "status": "PASS",
+      "report": "frozen.json"
+    },
+    "extractedArchiveGate": {
+      "status": "PASS",
+      "report": "archive.json"
+    },
+    "nativeMeasurement": {
+      "status": "PASS",
+      "durationSeconds": 60,
+      "restarts": 10,
+      "sessions": 11,
+      "firstSessionObservedCompletions": 103,
+      "remainingSessionObservedCompletions": 4,
+      "stopCode": "E_CANCELLED",
+      "report": "native.json",
+      "measurement": "measurement.json",
+      "acceptance": "Synthetic functional short run; not field soak or resource-budget acceptance."
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "operatorId": "vision.state.variable_write",
+  "displayName": "写入全局变量",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins.variable_write.operator:WriteVariableOperator",
+  "category": "数值与逻辑",
+  "iconKey": "count",
+  "summary": "对全局变量赋值、原子自增或恢复初始值；自增和复位必须连接 after 执行依赖。",
+  "inputPorts": {"value": {"type": "any", "required": false, "nullable": false}, "after": {"type": "any", "required": false, "nullable": false}},
+  "outputPorts": {"value": {"type": "any", "required": true, "nullable": false}},
+  "paramSchema": {"type": "object", "properties": {
+    "variableId": {"type": "string", "title": "全局变量", "minLength": 1},
+    "operation": {"type": "string", "title": "变量操作", "enum": ["set", "increment", "reset"], "default": "set", "xGlobalVariableBindingDisabled": true, "xOptionLabels": {"set": "赋值", "increment": "原子自增", "reset": "恢复初始值"}},
+    "delta": {"type": "integer", "title": "整数增量", "default": 1, "minimum": -9223372036854775808, "maximum": 9223372036854775807, "xEnabledWhen": {"operation": ["increment"]}}
+  }, "required": ["variableId"]},
+  "minCoreVersion": "0.6.0",
+  "maxCoreVersion": "1.x"
+}

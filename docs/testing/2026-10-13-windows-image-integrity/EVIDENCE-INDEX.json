@@ -1,0 +1,706 @@
+{
+  "schema_version": 1,
+  "role": "frozen_evidence_not_acceptance",
+  "original_sha": "5410737a561e1f192ee9a081b3f208c9b27d9886",
+  "candidate_parent": "c891b8a69d1d0f4ddbcb4d83ed90b54eac82d189",
+  "original_result_unchanged": {
+    "original_step_outcome": "failure",
+    "measurement_status": "INVALID",
+    "performance_status": "NOT_ASSESSED"
+  },
+  "candidate_actions": "PENDING_AT_ARCHIVE_CREATION; delivery reply records actual exact-SHA runs",
+  "archive": {
+    "name": "windows-image-integrity-evidence.zip",
+    "bytes": 1013968,
+    "sha256": "f850662355555fa3ce490abacfd4de7a4870f78c44b84006849e7fe807e1060b"
+  },
+  "files": {
+    "actions/artifacts-38347057040.json": {
+      "bytes": 770,
+      "sha256": "da21766e804edddb2fd346cf5e0a74b3d36d0eedfd0f277bf4d8c3d97ca6e1bf"
+    },
+    "actions/artifacts-38347057046.json": {
+      "bytes": 34,
+      "sha256": "e338fb10e6740e1e43cdbe137da3a22ec09f95d8097c5f247e751de5f81f87b4"
+    },
+    "actions/artifacts-38347060373.json": {
+      "bytes": 803,
+      "sha256": "653b4132c160fe3a1476f1579040ffbed332cb02e35170f2fa7a60e47fe594a4"
+    },
+    "actions/artifacts-38347064093.json": {
+      "bytes": 1516,
+      "sha256": "4dc784f95eaeb76c31df7bebddc10d9e553125a78068a4a57fbe22a339e9f668"
+    },
+    "actions/ci-38356361465-windows-first-failure.log": {
+      "bytes": 80608,
+      "sha256": "25603d5cb619c8060d6bfc48aef979e1e1552c85d96f2b3bbbc09cf3f33580fd"
+    },
+    "actions/ci-38356368865-linux-first-failure.log": {
+      "bytes": 89058,
+      "sha256": "257568aa0101283cc005ce6117be61a08f15a23966c125a04adcccd4b3755509"
+    },
+    "actions/ci-38356368865-windows-first-failure.log": {
+      "bytes": 100660,
+      "sha256": "807f84f67ea049e24370bae59352846b815cc20d34f93ce9f47c2dccd69df9fa"
+    },
+    "actions/credit-38347057040-1.log": {
+      "bytes": 1135486,
+      "sha256": "01d7dd09dbd22cba1717bb1e540a76102fb8d9e34571ce144416171a4c25e1f7"
+    },
+    "actions/native-38347060373-1/changing-96.json": {
+      "bytes": 281958,
+      "sha256": "719df4e2382ac1b2ec8131424efc2dfd5dae5f2b1048559ef7e85227d875278f"
+    },
+    "actions/native-38347060373-1/close-while-running/five-native-sessions.json": {
+      "bytes": 5465,
+      "sha256": "e56f1e90c28aa4f364af159f12e25cd10574f98d54b51d882d958642bfdb15ee"
+    },
+    "actions/native-38347060373-1/five-sessions.json": {
+      "bytes": 2156,
+      "sha256": "d57c6c0951416ed913e56726d97350a0b819c673fbf89ab1c415f1785db79303"
+    },
+    "actions/native-38347060373-1/full-lifecycle/five-native-sessions.json": {
+      "bytes": 7732,
+      "sha256": "9f59378e0ef6b71e2db8e7e61fae8035e280c709a989549c59a22da6fc651ae7"
+    },
+    "actions/native-38347060373-1/full-lifecycle/tab-0.png": {
+      "bytes": 31342,
+      "sha256": "37f8e06898fbfd6f9b6ec4479d2c7ee3754b832cac6c65f10b031a19d0fd7811"
+    },
+    "actions/native-38347060373-1/full-lifecycle/tab-1.png": {
+      "bytes": 32286,
+      "sha256": "892f479bfa08270ab48f66c9b5d1de53d9f590dbe1ad16f0263244858c63a52d"
+    },
+    "actions/native-38347060373-1/full-lifecycle/tab-2.png": {
+      "bytes": 31979,
+      "sha256": "0cda6804ae52b7f631ec3cf93742a948bada6f615313e326d118e9493573fe7a"
+    },
+    "actions/native-38347060373-1/full-lifecycle/tab-3.png": {
+      "bytes": 31936,
+      "sha256": "56c9c5a719e523cc72339354a86056241ead3d24f85ba7ef9adb3125b12c912f"
+    },
+    "actions/native-38347060373-1/full-lifecycle/tab-4.png": {
+      "bytes": 31723,
+      "sha256": "83a422465a353a8870831170f7f9635cca412c15d351c9365e0c4b73f91a1c34"
+    },
+    "actions/native-38347060373-1/junit.xml": {
+      "bytes": 3033,
+      "sha256": "387a5d578b6e1806bb51664844ff7d37cd7b8c8819166e741e003cef63e0fd73"
+    },
+    "actions/native-38347060373-1/source-sha.txt": {
+      "bytes": 42,
+      "sha256": "2edd1770a8e0aafbf762abc61d4439c4d02f72b96bb62bacff4062234fdf4073"
+    },
+    "actions/run-38347057040.json": {
+      "bytes": 2523,
+      "sha256": "11682c7e7d50172dc4f876eb0f486819cf23ffb05bb19bb81d3af9c2f66a3bfa"
+    },
+    "actions/run-38347057046.json": {
+      "bytes": 3737,
+      "sha256": "b9f7c92d1a96875422befc4ba6acc709995e31270db1224acbd32925b8af7234"
+    },
+    "actions/run-38347060373.json": {
+      "bytes": 2260,
+      "sha256": "66adfca241b020dc2f9935df9a115c05c943a2777bdce6f084f5ec3c7519847d"
+    },
+    "actions/run-38347064093.json": {
+      "bytes": 6981,
+      "sha256": "a6a4c8144c484ceb1016bce79c09a8cfca20cceb61ebe6e8bb282844e9659b22"
+    },
+    "actions/run-38356361465-refreshed.json": {
+      "bytes": 3742,
+      "sha256": "a3c68c7ea27bdd2738ad1c4c42ce4bb50e3c7d2dcf6531ea8a15c67a0574a73b"
+    },
+    "actions/run-38356361465.json": {
+      "bytes": 3552,
+      "sha256": "73dae9c261af46a731e5c585100a46739521db4ec6dd95da84156ea5f29ffb65"
+    },
+    "actions/run-38356368865-refreshed.json": {
+      "bytes": 3750,
+      "sha256": "e295555cbe28b6e0e143a2e49557d483b61b5c27a2c44ce274eef97ddbf9d725"
+    },
+    "actions/run-38356368865.json": {
+      "bytes": 3552,
+      "sha256": "262d881ef1debe2b7e386c19b142595bc89d6a78e11756e6d1afc30a86d2c91b"
+    },
+    "actions/run-38356370472.json": {
+      "bytes": 6981,
+      "sha256": "74b43d94ef9785d4529cb9e4047eb9412b48d9027a3ef0ae208eba892d57b7b5"
+    },
+    "audit/layer-audit.json": {
+      "bytes": 157868,
+      "sha256": "a352a6931d9e7c022345645d2c21a8660d3c79af0e4e9d021804ed73bffd28a8"
+    },
+    "local/ci-failure-local-once.log": {
+      "bytes": 101,
+      "sha256": "2ce0b04e59af62dd1da2d4fb80c3bee1590b26dad85c2a27fe529436baac4edf"
+    },
+    "local/ci-failure-local-once.xml": {
+      "bytes": 839,
+      "sha256": "24093c51ca261d63708b399364966684893edf87bc1384f1dd0ede1ae3c87b10"
+    },
+    "local/diagnostic-callsite.log": {
+      "bytes": 100,
+      "sha256": "580d4139608400fa8b99387def4ee35be7f9ff541dfc61ece49449b72efd8f7c"
+    },
+    "local/diagnostic-callsite.xml": {
+      "bytes": 1247,
+      "sha256": "818612b0d7380c8d5b287affec206775da42d262fef84461a2b92e5bb4cb6f77"
+    },
+    "local/final-local-candidate-manifest.json": {
+      "bytes": 1235,
+      "sha256": "7f26025f9f2f17732e65f31a680d1d0cb1c884dd277b02774290209b4d49acff"
+    },
+    "local/mypy-final.log": {
+      "bytes": 5756,
+      "sha256": "7648c6ed6d7d6514943de72fc1a41d66927a609b087dca987fc01ffe1e3e6471"
+    },
+    "local/native/changing-96.json": {
+      "bytes": 282779,
+      "sha256": "6a1818c72cdb68e45c40652f0a07407d3addd3afa2a8c91b4a7b2b1ee145bd6a"
+    },
+    "local/native/close-while-running/five-native-sessions.json": {
+      "bytes": 5485,
+      "sha256": "5f070ae3e7b2998541db6543a7c2498a2a0f8ee99d5e0b31a8e29cb192f09bc7"
+    },
+    "local/native/five-sessions.json": {
+      "bytes": 2166,
+      "sha256": "479ac58b250bba131e32d3f78b6674ad39917b07349a794958d7a7c6460b37dd"
+    },
+    "local/native/full-lifecycle/five-native-sessions.json": {
+      "bytes": 7760,
+      "sha256": "886dc38f6646da5ee4a30d1379b597e9bf8bec6ce3a4c5a93910e16ccd8bc9f9"
+    },
+    "local/native/full-lifecycle/tab-0.png": {
+      "bytes": 29132,
+      "sha256": "1a5170ce1859ebe5075fcff1ce31a87f3d0d3c29460d3b88d5a6b0a0b90b14fe"
+    },
+    "local/native/full-lifecycle/tab-1.png": {
+      "bytes": 29854,
+      "sha256": "806dc1a4c7dd58ab660daed4b98864eaeaf104ab5185bdb28efa8340849c57b6"
+    },
+    "local/native/full-lifecycle/tab-2.png": {
+      "bytes": 29170,
+      "sha256": "d88e0614847a4bae42828bfde3b13c475878558829771cbbaec09317df5fa97d"
+    },
+    "local/native/full-lifecycle/tab-3.png": {
+      "bytes": 29098,
+      "sha256": "b4508994c86997b698c452e9e69b882aec77441c89c13faeea6193807110222c"
+    },
+    "local/native/full-lifecycle/tab-4.png": {
+      "bytes": 29281,
+      "sha256": "704838c710fd516076e700f0bffef275b7ca69e5a45ca3a92664efb9e7f3d0eb"
+    },
+    "local/new-native.log": {
+      "bytes": 101,
+      "sha256": "c447f8b11bdc5a18f3efe313b6b3afbaf4eee5fadbbdec724225b892dec38f13"
+    },
+    "local/new-native.xml": {
+      "bytes": 5006,
+      "sha256": "6dc4053fe101c34536e379215d228937cff75307e561a1728a1b9987cb55def6"
+    },
+    "local/regression.log": {
+      "bytes": 347,
+      "sha256": "42b011dd60797b3129cb2aac81b31eeb1823de80dd4a604c0dccdeeaf9318e54"
+    },
+    "local/regression.xml": {
+      "bytes": 32704,
+      "sha256": "d03a3bf40cc5693b2dfbf997ea2291b5a40c8b13ea3b653d01d694f279b933fb"
+    },
+    "local/tool-failures-and-preservation.json": {
+      "bytes": 1374,
+      "sha256": "6a9e0843a7e734eec40f29b91d58dd8c606a70cbcfe3302f3d7291035cd552a2"
+    },
+    "original/export-credit-public.json": {
+      "bytes": 1039654,
+      "sha256": "5a364ea74bcb1f04a40efeff08e7f4293ab753a3e0acaf7a07b3a14e900063af"
+    }
+  },
+  "layer_summary": [
+    {
+      "position": 0,
+      "observer_mode": "off",
+      "source": {
+        "denominator": 96,
+        "covered": 96,
+        "missing": [],
+        "formal_denominator": 88,
+        "formal_covered": 88
+      },
+      "consumers": [
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        },
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        }
+      ],
+      "windows": [
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        },
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              68
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        }
+      ],
+      "gaps": [
+        {
+          "ordinal": 68,
+          "window": 0,
+          "category": "LIVE_SUPERSESSION_PROVEN",
+          "root_cause_status": "PROVEN_LIVE_DECISION",
+          "commit_ns": [],
+          "next_commit_ordinal": 69,
+          "next_commit_ns": 361200618500
+        },
+        {
+          "ordinal": 68,
+          "window": 1,
+          "category": "LIVE_SUPERSESSION_PROVEN",
+          "root_cause_status": "PROVEN_LIVE_DECISION",
+          "commit_ns": [],
+          "next_commit_ordinal": 69,
+          "next_commit_ns": 361200843300
+        }
+      ]
+    },
+    {
+      "position": 1,
+      "observer_mode": "on",
+      "source": {
+        "denominator": 96,
+        "covered": 96,
+        "missing": [],
+        "formal_denominator": 88,
+        "formal_covered": 88
+      },
+      "consumers": [
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        },
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        }
+      ],
+      "windows": [
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 94,
+            "missing": [
+              60,
+              94
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 86
+          }
+        },
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 94,
+            "missing": [
+              60,
+              94
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 86
+          }
+        }
+      ],
+      "gaps": [
+        {
+          "ordinal": 60,
+          "window": 0,
+          "category": "GUI_PAINT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [
+            382940192800
+          ],
+          "next_commit_ordinal": 61,
+          "next_commit_ns": 383026421300
+        },
+        {
+          "ordinal": 60,
+          "window": 1,
+          "category": "GUI_PAINT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [
+            382940342200
+          ],
+          "next_commit_ordinal": 61,
+          "next_commit_ns": 383026704700
+        },
+        {
+          "ordinal": 94,
+          "window": 0,
+          "category": "GUI_PAINT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [
+            389741423000
+          ],
+          "next_commit_ordinal": 95,
+          "next_commit_ns": 389827155000
+        },
+        {
+          "ordinal": 94,
+          "window": 1,
+          "category": "GUI_PAINT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [
+            389741576100
+          ],
+          "next_commit_ordinal": 95,
+          "next_commit_ns": 389827381400
+        }
+      ]
+    },
+    {
+      "position": 2,
+      "observer_mode": "on",
+      "source": {
+        "denominator": 96,
+        "covered": 96,
+        "missing": [],
+        "formal_denominator": 88,
+        "formal_covered": 88
+      },
+      "consumers": [
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        },
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        }
+      ],
+      "windows": [
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        },
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        }
+      ],
+      "gaps": []
+    },
+    {
+      "position": 3,
+      "observer_mode": "off",
+      "source": {
+        "denominator": 96,
+        "covered": 96,
+        "missing": [],
+        "formal_denominator": 88,
+        "formal_covered": 88
+      },
+      "consumers": [
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        },
+        {
+          "received": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "decoded": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          },
+          "live": {
+            "denominator": 96,
+            "covered": 96,
+            "missing": [],
+            "formal_denominator": 88,
+            "formal_covered": 88
+          }
+        }
+      ],
+      "windows": [
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              38
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              38
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        },
+        {
+          "committed": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              38
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          },
+          "painted": {
+            "denominator": 96,
+            "covered": 95,
+            "missing": [
+              38
+            ],
+            "formal_denominator": 88,
+            "formal_covered": 87
+          }
+        }
+      ],
+      "gaps": [
+        {
+          "ordinal": 38,
+          "window": 0,
+          "category": "GUI_COMMIT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [],
+          "next_commit_ordinal": 39,
+          "next_commit_ns": 425267526600
+        },
+        {
+          "ordinal": 38,
+          "window": 1,
+          "category": "GUI_COMMIT_NOT_RECORDED",
+          "root_cause_status": "NOT_PROVEN",
+          "commit_ns": [],
+          "next_commit_ordinal": 39,
+          "next_commit_ns": 425267374800
+        }
+      ]
+    }
+  ]
+}

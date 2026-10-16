@@ -1,0 +1,32 @@
+552: 2026-10-11T04:10:51.6935724Z ________ testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount ________
+553: 2026-10-11T04:10:51.6936765Z 
+554: 2026-10-11T04:10:51.6937779Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/testBusinessNgDoesNotStopAndSh0')
+555: 2026-10-11T04:10:51.6938711Z 
+556: 2026-10-11T04:10:51.6939185Z     def testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount(tmp_path):
+557: 2026-10-11T04:10:51.6940027Z         root = tmp_path / "project"
+558: 2026-10-11T04:10:51.6940615Z         payload = productionProject(root, save=False).model_dump()
+559: 2026-10-11T04:10:51.6941309Z         workflow = payload["workflows"]["main"]
+560: 2026-10-11T04:10:51.6942081Z         workflow["nodes"].append({"nodeId": "judge", "operatorId": "vision.compare.number",
+561: 2026-10-11T04:10:51.6943041Z                                   "params": {"operator": "gt", "rightValue": 3.0}})
+562: 2026-10-11T04:10:51.6944000Z         workflow["edges"].append(dict(fromNode="count", fromPort="count", toNode="judge", toPort="left"))
+563: 2026-10-11T04:10:51.6944862Z         page = payload["presentation"]
+564: 2026-10-11T04:10:51.6945589Z         page["dataSources"]["judge"] = dict(page["dataSources"]["count"], nodeId="judge",
+565: 2026-10-11T04:10:51.6946633Z                                            port="result", expectedType="boolean")
+566: 2026-10-11T04:10:51.6947501Z         page["pages"]["main"]["components"].append({"componentId": "judge", "type": "indicator",
+567: 2026-10-11T04:10:51.6948524Z             "bindings": {"value": "judge"}, "layout": {"row": 2}, "props": {"indicatorStates": {
+568: 2026-10-11T04:10:51.6949469Z                 "true": {"text": "OK", "color": "green"}, "false": {"text": "NG", "color": "red"}}}})
+569: 2026-10-11T04:10:51.6950322Z         saveDocument(root, ProjectDocument.model_validate(payload))
+570: 2026-10-11T04:10:51.6951018Z         owner = ProductionRuntime(tmp_path / "data")
+571: 2026-10-11T04:10:51.6951536Z         try:
+572: 2026-10-11T04:10:51.6951888Z             owner.load(root)
+573: 2026-10-11T04:10:51.6952348Z             job = owner.start()
+574: 2026-10-11T04:10:51.6953203Z             waitFor(lambda: any(r.identity.resultOrdinal >= 3 for r in owner.presentation.store.latest.values()))
+575: 2026-10-11T04:10:51.6954402Z             result = next(iter(owner.presentation.store.latest.values()))
+576: 2026-10-11T04:10:51.6955099Z >           assert result.status == "COMPLETE"
+577: 2026-10-11T04:10:51.6955694Z E           AssertionError: assert 'INCOMPLETE' == 'COMPLETE'
+578: 2026-10-11T04:10:51.6956242Z E             
+579: 2026-10-11T04:10:51.6956593Z E             - COMPLETE
+580: 2026-10-11T04:10:51.6956986Z E             + INCOMPLETE
+581: 2026-10-11T04:10:51.6957581Z E             ? ++
+582: 2026-10-11T04:10:51.6957811Z 
+583: 2026-10-11T04:10:51.6958104Z tests\runtime\test_production_boundaries.py:261: AssertionError

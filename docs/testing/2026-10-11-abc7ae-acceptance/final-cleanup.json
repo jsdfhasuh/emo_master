@@ -1,0 +1,28 @@
+{
+  "utc": "2026-10-11T10:06:11.306999+00:00",
+  "sha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "gitStatus": "?? docs.emofixture\n",
+  "trackedDiff": "",
+  "trackedFiles": 5034,
+  "desktopLastTimeline": {
+    "utc": "2026-10-11T10:04:36.442558+00:00",
+    "monotonic": 78842.814365953,
+    "processes": []
+  },
+  "desktopDirectCheck": {
+    "utc": "2026-10-11T10:05:46.790Z",
+    "pidNamespace": "pid:[4026533006]",
+    "rows": []
+  },
+  "cleanup": "Normal UI close, only own observer stop marker. No killall, no old service stops, no database cleanup. Fresh Designer3285 and tracker3330 retired 10:04:36 UTC.",
+  "untrackedExplanation": "docs.emofixture is this round GUI-created test input set; original retained and byte-identical evidence copy retained.",
+  "desktopDirectCheckNamespaceWarning": "Earlier CUA REPL /proc check used a different namespace and is not proof of actual desktop process retirement; actual terminal-based check below supersedes it, original retained.",
+  "actualDesktopCheck": {
+    "utc": "2026-10-11T10:08:44.300637+00:00",
+    "pidNamespace": "pid:[4026532208]",
+    "observerNamespace": "pid:[4026532208]",
+    "sameNamespace": true,
+    "processes": [],
+    "observerAlive": false
+  }
+}

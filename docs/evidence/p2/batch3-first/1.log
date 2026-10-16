@@ -1,0 +1,55 @@
+..............F......................................................... [ 77%]
+.....................                                                    [100%]
+================================== FAILURES ===================================
+_____________ testCancelledLegacyWorkKeepsQuotaUntilCleanup[next] _____________
+
+channel = <emo_master.apps.runtime.presentation.service.PresentationService object at 0x000001E1DB898FA0>
+failure = 'next'
+
+    @pytest.mark.parametrize("failure", ["construct", "next", "close"])
+    def testCancelledLegacyWorkKeepsQuotaUntilCleanup(channel, failure):
+        entered, release, closed = threading.Event(), threading.Event(), threading.Event()
+    
+        class Iterator:
+            def __iter__(self):
+                return self
+    
+            def __next__(self):
+                entered.set()
+                release.wait(10)
+                raise StopIteration
+    
+            def close(self):
+                if failure == "close":
+                    entered.set()
+                    release.wait(10)
+                    closed.set()
+                    raise RuntimeError("injected close failure")
+                closed.set()
+    
+        def stream(request, context):
+            if failure == "construct":
+                entered.set()
+                release.wait(10)
+            iterator = Iterator()
+            if failure == "close":
+                release.set()
+            return iterator
+    
+        channel.runtime.StreamJobEvents = stream
+        server = AioRuntimeServer(channel.runtime, channel)
+        transport = grpc.insecure_channel(f"127.0.0.1:{server.port}")
+        try:
+            stub = rpc.RuntimeServiceStub(transport)
+            calls = [stub.StreamJobEvents(pb.StreamJobEventsRequest(job_id="fault")) for _ in range(2)]
+            assert entered.wait(2)
+            until(lambda: server.active["events"] == 2)
+            for call in calls:
+                call.cancel()
+            if failure != "close":
+                time.sleep(.05)
+>               assert server.active["events"] == 2
+E               assert 1 == 2
+
+tests\runtime\presentation\test_network.py:110: AssertionError
+1 failed, 92 passed in 26.20s

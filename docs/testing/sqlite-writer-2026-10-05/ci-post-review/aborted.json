@@ -1,0 +1,8 @@
+{
+  "reason": "clean indexed candidate exposed dependency on uncommitted editor discardChanges; preserve partial output and rerun final source",
+  "pid": 88036,
+  "command": "\"C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe\" scripts/sqlite_writer_validate.py --phase ci --output docs/testing/sqlite-writer-2026-10-05/ci-post-review",
+  "remainingSuite": "NOT_RUN",
+  "time": "2026-10-05T11:05:59.6568807+08:00",
+  "action": "terminate owned validation process tree"
+}

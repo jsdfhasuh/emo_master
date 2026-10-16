@@ -1,0 +1,1020 @@
+{
+  "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+  "dirty": [
+    "M docs/development-guide.md",
+    " M docs/evidence/p4/a-first/evidence.json",
+    " M scripts/validate_page_editor.py",
+    " M src/emo_master/apps/designer/controllers/runtime_controller.py",
+    " M src/emo_master/apps/designer/page_designer/canvas_tools.py",
+    " M src/emo_master/apps/designer/page_designer/coordinator.py",
+    " M src/emo_master/apps/designer/page_designer/grid_geometry.py",
+    " M src/emo_master/apps/designer/page_designer/palette.py",
+    " M src/emo_master/apps/designer/page_designer/preview.py",
+    " M src/emo_master/apps/designer/page_designer/property_panel.py",
+    " M src/emo_master/apps/designer/page_designer/tools.py",
+    " M src/emo_master/apps/designer/page_designer/workspace.py",
+    " M src/emo_master/apps/designer/services/inspection_images.py",
+    " M src/emo_master/apps/designer/services/runtime_client.py",
+    " M src/emo_master/apps/designer/state/run_result_history.py",
+    " M src/emo_master/apps/designer/ui/main_window.py",
+    " M src/emo_master/apps/designer/ui/node_image_surface.py",
+    " M src/emo_master/apps/designer/ui/node_result_coordinator.py",
+    " M src/emo_master/apps/designer/ui/node_result_panel.py",
+    " M src/emo_master/apps/designer/ui/styles/app.qss",
+    " M src/emo_master/apps/runtime/grpc_server/service.py",
+    " M src/emo_master/apps/runtime/preview/run_inspection.py",
+    " M src/emo_master/ui/presentation/design_examples.py",
+    " M src/emo_master/ui/presentation/renderer.py",
+    " M tests/designer/test_inspection_images.py",
+    " M tests/designer/test_node_result_panel.py",
+    " M tests/designer/test_visual_layout.py",
+    " M tests/runtime/test_run_inspection_rpc.py",
+    " M tests/ui/page_designer/test_current_job_viewing.py",
+    " M tests/ui/page_designer/test_delivery_path.py",
+    " M tests/ui/page_designer/test_normal_run_path.py",
+    " M tests/ui/page_designer/test_normal_run_viewing.py",
+    " M tests/ui/page_designer/test_page_navigation.py",
+    " M tests/ui/page_designer/test_preview.py",
+    " M tests/ui/page_designer/test_retained_acceptance_multiscope.py",
+    " M tests/ui/page_designer/test_two_job_observation.py",
+    " M tests/ui/page_designer/test_usable_properties.py",
+    " M tests/ui/page_designer/test_user_path.py",
+    " M tests/ui/page_designer/test_visual_editor.py",
+    "?? docs/testing/node-results-2026-10-04/capture.py",
+    "?? docs/testing/node-results-2026-10-04/native-1600-100-first/",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-contracts-sixth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-contracts-sixth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-diagnostic.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-diagnostic.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fifth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fifth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fourth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fourth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-third.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-third.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-second.txt",
+    "?? docs/testing/workspace-switch-2026-10-03.md",
+    "?? docs/testing/workspace-switch-2026-10-03/",
+    "?? docs/testing/workspace-ui-2026-10-03.md",
+    "?? docs/testing/workspace-ui-2026-10-03/",
+    "?? scripts/validate_designer_workspaces.py",
+    "?? src/emo_master/apps/designer/page_designer/chrome.py",
+    "?? src/emo_master/apps/designer/page_designer/preview_window.py",
+    "?? src/emo_master/apps/designer/page_designer/workspace_switch.py",
+    "?? src/emo_master/apps/designer/ui/node_image_viewer.py",
+    "?? tests/designer/test_node_image_viewer.py",
+    "?? tests/ui/page_designer/test_palette.py",
+    "?? tests/ui/page_designer/test_workspace_modes.py",
+    "?? tests/ui/page_designer/test_workspace_switch.py"
+  ],
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "platform": "windows",
+  "qtScale": "1",
+  "requestedLogicalClient": [
+    1600,
+    900
+  ],
+  "runtimeTarget": "127.0.0.1:56526",
+  "load": "240x360 fixed local fixture; A=2 objects, B=3; three explicit spawn Jobs including missing-input failure",
+  "clock": "time.monotonic_ns; model delivery and QWidget paint completion measured separately",
+  "screenshots": [
+    {
+      "file": "01-before-run.png",
+      "sha256": "af9df6811121660cf7384cb64d4be975eeb5a79cedfb75d3c8818457e343dd7d",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "",
+        "main",
+        "load",
+        "",
+        "image",
+        ""
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 0,
+      "panelPaintNs": 1321710140000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": null,
+      "viewerImageSetNs": null,
+      "viewerFirstImagePaintNs": null,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        257
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        417
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    },
+    {
+      "file": "02-current-B-image.png",
+      "sha256": "a8140c12972e1c2d96492ce0088f37cffbf94e5aa2201628150a87d4ec441902",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "load",
+        "c8cb4407-aa7e-471e-86eb-3ab679ece236",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713093000000,
+      "panelPaintNs": 1321713140000000,
+      "panelFirstImagePaintNs": 1321713109000000,
+      "viewerPaintNs": null,
+      "viewerImageSetNs": null,
+      "viewerFirstImagePaintNs": null,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-a91ee593e20e245b2265cf8ea3c62e6f58bcaa6863285ecb2f85c17ea438ed45",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "originProjectRevision": 3,
+        "captureId": "dbf4ad7a-baf2-476e-b83f-0eb19b25e3b4",
+        "createdAtMs": 1791113707360,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "656cf650-9e15-42b7-8bff-0d57cdd8c00a",
+        "nodeRunId": "c8cb4407-aa7e-471e-86eb-3ab679ece236",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5368709120002,
+        "viewerCacheKey": null
+      }
+    },
+    {
+      "file": "03-previous-A-image.png",
+      "sha256": "9fb95d2d7e7b34af43334eca2b56d422f410779ce73387b4e87aa5d94667b1e7",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "0b35a922-084d-420f-a1c7-6c05b7966769",
+        "main",
+        "load",
+        "c1c39f9f-5570-4907-aa27-478847bc5613",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 1321713312000000,
+      "viewerPaintNs": 1321713312000000,
+      "viewerImageSetNs": 1321713296000000,
+      "viewerFirstImagePaintNs": 1321713296000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-2e64a22266b5dfa4e2e73664439c4456f3d0dedcc7b9cea93b9176f96999346f",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "0b35a922-084d-420f-a1c7-6c05b7966769",
+        "originProjectRevision": 2,
+        "captureId": "482e1dbb-3c39-441c-b544-77a44803157d",
+        "createdAtMs": 1791113705909,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "d5adcec1-69db-481b-ad82-3be9dad35fc4",
+        "nodeRunId": "c1c39f9f-5570-4907-aa27-478847bc5613",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5579162517506,
+        "viewerCacheKey": 5579162517506
+      }
+    },
+    {
+      "file": "04-previous-A-viewer.png",
+      "sha256": "85b03de6c94d9b9b676ef57d3d58859d275075242b06bb627407b0711da6f25f",
+      "clientLogical": [
+        1000,
+        740
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "0b35a922-084d-420f-a1c7-6c05b7966769",
+        "main",
+        "load",
+        "c1c39f9f-5570-4907-aa27-478847bc5613",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 1321713312000000,
+      "viewerPaintNs": 1321713375000000,
+      "viewerImageSetNs": 1321713296000000,
+      "viewerFirstImagePaintNs": 1321713296000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-2e64a22266b5dfa4e2e73664439c4456f3d0dedcc7b9cea93b9176f96999346f",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "0b35a922-084d-420f-a1c7-6c05b7966769",
+        "originProjectRevision": 2,
+        "captureId": "482e1dbb-3c39-441c-b544-77a44803157d",
+        "createdAtMs": 1791113705909,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "d5adcec1-69db-481b-ad82-3be9dad35fc4",
+        "nodeRunId": "c1c39f9f-5570-4907-aa27-478847bc5613",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5579162517506,
+        "viewerCacheKey": 5579162517506
+      }
+    },
+    {
+      "file": "05-previous-A-count.png",
+      "sha256": "a4e1d400130934bc522c0ac4eee235366b79bbde0233a9f6489b0aa50e52b860",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "0b35a922-084d-420f-a1c7-6c05b7966769",
+        "main",
+        "count",
+        "12462ac9-4dd0-4560-93d6-7ef63658168a",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "数值输出",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1321713453000000,
+      "viewerImageSetNs": 1321713421000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    },
+    {
+      "file": "06-current-B-count.png",
+      "sha256": "77a82e033e4b655061578f950d9ded6abd0f0940f98683f111f367e2971195df",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "count",
+        "4e634428-9f4b-4294-895e-80f582027f49",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "数值输出",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1321713515000000,
+      "viewerImageSetNs": 1321713500000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    },
+    {
+      "file": "07-current-B-execution.png",
+      "sha256": "b06f2ffdfd1db9bfbe6174e253ecabed2eca458c94748929c39d4e729cf6965a",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "count",
+        "4e634428-9f4b-4294-895e-80f582027f49",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "执行信息",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1321713515000000,
+      "viewerImageSetNs": 1321713500000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    },
+    {
+      "file": "08-current-B-inputs.png",
+      "sha256": "d1b1f7d67f6f82ff5fd808d8c15db652f7ba6d7a451fe80f4c9172f85524c5c0",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "presence",
+        "e4103268-620a-4d21-aa00-f5f88ed4db4d",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "输入数据",
+      "modelUpdatedNs": 1321713296000000,
+      "panelPaintNs": 1321713328000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1321713609000000,
+      "viewerImageSetNs": 1321713609000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    },
+    {
+      "file": "09-current-B-overlay.png",
+      "sha256": "aebcf04ee6be49599261112e7ec84ef6541ac913c846e457e9f6212c8f3793f3",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "blob",
+        "4d2a7144-8a55-422d-8123-1abb87d12f47",
+        "overlay",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713765000000,
+      "panelPaintNs": 1321713796000000,
+      "panelFirstImagePaintNs": 1321713781000000,
+      "viewerPaintNs": 1321713781000000,
+      "viewerImageSetNs": 1321713765000000,
+      "viewerFirstImagePaintNs": 1321713765000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-b1f0b71f3704e3ea7c013116e2004219c257458355eac5bd462b70dc5f6de391",
+        "label": "overlay",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "blob",
+        "port": "overlay",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "originProjectRevision": 3,
+        "captureId": "5d1b112e-462e-4191-bedf-eacea777c5f0",
+        "createdAtMs": 1791113707383,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "656cf650-9e15-42b7-8bff-0d57cdd8c00a",
+        "nodeRunId": "4d2a7144-8a55-422d-8123-1abb87d12f47",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 6240587481090,
+        "viewerCacheKey": 6240587481090
+      }
+    },
+    {
+      "file": "10-saved-result.png",
+      "sha256": "d0ddb82702660f34224b592900fec29bac719e6da47542027647f0a09b13232f",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "main",
+        "save",
+        "d3b08bc5-4f3b-44ae-aed9-ff178b4041c8",
+        "__saved_result__",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713859000000,
+      "panelPaintNs": 1321713875000000,
+      "panelFirstImagePaintNs": 1321713859000000,
+      "viewerPaintNs": 1321713859000000,
+      "viewerImageSetNs": 1321713859000000,
+      "viewerFirstImagePaintNs": 1321713859000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        397
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-2d28d6a0b8418ea00c0a372762d1bc8ec21e00a33b5f40303f7abe7cd80a3911",
+        "label": "__saved_result__",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "save",
+        "port": "__saved_result__",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+        "originProjectRevision": 3,
+        "captureId": "23b80267-0145-4b9f-993d-cc1fbefa3bcd",
+        "createdAtMs": 1791113707447,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "656cf650-9e15-42b7-8bff-0d57cdd8c00a",
+        "nodeRunId": "d3b08bc5-4f3b-44ae-aed9-ff178b4041c8",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 6360846565378,
+        "viewerCacheKey": 6360846565378
+      }
+    },
+    {
+      "file": "11-third-run-missing-input.png",
+      "sha256": "09453a288d3687a0c839db9f35f87b86ebf36b28e87851bec871b76fe6abae5a",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "72609a52-59e5-45af-8daf-7166dcebb13d",
+        "main",
+        "load",
+        "a632b25a-cb44-4972-8275-93220bffab8e",
+        "image",
+        "FAILED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1321713953000000,
+      "panelPaintNs": 1321715078000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1321715078000000,
+      "viewerImageSetNs": 1321715062000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        264
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        377
+      ],
+      "tabBarMinimum": 145,
+      "panelWidth": 430
+    }
+  ],
+  "resources": [
+    {
+      "stage": "A complete",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 5676,
+        "jobs": 1,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 7600,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 1,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    },
+    {
+      "stage": "A+B retained",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 11835,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 15201,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 2,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    },
+    {
+      "stage": "previous A selected with shared large window",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 11835,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 15201,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 3,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    },
+    {
+      "stage": "third acceptance evicts A",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 6159,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 9950,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 8,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    },
+    {
+      "stage": "project switched; external Runtime remains alive",
+      "server": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 0,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 9,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    },
+    {
+      "stage": "Designer closed",
+      "server": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 0,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 9,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 345600
+    }
+  ],
+  "jobs": [
+    {
+      "jobId": "0b35a922-084d-420f-a1c7-6c05b7966769",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 2,
+      "workflowId": "main",
+      "status": "COMPLETED",
+      "pid": 29236,
+      "acceptedAtMs": 1791113704876,
+      "startedAtMs": 1791113705907,
+      "endedAtMs": 1791113706060,
+      "errorCode": "",
+      "message": "job.completed",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "eb3ba033a8de87d8dbf9cd7ab59db018595db37a5a1701dfe432fa4aeafa3762"
+    },
+    {
+      "jobId": "90653a0e-ab21-4f12-9c3d-ea72bca00d42",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 3,
+      "workflowId": "main",
+      "status": "COMPLETED",
+      "pid": 35576,
+      "acceptedAtMs": 1791113706394,
+      "startedAtMs": 1791113707359,
+      "endedAtMs": 1791113707496,
+      "errorCode": "",
+      "message": "job.completed",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "eb3ba033a8de87d8dbf9cd7ab59db018595db37a5a1701dfe432fa4aeafa3762"
+    },
+    {
+      "jobId": "72609a52-59e5-45af-8daf-7166dcebb13d",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 4,
+      "workflowId": "main",
+      "status": "FAILED",
+      "pid": 89220,
+      "acceptedAtMs": 1791113708673,
+      "startedAtMs": 1791113709647,
+      "endedAtMs": 1791113709664,
+      "errorCode": "E_INPUT_MISSING",
+      "message": "image file not found: C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-node-results-exeqsw0j\\临时 工程 A\\missing.png",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "eb3ba033a8de87d8dbf9cd7ab59db018595db37a5a1701dfe432fa4aeafa3762"
+    }
+  ],
+  "windowConstructionMs": 313.0,
+  "captureSourceSha256": "1214605f779fdf1c54db0a54b10b9c20b3e0929709d83518f51fc4ef90a308c5",
+  "fixtureSourceSha256": "bd809040c4fcc49f24bfca05cd6994fb23d139209ca4dd85432c7eef862716fe",
+  "projectLoadMs": 47.0,
+  "explicitFlowLayoutMs": 0.0,
+  "previousCount": "count = 2  [integer]",
+  "currentCount": "count = 3  [integer]",
+  "savedResultMeta": "保存结果图 · __saved_result__ · 360 × 240 · PNG\n2026-10-04 19:35:07.447 · 任务 90653a0e · 执行 d3b08bc5",
+  "failedText": "本次运行 · 执行失败\n任务：72609a52 · 流程：main\n节点执行：a632b25a\n更新：19:35:09.657\n实际输入：\n  无传入端口值（参数默认值见配置）\n实际输出：\n  无结果（执行失败或跳过）\n错误：E_INPUT_MISSING image file not found: C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-node-results-exeqsw0j\\临时 工程 A\\missing.png\n节点完成状态表示执行状态；判定值以实际输出为准。\n流程执行：de93d542-b835-45f2-a6b6-fa397f3359c0\n节点执行完整标识：a632b25a-cb44-4972-8275-93220bffab8e",
+  "status": "PASS",
+  "windowClosed": true,
+  "inspectionAfterWindowClose": {
+    "sessions": 0,
+    "readers": 0,
+    "encodedBytes": 0,
+    "jobs": 0,
+    "retiredJobs": 0,
+    "pendingFiles": 0
+  },
+  "runtimeAliveAfterWindowClose": true,
+  "runtimeClosedByTestOwner": true
+}

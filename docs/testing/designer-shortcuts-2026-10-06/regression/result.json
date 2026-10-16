@@ -1,0 +1,25 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_flow_scene_interactions.py",
+    "tests/designer/test_flow_layout_qt.py",
+    "tests/designer/test_node_result_panel.py",
+    "tests/designer/test_run_inspector_ui.py",
+    "tests/designer/test_operator_editor_manager.py",
+    "tests/designer/test_main_window_project_save_load.py",
+    "tests/designer/test_main_window_lifecycle.py",
+    "tests/ui/page_designer/test_pending_inputs.py",
+    "tests/ui/page_designer/test_pending_drops.py",
+    "tests/ui/page_designer/test_normal_run_path.py",
+    "tests/ui/page_designer/test_page_navigation.py",
+    "tests/ui/page_designer/test_workspace_switch.py",
+    "tests/sqlite_writer/test_editor.py",
+    "tests/sqlite_writer/test_dependencies.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 32.014999999897555
+}

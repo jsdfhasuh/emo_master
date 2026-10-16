@@ -1,0 +1,77 @@
+{
+  "platform": "windows",
+  "steps": [
+    "01-component-drop",
+    "02-output-drop",
+    "03-saved-reopened",
+    "04-real-overview",
+    "05-real-detail",
+    "06-new-explicit-debug",
+    "07-final-reopen"
+  ],
+  "results": [
+    {
+      "key": "b6128531-157f-419c-98fd-84d43e6e8aeb",
+      "job": "7cac4a29-2974-4910-b81f-4e5cbfaba869",
+      "count": "2",
+      "image_sha": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3"
+    },
+    {
+      "key": "83c1ddf7-4338-42a9-97f0-021e65e3d027",
+      "job": "6d6bcd24-47af-4212-87b2-92a95bec3b6c",
+      "count": "3"
+    }
+  ],
+  "incremental_reload_ms": [
+    33.5974,
+    24.7752,
+    26.6436,
+    23.9669,
+    26.2371,
+    27.2112,
+    26.679,
+    30.3247,
+    32.0242,
+    30.6211,
+    31.574,
+    32.2714
+  ],
+  "gui_submission_and_paint": [
+    {
+      "key": "b6128531-157f-419c-98fd-84d43e6e8aeb",
+      "ready_ns": 691304288267400,
+      "gui_ns": 691304315349500,
+      "scope_end_ns": 691304271673400,
+      "paint_ns": 691304317734900
+    }
+  ],
+  "hub": {
+    "windows": 1,
+    "qt_image_bytes": 57600,
+    "qt_image_limit": 25165824,
+    "conversions": 1,
+    "coalesced_results": 0,
+    "pending_gui_notifications": 0,
+    "live_decoded_bytes": 57600,
+    "ui_decoded_reference_bytes": 57600,
+    "live_ui_decoded_bytes": 57600,
+    "decoded_retention_accounted_bytes": 57600,
+    "decoded_retention_reserved": 50331648,
+    "pin_decoded_bytes": 0,
+    "pin_limit": 16777216,
+    "conversion_scratch_limit": 8388608,
+    "window_surface_reserved": 16777216,
+    "table_bytes": 0,
+    "table_limit": 8388608
+  },
+  "session_stats": {
+    "received": 1,
+    "decoded": 1,
+    "dropped": 0,
+    "read_failed": 0,
+    "resets": 1
+  },
+  "saved_project_sha256": "2172a77c234513d0cbcdae7ebab6e30f880047d9bf2027f24ebd79bf108a28dc",
+  "saved_reopen": true,
+  "shutdown_confirmed": true
+}

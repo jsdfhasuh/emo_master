@@ -1,0 +1,115 @@
+All checks passed!
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:728: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 295 source files
+..................................................................s..... [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+........................................................................ [ 11%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+........................................................................ [ 19%]
+........................................................................ [ 22%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+........................................................................ [ 30%]
+........................................................................ [ 33%]
+........................................................................ [ 35%]
+........................................................................ [ 38%]
+..................................s..................................... [ 41%]
+........................................................................ [ 44%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 58%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 66%]
+........................................................................ [ 69%]
+........................................................................ [ 71%]
+..................................................................................................................... [ 76%]
+........................................................................ [ 79%]
+........................................................................ [ 81%]
+........................................................................ [ 84%]
+........................................................................ [ 87%]
+........................................ssss............................ [ 90%]
+..........................s............................................. [ 93%]
+.....................................................................F.. [ 95%]
+........................................................................ [ 98%]
+.....................................                                    [100%]
+================================== FAILURES ===================================
+_________ testContainerTitleWrapUsesSameLiveAndPreviewLayout[0-True] __________
+
+styled = <emo_master.apps.designer.ui.main_window.MainWindow(0x1e3ea6550d0) at 0x000001E3F7229380>
+nested = True, fontSize = 0
+
+    @pytest.mark.parametrize('nested', [False, True])
+    @pytest.mark.parametrize('fontSize', [0, 24])
+    def testContainerTitleWrapUsesSameLiveAndPreviewLayout(styled, nested, fontSize):
+        c, e, key = setupPage(styled, 'container')
+        if nested:
+            outer = e.tools.commands().add(e.pageId, 'container', 1, 0)
+            c.session.editPresentation(lambda p: setattr(_component(p, e.pageId, outer).grid, 'columns', 2))
+            e.tools.commands().move(e.pageId, key, 0, 0, outer)
+        else:
+            c.session.editPresentation(lambda p: setattr(p.pages[e.pageId].layout, 'columns', 2))
+        child = e.tools.commands().add(e.pageId, 'number', 0, 0, key)
+        e.refresh()
+        e.tools.select(key)
+        e.tools.fields['title'].setText('This container has a long descriptive title ' * 8)
+        e.tools.fields['fontSize'].setValue(fontSize)
+        e.tools.apply()
+        e.refresh()
+        styled.resize(1280, 720)
+        settle()
+        e.tools.select(key)
+        selection = e.tools.selection
+        before, history = c.session.payload(), len(c.session._undo)
+        delta = QPoint(selection.card.parentWidget().width() // 2, 0)
+        handle, start = press(selection, 'x')
+        move(handle, start + delta)
+        assert selection.valid
+        ghost = e.tools.gridPreview.box
+        assert c.session.payload() == before
+        QTest.mouseRelease(handle, Qt.LeftButton, pos=handle.mapFromGlobal(start + delta))
+        settle()
+        card = e.tools.selection.card
+        actual = card.geometry()
+>       assert abs(ghost.height() - actual.height()) <= 2, (ghost, actual)
+E       AssertionError: (PySide2.QtCore.QRect(9, 9, 276, 660), PySide2.QtCore.QRect(10, 10, 274, 678))
+E       assert 18 <= 2
+E        +  where 18 = abs((660 - 678))
+E        +    where 660 = <built-in method height of PySide2.QtCore.QRect object at 0x000001E3F728DF00>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001E3F728DF00> = PySide2.QtCore.QRect(9, 9, 276, 660).height
+E        +    and   678 = <built-in method height of PySide2.QtCore.QRect object at 0x000001E3F7208900>()
+E        +      where <built-in method height of PySide2.QtCore.QRect object at 0x000001E3F7208900> = PySide2.QtCore.QRect(10, 10, 274, 678).height
+
+tests\ui\page_designer\test_resize_properties.py:140: AssertionError
+=========================== short test summary info ===========================
+SKIPPED [1] tests\core\plugin\test_icon_resources.py:73: symlinks unavailable in this environment
+SKIPPED [1] tests\plugins\test_huaray_camera_smoke.py:10: set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera
+SKIPPED [1] tests\test_r3_export_credit_report.py:411: symlink creation is unavailable
+SKIPPED [2] tests\test_r3_sqlite_wal_metadata.py:145: Windows symlink privilege unavailable
+SKIPPED [2] tests\test_r3_sqlite_wal_metadata.py:153: Windows symlink privilege unavailable
+SKIPPED [1] tests\test_r3_sqlite_wal_metadata.py:477: Non-Windows platform rejection
+FAILED tests/ui/page_designer/test_resize_properties.py::testContainerTitleWrapUsesSameLiveAndPreviewLayout[0-True]
+1 failed, 2594 passed, 8 skipped, 26 subtests passed in 707.36s (0:11:47)
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+[ci-check] failed pytest with code 1

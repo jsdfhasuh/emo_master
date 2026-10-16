@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "observed_at_utc": "2026-10-11T04:15:42Z",
+  "repository": "jsdfhasuh/emo_master",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "pull_request": 1,
+  "head_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+  "parent_sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+  "pr_base_sha": "7f141ce627da39d9e174e4a79344fc468607ebef",
+  "pr_merge_checkout_sha": "db2014401017a04c832f69fa0fa4d208bccbbe53",
+  "overall_result": "CI_FAILED",
+  "all_applicable_runs_terminal": true,
+  "applicable_runs_total": 3,
+  "attempts": [
+    1
+  ],
+  "rerun_or_mutation_performed": false,
+  "runs": [
+    {
+      "id": 38109143881,
+      "name": "Validate frozen Windows package (no release)",
+      "event": "pull_request",
+      "head_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "status": "completed",
+      "conclusion": "success",
+      "run_attempt": 1,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38109143881",
+      "created_at": "2026-10-11T03:40:29Z",
+      "updated_at": "2026-10-11T03:47:40Z"
+    },
+    {
+      "id": 38109143323,
+      "name": "CI",
+      "event": "pull_request",
+      "head_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_attempt": 1,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38109143323",
+      "created_at": "2026-10-11T03:40:28Z",
+      "updated_at": "2026-10-11T04:10:57Z"
+    },
+    {
+      "id": 38109140024,
+      "name": "CI",
+      "event": "push",
+      "head_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "status": "completed",
+      "conclusion": "failure",
+      "run_attempt": 1,
+      "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38109140024",
+      "created_at": "2026-10-11T03:40:25Z",
+      "updated_at": "2026-10-11T04:14:22Z"
+    }
+  ],
+  "jobs": [
+    {
+      "id": 114380850823,
+      "run_id": 38109140024,
+      "event": "push",
+      "os": "ubuntu-latest",
+      "checkout_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "conclusion": "failure",
+      "passed": 4783,
+      "failed": 5,
+      "skipped": 19,
+      "subtests_passed": 29,
+      "pytest_seconds": 959.33,
+      "proto": "passed",
+      "ruff": "passed",
+      "mypy": "passed",
+      "log": "job-114380850823-push-ubuntu-first-failure.log",
+      "failures": [
+        "tests/designer/test_small_window_layout_repair.py::testProductionPlcFieldsRemainReachable[plc_slmp_read-640-474]",
+        "tests/designer/test_small_window_layout_repair.py::testProductionPlcFieldsRemainReachable[plc_slmp_read-800-478]",
+        "tests/designer/test_small_window_layout_repair.py::testProductionPlcFieldsRemainReachable[plc_slmp_write-640-474]",
+        "tests/designer/test_small_window_layout_repair.py::testProductionPlcFieldsRemainReachable[plc_slmp_write-800-478]",
+        "tests/designer/test_small_window_layout_repair.py::testOverflowButtonHasPaintedArrowAndSharedTailActions[800]"
+      ]
+    },
+    {
+      "id": 114380850977,
+      "run_id": 38109140024,
+      "event": "push",
+      "os": "windows-latest",
+      "checkout_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "conclusion": "failure",
+      "passed": 4801,
+      "failed": 1,
+      "skipped": 5,
+      "subtests_passed": 29,
+      "pytest_seconds": 1931.38,
+      "proto": "passed",
+      "ruff": "passed",
+      "mypy": "passed",
+      "log": "job-114380850977-push-windows-first-failure.log",
+      "failures": [
+        "tests/runtime/test_parallel_workflows.py::testMoreThanTwoActualWhileJobsWithImages[None-5]"
+      ]
+    },
+    {
+      "id": 114380859795,
+      "run_id": 38109143323,
+      "event": "pull_request",
+      "os": "ubuntu-latest",
+      "checkout_sha": "db2014401017a04c832f69fa0fa4d208bccbbe53",
+      "conclusion": "failure",
+      "passed": 4782,
+      "failed": 6,
+      "skipped": 19,
+      "subtests_passed": 29,
+      "pytest_seconds": 1054.75,
+      "proto": "passed",
+      "ruff": "passed",
+      "mypy": "passed",
+      "log": "job-114380859795-pr-ubuntu-first-failure.log",
+      "additional_failure": "tests/runtime/test_plc_debug.py::test_service_same_endpoint_rejected_and_released_by_project_reload[INPROCESS]",
+      "same_layout_failures_as_job": 114380850823
+    },
+    {
+      "id": 114380859609,
+      "run_id": 38109143323,
+      "event": "pull_request",
+      "os": "windows-latest",
+      "checkout_sha": "db2014401017a04c832f69fa0fa4d208bccbbe53",
+      "conclusion": "failure",
+      "passed": 4800,
+      "failed": 2,
+      "skipped": 5,
+      "subtests_passed": 29,
+      "pytest_seconds": 1722.94,
+      "proto": "passed",
+      "ruff": "passed",
+      "mypy": "passed",
+      "log": "job-114380859609-pr-windows-first-failure.log",
+      "failures": [
+        "tests/p0/test_continuous.py::test_long_lived_runner_to_two_network_image_consumers",
+        "tests/runtime/test_production_boundaries.py::testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount"
+      ]
+    },
+    {
+      "id": 114380861789,
+      "run_id": 38109143881,
+      "name": "prepare",
+      "checkout_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "conclusion": "success",
+      "log": "job-114380861789-prepare.log"
+    },
+    {
+      "id": 114380949296,
+      "run_id": 38109143881,
+      "name": "package / Build emo-master for Windows",
+      "conclusion": "success",
+      "source_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "log": "job-114380949296-package.log"
+    },
+    {
+      "id": 114380950133,
+      "run_id": 38109143881,
+      "name": "package / vision_train",
+      "conclusion": "skipped",
+      "log": null
+    },
+    {
+      "id": 114381656782,
+      "run_id": 38109143881,
+      "name": "verify",
+      "checkout_sha": "1657a65e5700b963000090964bd1b54227e1d550",
+      "conclusion": "success",
+      "contract_tests_passed": 11,
+      "subtests_passed": 2,
+      "log": "job-114381656782-verify.log",
+      "report": "frozen-windows-validation-report-from-log.json"
+    }
+  ],
+  "limits": [
+    "No rerun, code change, workflow change, dispatch, release, deployment, or new commit performed.",
+    "Failures not classified as flaky or pre-existing; no comparison experiment or rerun was authorized.",
+    "Frozen package native startup/Runtime validation does not cover Designer main editing, physical camera/GPU/field acceptance, OperatorView pixel fidelity, or installer execution.",
+    "API run head_sha describes PR source head; actual ordinary CI checkout is separately verified from checkout logs."
+  ]
+}

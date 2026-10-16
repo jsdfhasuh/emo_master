@@ -1,0 +1,42 @@
+--- a/src/emo_master/apps/designer/ui/main_window.py
++++ b/src/emo_master/apps/designer/ui/main_window.py
+@@ -1394,6 +1394,8 @@
+         if _nativeQt:
+             from emo_master.apps.designer.page_designer.coordinator import PageCoordinator
+             self.pageCoordinator = PageCoordinator(self, rootWidget)
++            from emo_master.apps.designer.ui.designer_actions import DesignerActions
++            self.designerActions = DesignerActions(self)
+             self.runtimeController.getCapturePresentation = self._capturePresentationForRun
+ 
+     def _capturePresentationForRun(self) -> bool | dict:
+@@ -1834,6 +1836,9 @@
+ 
+     def _setIsJobRunning(self, isRunning: bool) -> None:
+         self.isJobRunning = isRunning
++        actions = getattr(self, 'designerActions', None)
++        if actions is not None:
++            actions.refresh()
+ 
+     def refreshRecentProjectsMenu(self) -> None:
+         recentMenu = getattr(self, "_recentProjectsMenu", None)
+@@ -3223,6 +3228,10 @@
+         self.updateToolbarState()
+ 
+     def handleDeleteShortcut(self) -> None:
++        actions = getattr(self, 'designerActions', None)
++        if actions is not None:
++            actions.invoke('delete')
++            return
+         if self.pageCoordinator is not None and self.pageCoordinator.pageActive():
+             return
+         self.deleteSelectedElements()
+@@ -3519,6 +3528,9 @@
+             if name in self._toolbarActions:
+                 self._toolbarActions[name].setEnabled(enabled)
+         self._updateRunBlockedHint(canRun)
++        actions = getattr(self, 'designerActions', None)
++        if actions is not None:
++            actions.refresh()
+ 
+     def _updateRunBlockedHint(self, canRun: bool) -> None:
+         blockedReason = ""

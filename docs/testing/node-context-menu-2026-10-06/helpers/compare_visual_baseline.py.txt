@@ -1,0 +1,53 @@
+"""Compare the original dirty workspace and the isolated task commit."""
+from pathlib import Path
+import hashlib
+import json
+import os
+import shutil
+import subprocess
+import sys
+import time
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+backup = Path(__file__).parent
+original = json.loads((backup / 'candidate-start.json').read_text(encoding='utf-8'))
+kind = sys.argv[1]
+if kind == 'start-dirty':
+    source = backup / 'baseline-dirty-visual'
+    assert not source.exists()
+    shutil.copytree(backup / 'baseline-visual', source)
+    # Only the original file set is overlaid; no menu changes or new tests.
+    for relative, expected in original['dirtyHashes'].items():
+        current = (backup / 'before' / relative if relative.endswith('/ui/main_window.py')
+                   else root / relative)
+        value = current.read_bytes()
+        assert hashlib.sha256(value).hexdigest() == expected, relative
+        target = source / relative
+        assert target.resolve().is_relative_to(source.resolve())
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(value)
+    identity = {'baseHead': original['head'], 'originalDirtyOverlay': True,
+                'originalFileHashes': original['dirtyHashes'],
+                'taskChangesIncluded': False}
+elif kind == 'task-only':
+    source = backup / 'clean-candidate'
+    identity = json.loads((root / 'docs/testing/node-context-menu-2026-10-06/clean-candidate.json').read_text())
+else:
+    raise ValueError(kind)
+output = root / 'docs/testing/node-context-menu-2026-10-06' / ('visual-' + kind)
+output.mkdir(exist_ok=False)
+(output / 'candidate.json').write_text(json.dumps(identity, indent=2), encoding='utf-8')
+command = [sys.executable, '-m', 'pytest', '-q',
+           'tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow']
+env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONPATH': str(source / 'src'),
+       'QT_QPA_PLATFORM': 'offscreen', 'HUARAY_CAMERA_SMOKE': '0',
+       'PYTEST_ADDOPTS': '--ignore=manual_test_workspace'}
+begin = time.monotonic()
+with (output / 'raw.log').open('wb') as log:
+    result = subprocess.run(command, cwd=source, env=env, stdout=log, stderr=subprocess.STDOUT)
+record = {'command': command, 'cwd': str(source), 'exitCode': result.returncode,
+          'seconds': time.monotonic() - begin}
+(output / 'result.json').write_text(json.dumps(record, indent=2), encoding='utf-8')
+print(json.dumps(record))
+print((output / 'raw.log').read_text(encoding='utf-8')[-6000:])
+raise SystemExit(result.returncode)

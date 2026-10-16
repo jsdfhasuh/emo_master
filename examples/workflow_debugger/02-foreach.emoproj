@@ -1,0 +1,205 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "debug-02-foreach",
+    "name": "debug-02-foreach",
+    "revision": 1,
+    "createdAt": "2026-10-10T00:00:00Z",
+    "updatedAt": "2026-10-10T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "body"
+  ],
+  "workflows": {
+    "main": {
+      "name": "ForEach - [1, 5, 9]",
+      "inputs": {
+        "items": "list<number>"
+      },
+      "outputs": {
+        "result": "list<boolean>",
+        "index": "list<integer>"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {
+            "items": "list<number>"
+          }
+        },
+        {
+          "nodeId": "foreach",
+          "kind": "loop",
+          "inputPorts": {
+            "items": "list<number>"
+          },
+          "outputPorts": {
+            "result": "list<boolean>",
+            "index": "list<integer>"
+          },
+          "loop": {
+            "contractVersion": 2,
+            "mode": "foreach",
+            "bodyWorkflowId": "body",
+            "itemInputPort": "item",
+            "indexInputPort": "index",
+            "maxIterations": 10,
+            "timeoutMs": 10000
+          }
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result": "list<boolean>",
+            "index": "list<integer>"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "items",
+          "toNode": "foreach",
+          "toPort": "items"
+        },
+        {
+          "fromNode": "foreach",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result"
+        },
+        {
+          "fromNode": "foreach",
+          "fromPort": "index",
+          "toNode": "output",
+          "toPort": "index"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "foreach": {
+            "x": 260,
+            "y": 100
+          },
+          "output": {
+            "x": 520,
+            "y": 100
+          }
+        }
+      }
+    },
+    "body": {
+      "name": "Body - compare item >= 5",
+      "inputs": {
+        "item": "number",
+        "index": "integer"
+      },
+      "outputs": {
+        "result": "boolean",
+        "index": "integer"
+      },
+      "nodes": [
+        {
+          "nodeId": "input",
+          "kind": "workflow_input",
+          "outputPorts": {
+            "item": "number",
+            "index": "integer"
+          }
+        },
+        {
+          "nodeId": "compare",
+          "kind": "operator",
+          "operatorId": "vision.compare.number",
+          "params": {
+            "operator": "gte",
+            "rightValue": 5
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {
+              "operator": {
+                "title": "比较运算符",
+                "type": "string",
+                "enum": [
+                  "eq",
+                  "ne",
+                  "lt",
+                  "lte",
+                  "gt",
+                  "gte"
+                ],
+                "default": "gte"
+              },
+              "rightValue": {
+                "title": "右侧比较值",
+                "type": "number",
+                "default": 0.0
+              }
+            }
+          },
+          "inputPorts": {
+            "left": "number",
+            "right": "number"
+          },
+          "outputPorts": {
+            "result": "boolean"
+          },
+          "displayName": "compare"
+        },
+        {
+          "nodeId": "output",
+          "kind": "workflow_output",
+          "inputPorts": {
+            "result": "boolean",
+            "index": "integer"
+          }
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "input",
+          "fromPort": "item",
+          "toNode": "compare",
+          "toPort": "left"
+        },
+        {
+          "fromNode": "compare",
+          "fromPort": "result",
+          "toNode": "output",
+          "toPort": "result"
+        },
+        {
+          "fromNode": "input",
+          "fromPort": "index",
+          "toNode": "output",
+          "toPort": "index"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "input": {
+            "x": 0,
+            "y": 100
+          },
+          "compare": {
+            "x": 260,
+            "y": 100
+          },
+          "output": {
+            "x": 520,
+            "y": 100
+          }
+        }
+      }
+    }
+  }
+}

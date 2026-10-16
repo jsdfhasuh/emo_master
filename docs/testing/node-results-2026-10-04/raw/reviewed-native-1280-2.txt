@@ -1,0 +1,16 @@
+Process emo-master-job-99037d6b-fb8a-405b-9aa1-481fcd616d56:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-reviewed\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-reviewed\src\emo_master\apps\runtime\workflow\runner.py", line 91, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-reviewed\src\emo_master\apps\runtime\workflow\runner.py", line 169, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\task_backups\emo-node-results-20261004-180945\candidate-c-reviewed\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: image file not found: C:\Users\JSDFHA~1\AppData\Local\Temp\emo-node-results-ffxcb5co\临时 工程 A\missing.png
+{"status": "PASS", "previousCount": "count = 2  [integer]", "currentCount": "count = 3  [integer]", "windowClosed": true, "inspectionAfterWindowClose": {"sessions": 0, "readers": 0, "encodedBytes": 0, "jobs": 0, "retiredJobs": 0, "pendingFiles": 0}, "runtimeAliveAfterWindowClose": true}

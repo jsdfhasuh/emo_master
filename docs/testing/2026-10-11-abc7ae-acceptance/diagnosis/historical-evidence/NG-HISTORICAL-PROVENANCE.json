@@ -1,0 +1,34 @@
+{
+  "generated_utc": "2026-10-11T10:26:10.785919+00:00",
+  "operation": "read original bytes; copy without executing log contents or old scripts",
+  "files": [
+    {
+      "original": "/workspace/shared/emo-master-0120814-publication-20261011/records/ci/job-114380859609-pr-windows-first-failure.log",
+      "copy": "historical-evidence/job-114380859609-pr-windows-first-failure.log",
+      "bytes": 199262,
+      "sha256": "7bb0f9cba5fd4e6f95dcfd250194158f9590cf8b544ef43a4b45db0b981cee50",
+      "copy_equal": true
+    },
+    {
+      "original": "/workspace/shared/emo-master-0120814-publication-20261011/records/ci/pr-windows-continuous-first-failure.json",
+      "copy": "historical-evidence/pr-windows-continuous-first-failure.json",
+      "bytes": 97403,
+      "sha256": "5ca0c684962b53c8514037ed43b1067ef0fdb5125a7fc17ae32f8b3497380d6d",
+      "copy_equal": true
+    },
+    {
+      "original": "/workspace/shared/emo-master-0120814-publication-20261011/records/ci/READ_ONLY_CI_REVIEW_1657a65.md",
+      "copy": "historical-evidence/READ_ONLY_CI_REVIEW_1657a65.md",
+      "bytes": 5918,
+      "sha256": "7ff686404c421418dec6cce42efa87c9b9aadfeabc4ea113c60e7136d7745721",
+      "copy_equal": true
+    },
+    {
+      "original": "/workspace/shared/emo-master-0120814-publication-20261011/records/ci/ci-summary-1657a65.json",
+      "copy": "historical-evidence/ci-summary-1657a65.json",
+      "bytes": 6557,
+      "sha256": "62fe16fad30608909de0abb48a6a09f048f99493dd696a9ac9bd712a530dc49d",
+      "copy_equal": true
+    }
+  ]
+}

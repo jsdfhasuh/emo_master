@@ -1,0 +1,513 @@
+FFFFFFF.F.................................                               [100%]
+================================== FAILURES ===================================
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-relative] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha0')
+alias = 'relative', reverse = False
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFE23970>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='98207f52-26e2-4a41-ae40-2790f1e9fd7b', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFE43430>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-case] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha1')
+alias = 'case', reverse = False
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFE42CE0>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='461db3ec-7f95-432f-bc17-bb78fca7e665', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFE41600>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-hardlink] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha2')
+alias = 'hardlink', reverse = False
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFF57AF0>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='9ab3dd74-ef22-4a62-beeb-287c1cd4602e', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFF56FB0>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-relative] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha3')
+alias = 'relative', reverse = True
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEDC632F80>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='0174dd26-3ea1-4df8-b080-4f5b09c962a8', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEDCE8C0D0>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-case] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha4')
+alias = 'case', reverse = True
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFEF2110>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='76c4fe7a-a5dd-4172-82c1-1cd3702b7434', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFEF2740>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_ testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-hardlink] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSameDatabaseDebugTablesSha5')
+alias = 'hardlink', reverse = True
+
+    @pytest.mark.parametrize("alias", ["relative", "case", "hardlink"])
+    @pytest.mark.parametrize("reverse", [False, True])
+    def testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources(tmp_path, alias, reverse):
+        business = tmp_path / "业务.sqlite3"
+        template = tmp_path / "模板 空格.sqlite3"
+        twoTables(business)
+        twoTables(template)
+        if alias == "relative":
+            child = business.name
+        elif alias == "case":
+            if os.name != "nt":
+                pytest.skip("Windows case-insensitive filesystem regression")
+            child = str(business.with_suffix(".SQLITE3"))
+        else:
+            child = tmp_path / "business-alias.sqlite3"
+            os.link(business, child)
+        doc = document(business, template, child, reverse=reverse)
+        originalDraft = doc.model_dump()
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:77: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEDCE8F250>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='e3a512ce-ce46-40e3-a408-7f0782a627ed', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFE41D50>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+_____ testSupportedSchemasShareOneDebugDatabaseWithoutCopyingBusinessRows _____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testSupportedSchemasShareOneDe0')
+
+    def testSupportedSchemasShareOneDebugDatabaseWithoutCopyingBusinessRows(tmp_path):
+        business = tmp_path / "business.sqlite3"
+        twoTables(business, foreignKey=False)
+        doc = document(business)
+>       execute(freezeTargets(doc, tmp_path), "release")
+
+tests\sqlite_writer\test_review_isolation.py:102: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFE41CC0>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='release', workflowId='main', workflowRunId='c172c99e-b727-49f5-bce0-f6e2b236546c', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFE40F70>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+___ testOneTemplateAppliesToAllMappedTablesAndMissingTableCannotBeInvented ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-970/testOneTemplateAppliesToAllMap0')
+
+    def testOneTemplateAppliesToAllMappedTablesAndMissingTableCannotBeInvented(tmp_path):
+        business, template = (tmp_path / name for name in ("business.sqlite3", "template.sqlite3"))
+        twoTables(business)
+        twoTables(template)
+        doc = document(business, template)
+        del doc.workflows["main"].nodes[1].params["debugDatabasePath"]
+        prepared = freezeTargets(doc, tmp_path, debugRoot=tmp_path / "debug")
+>       execute(prepared, "debug")
+
+tests\sqlite_writer\test_review_isolation.py:132: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_review_isolation.py:50: in execute
+    WorkflowRunner(compiled, operators, eventPublisher=lambda **row: events.append(row)).run(
+src\emo_master\apps\runtime\workflow\runner.py:93: in run
+    result = self._runWorkflow(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.workflow.runner.WorkflowRunner object at 0x000002AEFFF67070>
+workflowId = 'main', inputs = {}
+context = RunContext(jobId='debug', workflowId='main', workflowRunId='3aa4c11d-c328-4555-82a7-dea547a8a8d5', parentWorkflowRunId='', callerNodeId='', nodeRunId='', callDepth=0, iterationPath=(), workspacePath='', projectId='', callPath=())
+cancellation = <emo_master.apps.runtime.workflow.cancellation.CancellationToken object at 0x000002AEFFF657E0>
+disposeWhenComplete = True
+
+    def _runWorkflow(
+        self,
+        workflowId: str,
+        inputs: dict[str, object] | None,
+        context: RunContext,
+        cancellation: CancellationToken,
+        *,
+        disposeWhenComplete: bool,
+    ) -> WorkflowResult:
+        workflow = self.compiledProject.workflows.get(workflowId)
+        if workflow is None:
+            raise WorkflowExecutionError("E_WORKFLOW_INVALID", f"unknown workflow: {workflowId}")
+        cancellation.raise_if_cancelled()
+        self.publish("workflow.started", context, f"workflow started: {workflowId}")
+        nodeInputs: dict[str, dict[str, object]] = {nodeId: {} for nodeId in workflow.nodeById}
+        # Invocation-local deliveries. A child/iteration never inherits this map.
+        boundValues: dict[str, dict[int, object]] = {}
+        supplied = dict(inputs or {})
+        missingInputs = _missingKeys(workflow.inputs, supplied)
+        if missingInputs:
+>           raise WorkflowExecutionError(
+                "E_INPUT_MISSING",
+                f"workflow inputs are missing: {', '.join(missingInputs)}",
+            )
+E           emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: workflow inputs are missing: value
+
+src\emo_master\apps\runtime\workflow\runner.py:133: WorkflowExecutionError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-relative]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-case]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[False-hardlink]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-relative]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-case]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSameDatabaseDebugTablesShareWritesAndForeignKeysWithoutChangingSources[True-hardlink]
+FAILED tests/sqlite_writer/test_review_isolation.py::testSupportedSchemasShareOneDebugDatabaseWithoutCopyingBusinessRows
+FAILED tests/sqlite_writer/test_review_isolation.py::testOneTemplateAppliesToAllMappedTablesAndMissingTableCannotBeInvented
+8 failed, 34 passed in 24.82s

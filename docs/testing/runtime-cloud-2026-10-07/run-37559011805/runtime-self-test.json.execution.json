@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "phase": "complete",
+  "executable": "D:\\a\\python_build_scripts\\python_build_scripts\\packager\\dist\\EmoMasterRuntime\\EmoMasterRuntime.exe",
+  "archive": "",
+  "workDirectory": "C:\\Users\\runneradmin\\AppData\\Local\\Temp\\emo-runtime-check-859b4189547d4aefab2bc58b1c00feed",
+  "exitCode": 0,
+  "durationSeconds": 1.0,
+  "restarts": 2,
+  "qtPlatform": "offscreen",
+  "fieldAcceptance": "NOT_RUN",
+  "executableSha256": "90fce6dc51b06c8e70a299cb887fddee9e0717c65b5615963147e8c377b78a36",
+  "pid": 6024
+}

@@ -1,0 +1,43 @@
+{
+  "date": "2026-10-12",
+  "timezone": "Asia/Shanghai",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "fullCiCommit": "5782cb32f40ae1def37edcb7fde94ad355796010",
+  "mergedCommit": "4e7d609aef41354868770e2e8bd6bbcc7b4ac521",
+  "fullCi": {
+    "exitCode": 0,
+    "passed": 5168,
+    "skipped": 11,
+    "subtestsPassed": 28,
+    "seconds": 1616.29,
+    "protoDrift": "PASS",
+    "ruff": "PASS",
+    "mypy": "PASS",
+    "mypySourceFiles": 411,
+    "cleanGitClone": true,
+    "trackedFilesUnchanged": true
+  },
+  "portableFocused": {"passed": 69, "seconds": 62.82},
+  "mergedFocused": {"passed": 39, "seconds": 18.17},
+  "fullSuiteRerunAfterMerge": false,
+  "postFreezeChanges": [
+    "Two trailing blank lines removed; no executable source difference",
+    "Upstream blank-pan test expanded to four zoom scales and retested",
+    "Upstream delivery documentation and evidence integrated"
+  ],
+  "designerStartupCheck": "PASS",
+  "privateFilePreservation": {"files": 29, "changed": 0},
+  "desktopHardwarePackagingAcceptance": "NOT_RUN",
+  "inheritedPerformanceRisk": "PERFORMANCE_PRECHECK_PARTIAL_FAILURE; not remeasured or fixed",
+  "archive": {
+    "file": "evidence.zip",
+    "bytes": 108942,
+    "sha256": "0f50e0b52fb578e547873171ce57f5e4463939f652804f65a9b82edb9c31501e",
+    "members": {
+      "full-ci.log": "dc3a42b9c97e9ec9e350bb796c1c952f6cad9cdc5339585f5f27335b1d8c8716",
+      "full-ci.xml": "90a8562a8378bbbf442a9397c39094e1733992dd3b434e27fbef78bb47662193",
+      "merged-focused.xml": "f9cb7f3605c6835988720b761466c88a5917b0c8b5acc729203b0152cb39a835",
+      "portable-tests.xml": "ea9b6946c0e7330e2c30bd11a348748d540f0317507f6c45db36f8c73b2c3de5"
+    }
+  }
+}

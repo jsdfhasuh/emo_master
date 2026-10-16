@@ -1,0 +1,30 @@
+{
+  "operatorId": "vision.math.exact_integer",
+  "displayName": "严格转整数",
+  "version": "1.0.0",
+  "inputPorts": {
+    "value": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "value": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._numeric_bridges:NumberExactIntegerOperator",
+  "category": "数值与逻辑",
+  "iconKey": "calculator",
+  "summary": "只转换本身为整数的有限数值；含小数报错，不截断或四舍五入。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

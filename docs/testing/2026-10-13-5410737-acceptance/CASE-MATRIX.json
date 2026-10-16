@@ -1,0 +1,186 @@
+{
+  "schema_version": 1,
+  "freeze_status": "FINAL",
+  "repository": "jsdfhasuh/emo_master",
+  "sha": "5410737a561e1f192ee9a081b3f208c9b27d9886",
+  "date": "2026-10-13",
+  "cases": [
+    {
+      "id": "S01",
+      "title": "原软件专项15项",
+      "status": "PASS",
+      "evidence_type": "software_integration_fault_injection",
+      "evidence": [
+        "evidence/automated/software.log",
+        "evidence/automated/software-junit.xml"
+      ],
+      "boundary": "15 passed 3.44s；不是人工桌面"
+    },
+    {
+      "id": "Q01",
+      "title": "原Qt自动化2项",
+      "status": "PASS",
+      "evidence_type": "offscreen_qt",
+      "evidence": [
+        "evidence/automated/native-junit.xml",
+        "evidence/automated/CLASSIFICATION.txt"
+      ],
+      "boundary": "2 passed 11.30s；launcher名称不代表native"
+    },
+    {
+      "id": "N01",
+      "title": "五路真实桌面生命周期",
+      "status": "PASS",
+      "evidence_type": "native_xcb_mouse",
+      "evidence": [
+        "evidence/native-full-lifecycle/observer.jsonl",
+        "report/UI-OPERATIONS.md"
+      ],
+      "boundary": "7 admitted/7 retired；0 rejected；辅助操作另列"
+    },
+    {
+      "id": "N02",
+      "title": "运行中标题栏直接关闭",
+      "status": "PASS",
+      "evidence_type": "native_xcb_mouse",
+      "evidence": [
+        "evidence/native-close-running/observer.jsonl",
+        "evidence/environment/final-process-check.json",
+        "report/UI-OPERATIONS.md"
+      ],
+      "boundary": "5 admitted/5 retired；正式28PID fence全部absent；无close后supervisor owns独立采样"
+    },
+    {
+      "id": "AUX01",
+      "title": "共享窗与断流重连",
+      "status": "PASS",
+      "evidence_type": "auxiliary_and_fault_injection",
+      "evidence": [
+        "evidence/native-full-lifecycle/observer.jsonl",
+        "report/UI-OPERATIONS.md"
+      ],
+      "boundary": "辅助控制并非原生产品入口；共享consumer不增加网络consumer"
+    },
+    {
+      "id": "A02-CURRENT",
+      "title": "原ABBA四组全编号链路",
+      "status": "PASS",
+      "evidence_type": "original_load_native_qt",
+      "evidence": [
+        "evidence/abba/evidence.json",
+        "report/INDEPENDENT-DISPLAY-AUDIT.json"
+      ],
+      "boundary": "每组96含8warmup，正式88；静态图；performance NOT_ASSESSED"
+    },
+    {
+      "id": "L01",
+      "title": "变化96及确定性替代",
+      "status": "PASS",
+      "evidence_type": "software_deterministic_fault_injection",
+      "evidence": [
+        "evidence/automated/software-artifacts/changing-96.json"
+      ],
+      "boundary": "原软件测试对双端96张变化图逐像素断言；产物为identity及verified_pixels编号，未保存全部96 PNG，未离线重解码96张；consumer0 ordinal2 SUPERSEDED；非历史根因证明"
+    },
+    {
+      "id": "R01",
+      "title": "决策及parent压缩可逆性",
+      "status": "PASS",
+      "evidence_type": "offline_evidence_audit",
+      "evidence": [
+        "report/INDEPENDENT-DISPLAY-AUDIT.json"
+      ],
+      "boundary": "960决策行；2×2306 parent行；不代表性能合格"
+    },
+    {
+      "id": "D-BASIC",
+      "title": "Designer基础无设备链",
+      "status": "PASS",
+      "evidence_type": "native_xcb_mouse",
+      "evidence": [
+        "evidence/screenshots/020-designer-open.jpg",
+        "evidence/screenshots/021-designer-completed.jpg",
+        "evidence/environment/designer-jobs-readonly.json",
+        "evidence/environment/final-git-projects.json",
+        "evidence/environment/designer-worker-final-check.json",
+        "report/UI-OPERATIONS.md"
+      ],
+      "boundary": "Job完成value7，标题栏关闭exit0；副本保存revision2，不替代D01-D08"
+    },
+    {
+      "id": "D01-D08",
+      "title": "完整Designer矩阵",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "O20",
+      "title": "SQLite与O20专项",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "DEVICE-DPI",
+      "title": "真实设备与DPI矩阵",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "SCALE",
+      "title": "32Job64流性能",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "WINDOWS",
+      "title": "Windows精确SHA Actions",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "RELEASE",
+      "title": "发布部署与合并",
+      "status": "NOT_RUN",
+      "evidence_type": "not_run",
+      "evidence": [],
+      "boundary": "本轮无此结论"
+    },
+    {
+      "id": "H-A02",
+      "title": "旧8c全96显示覆盖",
+      "status": "FAIL",
+      "evidence_type": "historical",
+      "evidence": [
+        "source/docs/testing/2026-10-13-display-subscriptions/CONTRACT.md"
+      ],
+      "boundary": "原缺号FAIL保留；不计本轮新失败"
+    },
+    {
+      "id": "H-W01",
+      "title": "旧8c五路订阅历史失败",
+      "status": "FAIL",
+      "evidence_type": "historical",
+      "evidence": [
+        "source/docs/testing/2026-10-13-display-subscriptions/REPORT.md",
+        "source/docs/testing/2026-10-13-display-subscriptions/CONTRACT.md"
+      ],
+      "boundary": "原失败记录不改判；本轮固定SHA五路场景PASS另列，不是全产品通过"
+    }
+  ],
+  "historical_open": [
+    "旧8c缺帧历史根因缺少决策瞬间直证",
+    "Windows捕获稳定性未由本轮关闭"
+  ],
+  "pending_freeze": [],
+  "classification_note": "9项本轮PASS、6项NOT_RUN；2项历史FAIL独立保留。项目之间重叠，不累加为独立覆盖数。历史OPEN不计本轮失败。"
+}

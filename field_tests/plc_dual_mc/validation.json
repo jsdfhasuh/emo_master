@@ -1,0 +1,72 @@
+{
+  "date": "2026-10-15",
+  "baseCommit": "8c3495c0f96f00b39a6741e9ca85bf574d670340",
+  "projectSchema": "2.4",
+  "designerFixValidation": {
+    "date": "2026-10-16",
+    "projectRevision": 2,
+    "projectFiles": ["dual_plc_mc.emoproj", "simulation/dual_plc_mc_simulation.emoproj"],
+    "projectAndNativeDesignerTests": {"passed": 11, "failed": 0, "durationSeconds": 46.03},
+    "projectFileAndStoreTests": {"passed": 30, "failed": 0, "durationSeconds": 4.75},
+    "historical671TestsRerun": false,
+    "allWorkflowCanvasEdgesPreserved": true,
+    "allWorkflowNodesNonOverlapping": true,
+    "nativeDesignerSaveAndReopenPassed": true,
+    "loopbackExecutionAfterDesignerStoreRoundtripPassed": true,
+    "defaultReadAndWriteCycleScreenshotsInspected": true,
+    "simulationLauncherSmokePassed": true,
+    "backgroundSimulatorLeftRunning": false,
+    "ruffPassed": true,
+    "hardwareConnectedDuringFix": false,
+    "hardwareWritesExecuted": false,
+    "manualHardwareDebugUiAcceptancePerformed": false
+  },
+  "pytest": {
+    "passed": 671,
+    "failed": 0,
+    "durationSeconds": 128.11,
+    "newProjectTestsIncluded": 7,
+    "fullRepositorySuite": false,
+    "files": [
+      "tests/runtime/test_dual_plc_field_project.py",
+      "tests/plugins/test_communication_operators.py",
+      "tests/plugins/test_slmp_debug_transport.py",
+      "tests/runtime/test_plc_debug.py",
+      "tests/runtime/test_plc_operator_debug.py",
+      "tests/runtime/test_builtin_communication_operator_workflows.py",
+      "tests/designer/test_plc_editor.py",
+      "tests/designer/test_plc_wheel_safety.py"
+    ]
+  },
+  "projectValidation": {
+    "modelAndCompilationPassed": true,
+    "generatedTemplatesMatchBuilder": true,
+    "allPublicWorkflowsExecutedOnLoopback": true,
+    "reversedNodeAndEdgeOrderPassed": true,
+    "fullSimulatedMemoryRestored": true,
+    "fieldWriteRequestsLimitedToD796OneWord": true,
+    "simulationLauncherSmokePassed": true,
+    "backgroundSimulatorLeftRunning": false,
+    "ruffPassed": true
+  },
+  "hardwareReadOnly": {
+    "entryWorkflowId": "read_both",
+    "protocol": "MC 3E binary TCP",
+    "port": 4998,
+    "device": "D",
+    "startAddress": 800,
+    "dataType": "uint16",
+    "count": 1,
+    "observations": [
+      {"host": "192.168.101.50", "numberValue": 6, "values": [6]},
+      {"host": "192.168.101.51", "numberValue": 6, "values": [6]}
+    ],
+    "writeExecuted": false,
+    "designerManualAcceptancePerformed": false
+  },
+  "pendingHardwareAcceptance": [
+    "D796 single-word write, readback and restoration",
+    "Manual Designer PLC debug UI acceptance",
+    "Other D addresses and M access require separate authorization"
+  ]
+}

@@ -4854,6 +4854,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 "vision.io.huaray_camera": ("waitMode", "sequencePolicy"),
                 "vision.io.coordinate_reader": ("readMode",),
                 "communication.tcp.client": ("rejectTrailingResponse",),
+                "communication.plc.slmp_read": ("frameEncoding",),
+                "communication.plc.slmp_write": ("frameEncoding",),
             }.get(node.operatorId, ())
             if extensions:
                 # Add only the opt-in extension fields. Opening a legacy node
@@ -4862,6 +4864,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                     from emo_master.plugins.builtins.huaray_camera.operator import PARAM_SCHEMA as extendedSchema
                 elif node.operatorId == "vision.io.coordinate_reader":
                     from emo_master.plugins.builtins._coordinate_operators import COORDINATE_READER_PARAM_SCHEMA as extendedSchema
+                elif node.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}:
+                    from emo_master.plugins.builtins._communication_operators import PLC_READ_PARAM_SCHEMA as extendedSchema
                 else:
                     from emo_master.plugins.builtins._communication_operators import TCP_CLIENT_PARAM_SCHEMA as extendedSchema
                 for fieldName in extensions:

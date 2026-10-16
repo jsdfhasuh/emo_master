@@ -10,7 +10,7 @@
       <layout class="QVBoxLayout" name="paramsLayout"/>
      </widget>
      <widget class="QWidget" name="runtimePage">
-      <attribute name="title"><string>运行</string></attribute>
+      <attribute name="title"><string>PLC 通信测试</string></attribute>
       <layout class="QVBoxLayout" name="runtimeLayout"/>
      </widget>
     </widget>

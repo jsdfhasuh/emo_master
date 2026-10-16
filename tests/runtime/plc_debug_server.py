@@ -16,33 +16,61 @@ class Request:
     raw: bytes
 
     @property
+    def ascii(self) -> bool:
+        return self.raw.startswith(b"5000")
+
+    @property
     def command(self) -> int:
+        if self.ascii:
+            return int(self.raw[22:26], 16)
         return struct.unpack_from("<H", self.raw, 11)[0]
 
     @property
     def subcommand(self) -> int:
+        if self.ascii:
+            return int(self.raw[26:30], 16)
         return struct.unpack_from("<H", self.raw, 13)[0]
 
     @property
     def start(self) -> int:
+        if self.ascii:
+            return int(self.raw[32:38], 10)
         return int.from_bytes(self.raw[15:18], "little")
 
     @property
     def device(self) -> str:
+        if self.ascii:
+            return {b"D*": "D", b"M*": "M"}[self.raw[30:32]]
         return {0xA8: "D", 0x90: "M"}[self.raw[18]]
 
     @property
     def count(self) -> int:
+        if self.ascii:
+            return int(self.raw[38:42], 16)
         return struct.unpack_from("<H", self.raw, 19)[0]
 
     @property
     def payload(self) -> bytes:
+        if self.ascii:
+            data = self.raw[42:]
+            if self.subcommand == 1:
+                bits = [int(chr(byte)) for byte in data] + [0]
+                return bytes(bits[i] * 16 + bits[i + 1] for i in range(0, len(data), 2))
+            return b"".join(struct.pack("<H", int(data[i:i + 4], 16)) for i in range(0, len(data), 4))
         return self.raw[21:]
 
 
 def response(request: Request, data: bytes = b"", *, end_code: int = 0,
              route: bytes | None = None, length: int | None = None,
              subheader: bytes = b"\xd0\x00") -> bytes:
+    if request.ascii:
+        if request.subcommand == 1:
+            payload = "".join(f"{byte:02X}" for byte in data)[:request.count]
+        else:
+            payload = "".join(f"{value:04X}" for value, in struct.iter_unpack("<H", data))
+        body = f"{end_code:04X}".encode() + payload.encode()
+        return (b"D000" + (request.raw[4:14] if route is None else route)
+                + f"{len(body) if length is None else length:04X}".encode() + body)
     body = struct.pack("<H", end_code) + data
     return (subheader + (request.raw[2:7] if route is None else route)
             + struct.pack("<H", len(body) if length is None else length) + body)
@@ -86,7 +114,8 @@ class PlcDebugServer:
     reconnects and accidental retries cannot masquerade as a persistent session.
     """
 
-    def __init__(self, actions: list[Action] | None = None, *, fragment: bool = False) -> None:
+    def __init__(self, actions: list[Action] | None = None, *, fragment: bool = False, encoding: str = "binary") -> None:
+        self.encoding = encoding
         self.actions = deque(actions or [])
         self.fragment = fragment
         self.words: dict[int, int] = {}
@@ -116,6 +145,7 @@ class PlcDebugServer:
 
     def params(self, **overrides) -> dict:
         return {"host": "127.0.0.1", "port": self.port,
+                **({"frameEncoding": "ascii"} if self.encoding == "ascii" else {}),
                 "connectTimeoutMs": 500, "responseTimeoutMs": 500, **overrides}
 
     def wait_requests(self, count: int, timeout: float = 2.0) -> None:
@@ -178,12 +208,17 @@ class PlcDebugServer:
             with sock:
                 sock.settimeout(0.05)
                 while not self.stopped.is_set():
-                    header = self._recv_exact(sock, 9)
+                    header = self._recv_exact(sock, 18 if self.encoding == "ascii" else 9)
                     if header is None:
                         return
-                    assert header[:2] == b"\x50\x00", header.hex()
-                    size = struct.unpack_from("<H", header, 7)[0]
-                    assert 12 <= size <= 1932, size
+                    if self.encoding == "ascii":
+                        assert header[:4] == b"5000", header
+                        size = int(header[14:18], 16)
+                        assert 24 <= size <= 3864, size
+                    else:
+                        assert header[:2] == b"\x50\x00", header.hex()
+                        size = struct.unpack_from("<H", header, 7)[0]
+                        assert 12 <= size <= 1932, size
                     body = self._recv_exact(sock, size)
                     if body is None:
                         return

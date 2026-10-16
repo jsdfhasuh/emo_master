@@ -31,6 +31,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.plugins.builtins._plc_editor import PlcEditorController, _Cancellation
+from emo_master.apps.designer.ui.plc_presentation import ADVANCED_FIELDS, NUMBER_TYPES, plcSchema
 from tests.runtime.plc_debug_server import BlockResponse, PlcDebugServer
 from tests.runtime.test_builtin_communication_operator_workflows import _project as plcProject
 
@@ -130,7 +131,7 @@ class _Context:
         assert requestId or name == "close"
         call = SimpleNamespace(
             name=name, params=deepcopy(params), requestId=requestId, cancellation=cancellation,
-            sessionId=sessionId, runtimeId=runtimeId, thread=get_ident(), start=time.monotonic(), end=None,
+            sessionId=sessionId, runtimeId=runtimeId, thread=get_ident(), start=time.perf_counter(), end=None,
             dispatched=False,
         )
         with self._lock:
@@ -146,7 +147,7 @@ class _Context:
                 assert gate.wait(5), f"test did not release {name}"
             yield call
         finally:
-            call.end = time.monotonic()
+            call.end = time.perf_counter()
             with self._lock:
                 self.activeCalls -= 1
                 if name in ("read", "write"):
@@ -344,7 +345,7 @@ def testPlcParameterTitlesCoverAdvancedAndDebugControls(editor, directory, desig
     from emo_master.plugins.builtins._communication_operators import PLC_READ_PARAM_SCHEMA
     controller, context, root = editor(directory)
     for name, control in controller._endpointControls.items():
-        title = PLC_READ_PARAM_SCHEMA["properties"][name]["title"]
+        title = plcSchema(PLC_READ_PARAM_SCHEMA)["properties"][name]["title"]
         assert f"参数键：{name}" in control.toolTip()
         assert any(label.text() == title and f"参数键：{name}" in label.toolTip()
                    for label in root.findChildren(QLabel))
@@ -367,7 +368,139 @@ def _connect(controller, context, application):
     assert context.named("open")
 
 
+@pytest.mark.parametrize("directory", _DIRECTORIES)
+def testCommunicationPageStartsReadOnlyAndFoldingRelocks(editor, designerApplication, directory):
+    controller, context, root = editor(directory, window=True)
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    designerApplication.processEvents()
+    assert controller.tabs.tabText(1) == "PLC 通信测试"
+    assert root._debugButton.text() == "调试当前算子"
+    assert not controller.manualWritePanel.isVisible()
+    assert not controller.receiptLabel.isVisible()
+    assert controller.statusLabel.text() == "未连接 PLC"
+    controller.manualWriteToggle.setChecked(True)
+    assert controller.manualWritePanel.isVisible()
+    assert not controller.writeEnabledCheck.isChecked() and not context.calls
+    controller.tabs.setCurrentWidget(controller.paramsPage)
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    assert controller.statusLabel.text() == "未连接 PLC"
+    assert context.statuses[-1] == "未连接 PLC"
+    _connect(controller, context, designerApplication)
+    _unlock(controller, context, designerApplication)
+    controller.manualWriteToggle.setChecked(False)
+    _pump(designerApplication, lambda: not controller._cleanups)
+    assert not context.writeEnabled and not controller._writeEnabled
+    controller.manualWriteToggle.setChecked(True)
+    assert not controller.writeEnabledCheck.isChecked() and not controller.writeButton.isEnabled()
+    assert len(context.named("unlock")) == 1
+    controller.tabs.setCurrentWidget(controller.paramsPage)
+    _pump(designerApplication, lambda: not controller._cleanups)
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    assert "待验证" in controller.statusLabel.text()
+    assert "已暂停" not in controller.statusLabel.text()
+
+
+def testPageSwitchPreservesConnectionError(editor, designerApplication):
+    controller, context, _root = editor()
+    context.overrides["open"] = _reply(ok=False, code="E_CONNECT_TEST", message="连接失败")
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    controller.connect()
+    _pump(designerApplication, lambda: controller._operation is None and not controller._cleanups)
+    error = controller.statusLabel.text()
+    assert "E_CONNECT_TEST" in error
+    controller.tabs.setCurrentWidget(controller.paramsPage)
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    assert controller.statusLabel.text() == error
+
+
+@pytest.mark.parametrize("directory", _DIRECTORIES)
+@pytest.mark.parametrize("width", [640, 980])
+def testFriendlyPlcParametersPreserveAdvancedDraft(editor, designerApplication, directory, width, tmp_path):
+    params = dict(host="192.168.101.50", port=4998, startAddress=800, dataType="int16",
+                  retryCount=0, networkNo=7, moduleIoNo=1234, monitoringTimer=8)
+    controller, context, window = editor(directory, params, window=True)
+    window.resize(width, 720)
+    designerApplication.processEvents()
+    form = controller.paramForm
+    original = controller.collectParams()
+    assert all(original[key] == value for key, value in params.items())
+    assert form._controls["dataType"].currentText() == NUMBER_TYPES["int16"]
+    assert "Binary" in form._controls["frameEncoding"].currentText()
+    for name in ADVANCED_FIELDS:
+        if name in form._controls:
+            assert form._controls[name].isHidden()
+    for name in ("host", "port", "device", "startAddress", "dataType"):
+        assert form._controls[name].isVisible()
+    assert form._controls["dataType"].geometry().right() <= form.width()
+    assert not window.isDirty()
+    assert window.grab().save(str(tmp_path / f"{directory}-{width}-parameters.png"))
+    form.advancedToggle.setChecked(True)
+    designerApplication.processEvents()
+    assert form._controls["networkNo"].isVisible()
+    form.advancedToggle.setChecked(False)
+    assert controller.collectParams() == original
+    assert not window.isDirty()
+    controller.loadParams(original)
+    assert controller.collectParams() == original
+    assert not context.calls
+
+
+def testInvalidHiddenAdvancedFieldExpands(editor):
+    controller, context, _ = editor(params={"outputIndex": 4, "count": 1})
+    # Invalid hidden parameters must be reachable for correction.
+    form = controller.paramForm
+    assert controller.validate()["code"] == "E_PARAM_INVALID"
+    assert form.advancedToggle.isChecked()
+    assert not form._controls["outputIndex"].isHidden()
+    assert not context.calls
+
+
+@pytest.mark.parametrize("directory", _DIRECTORIES)
+def testProtocolSelectionSavesReloadsWithoutConnecting(editor, directory, designerApplication, tmp_path):
+    controller, context, window = editor(directory, {"host": "192.168.101.50", "port": 4998, "retryCount": 0}, window=True)
+    combo = controller.paramForm._controls["frameEncoding"]
+    assert combo.currentData() == "binary"
+    assert not context.calls
+    combo.setCurrentIndex(combo.findData("ascii"))
+    assert window.applyChanges()
+    assert context.applied[-1]["frameEncoding"] == "ascii"
+    assert context.applied[-1]["retryCount"] == 0
+    controller.loadParams(context.applied[-1])
+    assert controller.paramForm._controls["frameEncoding"].currentData() == "ascii"
+    controller.tabs.setCurrentWidget(controller.runtimePage)
+    assert controller.frameEncodingCombo.currentData() == "ascii"
+    assert not context.calls
+    window.resize(820, 720)
+    designerApplication.processEvents()
+    assert window.grab().save(str(tmp_path / f"{directory}-ascii-runtime.png"))
+    controller.tabs.setCurrentWidget(controller.paramsPage)
+    designerApplication.processEvents()
+    assert window.grab().save(str(tmp_path / f"{directory}-ascii-parameters.png"))
+
+
+@pytest.mark.parametrize("directory", _DIRECTORIES)
+def testLegacyPlcSchemaOffersProtocolWithoutMutatingSavedNode(editor, directory):
+    from emo_master.apps.designer.ui.main_window import MainWindow
+    manifest = _manifest(directory)
+    legacy = deepcopy(manifest["paramSchema"])
+    del legacy["properties"]["frameEncoding"]
+    node = SimpleNamespace(kind="operator", operatorId=manifest["operatorId"], paramSchema=deepcopy(legacy))
+    window = SimpleNamespace(activeWorkflowId="main", _operatorDefinition=lambda _: manifest,
+                             workflowStore=SimpleNamespace(workflows={"main": SimpleNamespace(name="main")}))
+    schema = MainWindow._nodeEditorSchema(window, node)
+    context = _Context(directory)
+    context.paramSchema = schema
+    controller, _, _ = editor(directory, {"port": 4998, "retryCount": 0}, context=context)
+    assert controller.paramForm._controls["frameEncoding"].currentData() == "binary"
+    assert next(iter(controller.paramForm._controls)) == "frameEncoding"
+    assert node.paramSchema == legacy
+    assert controller.collectParams()["port"] == 4998
+    assert controller.collectParams()["retryCount"] == 0
+    assert not context.calls
+
+
 def _unlock(controller, context, application):
+    controller.manualWriteToggle.setChecked(True)
     controller.writeEnabledCheck.setChecked(True)
     _pump(application, lambda: controller._writeEnabled and controller._operation is None)
     assert context.writeEnabled
@@ -472,20 +605,20 @@ def testDebugTypeLimitsAndAddressStride(editor, directory):
     assert controller.pollIntervalSpin.value() == 500
     assert controller.pollIntervalSpin.minimum() == 100
     assert controller.pollIntervalSpin.maximum() == 60000
-    assert [controller.dataTypeCombo.itemText(i) for i in range(controller.dataTypeCombo.count())] == [
+    assert [controller.dataTypeCombo.itemData(i) for i in range(controller.dataTypeCombo.count())] == [
         "uint16", "int16", "uint32", "int32", "float32",
     ]
-    controller.dataTypeCombo.setCurrentText("uint32")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint32"))
     assert controller.countSpin.maximum() == 480
     controller.countSpin.setValue(2)
     assert controller.writeTable.item(1, 0).text() == "D2"
     controller.deviceCombo.setCurrentText("M")
-    assert [controller.dataTypeCombo.itemText(i) for i in range(controller.dataTypeCombo.count())] == [
+    assert [controller.dataTypeCombo.itemData(i) for i in range(controller.dataTypeCombo.count())] == [
         "uint16", "int16", "bit",
     ]
     assert controller.countSpin.maximum() == 960
     assert controller.writeTable.item(1, 0).text() == "M16"
-    controller.dataTypeCombo.setCurrentText("bit")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("bit"))
     assert isinstance(controller.writeTable.cellWidget(0, 1), QCheckBox)
     assert controller.writeTable.item(1, 0).text() == "M1"
     controller.addressSpin.setValue(0xFFFFFF)
@@ -502,7 +635,7 @@ def testDebugTypeLimitsAndAddressStride(editor, directory):
 def testWideValuesUseBoundedValidatedLineEdits(editor, dataType, valid, invalid):
     controller, _context, _root = editor()
     controller.tabs.setCurrentWidget(controller.runtimePage)
-    controller.dataTypeCombo.setCurrentText(dataType)
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData(dataType))
     control = controller.writeTable.cellWidget(0, 1)
     assert isinstance(control, QLineEdit) and not isinstance(control, QSpinBox)
     assert control.validator().validate(valid, len(valid))[0] == QValidator.Acceptable
@@ -522,7 +655,7 @@ def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication,
     controller, context, _root = editor(directory)
     _connect(controller, context, designerApplication)
     controller.deviceCombo.setCurrentText(device)
-    controller.dataTypeCombo.setCurrentText(dataType)
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData(dataType))
     controller.addressSpin.setValue(4)
     controller.countSpin.setValue(3)
     controller.read()
@@ -564,21 +697,21 @@ def testFailedReadReplyIsNeverDisplayedAsSuccess(editor, designerApplication):
 def testReadResultKeepsCapturedSpecWhenControlsChangeInFlight(editor, designerApplication):
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
-    controller.dataTypeCombo.setCurrentText("uint32")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint32"))
     controller.addressSpin.setValue(4)
     controller.countSpin.setValue(3)
     gate = context.hold("read")
     controller.read()
     _pump(designerApplication, lambda: context.entered["read"].is_set())
     controller.deviceCombo.setCurrentText("M")
-    controller.dataTypeCombo.setCurrentText("bit")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("bit"))
     controller.addressSpin.setValue(80)
     controller.countSpin.setValue(2)
     gate.set()
     _pump(designerApplication, lambda: controller._operation is None)
     assert controller.resultTable.rowCount() == 3
     assert [controller.resultTable.item(row, 0).text() for row in range(3)] == ["D4", "D6", "D8"]
-    assert controller.resultTable.item(1, 1).text() == "uint32"
+    assert controller.resultTable.item(1, 1).text() == NUMBER_TYPES["uint32"]
     assert controller.resultTable.item(1, 3).text() == "2, 3"
     assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
     stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
@@ -605,6 +738,7 @@ def testPlcTimestampAndElapsedDoNotFollowControlReplies(editor, designerApplicat
     elif control == "lock":
         controller._writeLockChanged(False)
     else:
+        controller.manualWriteToggle.setChecked(True)
         controller.writeEnabledCheck.setChecked(True)
     _pump(designerApplication, lambda: controller._operation is None and not controller._cleanups)
     assert controller.resultTable.item(0, 4).text() == stamp
@@ -617,7 +751,7 @@ def testLateConnectedControlReplyCannotDowngradeVerifiedConnection(editor, desig
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
     assert controller._state == "connected"
-    controller.dataTypeCombo.setCurrentText("uint32")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint32"))
     controller.countSpin.setValue(2)
     readGate = context.hold("read")
     controller.read()
@@ -651,13 +785,13 @@ def testRawBitHeaderUsesReplyTypeAndRestoresForWordReads(editor, designerApplica
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
     controller.deviceCombo.setCurrentText("M")
-    controller.dataTypeCombo.setCurrentText("bit")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("bit"))
     controller.countSpin.setValue(3)
     gate = context.hold("read")
     controller.read()
     _pump(designerApplication, lambda: context.entered["read"].is_set())
     controller.deviceCombo.setCurrentText("D")
-    controller.dataTypeCombo.setCurrentText("uint16")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint16"))
     gate.set()
     _pump(designerApplication, lambda: controller._operation is None)
     assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
@@ -740,7 +874,7 @@ def testWriteCapturesValuesOnceAndResumesOnlyExplicitPoll(editor, designerApplic
     _unlock(controller, context, designerApplication)
     version = controller._writeLockGeneration
     assert version == 1
-    controller.dataTypeCombo.setCurrentText("uint32")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint32"))
     controller.countSpin.setValue(2)
     controller.writeTable.cellWidget(0, 1).setText("4294967295")
     controller.writeTable.cellWidget(1, 1).setText("123")
@@ -760,7 +894,7 @@ def testWriteCapturesValuesOnceAndResumesOnlyExplicitPoll(editor, designerApplic
     assert context.named("write")[0].dispatched
     assert controller.receiptLabel.text().startswith("已确认 (confirmed)")
     assert controller.resultTable.item(0, 0).text() == "D0"
-    assert controller.resultTable.item(0, 1).text() == "uint32"
+    assert controller.resultTable.item(0, 1).text() == NUMBER_TYPES["uint32"]
     stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
     assert controller.resultTable.item(0, 4).text() == stamp
     assert controller.pollCheck.isChecked() and controller._pollTimer.isActive()
@@ -771,7 +905,7 @@ def testExplicitWriteWaitsForBlockedReadAndKeepsOneCapturedDraft(editor, designe
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
     _unlock(controller, context, designerApplication)
-    controller.dataTypeCombo.setCurrentText("uint32")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("uint32"))
     controller.countSpin.setValue(2)
     controller.addressSpin.setValue(4)
     controller.writeTable.cellWidget(0, 1).setText("4294967295")
@@ -789,7 +923,7 @@ def testExplicitWriteWaitsForBlockedReadAndKeepsOneCapturedDraft(editor, designe
     assert captured.params["lockGeneration"] == version
     assert not controller._pollTimer.isActive() and not context.named("write")
     controller.deviceCombo.setCurrentText("M")
-    controller.dataTypeCombo.setCurrentText("bit")
+    controller.dataTypeCombo.setCurrentIndex(controller.dataTypeCombo.findData("bit"))
     controller.addressSpin.setValue(80)
     controller.countSpin.setValue(3)
     controller.writeTable.cellWidget(0, 1).setChecked(True)
@@ -872,7 +1006,7 @@ def testPendingWriteKeepsOriginalPermissionAndCancelsAfterRenewedVersion(editor,
     assert not context.named("write") and not controller._pollTimer.isActive()
 
 
-@pytest.mark.parametrize("action", ["pageleave", "lock", "reload", "disconnect", "error", "invalidate", "dispose"])
+@pytest.mark.parametrize("action", ["pageleave", "lock", "collapse", "reload", "disconnect", "error", "invalidate", "dispose"])
 def testPendingWriteIsCanceledAtEveryLifecycleBoundary(editor, designerApplication, action):
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
@@ -889,6 +1023,8 @@ def testPendingWriteIsCanceledAtEveryLifecycleBoundary(editor, designerApplicati
         controller.tabs.setCurrentWidget(controller.paramsPage)
     elif action == "lock":
         controller.writeEnabledCheck.setChecked(False)
+    elif action == "collapse":
+        controller.manualWriteToggle.setChecked(False)
     elif action == "reload":
         controller.reloadParameters()
     elif action == "invalidate":
@@ -897,7 +1033,7 @@ def testPendingWriteIsCanceledAtEveryLifecycleBoundary(editor, designerApplicati
         context.overrides["read"] = _reply(ok=False, code="E_READ_TEST", message="读取失败")
     else:
         getattr(controller, action)()
-    if action in ("pageleave", "lock"):
+    if action in ("pageleave", "lock", "collapse"):
         assert not operation.cancellation.is_set() and controller._generation == generation
     gate.set()
     if action != "dispose":
@@ -1001,13 +1137,18 @@ def testPageLeaveFencesBlockedDataAndReturnDoesNotResume(editor, designerApplica
     assert len(context.named("unlock")) == 1
 
 
-def testCanceledSlowUnlockCannotUndoPageLeaveFence(editor, designerApplication):
+@pytest.mark.parametrize("boundary", ["pageleave", "collapse"])
+def testCanceledSlowUnlockCannotUndoPageLeaveFence(editor, designerApplication, boundary):
     controller, context, _root = editor()
     _connect(controller, context, designerApplication)
     gate = context.hold("unlock")
+    controller.manualWriteToggle.setChecked(True)
     controller.writeEnabledCheck.setChecked(True)
     _pump(designerApplication, lambda: context.entered["unlock"].is_set())
-    controller.tabs.setCurrentWidget(controller.paramsPage)
+    if boundary == "collapse":
+        controller.manualWriteToggle.setChecked(False)
+    else:
+        controller.tabs.setCurrentWidget(controller.paramsPage)
     _pump(designerApplication, lambda: context.finished["lock"].is_set())
     gate.set()
     _pump(designerApplication, lambda: controller._operation is None and len(context.named("lock")) >= 2)
@@ -1062,6 +1203,7 @@ def testUncertainPermissionRequiresRenewThenAnotherExplicitUnlock(editor, design
     controller._writeLockFresh = False
     context.writeLockGeneration = 3
     gate = context.hold("renew")
+    controller.manualWriteToggle.setChecked(True)
     controller.writeEnabledCheck.setChecked(True)
     _pump(designerApplication, lambda: context.entered["renew"].is_set())
     assert not context.named("unlock") and not controller._writeEnabled
@@ -1111,9 +1253,10 @@ def testManualLockBypassesBlockedDataWithoutCanceling(editor, designerApplicatio
 
 @pytest.mark.parametrize("directory", _DIRECTORIES)
 @pytest.mark.parametrize("phase", ["read", "write", "write_readback"])
-@pytest.mark.parametrize("pause", ["pageleave", "lock"])
+@pytest.mark.parametrize("pause", ["pageleave", "lock", "collapse"])
+@pytest.mark.parametrize("encoding", ["binary", "ascii"])
 def testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt(
-        embeddedPlcRuntime, editor, designerApplication, directory, phase, pause):
+        embeddedPlcRuntime, editor, designerApplication, directory, phase, pause, encoding):
     runtime, client = embeddedPlcRuntime
     context = _EmbeddedContext(directory, client, runtime.loadedProjectId)
     blocked = BlockResponse()
@@ -1124,10 +1267,13 @@ def testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt(
         return blocked(peer, request, sock)
 
     actions = [PlcDebugServer._memory_action, hold] if phase == "write_readback" else [hold]
-    with PlcDebugServer(actions) as peer:
+    with PlcDebugServer(actions, encoding=encoding) as peer:
         controller, _context, _root = editor(directory, peer.params(responseTimeoutMs=10000), context=context)
         try:
             _connect(controller, context, designerApplication)
+            assert controller.frameEncodingCombo.currentData() == encoding
+            assert not controller.frameEncodingCombo.isEnabled()
+            assert "待验证" in controller.statusLabel.text()
             _unlock(controller, context, designerApplication)
             controller.addressSpin.setValue(4)
             controller.writeTable.cellWidget(0, 1).setValue(97)
@@ -1147,6 +1293,8 @@ def testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt(
             sock = state.sock
             if pause == "pageleave":
                 controller.tabs.setCurrentWidget(controller.paramsPage)
+            elif pause == "collapse":
+                controller.manualWriteToggle.setChecked(False)
             else:
                 controller.writeEnabledCheck.setChecked(False)
             _pump(designerApplication, lambda: context.finished["lock"].is_set() and not controller._safetyPending())
@@ -1170,6 +1318,9 @@ def testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt(
             if command == "write":
                 assert controller.receiptLabel.text().startswith("已确认 (confirmed)")
                 assert "unknown" not in controller.receiptLabel.text()
+                if pause == "collapse":
+                    assert controller.receiptLabel.isVisible()
+                    assert not controller.manualWritePanel.isVisible()
             assert context.named("lock")[0].end < context.named(command)[0].end
             assert not context.errors and controller.collectParams() == savedParams
             controller.tabs.setCurrentWidget(controller.runtimePage)
@@ -1298,6 +1449,7 @@ def testEveryControlReplyChecksOkAndResetsWriteLock(editor, designerApplication,
         controller.tabs.setCurrentWidget(controller.runtimePage)
         controller.connect()
     elif operation == "unlock":
+        controller.manualWriteToggle.setChecked(True)
         controller.writeEnabledCheck.setChecked(True)
     elif operation == "renew":
         controller._renew()
@@ -1311,10 +1463,12 @@ def testEveryControlReplyChecksOkAndResetsWriteLock(editor, designerApplication,
 @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
 @pytest.mark.parametrize("advanced", [False, True])
 @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
-def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
-    controller, context, root = editor(window=True)
+@pytest.mark.parametrize("directory", _DIRECTORIES)
+def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase, directory):
+    controller, context, root = editor(directory, window=True)
     designerApplication.processEvents()
     controller.tabs.setCurrentWidget(controller.runtimePage)
+    controller.manualWriteToggle.setChecked(True)
     if phase != "closed":
         _connect(controller, context, designerApplication)
     if phase == "write":
@@ -1343,11 +1497,13 @@ def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplicatio
         assert controller.resultTable.visualItemRect(controller.resultTable.item(0, 4)).width() >= (
             controller.resultTable.fontMetrics().horizontalAdvance(controller.resultTable.item(0, 4).text())
         )
-    assert controller.tabs.tabText(0) == "参数" and controller.tabs.tabText(1) == "运行"
+    assert controller.tabs.tabText(0) == "参数" and controller.tabs.tabText(1) == "PLC 通信测试"
     assert controller._endpointControls.keys().isdisjoint({"retryCount", "retryDelayMs"})
     assert {"retryCount", "retryDelayMs"} <= controller.collectParams().keys()
     for control in (controller.connectButton, controller.readButton, controller.writeButton,
                     controller.resultTable, controller.writeTable, root._applyButton):
+        controller.runtimeScroll.ensureWidgetVisible(control)
+        designerApplication.processEvents()
         bounds = control.rect()
         origin = control.mapTo(root, bounds.topLeft())
         assert 0 <= origin.x() and origin.x() + bounds.width() <= width
@@ -1357,9 +1513,11 @@ def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplicatio
             assert label.height() >= label.heightForWidth(label.width())
     qaDirectory = os.environ.get("PLC_EDITOR_QA_DIR")
     if qaDirectory:
+        controller.runtimeScroll.verticalScrollBar().setValue(0)
+        designerApplication.processEvents()
         destination = Path(qaDirectory)
         destination.mkdir(parents=True, exist_ok=True)
-        assert root.grab().save(str(destination / f"plc-{width}x{height}-{phase}-advanced{advanced}.png"))
+        assert root.grab().save(str(destination / f"{directory}-{width}x{height}-{phase}-advanced{advanced}.png"))
         geometry = {
             "requested": [width, height], "actual": [root.width(), root.height()],
             "windowMinimum": [root.minimumSizeHint().width(), root.minimumSizeHint().height()],
@@ -1367,6 +1525,13 @@ def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplicatio
             "runtimeMinimum": [controller.runtimePage.minimumSizeHint().width(), controller.runtimePage.minimumSizeHint().height()],
             "tabsMinimum": [controller.tabs.minimumSizeHint().width(), controller.tabs.minimumSizeHint().height()],
         }
-        (destination / f"plc-{width}x{height}-{phase}-advanced{advanced}.json").write_text(
+        (destination / f"{directory}-{width}x{height}-{phase}-advanced{advanced}.json").write_text(
             json.dumps(geometry, indent=2), encoding="utf-8",
         )
+        controller.manualWriteToggle.setChecked(False)
+        _pump(designerApplication, lambda: not controller._cleanups)
+        for size in ((640, 430), (980, 680)):
+            root.resize(*size)
+            controller.runtimeScroll.verticalScrollBar().setValue(0)
+            designerApplication.processEvents()
+            assert root.grab().save(str(destination / f"{directory}-{size[0]}x{size[1]}-{phase}-folded-advanced{advanced}.png"))

@@ -56,6 +56,8 @@ class OperatorMeta:
 
 
 _PLC_COMMON_PROPERTIES: dict[str, object] = {
+    "frameEncoding": {"title": "通信格式", "type": "string", "enum": ["binary", "ascii"],
+                      "default": "binary", "xOptionLabels": {"binary": "MC 3E · 二进制（Binary）", "ascii": "MC 3E · ASCII"}},
     "host": {"title": "主机地址", "type": "string", "default": "127.0.0.1"},
     "port": {
         "title": "端口",
@@ -396,6 +398,8 @@ class PlcSlmpReadOperator:
         startAddress = cast(int, params.get("startAddress", 0))
         if startAddress + plcDeviceAddressSpan(device, wordCount) - 1 > 0xFFFFFF:
             return _paramError("requested address range exceeds the 24-bit device space")
+        if params.get("frameEncoding", "binary") == "ascii" and startAddress + plcDeviceAddressSpan(device, wordCount) - 1 > 999999:
+            return _paramError("ASCII address range must be within 0..999999")
         return None
 
     def executeNode(
@@ -545,6 +549,8 @@ class PlcSlmpWriteOperator:
                 > 0xFFFFFF
             ):
                 raise ValueError("write address range exceeds the 24-bit device space")
+            if params.get("frameEncoding", "binary") == "ascii" and startAddress + plcDeviceAddressSpan(device, len(words)) - 1 > 999999:
+                raise ValueError("ASCII write address range must be within 0..999999")
         except CommunicationPayloadValidationError as exc:
             return _error("E_INPUT_TYPE", str(exc))
         except (TypeError, ValueError) as exc:
@@ -1013,6 +1019,8 @@ def _validatePlcCommonParams(
     unknown = sorted(set(params) - allowed)
     if unknown:
         return _paramError(f"unknown params: {', '.join(unknown)}")
+    if params.get("frameEncoding", "binary") not in ("binary", "ascii"):
+        return _paramError("frameEncoding must be binary or ascii")
     host = params.get("host", "127.0.0.1")
     if not isinstance(host, str) or not host.strip():
         return _paramError("host must be a non-empty string")
@@ -1023,6 +1031,8 @@ def _validatePlcCommonParams(
         return _paramError("device must be D or M")
     if not _isIntegerInRange(params.get("startAddress", 0), 0, 0xFFFFFF):
         return _paramError("startAddress must be within the 24-bit device range")
+    if params.get("frameEncoding", "binary") == "ascii" and cast(int, params.get("startAddress", 0)) > 999999:
+        return _paramError("ASCII startAddress must be within 0..999999")
     for name in ("connectTimeoutMs", "responseTimeoutMs"):
         if not _isIntegerInRange(params.get(name, 2000), 1, 60000):
             return _paramError(f"{name} must be between 1 and 60000")
@@ -1076,6 +1086,7 @@ def _slmpEndpoint(params: dict[str, object]) -> SlmpEndpoint:
         moduleIoNo=cast(int, params.get("moduleIoNo", 0x03FF)),
         moduleStationNo=cast(int, params.get("moduleStationNo", 0)),
         monitoringTimer=cast(int, params.get("monitoringTimer", 0)),
+        frameEncoding=cast(str, params.get("frameEncoding", "binary")),
     )
 
 

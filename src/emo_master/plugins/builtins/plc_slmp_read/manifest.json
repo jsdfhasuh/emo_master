@@ -5,7 +5,7 @@
   "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpReadOperator",
   "category": "通讯",
   "iconKey": "plc-read",
-  "summary": "通过三菱 SLMP/MC 3E 二进制协议有界读取 D/M 设备数据。",
+  "summary": "通过三菱 SLMP/MC 3E Binary 或 ASCII 报文有界读取 D/M 设备数据。",
   "inputPorts": {},
   "outputPorts": {
     "values": {"type": "plcValueCollection", "required": true, "nullable": false, "schemaVersion": "1.x"},
@@ -15,6 +15,7 @@
   "paramSchema": {
     "type": "object",
     "properties": {
+      "frameEncoding": {"title": "通信格式", "type": "string", "enum": ["binary", "ascii"], "default": "binary", "xOptionLabels": {"binary": "MC 3E · 二进制（Binary）", "ascii": "MC 3E · ASCII"}},
       "host": {"title": "主机地址", "type": "string", "default": "127.0.0.1"},
       "port": {"title": "端口", "type": "integer", "minimum": 1, "maximum": 65535, "default": 10001},
       "device": {"title": "PLC 软元件", "type": "string", "enum": ["D", "M", "d", "m"], "default": "D"},

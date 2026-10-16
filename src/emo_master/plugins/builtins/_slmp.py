@@ -55,8 +55,11 @@ class SlmpEndpoint:
     moduleIoNo: int = 0x03FF
     moduleStationNo: int = 0x00
     monitoringTimer: int = 0x0000
+    frameEncoding: str = "binary"
 
     def __post_init__(self) -> None:
+        if self.frameEncoding not in ("binary", "ascii"):
+            raise ValueError("frameEncoding must be binary or ascii")
         if not isinstance(self.host, str) or not self.host.strip():
             raise ValueError("host must be a non-empty string")
         if not isinstance(self.port, int) or isinstance(self.port, bool):
@@ -171,6 +174,20 @@ class Slmp3EClient:
         data: bytes = b"",
         subcommand: int | None = None,
     ) -> bytes:
+        if self.endpoint.frameEncoding == "ascii":
+            device = {code: name for name, code in DEVICE_CODES.items()}[deviceCode]
+            commandUnit = self.SUBCOMMAND_WORD if subcommand is None else subcommand
+            span = count if commandUnit == 1 else plcDeviceAddressSpan(device, count)
+            if start + span - 1 > 999999:
+                raise ValueError("ASCII D/M addresses must fit six decimal digits (0..999999)")
+            if commandUnit == 1:
+                payload = "".join(str((byte >> shift) & 0x0F) for byte in data for shift in (4, 0))[:count]
+            else:
+                payload = "".join(f"{word:04X}" for (word,) in struct.iter_unpack("<H", data))
+            # ASCII D*/M* addresses are decimal; multiword values stay low-word first.
+            body = (f"{self.endpoint.monitoringTimer:04X}{command:04X}{commandUnit:04X}"
+                    f"{device}*{start:06d}{count:04X}{payload}").encode("ascii")
+            return b"5000" + _asciiRoute(self.endpoint) + f"{len(body):04X}".encode("ascii") + body
         requestData = (
             struct.pack(
                 "<HHH",
@@ -441,8 +458,7 @@ class Slmp3ESession(Slmp3EClient):
                 )
             )
             # Validate before releasing this socket's lifecycle identity.
-            command, subcommand = struct.unpack_from("<HH", request, 11)
-            count = struct.unpack_from("<H", request, 19)[0]
+            command, subcommand, count = _requestShape(request, self.endpoint)
             if command == self.COMMAND_BATCH_READ:
                 if subcommand == self.SUBCOMMAND_BIT:
                     _decodeBits(data, count)
@@ -509,6 +525,8 @@ def _exchangeOnSocket(
         if resetSendTimeout:
             sock.settimeout(endpoint.responseTimeoutSec)
         sock.sendall(request)
+        if endpoint.frameEncoding == "ascii":
+            return _receiveAscii(sock, request, endpoint, deadline)
         header = _recvExact(sock, 9, deadline=deadline)
         if header[:2] != responseSubheader:
             raise SlmpProtocolError(
@@ -542,6 +560,58 @@ def _responseData(body: bytes) -> bytes:
     if endCode != 0:
         raise SlmpResponseError(endCode)
     return body[2:]
+
+
+def _asciiRoute(endpoint: SlmpEndpoint) -> bytes:
+    return (f"{endpoint.networkNo:02X}{endpoint.pcNo:02X}"
+            f"{endpoint.moduleIoNo:04X}{endpoint.moduleStationNo:02X}").encode("ascii")
+
+
+def _asciiHex(value: bytes) -> int:
+    if not value or any(byte not in b"0123456789ABCDEFabcdef" for byte in value):
+        raise SlmpProtocolError("invalid hexadecimal field in ASCII response")
+    return int(value, 16)
+
+
+def _requestShape(request: bytes, endpoint: SlmpEndpoint) -> tuple[int, int, int]:
+    if endpoint.frameEncoding == "ascii":
+        return int(request[22:26], 16), int(request[26:30], 16), int(request[38:42], 16)
+    command, subcommand = struct.unpack_from("<HH", request, 11)
+    return command, subcommand, struct.unpack_from("<H", request, 19)[0]
+
+
+def _receiveAscii(sock: socket.socket, request: bytes, endpoint: SlmpEndpoint, deadline: float) -> bytes:
+    # Normalize to the existing end-code/word representation to share typed
+    # decoding and persistent-session retirement rules with binary transport.
+    subheader = _recvExact(sock, 4, deadline=deadline)
+    if subheader.upper() != b"D000":
+        raise SlmpProtocolError("expected MC 3E ASCII response; check PLC communication format")
+    header = subheader + _recvExact(sock, 14, deadline=deadline)
+    if header[4:14].upper() != _asciiRoute(endpoint):
+        raise SlmpProtocolError("response routing fields do not match the request")
+    length = _asciiHex(header[14:18])
+    if not 4 <= length <= 4 + MAX_WORDS_PER_REQUEST * 4:
+        raise SlmpProtocolError(f"invalid ASCII response data length: {length}")
+    body = _recvExact(sock, length, deadline=deadline)
+    endCode = _asciiHex(body[:4])
+    if endCode:
+        return struct.pack("<H", endCode)
+    command, subcommand, count = _requestShape(request, endpoint)
+    data = body[4:]
+    if command == Slmp3EClient.COMMAND_BATCH_WRITE:
+        _validateWriteData(data)
+        return b"\0\0"
+    if subcommand == 1:
+        _validateReadDataLength(data, count)
+        if any(byte not in b"01" for byte in data):
+            raise SlmpProtocolError("invalid ASCII bit response; expected 0 or 1")
+        bits = [byte - ord("0") for byte in data]
+        bits.append(0)
+        payload = bytes((bits[i] << 4) | bits[i + 1] for i in range(0, count, 2))
+    else:
+        _validateReadDataLength(data, count * 4)
+        payload = b"".join(struct.pack("<H", _asciiHex(data[i:i + 4])) for i in range(0, len(data), 4))
+    return b"\0\0" + payload
 
 
 def _validateReadDataLength(data: bytes, expectedSize: int) -> None:

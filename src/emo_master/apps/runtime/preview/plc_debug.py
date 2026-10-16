@@ -80,6 +80,9 @@ def endpointFromParams(params: dict[str, object]) -> SlmpEndpoint:
     host = params.get("host", "127.0.0.1")
     if not isinstance(host, str) or not host.strip() or len(host) > 253:
         raise ValueError("host must be a non-empty hostname or IP address")
+    frameEncoding = params.get("frameEncoding", "binary")
+    if not isinstance(frameEncoding, str):
+        raise ValueError("frameEncoding must be binary or ascii")
     return SlmpEndpoint(
         host=host.strip(), port=_integer(params, "port", 10001, 1, 65535),
         connectTimeoutSec=_integer(params, "connectTimeoutMs", 2000, 1, 60000) / 1000,
@@ -89,6 +92,7 @@ def endpointFromParams(params: dict[str, object]) -> SlmpEndpoint:
         moduleIoNo=_integer(params, "moduleIoNo", 1023, 0, 65535),
         moduleStationNo=_integer(params, "moduleStationNo", 0, 0, 255),
         monitoringTimer=_integer(params, "monitoringTimer", 0, 0, 65535),
+        frameEncoding=frameEncoding,
     )
 
 
@@ -268,6 +272,9 @@ class PlcDebugManager:
                 return self._duplicateWrite(session, requestId, fingerprint)
             self._requireActive(session, context)
             device, start, dataType, count, values, words = _range(params, writing=command == "write")
+            span = count if dataType == "bit" else plcDeviceAddressSpan(device, count * plcWordsPerValue(dataType))
+            if session.endpoint.frameEncoding == "ascii" and start + span - 1 > 999999:
+                raise ValueError("ASCII address range must be within 0..999999")
             if command == "write":
                 if len(session.writes) >= MAX_WRITE_REQUESTS:
                     return self._reply(session, ok=False, code="E_PLC_REQUEST_LIMIT", message="write request limit reached; reconnect before writing again",

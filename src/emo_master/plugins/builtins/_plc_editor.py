@@ -27,7 +27,6 @@ from PySide2.QtWidgets import (
     QScrollArea,
     QSizePolicy,
     QSpinBox,
-    QSplitter,
     QTableWidget,
     QTableWidgetItem,
     QTabWidget,
@@ -38,6 +37,7 @@ from PySide2.QtWidgets import (
 
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.apps.designer.ui.param_form import SchemaParamForm, applyParameterLabel
+from emo_master.apps.designer.ui.plc_presentation import ADVANCED_FIELDS, FRAME_ENCODINGS, NUMBER_TYPES, plcSchema
 from emo_master.apps.designer.ui.widgets import WrapLabel, scrollContent
 from emo_master.core.contracts.communication import plcDeviceAddressSpan, plcWordsPerValue
 from emo_master.plugins.builtins._communication_operators import (
@@ -62,9 +62,39 @@ _ENDPOINT_FIELDS = (
     "monitoringTimer",
 )
 _ENDPOINT_SPECS = cast(dict[str, dict[str, Any]], PLC_READ_PARAM_SCHEMA["properties"])
-_STATES = {"connecting": "连接中", "connected": "已连接", "verified": "通信已验证",
-           "closed": "已断开", "error": "错误"}
+_STATES = {"connecting": "连接中", "connected": "TCP 已连接，通信格式待验证", "verified": "通信已验证",
+           "closed": "未连接 PLC", "error": "通信异常"}
 _COMMANDS = {"open": "连接", "read": "读取", "write": "写入", "set_write_enabled": "写入解锁"}
+
+
+class _PlcParamForm(SchemaParamForm):
+    def setSchema(self, schema, values):
+        expanded = getattr(self, "_advancedExpanded", False)
+        super().setSchema(plcSchema(schema), values)
+        self.advancedToggle = QToolButton()
+        self.advancedToggle.setObjectName("advancedParameters")
+        self.advancedToggle.setText("高级设置")
+        self.advancedToggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.advancedToggle.setCheckable(True)
+        basicCount = sum(name not in ADVANCED_FIELDS for name in self._controls)
+        self._layout.insertRow(basicCount, self.advancedToggle)
+        self.advancedToggle.toggled.connect(self._toggleAdvancedFields)
+        self.advancedToggle.setChecked(expanded)
+        self._toggleAdvancedFields(expanded)
+
+    def _toggleAdvancedFields(self, expanded):
+        self._advancedExpanded = expanded
+        self.advancedToggle.setArrowType(Qt.DownArrow if expanded else Qt.RightArrow)
+        for name in ADVANCED_FIELDS:
+            control = self._controls.get(name)
+            if control is not None:
+                control.setVisible(expanded)
+                self._layout.labelForField(control).setVisible(expanded)
+
+    def _showFieldError(self, name, message):
+        if message and name in ADVANCED_FIELDS:
+            self.advancedToggle.setChecked(True)
+        return super()._showFieldError(name, message)
 
 
 class _Cancellation(Event):
@@ -322,6 +352,7 @@ class PlcEditorController:
         self._loadingDebug = False
         self._pendingDraft: tuple[int, dict] | None = None
         self._disposed = False
+        self._lastStatusError = False
         self._valueType = "uint16"
         self._endpointControls: dict[str, Any] = {}
 
@@ -331,10 +362,11 @@ class PlcEditorController:
         self.tabs = requiredChild(rootWidget, QTabWidget, "plcTabs")
         self.paramsPage = requiredChild(rootWidget, QWidget, "paramsPage")
         self.runtimePage = requiredChild(rootWidget, QWidget, "runtimePage")
+        self.tabs.setTabText(self.tabs.indexOf(self.runtimePage), "PLC 通信测试")
         self.root.layout().setContentsMargins(0, 0, 0, 0)
         self.root.layout().setSpacing(0)
         self.paramsPage.layout().setContentsMargins(0, 0, 0, 0)
-        self.paramForm = SchemaParamForm()
+        self.paramForm = _PlcParamForm()
         self.paramForm.setWorkflowOptions(getattr(context, "workflowOptions", []))
         self.paramScroll = scrollContent(self.paramForm)
         self.paramsPage.layout().addWidget(self.paramScroll)
@@ -389,7 +421,7 @@ class PlcEditorController:
     def _parameterLabel(self, name: str, control: QWidget) -> QLabel:
         label = WrapLabel()
         # Debug controls include read parameters even in the write editor.
-        applyParameterLabel(label, control, name, PLC_READ_PARAM_SCHEMA)
+        applyParameterLabel(label, control, name, plcSchema(PLC_READ_PARAM_SCHEMA))
         return label
 
     def _buildRuntimePage(self) -> None:
@@ -426,10 +458,19 @@ class PlcEditorController:
         for button in (self.reloadButton, self.connectButton, self.disconnectButton):
             top.addWidget(button)
         runtimeLayout.addLayout(top)
-        self.statusLabel = WrapLabel("已断开 | 写入已锁定")
+        self.statusLabel = WrapLabel("未连接 PLC")
         self.statusLabel.setObjectName("plcDebugStatus")
         self.statusLabel.setWordWrap(True)
         runtimeLayout.addWidget(self.statusLabel)
+        protocolRow = QHBoxLayout()
+        self.frameEncodingCombo = QComboBox()
+        self.frameEncodingCombo.setObjectName("debugFrameEncoding")
+        for value, title in FRAME_ENCODINGS.items():
+            self.frameEncodingCombo.addItem(title, value)
+        self._endpointControls["frameEncoding"] = self.frameEncodingCombo
+        protocolRow.addWidget(self._parameterLabel("frameEncoding", self.frameEncodingCombo))
+        protocolRow.addWidget(self.frameEncodingCombo, 1)
+        runtimeLayout.addLayout(protocolRow)
         self.metadataLabel = WrapLabel("")
         self.metadataLabel.setObjectName("plcReplyMetadata")
         self.metadataLabel.setWordWrap(True)
@@ -458,7 +499,8 @@ class PlcEditorController:
         self.addressSpin.setMinimumWidth(120)
         self.dataTypeCombo = QComboBox()
         self.dataTypeCombo.setObjectName("debugDataType")
-        self.dataTypeCombo.addItems(_WORD_TYPES)
+        for value in _WORD_TYPES:
+            self.dataTypeCombo.addItem(NUMBER_TYPES[value], value)
         self.dataTypeCombo.setMinimumWidth(105)
         self.dataTypeCombo.setFixedHeight(28)
         self.countSpin = self._spin("debugCount", 1, 960, 1)
@@ -476,10 +518,10 @@ class PlcEditorController:
         actions.setSpacing(6)
         self.readButton = self._tool("readButton", "读取一次", "scan-line", self.read)
         self.writeButton = self._tool("writeButton", "写入当前值", "upload", self.write)
-        self.writeEnabledCheck = QCheckBox("允许写入")
+        self.writeEnabledCheck = QCheckBox("解锁本页手动写入")
         self.writeEnabledCheck.setObjectName("writeEnabledCheck")
-        self.writeEnabledCheck.setToolTip("Runtime 写入锁")
-        self.pollCheck = QCheckBox("轮询")
+        self.writeEnabledCheck.setToolTip("仅控制本页的手动写入，不影响算子调试或工作流；收起写入区或离开本页会重新锁定。")
+        self.pollCheck = QCheckBox("连续读取")
         self.pollCheck.setObjectName("pollCheck")
         self.pollIntervalSpin = self._spin("pollIntervalMs", 100, 60000, 500)
         self.pollIntervalSpin.setSuffix(" 毫秒")
@@ -488,29 +530,40 @@ class PlcEditorController:
         actions.addWidget(self.pollCheck)
         actions.addWidget(self.pollIntervalSpin)
         actions.addStretch(1)
-        actions.addWidget(self.writeEnabledCheck)
-        actions.addWidget(self.writeButton)
         runtimeLayout.addWidget(controls)
         runtimeLayout.addLayout(actions)
         layout = runtimeLayout
 
-        splitter = QSplitter(Qt.Horizontal)
-        splitter.setChildrenCollapsible(False)
         self.resultTable = self._table("readResultTable", ["地址", "类型", "值", "原始字", "更新时间"])
         self.resultTable.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
         self.writeTable = self._table("writeValuesTable", ["地址", "值"])
         self.receiptLabel = WrapLabel("待写入值")
         self.receiptLabel.setObjectName("writeReceipt")
-        for title, table in ((WrapLabel("读取 / 回读"), self.resultTable), (self.receiptLabel, self.writeTable)):
-            panel = QWidget()
-            panelLayout = QVBoxLayout(panel)
-            panelLayout.setContentsMargins(0, 0, 0, 0)
-            panelLayout.setSpacing(2)
-            panelLayout.addWidget(title)
-            panelLayout.addWidget(table, 1)
-            splitter.addWidget(panel)
-        splitter.setSizes([400, 300])
-        layout.addWidget(splitter, 1)
+        layout.addWidget(WrapLabel("读取结果 / 写后回读"))
+        layout.addWidget(self.resultTable, 1)
+        self.manualWriteToggle = QToolButton()
+        self.manualWriteToggle.setObjectName("manualWriteToggle")
+        self.manualWriteToggle.setText("手动写入 PLC")
+        self.manualWriteToggle.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+        self.manualWriteToggle.setArrowType(Qt.RightArrow)
+        self.manualWriteToggle.setCheckable(True)
+        layout.addWidget(self.manualWriteToggle, 0, Qt.AlignLeft)
+        self.manualWritePanel = QWidget()
+        self.manualWritePanel.setObjectName("manualWritePanel")
+        writeLayout = QVBoxLayout(self.manualWritePanel)
+        writeLayout.setContentsMargins(0, 0, 0, 0)
+        writeActions = QHBoxLayout()
+        writeActions.addWidget(self.writeEnabledCheck)
+        writeActions.addStretch(1)
+        writeActions.addWidget(self.writeButton)
+        writeLayout.addLayout(writeActions)
+        writeLayout.addWidget(self.writeTable)
+        layout.addWidget(self.manualWritePanel)
+        self.manualWritePanel.hide()
+        self.manualWriteToggle.toggled.connect(self._toggleManualWrite)
+        # A pending/unknown write receipt must remain visible after folding.
+        layout.addWidget(self.receiptLabel)
+        self.receiptLabel.hide()
         footer = QHBoxLayout()
         self.advancedButton = QToolButton()
         self.advancedButton.setText("高级连接设置")
@@ -564,6 +617,13 @@ class PlcEditorController:
         self.advancedScroll.setVisible(enabled)
         self.advancedButton.setArrowType(Qt.DownArrow if enabled else Qt.RightArrow)
 
+    def _toggleManualWrite(self, expanded: bool) -> None:
+        self.manualWriteToggle.setArrowType(Qt.DownArrow if expanded else Qt.RightArrow)
+        self.manualWritePanel.setVisible(expanded)
+        if not expanded:
+            self._writeLockChanged(False)
+        self._refreshControls()
+
     def loadParams(self, params: dict[str, object]) -> None:
         self.paramForm.setSchema(self.context.paramSchema, deepcopy(params))
         # setSchema replaces controls, so install the same owner on new fields.
@@ -585,7 +645,10 @@ class PlcEditorController:
             return {"code": "E_PARAM_INVALID", "message": message}
         operator = (PlcSlmpWriteOperator() if self.context.operatorId.endswith("slmp_write")
                     else PlcSlmpReadOperator())
-        return operator.validateParams(self.collectParams())
+        error = operator.validateParams(self.collectParams())
+        if error and any(name in error.get("message", "") for name in ADVANCED_FIELDS):
+            self.paramForm.advancedToggle.setChecked(True)
+        return error
 
     def onOpen(self) -> None:
         self._refreshLocation()
@@ -630,6 +693,9 @@ class PlcEditorController:
                     self._setStatus(str(error), error=True)
                     return
                 self._applyDraft(draft)
+            if not self._lastStatusError and self._operation is None:
+                self._setStatus("正在锁定本页手动写入" if self._safetyPending() else
+                                "连续读取已停止" if self._sessionId else "")
             self._refreshControls()
             return
         self._pausePolling()
@@ -637,11 +703,15 @@ class PlcEditorController:
         if self._operation is None or self._operation.name not in ("read", "write"):
             self._generation += 1
         self._writeEnabled = False
-        if not self._sessionId:
+        if not self._sessionId and not self._lastStatusError:
             self._state = "closed"
         if self._sessionId:
             self._startCleanup("lock", self._sessionId, self._runtimeId)
-        self._setStatus("运行调试已暂停")
+        if not self._lastStatusError:
+            if self._operation is not None and self._operation.name in ("read", "write"):
+                self._setStatus(_COMMANDS[self._operation.name] + "进行中，后续连续读取已停止")
+            else:
+                self._setStatus("连续读取已停止" if self._sessionId else "")
         self._refreshControls()
 
     def _refreshLocation(self) -> None:
@@ -650,7 +720,7 @@ class PlcEditorController:
             location = str(method()) if callable(method) else "不可用"
         except Exception as error:
             location = str(error)
-        self.locationLabel.setText("运行目标：" + location)
+        self.locationLabel.setText("通信执行位置：" + location)
 
     def reloadParameters(self) -> None:
         if self._disposed:
@@ -680,19 +750,23 @@ class PlcEditorController:
                 value = draft.get(name, default)
                 if isinstance(control, QLineEdit):
                     control.setText(str(value))
+                elif isinstance(control, QComboBox):
+                    control.setCurrentIndex(control.findData(value))
                 else:
                     control.setValue(int(value))
             self.deviceCombo.setCurrentText(str(draft.get("device", "D")).upper())
             self._deviceChanged()
-            self.dataTypeCombo.setCurrentText(str(draft.get("dataType", "uint16")))
+            typeIndex = self.dataTypeCombo.findData(str(draft.get("dataType", "uint16")))
+            self.dataTypeCombo.setCurrentIndex(max(0, typeIndex))
             self.addressSpin.setValue(int(draft.get("startAddress", 0)))
-            self.countSpin.setMaximum(960 // plcWordsPerValue(self.dataTypeCombo.currentText()))
+            self.countSpin.setMaximum(960 // plcWordsPerValue(self.dataTypeCombo.currentData()))
             values = draft.get("values", [])
             values = values if isinstance(values, list) else []
             self.countSpin.setValue(int(draft.get("count", len(values) or 1)))
             self._rebuildWriteTable(values)
             self.resultTable.setRowCount(0)
             self.receiptLabel.setText("待写入值")
+            self.receiptLabel.hide()
             self.receiptLabel.setStyleSheet("")
             self.receiptLabel.setToolTip("")
             self.metadataLabel.clear()
@@ -702,23 +776,24 @@ class PlcEditorController:
         self._refreshControls()
 
     def _deviceChanged(self, *_args) -> None:
-        previous = self.dataTypeCombo.currentText()
+        previous = self.dataTypeCombo.currentData()
         types = _WORD_TYPES if self.deviceCombo.currentText() == "D" else ("uint16", "int16", "bit")
         blocked = self.dataTypeCombo.blockSignals(True)
         self.dataTypeCombo.clear()
-        self.dataTypeCombo.addItems(types)
-        self.dataTypeCombo.setCurrentText(previous if previous in types else types[0])
+        for value in types:
+            self.dataTypeCombo.addItem(NUMBER_TYPES[value], value)
+        self.dataTypeCombo.setCurrentIndex(self.dataTypeCombo.findData(previous if previous in types else types[0]))
         self.dataTypeCombo.blockSignals(blocked)
         self._shapeChanged()
 
     def _shapeChanged(self, *_args) -> None:
         if self._loadingDebug:
             return
-        self.countSpin.setMaximum(960 // plcWordsPerValue(self.dataTypeCombo.currentText()))
+        self.countSpin.setMaximum(960 // plcWordsPerValue(self.dataTypeCombo.currentData()))
         self._rebuildWriteTable()
 
     def _rebuildWriteTable(self, values: list | None = None) -> None:
-        dataType = self.dataTypeCombo.currentText()
+        dataType = self.dataTypeCombo.currentData()
         if values is None:
             values = []
             if self._valueType == dataType:
@@ -773,11 +848,13 @@ class PlcEditorController:
     def _readParams(self) -> dict:
         device = self.deviceCombo.currentText()
         startAddress = self.addressSpin.value()
-        dataType = self.dataTypeCombo.currentText()
+        dataType = self.dataTypeCombo.currentData()
         count = self.countSpin.value()
         span = count if dataType == "bit" else plcDeviceAddressSpan(device, count * plcWordsPerValue(dataType))
         if startAddress + span - 1 > 0xFFFFFF:
             raise ValueError("请求的地址范围超出了 24 位设备地址空间")
+        if self.frameEncodingCombo.currentData() == "ascii" and startAddress + span - 1 > 999999:
+            raise ValueError("ASCII 的地址范围必须在 0..999999 内")
         return {"device": device, "startAddress": startAddress, "dataType": dataType, "count": count}
 
     def connect(self) -> None:
@@ -785,7 +862,10 @@ class PlcEditorController:
             return
         params = {}
         for name, control in self._endpointControls.items():
-            params[name] = control.text().strip() if isinstance(control, QLineEdit) else control.value()
+            if isinstance(control, QComboBox):
+                params[name] = control.currentData()
+            else:
+                params[name] = control.text().strip() if isinstance(control, QLineEdit) else control.value()
         if not params["host"]:
             self._setStatus("PLC 主机不能为空", error=True)
             return
@@ -828,7 +908,7 @@ class PlcEditorController:
             return
         if enabled:
             self._checkQuietly(self.writeEnabledCheck, self._writeEnabled)
-            if self._canCommand():
+            if self.manualWriteToggle.isChecked() and self._canCommand():
                 if self._writeLockFresh:
                     self._submit("set_write_enabled", {
                         "enabled": True, "lockGeneration": self._writeLockGeneration,
@@ -874,7 +954,7 @@ class PlcEditorController:
 
     def _canWrite(self) -> bool:
         operation = self._operation
-        return bool(self._active() and self._sessionId and self._writeEnabled
+        return bool(self._active() and self.manualWriteToggle.isChecked() and self._sessionId and self._writeEnabled
                     and not self._pendingWrite and not self._safetyPending()
                     and (operation is None or (operation.name == "read"
                          and operation.generation == self._generation and not operation.cancellation.is_set())))
@@ -953,6 +1033,7 @@ class PlcEditorController:
         self._resetSession("作业或 Runtime 已变更")
         self.resultTable.setRowCount(0)
         self.receiptLabel.setText("待写入值")
+        self.receiptLabel.hide()
         self.receiptLabel.setStyleSheet("")
         self.receiptLabel.setToolTip("")
         self.metadataLabel.clear()
@@ -1011,7 +1092,7 @@ class PlcEditorController:
             try:
                 self._acceptSessionReply(result.reply, updateWriteLock=cleanup.kind == "lock" or cleanup.writesEnabledAtStart)
                 if cleanup.kind == "lock":
-                    self._setStatus("写入已锁定")
+                    self._setStatus("本页手动写入已锁定")
             except Exception as error:
                 self._fail(str(error))
 
@@ -1141,7 +1222,7 @@ class PlcEditorController:
         stamp = QDateTime.fromMSecsSinceEpoch(timestampMs).toString("yyyy-MM-dd HH:mm:ss.zzz") if timestampMs else "-"
         for row, value in enumerate(values):
             self.resultTable.setItem(row, 0, QTableWidgetItem(addresses[row]))
-            self.resultTable.setItem(row, 1, QTableWidgetItem(dataType))
+            self.resultTable.setItem(row, 1, QTableWidgetItem(NUMBER_TYPES.get(dataType, dataType)))
             self.resultTable.setItem(row, 2, QTableWidgetItem(str(value)))
             raw = ("1" if value else "0") if dataType == "bit" else ", ".join(
                 str(word) for word in words[row * stride:(row + 1) * stride]
@@ -1153,10 +1234,12 @@ class PlcEditorController:
                 item.setToolTip(item.text())
 
     def _unknownWrite(self, message: str) -> None:
+        self.receiptLabel.show()
         self.receiptLabel.setText("结果未知 (unknown)：写入结果尚未确认。" + message)
         self.receiptLabel.setStyleSheet("color: #a05a00;")
 
     def _renderWrite(self, reply: Any) -> bool:
+        self.receiptLabel.show()
         try:
             payload = self._resultJson(reply)
             receipt = payload.get("receipt", {})
@@ -1186,14 +1269,15 @@ class PlcEditorController:
             return False
 
     def _setStatus(self, message: str, *, error: bool = False) -> None:
-        lock = "允许写入" if self._writeEnabled else "写入已锁定"
-        self.statusLabel.setText(f"{_STATES[self._state]} | {lock} | {message}")
+        self._lastStatusError = error
+        self.statusLabel.setText(" | ".join(part for part in (_STATES[self._state], message) if part))
         self.statusLabel.setToolTip(message)
         self.statusLabel.setStyleSheet("color: #b42318;" if error else "")
         method = getattr(self.context, "setError" if error else "setStatus", None)
         if callable(method):
-            summary = message.splitlines()[0][:32]
-            method(summary + ("..." if summary != message else ""))
+            status = message or _STATES[self._state]
+            summary = status.splitlines()[0][:32]
+            method(summary + ("..." if summary != status else ""))
         if error:
             self.context.log("WARN", "PLC 调试：" + message)
 
@@ -1208,6 +1292,6 @@ class PlcEditorController:
             control.setEnabled(active and not connected and not busy)
         self.readButton.setEnabled(active and connected and not busy)
         self.writeButton.setEnabled(self._canWrite())
-        self.writeEnabledCheck.setEnabled(active and connected and (not busy or self._writeEnabled))
+        self.writeEnabledCheck.setEnabled(active and self.manualWriteToggle.isChecked() and connected and (not busy or self._writeEnabled))
         self._checkQuietly(self.writeEnabledCheck, self._writeEnabled)
         self.pollCheck.setEnabled(active and connected)

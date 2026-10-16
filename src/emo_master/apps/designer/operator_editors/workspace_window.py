@@ -126,6 +126,10 @@ try:
             self._debugButton = QPushButton("算子调试")
             self._debugButton.setIcon(icon("play"))
             self._debugButton.setToolTip("调试当前未应用的参数")
+            if context.operatorId in {"communication.plc.slmp_read", "communication.plc.slmp_write"}:
+                self._debugButton.setText("调试当前算子")
+                action = "读取" if context.operatorId.endswith("slmp_read") else "写入"
+                self._debugButton.setToolTip(f"按参数页配置执行当前{action}算子；不运行整个工作流。通信测试页的手动写入锁不控制此入口。")
             self._debugButton.hide()
             self._debugButton.clicked.connect(self.openDebug)
             buttons.addWidget(self._debugButton)

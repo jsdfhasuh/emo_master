@@ -95,7 +95,8 @@ def testUnsupportedOperatorDoesNotStartWorker(runtime):
         editor.forceClose()
 
 
-def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_property):
+@pytest.mark.parametrize("encoding", ["binary", "ascii"])
+def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_property, encoding):
     from emo_master.apps.designer.operator_editors.ui_loader import loadUiBytes
     from emo_master.plugins.builtins._plc_editor import PlcEditorController
     from tests.runtime.plc_debug_server import PlcDebugServer
@@ -105,7 +106,7 @@ def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_prope
     payload = project(operatorId)
     before = deepcopy(payload)
     calls = []
-    with PlcDebugServer() as peer:
+    with PlcDebugServer(encoding=encoding) as peer:
         peer.words.update({800: 12, 801: 34, 802: 56})
         params = peer.params(device="D", startAddress=800, count=2, dataType="uint16", outputIndex=1, retryCount=0)
         context = EditorContext(key=EditorKey("draft", "main", "node"), operatorId=operatorId,
@@ -123,11 +124,30 @@ def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_prope
         dialog.show()
         try:
             wait(lambda: dialog.run.isEnabled())
+            assert editor._debugButton.text() == "调试当前算子"
+            assert dialog.windowTitle().startswith("当前算子调试 - ")
+            assert dialog.run.text() == "执行读取"
             assert peer.connections == 0
             QTest.mouseClick(dialog.run, Qt.LeftButton)
             wait(lambda: len(dialog.records) == 1 and dialog.run.isEnabled())
             assert dialog.records[0]["outputs"]["values"]["values"] == [12, 34]
             assert dialog.records[0]["outputs"]["numberValue"] == 34
+            assert all(request.ascii == (encoding == "ascii") for request in peer.requests)
+            assert ("ASCII" if encoding == "ascii" else "Binary") in dialog.plcSummary.text()
+            assert not dialog.resourceNotice.isVisible()
+            assert dialog.plcResults.isVisible()
+            assert dialog.plcResults.item(0, 0).text() == "D800"
+            assert dialog.plcResults.item(1, 1).text() == "34"
+            assert "执行成功" in dialog.resultLabel.text()
+            assert "读取完成" in dialog.logs.toPlainText()
+            assert "session.opened" not in dialog.logs.toPlainText()
+            dialog.rawLogs.setChecked(True)
+            assert "session.opened" in dialog.logs.toPlainText()
+            dialog.rawLogs.setChecked(False)
+            dialog.rawOutput.setChecked(True)
+            assert dialog.outputTree.isVisible() and not dialog.plcResults.isVisible()
+            dialog.rawOutput.setChecked(False)
+            assert dialog.exportSelection()["port"] == "values"
             controller.paramForm._controls["startAddress"].setValue(801)
             QTest.mouseClick(dialog.run, Qt.LeftButton)
             wait(lambda: len(dialog.records) == 2 and dialog.run.isEnabled())
@@ -136,6 +156,15 @@ def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_prope
             assert current["outputs"]["numberValue"] == 56
             assert current["rawParams"]["startAddress"] == 801
             assert previous["rawParams"]["startAddress"] == 800
+            dialog.versions.setCurrentIndex(1)
+            assert dialog.plcResults.item(0, 0).text() == "D800"
+            assert dialog.plcResults.item(0, 1).text() == "12"
+            dialog.outputPorts.setCurrentIndex(dialog.outputPorts.findText("选定数值"))
+            assert dialog.plcResults.item(0, 0).text() == "D801"
+            assert dialog.plcResults.item(0, 1).text() == "34"
+            assert dialog.exportSelection()["port"] == "numberValue"
+            assert dialog.exportSelection()["wire"] == {"inline": 34}
+            dialog.versions.setCurrentIndex(0)
             assert [request.start for request in peer.requests] == [800, 801]
             assert all(request.command == 0x0401 for request in peer.requests)
             assert dialog.tabs.currentIndex() == 1 and dialog.outputTree.topLevelItemCount() > 0
@@ -144,6 +173,14 @@ def testPlcReadDebugUsesCurrentCustomEditorDraft(runtime, tmp_path, record_prope
             capture = tmp_path / "plc-read-debug-result.png"
             assert dialog.grab().save(str(capture))
             record_property("screenshot", str(capture))
+            for page, name in ((2, "parameters"), (3, "logs")):
+                dialog.tabs.setCurrentIndex(page)
+                QApplication.processEvents()
+                assert dialog.grab().save(str(tmp_path / f"plc-debug-{name}.png"))
+            dialog.tabs.setCurrentIndex(1)
+            dialog.resize(640, 660)
+            QApplication.processEvents()
+            assert dialog.grab().save(str(tmp_path / "plc-debug-narrow.png"))
             QTest.mouseClick(dialog.end, Qt.LeftButton)
             wait(lambda: not isValid(dialog))
             assert not runtime.operatorDebugManager.ownsResources()

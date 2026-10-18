@@ -25,6 +25,9 @@ def brokenRuntime(tmp_path, missing=False):
 @pytest.mark.parametrize('missing', [False, True])
 def testNormalLookupUploadAndSameRevisionRecovery(tmp_path, missing):
     runtime, project, source, old = brokenRuntime(tmp_path, missing)
+    repairRoot = tmp_path / 'provided-original'
+    project.parent.rename(repairRoot)
+    project = repairRoot / project.name
     import grpc
     from emo_master.apps.runtime.main import createRuntimeServer
     from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceStub
@@ -81,7 +84,20 @@ def testPinnedCorruptObjectSurvivesRepairAndPublicCancelUntilReaderExits(tmp_pat
         client = RuntimeClient(runtimeService=runtime)
         snap = client.getOnlineProjectSnapshot()
         oldId = client.transferProjectResource(snap, 'lookup', 'LOOKUP', resource=snap['payload']['resources']['items']['image'])['transferId']
-        result = client.uploadProjectResources(snap, snap['payload'], project.parent, repairConfirmed=True)
+        from concurrent.futures import ThreadPoolExecutor
+        from threading import Barrier
+        barrier = Barrier(2)
+        def repair():
+            barrier.wait(timeout=5)
+            return client.uploadProjectResources(snap, snap['payload'], project.parent, repairConfirmed=True)
+        def cancelPinned():
+            barrier.wait(timeout=5)
+            with pytest.raises(Exception, match='pinned'):
+                client.transferProjectResource(snap, oldId, 'CANCEL')
+        with ThreadPoolExecutor(2) as pool:
+            repaired, cancelled = pool.submit(repair), pool.submit(cancelPinned)
+            result = repaired.result(timeout=10)
+            cancelled.result(timeout=10)
         assert old.exists() and old.read_bytes() == b'corrupt'
         assert materialized.read_bytes() == INPUT
         new = transfers.resolve(runtime.loadedDocument)['image']

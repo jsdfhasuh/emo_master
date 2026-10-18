@@ -17,8 +17,8 @@ from tests.runtime.runtime_test_utils import waitForTerminal
 from tests.runtime.test_device_production_outcomes import waitFor
 
 
-@pytest.mark.parametrize('portable', [False, True])
-def testDispatchCopyImportJoinPortsAndCombinedRun(tmp_path, monkeypatch, portable):
+@pytest.mark.parametrize('portable,newDevice', [(False, False), (True, False), (True, True)])
+def testDispatchCopyImportJoinPortsAndCombinedRun(tmp_path, monkeypatch, portable, newDevice):
     monkeypatch.setattr('emo_master.apps.designer.state.workflow_store.utc_now_iso', lambda: '2026-10-18T00:00:00Z')
     payload = dispatchProject()
     payload['runtime']['maxConcurrentJobs'] = 5
@@ -26,13 +26,25 @@ def testDispatchCopyImportJoinPortsAndCombinedRun(tmp_path, monkeypatch, portabl
     main['outputs'] = {'result': 'object'}
     next(n for n in main['nodes'] if n['nodeId'] == 'join')['outputPorts'] = dict(left='object', right='object')
     main['edges'].append(dict(fromNode='join', fromPort='left', toNode='output', toPort='result'))
+    if newDevice:
+        payload['resources']['siteBindings'] = [dict(field='serial', purpose='camera_serial', target=dict(
+            deviceId='camera', section='connection', parameterPath=['serial']))]
     store = WorkflowStore(payload)
     before = store.toPayload()
     package = buildWorkflowPackage(store, 'main', forInProjectCopy=not portable, sourceRoot=tmp_path)
     if portable:
         package = loadWorkflowPackage(writeWorkflowPackage(tmp_path / 'portable', package))
-    result = importWorkflowPackage(store, package, reuseVariableIds=not portable, deviceMapping={'camera': 'camera'}, targetRoot=tmp_path)
+    result = importWorkflowPackage(store, package, reuseVariableIds=not portable,
+                                   deviceMapping={'camera': None if newDevice else 'camera'}, targetRoot=tmp_path)
     assert store.toPayload()['workflows']['main'] == before['workflows']['main']
+    assert store.toPayload()['devices']['definitions']['camera'] == before['devices']['definitions']['camera']
+    if newDevice:
+        editable = ProjectDocument.model_validate(store.toPayload())
+        device = editable.devices.definitions[result.deviceIdMap['camera']]
+        assert not device.enabled and device.connection['serial'] == ''
+        importedDevice = store.devices['definitions'][result.deviceIdMap['camera']]
+        importedDevice['connection']['serial'] = 'IMPORTED-SIMULATION-ONLY'
+        importedDevice['enabled'] = True
     imported = store.get(result.rootWorkflowId)
     dispatch = next(n for n in imported.nodes if n['kind'] == 'dispatch')
     slots = {t['targetSlotId'] for t in dispatch['params']['targets']}

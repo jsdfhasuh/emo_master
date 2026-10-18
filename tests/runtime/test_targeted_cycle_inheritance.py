@@ -151,6 +151,13 @@ def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatc
         import cv2
         expected = cv2.GaussianBlur(images[0], (5, 5), 0) if derived else images[0]
         assert all(np.array_equal(value, expected) for value in images[1:])
+        if derived:
+            from emo_master.plugins.builtins._image_frame import defaultFrame
+            height, width = images[0].shape[:2]
+            frames = [json.loads(e.payloadJson)['outputs']['frame'] for r in records
+                      for e in runtime._eventsAfter(r.jobId, 0)
+                      if e.eventType == 'node.completed' and e.nodeId == 'blur']
+            assert frames == [defaultFrame(width, height).toPayload()]
         waitFor(lambda: not runtime.deviceManager.workers, timeout=15)
         assert not runtime.projectConfiguration.cycles and not runtime.projectConfiguration.childCycles
         assert not runtime.deviceManager.frames.frames

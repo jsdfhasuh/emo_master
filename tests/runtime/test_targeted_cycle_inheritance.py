@@ -62,10 +62,23 @@ def inheritedProject(*, join=True, derived=False):
     return p
 
 
-@pytest.mark.parametrize('join,derived', [(True, False), (False, False), (True, True)])
-def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatch, join, derived):
+@pytest.mark.parametrize('join,derived,depth', [(True, False, 2), (False, False, 2), (True, True, 2), (True, False, 3)])
+def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatch, join, derived, depth):
     path = tmp_path / 'project.json'
-    path.write_text(json.dumps(inheritedProject(join=join, derived=derived)), encoding='utf-8')
+    payload = inheritedProject(join=join, derived=derived)
+    if depth == 3:
+        payload['runtime']['maxConcurrentJobs'] = 4
+        payload['workflows']['tip'] = deepcopy(payload['workflows']['leaf'])
+        leaf = payload['workflows']['leaf']
+        leaf['nodes'].extend([
+            dict(nodeId='forwardTip', kind='dispatch', inputPorts=dict(image='image'), params=dict(targets=[
+                dict(targetSlotId='tip', workflowId='tip', inputs=dict(image='image'))])),
+            dict(nodeId='joinTip', kind='join', params=dict(dispatchNodeId='forwardTip'))])
+        leaf['edges'].extend([
+            dict(fromNode='input', fromPort='image', toNode='forwardTip', toPort='image'),
+            dict(fromNode='forwardTip', fromPort='token', toNode='joinTip', toPort='token')])
+        payload['workflowOrder'].append('tip')
+    path.write_text(json.dumps(payload), encoding='utf-8')
     runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     import grpc
     from emo_master.apps.runtime.main import createRuntimeServer
@@ -75,15 +88,22 @@ def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatc
     channel = grpc.insecure_channel(f'127.0.0.1:{port}')
     remote = RuntimeServiceStub(channel)
     entered, release = Event(), Event()
+    leafEntered, leafRelease = Event(), Event()
     invocations = []
+    images = []
     original = RunGroup.handle
     def gate(group, owner, action, payload):
         result = original(group, owner, action, payload)
         if action == 'dispatchNext' and result['status'] == 'RUNNING':
+            from emo_master.apps.runtime.devices.frame_store import copyFrame
             invocations.append(deepcopy(result))
+            images.append(copyFrame(next(iter(result['frames'].values()))))
             if result['targetSlotId'] == 'left':
                 entered.set()
                 assert release.wait(20)
+            elif depth == 3 and result['targetSlotId'] == 'leaf':
+                leafEntered.set()
+                assert leafRelease.wait(20)
         return result
     monkeypatch.setattr(RunGroup, 'handle', gate)
     try:
@@ -104,6 +124,16 @@ def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatc
         assert reply.ok, reply.message
         assert finish(runtime.projectConfiguration, 'update')['state'] == 'COMMITTED'
         release.set()
+        if depth == 3:
+            assert leafEntered.wait(20)
+            next(n for n in candidate['workflows']['body']['nodes'] if n['nodeId'] == 'value')['params']['value'] = 100
+            reply = remote.WriteProjectConfiguration(pb.ProjectConfigurationWriteRequest(request_id='update-r3',
+                expected_runtime_instance_id=runtime.runtimeInstanceId, expected_revision=2,
+                local_payload_json=json.dumps(candidate),
+                selected_paths=['/workflows/body/nodes/value/params/value']), timeout=10)
+            assert reply.ok, reply.message
+            assert finish(runtime.projectConfiguration, 'update-r3')['state'] == 'COMMITTED'
+            leafRelease.set()
         waitFor(lambda: all(r.isTerminal for r in runtime.jobRepository.all()), timeout=25)
         records = runtime.jobRepository.all()
         values = [json.loads(e.payloadJson) for r in records for e in runtime._eventsAfter(r.jobId, 0)
@@ -111,16 +141,22 @@ def testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame(tmp_path, monkeypatc
         assert values and {v['outputs']['value'] for v in values} == {1}, values
         assert all(r.status == 'COMPLETED' for r in records), records
         assert all(v['planRevision'] == 1 for v in values)
-        assert len(invocations) == 2
-        first, leaf = invocations
+        assert len(invocations) == depth
+        first, leaf = invocations[:2]
         assert leaf['cycleId'] == first['cycleId'] == values[0]['cycleId']
         assert leaf['planRevision'] == first['planRevision'] == 1
         assert (set(first['frames']) != set(leaf['frames'])) == derived
+        assert all(v['cycleId'] == first['cycleId'] and v['planRevision'] == 1 for v in invocations)
+        import numpy as np
+        import cv2
+        expected = cv2.GaussianBlur(images[0], (5, 5), 0) if derived else images[0]
+        assert all(np.array_equal(value, expected) for value in images[1:])
         waitFor(lambda: not runtime.deviceManager.workers, timeout=15)
         assert not runtime.projectConfiguration.cycles and not runtime.projectConfiguration.childCycles
         assert not runtime.deviceManager.frames.frames
     finally:
         release.set()
+        leafRelease.set()
         channel.close()
         server.stop(0).wait()
         runtime.close()

@@ -63,7 +63,8 @@ def testResourceReplacementPinsOldBytesAndInstallsNewBytes(runtime):
 def testResourceValidationFailureDoesNotCommitOrReplace(runtime):
     service, resource = runtime
     old = imagePath(service)
-    resource.write_bytes(b"unexpected replacement")
+    owned = service.projectResourceTransfers.resolve(service.loadedDocument)["image"]
+    owned.write_bytes(b"unexpected replacement")
     candidate = deepcopy(service.projectConfiguration.snapshot()["payload"])
     candidate["devices"]["definitions"]["camera"]["defaults"]["exposureUs"] = 12000
     service.projectConfiguration.start(dict(requestId="failure", expectedRuntimeInstanceId=service.runtimeInstanceId,
@@ -71,6 +72,18 @@ def testResourceValidationFailureDoesNotCommitOrReplace(runtime):
     assert finish(service.projectConfiguration, "failure")["state"] == "FAILED"
     assert service.projectConfiguration.snapshot()["documentRevision"] == 1
     assert imagePath(service) == old and old.exists()
+
+
+def testChangedSourceCannotAlterCommittedBytesOrBlockUnrelatedWrite(runtime):
+    service, resource = runtime
+    old = imagePath(service)
+    resource.write_bytes(b"unexpected external replacement")
+    candidate = deepcopy(service.projectConfiguration.snapshot()["payload"])
+    candidate["devices"]["definitions"]["camera"]["defaults"]["exposureUs"] = 12000
+    service.projectConfiguration.start(dict(requestId="source-independent", expectedRuntimeInstanceId=service.runtimeInstanceId,
+        expectedRevision=1, localPayload=candidate, selectedPaths=["/devices/definitions/camera/defaults/exposureUs"]))
+    assert finish(service.projectConfiguration, "source-independent")["state"] == "COMMITTED"
+    assert imagePath(service) == old and old.read_bytes() == b"immutable input resource"
 
 
 def testCancelledCopyDoesNotLeavePartialFile(runtime, tmp_path):

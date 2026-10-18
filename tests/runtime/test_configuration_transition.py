@@ -10,6 +10,34 @@ from tests.runtime.test_device_production_outcomes import waitFor
 from tests.runtime.test_project_configuration import finish
 
 
+def testExplicitIterationDrainStopsAtBoundaryWithoutWaitingForInfiniteRoot(tmp_path):
+    from tests.runtime.test_loop_cycle_configuration import loopProject
+    path = tmp_path / "project.json"
+    path.write_text(json.dumps(loopProject()), encoding="utf-8")
+    service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
+    try:
+        assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
+        started = service.StartJob(pb.StartJobRequest(workflow_id="main", inputs_json='{"count":0}'), None)
+        assert started.ok
+        previous = service.deviceManager.drivers["camera"]
+        waitFor(lambda: previous.sequence >= 3, timeout=15)
+        snapshot = service.projectConfiguration.snapshot()
+        candidate = deepcopy(snapshot["payload"])
+        candidate["devices"]["definitions"]["camera"]["connection"]["serial"] = "REPLACEMENT"
+        service.projectConfiguration.start(dict(requestId="iteration-drain", expectedRuntimeInstanceId=service.runtimeInstanceId,
+            expectedRevision=snapshot["documentRevision"], localPayload=candidate,
+            selectedPaths=["/devices/definitions/camera/connection/serial"], replacementPolicy="drainAffected"))
+        status = finish(service.projectConfiguration, "iteration-drain")
+        assert status["state"] == "COMMITTED", status
+        assert service.jobRepository.get(started.job_id).isTerminal
+        assert not service.projectConfiguration.cycles and not service.projectConfiguration.childCycles
+        assert not service.projectConfiguration.parkedOwners and not service.projectConfiguration.drainingOwners
+        assert service.deviceManager.drivers["camera"] is not previous
+        assert service.deviceManager.drivers["camera"].sequence == 0
+    finally:
+        service.close()
+
+
 @pytest.mark.parametrize("policy", ["stopAffected", "drainAffected"])
 def testExplicitTransitionOnlyStopsAffectedSyntheticJob(tmp_path, policy):
     payload = simulatedProject()

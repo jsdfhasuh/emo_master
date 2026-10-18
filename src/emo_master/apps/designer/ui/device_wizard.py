@@ -151,9 +151,10 @@ class SourceEditor(QWidget):
 
 
 class DeviceNodeDialog(QDialog):
-    def __init__(self, coordinator, node, requirements, parent=None, *, position=None):
+    def __init__(self, coordinator, node, requirements, parent=None, *, position=None, migrateLegacy=False):
         super().__init__(parent)
         self.c, self.node, self.requirements = coordinator, deepcopy(node), requirements
+        self.migrateLegacy = migrateLegacy and not node.get("deviceBindings")
         self.projectSignature = coordinator.session._signature()
         self.workflowId = coordinator.window.activeWorkflowId
         self.runtimeScope = self._runtimeScope()
@@ -256,7 +257,7 @@ class DeviceNodeDialog(QDialog):
     def _create(self, slot):
         declaration = self.types[self.requirements[slot]["deviceTypeId"]]
         initial = None
-        if self.actionFields is not None and not self.node.get("deviceBindings"):
+        if self.actionFields is not None and self.migrateLegacy:
             legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
             if declaration.deviceTypeId == "device.camera.huaray_imv" and legacy.get("waitMode") == "hardware":
                 legacy["captureTimeoutMs"] = 0
@@ -300,7 +301,7 @@ class DeviceNodeDialog(QDialog):
         definitions = {**self.c.session.workflows.devices.get("definitions", {}), **self.newDefinitions}
         declaration = self.types[definitions[key]["deviceTypeId"]]
         editorNode = self.node
-        if declaration.deviceTypeId == "device.camera.huaray_imv" and not self.node.get("deviceBindings"):
+        if declaration.deviceTypeId == "device.camera.huaray_imv" and getattr(self, "migrateLegacy", False):
             editorNode = deepcopy(self.node)
             legacy = applySchemaDefaults(self.node.get("paramSchema", {}), self.node.get("params", {}))
             if legacy.get("waitMode") == "hardware":
@@ -310,7 +311,7 @@ class DeviceNodeDialog(QDialog):
             for rule in declaration.parameterRules:
                 if rule.whenOverridden and any(legacy.get(key) != value for key, value in rule.requires.items()):
                     editorNode["deviceOverrides"][slot].pop(rule.present, None)
-        if self.actionFields is not None and not self.node.get("deviceBindings"):
+        if self.actionFields is not None and getattr(self, "migrateLegacy", False):
             try:
                 editorNode = migrateLegacySources(editorNode, slot, key, declaration, self.actionFields)
             except ValueError as error:
@@ -337,14 +338,14 @@ class DeviceNodeDialog(QDialog):
                     raise ValueError("请选择设备：" + slot)
                 draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key}
                 declaration = self.types[definitions[key]["deviceTypeId"]]
-                if self.actionFields is not None and not self.node.get("deviceBindings"):
+                if self.actionFields is not None and self.migrateLegacy:
                     draft = migrateLegacySources(draft, slot, key, declaration, self.actionFields)
                     if resourcePlan is not None:
                         resourcePlan, changes = migrateLegacyResourceTargets(resourcePlan, self.workflowId,
                             draft["nodeId"], key, declaration, self.actionFields)
                         moved.extend(changes)
                 draft = self.sources[slot].apply(draft, slot)
-            if (self.actionFields is not None and not self.node.get("deviceBindings")
+            if (self.actionFields is not None and self.migrateLegacy
                     and (self.node.get("params") or self.node.get("globalVariableBindings") or moved)):
                 old = self.node.get("params", {})
                 firstSlot = next(iter(self.requirements))

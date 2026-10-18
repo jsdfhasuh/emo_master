@@ -15,7 +15,7 @@ def requiresReplacement(before, after, declaration):
 
 
 class PreparedDevices:
-    def __init__(self, manager, definitions, identities, classes):
+    def __init__(self, manager, definitions, identities, classes, *, force=False):
         self.manager = manager
         self.definitions, self.identities = definitions, identities
         self.drivers, self.executors, self.lifecycles = {}, {}, {}
@@ -25,6 +25,8 @@ class PreparedDevices:
         self.changed.update(key for key in definitions.keys() & manager.definitions.keys()
                             if requiresReplacement(manager.definitions[key], definitions[key],
                                                    manager.types[definitions[key].deviceTypeId]))
+        if force:
+            self.changed = set(manager.definitions) | set(definitions)
         if manager.replacement is not None:
             raise DeviceError("E_DEVICE_BUSY", "another device replacement is pending")
         for key in self.changed:
@@ -46,7 +48,7 @@ class PreparedDevices:
                 self.drivers[key] = driver
                 lifecycle = DeviceLifecycle(definitions[key], driver)
                 # Explicit maintenance remains paused across a configuration write.
-                previous = manager.lifecycles.get(key)
+                previous = None if force else manager.lifecycles.get(key)
                 lifecycle.paused = bool(previous and previous.paused)
                 self.lifecycles[key] = lifecycle
                 self.executors[key] = DeviceExecutor(identities[key], idleAction=lifecycle.idleAction)

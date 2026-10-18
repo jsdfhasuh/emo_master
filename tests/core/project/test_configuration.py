@@ -135,6 +135,7 @@ def testLayoutAndLabelsDoNotChangeExecutionRevision():
     local["workflows"]["main"]["layout"] = {"nodePositions": {"capture": {"x": 5, "y": 8}}}
     local["workflows"]["main"]["name"] = "renamed"
     local["project"]["revision"] += 1
+    local["devices"]["definitions"]["camera"].update(name="Renamed camera", description="Display only")
     assert executionDigest(online) == executionDigest(local)
     local["devices"]["definitions"]["camera"]["defaults"]["gain"] = 1
     assert executionDigest(online) != executionDigest(local)

@@ -78,6 +78,6 @@ class DeviceMigrationDialog(QDialog):
             node["paramSchema"] = definition.get("paramSchema", {})
         requirements = {key: value.model_dump() if hasattr(value, "model_dump") else value
                         for key, value in self.requirements[node["operatorId"]].items()}
-        dialog = DeviceNodeDialog(self.c, node, requirements, self)
+        dialog = DeviceNodeDialog(self.c, node, requirements, self, migrateLegacy=True)
         dialog.exec_()
         self.refresh()

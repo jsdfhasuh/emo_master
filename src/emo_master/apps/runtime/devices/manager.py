@@ -50,11 +50,11 @@ class DeviceManager:
             identities[key], definitions[key], classes[key] = identity, definition, driver
         return definitions, identities, classes
 
-    def prepareReplacement(self, document):
+    def prepareReplacement(self, document, *, force=False):
         from .replacement import PreparedDevices
         definitions, identities, classes = self._validatedDefinitions(document)
         with self.lock:
-            return PreparedDevices(self, definitions, identities, classes)
+            return PreparedDevices(self, definitions, identities, classes, force=force)
 
     def _checkReplacement(self, deviceIds):
         if self.replacement is not None and self.replacement.changed.intersection(deviceIds):

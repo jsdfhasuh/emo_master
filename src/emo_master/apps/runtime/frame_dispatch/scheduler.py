@@ -1,11 +1,12 @@
 """Bounded invocation queues; worker death is terminal, never an implicit retry."""
-from collections import deque
+from collections import OrderedDict, deque
 from copy import deepcopy
 from dataclasses import dataclass, field
 from threading import RLock
 from uuid import uuid4
 
 from emo_master.apps.runtime.devices.executor import DeviceError
+from emo_master.core.project.snapshots import revisionOf
 
 
 def frameIds(value):
@@ -51,6 +52,7 @@ class RunGroup:
         self.sourceEnded = False
         self.stopping = False
         self.records = {}
+        self.joinReceipts = OrderedDict()
         self.deliveries = {}
         self.highWater = {}
         self.closedCycles = set()
@@ -89,7 +91,12 @@ class RunGroup:
         if sequence <= self.highWater.get(owner, 0):
             existing = self.records.get(key)
             if existing is None:
-                raise DeviceError("E_DISPATCH_EXPIRED", "delivery receipt expired; invocation will not replay")
+                receipt = self.joinReceipts.get(key)
+                if receipt is None:
+                    raise DeviceError("E_DISPATCH_EXPIRED", "delivery receipt expired; invocation will not replay")
+                if receipt["fingerprint"] != revisionOf(request):
+                    raise DeviceError("E_DISPATCH_IDENTITY", "duplicate delivery changed its payload")
+                return deepcopy(receipt["token"])
             if existing["request"] != request:
                 raise DeviceError("E_DISPATCH_IDENTITY", "duplicate delivery changed its payload")
             return deepcopy(existing["token"])
@@ -198,11 +205,22 @@ class RunGroup:
 
     def join(self, owner, request):
         token = request["token"]
-        record = next((r for r in self.records.values() if r["token"] == token and r["owner"] == owner), None)
-        if record is None:
-            raise DeviceError("E_DISPATCH_IDENTITY", "Join token is expired, foreign, or altered")
         if request["cycleId"] != token["cycleId"] or request["planRevision"] != token["planRevision"]:
             raise DeviceError("E_DISPATCH_IDENTITY", "Join belongs to another cycle/plan")
+        key = next((k for k, r in self.records.items() if r["token"] == token and r["owner"] == owner), None)
+        if key is None:
+            receipt = next((r for k, r in self.joinReceipts.items() if k[0] == owner and r["token"] == token), None)
+            if receipt is None:
+                raise DeviceError("E_DISPATCH_IDENTITY", "Join token is expired, foreign, or altered")
+            # Cached results own no images: the receiving source owns them until
+            # its cycle ends (or explicitly releases them).
+            for result in receipt["result"]["results"].values():
+                for frame in frameIds(result["outputs"]) if result.get("outputs") is not None else ():
+                    if frame not in self.devices.frames.frames:
+                        raise DeviceError("E_DISPATCH_EXPIRED", "Join output has been released")
+                    self.devices.frames.retain(frame, owner, owner)
+            return deepcopy(receipt["result"])
+        record = self.records[key]
         results = {self.deliveries[d]["targetSlotId"]: self.deliveries[d] for d in record["deliveries"]}
         if any(v["status"] in {"QUEUED", "RUNNING"} for v in results.values()):
             return dict(status="WAITING")
@@ -210,11 +228,28 @@ class RunGroup:
             if result.get("outputs") is not None:
                 for frame in frameIds(result["outputs"]):
                     self.devices.frames.retain(frame, result["deliveryId"], owner)
-        return dict(status="COMPLETED" if all(v["status"] == "COMPLETED" for v in results.values()) else "FAILED",
-                    results=deepcopy(results))
+        result = dict(status="COMPLETED" if all(v["status"] == "COMPLETED" for v in results.values()) else "FAILED",
+                      results={slot: deepcopy({k: v for k, v in value.items() if k not in {"inputs", "cycle"}})
+                               for slot, value in results.items()})
+        self.joinReceipts[key] = dict(token=deepcopy(token), fingerprint=revisionOf(record["request"]), result=result)
+        while len(self.joinReceipts) > 256:
+            self.joinReceipts.popitem(last=False)
+        self._retireRecord(key)
+        return deepcopy(result)
+
+    def _retireRecord(self, key):
+        record = self.records[key]
+        for delivery in record["deliveries"]:
+            self.devices.frames.retireOwner(delivery)
+            self.devices.configuration.retireOwner(delivery)
+            del self.deliveries[delivery]
+        del self.records[key]
 
     def endCycle(self, owner, cycleId):
         with self.lock:
+            for key, receipt in list(self.joinReceipts.items()):
+                if key[0] == owner and receipt["token"]["cycleId"] == cycleId:
+                    del self.joinReceipts[key]
             if any(r["owner"] == owner and r["token"]["cycleId"] == cycleId for r in self.records.values()):
                 self.closedCycles.add((owner, cycleId))
             self._expire()
@@ -226,11 +261,7 @@ class RunGroup:
                 continue
             if any(self.deliveries[d]["status"] in {"QUEUED", "RUNNING"} for d in record["deliveries"]):
                 continue
-            for delivery in record["deliveries"]:
-                self.devices.frames.retireOwner(delivery)
-                self.devices.configuration.retireOwner(delivery)
-                del self.deliveries[delivery]
-            del self.records[key]
+            self._retireRecord(key)
         self.closedCycles.intersection_update((r["owner"], r["token"]["cycleId"]) for r in self.records.values())
 
     def stop(self):
@@ -247,6 +278,9 @@ class RunGroup:
         """Only supervisor process retirement may release an interrupted reader."""
         with self.lock:
             self.retired.add(owner)
+            for key in list(self.joinReceipts):
+                if key[0] == owner:
+                    del self.joinReceipts[key]
             if owner == self.source:
                 self.sourceEnded = True
             for slot in self.slots.values():

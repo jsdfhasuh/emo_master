@@ -61,7 +61,7 @@ def testLegacyPlcWizardShowsActionOnlyAndRequiresExplicitMigration(ownedDesigner
     before = c.session.payload()
     draft = deepcopy(legacy)
     draft["paramSchema"] = descriptor.manifest.paramSchema
-    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window)
+    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window, migrateLegacy=True)
     waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
     assert set(dialog.params._controls) == set(descriptor.manifest.paramSchema["xDeviceActionFields"])
     combo = dialog.slots["plc"][0]

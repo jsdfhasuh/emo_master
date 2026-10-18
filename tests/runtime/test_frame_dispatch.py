@@ -269,6 +269,54 @@ def testJoinIdentityAndNgIsNormalCompletion(group):
     assert result["results"]["left"]["outputs"]["value"]["ok"]["value"] is False
 
 
+def testThreeHundredJoinsRetireDeliveriesAndBoundReplayReceipts(group):
+    group, request, frame = group
+    first = None
+    for sequence in range(1, 301):
+        current = dict(request, dispatchSequence=sequence)
+        token = group.submit("source", current)
+        if first is None:
+            first = token
+        finish(group, "left")
+        finish(group, "right")
+        joined = dict(token=token, cycleId=request["cycleId"], planRevision=request["planRevision"])
+        result = group.join("source", joined)
+        assert result["status"] == "COMPLETED"
+        assert group.join("source", joined) == result
+        assert group.submit("source", current) == token
+        assert not group.records and not group.deliveries
+        assert len(group.joinReceipts) <= 256
+        assert group.devices.frames.frames[frame["frameId"]].owners == {"source"}
+    with pytest.raises(DeviceError, match="expired"):
+        group.submit("source", request)
+    with pytest.raises(DeviceError, match="expired"):
+        group.join("source", dict(joined, token=first))
+    with pytest.raises(DeviceError, match="changed"):
+        group.submit("source", dict(current, inputs={}))
+    group.endCycle("source", request["cycleId"])
+    assert not group.joinReceipts
+
+
+def testCachedJoinNeverKeepsReleasedOutputAlive(group):
+    group, request, frame = group
+    token = group.submit("source", request)
+    for slot in ("left", "right"):
+        invocation = group.next(slot)
+        completion = {key: invocation[key] for key in (
+            "deliveryId", "invocationId", "cycleId", "planRevision", "dispatchId", "runGroupId")}
+        group.complete(slot, dict(completion, status="COMPLETED", outputs=dict(
+            kind="dict", value={"image": dict(kind="frame", value=frame)})))
+    joined = dict(token=token, cycleId=request["cycleId"], planRevision=request["planRevision"])
+    result = group.join("source", joined)
+    assert group.join("source", joined) == result
+    assert group.devices.frames.frames[frame["frameId"]].owners == {"source"}
+    group.devices.frames.release(frame["frameId"], "source")
+    assert not group.devices.frames.frames
+    with pytest.raises(DeviceError, match="released"):
+        group.join("source", joined)
+    assert not group.records and not group.deliveries
+
+
 def testCrashDoesNotReplayAndOtherConsumerRetainsFrame(group):
     group, request, frame = group
     group.submit("source", request)

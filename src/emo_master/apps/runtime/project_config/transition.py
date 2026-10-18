@@ -14,23 +14,26 @@ class DeviceTransition:
         self.communicationChanged = False
         self.communicationListening = False
         self.configuration = runtime.projectConfiguration
+        self.projectChanged = payload["project"]["projectId"] != self.configuration.current["payload"]["project"]["projectId"]
         _document, prepared = runtime._validateProjectConfiguration(payload, checkAdmission=False)
         if runtime._supportsCycleChange(payload):
             return
         if runtime.operatorDebugManager.ownsResources() or runtime.livePreviewManager.hasConfigurationSession():
             raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "close diagnostic sessions before automatic transition")
-        self.communicationChanged = prepared.communication != runtime.loadedDocument.communication
+        self.communicationChanged = self.projectChanged or runtime.loadedDocument is None or prepared.communication != runtime.loadedDocument.communication
         if self.communicationChanged:
             state = runtime.communicationManager.snapshot()
             if state.get("savePending"):
                 raise ConfigurationError("E_CONFIG_WRITER_BUSY", "communication save is pending")
-            self.communicationListening = state["state"] == "LISTENING"
+            self.communicationListening = not self.projectChanged and state["state"] == "LISTENING"
             self.communicationControlRevision = runtime.communicationManager.controlRevision
         manager = runtime.deviceManager
         definitions, _identities, _classes = manager._validatedDefinitions(prepared)
         changed = set(manager.definitions) ^ set(definitions)
         changed.update(key for key in definitions.keys() & manager.definitions.keys()
             if requiresReplacement(manager.definitions[key], definitions[key], manager.types[definitions[key].deviceTypeId]))
+        if self.projectChanged:
+            changed = set(manager.definitions) | set(definitions)
         with manager.lock:
             self.owners = {owner for owner, ids in manager.permissions.items() if changed.intersection(ids)}
             from .impact import affectedJobs
@@ -45,6 +48,7 @@ class DeviceTransition:
                 group = manager.dispatchGroups.get(owner)
                 if group is not None:
                     self.owners.update(group.members)
+            groups = {group for owner in self.owners if (group := manager.dispatchGroups.get(owner)) is not None}
             for key in changed & manager.lifecycles.keys():
                 lifecycle = manager.lifecycles[key]
                 if lifecycle.controlPending:
@@ -53,12 +57,22 @@ class DeviceTransition:
         try:
             deadline = time.monotonic() + 30
             if policy == "drainAffected":
+                # Consumers must finish inherited deliveries, including their
+                # own explicit iteration scopes. Only close source admission.
+                consumers = {slot.jobId for group in groups for slot in group.slots.values()}
                 with self.configuration.cycleLock:
-                    self.configuration.drainingOwners.update(self.owners)
+                    self.configuration.drainingOwners.update(self.owners - consumers)
                 while True:
                     self._check(deadline)
                     with self.configuration.cycleLock:
-                        busy = any(owner in self.configuration.cycles or owner in self.configuration.childCycles for owner in self.owners)
+                        busy = any(owner in self.configuration.childCycles
+                                   or owner in self.configuration.cycles and owner not in self.configuration.parkedOwners
+                                   for owner in self.owners)
+                    # Queued deliveries retain their cycle under delivery IDs,
+                    # not Job IDs. Do not stop consumers while those are pending.
+                    for group in groups:
+                        with group.lock:
+                            busy = busy or any(slot.queue or slot.active for slot in group.slots.values())
                     if not busy:
                         break
                     time.sleep(.02)
@@ -86,6 +100,7 @@ class DeviceTransition:
         except BaseException:
             with self.configuration.cycleLock:
                 self.configuration.drainingOwners.difference_update(self.owners)
+                self.configuration.parkedOwners.difference_update(self.owners)
             raise
 
     def _check(self, deadline):
@@ -97,11 +112,16 @@ class DeviceTransition:
     def finish(self, status):
         with self.configuration.cycleLock:
             self.configuration.drainingOwners.difference_update(self.owners)
+            self.configuration.parkedOwners.difference_update(self.owners)
         status["affectedJobs"] = sorted(self.owners)
         if status["state"] != "COMMITTED":
             status["transitionMessage"] = "stopped Jobs are not restarted; disconnected devices remain disconnected"
             return
         status["connections"] = {}
+        if getattr(self, "projectChanged", False):
+            status["transitionMessage"] = "project replaced; old connection intents and Jobs are not restarted"
+            self.configuration.store.recordTransition(status)
+            return
         if self.communicationChanged and self.communicationListening and self.runtime.loadedDocument.communication.enabled:
             try:
                 if self.runtime.communicationManager.controlRevision != self.communicationControlRevision:

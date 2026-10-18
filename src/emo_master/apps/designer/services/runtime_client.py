@@ -441,6 +441,7 @@ class RuntimeClient:
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.project.snapshots import verifyResources
         document = ProjectDocument.model_validate(payload)
+        snapshot = dict(snapshot, payload=payload)
         root = Path(root).resolve()
         paths = verifyResources(document, root.parent if root.is_file() else root)
         uploaded = []
@@ -465,8 +466,8 @@ class RuntimeClient:
                 result = self.transferProjectResource(snapshot, transferId, "COMMIT")
                 uploaded.append(dict(resourceId=key, **result))
             except Exception:
-                # A lost COMMIT reply may already be READY. CANCEL never deletes
-                # completed content, and no configuration write is retried here.
+                # A lost COMMIT reply may already be READY. Cancellation only
+                # removes unreferenced uploads; publication is never retried.
                 try:
                     self.transferProjectResource(snapshot, transferId, "CANCEL")
                 except Exception:
@@ -1230,6 +1231,7 @@ class RuntimeClient:
         startRequestId: str = "",
         expectedRuntimeInstanceId: str = "",
         inspectionSessionId: str = "",
+        expectedDocumentRevision: int = 0,
     ) -> object:
         policy = normalizeLegacySnapshotPolicy(legacySnapshotPolicy)
         if policy == "NONE":
@@ -1254,6 +1256,7 @@ class RuntimeClient:
             expected_runtime_instance_id=expectedRuntimeInstanceId,
             legacy_snapshot_policy=policy,
             inspection_session_id=inspectionSessionId,
+            expected_document_revision=expectedDocumentRevision,
         )
         return self._call("StartJob", request)
 

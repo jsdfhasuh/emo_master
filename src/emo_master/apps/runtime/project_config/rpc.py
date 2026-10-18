@@ -1,11 +1,12 @@
 """Online authority; hardware transitions require an explicit replacement policy."""
 import json
+import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _pb
-from emo_master.core.project.configuration import executionDigest, projectChanges
+from emo_master.core.project.configuration import executionDigest
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from .coordinator import ConfigurationCoordinator
@@ -22,6 +23,9 @@ class PreparedConfiguration:
     resourceRoot: Any = None
     installed: bool = False
     communicationToken: str = ""
+    resourcePin: str = ""
+    sourcePath: str = ""
+    projectChanged: bool = False
 
 
 class ProjectConfigurationRpcMixin:
@@ -52,12 +56,15 @@ class ProjectConfigurationRpcMixin:
         runtime.deviceManager.configuration = runtime.projectConfiguration
         current = runtime.projectConfiguration.current
         if current:
+            pin = ""
             try:
                 document = ProjectDocument.model_validate(current["payload"])
+                pin = runtime.projectResourceTransfers.pin(document, Path(current["sourcePath"]).parent)
                 from emo_master.core.project.runtime_directory import prepareRuntimeProject
                 document = prepareRuntimeProject(document, Path(current["sourcePath"]).parent,
                     runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes,
                     resourcePaths=runtime.projectResourceTransfers.resolve(document),
+                    allowMissingRoot=True,
                     protectedPaths=(*runtime.sqliteProtectedPaths(), runtime.operationalLogWriter.directory))
                 from threading import Event
                 from .resources import prepareResources
@@ -68,7 +75,7 @@ class ProjectConfigurationRpcMixin:
                 WorkflowCompiler(runtime.pluginScanResult.activeOperators,
                     deviceTypes=runtime.pluginScanResult.deviceTypes).compile(document, pluginRootPaths=runtime.pluginRootPaths)
                 runtime.deviceManager.load(document)
-                runtime.communicationManager.load(document, current["sourcePath"])
+                runtime.communicationManager.load(document, os.path.normcase(str(Path(current["sourcePath"]).resolve())))
                 runtime.loadedProjectFile = current["sourcePath"]
                 runtime.loadedProjectPath = str(Path(current["sourcePath"]).parent)
                 self._publishProjectConfiguration(document, current)
@@ -77,20 +84,43 @@ class ProjectConfigurationRpcMixin:
                     runtime.loadedProjectFile, document.project.projectId)
             except Exception as error:
                 runtime.onlineRecoveryError = str(error)
+            finally:
+                if pin:
+                    runtime.projectResourceTransfers.unpin(pin)
 
     def _transitionProjectConfiguration(self, payload, cancelled, policy):
         from .transition import DeviceTransition
         return DeviceTransition(self, payload, cancelled, policy)
+
+    def _configurationSourcePath(self, payload):
+        runtime: Any = self
+        current = runtime.projectConfiguration.current
+        if current["payload"]["project"]["projectId"] == payload["project"]["projectId"]:
+            return current["sourcePath"]
+        from hashlib import sha256
+        identity = sha256(payload["project"]["projectId"].encode("utf-8")).hexdigest()
+        return str(runtime.workspaceRoot.parent / "online-projects" / identity / "project.emoproj")
 
     def _validateProjectConfiguration(self, payload, *, checkAdmission=True):
         runtime: Any = self
         document = ProjectDocument.model_validate(payload)
         with runtime._projectStateLock:
             current = runtime.loadedDocument
-            if current is None or runtime.onlineRecoveryError:
-                raise ConfigurationError("E_CONFIG_RECOVERY", "online configuration is not execution-ready")
-            if document.project.projectId != current.project.projectId or document.schemaVersion != "2.6":
-                raise ConfigurationError("E_CONFIG_PROJECT", "online writes must retain project identity and schema 2.6")
+            recovering = bool(runtime.onlineRecoveryError or current is None)
+            if recovering:
+                snapshot = runtime.projectConfiguration.current
+                if snapshot is None:
+                    raise ConfigurationError("E_CONFIG_RECOVERY", "no online configuration to repair")
+                current = ProjectDocument.model_validate(snapshot["payload"])
+                if (runtime.deviceManager.workers or runtime.deviceManager.permissions
+                        or runtime.operatorDebugManager.ownsResources()
+                        or runtime.livePreviewManager.hasConfigurationSession()
+                        or any(not r.isTerminal or runtime.jobSupervisor.ownsJobResources(r.jobId)
+                               for r in runtime.jobRepository.all())):
+                    raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "retire execution before repairing online recovery")
+            projectChanged = document.project.projectId != current.project.projectId
+            if document.schemaVersion != "2.6":
+                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require schema 2.6")
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             with runtime.sqliteStore.connection() as connection:
                 ProjectGlobalVariables(runtime.sqliteStore, document.project.projectId,
@@ -98,13 +128,15 @@ class ProjectConfigurationRpcMixin:
             if checkAdmission:
                 self._checkConfigurationAdmission(payload)
         from emo_master.core.project.runtime_directory import prepareRuntimeProject
-        prepared = prepareRuntimeProject(document, Path(runtime.loadedProjectFile).parent,
+        prepared = prepareRuntimeProject(document, Path(self._configurationSourcePath(payload)).parent,
             runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes,
             resourcePaths=runtime.projectResourceTransfers.resolve(document),
+            allowMissingRoot=True,
             protectedPaths=(*runtime.sqliteProtectedPaths(), runtime.operationalLogWriter.directory))
         from .resources import retainDeviceInputs
-        prepared = retainDeviceInputs(prepared, current, runtime.pluginScanResult.deviceTypes,
-                                      runtime.workspaceRoot.parent / "configuration-resources")
+        if not recovering and not projectChanged:
+            prepared = retainDeviceInputs(prepared, current, runtime.pluginScanResult.deviceTypes,
+                                          runtime.workspaceRoot.parent / "configuration-resources")
         WorkflowCompiler(runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes).compile(
             prepared, pluginRootPaths=runtime.pluginRootPaths)
         if document.presentation != current.presentation or document.resources != current.resources:
@@ -123,7 +155,7 @@ class ProjectConfigurationRpcMixin:
         return document, prepared
 
     def _commitProjectState(self, connection, before, after):
-        if before.get("globalVariables") != after.get("globalVariables"):
+        if before["project"]["projectId"] != after["project"]["projectId"] or before.get("globalVariables") != after.get("globalVariables"):
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             runtime: Any = self
             ProjectGlobalVariables(runtime.sqliteStore, after["project"]["projectId"],
@@ -131,32 +163,57 @@ class ProjectConfigurationRpcMixin:
 
     def _prepareProjectConfiguration(self, payload, cancelled):
         runtime: Any = self
+        document = ProjectDocument.model_validate(payload)
+        sourcePath = self._configurationSourcePath(payload)
+        if sourcePath != runtime.projectConfiguration.current["sourcePath"]:
+            Path(sourcePath).parent.mkdir(parents=True, exist_ok=True)
+        pin = runtime.projectResourceTransfers.pin(document,
+            Path(sourcePath).parent, cancelled=cancelled)
+        try:
+            prepared = self._preparePinnedProjectConfiguration(payload, cancelled)
+            prepared.resourcePin = pin
+            prepared.sourcePath = sourcePath
+            return prepared
+        except BaseException:
+            runtime.projectResourceTransfers.unpin(pin)
+            raise
+
+    def _preparePinnedProjectConfiguration(self, payload, cancelled):
+        runtime: Any = self
         document, prepared = self._validateProjectConfiguration(payload)
         if cancelled.is_set():
             raise ConfigurationError("E_CONFIG_CANCELLED", "configuration preparation cancelled")
         from .resources import prepareResources, discardResources
         root = runtime.workspaceRoot.parent / "configuration-resources"
+        projectChanged = document.project.projectId != runtime.projectConfiguration.current["payload"]["project"]["projectId"]
         self._reclaimConfigurationResources()
         prepared, resources = prepareResources(prepared, runtime.pluginScanResult.activeOperators,
-            runtime.pluginScanResult.deviceTypes, root, cancelled, previous=runtime.loadedDocument,
+            runtime.pluginScanResult.deviceTypes, root, cancelled, previous=None if projectChanged else runtime.loadedDocument,
             raw=document, previousRaw=ProjectDocument.model_validate(runtime.projectConfiguration.current["payload"]),
             journal=runtime.configurationResourceJournal)
         token = ""
         try:
-            if document.communication != runtime.loadedDocument.communication:
+            if projectChanged or runtime.onlineRecoveryError or runtime.loadedDocument is None or document.communication != runtime.loadedDocument.communication:
                 from uuid import uuid4
                 reserved = uuid4().hex
                 runtime.communicationManager.prepareReplacement(reserved)
                 token = reserved
-            adapters = runtime.deviceManager.prepareReplacement(prepared)
+            adapters = runtime.deviceManager.prepareReplacement(prepared, force=True) if projectChanged else runtime.deviceManager.prepareReplacement(prepared)
         except BaseException:
             if token:
                 runtime.communicationManager.abortDisableSave(token)
             discardResources(resources, root, journal=runtime.configurationResourceJournal)
             raise
-        return PreparedConfiguration(prepared, adapters, resources, root, communicationToken=token)
+        return PreparedConfiguration(prepared, adapters, resources, root, communicationToken=token, projectChanged=projectChanged)
 
     def _discardProjectConfiguration(self, prepared):
+        runtime: Any = self
+        try:
+            self._discardPreparedProjectConfiguration(prepared)
+        finally:
+            runtime.projectResourceTransfers.unpin(prepared.resourcePin)
+
+    def _discardPreparedProjectConfiguration(self, prepared):
         runtime: Any = self
         if prepared.communicationToken:
             runtime.communicationManager.abortDisableSave(prepared.communicationToken)
@@ -240,35 +297,22 @@ class ProjectConfigurationRpcMixin:
         return self._supportsCycleChange(candidate)
 
     def _supportsCycleChange(self, payload):
-        from emo_master.core.project.configuration import executionPayload
+        from copy import deepcopy
+        from emo_master.core.project.configuration import applyCycleParameters, applyDeviceCycleParameters, executionDigest
         runtime: Any = self
         current = runtime.projectConfiguration.current["payload"]
-        for change in projectChanges(executionPayload(current), executionPayload(payload)):
-            parts = change["parts"]
-            if (parts[0] in {"project", "workflowOrder"}
-                    or len(parts) >= 3 and parts[0] == "workflows" and parts[2] in {"layout", "name"}
-                    or len(parts) >= 5 and parts[0] == "workflows" and parts[2] == "nodes" and parts[4] == "displayName"):
-                continue
-            if len(parts) >= 5 and parts[:2] == ("devices", "definitions") and parts[3] == "defaults":
-                definition = runtime.loadedDocument.devices.definitions[parts[2]]
-                declaration = runtime.pluginScanResult.deviceTypes[definition.deviceTypeId]
-                if ".".join(parts[4:]) in declaration.nextCyclePaths:
-                    continue
-            if len(parts) >= 6 and parts[0] == "workflows" and parts[2] == "nodes" and parts[4] == "params":
-                workflow = runtime.loadedDocument.workflows[parts[1]]
-                node = next((node for node in workflow.nodes if node.nodeId == parts[3]), None)
-                descriptor = runtime.pluginScanResult.activeOperators.get(node.operatorId) if node else None
-                if descriptor and ".".join(parts[5:]) in descriptor.manifest.nextCycleParameterPaths:
-                    continue
-            return False
-        return True
+        projected = deepcopy(current)
+        applyDeviceCycleParameters(projected, payload, runtime.pluginScanResult.deviceTypes)
+        applyCycleParameters(projected, payload, runtime.pluginScanResult.activeOperators)
+        return executionDigest(projected) == executionDigest(payload)
 
     def _publishProjectConfiguration(self, document, receipt):
         runtime: Any = self
         if isinstance(document, PreparedConfiguration):
             if document.communicationToken:
                 runtime.communicationManager.configure(document.document.project.projectId,
-                    runtime.communicationManager.projectKey, document.document.communication,
+                    ("" if document.projectChanged else runtime.communicationManager.projectKey) or os.path.normcase(str(Path(
+                        runtime.projectConfiguration.current["sourcePath"]).resolve())), document.document.communication,
                     saveToken=document.communicationToken)
                 document.communicationToken = ""
             document.devices.install()
@@ -279,6 +323,10 @@ class ProjectConfigurationRpcMixin:
         from copy import deepcopy
         runtime.loadedPayload = deepcopy(runtime.projectConfiguration.current["payload"])
         runtime.loadedProjectId = document.project.projectId
+        runtime.loadedProjectFile = runtime.projectConfiguration.current["sourcePath"]
+        runtime.loadedProjectPath = str(Path(runtime.loadedProjectFile).parent)
+        runtime._loadedProjectPreviewKey = runtime.previewAssetStore.projectKey(
+            runtime.loadedProjectFile, document.project.projectId)
         with runtime.deviceManager.lock:
             runtime.deviceManager.definitions = {
                 key: runtime.pluginScanResult.deviceTypes[value.deviceTypeId].validateDefinition(value)
@@ -290,6 +338,7 @@ class ProjectConfigurationRpcMixin:
         runtime.jobSupervisor.maxConcurrentJobs = document.runtime.maxConcurrentJobs
         runtime.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
         runtime.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
+        runtime.onlineRecoveryError = ""
 
     @staticmethod
     def _configurationReply(action):
@@ -306,6 +355,7 @@ class ProjectConfigurationRpcMixin:
                 raise ConfigurationError("E_CONFIG_PROJECT", "Runtime contains a different project")
             result["recoveryError"] = runtime.onlineRecoveryError or runtime.projectConfiguration.publicationError
             result["retainedResourceCount"] = len(runtime.configurationResourceJournal.retainedAfterCrash())
+            result["versionedStart"] = True
             return result
         return self._configurationReply(snapshot)
 
@@ -314,10 +364,11 @@ class ProjectConfigurationRpcMixin:
             runtime: Any = self
             current = runtime.projectConfiguration.snapshot()
             projectId = current["payload"]["project"]["projectId"]
-            if request.project_id and request.project_id != projectId:
-                raise ConfigurationError("E_CONFIG_PROJECT", "Runtime contains a different project")
             store = runtime.projectConfiguration.store
             snapshot = store.historicalSnapshot(request.document_revision) if request.document_revision else current
+            projectId = snapshot["payload"]["project"]["projectId"]
+            if request.project_id and request.project_id != projectId:
+                raise ConfigurationError("E_CONFIG_PROJECT", "snapshot belongs to a different project")
             jobs = [record for record in runtime.jobRepository.all() if record.projectId == projectId]
             selected = next((record for record in jobs if record.jobId == request.job_id), None)
             if request.job_id and selected is None:
@@ -341,7 +392,7 @@ class ProjectConfigurationRpcMixin:
                 for node in workflow.nodes:
                     inputs, outputs = compiler.nodePortDefinitions(document, key, node)
                     ports[key][node.nodeId] = dict(inputs=inputs, outputs=outputs)
-            return dict(snapshot=snapshot, history=store.history(), runtimeInstanceId=runtime.runtimeInstanceId,
+            return dict(snapshot=snapshot, history=store.history(projectId), runtimeInstanceId=runtime.runtimeInstanceId,
                 jobs=[dict(jobId=r.jobId, workflowId=r.workflowId, status=r.status) for r in jobs[-100:]],
                 events=events[-200:], ports=ports, readOnly=True)
         return self._configurationReply(read)
@@ -374,12 +425,14 @@ class ProjectConfigurationRpcMixin:
                 active = [r.jobId for r in runtime.jobRepository.all() if r.jobId in affected
                           and (not r.isTerminal or runtime.jobSupervisor.ownsJobResources(r.jobId))]
                 before, after = runtime.deviceManager.definitions, prepared.devices.definitions
+                projectChanged = candidate["project"]["projectId"] != runtime.projectConfiguration.current["payload"]["project"]["projectId"]
                 disconnect = [key for key, lifecycle in runtime.deviceManager.lifecycles.items() if lifecycle.connected
-                    and (key not in after or requiresReplacement(before[key], after[key],
+                    and (projectChanged or key not in after or requiresReplacement(before[key], after[key],
                         runtime.pluginScanResult.deviceTypes[after[key].deviceTypeId]))]
                 return dict(candidate=candidate, cycleSafe=self._supportsCycleChange(candidate),
                     affectedJobs=sorted(active), disconnectDevices=sorted(disconnect),
-                    communicationRestart=prepared.communication != runtime.loadedDocument.communication
+                    projectChanged=projectChanged,
+                    communicationRestart=(projectChanged or runtime.loadedDocument is None or prepared.communication != runtime.loadedDocument.communication)
                         and runtime.communicationManager.state == "LISTENING")
         return self._configurationReply(validate)
 
@@ -413,8 +466,8 @@ class ProjectConfigurationRpcMixin:
                 if runtime._closing or request.runtime_instance_id != runtime.runtimeInstanceId:
                     raise ConfigurationError("E_CONFIG_INSTANCE", "Runtime changed or is closing")
                 current = runtime.projectConfiguration.current
-                if current is None or request.project_id != current["payload"]["project"]["projectId"]:
-                    raise ConfigurationError("E_CONFIG_PROJECT", "resource upload requires the current online project")
+                if current is None or not request.project_id or len(request.project_id) > 160:
+                    raise ConfigurationError("E_CONFIG_PROJECT", "resource upload requires an online authority and a bounded candidate project ID")
                 if context is not None and not context.is_active():
                     raise ConfigurationError("E_CONFIG_CANCELLED", "resource transfer cancelled")
             return runtime.projectResourceTransfers.execute(request)

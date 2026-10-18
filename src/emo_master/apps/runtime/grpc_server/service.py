@@ -245,6 +245,14 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
+        pins = []
+        try:
+            return self._loadInitialProject(request, context, pins)
+        finally:
+            for token in pins:
+                self.projectResourceTransfers.unpin(token)
+
+    def _loadInitialProject(self, request, context, pins):
         _ = context
         if self.projectConfiguration.current is not None:
             return runtime_pb2.LoadProjectReply(ok=False, status="FAILED",
@@ -286,9 +294,12 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             authoritativePayload = document.model_dump(mode="json")
             if self.productionMode or document.schemaVersion == "2.6":
                 from emo_master.core.project.runtime_directory import prepareRuntimeProject
+                if document.schemaVersion == "2.6":
+                    pins.append(self.projectResourceTransfers.pin(document, projectFile.parent))
                 document = prepareRuntimeProject(document, projectFile.parent,
                     self.pluginScanResult.activeOperators,
                     deviceTypes=self.pluginScanResult.deviceTypes,
+                    resourcePaths=self.projectResourceTransfers.resolve(document),
                     protectedPaths=(*self.sqliteProtectedPaths(), self.operationalLogWriter.directory))
                 if document.schemaVersion == "2.6":
                     from threading import Event
@@ -413,6 +424,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 ("project_id", ""), ("workflow_id", ""), ("inputs_json", ""),
                 ("capture_presentation", False))}
             arguments["legacy_snapshot_policy"] = policy
+            if getattr(request, "expected_document_revision", 0):
+                arguments["expected_document_revision"] = request.expected_document_revision
             inspectionId = str(getattr(request, "inspection_session_id", ""))
             if inspectionId:
                 arguments["inspection_session_id"] = inspectionId
@@ -476,6 +489,12 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     def _startJob(self, request, context):
         _ = context
+        expected = getattr(request, "expected_document_revision", 0)
+        if expected and (self.projectConfiguration.current is None
+                         or expected != self.projectConfiguration.current["documentRevision"]
+                         or request.expected_runtime_instance_id != self.runtimeInstanceId):
+            return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
+                message="E_CONFIG_CONFLICT: online snapshot changed; compare again before starting")
         if (self.onlineRecoveryError or self.projectConfiguration.active or self.projectConfiguration.closed
                 or self.projectConfiguration.publicationError):
             return runtime_pb2.StartJobReply(ok=False, status="REJECTED",

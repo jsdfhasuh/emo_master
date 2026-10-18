@@ -15,6 +15,52 @@ from tests.runtime.test_managed_imv import ROOT, cameraProject, definition
 from tests.designer.test_device_workspace import waitUntil
 
 
+def testNewImvDropInheritsSelectedDeviceThroughFinishAndSave(ownedDesignerWindow, tmp_path, monkeypatch):
+    import json
+    scan = PluginRegistry("0.6.1").scan(ROOT)
+    manifest = scan.activeOperators["vision.io.huaray_camera"].manifest
+    requirements = {manifest.operatorId: {"camera": {"deviceTypeId": "device.camera.huaray_imv"}}}
+    client = SimpleNamespace(listOperators=lambda: [], listDeviceTypes=lambda: (scan.deviceTypes, requirements, {}))
+    window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / "ui.ini"), QSettings.IniFormat))
+    payload = cameraProject()
+    payload["devices"]["definitions"]["camera"]["defaults"].update(
+        triggerMode="software", exposureMode="manual", exposureUs=8000)
+    path = tmp_path / "project.emoproj"
+    saveProject(path, payload)
+    assert window.loadProjectDirectory(str(path), confirmed=True)
+    c = window.pageCoordinator
+    c.sync()
+    before = c.session.payload()
+    def complete(dialog):
+        waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
+        combo = dialog.slots["camera"][0]
+        combo.setCurrentIndex(combo.findData("camera"))
+        assert all(row[0].currentData() == "inherit" for row in dialog.sources["camera"].rows.values())
+        dialog.buttons.button(QDialogButtonBox.Ok).click()
+        assert dialog.result() == dialog.Accepted, dialog.error.text()
+        return dialog.result()
+    monkeypatch.setattr(DeviceNodeDialog, "exec_", complete)
+    question = QMessageBox.question
+    def noMigration(*args):
+        assert args[1] != "确认设备迁移", "new node must not prompt legacy migration"
+        return question(*args)
+    monkeypatch.setattr(QMessageBox, "question", noMigration)
+    drop = dict(operatorId=manifest.operatorId, displayName="New camera", paramSchema=manifest.paramSchema,
+                inputPorts={}, outputPorts={}, deviceRequirements=requirements[manifest.operatorId], deviceBindingSince="2.6")
+    window.addNodeFromOperatorDrop(drop, 160, 240)
+    nodes = c.session.payload()["workflows"]["main"]["nodes"]
+    oldIds = {n["nodeId"] for n in before["workflows"]["main"]["nodes"]}
+    node = next(n for n in nodes if n["nodeId"] not in oldIds)
+    assert node["deviceBindings"]["camera"]["deviceId"] == "camera"
+    assert not node.get("deviceOverrides") and not node.get("deviceValueBindings")
+    saved = tmp_path / "saved.emoproj"
+    saveProject(saved, c.session.payload())
+    restored = json.loads(saved.read_text(encoding="utf-8"))
+    restoredNode = next(n for n in restored["workflows"]["main"]["nodes"] if n["nodeId"] == node["nodeId"])
+    assert not restoredNode.get("deviceOverrides")
+    assert restored["devices"] == c.session.payload()["devices"]
+
+
 def testCameraDiagnosticsOpenWithoutHardwareAndConfirmEveryCapture(monkeypatch):
     d = definition()
     calls = []
@@ -61,7 +107,7 @@ def testCameraWizardPreservesLegacyKeepAsExplicitOverride(ownedDesignerWindow, t
     before = c.session.payload()
     draft = deepcopy(legacy)
     draft["paramSchema"] = descriptor.manifest.paramSchema
-    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window)
+    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window, migrateLegacy=True)
     dialog.show()
     waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
     combo = dialog.slots["camera"][0]
@@ -110,7 +156,7 @@ def testCameraMigrationMovesVariableAndSiteTargetsInOneUndo(ownedDesignerWindow,
     before, disk = c.session.payload(), path.read_bytes()
     draft = deepcopy(legacy)
     draft["paramSchema"] = descriptor.manifest.paramSchema
-    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window)
+    dialog = DeviceNodeDialog(c, draft, requirements[draft["operatorId"]], window, migrateLegacy=True)
     waitUntil(lambda: dialog.buttons.button(QDialogButtonBox.Ok).isEnabled())
     combo = dialog.slots["camera"][0]
     combo.setCurrentIndex(combo.findData("camera"))

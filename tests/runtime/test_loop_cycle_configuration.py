@@ -54,6 +54,40 @@ def testCancelledCycleAdmissionDoesNotAllocateLease(tmp_path):
         c.close()
 
 
+def testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel(tmp_path):
+    from threading import Thread
+    c = authority(tmp_path)
+    cancelled = Event()
+    errors = []
+    try:
+        root = c.beginCycle("job", 1)
+        outer = c.beginCycle("job", 1, parentCycleId=root["cycleId"])
+        c.drainingOwners.add("job")
+        inner = c.beginCycle("job", 1, parentCycleId=outer["cycleId"])
+        assert not c.parkedOwners
+        c.endCycle("job", inner["cycleId"])
+        c.endCycle("job", outer["cycleId"])
+        def begin():
+            try:
+                c.beginCycle("job", 1, cancelled.is_set, parentCycleId=root["cycleId"])
+            except ConfigurationError as error:
+                errors.append(error.code)
+        thread = Thread(target=begin)
+        thread.start()
+        deadline = time.monotonic() + 3
+        while "job" not in c.parkedOwners and time.monotonic() < deadline:
+            time.sleep(.01)
+        assert "job" in c.parkedOwners and not c.childCycles
+        cancelled.set()
+        thread.join(3)
+        assert not thread.is_alive() and errors == ["E_CONFIG_NOT_READY"]
+        c.retireOwner("job")
+        assert not c.parkedOwners
+    finally:
+        cancelled.set()
+        c.close()
+
+
 def testIterationRestoresOuterCompiledPlanAndReleasesOnException(tmp_path):
     c = authority(tmp_path)
     document = ProjectDocument.model_validate(c.snapshot()["payload"])

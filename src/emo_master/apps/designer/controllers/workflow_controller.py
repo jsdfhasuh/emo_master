@@ -75,10 +75,10 @@ class WorkflowController:
         return self.buildPayload(projectName)
 
     def exportWorkflowPackage(
-        self, workflowId: str, filePath: str | Path
+        self, workflowId: str, filePath: str | Path, *, sourceRoot: Path | None = None,
     ) -> WorkflowPackageExportResult:
         self.captureActiveWorkflow()
-        document = buildWorkflowPackage(self.workflowStore, workflowId)
+        document = buildWorkflowPackage(self.workflowStore, workflowId, sourceRoot=sourceRoot)
         packagePath = writeWorkflowPackage(filePath, document)
         return WorkflowPackageExportResult(
             packagePath=packagePath,
@@ -106,6 +106,7 @@ class WorkflowController:
         *, deviceMapping: dict[str, str | None] | None = None,
         expectedFingerprint: str | None = None,
         expectedTargetFingerprint: str | None = None,
+        targetRoot: Path | None = None,
     ) -> WorkflowPackageImportResult:
         document = loadWorkflowPackage(filePath)
         workingStore = self._capturedWorkflowStoreCopy()
@@ -116,6 +117,7 @@ class WorkflowController:
             deviceMapping=deviceMapping,
             expectedFingerprint=expectedFingerprint,
             expectedTargetFingerprint=expectedTargetFingerprint,
+            targetRoot=targetRoot,
         )
         replaceWorkflowStoreState(self.workflowStore, workingStore)
         self.lastInterfaceRefreshReport = self._refreshWorkflowReferences()

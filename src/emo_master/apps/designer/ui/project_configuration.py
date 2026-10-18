@@ -9,7 +9,7 @@ from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox)
 
-from emo_master.core.project.configuration import projectChanges, executionDigest, requiredProjectChanges, changeCategory
+from emo_master.core.project.configuration import projectChanges, requiredProjectChanges, changeCategory
 
 
 class ProjectConfigurationDialog(QDialog):
@@ -70,7 +70,7 @@ class ProjectConfigurationDialog(QDialog):
         self.runButton = QPushButton("运行在线版本") if allowRun else None
         if self.runButton:
             layout.addWidget(self.runButton)
-            self.runButton.clicked.connect(self.accept)
+            self.runButton.clicked.connect(self.runOnline)
         self.refreshButton.clicked.connect(self.refresh)
         self.readButton.clicked.connect(self.readBack)
         self.validateButton.clicked.connect(lambda: self.write(validate=True))
@@ -93,9 +93,25 @@ class ProjectConfigurationDialog(QDialog):
         if not self._valid():
             return
         from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
-        dialog = OnlineGraphDialog(self.client, self.projectId, self)
+        projectId = self.snapshot["payload"]["project"]["projectId"] if self.snapshot else self.projectId
+        dialog = OnlineGraphDialog(self.client, projectId, self)
         dialog.setAttribute(Qt.WA_DeleteOnClose)
         dialog.show()
+
+    def runOnline(self):
+        if not self._valid() or self.pending is not None or self.writePending or not self.snapshot or self.snapshot.get("recoveryError"):
+            return
+        if not self.snapshot.get("versionedStart"):
+            self.status.setText("Runtime 不支持按在线版本校验启动，请先升级 Runtime")
+            return
+        from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+        projectId = self.snapshot["payload"]["project"]["projectId"]
+        dialog = OnlineGraphDialog(self.client, projectId, self.c.window, launchSnapshot=self.snapshot)
+        self.lastRunDialog = dialog
+        dialog.setAttribute(Qt.WA_DeleteOnClose)
+        dialog.show()
+        dialog.startOnline()
+        self.reject()  # The local-draft controller must not start another batch.
 
     def _valid(self):
         return (self.c.session is self.session and self._scope() == self.scope
@@ -104,7 +120,7 @@ class ProjectConfigurationDialog(QDialog):
     def _controls(self):
         idle = self.pending is None and self._valid()
         ready = idle and self.snapshot is not None and not self.writePending
-        writable = ready and not self.snapshot.get("recoveryError")
+        writable = ready
         self.refreshButton.setEnabled(idle and not self.writePending)
         self.readButton.setEnabled(ready)
         self.writeButton.setEnabled(writable and self.table.rowCount() > 0)
@@ -115,9 +131,8 @@ class ProjectConfigurationDialog(QDialog):
         self.table.setEnabled(ready)
         self.replacementPolicy.setEnabled(ready)
         if self.runButton:
-            sameExecution = ready and executionDigest(self.snapshot["payload"]) == executionDigest(self.session.payload())
-            self.runButton.setEnabled(sameExecution and not self.snapshot.get("recoveryError"))
-            self.runButton.setToolTip("当前监视图尚不支持不同执行版本；需先读回在线配置" if not sameExecution else "")
+            self.runButton.setEnabled(ready and not self.snapshot.get("recoveryError"))
+            self.runButton.setToolTip("运行在线配置并打开独立只读监视图；本地草稿保持不变")
 
     def _submit(self, kind, action, *args):
         if self.pending is not None or not self._valid():
@@ -130,17 +145,20 @@ class ProjectConfigurationDialog(QDialog):
         if self.writePending:
             return
         self.local = deepcopy(self.session.payload())
-        self._submit("snapshot", self.client.getOnlineProjectSnapshot, self.projectId)
+        self._submit("snapshot", self.client.getOnlineProjectSnapshot, "")
 
     def _showSnapshot(self, snapshot):
         self.snapshot = snapshot
         changes = projectChanges(snapshot["payload"], self.local)
+        replacing = snapshot["payload"]["project"]["projectId"] != self.projectId
+        if replacing and self.replacementPolicy.currentData() == "reject":
+            self.replacementPolicy.setCurrentIndex(self.replacementPolicy.findData("stopAffected"))
         self.table.setRowCount(len(changes))
         for row, change in enumerate(changes):
             item = QTableWidgetItem(change["path"])
             item.setToolTip(change["path"])
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
-            item.setCheckState(Qt.Checked if changeCategory(change["parts"]) in self.selectCategories else Qt.Unchecked)
+            item.setCheckState(Qt.Checked if replacing or changeCategory(change["parts"]) in self.selectCategories else Qt.Unchecked)
             item.setData(Qt.UserRole, change["path"])
             self.table.setItem(row, 0, item)
             for col, key in ((1, "before"), (2, "after")):
@@ -155,10 +173,11 @@ class ProjectConfigurationDialog(QDialog):
                 "presentation": "工作页面", "runtime_configuration": "运行配置"}
             self.table.setItem(row, 3, QTableWidgetItem(categories[changeCategory(change["parts"])]))
         self.status.setText(f"在线文档 R{snapshot['documentRevision']} / 执行计划 R{snapshot['executionRevision']}；{len(changes)} 项差异"
+                            + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
                             + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else ""))
 
     def write(self, checked=False, *, validate=False):
-        if (self.snapshot is None or self.snapshot.get("recoveryError") or self.pending is not None
+        if (self.snapshot is None or self.pending is not None
                 or self.writePending or not self._valid()):
             return
         paths = [self.table.item(row, 0).data(Qt.UserRole) for row in range(self.table.rowCount())
@@ -186,6 +205,8 @@ class ProjectConfigurationDialog(QDialog):
         if not validate:
             consequence = ("\n将停止受影响的任务并可能断开 / 重连设备；不执行采集或 PLC 写入。取消不能撤销已经发生的停止。"
                            if self.replacementPolicy.currentData() != "reject" else "")
+            if self.snapshot["payload"]["project"]["projectId"] != self.projectId:
+                consequence += f"\n将完整替换工程 {self.snapshot['payload']['project']['projectId']} 为 {self.projectId}；旧任务、连接意图不自动恢复。"
             answer = QMessageBox.question(self, "写入 Runtime", f"将选中的 {len(paths)} 项变更写入在线工程？" + consequence,
                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
@@ -276,8 +297,10 @@ class ProjectConfigurationDialog(QDialog):
     def readBack(self):
         if self.snapshot is None or self.writePending or not self._valid():
             return
-        if self.session.dirty:
-            answer = QMessageBox.question(self, "从 Runtime 读取", "当前工程有未保存修改。用在线配置替换草稿？可通过撤销恢复；本地文件不会被覆盖。",
+        replacing = self.snapshot["payload"]["project"]["projectId"] != self.projectId
+        if self.session.dirty or replacing:
+            message = ("在线配置属于不同工程，将替换当前草稿的工程身份与内容。" if replacing else "当前工程有未保存修改。")
+            answer = QMessageBox.question(self, "从 Runtime 读取", message + "用在线配置替换草稿？可通过撤销恢复；本地文件不会被覆盖。",
                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
                 return
@@ -293,6 +316,7 @@ class ProjectConfigurationDialog(QDialog):
         if self.c.editor:
             self.c.editor.refresh()
         self.c.chrome.update()
+        self.projectId = self.session.document().project.projectId
         self.local = deepcopy(self.session.payload())
         self._showSnapshot(self.snapshot)
         self.status.setText("在线配置已读入工程草稿；本地文件未改变")

@@ -10,7 +10,7 @@ from tests.runtime.test_device_runtime import simulatedProject
 from tests.designer.test_device_workspace import waitUntil
 
 
-def setupDialog(ownedDesignerWindow, tmp_path):
+def setupDialog(ownedDesignerWindow, tmp_path, *, allowRun=False):
     local = simulatedProject()
     online = deepcopy(local)
     online["devices"]["definitions"]["camera"]["defaults"]["exposureUs"] = 12000
@@ -26,9 +26,33 @@ def setupDialog(ownedDesignerWindow, tmp_path):
     saveProject(path, local)
     assert window.loadProjectDirectory(str(path), confirmed=True)
     window.pageCoordinator.sync()
-    dialog = ProjectConfigurationDialog(window.pageCoordinator, window)
+    dialog = ProjectConfigurationDialog(window.pageCoordinator, window, allowRun=allowRun)
     waitUntil(lambda: dialog.pending is None)
     return window, dialog, calls, path
+
+
+def testRecoveryErrorAllowsExplicitRepairButNeverRun(ownedDesignerWindow, tmp_path, monkeypatch):
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path, allowRun=True)
+    try:
+        before, disk = window.pageCoordinator.session.payload(), path.read_bytes()
+        dialog.snapshot["recoveryError"] = "resource missing or size mismatch"
+        dialog._controls()
+        assert dialog.writeButton.isEnabled() and dialog.validateButton.isEnabled()
+        assert not dialog.runButton.isEnabled()
+        for row in range(dialog.table.rowCount()):
+            item = dialog.table.item(row, 0)
+            if item.data(Qt.UserRole) == "/devices/definitions/camera/defaults/exposureUs":
+                item.setCheckState(Qt.Checked)
+        dialog.validateButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert calls[-1][3]
+        monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.Yes)
+        dialog.writeButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert len(calls) == 2 and not calls[-1][3]
+        assert window.pageCoordinator.session.payload() == before and path.read_bytes() == disk
+    finally:
+        dialog.reject()
 
 
 def testCompareDoesNotSaveOrMutateAndSelectionIsExplicit(ownedDesignerWindow, tmp_path, monkeypatch):
@@ -85,6 +109,28 @@ def testRuntimeSwitchFencesOldDialog(ownedDesignerWindow, tmp_path):
         dialog.readBack()
         assert not calls and window.pageCoordinator.session.payload() == before
         window.runtimeClient = original
+    finally:
+        dialog.reject()
+
+
+def testDifferentOnlineProjectSelectsCompleteReplacementAndReadBackRequiresConsent(ownedDesignerWindow, tmp_path, monkeypatch):
+    window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
+    try:
+        before, disk = window.pageCoordinator.session.payload(), path.read_bytes()
+        dialog.snapshot["payload"]["project"]["projectId"] = "different-online-project"
+        dialog._showSnapshot(dialog.snapshot)
+        dialog._controls()
+        assert dialog.replacementPolicy.currentData() == "stopAffected"
+        assert all(dialog.table.item(row, 0).checkState() == Qt.Checked for row in range(dialog.table.rowCount()))
+        monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.No)
+        dialog.readButton.click()
+        assert window.pageCoordinator.session.payload() == before
+        monkeypatch.setattr(QMessageBox, "question", lambda *args: QMessageBox.Yes)
+        dialog.readButton.click()
+        assert window.pageCoordinator.session.document().project.projectId == "different-online-project"
+        assert dialog._valid() and path.read_bytes() == disk and not calls
+        window.pageCoordinator.history()
+        assert window.pageCoordinator.session.payload() == before
     finally:
         dialog.reject()
 

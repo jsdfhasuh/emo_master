@@ -3,8 +3,10 @@ from copy import deepcopy
 from threading import Event, RLock, Thread
 from uuid import uuid4
 
-from emo_master.core.project.configuration import digest, selectedCandidate
+from emo_master.core.project.configuration import digest, selectedCandidate, projectChanges
 from .store import ConfigurationError
+
+REQUEST_WINDOW = 2048
 
 
 class ConfigurationCoordinator:
@@ -16,6 +18,7 @@ class ConfigurationCoordinator:
         self.discard = discard
         self.transition = transition
         self.drainingOwners = set()
+        self.parkedOwners = set()
         self.current = store.snapshot()
         self.requests = {}
         self.active = None
@@ -44,7 +47,15 @@ class ConfigurationCoordinator:
 
     def _candidate(self, request):
         self._check(request)
-        return selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
+        candidate = selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
+        if candidate["project"]["projectId"] != self.current["payload"]["project"]["projectId"]:
+            from emo_master.core.project.models import ProjectDocument
+            local = ProjectDocument.model_validate(request["localPayload"]).model_dump(mode="json")
+            if (projectChanges(ProjectDocument.model_validate(candidate).model_dump(mode="json"), local)
+                    or request.get("replacementPolicy", "reject") not in {"stopAffected", "drainAffected"}):
+                raise ConfigurationError("E_CONFIG_PROJECT_REPLACEMENT", "project replacement requires the complete candidate and an explicit stop/drain policy")
+            candidate = local
+        return candidate
 
     def validate(self, request):
         with self.lock:
@@ -76,10 +87,15 @@ class ConfigurationCoordinator:
             self._check(request)
             if self.active:
                 raise ConfigurationError("E_CONFIG_WRITER_BUSY", "another configuration write is pending")
-            if len(self.requests) >= 2048:
-                raise ConfigurationError("E_CONFIG_CAPACITY", "write request capacity reached")
+            self._retireRequests()
+            if len(self.requests) >= REQUEST_WINDOW:
+                # Failures at the current revision cannot be forgotten until
+                # their original requests have a durable stale-revision fence.
+                self.current = self.store.advanceRequestFence(self.current["documentRevision"])
+                self._retireRequests()
+                raise ConfigurationError("E_CONFIG_CONFLICT", "request window rotated; compare the new document revision before writing")
             candidate = self._candidate(request)
-            entry = dict(fingerprint=fingerprint, cancelled=Event(), status=dict(
+            entry = dict(fingerprint=fingerprint, expectedRevision=request["expectedRevision"], cancelled=Event(), status=dict(
                 state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
             self.requests[requestId] = entry
             self.active = requestId
@@ -87,6 +103,13 @@ class ConfigurationCoordinator:
                                  name="project-config-writer", daemon=True)
             self.thread.start()
             return deepcopy(entry["status"])
+
+    def _retireRequests(self):
+        for key, entry in list(self.requests.items()):
+            if len(self.requests) < REQUEST_WINDOW:
+                break
+            if key != self.active and entry["expectedRevision"] < self.current["documentRevision"]:
+                del self.requests[key]
 
     def _write(self, request, candidate, entry):
         prepared = None
@@ -107,9 +130,10 @@ class ConfigurationCoordinator:
                         raise ConfigurationError("E_CONFIG_PLAN_CAPACITY", "in-flight plan capacity reached")
                 if self.beforeCommit is not None:
                     self.beforeCommit(candidate)
+                sourcePath = getattr(prepared, "sourcePath", "") or self.current["sourcePath"]
                 receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
-                                            entry["fingerprint"], self.runtimeInstanceId)
-                self.current = dict(payload=candidate, sourcePath=self.current["sourcePath"],
+                                            entry["fingerprint"], self.runtimeInstanceId, sourcePath=sourcePath)
+                self.current = dict(payload=candidate, sourcePath=sourcePath,
                     documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
                 entry["status"] = receipt
                 # Publication must only install prepared software state. An unexpected
@@ -154,43 +178,56 @@ class ConfigurationCoordinator:
             raise ConfigurationError("E_CONFIG_REQUEST_UNKNOWN", "request not found; read online revision before any new write")
 
     def beginCycle(self, owner, knownRevision, cancelled=lambda: False, *, parentCycleId=None):
-        if parentCycleId is None:
-            import time
-            while owner in self.drainingOwners:
-                if self.closed or cancelled():
-                    raise ConfigurationError("E_CONFIG_NOT_READY", "cycle admission cancelled during drain")
-                time.sleep(.02)
-        # Runtime shutdown may hold the project lock while joining Job bridges.
-        # A cancelled bridge must be able to abandon admission without that lock.
-        while not self.lock.acquire(timeout=.02):
+        import time
+        while True:
             if self.closed or cancelled():
                 raise ConfigurationError("E_CONFIG_NOT_READY", "cycle admission cancelled")
-        try:
-            if self.closed or cancelled() or self.current is None or self.publicationError:
-                raise ConfigurationError("E_CONFIG_NOT_READY", "online plan is unavailable")
             with self.cycleLock:
-                if parentCycleId is None and owner in self.drainingOwners:
-                    raise ConfigurationError("E_CONFIG_DRAINED", "root cycle admission closed for configuration drain")
-                if parentCycleId is not None:
-                    self.requireCycle(owner, parentCycleId)
-                    if len(self.childCycles.get(owner, {})) >= 32:
-                        raise ConfigurationError("E_CYCLE_DEPTH", "nested cycle capacity reached")
-                elif owner in self.cycles:
-                    raise ConfigurationError("E_CYCLE_ACTIVE", "previous root cycle has not retired")
-                cycleId = uuid4().hex
-                snapshot = self.current
-                lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId)
-                if parentCycleId is None:
-                    self.cycles[owner] = lease
-                else:
-                    self.childCycles.setdefault(owner, {})[cycleId] = lease
-                result = dict(cycleId=cycleId, planRevision=snapshot["executionRevision"],
-                              documentRevision=snapshot["documentRevision"])
-                if knownRevision != snapshot["executionRevision"]:
-                    result["payload"] = deepcopy(snapshot["payload"])
-                return result
-        finally:
-            self.lock.release()
+                blocked = self._parkForDrain(owner, parentCycleId)
+            if blocked:
+                time.sleep(.02)
+                continue
+            # Shutdown can hold the project lock while waiting for this bridge.
+            if not self.lock.acquire(timeout=.02):
+                continue
+            try:
+                if self.closed or cancelled() or self.current is None or self.publicationError:
+                    raise ConfigurationError("E_CONFIG_NOT_READY", "online plan is unavailable")
+                with self.cycleLock:
+                    if self._parkForDrain(owner, parentCycleId):
+                        continue
+                    if parentCycleId is not None:
+                        self.requireCycle(owner, parentCycleId)
+                        if len(self.childCycles.get(owner, {})) >= 32:
+                            raise ConfigurationError("E_CYCLE_DEPTH", "nested cycle capacity reached")
+                    elif owner in self.cycles:
+                        raise ConfigurationError("E_CYCLE_ACTIVE", "previous root cycle has not retired")
+                    cycleId = uuid4().hex
+                    snapshot = self.current
+                    lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId)
+                    if parentCycleId is None:
+                        self.cycles[owner] = lease
+                    else:
+                        self.childCycles.setdefault(owner, {})[cycleId] = lease
+                    result = dict(cycleId=cycleId, planRevision=snapshot["executionRevision"],
+                                  documentRevision=snapshot["documentRevision"])
+                    if knownRevision != snapshot["executionRevision"]:
+                        result["payload"] = deepcopy(snapshot["payload"])
+                    return result
+            finally:
+                self.lock.release()
+
+    def _parkForDrain(self, owner, parentCycleId):
+        # A long-lived root may contain explicit iteration cycles. Only park
+        # between outer iterations; nested cycles must finish the active one.
+        if parentCycleId is not None:
+            self.requireCycle(owner, parentCycleId)
+        blocked = owner in self.drainingOwners and (parentCycleId is None or not self.childCycles.get(owner))
+        if blocked:
+            self.parkedOwners.add(owner)
+        else:
+            self.parkedOwners.discard(owner)
+        return blocked
 
     def requireCycle(self, owner, cycleId):
         with self.cycleLock:
@@ -230,6 +267,7 @@ class ConfigurationCoordinator:
 
     def retireOwner(self, owner):
         with self.cycleLock:
+            self.parkedOwners.discard(owner)
             self.cycles.pop(owner, None)
             self.childCycles.pop(owner, None)
 

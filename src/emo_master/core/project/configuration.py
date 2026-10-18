@@ -253,8 +253,12 @@ def presentationExecution(payload):
 def executionPayload(payload):
     tree = _tree(payload)
     tree.pop("project", None)
+    tree["projectId"] = payload.get("project", {}).get("projectId")
     tree.pop("workflowOrder", None)
     tree["presentation"] = presentationExecution(payload)
+    for definition in tree.get("devices", {}).get("definitions", {}).values():
+        definition.pop("name", None)
+        definition.pop("description", None)
     resources = tree.get("resources")
     if resources:
         bound = {binding["resourceId"] for binding in resources.get("parameterBindings", [])}
@@ -265,11 +269,66 @@ def executionPayload(payload):
         workflow.pop("name", None)
         for node in workflow.get("nodes", {}).values():
             node.pop("displayName", None)
+            for field in ("deviceOverrides", "deviceValueBindings"):
+                if field in node:
+                    node[field] = {slot: values for slot, values in node[field].items() if values}
+                    if not node[field]:
+                        node.pop(field)
     return tree
 
 
 def executionDigest(payload):
     return digest(executionPayload(payload))
+
+
+def _copyCyclePath(target, source, parts):
+    key, *rest = parts
+    if rest:
+        if key not in source and key not in target:
+            return
+        child = target.setdefault(key, {})
+        _copyCyclePath(child, source.get(key, {}), rest)
+        if not child:
+            target.pop(key, None)
+    elif key in source:
+        target[key] = deepcopy(source[key])
+    else:
+        target.pop(key, None)
+
+
+def applyDeviceCycleParameters(materialized, online, deviceTypes):
+    """Use the same capability projection for admission and worker installation."""
+    definitions = materialized.get("devices", {}).get("definitions", {})
+    for key, target in definitions.items():
+        source = online.get("devices", {}).get("definitions", {}).get(key)
+        declaration = deviceTypes.get(target["deviceTypeId"])
+        if source is None or declaration is None or source["deviceTypeId"] != target["deviceTypeId"]:
+            continue
+        for path in declaration.nextCyclePaths:
+            _copyCyclePath(target.setdefault("defaults", {}), source.get("defaults", {}), path.split("."))
+    for workflowId, workflow in materialized.get("workflows", {}).items():
+        sources = {node["nodeId"]: node for node in online.get("workflows", {}).get(workflowId, {}).get("nodes", [])}
+        for node in workflow.get("nodes", []):
+            source = sources.get(node["nodeId"])
+            if source is None:
+                continue
+            for slot, binding in node.get("deviceBindings", {}).items():
+                definition = definitions.get(binding["deviceId"])
+                if definition is None or source.get("deviceBindings", {}).get(slot) != binding:
+                    continue
+                declaration = deviceTypes.get(definition["deviceTypeId"])
+                if declaration is None:
+                    continue
+                for field in ("deviceOverrides", "deviceValueBindings"):
+                    target = node.setdefault(field, {}).setdefault(slot, {})
+                    values = source.get(field, {}).get(slot, {})
+                    for path in declaration.nextCyclePaths:
+                        if field == "deviceOverrides" and path in declaration.overridePaths:
+                            _copyCyclePath(target, values, path.split("."))
+                        elif field == "deviceValueBindings" and path in declaration.dynamicPaths:
+                            _copyCyclePath(target, values, [path])
+                    if not target:
+                        node[field].pop(slot, None)
 
 
 def applyCycleParameters(materialized, online, registry):

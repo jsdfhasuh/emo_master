@@ -4,6 +4,8 @@ import json
 from emo_master.core.project.configuration import canonical, executionDigest
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
 
+RECEIPT_WINDOW = 4096
+
 
 class ConfigurationError(ValueError):
     def __init__(self, code, message):
@@ -70,10 +72,11 @@ class ConfigurationStore:
             connection.execute("UPDATE projectWriteReceipts SET receipt=? WHERE requestId=?",
                                (canonical(receipt), status["requestId"]))
 
-    def history(self):
+    def history(self, projectId=None):
         with self.sqlite.connection() as connection:
             return [dict(documentRevision=row[0], executionRevision=row[1]) for row in connection.execute(
-                "SELECT documentRevision, executionRevision FROM onlineProjectHistory ORDER BY documentRevision DESC")]
+                "SELECT documentRevision, executionRevision, payload FROM onlineProjectHistory ORDER BY documentRevision DESC")
+                if projectId is None or json.loads(row[2])["project"]["projectId"] == projectId]
 
     def initialize(self, payload, sourcePath):
         with self.sqlite.connection() as connection:
@@ -84,7 +87,18 @@ class ConfigurationStore:
             connection.execute("INSERT INTO onlineProjectHistory VALUES (1,1,?,?)", (canonical(payload), sourcePath))
         return self.snapshot()
 
-    def commit(self, expectedRevision, payload, requestId, fingerprint, runtimeInstanceId):
+    def advanceRequestFence(self, expectedRevision):
+        """Expire terminal attempts without changing an execution plan."""
+        with self.sqlite.connection() as connection:
+            beginImmediate(connection)
+            row = connection.execute("SELECT documentRevision, executionRevision, payload, sourcePath FROM onlineProject WHERE singleton=1").fetchone()
+            if row is None or row[0] != expectedRevision:
+                raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
+            connection.execute("UPDATE onlineProject SET documentRevision=? WHERE singleton=1", (expectedRevision + 1,))
+            connection.execute("INSERT INTO onlineProjectHistory VALUES (?,?,?,?)", (expectedRevision + 1, *row[1:]))
+        return self.snapshot()
+
+    def commit(self, expectedRevision, payload, requestId, fingerprint, runtimeInstanceId, *, sourcePath=None):
         with self.sqlite.connection() as connection:
             beginImmediate(connection)
             saved = connection.execute("SELECT fingerprint, receipt FROM projectWriteReceipts WHERE requestId=?",
@@ -99,19 +113,21 @@ class ConfigurationStore:
             current = self._snapshot(row)
             if current is None or current["documentRevision"] != expectedRevision:
                 raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
-            # Refuse admission rather than evicting receipts and replaying old requests.
-            if connection.execute("SELECT count(*) FROM projectWriteReceipts").fetchone()[0] >= 4096:
-                raise ConfigurationError("E_CONFIG_CAPACITY", "durable write receipt capacity reached")
             if self.commitState is not None:
                 self.commitState(connection, current["payload"], payload)
             revision = expectedRevision + 1
             execution = current["executionRevision"] + int(executionDigest(payload) != executionDigest(current["payload"]))
             receipt = dict(state="COMMITTED", requestId=requestId, runtimeInstanceId=runtimeInstanceId,
                            documentRevision=revision, executionRevision=execution, code="", message="configuration committed")
-            connection.execute("UPDATE onlineProject SET documentRevision=?, executionRevision=?, payload=? WHERE singleton=1",
-                               (revision, execution, canonical(payload)))
+            sourcePath = sourcePath or current["sourcePath"]
+            connection.execute("UPDATE onlineProject SET documentRevision=?, executionRevision=?, payload=?, sourcePath=? WHERE singleton=1",
+                               (revision, execution, canonical(payload), sourcePath))
             connection.execute("INSERT INTO projectWriteReceipts VALUES (?,?,?)",
                                (requestId, fingerprint, canonical(receipt)))
+            # The revision fence is committed with eviction. An exact replay
+            # outside the receipt window fails CAS, never repeats preparation.
+            connection.execute("""DELETE FROM projectWriteReceipts WHERE rowid NOT IN
+                (SELECT rowid FROM projectWriteReceipts ORDER BY rowid DESC LIMIT ?)""", (RECEIPT_WINDOW,))
             connection.execute("INSERT INTO onlineProjectHistory VALUES (?,?,?,?)",
-                               (revision, execution, canonical(payload), current["sourcePath"]))
+                               (revision, execution, canonical(payload), sourcePath))
         return receipt

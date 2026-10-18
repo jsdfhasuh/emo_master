@@ -67,6 +67,8 @@ def _warningText(preview: WorkflowPackageImportPreview) -> str:
         )
     if preview.devices:
         warnings.append("设备必须逐项映射；新建设备保持禁用，复用要求类型、驱动版本及默认参数一致")
+    if preview.resourceDependencies:
+        warnings.append("资源将复制到工程独立目录；现场值已清空，带绑定的设备只能新建。撤销保留资源以支持重做")
     pathWarnings = [
         item for item in preview.externalPaths if item.status != "available"
     ]
@@ -184,6 +186,17 @@ try:
                 self._externalPathTexts or ["无外部文件路径"]
             )
             rootLayout.addWidget(self._externalPathList)
+
+            if preview.resourceDependencies:
+                rootLayout.addWidget(QLabel("打包资源与待填写现场参数"))
+                dependencies = QListWidget()
+                dependencies.setObjectName("workflowPackageResourceDependencies")
+                dependencies.addItems(list(preview.resourceDependencies))
+                dependencies.setMinimumHeight(self.fontMetrics().height() * 3 + 12)
+                dependencies.setMaximumHeight(self.fontMetrics().height() * 5 + 12)
+                for index in range(dependencies.count()):
+                    dependencies.item(index).setToolTip(dependencies.item(index).text())
+                rootLayout.addWidget(dependencies)
 
             for view in (self._workflowTree, self._dependencyList, self._conflictList,
                          self._operatorList, self._externalPathList):

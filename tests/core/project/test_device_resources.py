@@ -245,8 +245,14 @@ def testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations(bundle):
     from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, importWorkflowPackage
     from emo_master.apps.designer.state.workflow_store import WorkflowStore
     store = WorkflowStore(bundle[1].model_dump())
-    with pytest.raises(ValueError, match="完整工程部署包"):
+    with pytest.raises(ValueError, match="save the source project"):
         buildWorkflowPackage(store, "main")
+    portable = buildWorkflowPackage(store, "main", sourceRoot=bundle[0])
+    assert portable.schemaVersion == "1.3"
+    assert set(portable.resourceData) == {"calibration"}
+    assert portable.resources.parameterBindings == bundle[1].resources.parameterBindings
+    assert portable.resources.siteBindings == bundle[1].resources.siteBindings
+    assert portable.devices["camera"].connection["serial"] == ""
     package = buildWorkflowPackage(store, "main", forInProjectCopy=True)
     resources = deepcopy(store.projectExtensions["resources"])
     result = importWorkflowPackage(store, package, reuseVariableIds=True, deviceMapping={"camera": "camera"})
@@ -346,6 +352,14 @@ def testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity(bundl
     finally:
         service.close()
     (installed / "calibration.bin").write_bytes(b"tampered")
+    recovered = RuntimeService(**kwargs)
+    try:
+        assert not recovered.onlineRecoveryError
+        owned = recovered.projectResourceTransfers.resolve(recovered.loadedDocument)["calibration"]
+        assert owned.read_bytes() == b"synthetic calibration data"
+    finally:
+        recovered.close()
+    owned.write_bytes(b"tampered persistent copy")
     recovered = RuntimeService(**kwargs)
     try:
         assert "resource" in recovered.onlineRecoveryError

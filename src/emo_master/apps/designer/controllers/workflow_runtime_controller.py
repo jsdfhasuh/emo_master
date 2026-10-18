@@ -123,6 +123,11 @@ class WorkflowRuntimeController:
     def startJob(self):
         if not self.canStart():
             return
+        active = sum(self.busy(run) for run in self.runs.values())
+        # Online-version selection may launch an independent snapshot monitor
+        # and cancel this draft-backed start. Do that before using draft targets.
+        if not active and not self.syncRuntimeProjectBeforeRun():
+            return
         keys = self.targets()
         if any(key not in self.getWorkflows() for key in keys):
             self.callbacks['appendLog']('ERROR', '运行目标已不存在，请重新选择')
@@ -135,12 +140,8 @@ class WorkflowRuntimeController:
             self.selected = initial.workflowId
         pending = [key for key in keys if key not in self.runs or not self.busy(self.runs[key])]
         limit = self.getMaxJobs()
-        active = sum(self.busy(run) for run in self.runs.values())
         if limit is not None and active + len(pending) > limit:
             self.callbacks['appendLog']('ERROR', f'所选流程超过最大并发 Job 数 {limit}，未启动本批次')
-            return
-        # One save/load for the first batch; NEVER reload under a live sibling.
-        if not active and not self.syncRuntimeProjectBeforeRun():
             return
         self._batchStarting = True
         try:

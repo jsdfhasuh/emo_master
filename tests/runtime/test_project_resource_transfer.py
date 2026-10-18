@@ -37,7 +37,7 @@ def chunk(data, offset=0):
     return result
 
 
-def testOrderedIdempotentChunksAndReadyNotRemovable(transfers):
+def testOrderedIdempotentChunksAndUnreferencedReadyIsRemovable(transfers):
     assert transfers.execute(request("BEGIN"))["offset"] == 0
     assert transfers.execute(chunk(b"model "))["offset"] == 6
     assert transfers.execute(chunk(b"model "))["offset"] == 6
@@ -49,8 +49,8 @@ def testOrderedIdempotentChunksAndReadyNotRemovable(transfers):
     assert transfers.execute(request("COMMIT"))["state"] == "READY"
     assert transfers.execute(request("COMMIT"))["state"] == "READY"
     assert transfers.execute(request("BEGIN"))["state"] == "READY"
-    with pytest.raises(ValueError, match="referenced"):
-        transfers.execute(request("CANCEL"))
+    assert transfers.execute(request("CANCEL"))["state"] == "CANCELLED"
+    assert not list(transfers.root.iterdir())
 
 
 def testInvalidDigestIncompleteAndCapacityFailWithoutReady(transfers, monkeypatch):
@@ -109,6 +109,16 @@ def testClosingAnotherInProcessServiceCannotCancelPendingTransfer(transfers):
     other.close()
     assert transfers.execute(request("STATUS"))["state"] == "PENDING"
     assert transfers.execute(request("STATUS"))["offset"] == 5
+
+
+def testCancelledTransferTombstonesCannotExhaustAdmission(transfers):
+    with transfers.sqlite.connection() as connection:
+        connection.executemany("INSERT INTO projectResourceTransfers VALUES (?,?,?,?, 'CANCELLED',0,?)",
+            [(f"expired-{index}", "project", json.dumps(manifest()), f"{index:032x}.bin", "old")
+             for index in range(4096)])
+    assert transfers.execute(request("BEGIN"))["state"] == "PENDING"
+    with transfers.sqlite.connection() as connection:
+        assert connection.execute("SELECT count(*) FROM projectResourceTransfers").fetchone()[0] == 257
 
 
 def testSharedUploadOwnersSerializeCapacityAndChunkState(transfers, monkeypatch):

@@ -17,15 +17,15 @@ from emo_master.core.project.device_resources import deviceDeclaration, deviceTa
 def prepareRuntimeProject(
     document: ProjectDocument, root: Path,
     registry: Mapping[str, PluginDescriptor], *, protectedPaths: tuple[Path, ...] = (),
-    deviceTypes=None, siteValues: Mapping[str, str] | None = None, resourcePaths=None,
+    deviceTypes=None, siteValues: Mapping[str, str] | None = None, resourcePaths=None, allowMissingRoot=False,
 ) -> ProjectDocument:
     from emo_master.core.project.dependencies import validateOperatorDependencies
     validateOperatorDependencies(document, registry)
-    root = root.resolve(strict=True)
+    root = root.resolve(strict=not allowMissingRoot)
     prepared = document.model_copy(deep=True)
     nodes = {(wid, node.nodeId): node for wid, workflow in prepared.workflows.items()
              for node in workflow.nodes}
-    inputs = {root / "project.json", *projectFiles(root)}
+    inputs = {root / "project.json", *(projectFiles(root) if root.is_dir() else [])}
     sites = dict(siteValues or {})
     deviceSites = {b.field for b in prepared.resources.siteBindings
                    if isinstance(b.target, DeviceParameterTarget)} if prepared.resources else set()

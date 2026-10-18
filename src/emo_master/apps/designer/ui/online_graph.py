@@ -14,22 +14,32 @@ from emo_master.core.workflow.loop_contracts import interfacePortTypes
 
 
 class OnlineGraphDialog(QDialog):
-    def __init__(self, client, projectId, parent=None):
+    def __init__(self, client, projectId, parent=None, *, launchSnapshot=None):
         super().__init__(parent)
         self.client, self.projectId = client, projectId
         self.pending = None
         self.data = None
-        self.instance = None
+        self.instance = launchSnapshot["runtimeInstanceId"] if launchSnapshot else None
         self.graphIdentity = None
         self.selectionEpoch = 0
         self.lastRefresh = 0.0
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="online-graph")
+        self.launchSnapshot = deepcopy(launchSnapshot)
+        self.command = None
+        self.commandKind = ""
+        self.startedJobs = {}
+        self.uncertainRequests = {}
+        self.launched = False
         self.setWindowTitle("在线 / 历史流程 · 只读")
         self.resize(1100, 720)
         layout = QVBoxLayout(self)
         bar = QHBoxLayout()
         self.revision, self.job, self.workflow, self.node, self.event = (QComboBox() for _ in range(5))
         self.revision.addItem("当前在线", 0)
+        if launchSnapshot is not None:
+            revision = launchSnapshot["documentRevision"]
+            self.revision.addItem(f"文档 R{revision}", revision)
+            self.revision.setCurrentIndex(1)
         self.job.addItem("配置快照", "")
         self.refreshButton = QPushButton()
         self.refreshButton.setIcon(icon("refresh-cw"))
@@ -41,6 +51,26 @@ class OnlineGraphDialog(QDialog):
         self.status = QLabel()
         self.status.setWordWrap(True)
         layout.addWidget(self.status)
+        self.runStatus = QLabel()
+        self.runStatus.setWordWrap(True)
+        self.runStatus.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        layout.addWidget(self.runStatus)
+        controls = QHBoxLayout()
+        self.stopButton, self.stopAllButton, self.reconcileButton = (QPushButton() for _ in range(3))
+        for button, glyph, label in ((self.stopButton, "square", "停止所选在线任务"),
+                (self.stopAllButton, "square", "停止本窗口启动的任务"),
+                (self.reconcileButton, "refresh-cw", "查询原启动请求")):
+            button.setIcon(icon(glyph))
+            button.setToolTip(label)
+            button.setAccessibleName(label)
+            button.setFixedSize(32, 32)
+            controls.addWidget(button)
+            button.setVisible(launchSnapshot is not None)
+        controls.addStretch(1)
+        layout.addLayout(controls)
+        self.stopButton.clicked.connect(self.stopSelected)
+        self.stopAllButton.clicked.connect(self.stopLaunched)
+        self.reconcileButton.clicked.connect(self.reconcile)
         split = QSplitter(Qt.Horizontal)
         self.scene = FlowScene()
         self.scene.setParent(self)
@@ -69,6 +99,87 @@ class OnlineGraphDialog(QDialog):
         self.timer.start(50)
         self.refresh()
 
+    def startOnline(self):
+        if self.launched or self.launchSnapshot is None or self.command is not None:
+            return
+        from emo_master.apps.designer.services.online_run import startOnline
+        self.launched = True
+        self.commandKind = "start"
+        self.command = self.pool.submit(startOnline, self.client, self.launchSnapshot)
+        self.runStatus.setText("正在启动已比较的在线版本")
+
+    def stopSelected(self):
+        if self.command is None and self.job.currentData():
+            self.commandKind = "stop"
+            self.command = self.pool.submit(self.client.stopJob, self.job.currentData())
+
+    def stopLaunched(self):
+        if self.command is None and self.startedJobs:
+            self.commandKind = "stopAll"
+            jobs = tuple(self.startedJobs)
+            def stop():
+                results = []
+                for job in jobs:
+                    try:
+                        reply = self.client.stopJob(job)
+                        results.append(f"{job}: {reply.message}")
+                    except Exception as error:
+                        results.append(f"{job}: {error}")
+                return results
+            self.command = self.pool.submit(stop)
+
+    def reconcile(self):
+        if self.command is None and self.uncertainRequests:
+            self.commandKind = "start"
+            requests = dict(self.uncertainRequests)
+            def query():
+                results = []
+                for requestId, workflowId in requests.items():
+                    try:
+                        reply = self.client.getStartRequest(requestId, self.launchSnapshot["runtimeInstanceId"])
+                        results.append(dict(workflowId=workflowId, requestId=requestId, reply=reply))
+                    except Exception as error:
+                        results.append(dict(workflowId=workflowId, requestId=requestId, error=str(error)))
+                return results
+            self.command = self.pool.submit(query)
+
+    def pollCommand(self):
+        idle = self.command is None
+        self.stopButton.setEnabled(idle and bool(self.job.currentData()))
+        self.stopAllButton.setEnabled(idle and bool(self.startedJobs))
+        self.reconcileButton.setEnabled(idle and bool(self.uncertainRequests))
+        if self.command is None or not self.command.done():
+            return
+        future, self.command = self.command, None
+        try:
+            result = future.result()
+            if self.commandKind == "start":
+                messages = []
+                for item in result:
+                    reply, requestId = item.get("reply"), item["requestId"]
+                    if reply is None or reply.status in {"UNKNOWN", "RESET_REQUIRED"}:
+                        self.uncertainRequests[requestId] = item["workflowId"]
+                    else:
+                        self.uncertainRequests.pop(requestId, None)
+                    if reply is not None and reply.job_id:
+                        self.startedJobs[reply.job_id] = item["workflowId"]
+                        if self.job.findData(reply.job_id) < 0:
+                            self.job.addItem(item["workflowId"] + " · " + reply.job_id[:8], reply.job_id)
+                        self.job.setCurrentIndex(self.job.findData(reply.job_id))
+                    messages.append(item["workflowId"] + ": " + (reply.message if reply is not None else item["error"])
+                                    + " · " + requestId)
+                revision = self.launchSnapshot["documentRevision"]
+                if self.revision.findData(revision) < 0:
+                    self.revision.addItem(f"文档 R{revision}", revision)
+                self.revision.setCurrentIndex(self.revision.findData(revision))
+                self.runStatus.setText("\n".join(messages))
+            elif self.commandKind == "stopAll":
+                self.runStatus.setText("\n".join(result))
+            else:
+                self.runStatus.setText(result.message)
+        except Exception as error:
+            self.runStatus.setText(str(error))
+
     def selectionChanged(self):
         self.selectionEpoch += 1
         if self.pending is None:
@@ -94,6 +205,7 @@ class OnlineGraphDialog(QDialog):
         combo.blockSignals(False)
 
     def poll(self):
+        self.pollCommand()
         if self.pending is None and self.isVisible() and self.job.currentData() and time.monotonic() - self.lastRefresh > .5:
             self.refresh()
         if self.pending is None or not self.pending.done():
@@ -174,6 +286,9 @@ class OnlineGraphDialog(QDialog):
         self.details.setPlainText(json.dumps(dict(node=node, result=event), ensure_ascii=False, indent=2))
 
     def done(self, result):
+        if self.command is not None:
+            self.runStatus.setText("操作尚未返回；请先核对结果")
+            return
         self.timer.stop()
         self.pool.shutdown(wait=False, cancel_futures=True)
         super().done(result)

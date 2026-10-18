@@ -6,6 +6,8 @@ from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 def affectedJobs(runtime, payload):
     before = runtime.projectConfiguration.current["payload"]
+    if before["project"]["projectId"] != payload["project"]["projectId"]:
+        return {record.jobId for record in runtime.jobRepository.all()}
     flows, devices = set(), set()
     for change in projectChanges(before, payload):
         p = change["parts"]

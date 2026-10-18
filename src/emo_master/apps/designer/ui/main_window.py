@@ -2515,7 +2515,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return None
         try:
             result = self.workflowController.exportWorkflowPackage(
-                workflowId, selectedPath
+                workflowId, selectedPath, sourceRoot=self.currentProjectDir,
             )
         except (KeyError, OSError, TypeError, ValueError) as err:
             message = f"导出工作流失败：{err}"
@@ -2571,6 +2571,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 deviceMapping=dialog.getDeviceMapping() if preview.devices else None,
                 expectedFingerprint=preview.packageFingerprint,
                 expectedTargetFingerprint=preview.targetFingerprint,
+                targetRoot=self.currentProjectDir,
                 insertIntoWorkflowId=(
                     selectedParentWorkflowId if insertSubflow else None
                 ),
@@ -3602,7 +3603,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion == "2.6":
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
             try:
-                self.runtimeClient.getOnlineProjectSnapshot(self.pageCoordinator.session.document().project.projectId)
+                self.runtimeClient.getOnlineProjectSnapshot("")
             except RuntimeClientError as error:
                 if error.code != "E_CONFIG_NOT_LOADED":
                     self.appendRuntimeLog("ERROR", str(error))
@@ -4564,7 +4565,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():
                 return
-            dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self)
+            dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self,
+                                      migrateLegacy=not node.deviceBindings)
             dialog.exec_()
             return
 

@@ -6,6 +6,7 @@ from threading import RLock
 from uuid import uuid4
 from weakref import WeakValueDictionary
 from typing import Any
+from types import SimpleNamespace
 
 from emo_master.core.project.resources import Resource
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
@@ -37,6 +38,10 @@ class ResourceTransfers:
             columns = {row[1] for row in connection.execute("PRAGMA table_info(projectResourceTransfers)")}
             if "instanceId" not in columns:
                 connection.execute("ALTER TABLE projectResourceTransfers ADD COLUMN instanceId TEXT NOT NULL DEFAULT ''")
+            connection.execute("""CREATE TABLE IF NOT EXISTS projectResourcePins (
+                token TEXT NOT NULL, instanceId TEXT NOT NULL, projectId TEXT NOT NULL, manifest TEXT NOT NULL)""")
+            connection.execute("""CREATE TABLE IF NOT EXISTS projectResourceIngestions (
+                transferId TEXT PRIMARY KEY)""")
 
     def _path(self, name):
         if not re.fullmatch(r"[0-9a-f]{32}(\.[a-z0-9]{1,16})?", name):
@@ -55,10 +60,21 @@ class ResourceTransfers:
         return row
 
     def _cancel(self, transferId, row):
-        if row[3] == "READY":
-            raise ConfigurationError("E_RESOURCE_TRANSFER_READY", "completed upload may be referenced by online configuration")
-        self._path(row[2]).unlink(missing_ok=True)
         with self.sqlite.connection() as connection:
+            beginImmediate(connection)
+            if row[3] == "READY":
+                pinned = connection.execute("SELECT 1 FROM projectResourcePins WHERE projectId=? AND manifest=? LIMIT 1",
+                                            (row[0], row[1])).fetchone()
+                online = None
+                if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='onlineProject'").fetchone():
+                    online = connection.execute("SELECT payload FROM onlineProject WHERE singleton=1").fetchone()
+                payload = json.loads(online[0]) if online else {}
+                referenced = payload.get("project", {}).get("projectId") == row[0] and any(
+                    Resource.model_validate(item).model_dump_json() == row[1]
+                    for item in (payload.get("resources") or {}).get("items", {}).values())
+                if pinned or referenced:
+                    raise ConfigurationError("E_RESOURCE_TRANSFER_READY", "resource is referenced by online or prepared configuration")
+            self._path(row[2]).unlink(missing_ok=True)
             connection.execute("UPDATE projectResourceTransfers SET state='CANCELLED', offset=0 WHERE transferId=?", (transferId,))
 
     def recover(self, *, onlyInstance=None):
@@ -67,6 +83,9 @@ class ResourceTransfers:
                 WHERE state='PENDING' AND (? IS NULL OR instanceId=?)""", (onlyInstance, onlyInstance))]
             for transferId in ids:
                 self._cancel(transferId, self._read(transferId))
+            connection.execute("DELETE FROM projectResourcePins WHERE (? IS NULL OR instanceId=?)", (onlyInstance, onlyInstance))
+        with self.lock:
+            self._reclaimIngestions()
 
     def execute(self, request):
         with self.lock:
@@ -99,10 +118,14 @@ class ResourceTransfers:
                         if existing != (request.project_id, manifest):
                             raise ConfigurationError("E_RESOURCE_TRANSFER_CONFLICT", "transfer ID content changed")
                     else:
+                        # Retain a small status window; an expired BEGIN is a new
+                        # empty upload, never a replay of publication or bytes.
+                        connection.execute("""DELETE FROM projectResourceTransfers WHERE state='CANCELLED' AND rowid NOT IN
+                            (SELECT rowid FROM projectResourceTransfers WHERE state='CANCELLED' ORDER BY rowid DESC LIMIT 256)""")
                         rows = connection.execute("SELECT manifest, state FROM projectResourceTransfers").fetchall()
                         reserved = sum(json.loads(value)["size"] for value, state in rows if state != "CANCELLED")
                         disk = sum(path.stat().st_size for path in self.root.iterdir() if path.is_file())
-                        if len(rows) >= 4096 or max(reserved, disk) + item.size > MAX_TRANSFER_BYTES:
+                        if sum(state != "CANCELLED" for _, state in rows) >= 4096 or max(reserved, disk) + item.size > MAX_TRANSFER_BYTES:
                             raise ConfigurationError("E_RESOURCE_TRANSFER_CAPACITY", "resource upload capacity exhausted")
                         suffix = Path(item.path).suffix.lower()
                         if suffix and not re.fullmatch(r"\.[a-z0-9]{1,16}", suffix):
@@ -152,6 +175,83 @@ class ResourceTransfers:
                 raise ConfigurationError("E_RESOURCE_TRANSFER_ACTION", "unknown resource transfer action")
             row = self._read(transferId)
             return dict(transferId=transferId, state=row[3], offset=row[4], size=item.size, sha256=item.sha256)
+
+    def pin(self, document, root, *, cancelled=None):
+        """Ingest declared local inputs and pin verified copies until publication.
+
+        Pins and cancellation share the transfer lock and SQLite authority. A
+        successful commit protects the copies before the preparation pin retires.
+        """
+        token = uuid4().hex
+        with self.lock:
+            try:
+                self._pinDocument(token, document, root, cancelled)
+            except BaseException:
+                self.unpin(token)
+                raise
+        return token
+
+    def _pinDocument(self, token, document, root, cancelled):
+        from emo_master.core.project.snapshots import verifyResources
+        with self.lock:
+            if self.closed:
+                raise ConfigurationError("E_RUNTIME_CLOSING", "resource transfer owner is closing")
+            if document.resources is None:
+                return
+            available = self.resolve(document)
+            sources = verifyResources(document, Path(root), resourcePaths=available)
+            for key, item in document.resources.items.items():
+                if cancelled is not None and cancelled.is_set():
+                    raise ConfigurationError("E_CONFIG_CANCELLED", "resource ingestion cancelled")
+                if key in available:
+                    continue
+                request = SimpleNamespace(action="BEGIN", transfer_id=uuid4().hex,
+                    project_id=document.project.projectId, resource_json=item.model_dump_json(), data=b"", offset=0)
+                with self.sqlite.connection() as connection:
+                    connection.execute("INSERT INTO projectResourceIngestions VALUES (?)", (request.transfer_id,))
+                try:
+                    self.execute(request)
+                    with Path(sources[key]).open("rb") as source:
+                        while data := source.read(MAX_CHUNK_BYTES):
+                            if cancelled is not None and cancelled.is_set():
+                                raise ConfigurationError("E_CONFIG_CANCELLED", "resource ingestion cancelled")
+                            request.action, request.data = "CHUNK", data
+                            self.execute(request)
+                            request.offset += len(data)
+                    request.action, request.data = "COMMIT", b""
+                    self.execute(request)
+                except BaseException:
+                    with self.sqlite.connection() as connection:
+                        exists = connection.execute("SELECT 1 FROM projectResourceTransfers WHERE transferId=?", (request.transfer_id,)).fetchone()
+                    if exists:
+                        self._cancel(request.transfer_id, self._read(request.transfer_id))
+                    raise
+            with self.sqlite.connection() as connection:
+                connection.executemany("INSERT INTO projectResourcePins VALUES (?,?,?,?)",
+                    [(token, self.instanceId, document.project.projectId, item.model_dump_json())
+                     for item in document.resources.items.values()])
+
+    def unpin(self, token):
+        with self.lock:
+            with self.sqlite.connection() as connection:
+                connection.execute("DELETE FROM projectResourcePins WHERE token=? AND instanceId=?", (token, self.instanceId))
+            self._reclaimIngestions()
+
+    def _reclaimIngestions(self):
+        # Only automatically ingested copies are implicit cleanup candidates.
+        # User uploads remain available until an explicit CANCEL.
+        with self.sqlite.connection() as connection:
+            ids = [row[0] for row in connection.execute("SELECT transferId FROM projectResourceIngestions")]
+        for transferId in ids:
+            try:
+                self._cancel(transferId, self._read(transferId))
+            except ConfigurationError as error:
+                if error.code == "E_RESOURCE_TRANSFER_READY":
+                    continue
+                if error.code != "E_RESOURCE_TRANSFER_UNKNOWN":
+                    raise
+            with self.sqlite.connection() as connection:
+                connection.execute("DELETE FROM projectResourceIngestions WHERE transferId=?", (transferId,))
 
     def resolve(self, document):
         if document.resources is None:

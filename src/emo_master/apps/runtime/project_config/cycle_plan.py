@@ -1,9 +1,8 @@
 """Install cycle-safe parameters only for the lifetime of an explicit plan lease."""
 from contextlib import contextmanager
 from dataclasses import replace
-from copy import deepcopy
 
-from emo_master.core.project.configuration import applyCycleParameters
+from emo_master.core.project.configuration import applyCycleParameters, applyDeviceCycleParameters
 from emo_master.core.project.models import ProjectDocument
 
 
@@ -35,20 +34,7 @@ class CyclePlanSession:
         if "payload" in cycle:
             # Preserve materialized paths and retained operator instances.
             updated = self.document.model_dump(mode="json")
-            for key, definition in cycle["payload"]["devices"]["definitions"].items():
-                if key in updated["devices"]["definitions"]:
-                    target = updated["devices"]["definitions"][key]
-                    declaration = self.compiler.deviceTypes.get(target["deviceTypeId"])
-                    for path in declaration.nextCyclePaths if declaration is not None else ():
-                        destination, source = target["defaults"], definition["defaults"]
-                        parts = path.split(".")
-                        for part in parts[:-1]:
-                            destination = destination.setdefault(part, {})
-                            source = source.get(part, {})
-                        if parts[-1] in source:
-                            destination[parts[-1]] = deepcopy(source[parts[-1]])
-                        else:
-                            destination.pop(parts[-1], None)
+            applyDeviceCycleParameters(updated, cycle["payload"], self.compiler.deviceTypes)
             applyCycleParameters(updated, cycle["payload"], self.registry)
             self.document = ProjectDocument.model_validate(updated)
             self.runner.compiledProject = self.compiler.compile(self.document, pluginRootPaths=self.pluginRoots)

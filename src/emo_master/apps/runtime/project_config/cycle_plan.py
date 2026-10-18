@@ -24,7 +24,7 @@ class CyclePlanSession:
             if parentCycleId is not None:
                 # Code after the Loop still belongs to the outer cycle's plan.
                 self.document, self.runner.compiledProject, self.revision = previous
-            if not self.cancelled():
+            if cycle["ownsCycle"] and not self.cancelled():
                 self.devices.call("endCycle", cycleId=cycle["cycleId"])
 
     def iteration(self, context):

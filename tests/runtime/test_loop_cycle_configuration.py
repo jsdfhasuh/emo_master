@@ -65,7 +65,7 @@ def testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel(tmp_path)
         c.drainingOwners.add("job")
         inner = c.beginCycle("job", 1, parentCycleId=outer["cycleId"])
         assert not c.parkedOwners
-        c.endCycle("job", inner["cycleId"])
+        assert inner["cycleId"] == outer["cycleId"] and not inner["ownsCycle"]
         c.endCycle("job", outer["cycleId"])
         def begin():
             try:

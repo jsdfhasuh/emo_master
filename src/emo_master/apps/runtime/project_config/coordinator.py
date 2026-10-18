@@ -198,22 +198,22 @@ class ConfigurationCoordinator:
                         continue
                     if parentCycleId is not None:
                         self.requireCycle(owner, parentCycleId)
+                        parent = self._cycleLease(owner, parentCycleId)
+                        if not parent["allowChildRefresh"]:
+                            return self._cycleResult(parent, knownRevision, ownsCycle=False)
                         if len(self.childCycles.get(owner, {})) >= 32:
                             raise ConfigurationError("E_CYCLE_DEPTH", "nested cycle capacity reached")
                     elif owner in self.cycles:
                         raise ConfigurationError("E_CYCLE_ACTIVE", "previous root cycle has not retired")
                     cycleId = uuid4().hex
                     snapshot = self.current
-                    lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId)
+                    lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId,
+                                 allowChildRefresh=parentCycleId is None)
                     if parentCycleId is None:
                         self.cycles[owner] = lease
                     else:
                         self.childCycles.setdefault(owner, {})[cycleId] = lease
-                    result = dict(cycleId=cycleId, planRevision=snapshot["executionRevision"],
-                                  documentRevision=snapshot["documentRevision"])
-                    if knownRevision != snapshot["executionRevision"]:
-                        result["payload"] = deepcopy(snapshot["payload"])
-                    return result
+                    return self._cycleResult(lease, knownRevision, ownsCycle=True)
             finally:
                 self.lock.release()
 
@@ -222,12 +222,26 @@ class ConfigurationCoordinator:
         # between outer iterations; nested cycles must finish the active one.
         if parentCycleId is not None:
             self.requireCycle(owner, parentCycleId)
-        blocked = owner in self.drainingOwners and (parentCycleId is None or not self.childCycles.get(owner))
+        createsDetection = parentCycleId is None or self._cycleLease(owner, parentCycleId)["allowChildRefresh"]
+        blocked = owner in self.drainingOwners and createsDetection
         if blocked:
             self.parkedOwners.add(owner)
         else:
             self.parkedOwners.discard(owner)
         return blocked
+
+    def _cycleLease(self, owner, cycleId):
+        root = self.cycles.get(owner)
+        return root if root and root["cycleId"] == cycleId else self.childCycles[owner][cycleId]
+
+    @staticmethod
+    def _cycleResult(lease, knownRevision, *, ownsCycle):
+        snapshot = lease["snapshot"]
+        result = dict(cycleId=lease["cycleId"], planRevision=snapshot["executionRevision"],
+                      documentRevision=snapshot["documentRevision"], ownsCycle=ownsCycle)
+        if knownRevision != snapshot["executionRevision"]:
+            result["payload"] = deepcopy(snapshot["payload"])
+        return result
 
     def requireCycle(self, owner, cycleId):
         with self.cycleLock:
@@ -247,7 +261,7 @@ class ConfigurationCoordinator:
                 source = self.childCycles[sourceOwner][cycleId]
             if owner in self.cycles:
                 raise ConfigurationError("E_CYCLE_ACTIVE", "consumer already owns a cycle")
-            self.cycles[owner] = dict(source, parentCycleId=None)
+            self.cycles[owner] = dict(source, parentCycleId=None, allowChildRefresh=False)
             return dict(cycleId=cycleId, planRevision=source["snapshot"]["executionRevision"],
                         documentRevision=source["snapshot"]["documentRevision"],
                         payload=deepcopy(source["snapshot"]["payload"]))

@@ -1,5 +1,7 @@
 {
   "operatorId": "communication.plc.slmp_read",
+  "deviceBindingSince": "2.6",
+  "deviceRequirements": {"plc": {"deviceTypeId": "device.plc.mitsubishi_slmp"}},
   "displayName": "PLC SLMP Read",
   "version": "1.1.0",
   "entry": "emo_master.plugins.builtins._communication_operators:PlcSlmpReadOperator",
@@ -14,6 +16,7 @@
   },
   "paramSchema": {
     "type": "object",
+    "xDeviceActionFields": ["device", "startAddress", "dataType", "count", "outputIndex"],
     "properties": {
       "frameEncoding": {"title": "通信格式", "type": "string", "enum": ["binary", "ascii"], "default": "binary", "xOptionLabels": {"binary": "MC 3E · 二进制（Binary）", "ascii": "MC 3E · ASCII"}},
       "host": {"title": "主机地址", "type": "string", "default": "127.0.0.1"},

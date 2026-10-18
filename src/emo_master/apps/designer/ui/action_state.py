@@ -5,5 +5,5 @@ def flowEditAllowed(window) -> bool:
     coordinator = getattr(window, 'pageCoordinator', None)
     controller = getattr(window, 'runtimeController', None)
     return (not window.isJobRunning
-            and not (coordinator is not None and coordinator.pageActive())
+            and not (coordinator is not None and (coordinator.pageActive() or coordinator.deviceActive()))
             and not (controller is not None and controller._closed))

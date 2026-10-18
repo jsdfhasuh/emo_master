@@ -94,6 +94,16 @@ class TableColumn(Model):
 
 
 class Props(Model):
+    imageResourceId: Id | None = None
+    iconResourceId: Id | None = None
+
+    @model_serializer(mode="wrap")
+    def serializeResources(self, handler):
+        payload = handler(self)
+        for field in ("imageResourceId", "iconResourceId"):
+            if payload.get(field) is None:
+                payload.pop(field, None)
+        return payload
     title: str = Field(default="", max_length=1024)
     text: str = Field(default="", max_length=4096)
     emptyText: str = Field(default="—", max_length=256)
@@ -159,6 +169,10 @@ class Component(Model):
 
     @model_validator(mode="after")
     def checkShape(self) -> Component:
+        if self.props.imageResourceId and (self.type != "image" or self.bindings):
+            raise ValueError("static image requires image component without result bindings")
+        if self.props.iconResourceId and self.type != "navigation_button":
+            raise ValueError("static icon requires navigation_button")
         if self.type != "container" and self.children:
             raise ValueError("only container can have children")
         allowed = {"image": {"image"}, "table": {"rows"}, "container": set(),

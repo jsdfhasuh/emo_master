@@ -65,10 +65,12 @@ def trustedRegistry():
 
 def portableDocument(document):
     result = ProjectDocument.model_validate(document.model_dump())
+    if result.schemaVersion == "2.6":
+        raise ValueError('device projects require managed Runtime delivery, not a local page test package')
     if result.resources is None or result.presentation is None:
         raise ValueError('test delivery requires explicit project 2.2')
     # Declared paths are materialized later. Do not archive developer fallbacks.
-    for binding in [*result.resources.parameterBindings, *result.resources.siteBindings]:
+    for binding in [*result.resources.nodeParameterBindings, *result.resources.nodeSiteBindings]:
         target = binding.target
         node = next(n for n in result.workflows[target.workflowId].nodes if n.nodeId == target.nodeId)
         params = node.params

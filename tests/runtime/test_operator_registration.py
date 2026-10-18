@@ -97,7 +97,8 @@ def testRuntimeRegistersBuiltinsAfterStrictValidation(tmp_path: Path) -> None:
         "vision.math.truncate",
         "vision.collection.number_pair",
     } <= operatorIds
-    assert len(operatorIds) == 69
+    assert "vision.io.simulated_camera" in operatorIds
+    assert len(operatorIds) == 70
     assert list(rejectedReply.rejected) == []
 
 

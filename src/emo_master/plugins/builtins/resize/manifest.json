@@ -1,4 +1,5 @@
 {
+  "nextCycleParameterPaths": ["width","height","mode","interpolation"],
   "operatorId": "vision.preprocess.resize",
   "displayName": "Resize / Letterbox",
   "version": "1.0.0",

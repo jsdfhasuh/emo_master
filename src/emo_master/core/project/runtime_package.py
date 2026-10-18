@@ -18,6 +18,7 @@ from emo_master.core.project.migration import loadProjectPayload, migrateProject
 from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.files import projectFiles, resolveProjectFile
 from emo_master.core.project.runtime_directory import prepareRuntimeProject
+from emo_master.core.project.device_resources import deviceDeclaration, trustedDeviceTypes
 from emo_master.core.project.snapshots import _inside, canonicalJson
 from emo_master.core.project.test_delivery import packagePath, readJson, trustedRegistry
 from emo_master.core.workflow.compiler import WorkflowCompiler
@@ -55,9 +56,21 @@ def _files(value, schema, visit):
     return value
 
 
-def _validate(document, root, registry):
-    prepared = prepareRuntimeProject(document, root, registry)
-    WorkflowCompiler(operatorRegistry=registry).compile(prepared)
+def _validate(document, root, registry, deviceTypes=None, *, portable=False):
+    _devices(document, deviceTypes)
+    prepared = prepareRuntimeProject(document, root, registry, deviceTypes=deviceTypes)
+    if portable:
+        def validateDeviceInput(raw, mode):
+            if mode == "directory":
+                raise ValueError("packaged device input directories are unsupported")
+            if mode == "open":
+                path = Path(raw).resolve()
+                if not path.is_relative_to(root.resolve()):
+                    raise ValueError("packaged device input escapes package root")
+                _inside(root, path.relative_to(root.resolve()).as_posix())
+            return raw
+        _deviceFiles(prepared, deviceTypes, validateDeviceInput)
+    WorkflowCompiler(operatorRegistry=registry, deviceTypes=deviceTypes).compile(prepared)
     issues = validateBindings(prepared, {key: item.manifest for key, item in registry.items()})
     if issues:
         raise ValueError("project page bindings invalid: " + "; ".join(issue.message for issue in issues))
@@ -69,15 +82,36 @@ def _operators(document, registry):
     return {key: registry[key].manifest.version for key in sorted(ids)}
 
 
-def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None) -> Path:
+def _devices(document, deviceTypes):
+    declarations = {value.deviceTypeId: deviceDeclaration(value, deviceTypes)
+                    for value in document.devices.definitions.values()}
+    return {key: dict(version=value.version, sha256=hashlib.sha256(
+        canonicalJson(value.model_dump()).encode()).hexdigest()) for key, value in sorted(declarations.items())}
+
+
+def _deviceFiles(document, deviceTypes, visit):
+    for definition in document.devices.definitions.values():
+        declaration = deviceDeclaration(definition, deviceTypes)
+        for section, schema in (("connection", declaration.connectionSchema), ("defaults", declaration.defaultsSchema)):
+            setattr(definition, section, _files(getattr(definition, section), schema, visit))
+    for flow in document.workflows.values():
+        for node in flow.nodes:
+            for slot, binding in node.deviceBindings.items():
+                declaration = deviceDeclaration(document.devices.definitions[binding.deviceId], deviceTypes)
+                if slot in node.deviceOverrides:
+                    node.deviceOverrides[slot] = _files(node.deviceOverrides[slot], declaration.defaultsSchema, visit)
+
+
+def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None, deviceTypes=None) -> Path:
     registry = trustedRegistry() if registry is None else registry
+    deviceTypes = trustedDeviceTypes() if deviceTypes is None else deviceTypes
     projectFile = resolveProjectFile(Path(projectDir).resolve(strict=True))
     root = projectFile.parent
     outputDir = Path(outputDir).resolve()
     if outputDir.is_relative_to(root):
         raise ValueError("package output must be outside the engineering project")
     document = ProjectDocument.model_validate(migrateProjectPayload(loadProjectPayload(projectFile), enableProduction=True))
-    prepared = _validate(document, root, registry)
+    prepared = _validate(document, root, registry, deviceTypes)
     assert document.resources is not None
     sources = {item.path: _inside(root, item.path) for item in document.resources.items.values()}
     sourceNames = {path.resolve(): name for name, path in sources.items()}
@@ -101,6 +135,24 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None) -> 
                 # Only input paths change. Keep the project's device and output values verbatim.
                 targetNode = original[node.nodeId]
                 targetNode.params = _replaceInputs(targetNode.params, portable, registry[node.operatorId].manifest.paramSchema)
+    def collectDevice(raw, mode):
+        if mode == "directory":
+            raise ValueError("runtime packages require explicit files, not device input directories")
+        return collect(raw, mode)
+    _deviceFiles(prepared, deviceTypes, collectDevice)
+    for deviceId, definition in document.devices.definitions.items():
+        declaration = deviceDeclaration(definition, deviceTypes)
+        for section, schema in (("connection", declaration.connectionSchema), ("defaults", declaration.defaultsSchema)):
+            setattr(definition, section, _replaceInputs(getattr(definition, section),
+                    getattr(prepared.devices.definitions[deviceId], section), schema))
+    for wid, flow in document.workflows.items():
+        preparedNodes = {node.nodeId: node for node in prepared.workflows[wid].nodes}
+        for node in flow.nodes:
+            for slot, binding in node.deviceBindings.items():
+                if slot in node.deviceOverrides:
+                    declaration = deviceDeclaration(document.devices.definitions[binding.deviceId], deviceTypes)
+                    node.deviceOverrides[slot] = _replaceInputs(node.deviceOverrides[slot],
+                        preparedNodes[node.nodeId].deviceOverrides[slot], declaration.defaultsSchema)
     metadata = canonicalJson(document.model_dump(mode="json")).encode()
     if len(metadata) > MAX_METADATA or len(sources) + 2 > MAX_ENTRIES:
         raise ValueError("runtime package metadata or file count limit")
@@ -123,10 +175,12 @@ def buildRuntimePackage(projectDir: Path, outputDir: Path, *, registry=None) -> 
             archive.writestr("project.json", metadata)
             manifest = dict(format=FORMAT, application=__version__, projectSchema=document.schemaVersion,
                 projectId=document.project.projectId, requiredOperators=_operators(document, registry), files=checksums)
+            if document.schemaVersion == "2.6":
+                manifest["requiredDeviceTypes"] = _devices(document, deviceTypes)
             archive.writestr("manifest.json", canonicalJson(manifest))
         # Validate the copied bytes, not just the source's earlier hash.
         with tempfile.TemporaryDirectory(prefix="emo-runtime-export-") as directory:
-            _extract(temporary, Path(directory), registry)
+            _extract(temporary, Path(directory), registry, deviceTypes)
         os.replace(temporary, destination)
         return destination
     finally:
@@ -148,7 +202,7 @@ def _replaceInputs(original, prepared, schema):
     return original
 
 
-def _extract(package, stage, registry):
+def _extract(package, stage, registry, deviceTypes=None):
     with zipfile.ZipFile(package) as archive:
         entries = archive.infolist()
         if len(entries) > MAX_ENTRIES or sum(i.file_size for i in entries) > MAX_TOTAL:
@@ -169,7 +223,7 @@ def _extract(package, stage, registry):
         if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
             raise ValueError("runtime package metadata limit")
         manifest = readJson(archive.read("manifest.json"))
-        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5"}:
+        if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6"}:
             raise ValueError("unsupported runtime package format")
         files = manifest.get("files")
         if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):
@@ -186,13 +240,17 @@ def _extract(package, stage, registry):
         if (document.schemaVersion != manifest["projectSchema"] or document.project.projectId != manifest.get("projectId")
                 or _operators(document, registry) != manifest.get("requiredOperators")):
             raise ValueError("incompatible operator versions or project identity")
-        _validate(document, stage, registry)
+        if document.schemaVersion == "2.6" and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
+            raise ValueError("incompatible device metadata lock")
+        _validate(document, stage, registry, deviceTypes, portable=True)
         return document, manifest
 
 
-def installRuntimePackage(package: Path, destination: Path, *, registry=None, owner=None, projectFile=None) -> ProjectDocument:
+def installRuntimePackage(package: Path, destination: Path, *, registry=None, deviceTypes=None,
+                          owner=None, projectFile=None) -> ProjectDocument:
     """Normal failures restore replaced assets; crashes leave the sibling backup for repair."""
     registry = trustedRegistry() if registry is None else registry
+    deviceTypes = trustedDeviceTypes() if deviceTypes is None else deviceTypes
     destination = Path(destination).resolve()
     if owner is not None and (owner.root != destination or owner.stream is None):
         raise ValueError("engineering directory owner mismatch")
@@ -200,7 +258,7 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, ow
     with nullcontext() if owner is not None else DirectoryOwner(destination):
         with tempfile.TemporaryDirectory(prefix=".runtime-stage-", dir=destination.parent) as directory:
             stage = Path(directory)
-            document, manifest = _extract(package, stage, registry)
+            document, manifest = _extract(package, stage, registry, deviceTypes)
             current = (resolveProjectFile(Path(projectFile) if projectFile else destination)
                        if projectFile or projectFiles(destination) else destination / "project.json")
             if current.parent.resolve() != destination:
@@ -228,6 +286,7 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, ow
                     for node in flow.nodes:
                         if node.kind == "operator":
                             _files(node.params, registry[node.operatorId].manifest.paramSchema, output)
+                _deviceFiles(previous, deviceTypes, output)
                 if any((destination / name).resolve() == path or (destination / name).resolve().is_relative_to(path)
                        or path.is_relative_to((destination / name).resolve())
                        for name in manifest["files"] if name != "project.json" for path in outputs):

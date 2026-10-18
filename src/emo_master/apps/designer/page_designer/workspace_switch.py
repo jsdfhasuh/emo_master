@@ -9,10 +9,11 @@ class WorkspaceSwitch(QWidget):
         super().__init__(parent)
         self.setObjectName('workspaceSelector')
         self.setAccessibleName('设计工作区')
-        self.setToolTip('选择流程设计或页面设计；切换前校验当前编辑内容')
+        self.setToolTip('选择设计工作区')
         self.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Fixed)
         self._index = 0
         self._position = 0.0
+        self._compact = False
         self._actions = tuple(actions)
         self.buttons = []
         layout = QHBoxLayout(self)
@@ -55,9 +56,22 @@ class WorkspaceSwitch(QWidget):
         # An em is the font's pixel size, not its taller line-spacing height.
         # Using line height over-allocates on Linux and hides Stop at 480 px.
         em = self.fontInfo().pixelSize()
-        width = max(92, max(max(metrics.horizontalAdvance(a.text()), 4 * em)
-                            for a in self._actions) + 32)
+        width = max(58 if self._compact else 92,
+                    max(max(metrics.horizontalAdvance(button.text()), (2 if self._compact else 4) * em)
+                        for button in self.buttons) + (20 if self._compact else 32))
         return QSize(width * len(self.buttons) + 8, max(36, metrics.height() + 16))
+
+    def setCompact(self, compact):
+        changed = self._compact != compact
+        self._compact = compact
+        for button, action in zip(self.buttons, self._actions):
+            text = action.text()[:2] if compact else action.text()
+            if button.text() != text:
+                button.setText(text)
+                changed = True
+            button.setToolTip(action.text())
+        if changed:
+            self.updateGeometry()
 
     def minimumSizeHint(self):
         return self.sizeHint()
@@ -93,7 +107,7 @@ class WorkspaceSwitch(QWidget):
 
     def selectedRect(self):
         first, last = self.buttons[0].geometry(), self.buttons[-1].geometry()
-        return QRectF(first.x() + (last.x() - first.x()) * self._position,
+        return QRectF(first.x() + (last.x() - first.x()) * self._position / max(1, len(self.buttons) - 1),
                       first.y(), first.width(), first.height())
 
     def paintEvent(self, event):

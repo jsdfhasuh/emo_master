@@ -89,6 +89,11 @@ class EditingTools(QObject):
         self.pageName = QLineEdit()
         self.form.addRow('页面名称', self.pageName)
         self.fields = {}
+        for name, label in [('imageResourceId', '静态图片资源'), ('iconResourceId', '按钮图标资源')]:
+            field = QComboBox()
+            field.addItem('未选择', None)
+            self.fields[name] = field
+            self.form.addRow(label, field)
         for name, label in [('title', '标题'), ('text', '文字'), ('emptyText', '空值文字'), ('unit', '单位')]:
             field = QLineEdit()
             self.fields[name] = field
@@ -395,7 +400,8 @@ class EditingTools(QObject):
             self.extra.setCellWidget(row, 1, fields)
 
     def _fieldState(self):
-        values = tuple((name, field.text() if isinstance(field, QLineEdit) else field.value())
+        values = tuple((name, field.currentData() if isinstance(field, QComboBox) else
+                        field.text() if isinstance(field, QLineEdit) else field.value())
                        for name, field in self.fields.items())
         rows = tuple(tuple(self._cellValue(r, c) for c in range(4)) for r in range(self.extra.rowCount()))
         return (values, self.pageName.text(), self.destination.currentData(), self.actionMode.currentData(), self.actionScope.currentData(),
@@ -448,6 +454,18 @@ class EditingTools(QObject):
             self.title.setWordWrap(True)
         for name in ['title', 'text', 'emptyText', 'unit']:
             self.fields[name].setText(getattr(component.props, name))
+        resources = self.w.session.document().resources
+        for name, purpose in [('imageResourceId', 'page_image'), ('iconResourceId', 'icon')]:
+            field = self.fields[name]
+            field.clear()
+            field.addItem('未选择', None)
+            for resourceId, resource in resources.items.items() if resources else []:
+                if resource.purpose == purpose:
+                    field.addItem(resourceId + ' · ' + resource.path, resourceId)
+            value = getattr(component.props, name)
+            if value and field.findData(value) < 0:
+                field.addItem('资源缺失 · ' + value, value)
+            field.setCurrentIndex(max(0, field.findData(value)))
         for name in ['row', 'column', 'rowSpan', 'columnSpan']:
             self.fields[name].setValue(getattr(component.layout, name))
         for name in ['decimals', 'pageSize', 'fontSize']:
@@ -526,6 +544,8 @@ class EditingTools(QObject):
         props.update({key: self.fields[key].text() for key in ['title', 'text', 'emptyText', 'unit'] if key in applicable})
         props.update({key: self.fields[key].value() for key in ['decimals', 'pageSize', 'fontSize'] if key in applicable})
         props.update({key: field.currentData() for key, field in self.appearance.items()})
+        props.update({key: self.fields[key].currentData() for key in ['imageResourceId', 'iconResourceId']
+                      if key in applicable})
         rows = [[self._cellValue(r, c) for c in range(4)]
                 for r in range(self.extra.rowCount())]
         if item.type == 'table':

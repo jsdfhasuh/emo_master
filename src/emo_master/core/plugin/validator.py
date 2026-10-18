@@ -213,6 +213,36 @@ def validateManifestFields(
             )
         )
 
+    from emo_master.core.plugin.devices import DeviceRequirement
+    from emo_master.core.project.devices import DeviceId
+    from pydantic import TypeAdapter
+    try:
+        requirements = TypeAdapter(dict[DeviceId, DeviceRequirement]).validate_python(
+            manifestData.get("deviceRequirements", {}), strict=True)
+    except ValueError as error:
+        issues.append(ValidationIssue("D01", "E_DEVICE_REQUIREMENT", str(error)))
+        requirements = {}
+
+    bindingSince = manifestData.get("deviceBindingSince", "")
+    if bindingSince not in ("", "2.6") or (bindingSince and not requirements):
+        issues.append(ValidationIssue("D01", "E_DEVICE_REQUIREMENT", "invalid deviceBindingSince"))
+
+    nextCycle = manifestData.get("nextCycleParameterPaths", [])
+    if (not isinstance(nextCycle, list) or any(not isinstance(path, str) for path in nextCycle)
+            or len(nextCycle) != len(set(nextCycle))):
+        issues.append(ValidationIssue("R01", "E_MANIFEST_UPDATE_CONTRACT", "nextCycleParameterPaths must be unique field paths"))
+        nextCycle = []
+    for path in nextCycle:
+        spec = paramSchema or {}
+        for part in path.split("."):
+            properties = spec.get("properties", {})
+            spec = properties.get(part, {}) if isinstance(properties, dict) else {}
+            if not isinstance(spec, dict):
+                spec = {}
+        if (spec.get("type") not in {"number", "integer", "boolean", "string"}
+                or spec.get("xWidget") == "file" or spec.get("xResourcePurpose")):
+            issues.append(ValidationIssue("R01", "E_MANIFEST_UPDATE_CONTRACT", "cycle-safe field must be a scalar, non-resource parameter: " + path))
+
     if issues:
         return None, issues
     if inputPorts is None or outputPorts is None or paramSchema is None:
@@ -242,6 +272,9 @@ def validateManifestFields(
         maxCoreVersion=parsedStrings["maxCoreVersion"],
         editor=editor,
         iconResource=parseIconResource(manifestData)[0],
+        deviceRequirements=requirements,
+        deviceBindingSince=str(bindingSince),
+        nextCycleParameterPaths=tuple(nextCycle),
     )
     return manifest, []
 

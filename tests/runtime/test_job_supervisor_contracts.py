@@ -186,6 +186,17 @@ def testGracefulStopTimeoutForceTerminatesAndCleansHandle() -> None:
     assert supervisor.getProcess(record.jobId) is None
 
 
+def testGracefulStopWatcherDoesNotTouchAnAlreadyRetiredProcess() -> None:
+    supervisor, _repository, _eventStore, _process = _supervisor()
+    supervisor._handles.pop("job-stop")
+    class ClosedProcess:
+        def join(self, *args, **kwargs):
+            raise AssertionError("join on a closed Windows process handle")
+        def is_alive(self):
+            raise AssertionError("query on a closed Windows process handle")
+    supervisor._enforceGracefulStop("job-stop", ClosedProcess())
+
+
 def testShutdownEmitsStoppingTerminationAndAbortedEvents() -> None:
     supervisor, repository, eventStore, _process = _supervisor()
 

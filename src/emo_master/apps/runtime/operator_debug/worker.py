@@ -204,10 +204,12 @@ class DebugWorker:
         if spec.get("kind") == "workflow":
             from emo_master.apps.runtime.workflow_debug.worker import runWorkflowDebug
             target, extra = runWorkflowDebug, (self.snapshotAck,)
-        self.process = context.Process(target=target,
-            args=(encode(dict(spec, workspacePath=self.workspace.name), MAX_REQUEST_BYTES), childRead, childWrite,
-                  self.cancel, self.stop, self.heartbeat, *extra),
-            name="emo-operator-debug")
+        args = (encode(dict(spec, workspacePath=self.workspace.name), MAX_REQUEST_BYTES), childRead, childWrite,
+                self.cancel, self.stop, self.heartbeat, *extra)
+        if spec.get('_resourceLeasePath'):
+            from emo_master.apps.runtime.project_config.resource_lease import runWithResourceLease
+            target, args = runWithResourceLease, (spec['_resourceLeasePath'], target, args)
+        self.process = context.Process(target=target, args=args, name="emo-operator-debug")
         self.reader = threading.Thread(target=self._read, name="debug-pipe-reader", daemon=True)
         self.writer = threading.Thread(target=self._write, name="debug-pipe-writer", daemon=True)
         self.processStarted = False

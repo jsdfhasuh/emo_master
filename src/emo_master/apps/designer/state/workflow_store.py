@@ -12,7 +12,14 @@ from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 from emo_master.apps.designer.state.workflow_transfers import workflowTransfers
 
 
+def _dispatchTargets(node):
+    params = node.get("params")
+    targets = params.get("targets", []) if isinstance(params, dict) else []
+    return [target for target in targets if isinstance(target, dict)] if isinstance(targets, list) else []
+
+
 _WORKFLOW_RELATION_LABELS = {
+    "dispatch": "Dispatch",
     "subflow": "Subflow",
     "repeat-body": "Repeat · Body",
     "foreach-body": "ForEach · Body",
@@ -96,7 +103,7 @@ class WorkflowStore:
         )
         if document.production is not None:
             self.projectExtensions["production"] = document.production.model_dump()
-        if document.schemaVersion in {"2.4", "2.5"}:
+        if document.schemaVersion in {"2.4", "2.5", "2.6"}:
             self.projectExtensions["globalVariables"] = {key: value.model_dump() for key, value in document.globalVariables.items()}
         if document.communication is not None:
             self.projectExtensions["communication"] = document.communication.model_dump()
@@ -160,7 +167,7 @@ class WorkflowStore:
             # The canvas uses an empty string for the absent operator of a
             # control/boundary node. Merely visiting it must preserve an
             # explicit JSON null, rather than create a spurious project edit.
-            if (node.get("kind") in {"subflow", "loop", "workflow_input", "workflow_output"}
+            if (node.get("kind") in {"subflow", "loop", "dispatch", "join", "workflow_input", "workflow_output"}
                     and previous.get("kind") == node.get("kind")
                     and "operatorId" in previous and previous["operatorId"] is None
                     and node.get("operatorId") == ""):
@@ -275,6 +282,9 @@ class WorkflowStore:
             for node in workflow.nodes:
                 if node.get("targetWorkflowId") == workflowId:
                     references.append(sourceId)
+                if node.get("kind") == "dispatch" and any(t.get("workflowId") == workflowId
+                        for t in _dispatchTargets(node)):
+                    references.append(sourceId)
                 loop = node.get("loop")
                 if isinstance(loop, dict) and any(
                     loop.get(field) == workflowId for field in loopWorkflowReferenceFields(loop)
@@ -324,6 +334,10 @@ class WorkflowStore:
                 rawNodeId = node.get("nodeId")
                 sourceNodeId = rawNodeId if isinstance(rawNodeId, str) else ""
                 kind = node.get("kind")
+                if kind == "dispatch":
+                    for target in _dispatchTargets(node):
+                        appendReference(sourceWorkflowId, sourceNodeId, "dispatch", target.get("workflowId"))
+                    continue
                 if kind == "subflow":
                     appendReference(
                         sourceWorkflowId,
@@ -602,7 +616,8 @@ class WorkflowStore:
         revision = project.get("revision", 1)
         project["revision"] = (revision if isinstance(revision, int) else 1) + 1
         return {
-            "schemaVersion": ("2.5" if "communication" in self.projectExtensions
+            "schemaVersion": ("2.6" if self.devices.get("schemaVersion") == "1.0"
+                              else "2.5" if "communication" in self.projectExtensions
                               else "2.4" if "globalVariables" in self.projectExtensions
                               else "2.3" if "production" in self.projectExtensions
                               else "2.2" if self.projectExtensions else "2.1"),

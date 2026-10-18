@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 from time import monotonic
 from itertools import count
 from typing import TYPE_CHECKING
@@ -275,78 +276,61 @@ class LoopRunner:
         state = {name: inputs[name] for name in node.inputPorts}
         metrics: dict[str, object] = {}
         diagnostics: dict[str, object] = {}
-        booleanCondition = whileConditionMode(node.loop) == "boolean"
-        variableCondition = whileConditionMode(node.loop) == "globalVariable"
-        conditionWorkflowId = None if booleanCondition or variableCondition else str(node.loop["conditionWorkflowId"])
-        bodyWorkflowId = str(node.loop["bodyWorkflowId"])
-        conditionWorkflow = self.workflowRunner.compiledProject.workflows[
-            conditionWorkflowId
-        ] if conditionWorkflowId is not None else None
-        bodyWorkflow = self.workflowRunner.compiledProject.workflows[bodyWorkflowId]
         for index in (count() if node.loop.get("unlimited", False) else range(maximum)):
             self._check(cancellation, timeoutMs, startedAt)
-            iterationContext = context.forIteration(index)
-            self._iterationEvent("loop.iteration.started", iterationContext, index)
-            if variableCondition:
-                condition = self.workflowRunner.globalVariables.get(str(node.loop["conditionVariableId"]))
-            elif booleanCondition:
-                condition = state.get(str(node.loop["conditionPort"]))
-            else:
-                conditionContext = context.childWorkflow(
-                    conditionWorkflowId, node.nodeId, "loop_condition"
-                ).forIteration(index)
-                conditionInputs = {
-                    name: state[name]
-                    for name in conditionWorkflow.inputs
-                    if name in state
-                }
-                conditionResult = self.workflowRunner.run(
-                    conditionWorkflowId,
-                    conditionInputs,
-                    conditionContext,
-                    cancellation,
-                )
-                metrics.update(conditionResult.metrics)
-                diagnostics.update(conditionResult.diagnostics)
-                condition = conditionResult.outputs.get("continue")
-            self._debugPoint("loop.condition", node, dict(state=state, condition=condition), iterationContext)
-            if not isinstance(condition, bool):
-                raise LoopExecutionError(
-                    "E_INPUT_TYPE", "While condition must be a boolean value" if booleanCondition or variableCondition
-                    else "While condition must return continue:boolean"
-                )
-            if not condition:
+            scope = nullcontext(context)
+            if node.loop.get("cycleBoundary") == "iteration":
+                if self.workflowRunner.cycleScope is None:
+                    raise LoopExecutionError("E_CYCLE_RUNTIME_REQUIRED", "iteration boundaries require the managed Runtime cycle service")
+                scope = self.workflowRunner.cycleScope(context)
+            with scope as cycleContext:
+                iterationContext = cycleContext.forIteration(index)
+                self._iterationEvent("loop.iteration.started", iterationContext, index)
+                condition, state = self._whileIteration(node, state, iterationContext, cancellation, metrics, diagnostics)
                 self._iterationEvent("loop.iteration.completed", iterationContext, index)
+            if not condition:
                 return self.workflowRunner.result(state, metrics, diagnostics)
-            self._debugPoint("loop.body", node, state, iterationContext)
-            bodyContext = context.childWorkflow(
-                bodyWorkflowId, node.nodeId, "loop_body"
-            ).forIteration(index)
-            bodyInputs = {
-                name: state[name] for name in bodyWorkflow.inputs if name in state
-            }
-            bodyInputs["__iteration__"] = index
-            bodyResult = self.workflowRunner.run(
-                bodyWorkflowId,
-                bodyInputs,
-                bodyContext,
-                cancellation,
-            )
-            nextState: dict[str, object] = {}
-            for name in node.outputPorts:
-                if name not in bodyResult.outputs:
-                    raise LoopExecutionError(
-                        "E_OUTPUT_MISSING", f"While body state output is missing: {name}"
-                    )
-                nextState[name] = bodyResult.outputs[name]
-            state = nextState
-            metrics.update(bodyResult.metrics)
-            diagnostics.update(bodyResult.diagnostics)
-            self._iterationEvent("loop.iteration.completed", iterationContext, index)
             self._check(cancellation, timeoutMs, startedAt)
         raise LoopExecutionError(
             "E_LOOP_LIMIT_REACHED", "while loop reached maxIterations"
         )
+
+    def _whileIteration(self, node, state, context, cancellation, metrics, diagnostics):
+        mode = whileConditionMode(node.loop)
+        if mode == "globalVariable":
+            condition = self.workflowRunner.globalVariables.get(str(node.loop["conditionVariableId"]))
+        elif mode == "boolean":
+            condition = state.get(str(node.loop["conditionPort"]))
+        else:
+            workflowId = str(node.loop["conditionWorkflowId"])
+            workflow = self.workflowRunner.compiledProject.workflows[workflowId]
+            conditionContext = context.childWorkflow(workflowId, node.nodeId, "loop_condition")
+            result = self.workflowRunner.run(workflowId,
+                {name: state[name] for name in workflow.inputs if name in state}, conditionContext, cancellation)
+            metrics.update(result.metrics)
+            diagnostics.update(result.diagnostics)
+            condition = result.outputs.get("continue")
+        self._debugPoint("loop.condition", node, dict(state=state, condition=condition), context)
+        if not isinstance(condition, bool):
+            raise LoopExecutionError("E_INPUT_TYPE", "While condition must be a boolean value" if mode != "workflow"
+                                     else "While condition must return continue:boolean")
+        if not condition:
+            return False, state
+        self._debugPoint("loop.body", node, state, context)
+        workflowId = str(node.loop["bodyWorkflowId"])
+        workflow = self.workflowRunner.compiledProject.workflows[workflowId]
+        bodyContext = context.childWorkflow(workflowId, node.nodeId, "loop_body")
+        inputs = {name: state[name] for name in workflow.inputs if name in state}
+        inputs["__iteration__"] = context.iterationPath[-1]
+        result = self.workflowRunner.run(workflowId, inputs, bodyContext, cancellation)
+        nextState = {}
+        for name in node.outputPorts:
+            if name not in result.outputs:
+                raise LoopExecutionError("E_OUTPUT_MISSING", f"While body state output is missing: {name}")
+            nextState[name] = result.outputs[name]
+        metrics.update(result.metrics)
+        diagnostics.update(result.diagnostics)
+        return True, nextState
 
     def _check(self, cancellation, timeoutMs, startedAt) -> None:
         cancellation.raise_if_cancelled()

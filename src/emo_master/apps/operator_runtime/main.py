@@ -18,6 +18,7 @@ from emo_master.apps.operator_runtime.controller import ProductionRuntime
 from emo_master.clients.runtime.display_session import DisplaySession
 from emo_master.ui.presentation.hub import DisplayHub
 from emo_master.ui.presentation.renderer import RuntimePages
+from emo_master.core.presentation.assets import pageAssets
 
 
 class OperatorWindow(QWidget):
@@ -311,7 +312,7 @@ class OperatorWindow(QWidget):
         if self.session:
             self.hub = DisplayHub(self.session, self)
         self.pages = RuntimePages(self.controller.presentationForWorkflow(document.entryWorkflowId),
-            hub=self.hub, label=document.project.name, parent=self)
+            hub=self.hub, label=document.project.name, parent=self, assets=pageAssets(document))
         self.pages.banner.hide()
         self.pageLayout.addWidget(self.pages)
         self.pages.show()
@@ -367,7 +368,7 @@ class OperatorWindow(QWidget):
             if hub:
                 self.workflowHubs[key] = hub
             pages = RuntimePages(self.controller.presentationForWorkflow(key), hub=hub,
-                                 label=workflow.name, parent=self.workflowTabs)
+                                 label=workflow.name, parent=self.workflowTabs, assets=pageAssets(self.controller.document))
             pages.banner.hide()
             self.workflowPages[key] = pages
             self.workflowControls[key]["layout"].addWidget(pages)
@@ -443,13 +444,25 @@ class OperatorWindow(QWidget):
             self.close()
             return
         self.state = value
+        revision = value.get("pagePublicationRevision") if isinstance(value, dict) else None
+        previousRevision = getattr(self, "_pagePublicationRevision", None)
+        if revision is not None:
+            self._pagePublicationRevision = revision
+        if (revision is not None and previousRevision is not None and revision != previousRevision
+                and kind not in {"loaded", "started", "workflowsStarted", "pagesPublished"}):
+            self._removePages()
+            def retireOldPageSession():
+                self._closeSession()
+                return self.controller.status()
+            self.launch("pagesPublished", retireOldPageSession)
+            return
         self._ensureCommunication()
         if self.closing:
             self.shutdown()
             return
         if kind == "loaded" and self.controller.document:
             self.selectedWorkflowIds = self.controller.document.startupWorkflows()
-        if kind in {"loaded", "started", "workflowsStarted"} and self.controller.document:
+        if kind in {"loaded", "started", "workflowsStarted", "pagesPublished"} and self.controller.document:
             document = self.controller.document
             self.projectPath = self.controller.runtime.loadedProjectFile
             self.projectLabel.setText(document.project.name)

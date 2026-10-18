@@ -72,7 +72,7 @@ def testDirectButtonsSwitchWorkspacesWithoutAddingHistoryOrJobs(designer):  # no
     c, e, key = setupPage(designer)
     switch = c.chrome.selector
     before, history = c.session.payload(), len(c.session._undo)
-    assert [b.text() for b in switch.buttons] == ['流程设计', '页面设计']
+    assert [b.text() for b in switch.buttons] == ['流程设计', '页面设计', '设备管理']
     assert all(b.menu() is None for b in switch.buttons)
     QTest.mouseClick(switch.buttons[0], Qt.LeftButton)
     assert not c.pageActive() and switch.currentIndex() == 0

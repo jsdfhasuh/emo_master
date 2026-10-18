@@ -48,6 +48,7 @@ DEFAULTS: dict[str, object] = {
 }
 
 PARAM_SCHEMA: dict[str, object] = {
+    "xDeviceActionFields": [],
     "type": "object",
     "additionalProperties": False,
     "properties": {
@@ -277,12 +278,29 @@ class HuarayCameraOperator:
                     return _paramError(f"{name} must be a non-negative integer for custom ROI")
         return None
 
+    @staticmethod
+    def validateDeviceParams(params):
+        return _paramError("managed camera parameters belong to the device") if params else None
+
     def executeNode(
         self,
         inputs: dict[str, object],
         params: dict[str, object],
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
+        captureDevice = runtimeContext.get("captureDevice")
+        if callable(captureDevice):
+            image, descriptor = captureDevice("camera")
+            acquisition = descriptor["acquisition"]
+            height, width = image.shape[:2]
+            space = CoordinateSpace2D(reference=frameReference(runtimeContext, self.meta.operatorId),
+                sourceId=acquisition["sourceId"], imageWidth=width, imageHeight=height,
+                transformToSource=(1.0, 0.0, 0.0, 1.0, float(acquisition["offsetX"]), float(acquisition["offsetY"])))
+            return dict(status="ok", outputs=dict(image=image,
+                frame=BBox2D(0.0, 0.0, float(width), float(height), space).toPayload(),
+                blockId=acquisition["blockId"], deviceTimestamp=acquisition["deviceTimestamp"],
+                actualExposureUs=float(acquisition["actualExposureUs"])),
+                metrics=dict(captureAttempts=1), diagnostics=dict(deviceFrame=descriptor))
         _ = inputs
         if runtimeContext.get("isPreview"):
             params = dict(params, waitMode="bounded", sequencePolicy="off",

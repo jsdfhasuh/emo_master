@@ -29,12 +29,14 @@ class OperatorExecutor:
         coordinateSnapshots: CoordinateSnapshots | None = None,
         logManager: OperatorLogManager | None = None,
         communication: Any = None,
+        devices: Any = None,
     ) -> None:
         self.operatorRegistry = operatorRegistry
         self.eventPublisher = eventPublisher
         self.globalVariables = globalVariables if globalVariables is not None else ReadOnlyVariables({})
         self.globalCounters = globalCounters
         self.communication = communication
+        self.devices = devices
         self.coordinateSnapshots = coordinateSnapshots if coordinateSnapshots is not None else CoordinateSnapshots()
         self._operatorLogManager = logManager if logManager is not None else OperatorLogManager(
             self.publish if eventPublisher is not None else None
@@ -67,6 +69,9 @@ class OperatorExecutor:
     @staticmethod
     def failureDiagnostics(node, context, nodeDiagnostics, error):
         diagnostics = getattr(error, "diagnostics", {})
+        if node.devicePlans and hasattr(error, "outcome"):
+            diagnostics = {**diagnostics, "deviceOutcome": dict(code=getattr(error, "code", "E_DEVICE_ERROR"),
+                outcome=error.outcome, message=str(error))}
         if node.operatorId == "communication.tcp.session_send" and "tcpReceipt" in nodeDiagnostics:
             diagnostics = {**diagnostics, "tcpReceipt": nodeDiagnostics["tcpReceipt"]}
         if node.operatorId == "vision.io.sqlite_writer" and "sqliteReceipt" in nodeDiagnostics:
@@ -109,6 +114,20 @@ class OperatorExecutor:
                     f"node inputs have invalid types: {', '.join(invalidInputs)}",
                     node.nodeId,
                 )
+        deviceParameters = {}
+        if node.devicePlans:
+            from emo_master.core.plugin.devices import DeviceType
+            from emo_master.core.project.devices import DeviceDefinition
+            if self.devices is None:
+                raise WorkflowExecutionError("E_DEVICE_RUNTIME_UNAVAILABLE", "managed device proxy missing", node.nodeId)
+            variableIds = {binding["variableId"] for plan in node.devicePlans.values()
+                           for binding in plan["bindings"].values() if binding["source"] == "variable"}
+            variables = self.globalVariables.readMany(list(variableIds)) if variableIds else {}
+            for slot, plan in node.devicePlans.items():
+                declaration = DeviceType.model_validate(plan["declaration"])
+                definition = DeviceDefinition.model_validate(plan["definition"])
+                deviceParameters[slot] = declaration.resolveParameters(
+                    definition, plan["overrides"], plan["bindings"], variables, nodeInput)
         operator = self._operatorForNode(node, context, cancellation)
         if operator is None or not hasattr(operator, "executeNode"):
             raise WorkflowExecutionError("E_OPERATOR_UNAVAILABLE", f"operator not found: {node.operatorId}", node.nodeId)
@@ -133,6 +152,8 @@ class OperatorExecutor:
             "projectId": context.projectId,
             "workflowId": context.workflowId,
             "workflowRunId": context.workflowRunId,
+            "cycleId": context.cycleId,
+            "planRevision": context.planRevision,
             "parentWorkflowRunId": context.parentWorkflowRunId,
             "nodeId": node.nodeId,
             "nodeRunId": context.nodeRunId,
@@ -147,6 +168,12 @@ class OperatorExecutor:
             "coordinateSnapshots": self.coordinateSnapshots,
             "communication": self.communication,
         }
+        if node.devicePlans:
+            runtimeContext["executeDevice"] = lambda slot, action, arguments: self.devices.call(
+                action, deviceId=node.devicePlans[slot]["deviceId"], params=deviceParameters[slot],
+                arguments=arguments, cycleId=context.cycleId or context.workflowRunId)
+            runtimeContext["captureDevice"] = lambda slot: self.devices.capture(
+                node.devicePlans[slot]["deviceId"], deviceParameters[slot], context.cycleId or context.workflowRunId)
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert
             runtimeContext["sqliteInsert"] = insert

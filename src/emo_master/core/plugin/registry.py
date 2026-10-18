@@ -74,6 +74,7 @@ class PluginRegistry:
         return self.scanRoots((pluginRoot,))
 
     def scanRoots(self, pluginRoots: Iterable[Path | str]) -> RegistryScanResult:
+        pluginRoots = tuple(pluginRoots)
         activeOperators: dict[str, PluginDescriptor] = {}
         manifestPaths, rejectedOperators = self._discoverManifestPaths(pluginRoots)
         recordsByOperatorId: dict[str, list[_ManifestRecord]] = {}
@@ -238,10 +239,17 @@ class PluginRegistry:
                 iconIssues=iconIssues,
             )
 
+        deviceTypes, rejectedDeviceTypes = self.scanDeviceTypes(pluginRoots)
         return RegistryScanResult(
             activeOperators=activeOperators,
             rejectedOperators=rejectedOperators,
+            deviceTypes=deviceTypes,
+            rejectedDeviceTypes=rejectedDeviceTypes,
         )
+
+    def scanDeviceTypes(self, pluginRoots: Iterable[Path | str]):
+        from emo_master.core.plugin.devices import scanDeviceTypes
+        return scanDeviceTypes(pluginRoots, self.coreVersion)
 
     def _discoverManifestPaths(
         self,

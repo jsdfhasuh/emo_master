@@ -46,8 +46,11 @@ class WorkflowRunner:
         globalVariables: object | None = None,
         debugController: Any = None,
         communication: Any = None,
+        devices: Any = None,
+        cycleScope: Any = None,
     ) -> None:
         self.compiledProject = compiledProject
+        self.cycleScope = cycleScope
         self.operatorRegistry = operatorRegistry
         self.eventPublisher = eventPublisher
         self.maxCallDepth = maxCallDepth
@@ -83,6 +86,7 @@ class WorkflowRunner:
             coordinateSnapshots=self.coordinateSnapshots,
             logManager=self._operatorLogManager,
             communication=communication,
+            devices=devices,
         )
         # Preserve the existing lifecycle inspection hooks while ownership moves.
         self._lifecycleOperators = self.operatorExecutor._lifecycleOperators
@@ -93,6 +97,8 @@ class WorkflowRunner:
 
         self.loopRunner = LoopRunner(self)
         self.subflowRunner = SubflowRunner(self)
+        from emo_master.apps.runtime.frame_dispatch.runner import DispatchRunner
+        self.dispatchRunner = DispatchRunner(devices, self.publish)
 
     def run(
         self,
@@ -337,6 +343,8 @@ class WorkflowRunner:
         if node.kind == "loop":
             result = self.loopRunner.run(node, nodeInput, context, cancellation)
             return result.outputs, result.metrics, result.diagnostics
+        if node.kind in {"dispatch", "join"}:
+            return self.dispatchRunner.run(node, nodeInput, context, cancellation)
         return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
 
     def disposeOperators(self) -> WorkflowExecutionError | None:

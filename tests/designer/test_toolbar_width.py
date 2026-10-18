@@ -85,3 +85,22 @@ def testToolbarFontChangeRecalculatesSpaceAtSameWindowWidth(designerApplication)
         assert window.mainToolbar.contentsRect().contains(window.stopButton.geometry())
     finally:
         window.close()
+
+
+def testNarrowWorkspaceLabelsSurviveActionChanges(designerApplication):
+    window = makeWindow()
+    try:
+        window.show()
+        window.resize(480, 500)
+        settle(designerApplication)
+        chrome = window.pageCoordinator.chrome
+        for action in chrome.workspaceActions:
+            action.setChecked(True)
+            chrome.resizeTools()
+            settle(designerApplication)
+            assert [button.text() for button in chrome.selector.buttons] == ['流程', '页面', '设备']
+            assert all(button.accessibleName() == action.text()
+                       for button, action in zip(chrome.selector.buttons, chrome.workspaceActions))
+            assert window.stopButton.isVisible()
+    finally:
+        window.close()

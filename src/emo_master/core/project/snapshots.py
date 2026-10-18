@@ -19,7 +19,7 @@ from emo_master.core.plugin.models import PluginManifest
 from emo_master.core.presentation.models import walkComponents
 from emo_master.core.presentation.validation import validateBindings
 from emo_master.core.project.models import ProjectDocument
-from emo_master.core.project.resources import ResourceBinding, SiteBinding, safeRelativePath
+from emo_master.core.project.resources import ParameterTarget, ResourceBinding, SiteBinding, safeRelativePath
 from emo_master.core.workflow.validation import validateProjectDocument
 
 
@@ -73,11 +73,11 @@ def _inside(root: Path, relative: str) -> Path:
     return candidate
 
 
-def verifyResources(project: ProjectDocument, root: Path) -> dict[str, str]:
+def verifyResources(project: ProjectDocument, root: Path, *, resourcePaths=None) -> dict[str, str]:
     assert project.resources is not None
     resolved: dict[str, str] = {}
     for resourceId, item in project.resources.items.items():
-        path = _inside(root, item.path)
+        path = Path(resourcePaths[resourceId]) if resourcePaths and resourceId in resourcePaths else _inside(root, item.path)
         if not path.is_file() or path.stat().st_size != item.size:
             raise ValueError(f"resource missing or size mismatch: {resourceId}")
         digest = hashlib.sha256()
@@ -160,6 +160,8 @@ def freezeProjectSnapshot(
     parameterPurposes: Mapping[tuple[str, tuple[str, ...]], str] | None = None,
 ) -> ProjectSnapshot:
     project = ProjectDocument.model_validate(project.model_dump())
+    if project.schemaVersion == "2.6":
+        raise ValueError("device project snapshots require managed device resource mapping")
     if mode not in {"debug", "release"} or (mode == "release") != bool(releaseRevision):
         raise ValueError("release requires releaseRevision; debug forbids it")
     if project.presentation is None or project.resources is None:
@@ -208,6 +210,7 @@ def freezeProjectSnapshot(
 
     for binding in project.resources.parameterBindings:
         target = binding.target
+        assert isinstance(target, ParameterTarget)
         key = (target.workflowId, target.nodeId)
         item = project.resources.items.get(binding.resourceId)
         if item is None or key not in operatorIds:
@@ -219,6 +222,7 @@ def freezeProjectSnapshot(
 
     for siteBinding in project.resources.siteBindings:
         target = siteBinding.target
+        assert isinstance(target, ParameterTarget)
         key = (target.workflowId, target.nodeId)
         if key not in operatorIds or purposes.get((operatorIds[key], tuple(target.parameterPath))) != siteBinding.purpose:
             raise ValueError("site override is not on the trusted parameter whitelist")
@@ -251,7 +255,7 @@ def freezeProjectSnapshot(
         node = next(node for node in project.workflows[key[0]].nodes if node.nodeId == key[1])
         occupiedBindings: list[ResourceBinding | SiteBinding] = [*project.resources.parameterBindings, *project.resources.siteBindings]
         occupied = [b.target.parameterPath for b in occupiedBindings
-                    if (b.target.workflowId, b.target.nodeId) == key]
+                    if isinstance(b.target, ParameterTarget) and (b.target.workflowId, b.target.nodeId) == key]
         validateVariableBindings(node.globalVariableBindings, project.globalVariables, schemas[key], occupied=occupied)
         params = resolveParams(params, node.globalVariableBindings,
                                {vid: var.initialValue for vid, var in project.globalVariables.items()})
@@ -262,7 +266,7 @@ def freezeProjectSnapshot(
             if operatorIds[key] == operatorId and purpose in {"input_image", "model", "output_directory", "output_file"}:
                 declarations: list[ResourceBinding | SiteBinding] = [
                     *project.resources.parameterBindings, *project.resources.siteBindings]
-                if not any((b.target.workflowId, b.target.nodeId) == key
+                if not any(isinstance(b.target, ParameterTarget) and (b.target.workflowId, b.target.nodeId) == key
                            and tuple(b.target.parameterPath) == path for b in declarations):
                     raise ValueError("file parameter requires explicit resource/site declaration")
         properties = schemas[key].get("properties", {})
@@ -275,11 +279,13 @@ def freezeProjectSnapshot(
     # Replace expanded locations after normalization; machine paths never enter content revisions.
     for resourceBinding in project.resources.parameterBindings:
         target = resourceBinding.target
+        assert isinstance(target, ParameterTarget)
         _setPath(canonicalParams[(target.workflowId, target.nodeId)], target.parameterPath,
                  {"resourceId": resourceBinding.resourceId})
     for siteBinding in project.resources.siteBindings:
         if siteBinding.field in sites:
             target = siteBinding.target
+            assert isinstance(target, ParameterTarget)
             _setPath(canonicalParams[(target.workflowId, target.nodeId)], target.parameterPath,
                      {"siteField": siteBinding.field})
 

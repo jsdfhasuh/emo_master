@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 import queue
 import threading
@@ -24,9 +25,13 @@ from emo_master.apps.runtime.jobs.models import JobProcessSpec
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell
 
 
-def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPipe=None) -> None:
+def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPipe=None, devicePipe=None) -> None:
     from emo_master.apps.runtime.communication.ipc import CommunicationProxy
     communication = CommunicationProxy(communicationPipe, cancelEvent) if communicationPipe is not None else None
+    from emo_master.apps.runtime.devices.ipc import DeviceProxy
+    devices = DeviceProxy(devicePipe, cancelEvent) if devicePipe is not None else None
+    if devices is not None:
+        devices.retainFrames = bool(spec.runGroupId)
     heartbeatStop = threading.Event()
     heartbeatEventsStopped = threading.Event()
     heartbeatEmissionLock = threading.Lock()
@@ -64,7 +69,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             Path(root) for root in spec.pluginRootPaths
         )
         registry: dict[str, object] = dict(scanResult.activeOperators)
-        compiler = WorkflowCompiler(operatorRegistry=registry)
+        compiler = WorkflowCompiler(operatorRegistry=registry, deviceTypes=scanResult.deviceTypes if devices else None)
         compiled = compiler.compile(document, pluginRootPaths=tuple(spec.pluginRootPaths))
         inputs = json.loads(spec.inputsJson or "{}")
         if not isinstance(inputs, dict):
@@ -93,22 +98,54 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             globalCounters=globalCounters,
             globalVariables=globalVariables,
             resultCollector=_collector(spec, eventQueue),
-            retainOperators=spec.continuous,
+            retainOperators=spec.continuous or bool(spec.targetSlotId),
             communication=communication,
+            devices=devices,
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
-        if spec.continuous:
-            _runContinuous(runner, spec, inputs, token, cancelEvent)
+        from emo_master.apps.runtime.project_config.cycle_plan import CyclePlanSession
+        cyclePlans = CyclePlanSession(runner, devices, document, compiler, registry,
+                                      tuple(spec.pluginRootPaths), spec.planRevision, cancelEvent.is_set)
+        if spec.managedConfiguration:
+            runner.cycleScope = cyclePlans.iteration
+        def runCycle(context, cycleInputs):
+            context = replace(context, runGroupId=spec.runGroupId)
+            if not spec.managedConfiguration:
+                return runner.run(spec.workflowId, cycleInputs, context, token)
+            with cyclePlans.scope(context) as context:
+                return runner.run(spec.workflowId, cycleInputs, context, token)
+        if spec.targetSlotId:
+            _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publisher)
+        elif spec.runGroupId:
+            if devices is None:
+                raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE: Dispatch requires managed device IPC")
+            deadline = time.monotonic() + 30
+            while not devices.call("dispatchReady"):
+                token.raise_if_cancelled()
+                if time.monotonic() >= deadline:
+                    raise RuntimeError("E_DISPATCH_START_TIMEOUT: consumers did not become ready")
+                cancelEvent.wait(.02)
+            if spec.continuous:
+                _runContinuous(runner, spec, inputs, token, cancelEvent, runCycle=runCycle)
+            else:
+                runCycle(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+                                        projectId=spec.projectId), inputs)
+        elif spec.continuous:
+            _runContinuous(runner, spec, inputs, token, cancelEvent, runCycle=runCycle)
         else:
             context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
                                       projectId=spec.projectId)
-            runner.run(spec.workflowId, inputs, context, token)
+            runCycle(context, inputs)
         publishTerminal({"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
     except CancellationRequested as err:
         publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
     except BaseException as err:
+        if getattr(err, "code", "") == "E_CONFIG_DRAINED":
+            publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId,
+                             "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CONFIG_DRAINED", "message": str(err)})
+            return
         publishTerminal(
             {
                 "eventType": "job.failed",
@@ -122,6 +159,8 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         )
         raise
     finally:
+        if devices is not None:
+            devices.close()
         if communication is not None:
             communication.close()
         try:
@@ -142,7 +181,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 heartbeatThread.join(timeout=1.0)
 
 
-def _runContinuous(runner, spec, inputs, token, cancelEvent):
+def _runContinuous(runner, spec, inputs, token, cancelEvent, runCycle=None):
     context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
                               projectId=spec.projectId)
     primaryError = None
@@ -152,7 +191,10 @@ def _runContinuous(runner, spec, inputs, token, cancelEvent):
             started = time.monotonic()
             context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
                                       projectId=spec.projectId)
-            runner.run(spec.workflowId, deepcopy(inputs), context, token)
+            if runCycle is None:
+                runner.run(spec.workflowId, deepcopy(inputs), context, token)
+            else:
+                runCycle(context, deepcopy(inputs))
             delay = max(0.0, spec.cycleIntervalMs / 1000.0 - (time.monotonic() - started))
             if cancelEvent.wait(delay):
                 token.raise_if_cancelled()
@@ -161,6 +203,48 @@ def _runContinuous(runner, spec, inputs, token, cancelEvent):
         raise
     finally:
         runner.closeSession(context, primaryError)
+
+
+def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish):
+    context = RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId)
+    primary = None
+    try:
+        while True:
+            token.raise_if_cancelled()
+            invocation = devices.call("dispatchNext")
+            if invocation["status"] == "CLOSED":
+                return
+            if invocation["status"] == "IDLE":
+                cancelEvent.wait(.02)
+                continue
+            context = replace(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+                projectId=spec.projectId), **{key: invocation[key] for key in (
+                    "runGroupId", "dispatchId", "deliveryId", "invocationId", "targetSlotId", "cycleId", "planRevision")})
+            identity = {key: invocation[key] for key in (
+                "runGroupId", "dispatchId", "deliveryId", "invocationId", "cycleId", "planRevision")}
+            cyclePlans.install(invocation["cycle"])
+            context = replace(context, documentRevision=invocation["cycle"].get("documentRevision", 0))
+            try:
+                values = {key: devices.decode(value) for key, value in invocation["inputs"].items()}
+                result = runner.run(spec.workflowId, values, context, token)
+                outputs = devices.encode(result.outputs, context)
+            except Exception as error:
+                if cancelEvent.is_set():
+                    raise
+                devices.call("dispatchComplete", **identity, status="FAILED", outputs=None,
+                             code=getattr(error, "code", "E_DISPATCH_CONSUMER"), message=str(error))
+                publish("dispatch.invocation.failed", context, str(error), level="ERROR",
+                        code=getattr(error, "code", "E_DISPATCH_CONSUMER"))
+                raise
+            devices.call("dispatchComplete", **identity, status="COMPLETED", outputs=outputs)
+            devices.frameCopies.clear()
+            publish("dispatch.invocation.completed", context, "consumer invocation completed",
+                    payload=dict(frameIds=list(invocation["frames"])))
+    except BaseException as error:
+        primary = error
+        raise
+    finally:
+        runner.closeSession(context, primary)
 
 
 def heartbeatLoop(jobId: str, projectId: str, workflowId: str, eventQueue, stopEvent: threading.Event, intervalMs: int, heartbeatCell: HeartbeatCell | None = None, eventsStopped: threading.Event | None = None, emissionLock=None) -> None:
@@ -211,7 +295,10 @@ def _eventPublisher(jobId: str, projectId: str, eventQueue):
                 "message": message,
                 "level": level,
                 "code": code,
-                "payload": payload or {},
+                "payload": dict(payload or {}, cycleId=context.cycleId, planRevision=context.planRevision,
+                    runGroupId=context.runGroupId, dispatchId=context.dispatchId, deliveryId=context.deliveryId,
+                    invocationId=context.invocationId, targetSlotId=context.targetSlotId,
+                    documentRevision=context.documentRevision),
             },
         )
 

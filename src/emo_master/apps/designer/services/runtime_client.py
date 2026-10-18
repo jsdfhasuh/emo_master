@@ -44,6 +44,8 @@ class OperatorDefinition:
     editorIssues: tuple[dict[str, object], ...] = ()
     icon: dict[str, object] = field(default_factory=dict)
     iconIssues: tuple[dict[str, object], ...] = ()
+    deviceRequirements: dict[str, object] = field(default_factory=dict)
+    deviceBindingSince: str = ""
 
 
 @dataclass(frozen=True)
@@ -354,6 +356,8 @@ class RuntimeClient:
             parsed.append(
                 OperatorDefinition(
                     operatorId=str(getattr(operatorInfo, "operator_id", "")),
+                    deviceRequirements=self._parseSchema(getattr(operatorInfo, "device_requirements_json", "{}")),
+                    deviceBindingSince=getattr(operatorInfo, "device_binding_since", ""),
                     displayName=str(getattr(operatorInfo, "display_name", "")),
                     version=str(getattr(operatorInfo, "version", "")),
                     category=rawCategory or "Other",
@@ -393,6 +397,124 @@ class RuntimeClient:
                 )
             )
         return parsed
+
+    def _projectConfigurationCall(self, method, request):
+        reply = self._call(method, request)
+        if not reply.ok:
+            raise RuntimeClientError(reply.code, reply.message)
+        return json.loads(reply.result_json)
+
+    def getOnlineProjectSnapshot(self, projectId=""):
+        return self._projectConfigurationCall("GetOnlineProjectSnapshot",
+            runtime_pb2.OnlineProjectRequest(project_id=projectId))
+
+    def getOnlineGraphSnapshot(self, projectId="", documentRevision=0, jobId=""):
+        return self._projectConfigurationCall("GetOnlineGraphSnapshot", runtime_pb2.OnlineGraphRequest(
+            project_id=projectId, document_revision=documentRevision, job_id=jobId))
+
+    def writeProjectConfiguration(self, snapshot, localPayload, selectedPaths, requestId, *, validate=False, replacementPolicy="reject"):
+        return self._projectConfigurationCall("ValidateProjectWrite" if validate else "WriteProjectConfiguration",
+            runtime_pb2.ProjectConfigurationWriteRequest(request_id=requestId,
+                expected_runtime_instance_id=snapshot["runtimeInstanceId"], expected_revision=snapshot["documentRevision"],
+                local_payload_json=json.dumps(localPayload, ensure_ascii=True), selected_paths=selectedPaths,
+                replacement_policy=replacementPolicy))
+
+    def getProjectWriteStatus(self, requestId):
+        return self._projectConfigurationCall("GetProjectWriteStatus", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+
+    def deviceNetworkCommand(self, projectId, runtimeId, action, *, deviceId='', requestId='', payload=None):
+        return self._projectConfigurationCall('DeviceNetworkCommand', runtime_pb2.DeviceNetworkRequest(
+            project_id=projectId, runtime_instance_id=runtimeId, device_id=deviceId, request_id=requestId,
+            action=action, payload_json=json.dumps(payload or {})))
+
+    def cancelProjectWrite(self, requestId):
+        return self._projectConfigurationCall("CancelProjectWrite", runtime_pb2.ProjectWriteLookup(request_id=requestId))
+
+    def transferProjectResource(self, snapshot, transferId, action, *, resource=None, offset=0, data=b""):
+        return self._projectConfigurationCall("TransferProjectResource", runtime_pb2.ProjectResourceTransferRequest(
+            runtime_instance_id=snapshot["runtimeInstanceId"], project_id=snapshot["payload"]["project"]["projectId"],
+            transfer_id=transferId, action=action, resource_json=json.dumps(resource) if resource is not None else "",
+            offset=offset, data=data))
+
+    def uploadProjectResources(self, snapshot, payload, root, cancelled=None):
+        from pathlib import Path
+        from emo_master.core.project.models import ProjectDocument
+        from emo_master.core.project.snapshots import verifyResources
+        document = ProjectDocument.model_validate(payload)
+        root = Path(root).resolve()
+        paths = verifyResources(document, root.parent if root.is_file() else root)
+        uploaded = []
+        for key, path in paths.items():
+            if cancelled is not None and cancelled.is_set():
+                raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
+            transferId = uuid4().hex
+            resource = document.resources.items[key].model_dump(mode="json")
+            existing = self.transferProjectResource(snapshot, transferId, "LOOKUP", resource=resource)
+            if existing["state"] == "READY":
+                uploaded.append(dict(resourceId=key, **existing))
+                continue
+            try:
+                self.transferProjectResource(snapshot, transferId, "BEGIN", resource=resource)
+                offset = 0
+                with Path(path).open("rb") as stream:
+                    while chunk := stream.read(512 * 1024):
+                        if cancelled is not None and cancelled.is_set():
+                            raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
+                        self.transferProjectResource(snapshot, transferId, "CHUNK", offset=offset, data=chunk)
+                        offset += len(chunk)
+                result = self.transferProjectResource(snapshot, transferId, "COMMIT")
+                uploaded.append(dict(resourceId=key, **result))
+            except Exception:
+                # A lost COMMIT reply may already be READY. CANCEL never deletes
+                # completed content, and no configuration write is retried here.
+                try:
+                    self.transferProjectResource(snapshot, transferId, "CANCEL")
+                except Exception:
+                    pass
+                raise
+        return dict(uploaded=uploaded)
+
+    def listDeviceTypes(self):
+        from emo_master.core.plugin.devices import DeviceType, DeviceRequirement
+
+        reply = self._call("ListDeviceTypes", runtime_pb2.ListDeviceTypesRequest())
+        types = {key: DeviceType.model_validate(value) for key, value in json.loads(reply.types_json).items()}
+        requirements = {key: {slot: DeviceRequirement.model_validate(value) for slot, value in slots.items()}
+                        for key, slots in json.loads(reply.requirements_json).items()}
+        return types, requirements, json.loads(reply.rejected_json)
+
+    def getDeviceStates(self, projectId):
+        reply = self._call("GetDeviceStates", runtime_pb2.GetDeviceStatesRequest(project_id=projectId))
+        if not reply.ok:
+            raise ValueError(reply.message)
+        return reply.runtime_instance_id, json.loads(reply.states_json)
+
+    def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):
+        reply = self._call("ControlDevice", runtime_pb2.ControlDeviceRequest(project_id=projectId,
+            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
+            expected_definition_revision=state["definitionRevision"], action=action, confirmed=confirmed,
+            expected_control_revision=state.get("controlRevision", "")))
+        if not reply.ok:
+            raise ValueError(reply.message)
+        return reply.runtime_instance_id, json.loads(reply.states_json)
+
+    def recoverDevice(self, projectId, runtimeInstanceId, deviceId, state, *, hardwareSynchronized=False):
+        reply = self._call("RecoverDevice", runtime_pb2.RecoverDeviceRequest(project_id=projectId,
+            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
+            expected_definition_revision=state["definitionRevision"], hardware_synchronized=hardwareSynchronized))
+        if not reply.ok:
+            raise ValueError(reply.message)
+        return reply.runtime_instance_id, json.loads(reply.states_json)
+
+    def cameraDiagnostic(self, projectId, runtimeInstanceId, deviceId, state, action, *, sessionId="", sequence=0,
+                         confirmed=False):
+        reply = self._call("CameraDiagnostic", runtime_pb2.CameraDiagnosticRequest(project_id=projectId,
+            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
+            expected_definition_revision=state["definitionRevision"], action=action, session_id=sessionId,
+            sequence=sequence, confirmed=confirmed))
+        if not reply.ok:
+            raise ValueError(reply.code + ": " + reply.message)
+        return dict(sessionId=reply.session_id, metadata=json.loads(reply.metadata_json or "{}"), preview=reply.preview_jpeg)
 
     def getOperatorIconAsset(self, operatorId: str, version: str, expectedSha256: str,
                              *, timeoutMs: int = 2000,

@@ -29,6 +29,8 @@ class EditorPages(RuntimePages):
     def __init__(self, workspace, *args, **kwargs):
         self.workspace = workspace
         self.reloading = False
+        from emo_master.core.presentation.assets import pageAssets
+        kwargs['assets'] = pageAssets(workspace.session.document(), workspace.coordinator.directory)
         super().__init__(*args, **kwargs)
 
     def navigate(self, pageId, keepFrozen=False):
@@ -53,6 +55,8 @@ class EditorPages(RuntimePages):
             self.workspace.tools.clearSelection()
         self.reloading = True
         try:
+            from emo_master.core.presentation.assets import pageAssets
+            self.assets = pageAssets(self.workspace.session.document(), self.workspace.coordinator.directory)
             super().reload(presentation)
             for button in self.buttons.values():
                 button.hide()

@@ -2217,6 +2217,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def _getSystemNodeLibraryPayloads(self) -> list[dict[str, object]]:
         operatorIds = {
             "subflow": "system.subflow",
+            "dispatch": "system.dispatch",
+            "join": "system.join",
             "loop:repeat": "system.repeat",
             "loop:foreach": "system.foreach",
             "loop:while": "system.while",
@@ -2527,7 +2529,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         )
         return str(result.packagePath)
 
-    @draftCommand
     def importWorkflowPackageAction(
         self, parentWorkflowId: str | None = None
     ) -> str | None:
@@ -2565,8 +2566,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("INFO", "已在预览中取消导入工作流")
             return None
         try:
-            result = self.workflowController.importWorkflowPackage(
+            result = self._commitWorkflowPackageImport(
                 selectedPath,
+                deviceMapping=dialog.getDeviceMapping() if preview.devices else None,
+                expectedFingerprint=preview.packageFingerprint,
+                expectedTargetFingerprint=preview.targetFingerprint,
                 insertIntoWorkflowId=(
                     selectedParentWorkflowId if insertSubflow else None
                 ),
@@ -2576,15 +2580,6 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", message)
             QMessageBox.warning(self, "导入工作流失败", message)
             return None
-        self.activeWorkflowId = (
-            result.parentWorkflowId or result.rootWorkflowId
-        )
-        self._restoreActiveWorkflowRuntimeState()
-        self._refreshWorkflowTabs()
-        if result.insertedSubflowNodeId is not None:
-            self.flowModel.selectNode(result.insertedSubflowNodeId)
-            self.flowScene.setNodeSelected(result.insertedSubflowNodeId)
-            self.onNodeSelectionChanged()
         self.appendRuntimeLog(
             "INFO",
             f"工作流已导入：{selectedPath} | 包含 {len(result.workflowIds)} 个工作流"
@@ -2611,6 +2606,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 f"导入的工作流有 {len(pathWarnings)} 个外部路径需要核对",
             )
         return result.rootWorkflowId
+
+    @draftCommand
+    def _commitWorkflowPackageImport(self, selectedPath, **kwargs):
+        result = self.workflowController.importWorkflowPackage(selectedPath, **kwargs)
+        self.activeWorkflowId = result.parentWorkflowId or result.rootWorkflowId
+        self._restoreActiveWorkflowRuntimeState()
+        self._refreshWorkflowTabs()
+        if result.insertedSubflowNodeId is not None:
+            self.flowModel.selectNode(result.insertedSubflowNodeId)
+            self.flowScene.setNodeSelected(result.insertedSubflowNodeId)
+            self.onNodeSelectionChanged()
+        return result
 
     def _createWorkflowPackagePreviewDialog(self, preview):
         if self._workflowPackagePreviewDialogFactory is not None:
@@ -3592,6 +3599,20 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return False
         if self.currentProjectDir is None:
             return True
+        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion == "2.6":
+            from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+            try:
+                self.runtimeClient.getOnlineProjectSnapshot(self.pageCoordinator.session.document().project.projectId)
+            except RuntimeClientError as error:
+                if error.code != "E_CONFIG_NOT_LOADED":
+                    self.appendRuntimeLog("ERROR", str(error))
+                    return False
+            else:
+                if not self.pageCoordinator._canSync():
+                    return False
+                from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
+                dialog = ProjectConfigurationDialog(self.pageCoordinator, self, allowRun=True)
+                return dialog.exec_() == dialog.Accepted
         target = self.projectController.currentProjectFile or self.currentProjectDir
         if not self.saveProjectToDirectory(str(target)):
             return False
@@ -3671,8 +3692,31 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self._refreshNodeDetailsView()
             self.updateToolbarState()
 
+    def addNodeFromOperatorPayload(self, payload, sceneX=None, sceneY=None):
+        if not flowEditAllowed(self):
+            return
+        if (not isinstance(payload, dict) or not payload.get("deviceRequirements")
+                or payload.get("deviceBindingSince") == "2.6" and self.workflowStore.devices.get("schemaVersion") != "1.0"):
+            return self._addLegacyNodeFromOperatorPayload(payload, sceneX, sceneY)
+        from uuid import uuid4
+        from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
+        if not self.pageCoordinator._canSync():
+            return
+        operatorId = str(payload.get("operatorId", "unknown"))
+        draft = dict(nodeId="node-" + uuid4().hex[:8], operatorId=operatorId,
+                     displayName=payload.get("displayName", operatorId),
+                     inputPorts=payload.get("inputPorts", {}), outputPorts=payload.get("outputPorts", {}),
+                     paramSchema=payload.get("paramSchema", {}))
+        defaultX, defaultY = self.flowScene.nextNodePosition()
+        position = dict(x=defaultX if sceneX is None else float(sceneX),
+                        y=defaultY if sceneY is None else float(sceneY))
+        dialog = DeviceNodeDialog(self.pageCoordinator, draft, payload["deviceRequirements"], self, position=position)
+        if dialog.exec_() == dialog.Accepted:
+            self._recordRecentOperator(operatorId)
+        self.collapseOperatorBubble()
+
     @draftCommand
-    def addNodeFromOperatorPayload(
+    def _addLegacyNodeFromOperatorPayload(
         self,
         payload: dict[str, object],
         sceneX: float | None = None,
@@ -3758,6 +3802,8 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         sceneX: float | None = None,
         sceneY: float | None = None,
     ) -> str | None:
+        if systemNodeKind in {"dispatch", "join"}:
+            return self.editDispatchNode(systemNodeKind, sceneX=sceneX, sceneY=sceneY)
         if systemNodeKind == "subflow":
             return self.addSubflowNode(sceneX=sceneX, sceneY=sceneY)
         if systemNodeKind == "loop:repeat":
@@ -4497,6 +4543,10 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.appendRuntimeLog("ERROR", "未找到所选节点")
             return
 
+        if node.kind in {"dispatch", "join"}:
+            self.editDispatchNode(node.kind, nodeId=nodeId)
+            return
+
         if node.kind in {"workflow_input", "workflow_output"}:
             self.editWorkflowInterfaceFor(
                 self.activeWorkflowId,
@@ -4505,6 +4555,17 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
 
         if node.kind == "operator" and not self._requireOperatorCatalog():
+            return
+
+        definition = self._operatorDefinition(node.operatorId)
+        if node.deviceBindings or (definition.get("deviceRequirements") and
+                (definition.get("deviceBindingSince") != "2.6" or self.workflowStore.devices.get("schemaVersion") == "1.0")):
+            from dataclasses import asdict
+            from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
+            if self.pageCoordinator is None or not self.pageCoordinator._canSync():
+                return
+            dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self)
+            dialog.exec_()
             return
 
         self.activeParamNodeId = nodeId
@@ -4624,6 +4685,33 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         debug.raise_()
         debug.activateWindow()
 
+    def editDispatchNode(self, kind, *, nodeId=None, sceneX=None, sceneY=None):
+        if not flowEditAllowed(self) or self.pageCoordinator is None or not self.pageCoordinator._canSync():
+            return None
+        from emo_master.apps.designer.ui.dispatch_editor import DispatchEditor
+        session = self.pageCoordinator.session
+        signature, workflowId = session._signature(), self.activeWorkflowId
+        dialog = DispatchEditor(session.payload(), self.activeWorkflowId, kind, self, nodeId=nodeId)
+        if dialog.exec_() != dialog.Accepted:
+            return None
+        if (self.pageCoordinator.session is not session or session._signature() != signature
+                or self.activeWorkflowId != workflowId):
+            self.appendRuntimeLog("ERROR", "工程草稿已变化，请重新打开 Dispatch / Join 编辑器")
+            return None
+        payload = dialog.resultPayload
+        if nodeId is None:
+            x, y = self.flowScene.nextNodePosition()
+            payload["workflows"][self.activeWorkflowId]["layout"]["nodePositions"][dialog.nodeId] = dict(
+                x=float(x if sceneX is None else sceneX), y=float(y if sceneY is None else sceneY))
+        with session.transaction():
+            session._restore(payload)
+        self.workflowController._renderActive()
+        self.flowModel.selectNode(dialog.nodeId)
+        self.flowScene.setNodeSelected(dialog.nodeId)
+        self._refreshWorkflowTabs()
+        self.pageCoordinator.chrome.update()
+        return dialog.nodeId
+
     @draftCommand
     def applyNodeParams(self, nodeId: str, params: dict[str, object]) -> bool:
         if nodeId not in self.flowModel.nodes:
@@ -4709,7 +4797,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         variables = definitions(self._globalVariableDefinitions())
         resources = self.workflowStore.projectExtensions.get("resources", {})
         occupied = [b["target"]["parameterPath"] for b in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
-                    if b["target"]["workflowId"] == key.workflowId and b["target"]["nodeId"] == key.nodeId]
+                    if b["target"].get("workflowId") == key.workflowId and b["target"].get("nodeId") == key.nodeId]
         if raw.get("operatorId") in {"vision.state.variable_read", "vision.state.variable_write"}:
             occupied.append(["variableId"])
         if raw.get("operatorId") == "vision.state.variable_write":
@@ -4898,7 +4986,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             resources = resources if isinstance(resources, dict) else {}
             occupied = [tuple(binding["target"]["parameterPath"])
                         for binding in (*resources.get("parameterBindings", []), *resources.get("siteBindings", []))
-                        if binding["target"]["workflowId"] == sourceWorkflowId and binding["target"]["nodeId"] == getattr(node, "nodeId", None)]
+                        if binding["target"].get("workflowId") == sourceWorkflowId and binding["target"].get("nodeId") == getattr(node, "nodeId", None)]
             for path, field in scalarFields(schema):
                 if any(path[:len(other)] == other or other[:len(path)] == path for other in occupied):
                     field["xGlobalVariableBindingDisabled"] = True
@@ -4911,6 +4999,9 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             "mode": {"type": "string", "enum": [modeValue], "title": "循环模式",
                      "xOptionLabels": {"repeat": "计次循环", "foreach": "逐项循环", "while": "条件循环"}},
             "bodyWorkflowId": {**workflowSelect, "title": "循环体工作流"},
+            "cycleBoundary": {"type": "string", "enum": ["inherit", "iteration"], "default": "inherit",
+                "title": "在线配置周期", "xOptionLabels": {"inherit": "继承调用周期", "iteration": "每次迭代"},
+                "xHidden": modeValue != "while" or self.workflowStore.devices.get("schemaVersion") != "1.0"},
             "repeatCount": {"type": "integer", "minimum": 0, "title": "重复次数", "xHidden": modeValue != "repeat"},
             "maxIterations": {
                 "type": "integer",
@@ -4959,7 +5050,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             required.append("conditionMode")
             properties = {key: properties[key] for key in (
                 "mode", "conditionMode", "conditionPort", "conditionVariableId", "conditionWorkflowId",
-                "bodyWorkflowId", "unlimited", "maxIterations", "timeoutMs", "repeatCount",
+                "bodyWorkflowId", "cycleBoundary", "unlimited", "maxIterations", "timeoutMs", "repeatCount",
             )}
         elif modeValue == "foreach":
             bodyWorkflowId = node.loop.get("bodyWorkflowId")

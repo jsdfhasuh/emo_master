@@ -1,4 +1,31 @@
-# project.json v2.1 / v2.2 / v2.3 规范
+# project.json v2.1 至 v2.6 规范
+
+## 2.6 受管设备增量
+
+显式设备迁移启用 2.6，不在打开旧工程时猜测硬件或自动落盘。
+2.6 保留页面、资源、生产设置、全局变量和项目通信配置，并使用
+`devices.definitions` 按稳定设备 ID 保存 `name/deviceTypeId/driverVersion/enabled/
+connection/defaults/policies`。设备类型和策略以已安装插件元数据校验。
+以下正文中的 2.1 顶层 JSON 是旧版本示例，不可将 `devices.bindings` 直接当作 2.6。
+
+节点新增 `deviceBindings`（槽位到 deviceId）、`deviceOverrides`（明确常量覆写）
+及 `deviceValueBindings`（变量或输入来源）。缺少覆写才表示继承；等于默认值的覆写
+仍是覆写。连接/策略不能由节点覆写，同一路径及父子路径不能存在多个生效来源。
+资源与现场绑定目标可选节点，或 `deviceId/section/parameterPath` 设备目标；
+设备 section 仅允许 connection/defaults，字段必须由插件声明用途。
+
+`dispatch` 节点以 `params.targets` 声明 1 至 32 个目标槽；每项包含
+`targetSlotId/workflowId/inputs/queueCapacity`，单槽容量为 1 至 64。
+`join.params.dispatchNodeId` 引用同流程 Dispatch，`timeoutMs` 为 1 至 1200000。
+运行组必须一次容纳生产者和全部持久消费者，不自动重放失败调用。
+
+页面 `image.props.imageResourceId` 引用 page_image 资源，与动态绑定互斥；
+`navigation_button.props.iconResourceId` 引用 icon 资源。执行私有路径不写回 JSON。
+在线权威配置存于 Runtime SQLite，本地保存不是在线提交；历史文档/执行版本与
+周期标识不可互换。详细语义见[设备契约](guides/device-catalog-contract-v1.md)
+和[在线配置指南](guides/device-dispatch-online-configuration.md)。
+
+## 旧版本兼容
 
 `project.json v2.1` 是 Designer 与 Runtime 的唯一项目源。磁盘模型由
 `ProjectDocument` 严格校验；Designer 读取 v1/v2.0 时只在内存中迁移，保存 v2.1

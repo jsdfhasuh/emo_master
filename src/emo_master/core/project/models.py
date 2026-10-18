@@ -2,12 +2,15 @@ from __future__ import annotations
 
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator, model_serializer
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, PrivateAttr, model_validator, model_serializer
 
 from emo_master.core.presentation.models import Presentation
 from emo_master.core.project.resources import ResourcePlan
 from emo_master.core.project.communication import CommunicationSettings
 from emo_master.core.project.global_variables import VariableDefinition, VariableBinding
+from emo_master.core.project.devices import (
+    DeviceBinding, DeviceDefinition, DeviceId, DeviceValueBinding, validateSources,
+)
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
@@ -50,7 +53,7 @@ class ProductionSettings(StrictModel):
 class WorkflowNode(StrictModel):
     nodeId: str
     kind: Literal[
-        "operator", "workflow_input", "workflow_output", "subflow", "loop"
+        "operator", "workflow_input", "workflow_output", "subflow", "loop", "dispatch", "join"
     ] = "operator"
     operatorId: str | None = None
     displayName: str | None = None
@@ -59,6 +62,9 @@ class WorkflowNode(StrictModel):
     paramSchema: dict[str, object] = Field(default_factory=dict)
     params: dict[str, object] = Field(default_factory=dict)
     globalVariableBindings: list[VariableBinding] = Field(default_factory=list)
+    deviceBindings: dict[DeviceId, DeviceBinding] = Field(default_factory=dict)
+    deviceOverrides: dict[DeviceId, dict[str, JsonValue]] = Field(default_factory=dict)
+    deviceValueBindings: dict[DeviceId, dict[str, DeviceValueBinding]] = Field(default_factory=dict)
     targetWorkflowId: str | None = None
     loop: dict[str, object] = Field(default_factory=dict)
 
@@ -67,7 +73,17 @@ class WorkflowNode(StrictModel):
         payload = handler(self)
         if not self.globalVariableBindings:
             payload.pop("globalVariableBindings", None)
+        for key in ("deviceBindings", "deviceOverrides", "deviceValueBindings"):
+            if not getattr(self, key):
+                payload.pop(key, None)
         return payload
+
+    @model_validator(mode="after")
+    def validateDeviceSources(self):
+        validateSources(self.deviceBindings, self.deviceOverrides, self.deviceValueBindings)
+        if self.deviceBindings and self.kind != "operator":
+            raise ValueError("device bindings belong to operator nodes")
+        return self
 
 
 class WorkflowEdge(StrictModel):
@@ -96,10 +112,23 @@ class ProjectDependencies(StrictModel):
 
 class ProjectDevices(StrictModel):
     bindings: dict[str, object] = Field(default_factory=dict)
+    schemaVersion: Literal["1.0"] | None = None
+    definitions: dict[DeviceId, DeviceDefinition] = Field(default_factory=dict)
+
+    @model_serializer(mode="wrap")
+    def serializeCatalog(self, handler):
+        payload = handler(self)
+        if self.schemaVersion is None:
+            payload.pop("schemaVersion", None)
+            if not self.definitions:
+                payload.pop("definitions", None)
+        return payload
 
 
 class ProjectDocument(StrictModel):
-    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5"]
+    # Execution-only asset locations never enter portable snapshots or digests.
+    _pageResourcePaths: dict[str, str] = PrivateAttr(default_factory=dict)
+    schemaVersion: Literal["2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"]
     project: ProjectMetadata
     entryWorkflowId: str
     workflowOrder: list[str]
@@ -115,28 +144,51 @@ class ProjectDocument(StrictModel):
 
     @model_validator(mode="after")
     def validateVersion(self) -> "ProjectDocument":
-        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5"}:
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6"}:
             if {"presentation", "resources"} & self.model_fields_set:
                 raise ValueError("presentation/resources require explicit project 2.2 migration")
         elif self.presentation is None or self.resources is None:
             raise ValueError("project 2.2/2.3 requires presentation and resources")
-        if self.schemaVersion in {"2.3", "2.4", "2.5"}:
+        if self.schemaVersion in {"2.3", "2.4", "2.5", "2.6"}:
             if self.production is None:
                 raise ValueError("project 2.3 requires production settings")
         elif "production" in self.model_fields_set:
             raise ValueError("production requires explicit project 2.3 migration")
-        if self.schemaVersion not in {"2.4", "2.5"} and (self.globalVariables or
+        if self.schemaVersion not in {"2.4", "2.5", "2.6"} and (self.globalVariables or
             (self.presentation and any(source.kind == "global_variable" for source in self.presentation.dataSources.values())) or any(
             node.globalVariableBindings or node.loop.get("conditionMode") == "globalVariable"
             or node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}
             for workflow in self.workflows.values() for node in workflow.nodes
         )):
             raise ValueError("global variables require explicit project 2.4 migration")
-        if self.schemaVersion == "2.5":
+        if self.schemaVersion in {"2.5", "2.6"}:
             if self.communication is None:
                 raise ValueError("project 2.5 requires communication settings")
         elif "communication" in self.model_fields_set:
             raise ValueError("communication requires explicit project 2.5 migration")
+        if self.schemaVersion == "2.6":
+            if self.devices.schemaVersion != "1.0":
+                raise ValueError("project 2.6 requires device catalog schemaVersion 1.0")
+        elif (self.devices.schemaVersion is not None or "definitions" in self.devices.model_fields_set
+              or any({"deviceBindings", "deviceOverrides", "deviceValueBindings"} & node.model_fields_set
+                     for workflow in self.workflows.values() for node in workflow.nodes)):
+            raise ValueError("device catalog and node sources require explicit project 2.6 migration")
+        for workflow in self.workflows.values():
+            for node in workflow.nodes:
+                for binding in node.deviceBindings.values():
+                    if binding.deviceId not in self.devices.definitions:
+                        raise ValueError(f"unknown device reference: {binding.deviceId}")
+        if self.resources is not None:
+            from emo_master.core.project.resources import DeviceParameterTarget, ResourceBinding, SiteBinding
+            resourceBindings: list[ResourceBinding | SiteBinding] = [
+                *self.resources.parameterBindings, *self.resources.siteBindings]
+            for resourceBinding in resourceBindings:
+                target = resourceBinding.target
+                if isinstance(target, DeviceParameterTarget):
+                    if self.schemaVersion != "2.6":
+                        raise ValueError("device resource targets require explicit project 2.6 migration")
+                    if target.deviceId not in self.devices.definitions:
+                        raise ValueError(f"unknown device resource target: {target.deviceId}")
         names = [value.name for value in self.globalVariables.values()]
         if len(names) != len(set(names)):
             raise ValueError("global variable names must be unique")
@@ -150,17 +202,17 @@ class ProjectDocument(StrictModel):
     @model_serializer(mode="wrap")
     def serializeVersion(self, handler):
         payload = handler(self)
-        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5"}:
+        if self.schemaVersion not in {"2.2", "2.3", "2.4", "2.5", "2.6"}:
             payload.pop("presentation", None)
             payload.pop("resources", None)
-        if self.schemaVersion not in {"2.3", "2.4", "2.5"}:
+        if self.schemaVersion not in {"2.3", "2.4", "2.5", "2.6"}:
             payload.pop("production", None)
-        if self.schemaVersion not in {"2.4", "2.5"}:
+        if self.schemaVersion not in {"2.4", "2.5", "2.6"}:
             payload.pop("globalVariables", None)
             for workflow in payload["workflows"].values():
                 for node in workflow["nodes"]:
                     node.pop("globalVariableBindings", None)
-        if self.schemaVersion != "2.5":
+        if self.schemaVersion not in {"2.5", "2.6"}:
             payload.pop("communication", None)
         return payload
 

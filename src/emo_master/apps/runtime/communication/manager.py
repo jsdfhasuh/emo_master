@@ -59,6 +59,7 @@ class CommunicationManager:
         self.state = "STOPPED"
         self.error = ""
         self.serviceGeneration = 0
+        self.controlRevision = 0
         self._connectionOrdinal = 0
         self._lock = threading.RLock()
         self._control = threading.RLock()
@@ -136,6 +137,14 @@ class CommunicationManager:
 
     def prepareDisableSave(self, token):
         self.prepareSave(token, disabling=True)
+
+    def prepareReplacement(self, token):
+        with self._control, self._lock:
+            if self._closed:
+                raise TcpServiceError("E_RUNTIME_CLOSING", "Runtime is closing")
+            if self._workers or self.state not in {"STOPPED", "FAILED"} or self.snapshot()["ownsResources"]:
+                raise TcpServiceError("E_CONFIG_REQUIRES_STOP", "stop and retire communication before replacement")
+            self.prepareSave(token)
 
     def prepareSave(self, token, *, disabling=False):
         # One reservation for both ordinary and disable saves. Existing disable

@@ -9,7 +9,7 @@ def previewParameters(store, document, workflowId, nodeId, params, schema, jobId
     node = next(node for node in document.workflows[workflowId].nodes if node.nodeId == nodeId)
     if node.operatorId in {WRITE_VARIABLE, "vision.state.counter"}:
         raise VariableError("E_VARIABLE_PREVIEW_READ_ONLY", "preview cannot write, reset or increment variables")
-    occupied = [b.target.parameterPath for b in (*document.resources.parameterBindings, *document.resources.siteBindings)
+    occupied = [b.target.parameterPath for b in (*document.resources.nodeParameterBindings, *document.resources.nodeSiteBindings)
                 if b.target.workflowId == workflowId and b.target.nodeId == nodeId] if document.resources else []
     validateBindings(node.globalVariableBindings, document.globalVariables, schema, occupied=occupied)
     keys = list(document.globalVariables)

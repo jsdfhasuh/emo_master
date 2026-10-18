@@ -79,6 +79,12 @@ python scripts/dev.py run-designer --local
 
 ## 当前能力与边界
 
+设备管理 R2.1 工作副本新增项目 2.6、受管设备队列、持久 Dispatch/Join、在线配置
+比较/选择写入、历史只读图、迁移与资源/现场绑定，以及页面发布。
+操作入口见[设备与在线配置指南](docs/guides/device-dispatch-online-configuration.md)，
+测试产物和实机前步骤见[交接检查表](docs/testing/2026-10-18-device-platform-handoff.md)。
+以下旧版本能力列表仍适用于兼容项目；源码实现不代表已发布 Release 或完成硬件验收。
+
 - `project.json v2.1` 多工作流、入口工作流、Subflow、类型化 Loop，以及项目和工作流包的保存、导入导出与迁移基础能力。
 - 异步 Job、spawn worker 隔离、SQLite 事件重放、实时 follow 事件流、结构化算子日志、滚动 JSONL 与可浮动日志 Dock。
 - manifest 自动发现的插件算子；schema 1.2/Homography、经典视觉、强类型集合、TXT/CSV 坐标读取、点序列变换和几何测量。

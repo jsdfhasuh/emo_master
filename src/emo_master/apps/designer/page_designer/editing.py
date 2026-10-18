@@ -230,6 +230,7 @@ class PageCommands:
         def edit(p):
             p.resultScopes[key] = choice.scope
             target = _component(p, pageId, componentId)
+            target.props.imageResourceId = None
             prop = {'image': 'image', 'table': 'rows'}.get(target.type, 'value')
             sourceId = next((k for k, value in p.dataSources.items() if value == source), None) or str(uuid4())
             p.dataSources[sourceId] = source

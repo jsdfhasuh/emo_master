@@ -35,13 +35,19 @@ class ParameterTarget(Model):
     parameterPath: list[Id] = Field(min_length=1, max_length=16)
 
 
+class DeviceParameterTarget(Model):
+    deviceId: Id
+    section: Literal["connection", "defaults"]
+    parameterPath: list[Id] = Field(min_length=1, max_length=16)
+
+
 class ResourceBinding(Model):
-    target: ParameterTarget
+    target: ParameterTarget | DeviceParameterTarget
     resourceId: Id
 
 
 class SiteBinding(Model):
-    target: ParameterTarget
+    target: ParameterTarget | DeviceParameterTarget
     field: Id
     purpose: Literal["output_directory", "output_file", "device_address", "camera_serial", "secret_ref"]
     required: bool = True
@@ -53,14 +59,22 @@ class ResourcePlan(Model):
     parameterBindings: list[ResourceBinding] = Field(default_factory=list)
     siteBindings: list[SiteBinding] = Field(default_factory=list)
 
+    @property
+    def nodeParameterBindings(self):
+        return [b for b in self.parameterBindings if isinstance(b.target, ParameterTarget)]
+
+    @property
+    def nodeSiteBindings(self):
+        return [b for b in self.siteBindings if isinstance(b.target, ParameterTarget)]
+
     @model_validator(mode="after")
     def uniqueTargets(self) -> ResourcePlan:
-        seen: list[ParameterTarget] = []
+        seen: list[ParameterTarget | DeviceParameterTarget] = []
         bindings: list[ResourceBinding | SiteBinding] = [*self.parameterBindings, *self.siteBindings]
         for binding in bindings:
             target = binding.target
             for other in seen:
-                if (target.workflowId, target.nodeId) == (other.workflowId, other.nodeId):
+                if targetOwner(target) == targetOwner(other):
                     a, b = target.parameterPath, other.parameterPath
                     if a[:len(b)] == b or b[:len(a)] == a:
                         raise ValueError("resource/site parameter targets overlap")
@@ -69,3 +83,9 @@ class ResourcePlan(Model):
         if len(paths) != len(set(paths)):
             raise ValueError("duplicate resource path")
         return self
+
+
+def targetOwner(target: ParameterTarget | DeviceParameterTarget) -> tuple[str, ...]:
+    if isinstance(target, DeviceParameterTarget):
+        return ("device", target.deviceId, target.section)
+    return ("node", target.workflowId, target.nodeId)

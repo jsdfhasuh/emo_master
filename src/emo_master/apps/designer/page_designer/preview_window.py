@@ -8,11 +8,18 @@ from .workspace import ObserverPages
 class PreviewWindow(ObserverPages):
     allowsDesignExamples = True
 
+    def reload(self, presentation):
+        from emo_master.core.presentation.assets import pageAssets
+        self.assets = pageAssets(self.controller.coordinator.session.document(), self.controller.coordinator.directory)
+        super().reload(presentation)
+
     def __init__(self, controller, presentation):
         self.controller = controller
         self.retiring = False
         self.pendingPresentation = None
-        super().__init__(presentation, parent=controller.coordinator.window, label='页面预览')
+        from emo_master.core.presentation.assets import pageAssets
+        super().__init__(presentation, parent=controller.coordinator.window, label='页面预览',
+                         assets=pageAssets(controller.coordinator.session.document(), controller.coordinator.directory))
         # Preserve native page buttons but let many/long page names scroll
         # horizontally without enlarging the preview beyond the screen.
         self.layout().removeItem(self.navigationLayout)
@@ -159,6 +166,9 @@ class PreviewWindow(ObserverPages):
         self.pendingPresentation = None
         if pending is not None and self.config != pending:
             self.reload(pending)
+        elif submit:
+            from emo_master.core.presentation.assets import pageAssets
+            self.setAssets(pageAssets(self.controller.coordinator.session.document(), self.controller.coordinator.directory))
 
     def closeEvent(self, event):
         super().closeEvent(event)

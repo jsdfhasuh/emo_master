@@ -25,6 +25,8 @@ def populate(renderer):
     from .renderer import ImageView, COLORS, appearanceStyle
     for component, widget in renderer.widgets.get(renderer.currentPageId, {}).values():
         props = component.props
+        if props.imageResourceId:
+            continue
         if isinstance(widget, ImageView):
             if renderer._designImage.isNull():
                 renderer._designImage = sampleImage()
@@ -66,6 +68,8 @@ def clear(renderer):
     from .renderer import ImageView, appearanceStyle
     for rows in renderer.widgets.values():
         for component, widget in rows.values():
+            if component.props.imageResourceId:
+                continue
             if isinstance(widget, ImageView):
                 widget.setImage(QImage(), '', '已绑定 · 等待明确任务结果' if component.bindings else '未绑定')
             elif isinstance(widget, CollectionView):

@@ -57,8 +57,8 @@ def uploadImage(debug):
 
 def testAllBuiltinsAdmittedButExternalResourcesNotWorkflowEnabled(runtime):
     rows = json.loads(runtime.GetOperatorDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
-    managed = {"communication.tcp.session", "communication.tcp.session_send"}
-    assert len(rows) == 69
+    managed = {"communication.tcp.session", "communication.tcp.session_send", "vision.io.simulated_camera"}
+    assert len(rows) == 70
     assert {row["operatorId"] for row in rows if not row["supported"]} == managed
     flow = json.loads(runtime.GetWorkflowDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
     assert sum(not row["supported"] for row in flow) == len(SINGLE_NODE_FOLDERS) + len(managed)

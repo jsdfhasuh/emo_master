@@ -7,7 +7,7 @@ import time
 from types import MappingProxyType
 
 from PySide2.QtCore import Qt, QRect, Signal, QEvent
-from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase
+from PySide2.QtGui import QPainter, QColor, QImage, QFontDatabase, QIcon, QPixmap
 from PySide2.QtWidgets import (
     QWidget, QLabel, QPushButton, QVBoxLayout, QHBoxLayout, QGridLayout,
     QStackedWidget, QScrollArea, QFrame, QSizePolicy, QApplication,
@@ -86,9 +86,10 @@ class RuntimePages(QWidget):
     """
     designExamplesChanged = Signal(bool)
 
-    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None):
+    def __init__(self, presentation, *, hub=None, label="只读运行页面", parent=None, assets=None):
         super().__init__(parent)
         assertGuiThread()
+        self.assets = dict(assets or {})
         self.config = Presentation.model_validate(presentation.model_dump()) if presentation is not None else Presentation()
         try:
             self.expectedCapture = revisionOf(captureDefinition(self.config))
@@ -243,6 +244,8 @@ class RuntimePages(QWidget):
 
     def editorResourceUsage(self):
         return {'design_image_bytes': self._designImage.sizeInBytes(),
+                'static_image_bytes': sum(w.image.sizeInBytes() for rows in self.widgets.values()
+                    for c, w in rows.values() if isinstance(w, ImageView) and c.props.imageResourceId),
                 'table_bytes': sum(w.model.bytesHeld for rows in self.widgets.values()
                                    for _c, w in rows.values() if isinstance(w, CollectionView)),
                 'surface_bytes': self.surfaceBytes()}
@@ -294,6 +297,8 @@ class RuntimePages(QWidget):
                 if isinstance(widget, ImageView):
                     widget.painted = None
                     widget.setImage(QImage(), '')
+                elif _component.props.iconResourceId:
+                    widget.setIcon(QIcon())
                 elif isinstance(widget, CollectionView):
                     widget.clear('配置更新')
         while self.stack.count():
@@ -420,7 +425,9 @@ class RuntimePages(QWidget):
                 box.addWidget(widget, 1)
                 if self.editorHost and component.type in ('image', 'number', 'text', 'indicator', 'table'):
                     source = self.config.dataSources.get(next(iter(component.bindings.values()), ''))
-                    if source and source.kind == 'global_variable':
+                    if component.props.imageResourceId:
+                        note = '静态资源: ' + component.props.imageResourceId
+                    elif source and source.kind == 'global_variable':
                         note = '来源: 全局变量 ' + source.variableId
                     elif source:
                         note = '来源: ' + (source.port or source.name or source.kind)[:32]
@@ -445,6 +452,47 @@ class RuntimePages(QWidget):
                 and self.config.dataSources[sourceId].expectedType == 'image'
                 and (self.captureCoverage is None or not self.captureCoverage.sourceProblem(self.config, sourceId))}
 
+    def setAssets(self, assets):
+        assertGuiThread()
+        self.assets = dict(assets)
+        if not self.detached:
+            self._renderAssets()
+
+    def _renderAssets(self):
+        from .static_assets import readAsset
+        # Drop previous decoded ownership before allocating replacements.
+        for component, widget in self.widgets.get(self.currentPageId, {}).values():
+            if component.props.imageResourceId:
+                widget.setImage(QImage(), "")
+            elif component.props.iconResourceId:
+                widget.setIcon(QIcon())
+        remaining = SURFACE_LIMIT
+        encodedRemaining = SURFACE_LIMIT
+        for component, widget in self.widgets.get(self.currentPageId, {}).values():
+            key = component.props.imageResourceId or component.props.iconResourceId
+            if not key:
+                continue
+            try:
+                if key not in self.assets:
+                    raise ValueError("STATIC_ASSET_MISSING")
+                size = self.assets[key][2]
+                if size > encodedRemaining:
+                    raise ValueError("STATIC_ASSET_ENCODED_BUDGET")
+                encodedRemaining -= size
+                image = readAsset(self.assets[key], remaining, icon=component.type == "navigation_button")
+                remaining -= image.sizeInBytes()
+                widget.setToolTip("")
+                if isinstance(widget, ImageView):
+                    widget.setImage(image, "")
+                else:
+                    widget.setIcon(QIcon(QPixmap.fromImage(image)))
+            except (OSError, ValueError) as error:
+                widget.setToolTip(str(error))
+                if isinstance(widget, ImageView):
+                    widget.setImage(QImage(), "", str(error))
+                else:
+                    widget.setIcon(QIcon())
+
     def navigate(self, pageId, keepFrozen=False):
         assertGuiThread()
         if pageId not in self.config.pages:
@@ -456,12 +504,15 @@ class RuntimePages(QWidget):
             for _component, widget in self.widgets[self.currentPageId].values():
                 if isinstance(widget, ImageView):
                     widget.setImage(QImage(), "", "隐藏页面")
+                elif _component.props.iconResourceId:
+                    widget.setIcon(QIcon())
                 elif isinstance(widget, CollectionView):
                     widget.clear('隐藏页面')
         if pageId not in self.pages:
             self._build(pageId)
         self.currentPageId = pageId
         self.stack.setCurrentWidget(self.pages[pageId])
+        self._renderAssets()
         for key, button in self.buttons.items():
             button.setChecked(key == pageId)
         if self.designExamples:
@@ -605,6 +656,8 @@ class RuntimePages(QWidget):
         self.setUpdatesEnabled(False)
         try:
             for component, widget in self.widgets[page].values():
+                if component.props.imageResourceId:
+                    continue
                 if component.type == "navigation_button":
                     continue
                 if component.type == "text" and not component.bindings:
@@ -675,6 +728,7 @@ class RuntimePages(QWidget):
             self._screenWindow = handle
             handle.screenChanged.connect(self._screenChanged)
         self._screenChanged()
+        self._renderAssets()
         if self.designExamples:
             from .design_examples import populate
             populate(self)
@@ -718,6 +772,8 @@ class RuntimePages(QWidget):
             for _component, widget in rows.values():
                 if isinstance(widget, ImageView):
                     widget.setImage(QImage(), "", "隐藏页面")
+                elif _component.props.iconResourceId:
+                    widget.setIcon(QIcon())
                 elif isinstance(widget, CollectionView):
                     widget.clear('隐藏页面')
         super().hideEvent(event)
@@ -750,6 +806,8 @@ class RuntimePages(QWidget):
                 if isinstance(widget, ImageView):
                     widget.painted = None
                     widget.setImage(QImage(), "")
+                elif _component.props.iconResourceId:
+                    widget.setIcon(QIcon())
                 elif isinstance(widget, CollectionView):
                     widget.clear('已关闭')
         super().closeEvent(event)

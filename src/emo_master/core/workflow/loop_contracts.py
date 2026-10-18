@@ -84,6 +84,11 @@ def deriveLoopContract(
     else:
         version = versionValue
     normalizedConfig["contractVersion"] = version
+    cycleBoundary = config.get("cycleBoundary", "inherit")
+    if not isinstance(cycleBoundary, str) or cycleBoundary not in {"inherit", "iteration"} or (cycleBoundary == "iteration" and
+            (mode != "while" or version != CURRENT_LOOP_CONTRACT_VERSION)):
+        issues.append(LoopContractIssue("E_LOOP_CYCLE_BOUNDARY",
+            "iteration cycle boundaries require While contractVersion=2", "loop.cycleBoundary"))
     unlimited = config.get("unlimited", False)
     if not isinstance(unlimited, bool) or (unlimited and (mode != "while" or version != CURRENT_LOOP_CONTRACT_VERSION)):
         issues.append(LoopContractIssue("E_LOOP_LIMIT_MODE_INVALID",

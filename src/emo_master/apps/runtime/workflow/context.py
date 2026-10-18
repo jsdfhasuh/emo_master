@@ -17,6 +17,14 @@ class RunContext:
     workspacePath: str = ""
     projectId: str = ""
     callPath: tuple[tuple[str, str], ...] = ()
+    cycleId: str = ""
+    planRevision: int = 0
+    runGroupId: str = ""
+    dispatchId: str = ""
+    deliveryId: str = ""
+    invocationId: str = ""
+    targetSlotId: str = ""
+    documentRevision: int = 0
 
     @classmethod
     def root(
@@ -25,6 +33,8 @@ class RunContext:
         workflowId: str,
         workspacePath: str = "",
         projectId: str = "",
+        cycleId: str = "",
+        planRevision: int = 0,
     ) -> "RunContext":
         return cls(
             jobId=jobId,
@@ -32,6 +42,8 @@ class RunContext:
             workflowRunId=str(uuid4()),
             workspacePath=workspacePath,
             projectId=projectId,
+            cycleId=cycleId or str(uuid4()),
+            planRevision=planRevision,
         )
 
     def forNode(self, nodeId: str) -> "RunContext":
@@ -49,6 +61,14 @@ class RunContext:
             workspacePath=self.workspacePath,
             projectId=self.projectId,
             callPath=(*self.callPath, (callerNodeId, relation)),
+            cycleId=self.cycleId,
+            planRevision=self.planRevision,
+            runGroupId=self.runGroupId,
+            dispatchId=self.dispatchId,
+            deliveryId=self.deliveryId,
+            invocationId=self.invocationId,
+            targetSlotId=self.targetSlotId,
+            documentRevision=self.documentRevision,
         )
 
     def forIteration(self, index: int) -> "RunContext":

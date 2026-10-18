@@ -1,0 +1,15 @@
+{
+  "operatorId": "vision.io.simulated_camera",
+  "displayName": "模拟相机采集",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.simulated_camera.operator:SimulatedCameraOperator",
+  "category": "图像输入",
+  "iconKey": "camera",
+  "summary": "通过 Runtime 设备队列生成模拟图像，不访问真实相机。",
+  "inputPorts": {},
+  "outputPorts": {"image": "image", "frame": {"type": "bbox2d", "schemaVersion": "1.1"}},
+  "paramSchema": {"type": "object", "properties": {}, "additionalProperties": false},
+  "deviceRequirements": {"camera": {"deviceTypeId": "device.simulated.camera"}},
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x"
+}

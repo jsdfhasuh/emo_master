@@ -1,4 +1,5 @@
 {
+  "nextCycleParameterPaths": ["operator","rightValue"],
   "operatorId": "vision.compare.number",
   "displayName": "Compare Number",
   "version": "1.0.0",

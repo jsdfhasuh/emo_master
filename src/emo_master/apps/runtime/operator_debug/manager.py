@@ -61,6 +61,7 @@ class OperatorDebugManager:
         self.leaseSeconds = leaseSeconds
         self.graceSeconds = graceSeconds
         self.workerFactory = workerFactory
+        self.resourceLeasePath = None
         self.maxRequests, self.maxResults, self.maxOpens = maxRequests, maxResults, maxOpens
         self.lock = threading.RLock()
         self.sessions: dict[str, Session] = {}
@@ -69,6 +70,9 @@ class OperatorDebugManager:
         self.stop = threading.Event()
         self.monitor = threading.Thread(target=self._monitor, name="operator-debug-monitor", daemon=True)
         self.monitor.start()
+
+    def _leasedSpec(self, spec):
+        return dict(spec, _resourceLeasePath=self.resourceLeasePath) if self.resourceLeasePath else spec
 
     def ownsResources(self):
         with self.lock:
@@ -359,7 +363,7 @@ class OperatorDebugManager:
         self.sessions[session.sessionId] = session
         self.opens[requestId] = (fingerprint, session.sessionId)
         try:
-            session.worker = self.workerFactory(spec)
+            session.worker = self.workerFactory(self._leasedSpec(spec))
             session.assets = DebugAssets(session.worker.workspace.name)
             session.worker.start()
         except Exception as error:
@@ -487,7 +491,7 @@ class OperatorDebugManager:
             session.closedAck = False
             session.state = "STARTING"
             try:
-                session.worker = self.workerFactory(session.spec)
+                session.worker = self.workerFactory(self._leasedSpec(session.spec))
                 session.assets = DebugAssets(session.worker.workspace.name)
                 session.worker.start()
             except Exception as error:

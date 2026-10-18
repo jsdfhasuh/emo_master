@@ -58,7 +58,7 @@ def prepare(project, registry, root: Path, resourceRoot: Path, *, siteValues=Non
                 if inputStream.read(1) or digest.hexdigest() != item.sha256:
                     raise ValueError("resource changed during copy")
             paths[key] = str(target)
-        for binding in document.resources.parameterBindings:
+        for binding in document.resources.nodeParameterBindings:
             parameterTarget = binding.target
             value = parameters[parameterTarget.workflowId][parameterTarget.nodeId]
             for part in parameterTarget.parameterPath[:-1]:

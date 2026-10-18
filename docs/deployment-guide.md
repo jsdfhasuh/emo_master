@@ -213,6 +213,15 @@ python scripts\release_wizard_emo_master.py
 
 ## 8. 验收记录与源码依据
 
+设备平台 2.6 使用完整 Runtime `.vxpkg` 部署或在线配置提交，不使用旧页面测试包
+绕过受管设备所有权。远端资源先明确上传并核对 SHA-256，再提交配置；上传完成
+不是发布成功。页面静态资产也走同一资源清单，不能依赖 Designer 的本机绝对路径。
+
+最新本地候选包和软件/冻结/实机分层证据见
+[设备平台交接检查表](testing/2026-10-18-device-platform-handoff.md)。必须完整保留
+EXE 同目录的 `_internal`；新源码不会热更新已经运行的旧 EXE。测试候选不是正式
+Release，也不是干净 Windows 安装器验收。
+
 本次文档更新按源码进行核对，没有据此宣称完成新一轮干净 Windows 环境、安装器、相机、PLC 或生产长稳验收。旧验证证据见 [Designer 验证记录](designer-ui-validation.md)，新交付应另行保存源码检查、冻结包自检、安装/卸载及硬件测试结果。
 
 应用依据：`src/emo_master/apps/windows_entry.py`、`apps/runtime/main.py`（位于 `src/emo_master` 下）、`.github/workflows/release-windows.yml`、`scripts/verify_windows_package.ps1`。

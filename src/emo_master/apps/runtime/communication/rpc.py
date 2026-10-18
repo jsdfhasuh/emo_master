@@ -50,6 +50,9 @@ class CommunicationRpcMixin:
                     raise TcpServiceError("E_TCP_STALE_CONTEXT", "Runtime 或项目代次已改变，请刷新通信状态")
                 if runtime._closing:
                     raise TcpServiceError("E_RUNTIME_CLOSING", "Runtime 正在关闭")
+                configuration = getattr(runtime, "projectConfiguration", None)
+                if configuration is not None and configuration.active and request.action != "STOP":
+                    raise TcpServiceError("E_CONFIG_WRITER_BUSY", "online configuration transition is pending")
                 if context is not None:
                     check = getattr(context, "check", None)
                     if callable(check):
@@ -79,6 +82,9 @@ class CommunicationRpcMixin:
                     if request.action != "ABORT_DISABLE" and request.expected_config_revision != state["desiredRevision"]:
                         raise TcpServiceError("E_TCP_CONFIG_STALE", "通信配置已改变，请刷新后操作")
                     if request.action == "SYNC":
+                        configuration = getattr(runtime, "projectConfiguration", None)
+                        if configuration is not None and configuration.current is not None:
+                            raise TcpServiceError("E_CONFIG_UNIFIED_WRITE", "在线工程的通信配置必须通过统一配置写入接口修改")
                         config = CommunicationSettings.model_validate_json(request.config_json)
                         if runtime.loadedDocument.communication is None and config == CommunicationSettings():
                             candidate = runtime.loadedDocument
@@ -106,8 +112,12 @@ class CommunicationRpcMixin:
                                 raise TcpServiceError("E_RESOURCE_BUSY", "请先关闭相机配置或算子调试会话")
                             manager.start()
                     elif request.action == "STOP":
+                        manager.controlRevision += 1
                         manager.stop()
                     elif request.action == "UNLOAD":
+                        configuration = getattr(runtime, "projectConfiguration", None)
+                        if configuration is not None and configuration.current is not None:
+                            raise TcpServiceError("E_CONFIG_UNIFIED_WRITE", "在线工程不能通过旧通信接口卸载")
                         with runtime._previewJobLock:
                             if (runtime.livePreviewManager.hasConfigurationSession() or runtime.operatorDebugManager.ownsResources()
                                     or any(not record.isTerminal or runtime.jobSupervisor.ownsJobResources(record.jobId)

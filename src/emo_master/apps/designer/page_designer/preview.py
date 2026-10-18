@@ -34,9 +34,9 @@ def checkLocalDraft(document):
     if len(imageSources) > 1:
         raise ValueError('隔离草稿调试/测试入口仅支持单图来源，请跨页复用；正常运行可按 Runtime 广告能力使用有界双图配置')
     inputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
-              for b in document.resources.parameterBindings}
+              for b in document.resources.nodeParameterBindings}
     outputs = {(b.target.workflowId, b.target.nodeId, tuple(b.target.parameterPath))
-               for b in document.resources.siteBindings if b.purpose == 'output_file'}
+               for b in document.resources.nodeSiteBindings if b.purpose == 'output_file'}
     for workflowId, workflow in document.workflows.items():
         for node in workflow.nodes:
             if node.kind != 'operator':
@@ -394,6 +394,11 @@ class PreviewController(QObject):
                                             if observer.config != presentation else None)
         elif observer.config != presentation:
             observer.reload(presentation)
+        elif not observer.frozen:
+            from emo_master.core.presentation.assets import pageAssets
+            assets = pageAssets(self.coordinator.session.document(), self.coordinator.directory)
+            if observer.assets != assets:
+                observer.setAssets(assets)
 
     def _jobPresentation(self, presentation):
         document = self.coordinator.session.document()

@@ -45,7 +45,10 @@ def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, h
         viewport = controller.runtimeScroll.viewport()
         bounds = control.rect().translated(control.mapTo(viewport, QPoint()))
         assert viewport.rect().contains(bounds), (control.objectName(), bounds, viewport.rect())
-    for caption in ('PLC 软元件', '起始地址', '数据类型', '数量'):
+    from emo_master.apps.designer.ui.plc_presentation import plcSchema
+    from emo_master.plugins.builtins._communication_operators import PLC_READ_PARAM_SCHEMA
+    titles = plcSchema(PLC_READ_PARAM_SCHEMA)['properties']
+    for caption in (titles[name]['title'] for name in ('device', 'startAddress', 'dataType', 'count')):
         labels = [label for label in controller.runtimePage.findChildren(QLabel)
                   if label.text().strip() == caption]
         assert labels, caption

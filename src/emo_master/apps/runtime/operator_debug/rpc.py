@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import json
 from typing import Any
 
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as _pb
@@ -51,6 +52,23 @@ class OperatorDebugRpcMixin:
                     with runtime._projectStateLock, runtime._previewJobLock:
                         if runtime._closing:
                             fail("E_RUNTIME_CLOSING", "Runtime is closing")
+                        if runtime.loadedDocument is not None and runtime.loadedDocument.schemaVersion == "2.6":
+                            from emo_master.apps.runtime.preview.plc_debug import PLC_OPERATORS
+                            managedOperators = set(PLC_OPERATORS) | {"vision.io.huaray_camera"}
+                            draft = json.loads(request.project_json or "{}")
+                            if not isinstance(draft, dict) or not isinstance(draft.get("workflows", {}), dict):
+                                fail("E_DEBUG_CONTEXT_INVALID", "invalid debug project object")
+                            hardware = request.operator_id in managedOperators
+                            if debugKind == "workflow":
+                                for workflow in draft.get("workflows", {}).values():
+                                    if not isinstance(workflow, dict) or not isinstance(workflow.get("nodes", []), list):
+                                        fail("E_DEBUG_CONTEXT_INVALID", "invalid debug workflow")
+                                    for node in workflow.get("nodes", []):
+                                        if not isinstance(node, dict):
+                                            fail("E_DEBUG_CONTEXT_INVALID", "invalid debug node")
+                                        hardware = hardware or node.get("operatorId") in managedOperators
+                            if hardware:
+                                fail("E_DEVICE_DEBUG_REQUIRED", "use managed device diagnostics; private debug connections are disabled")
                         if not getattr(context, "is_active", lambda: True)():
                             fail("E_CANCELLED", "request cancelled before acceptance")
                         with manager.lock:

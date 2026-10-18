@@ -7,7 +7,7 @@ from typing import Callable, cast
 
 from emo_master.core.project.migration import migrateProjectPayload
 from emo_master.core.project.models import ProjectDocument, WorkflowDefinition, WorkflowNode
-from emo_master.core.project.resources import ResourceBinding, SiteBinding
+from emo_master.core.project.resources import ParameterTarget, ResourceBinding, SiteBinding
 from emo_master.core.contracts.port_compatibility import arePortTypesCompatible
 from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
 from emo_master.core.workflow.loop_contracts import (
@@ -34,9 +34,11 @@ class WorkflowCompiler:
         self,
         operatorRegistry: Mapping[str, object] | None = None,
         maxCallDepth: int = 32,
+        deviceTypes: Mapping[str, object] | None = None,
     ) -> None:
         self.operatorRegistry = operatorRegistry or {}
         self.maxCallDepth = maxCallDepth
+        self.deviceTypes = deviceTypes or {}
 
     def compile(
         self,
@@ -49,6 +51,19 @@ class WorkflowCompiler:
             else ProjectDocument.model_validate(migrateProjectPayload(project))
         )
         issues = validateProjectDocument(document, self.operatorRegistry)
+        for workflowId, workflow in document.workflows.items():
+            for node in workflow.nodes:
+                descriptor = self.operatorRegistry.get(node.operatorId or "")
+                manifest = getattr(descriptor, "manifest", descriptor)
+                requirements = (manifest.get("deviceRequirements", {}) if isinstance(manifest, Mapping)
+                                else getattr(manifest, "deviceRequirements", {}))
+                if node.deviceBindings or requirements:
+                    try:
+                        self._devicePlans(document, node, requirements)
+                    except ValueError as error:
+                        issues.append(ValidationIssue(
+                            "E_DEVICE_RUNTIME_UNAVAILABLE", str(error),
+                            document.project.projectId, workflowId, node.nodeId))
         if issues:
             raise WorkflowCompileError(issues)
 
@@ -60,7 +75,8 @@ class WorkflowCompiler:
                     resourceBindings: list[ResourceBinding | SiteBinding] = (
                         [*document.resources.parameterBindings, *document.resources.siteBindings] if document.resources else [])
                     occupied = [binding.target.parameterPath for binding in resourceBindings
-                        if binding.target.workflowId == workflowId and binding.target.nodeId == node.nodeId]
+                        if isinstance(binding.target, ParameterTarget)
+                        and binding.target.workflowId == workflowId and binding.target.nodeId == node.nodeId]
                     schema = _operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))
                     if node.operatorId in {"vision.state.variable_read", "vision.state.variable_write"}:
                         occupied.append(["variableId"])
@@ -86,6 +102,13 @@ class WorkflowCompiler:
         recursionIssues = self._findRecursion(callGraph, document.project.projectId)
         if recursionIssues:
             raise WorkflowCompileError(recursionIssues)
+        from emo_master.core.workflow.dispatch_contracts import groupSlots
+        for workflowId in document.workflowOrder:
+            try:
+                groupSlots(document, workflowId)
+            except ValueError as error:
+                raise WorkflowCompileError([ValidationIssue("E_DISPATCH_CONTRACT", str(error),
+                    projectId=document.project.projectId, workflowId=workflowId)]) from error
         return CompiledProject(
             projectId=document.project.projectId,
             revision=document.project.revision,
@@ -96,6 +119,51 @@ class WorkflowCompiler:
             pluginRootPaths=tuple(pluginRootPaths),
             globalVariables=freezeMapping({key: value.model_dump() for key, value in document.globalVariables.items()}),
         )
+
+    def _devicePlans(self, document, node, requirements=None):
+        descriptor = self.operatorRegistry.get(node.operatorId or "")
+        manifest = getattr(descriptor, "manifest", descriptor)
+        if requirements is None:
+            requirements = (manifest.get("deviceRequirements", {}) if isinstance(manifest, Mapping)
+                            else getattr(manifest, "deviceRequirements", {}))
+        since = (manifest.get("deviceBindingSince", "") if isinstance(manifest, Mapping)
+                 else getattr(manifest, "deviceBindingSince", ""))
+        if not node.deviceBindings and (not requirements or (since == "2.6" and document.schemaVersion != "2.6")):
+            return {}
+        if set(requirements) != set(node.deviceBindings):
+            raise ValueError("device slots do not match the operator declaration")
+        schema = _operatorParamSchema(descriptor)
+        actionFields = schema.get("xDeviceActionFields")
+        if actionFields is not None:
+            boundFields = {binding.parameterPath[0] for binding in node.globalVariableBindings}
+            if (set(node.params) | boundFields) - set(actionFields):
+                raise ValueError("managed node contains connection/retry parameters; explicitly migrate them to the device")
+        result = {}
+        for slot, binding in node.deviceBindings.items():
+            definition = document.devices.definitions[binding.deviceId]
+            declaration = self.deviceTypes.get(definition.deviceTypeId)
+            if declaration is None or not declaration.driverEntry:
+                raise ValueError("Device-bound execution requires the managed device Runtime")
+            requirement = requirements[slot]
+            typeId = requirement.get("deviceTypeId") if isinstance(requirement, Mapping) else requirement.deviceTypeId
+            if definition.deviceTypeId != typeId:
+                raise ValueError("device type does not match operator slot")
+            overrides = node.deviceOverrides.get(slot, {})
+            bindings = node.deviceValueBindings.get(slot, {})
+            declaration.validateNodeSources(definition, overrides, bindings)
+            from emo_master.core.project.global_variables import compatible
+            for path, source in bindings.items():
+                expected = declaration.parameterSpec(path)["type"]
+                if source.source == "variable":
+                    variable = document.globalVariables.get(source.variableId)
+                    if variable is None or not compatible(variable.type, expected):
+                        raise ValueError("invalid dynamic device variable")
+                elif node.inputPorts.get(source.inputName) != expected:
+                    raise ValueError("invalid dynamic device input")
+            result[slot] = dict(deviceId=binding.deviceId, definition=definition.model_dump(),
+                                declaration=declaration.model_dump(), overrides=deepcopy(overrides),
+                                bindings={path: source.model_dump() for path, source in bindings.items()})
+        return result
 
     def _compileWorkflow(
         self,
@@ -132,6 +200,7 @@ class WorkflowCompiler:
                 loop=freezeMapping(loopConfig),
                 globalVariableBindings=tuple(freezeMapping(binding.model_dump()) for binding in node.globalVariableBindings),
                 paramSchema=freezeMapping(_operatorParamSchema(self.operatorRegistry.get(node.operatorId or ""))),
+                devicePlans=freezeMapping(self._devicePlans(document, node)),
             )
             nodes.append(compiled)
             nodeById[node.nodeId] = compiled
@@ -182,6 +251,12 @@ class WorkflowCompiler:
             incoming[edge.toNode].append(edge)
             outgoing[edge.fromNode].append(edge)
         for compiledNode in nodes:
+            if compiledNode.kind == "join":
+                tokenEdges = [e for e in incoming.get(compiledNode.nodeId, ()) if e.toPort == "token"]
+                if len(tokenEdges) != 1 or (tokenEdges[0].fromNode, tokenEdges[0].fromPort) != (
+                        compiledNode.params["dispatchNodeId"], "token"):
+                    issues.append(ValidationIssue("E_DISPATCH_JOIN_EDGE", "Join token must come from its declared Dispatch",
+                        projectId=document.project.projectId, workflowId=workflowId, nodeId=compiledNode.nodeId))
             if (compiledNode.operatorId == "vision.state.variable_write"
                     and compiledNode.params.get("operation", "set") != "set"
                     and not any(edge.toPort == "after" for edge in incoming.get(compiledNode.nodeId, ()))):
@@ -235,6 +310,13 @@ class WorkflowCompiler:
     def _nodePorts(
         self, document: ProjectDocument, workflowId: str, node: WorkflowNode
     ) -> tuple[dict[str, object], dict[str, object]]:
+        if node.kind in {"dispatch", "join"}:
+            from emo_master.core.workflow.dispatch_contracts import dispatchPorts
+            try:
+                return dispatchPorts(document, workflowId, node)
+            except ValueError as error:
+                raise WorkflowCompileError([ValidationIssue("E_DISPATCH_CONTRACT", str(error),
+                    projectId=document.project.projectId, workflowId=workflowId, nodeId=node.nodeId)]) from error
         if node.kind == "workflow_input":
             return {}, _interfacePorts(document.workflows[workflowId].inputs)
         if node.kind == "workflow_output":
@@ -305,6 +387,8 @@ class WorkflowCompiler:
         if operatorClass is None:
             return []
         validate = getattr(operatorClass, "validateParams", None)
+        if node.deviceBindings:
+            validate = getattr(operatorClass, "validateDeviceParams", validate)
         try:
             params = resolveParams(node.params, node.globalVariableBindings,
                                    {key: value.initialValue for key, value in document.globalVariables.items()})
@@ -358,6 +442,9 @@ class WorkflowCompiler:
         for workflowId, workflow in workflows.items():
             targets: list[str] = []
             for node in workflow.nodes:
+                if node.kind == "dispatch":
+                    declarations = cast(list[dict[str, str]], node.params["targets"])
+                    targets.extend(target["workflowId"] for target in declarations)
                 if node.kind == "subflow" and node.targetWorkflowId:
                     targets.append(node.targetWorkflowId)
                 elif node.kind == "loop":

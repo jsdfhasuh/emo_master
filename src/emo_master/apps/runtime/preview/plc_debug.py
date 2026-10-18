@@ -172,7 +172,8 @@ class PlcDebugManager:
     def failure(self, code: str, message: str) -> PlcDebugReply:
         return PlcDebugReply(code=code, message=message, runtime_instance_id=self.runtimeInstanceId)
 
-    def reserve(self, projectId: str, params: dict[str, object], *, workflowId: str = "", nodeId: str = "") -> _Session:
+    def reserve(self, projectId: str, params: dict[str, object], *, workflowId: str = "", nodeId: str = "",
+                clientFactory=None) -> _Session:
         endpoint = endpointFromParams(params)
         with self._lock:
             if self._stop.is_set():
@@ -182,7 +183,7 @@ class PlcDebugManager:
             key = endpoint.host.lower(), endpoint.port
             if any((s.endpoint.host.lower(), s.endpoint.port) == key for s in self._sessions.values()):
                 raise RuntimeError("PLC endpoint already has a debug session")
-            session = _Session(uuid4().hex, projectId, endpoint, self._clientFactory(endpoint),
+            session = _Session(uuid4().hex, projectId, endpoint, (clientFactory or self._clientFactory)(endpoint),
                                self._clock() + max(LEASE_SECONDS, endpoint.connectTimeoutSec + 2.0),
                                workflowId=workflowId, nodeId=nodeId)
             self._sessions[session.sessionId] = session
@@ -276,6 +277,8 @@ class PlcDebugManager:
             if session.endpoint.frameEncoding == "ascii" and start + span - 1 > 999999:
                 raise ValueError("ASCII address range must be within 0..999999")
             if command == "write":
+                if getattr(session.client, "managed", False) and params.get("confirmed") is not True:
+                    raise ValueError("managed PLC writes require confirmation for this execution")
                 if len(session.writes) >= MAX_WRITE_REQUESTS:
                     return self._reply(session, ok=False, code="E_PLC_REQUEST_LIMIT", message="write request limit reached; reconnect before writing again",
                                        result={"receipt": {"outcome": "rejected"}, "readback": None, "readbackError": ""})
@@ -325,8 +328,10 @@ class PlcDebugManager:
         except Exception as error:
             if not acquired and command == "write" and requestId in session.writes:
                 return self._duplicateWrite(session, requestId, fingerprint)
-            unknown = attemptingWrite and not confirmedWrite and not isinstance(error, SlmpResponseError)
-            if isinstance(error, (SlmpConnectionError, SlmpProtocolError, SlmpResponseError)) or unknown or session.closed.is_set():
+            unknown = (attemptingWrite and not confirmedWrite and not isinstance(error, SlmpResponseError)
+                       and getattr(error, "outcome", "UNKNOWN") not in {"REJECTED", "NOT_EXECUTED"})
+            if (isinstance(error, (SlmpConnectionError, SlmpProtocolError, SlmpResponseError)) or unknown
+                    or getattr(error, "unhealthy", False) or session.closed.is_set()):
                 self._invalidate(session, "error")
             result = {"receipt": {"outcome": "unknown" if unknown else "rejected"},
                       "readback": None, "readbackError": ""} if command == "write" else {}
@@ -413,6 +418,12 @@ class PlcDebugManager:
         if not session.operation.acquire(timeout=max(0.0, timeoutSeconds)):
             return "PLC debug work still owns a connection; release is unconfirmed"
         try:
+            retire = getattr(session.client, "retire", None)
+            if callable(retire):
+                try:
+                    retire()
+                except RuntimeError as error:
+                    return str(error)
             with self._lock:
                 if self._sessions.get(sessionId) is session:
                     del self._sessions[sessionId]
@@ -453,13 +464,20 @@ class PlcDebugManager:
                 errors.append("PLC debug lease worker has not retired")
         return errors
 
-    def closeSessions(self) -> list[str]:
+    def closeSessions(self, *, legacyOnly=False) -> list[str]:
         with self._lock:
-            projects = {s.projectId for s in self._sessions.values()}
-        return [error for project in projects for error in self.closeProject(project)]
+            sessions = [s for s in self._sessions.values()
+                        if not legacyOnly or not getattr(s.client, "managed", False)]
+        for session in sessions:
+            self._invalidate(session)
+        deadline = time.monotonic() + 3.0
+        return [error for session in sessions if (error := self.close(
+            session.sessionId, max(0.0, deadline - time.monotonic())))]
 
     @staticmethod
     def _errorCode(error: Exception) -> str:
+        if hasattr(error, "code"):
+            return str(error.code)
         if isinstance(error, (ValueError, TypeError)):
             return "E_PARAM_INVALID"
         if isinstance(error, SlmpTimeoutError):

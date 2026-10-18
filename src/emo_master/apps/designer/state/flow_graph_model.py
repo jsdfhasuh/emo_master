@@ -20,6 +20,9 @@ class FlowNode:
     targetWorkflowId: str | None = None
     loop: dict[str, object] = field(default_factory=dict)
     globalVariableBindings: list[dict[str, object]] = field(default_factory=list)
+    deviceBindings: dict[str, object] = field(default_factory=dict)
+    deviceOverrides: dict[str, object] = field(default_factory=dict)
+    deviceValueBindings: dict[str, object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -244,6 +247,8 @@ class FlowGraphModel:
                     "targetWorkflowId": node.targetWorkflowId,
                     "loop": dict(node.loop),
                     **({"globalVariableBindings": deepcopy(node.globalVariableBindings)} if node.globalVariableBindings else {}),
+                    **{key: deepcopy(getattr(node, key)) for key in
+                       ("deviceBindings", "deviceOverrides", "deviceValueBindings") if getattr(node, key)},
                 }
                 for node in self.nodes.values()
             ],
@@ -315,6 +320,9 @@ class FlowGraphModel:
                     targetWorkflowId=targetWorkflowId,
                     loop=dict(loop),
                     globalVariableBindings=deepcopy(item.get("globalVariableBindings", [])),
+                    deviceBindings=deepcopy(item.get("deviceBindings", {})),
+                    deviceOverrides=deepcopy(item.get("deviceOverrides", {})),
+                    deviceValueBindings=deepcopy(item.get("deviceValueBindings", {})),
                 )
 
         regularNodes = {

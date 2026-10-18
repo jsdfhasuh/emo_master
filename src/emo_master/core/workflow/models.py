@@ -18,6 +18,7 @@ class CompiledNode:
     loop: Mapping[str, object] = MappingProxyType({})
     globalVariableBindings: tuple[Mapping[str, object], ...] = ()
     paramSchema: Mapping[str, object] = MappingProxyType({})
+    devicePlans: Mapping[str, object] = MappingProxyType({})
 
 
 @dataclass(frozen=True)

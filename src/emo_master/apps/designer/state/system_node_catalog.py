@@ -15,6 +15,8 @@ SYSTEM_NODE_CATALOG: tuple[SystemNodeDefinition, ...] = (
     SystemNodeDefinition("workflow_input", "Workflow Input", "边界"),
     SystemNodeDefinition("workflow_output", "Workflow Output", "边界"),
     SystemNodeDefinition("subflow", "Subflow", "控制流"),
+    SystemNodeDefinition("dispatch", "Dispatch", "控制流"),
+    SystemNodeDefinition("join", "Join", "控制流"),
     SystemNodeDefinition("loop:repeat", "Repeat", "控制流"),
     SystemNodeDefinition("loop:foreach", "ForEach", "控制流"),
     SystemNodeDefinition("loop:while", "While", "控制流"),

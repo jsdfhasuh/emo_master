@@ -103,6 +103,9 @@ class WorkflowController:
         self,
         filePath: str | Path,
         insertIntoWorkflowId: str | None = None,
+        *, deviceMapping: dict[str, str | None] | None = None,
+        expectedFingerprint: str | None = None,
+        expectedTargetFingerprint: str | None = None,
     ) -> WorkflowPackageImportResult:
         document = loadWorkflowPackage(filePath)
         workingStore = self._capturedWorkflowStoreCopy()
@@ -110,6 +113,9 @@ class WorkflowController:
             workingStore,
             document,
             insertIntoWorkflowId=insertIntoWorkflowId,
+            deviceMapping=deviceMapping,
+            expectedFingerprint=expectedFingerprint,
+            expectedTargetFingerprint=expectedTargetFingerprint,
         )
         replaceWorkflowStoreState(self.workflowStore, workingStore)
         self.lastInterfaceRefreshReport = self._refreshWorkflowReferences()
@@ -147,8 +153,9 @@ class WorkflowController:
     def duplicateWorkflow(self, workflowId):
         """Use the existing import ID remap for a full reachable workflow copy."""
         store = self._capturedWorkflowStoreCopy()
-        document = buildWorkflowPackage(store, workflowId)
-        result = importWorkflowPackage(store, document, reuseVariableIds=True)
+        document = buildWorkflowPackage(store, workflowId, forInProjectCopy=True)
+        result = importWorkflowPackage(store, document, reuseVariableIds=True,
+                                       deviceMapping={key: key for key in document.devices})
         replaceWorkflowStoreState(self.workflowStore, store)
         self._refreshWorkflowReferences()
         self._renderActive()

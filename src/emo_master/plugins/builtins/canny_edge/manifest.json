@@ -1,4 +1,5 @@
 {
+  "nextCycleParameterPaths": ["thresholdLow","thresholdHigh","apertureSize","l2Gradient"],
   "operatorId": "vision.edge.canny",
   "displayName": "Canny Edge",
   "version": "1.1.1",

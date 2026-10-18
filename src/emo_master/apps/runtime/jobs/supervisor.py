@@ -29,6 +29,7 @@ class JobSupervisor:
         terminalCallback: Callable[[str, str], None] | None = None,
         retiredCallback: Callable[[str], None] | None = None,
         communication: Any = None,
+        devices: Any = None,
     ) -> None:
         self.jobRepository = jobRepository
         self.eventStore = eventStore
@@ -40,6 +41,7 @@ class JobSupervisor:
         self._presentationEpoch: int | None = None
         self.retiredCallback = retiredCallback
         self.communication = communication
+        self.devices = devices
         self.presentationCallback: Callable | None = None
         self.presentationErrors: deque[str] = deque(maxlen=64)
         self._context = multiprocessing.get_context("spawn")
@@ -66,6 +68,9 @@ class JobSupervisor:
         self.retirementRepairFactory: Callable | None = None
 
     def startJob(self, spec: JobProcessSpec) -> None:
+        if spec.dispatchSlots and not spec.runGroupId:
+            self._startRunGroup(spec)
+            return
         self.assertMutationAllowed()
         with self._lock:
             active = len(self._ownedJobs())
@@ -90,15 +95,26 @@ class JobSupervisor:
             process = None
             bridge: EventBridge | None = None
             communicationPipe = None
+            devicePipe = None
             try:
                 cell = HeartbeatCell(self._context)
                 spec = replace(spec, heartbeatCell=cell)
                 if self.communication is not None and spec.usesCommunication:
                     communicationPipe = self.communication.openWorker(spec.jobId, cancelEvent, self._context)
+                if spec.deviceIds or spec.managedConfiguration or spec.runGroupId:
+                    if self.devices is None:
+                        raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE")
+                    devicePipe = self.devices.openWorker(spec.jobId, spec.deviceIds, cancelEvent, self._context)
+                processArgs: tuple[Any, ...] = ((spec, cancelEvent, eventQueue, communicationPipe, devicePipe) if devicePipe is not None
+                          else (spec, cancelEvent, eventQueue, communicationPipe) if communicationPipe is not None
+                          else (spec, cancelEvent, eventQueue))
+                target: Callable[..., Any] = runJobProcess
+                leasePath = getattr(self.devices, 'resourceLeasePath', None)
+                if leasePath:
+                    from emo_master.apps.runtime.project_config.resource_lease import runWithResourceLease
+                    target, processArgs = runWithResourceLease, (leasePath, target, processArgs)
                 process = self._context.Process(
-                    target=runJobProcess,
-                    args=((spec, cancelEvent, eventQueue, communicationPipe) if communicationPipe is not None
-                          else (spec, cancelEvent, eventQueue)),
+                    target=target, args=processArgs,
                     name=f"emo-master-job-{spec.jobId}",
                 )
                 self._heartbeatCells[spec.jobId] = cell
@@ -133,10 +149,68 @@ class JobSupervisor:
                 )
                 raise
             finally:
+                if devicePipe is not None:
+                    devicePipe.close()
+                if spec.jobId not in self._handles and self.devices is not None:
+                    self.devices.retire(spec.jobId)
                 if communicationPipe is not None:
                     communicationPipe.close()
                 if spec.jobId not in self._handles and self.communication is not None:
                     self.communication.revokeJob(spec.jobId)
+
+    def _startRunGroup(self, spec):
+        import json
+        from pathlib import Path
+        from uuid import uuid4
+        from emo_master.core.project.models import ProjectDocument
+        from emo_master.core.project.devices import workflowDeviceIds
+        from emo_master.core.project.tcp_dependencies import communicationNodes
+        from emo_master.apps.runtime.jobs.models import JobRecord
+        from emo_master.apps.runtime.frame_dispatch.scheduler import RunGroup, Slot
+        document = ProjectDocument.model_validate(json.loads(Path(spec.projectSnapshotPath).read_text(encoding="utf-8")))
+        if not spec.managedConfiguration or self.devices is None:
+            raise RuntimeError("E_DISPATCH_CONFIGURATION: Dispatch requires authoritative online configuration")
+        slots = {key: Slot(workflow, capacity, str(uuid4())) for key, workflow, capacity in spec.dispatchSlots}
+        group = RunGroup(spec.jobId, slots, self.devices, document)
+        # Reserve producer and every persistent consumer in one admission section.
+        # No producer process exists until all consumer starts have been issued.
+        with self._lock:
+            self.assertMutationAllowed()
+            if self._closing:
+                raise RuntimeError("E_RUNTIME_CLOSING")
+            if self.maxConcurrentJobs is not None and len(self._ownedJobs()) + len(slots) + 1 > self.maxConcurrentJobs:
+                raise RuntimeError("E_MAX_CONCURRENT_JOBS: entire Dispatch run group exceeds capacity")
+            for member in group.members:
+                self.devices.dispatchGroups[member] = group
+            try:
+                for key, slot in slots.items():
+                    self.jobRepository.create(JobRecord(slot.jobId, spec.projectId, document.project.revision, slot.workflowId))
+                    workspace = Path(spec.jobWorkspacePath).parent / slot.jobId
+                    workspace.mkdir(parents=True, exist_ok=True)
+                    self.startJob(replace(spec, jobId=slot.jobId, workflowId=slot.workflowId,
+                        runGroupId=group.groupId, targetSlotId=key, dispatchSlots=(),
+                        jobWorkspacePath=str(workspace), continuous=False, presentation=None,
+                        inputsJson="{}", deviceIds=workflowDeviceIds(document, slot.workflowId),
+                        usesCommunication=bool(communicationNodes(document, slot.workflowId))))
+                self.startJob(replace(spec, runGroupId=group.groupId, dispatchSlots=()))
+            except BaseException:
+                group.stop()
+                for member in group.members:
+                    handle = self._handles.get(member)
+                    if handle is not None:
+                        handle[1].set()
+                    else:
+                        group.workerRetired(member)
+                        self.devices.dispatchGroups.pop(member, None)
+                        record = self.jobRepository.get(member)
+                        if member != group.source and record is not None and not record.isTerminal:
+                            self._markTerminalWithoutEvent(member, JobStatus.FAILED.value,
+                                "E_DISPATCH_START_FAILED", "run-group admission failed before this consumer started; no invocation replay")
+                raise
+        self.eventStore.append(spec.jobId, "dispatch.group.started", "persistent consumer group admitted",
+            projectId=spec.projectId, workflowId=spec.workflowId,
+            payload=dict(runGroupId=group.groupId, sourceJobId=spec.jobId,
+                         slots={key: slot.jobId for key, slot in slots.items()}))
 
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:
         self.assertMutationAllowed()
@@ -331,6 +405,11 @@ class JobSupervisor:
         return outcome.status
 
     def stopJobOutcome(self, jobId: str, mode: str = "graceful", context=None) -> StopOutcome:
+        group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
+        if group is not None and group.source == jobId and mode in {"graceful", "force"}:
+            group.stop()
+            for slot in group.slots.values():
+                self.stopJobOutcome(slot.jobId, mode, context)
         claim: list[TerminalTicket] = []
         pending = None
         accepted = None
@@ -422,7 +501,17 @@ class JobSupervisor:
 
     def _enforceGracefulStop(self, jobId: str, process) -> None:
         self.assertMutationAllowed()
-        process.join(timeout=max(0.0, self.gracefulStopTimeoutMs / 1000.0))
+        deadline = time.monotonic() + max(0.0, self.gracefulStopTimeoutMs / 1000.0)
+        # Retirement closes the Windows process handle under _lock. A blocking
+        # join outside that lock can race close(), even after the worker exited.
+        while time.monotonic() < deadline:
+            with self._lock:
+                handle = self._handles.get(jobId)
+                if handle is None or handle[0] is not process:
+                    return
+                if not process.is_alive():
+                    break
+            time.sleep(min(.02, max(0.0, deadline - time.monotonic())))
         pending = None
         with self._terminalAttempt(jobId) as claim:
             with self._lock:
@@ -1057,6 +1146,7 @@ class JobSupervisor:
             try:
                 if self.retiredCallback is not None:
                     self.retiredCallback(jobId)
+                self._retireDispatch(jobId)
                 receipt.callbackDone = True
             except BaseException as error:
                 receipt.fault("callback", error)
@@ -1067,6 +1157,23 @@ class JobSupervisor:
         self._retirements.pop(jobId, None)
         self._safeRetirement.discard(jobId)
         self._failedStartRetirement.discard(jobId)
+
+    def _retireDispatch(self, jobId):
+        group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
+        if group is None:
+            return
+        self.devices.retire(jobId)
+        group.workerRetired(jobId)
+        if jobId == group.source:
+            self.eventStore.append(jobId, "dispatch.source.ended", "source ended; downstream group remains managed",
+                payload=dict(runGroupId=group.groupId, downstreamPending=any(s.active or s.queue for s in group.slots.values())))
+        if group.retired >= group.members:
+            if self.retiredCallback is not None and group.source != jobId:
+                self.retiredCallback(group.source)
+            for member in group.members:
+                self.devices.dispatchGroups.pop(member, None)
+            self.eventStore.append(group.source, "dispatch.group.retired", "all run-group processes retired",
+                payload=dict(runGroupId=group.groupId))
 
     def finishRetirements(self) -> list[str]:
         self.assertMutationAllowed()

@@ -3,9 +3,9 @@ from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QFormLayout, QGroupBox, QVBoxLayout, QComboBox, QLabel, QWidget, QGridLayout, QSizePolicy
 
 CONTENT = {
-    'image': {'title', 'emptyText'}, 'number': {'title', 'unit', 'decimals', 'emptyText'},
+    'image': {'title', 'emptyText', 'imageResourceId'}, 'number': {'title', 'unit', 'decimals', 'emptyText'},
     'text': {'title', 'text', 'emptyText'}, 'indicator': {'title', 'emptyText'},
-    'table': {'title', 'pageSize', 'emptyText'}, 'navigation_button': {'title', 'text'},
+    'table': {'title', 'pageSize', 'emptyText'}, 'navigation_button': {'title', 'text', 'iconResourceId'},
     'container': {'title'}, 'runtime_status': {'title'},
 }
 LAYOUT = {'row', 'column', 'rowSpan', 'columnSpan', 'columns'}
@@ -133,7 +133,7 @@ class PropertyGroups:
                 visible = kind is None
             if name in CONTENT.get(kind, set()):
                 visible = True
-            elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize'}:
+            elif name in {'title', 'text', 'emptyText', 'unit', 'decimals', 'pageSize', 'imageResourceId', 'iconResourceId'}:
                 visible = False
             if name == 'columns':
                 visible = kind in (None, 'container')

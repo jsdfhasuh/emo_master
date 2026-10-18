@@ -12,6 +12,37 @@ from emo_master.apps.designer.state.presentation_store import _component
 from emo_master.core.presentation.models import ResultScope
 
 
+def testStaticResourcePickerPersistsAndUndoRestores(designer, tmp_path):  # noqa: F811
+    import hashlib
+    from PySide2.QtGui import QImage, QColor
+    coordinator, editor, key = setupPage(designer, 'image')
+    coordinator.directory = tmp_path
+    picture = QImage(80, 48, QImage.Format_ARGB32)
+    picture.fill(QColor('#c94054'))
+    assert picture.save(str(tmp_path / 'page.png'))
+    data = (tmp_path / 'page.png').read_bytes()
+    with coordinator.session.transaction():
+        coordinator.session.workflows.projectExtensions['resources']['items']['page-image'] = dict(
+            path='page.png', size=len(data), sha256=hashlib.sha256(data).hexdigest(), purpose='page_image')
+    editor.refresh()
+    editor.tools.select(key)
+    picker = editor.tools.fields['imageResourceId']
+    assert picker.findData('page-image') >= 0
+    picker.setCurrentIndex(picker.findData('page-image'))
+    editor.tools.commitPending()
+    assert _component(editor.store.snapshot(), editor.pageId, key).props.imageResourceId == 'page-image'
+    editor.refresh()
+    assert not editor.renderer.widgets[editor.pageId][key][1].image.isNull()
+    assert not editor.renderer.imageSources()
+    assert coordinator.session.undo()
+    assert _component(editor.store.snapshot(), editor.pageId, key).props.imageResourceId is None
+    assert coordinator.session.redo()
+    assert designer.saveProjectToDirectory(str(tmp_path / 'saved'))
+    saved = json.loads((tmp_path / 'saved' / 'project.json').read_text(encoding='utf-8'))
+    assert saved['presentation']['pages'][editor.pageId]['components'][0]['props']['imageResourceId'] == 'page-image'
+    assert (tmp_path / 'saved' / 'page.png').read_bytes() == data
+
+
 def testTypedIndicatorPlainTextFalseAndAppearanceSave(designer, tmp_path):  # noqa: F811
     coordinator, editor, key = setupPage(designer, 'indicator')
     tools = editor.tools

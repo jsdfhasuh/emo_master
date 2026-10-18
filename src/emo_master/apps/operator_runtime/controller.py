@@ -99,6 +99,15 @@ class ProductionRuntime:
 
     @serialized
     def load(self, path):
+        from emo_master.core.project.files import resolveProjectFile
+        online = self.runtime.projectConfiguration.current
+        if online is not None:
+            selected = resolveProjectFile(Path(path).resolve(strict=True)).resolve()
+            if selected != Path(online["sourcePath"]).resolve():
+                raise ValueError("E_CONFIG_ACTIVE: online project replacement requires explicit configuration write")
+            if self.runtime.onlineRecoveryError or self.runtime.projectConfiguration.publicationError:
+                raise ValueError("E_CONFIG_NOT_READY: " + (self.runtime.onlineRecoveryError
+                    or self.runtime.projectConfiguration.publicationError))
         self._releaseAll()
         root = Path(path).resolve(strict=True)
         root = root if root.is_dir() else root.parent
@@ -108,9 +117,10 @@ class ProductionRuntime:
                 self.projectOwner.close()
             self.projectOwner = nextOwner
         try:
-            reply = self.runtime.LoadProject(pb.LoadProjectRequest(project_path=str(Path(path).resolve())), None)
-            if not reply.ok:
-                raise ValueError(reply.message)
+            if online is None:
+                reply = self.runtime.LoadProject(pb.LoadProjectRequest(project_path=str(Path(path).resolve())), None)
+                if not reply.ok:
+                    raise ValueError(reply.message)
         except BaseException:
             self.document = None
             self.sessions.clear()
@@ -124,13 +134,16 @@ class ProductionRuntime:
     @serialized
     def installPackage(self, package):
         from emo_master.core.project.runtime_package import installRuntimePackage
+        if self.runtime.projectConfiguration.current is not None:
+            raise ValueError("E_CONFIG_ACTIVE: managed online project updates require prepared replacement; no files changed")
         self._releaseAll()
         if self.projectOwner is None:
             raise ValueError("load the destination project before updating")
         root = self.projectOwner.root
         projectFile = self.runtime.loadedProjectFile
         installRuntimePackage(package, root, owner=self.projectOwner,
-            registry=self.runtime.pluginScanResult.activeOperators, projectFile=projectFile)
+            registry=self.runtime.pluginScanResult.activeOperators,
+            deviceTypes=self.runtime.pluginScanResult.deviceTypes, projectFile=projectFile)
         return self.load(projectFile or root)
 
     def start(self, workflowId=None):
@@ -138,6 +151,7 @@ class ProductionRuntime:
             return self._start(workflowId)
 
     def _start(self, workflowId=None):
+        self._synchronizeOnlineDocument()
         workflowId = self._workflowId(workflowId)
         session = self.sessions[workflowId]
         self._releasePrevious(workflowId)
@@ -193,6 +207,7 @@ class ProductionRuntime:
 
     def status(self, workflowId=None):
         with self.operationLock:
+            self._synchronizeOnlineDocument()
             if self.document is None:
                 return dict(state="EMPTY", jobId="", message="", canStart=False, canLoad=True, workflows={})
             if workflowId is not None or len(self.sessions) == 1:
@@ -200,13 +215,47 @@ class ProductionRuntime:
                 state = self._workflowStatus(key)
                 if workflowId is None:
                     state["workflows"] = {key: dict(state)}
+                state["pagePublicationRevision"] = self._pagePublicationRevision()
                 return state
             rows = {key: self._workflowStatus(key) for key in self.sessions}
             states = {row["state"] for row in rows.values()}
             state = next((s for s in ("FAULT", "STOPPING", "RUNNING", "READY") if s in states), "READY")
             return dict(state=state, jobId="", workflows=rows,
+                pagePublicationRevision=self._pagePublicationRevision(),
                 message="\n".join(f"{row['name']}: {row['message']}" for row in rows.values() if row["message"]),
                 canStart=any(row["canStart"] for row in rows.values()), canLoad=all(row["canLoad"] for row in rows.values()))
+
+    def _pagePublicationRevision(self):
+        from emo_master.core.project.configuration import digest
+        return digest({"presentation": self.document.presentation.model_dump(mode="json") if self.document.presentation else None,
+                       "assets": {key: item.model_dump(mode="json") for key, item in
+                                  (self.document.resources.items.items() if self.document.resources else [])
+                                  if item.purpose in {"page_image", "icon"}}})
+
+    def _synchronizeOnlineDocument(self):
+        current = self.runtime.loadedDocument
+        if self.document is None or current is None or self.document is current:
+            return
+        if current.project.projectId != self.document.project.projectId:
+            return
+        from emo_master.core.project.configuration import presentationExecution
+        if presentationExecution(current.model_dump()) != presentationExecution(self.document.model_dump()):
+            roots = {scope.entryWorkflowId for document in (self.document, current)
+                     if document.presentation for scope in document.presentation.resultScopes.values()}
+            affected = {record.jobId for record in self.runtime.jobRepository.all() if record.workflowId in roots}
+            for jobId in tuple(affected):
+                group = self.runtime.deviceManager.dispatchGroups.get(jobId)
+                if group is not None:
+                    affected.update(group.members)
+            if any(record.jobId in affected and (not record.isTerminal or self.runtime.jobSupervisor.ownsJobResources(record.jobId))
+                   for record in self.runtime.jobRepository.all()):
+                return
+        for key in set(self.sessions) - current.workflows.keys():
+            self._releasePrevious(key)
+            del self.sessions[key]
+        self.document = current
+        for key in current.startupWorkflows():
+            self.sessions.setdefault(key, WorkflowSession())
 
     def _workflowStatus(self, workflowId):
         workflow, session = self.workflows[workflowId], self.sessions[workflowId]

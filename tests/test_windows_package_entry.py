@@ -49,6 +49,34 @@ def testPackageSelfTestCommandWritesResultJson(tmp_path: Path) -> None:
     assert json.loads(resultPath.read_text(encoding="utf-8"))["status"] == "ok"
 
 
+def testExplicitManagedPackageProbeUsesSpawnWithoutHardware(tmp_path):
+    root = Path(__file__).resolve().parents[1]
+    resultPath = tmp_path / "managed-selftest.json"
+    completed = subprocess.run([sys.executable, "-m", "emo_master.apps.windows_entry", "--self-test",
+        "--managed-runtime", "--result-json", str(resultPath)],
+        env={**os.environ, "PYTHONPATH": str(root / "src"), "QT_QPA_PLATFORM": "offscreen", "HUARAY_CAMERA_SMOKE": "0"},
+        capture_output=True, text=True, timeout=90)
+    assert completed.returncode == 0, completed.stdout + completed.stderr
+    report = json.loads(resultPath.read_text(encoding="utf-8"))
+    result = report["checks"]["managedRuntime"]
+    assert report["status"] == "ok" and result["hardwareAccessed"] is False
+    assert result["originalFramesRetired"] and result["runtimeClosed"]
+    assert result["replacementRevision"] == 3 and len(set(result["workerPids"])) == 2
+    assert result["dispatch"]["consumers"] == 2
+    assert len(set(result["dispatch"]["workerPids"])) == 3
+    assert result["dispatch"]["sameFrame"] and result["dispatch"]["joinCompleted"]
+    assert result["dispatch"]["resourcesRetired"]
+    host = result["hostFailureProbe"]
+    assert host["processRetired"] and host["stagingRetired"] and host["quarantined"]
+    assert not host["sdkLoaded"] and not host["hardwareAccessed"]
+    leases = result["networkAndResourceLease"]
+    assert leases["liveConsumerProtected"] and leases["lateConsumerRejected"]
+    assert not leases["sdkLoaded"] and not leases["hardwareAccessed"]
+    transfer = result["resourceTransfer"]
+    assert transfer["ready"] and transfer["separateCommit"] and transfer["immutableCopy"]
+    assert transfer["designerSourceRemoved"] and transfer["recoveredAfterRestart"]
+
+
 def testWindowsEntryCallsFreezeSupportBeforeImportingDesigner(monkeypatch) -> None:
     events: list[str] = []
     fakeDesignerMain = ModuleType("emo_master.apps.designer.main")

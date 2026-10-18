@@ -1,0 +1,252 @@
+"""One nonblocking writer; cancellation stops before, never after, durable commit."""
+from copy import deepcopy
+from threading import Event, RLock, Thread
+from uuid import uuid4
+
+from emo_master.core.project.configuration import digest, selectedCandidate
+from .store import ConfigurationError
+
+
+class ConfigurationCoordinator:
+    def __init__(self, store, runtimeInstanceId, *, lock=None, prepare, publish, beforeCommit=None, discard=None, transition=None):
+        self.store, self.runtimeInstanceId = store, runtimeInstanceId
+        self.lock = lock if lock is not None else RLock()
+        self.prepare, self.publish = prepare, publish
+        self.beforeCommit = beforeCommit
+        self.discard = discard
+        self.transition = transition
+        self.drainingOwners = set()
+        self.current = store.snapshot()
+        self.requests = {}
+        self.active = None
+        self.thread = None
+        self.closed = False
+        self.cycles = {}
+        self.childCycles = {}
+        self.cycleLock = RLock()
+        self.publicationError = ""
+
+    def snapshot(self):
+        with self.lock:
+            if self.current is None:
+                raise ConfigurationError("E_CONFIG_NOT_LOADED", "no online project configuration")
+            return dict(deepcopy(self.current), runtimeInstanceId=self.runtimeInstanceId)
+
+    def _check(self, request):
+        if self.closed:
+            raise ConfigurationError("E_RUNTIME_CLOSING", "configuration authority is closing")
+        if self.publicationError:
+            raise ConfigurationError("E_CONFIG_NOT_READY", "previous configuration publication or cleanup requires recovery")
+        if request["expectedRuntimeInstanceId"] != self.runtimeInstanceId:
+            raise ConfigurationError("E_CONFIG_INSTANCE", "Runtime restarted; compare again")
+        if self.current is None or request["expectedRevision"] != self.current["documentRevision"]:
+            raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
+
+    def _candidate(self, request):
+        self._check(request)
+        return selectedCandidate(self.current["payload"], request["localPayload"], request["selectedPaths"])
+
+    def validate(self, request):
+        with self.lock:
+            candidate = self._candidate(request)
+        prepared = self.prepare(candidate, Event())
+        if self.discard is not None:
+            self.discard(prepared)
+        return candidate
+
+    def start(self, request):
+        request = deepcopy(request)
+        requestId = request["requestId"]
+        if not isinstance(requestId, str) or not requestId or len(requestId) > 160:
+            raise ConfigurationError("E_CONFIG_REQUEST_ID", "a bounded unique request ID is required")
+        fingerprint = digest(request)
+        with self.lock:
+            # A lost reply can be recovered even after a Runtime restart.
+            saved = self.store.receipt(requestId)
+            existing = self.requests.get(requestId)
+            if saved or existing:
+                if saved:
+                    oldFingerprint, status = saved
+                else:
+                    assert existing is not None
+                    oldFingerprint, status = existing["fingerprint"], existing["status"]
+                if fingerprint != oldFingerprint:
+                    raise ConfigurationError("E_CONFIG_REQUEST_MISMATCH", "request ID content changed")
+                return deepcopy(status)
+            self._check(request)
+            if self.active:
+                raise ConfigurationError("E_CONFIG_WRITER_BUSY", "another configuration write is pending")
+            if len(self.requests) >= 2048:
+                raise ConfigurationError("E_CONFIG_CAPACITY", "write request capacity reached")
+            candidate = self._candidate(request)
+            entry = dict(fingerprint=fingerprint, cancelled=Event(), status=dict(
+                state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
+            self.requests[requestId] = entry
+            self.active = requestId
+            self.thread = Thread(target=self._write, args=(request, candidate, entry),
+                                 name="project-config-writer", daemon=True)
+            self.thread.start()
+            return deepcopy(entry["status"])
+
+    def _write(self, request, candidate, entry):
+        prepared = None
+        transition = None
+        try:
+            if self.transition is not None and request.get("replacementPolicy", "reject") != "reject":
+                entry["status"]["state"] = "WAITING"
+                transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"])
+            prepared = self.prepare(candidate, entry["cancelled"])
+            with self.lock:
+                if entry["cancelled"].is_set():
+                    entry["status"].update(state="CANCELLED", code="E_CONFIG_CANCELLED")
+                    return
+                self._check(request)
+                with self.cycleLock:
+                    leases = [*self.cycles.values(), *(lease for children in self.childCycles.values() for lease in children.values())]
+                    if len({value["snapshot"]["executionRevision"] for value in leases}) >= 16:
+                        raise ConfigurationError("E_CONFIG_PLAN_CAPACITY", "in-flight plan capacity reached")
+                if self.beforeCommit is not None:
+                    self.beforeCommit(candidate)
+                receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
+                                            entry["fingerprint"], self.runtimeInstanceId)
+                self.current = dict(payload=candidate, sourcePath=self.current["sourcePath"],
+                    documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
+                entry["status"] = receipt
+                # Publication must only install prepared software state. An unexpected
+                # publication failure cannot erase the SQLite commit or invite a retry.
+                try:
+                    self.publish(prepared, receipt)
+                except Exception as error:
+                    self.publicationError = str(error)
+                    entry["status"] = dict(receipt, publicationError=str(error))
+        except Exception as error:
+            with self.lock:
+                entry["status"].update(state="CANCELLED" if entry["cancelled"].is_set() else "FAILED",
+                    code=getattr(error, "code", "E_CONFIG_VALIDATION"), message=str(error))
+        finally:
+            if prepared is not None and self.discard is not None:
+                try:
+                    self.discard(prepared)
+                except Exception as error:
+                    with self.lock:
+                        self.publicationError = str(error)
+                        entry["status"]["cleanupError"] = str(error)
+            with self.lock:
+                try:
+                    if transition is not None:
+                        transition.finish(entry["status"])
+                except Exception as error:
+                    entry["status"]["connectionError"] = str(error)
+                finally:
+                    self.active = None
+
+    def status(self, requestId):
+        with self.lock:
+            if requestId in self.requests:
+                return deepcopy(self.requests[requestId]["status"])
+            saved = self.store.receipt(requestId)
+            if saved:
+                status = saved[1]
+                if status["runtimeInstanceId"] != self.runtimeInstanceId:
+                    status["connections"] = {key: "UNKNOWN_AFTER_RESTART" if value == "PENDING" else value
+                        for key, value in status.get("connections", {}).items()}
+                return status
+            raise ConfigurationError("E_CONFIG_REQUEST_UNKNOWN", "request not found; read online revision before any new write")
+
+    def beginCycle(self, owner, knownRevision, cancelled=lambda: False, *, parentCycleId=None):
+        if parentCycleId is None:
+            import time
+            while owner in self.drainingOwners:
+                if self.closed or cancelled():
+                    raise ConfigurationError("E_CONFIG_NOT_READY", "cycle admission cancelled during drain")
+                time.sleep(.02)
+        # Runtime shutdown may hold the project lock while joining Job bridges.
+        # A cancelled bridge must be able to abandon admission without that lock.
+        while not self.lock.acquire(timeout=.02):
+            if self.closed or cancelled():
+                raise ConfigurationError("E_CONFIG_NOT_READY", "cycle admission cancelled")
+        try:
+            if self.closed or cancelled() or self.current is None or self.publicationError:
+                raise ConfigurationError("E_CONFIG_NOT_READY", "online plan is unavailable")
+            with self.cycleLock:
+                if parentCycleId is None and owner in self.drainingOwners:
+                    raise ConfigurationError("E_CONFIG_DRAINED", "root cycle admission closed for configuration drain")
+                if parentCycleId is not None:
+                    self.requireCycle(owner, parentCycleId)
+                    if len(self.childCycles.get(owner, {})) >= 32:
+                        raise ConfigurationError("E_CYCLE_DEPTH", "nested cycle capacity reached")
+                elif owner in self.cycles:
+                    raise ConfigurationError("E_CYCLE_ACTIVE", "previous root cycle has not retired")
+                cycleId = uuid4().hex
+                snapshot = self.current
+                lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId)
+                if parentCycleId is None:
+                    self.cycles[owner] = lease
+                else:
+                    self.childCycles.setdefault(owner, {})[cycleId] = lease
+                result = dict(cycleId=cycleId, planRevision=snapshot["executionRevision"],
+                              documentRevision=snapshot["documentRevision"])
+                if knownRevision != snapshot["executionRevision"]:
+                    result["payload"] = deepcopy(snapshot["payload"])
+                return result
+        finally:
+            self.lock.release()
+
+    def requireCycle(self, owner, cycleId):
+        with self.cycleLock:
+            cycle = self.cycles.get(owner)
+            if cycle is None or cycle["cycleId"] != cycleId:
+                cycle = self.childCycles.get(owner, {}).get(cycleId)
+            if cycle is None:
+                raise ConfigurationError("E_CYCLE_STALE", "device request has no matching root cycle lease")
+            return cycle["snapshot"]["executionRevision"]
+
+    def retainCycle(self, sourceOwner, cycleId, owner):
+        """Queued consumers pin the source plan without holding the project lock."""
+        with self.cycleLock:
+            self.requireCycle(sourceOwner, cycleId)
+            source = self.cycles.get(sourceOwner)
+            if source is None or source["cycleId"] != cycleId:
+                source = self.childCycles[sourceOwner][cycleId]
+            if owner in self.cycles:
+                raise ConfigurationError("E_CYCLE_ACTIVE", "consumer already owns a cycle")
+            self.cycles[owner] = dict(source, parentCycleId=None)
+            return dict(cycleId=cycleId, planRevision=source["snapshot"]["executionRevision"],
+                        documentRevision=source["snapshot"]["documentRevision"],
+                        payload=deepcopy(source["snapshot"]["payload"]))
+
+    def endCycle(self, owner, cycleId):
+        with self.cycleLock:
+            self.requireCycle(owner, cycleId)
+            children = self.childCycles.get(owner, {})
+            if any(lease["parentCycleId"] == cycleId for lease in children.values()):
+                raise ConfigurationError("E_CYCLE_ACTIVE", "child cycles must retire before their parent")
+            if cycleId in children:
+                del children[cycleId]
+                if not children:
+                    self.childCycles.pop(owner, None)
+            else:
+                del self.cycles[owner]
+
+    def retireOwner(self, owner):
+        with self.cycleLock:
+            self.cycles.pop(owner, None)
+            self.childCycles.pop(owner, None)
+
+    def cancel(self, requestId):
+        with self.lock:
+            entry = self.requests.get(requestId)
+            if entry and entry["status"]["state"] in {"VALIDATING", "WAITING"}:
+                entry["cancelled"].set()
+            return self.status(requestId)
+
+    def close(self):
+        with self.lock:
+            self.closed = True
+            if self.active:
+                self.requests[self.active]["cancelled"].set()
+            thread = self.thread
+        if thread:
+            thread.join(5)
+            if thread.is_alive():
+                raise ConfigurationError("E_CONFIG_RELEASE_PENDING", "configuration preparation has not retired")

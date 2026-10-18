@@ -165,7 +165,7 @@ class ProjectController:
             self.lastLoadError = f"加载项目失败：{projectDirPath}\n{err}"
             self.appendLog("ERROR", self.lastLoadError)
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5'}:
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5', '2.6'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
             loaded, runtimePath = True, str(projectFile)
@@ -225,7 +225,14 @@ class ProjectController:
             self.lastSaveError = f"项目保存失败：{err}"
             self.appendLog("ERROR", self.lastSaveError)
             return False, None
-        if self.currentProjectFile is not None and projectFile.resolve() != self.currentProjectFile.resolve():
+        changedPath = self.currentProjectFile is not None and projectFile != self.currentProjectFile
+        if changedPath:
+            try:
+                changedPath = projectFile.resolve() != cast(Path, self.currentProjectFile).resolve()
+            except (OSError, RuntimeError):
+                # The file was saved; failed identity probing must not undo that fact.
+                pass
+        if payload.get("schemaVersion") != "2.6" and changedPath:
             release = getattr(self.runtimeClient, "releaseCommunicationForReplacement", None)
             if callable(release):
                 try:

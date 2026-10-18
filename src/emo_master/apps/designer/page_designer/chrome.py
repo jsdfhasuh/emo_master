@@ -27,7 +27,8 @@ class WorkspaceChrome(QObject):
             toolbar.removeAction(action)
         self.workspaceActions = []
         group = QActionGroup(self)
-        for text, command in [('流程设计', coordinator.showFlow), ('页面设计', coordinator.showPages)]:
+        for text, command in [('流程设计', coordinator.showFlow), ('页面设计', coordinator.showPages),
+                              ('设备管理', coordinator.showDevices)]:
             action = QAction(text, self)
             action.setCheckable(True)
             group.addAction(action)
@@ -113,6 +114,9 @@ class WorkspaceChrome(QObject):
         self.fit = self.action('适应画布', lambda: self.c.editor.renderer.fitToAvailableScreen() if self.c.pageActive() else None)
         self.menus['视图'].addAction(self.fit)
         self.pageActions.append(self.fit)
+        self.publishPages = self.action('发布工作页面…', self.publish)
+        self.menus['文件'].addAction(self.publishPages)
+        self.pageActions.append(self.publishPages)
         toolbar.installEventFilter(self)
         self.update()
 
@@ -125,6 +129,7 @@ class WorkspaceChrome(QObject):
         if self._sizingTools:
             return
         toolbar = self.window.mainToolbar
+        self.selector.setCompact(toolbar.width() < 600)
         buttons = (self.window.loadButton, self.window.saveProjectButton,
                    self.window.startButton, self.window.stopButton)
         key = (toolbar.width(), toolbar.font().toString(), toolbar.styleSheet(),
@@ -196,12 +201,19 @@ class WorkspaceChrome(QObject):
         self.update()
 
     def flowCommand(self, command):
-        if not self.c.pageActive():
+        if self.c.flowActive():
             self.command(command)
 
     def preview(self):
         if self.c.pageActive():
             self.command(self.c.preview.openObserver)
+
+    def publish(self):
+        if not self.c._canSync():
+            return
+        from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
+        dialog = ProjectConfigurationDialog(self.c, self.window, selectCategories={"presentation"})
+        dialog.exec_()
 
     def syncPolicies(self, *_args):
         for action, value in self.policies:
@@ -209,15 +221,17 @@ class WorkspaceChrome(QObject):
 
     def update(self):
         pages = self.c.pageActive()
-        self.testStatus.setVisible(not pages and self.c.preview.backend is not None)
-        self.workspaceActions[int(pages)].setChecked(True)
-        self.selector.setCurrentIndex(int(pages))
-        self.menus['运行'].menuAction().setVisible(not pages)
+        flow = self.c.flowActive()
+        index = 0 if flow else 1 if pages else 2
+        self.testStatus.setVisible(flow and self.c.preview.backend is not None)
+        self.workspaceActions[index].setChecked(True)
+        self.selector.setCurrentIndex(index)
+        self.menus['运行'].menuAction().setVisible(flow)
         for action in self.flowActions:
-            action.setVisible(not pages)
-            action.setEnabled(not pages)
-        self.window.deleteShortcut.setEnabled(not pages)
-        self.window.backspaceDeleteShortcut.setEnabled(not pages)
+            action.setVisible(flow)
+            action.setEnabled(flow)
+        self.window.deleteShortcut.setEnabled(flow)
+        self.window.backspaceDeleteShortcut.setEnabled(flow)
         for action in self.pageActions:
             action.setVisible(pages)
             action.setEnabled(pages)
@@ -228,10 +242,15 @@ class WorkspaceChrome(QObject):
         runtime = self.window.runtimeController
         for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),
                              ('停止运行', runtime.canStop())]:
-            self.window._toolbarActions[key].setEnabled(not pages and allowed)
+            self.window._toolbarActions[key].setEnabled(flow and allowed)
+        # Production stop remains reachable from the device workspace.
+        if self.c.deviceActive() and runtime.canStop():
+            stop = self.window._toolbarActions['停止运行']
+            stop.setVisible(True)
+            stop.setEnabled(True)
         preview = self.c.preview
-        self.testActions['开始测试'].setEnabled(not pages and not preview.busy and preview.backend is None)
-        self.testActions['停止测试'].setEnabled(not pages and preview.backend is not None and not preview.busy)
+        self.testActions['开始测试'].setEnabled(flow and not preview.busy and preview.backend is None)
+        self.testActions['停止测试'].setEnabled(flow and preview.backend is not None and not preview.busy)
         for action, history in [(self.undo, self.c.session._undo), (self.redo, self.c.session._redo)]:
             action.setToolTip(action.text() + '项目编辑：' + self.historyDescription(history, redo=action is self.redo))
         self.resizeTools()
@@ -249,6 +268,8 @@ class WorkspaceChrome(QObject):
             changes.append('流程内容')
         if previous.get('resources') != current.get('resources'):
             changes.append('测试图片资源')
+        if previous.get('devices') != current.get('devices'):
+            changes.append('设备配置')
         return '、'.join(changes) or '项目设置'
 
     @staticmethod

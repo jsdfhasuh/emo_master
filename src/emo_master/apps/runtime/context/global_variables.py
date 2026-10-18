@@ -79,26 +79,29 @@ class ProjectGlobalVariables:
     def synchronize(self):
         with self.store.connection() as connection:
             _beginWrite(connection)
-            legacy = {key: json.loads(raw)["name"] for key, raw in connection.execute(
-                "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=? AND legacyName IS NOT NULL",
-                (self.projectId,))}
-            for key, definition in self.definitions.items():
-                if any(name == definition.name and other != key for other, name in legacy.items()):
-                    raise VariableError("E_VARIABLE_NAME_CONFLICT", "variable name conflicts with a legacy counter")
-            for key, definition in self.definitions.items():
-                old = connection.execute(
-                    "SELECT definitionJson FROM variableDefinitions WHERE projectId=? AND variableId=?",
-                    (self.projectId, key)).fetchone()
-                if old:
-                    previous = VariableDefinition.model_validate_json(old[0])
-                    if any(getattr(previous, field) != getattr(definition, field)
+            self.synchronizeInTransaction(connection)
+
+    def validateDefinitions(self, connection):
+        previous = {key: VariableDefinition.model_validate_json(raw) for key, raw in connection.execute(
+            "SELECT variableId, definitionJson FROM variableDefinitions WHERE projectId=?", (self.projectId,))}
+        for key, definition in self.definitions.items():
+            if any(old.legacyCounterName is not None and old.name == definition.name and other != key
+                   for other, old in previous.items()):
+                raise VariableError("E_VARIABLE_NAME_CONFLICT", "variable name conflicts with a legacy counter")
+            old = previous.get(key)
+            if old and any(getattr(old, field) != getattr(definition, field)
                            for field in ("type", "kind", "lifetime", "legacyCounterName")):
-                        raise VariableError("E_VARIABLE_DEFINITION_CHANGED", "variable identity/type/lifetime changed")
-                connection.execute("""INSERT INTO variableDefinitions VALUES (?, ?, ?, ?)
-                    ON CONFLICT(projectId,variableId) DO UPDATE SET definitionJson=excluded.definitionJson""",
-                    (self.projectId, key, definition.model_dump_json(), definition.legacyCounterName))
-                if definition.kind == "variable" and definition.lifetime == "persistent":
-                    self._initialize(connection, key, definition, "")
+                raise VariableError("E_VARIABLE_DEFINITION_CHANGED", "variable identity/type/lifetime changed; use a new variable ID")
+
+    def synchronizeInTransaction(self, connection):
+        """Caller owns the commit; persistent values and removed IDs are preserved."""
+        self.validateDefinitions(connection)
+        for key, definition in self.definitions.items():
+            connection.execute("""INSERT INTO variableDefinitions VALUES (?, ?, ?, ?)
+                ON CONFLICT(projectId,variableId) DO UPDATE SET definitionJson=excluded.definitionJson""",
+                (self.projectId, key, definition.model_dump_json(), definition.legacyCounterName))
+            if definition.kind == "variable" and definition.lifetime == "persistent":
+                self._initialize(connection, key, definition, "")
 
     def initializeJob(self):
         if not self.jobId:

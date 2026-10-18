@@ -148,6 +148,11 @@ def main():
         window.updateToolbarState()
     else:
         ports = dict.fromkeys(["image", "frame", "blockId", "deviceTimestamp", "actualExposureUs"], "Any")
+        window.flowModel.loadProjectGraph({"nodes": [
+            dict(nodeId="camera", operatorId="vision.io.huaray_camera",
+                 displayName="Huaray Camera - 192.168.125.28", inputPorts={}, outputPorts=ports),
+            dict(nodeId="output", operatorId="", displayName="Workflow Output", inputPorts=ports, outputPorts={}),
+        ], "edges": [dict(fromNode="camera", fromPort=name, toNode="output", toPort=name) for name in ports]})
         window.flowScene.addFlowNode(FlowNodeViewModel("camera", "Huaray Camera - 192.168.125.28", 40, 40, {}, ports))
         window.flowScene.addFlowNode(FlowNodeViewModel("output", "Workflow Output", 500, 40, ports, {}))
         for name in ports:
@@ -157,7 +162,8 @@ def main():
     report["sidebar"] = {"collapsed": window.isSidebarCollapsed, "width": window.sidebarContainer.width(),
                          "minimum": window.sidebarContainer.minimumWidth(), "maximum": window.sidebarContainer.maximumWidth()}
     window.expandSidebar()
-    window.flowScene.setNodeSelected("camera")
+    if "camera" in window.flowModel.nodes:
+        window.flowScene.setNodeSelected("camera")
     capture("main-expanded", window, (args.width, args.height))
     entry = ProjectEntryDialog()
     entry.setRecentProjects([{"projectName": "Camera Capture", "projectPath": str(args.project)}])
@@ -246,6 +252,9 @@ def main():
     report["failures"] = failures
     (output / "report.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
     manager.closeAll()
+    # All edits in this probe are disposable; never prompt to persist a fixture.
+    if window.pageCoordinator is not None:
+        window.pageCoordinator.confirmDraft = lambda: True
     for widget in (param, entry, counters, log, package, window):
         widget.close()
     app.processEvents()

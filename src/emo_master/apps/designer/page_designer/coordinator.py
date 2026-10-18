@@ -22,6 +22,7 @@ class PageCoordinator:
         self.commandDepth = 0
         self.directory = None
         self.editor = None
+        self.devices = None
         self.closeApproved = None
         from .preview import PreviewController
         self.preview = PreviewController(self)
@@ -47,6 +48,8 @@ class PageCoordinator:
     def sync(self):
         if self.editor:
             self.editor.tools.commitPending()
+        if self.devices:
+            self.devices.commitPending()
         self.window.workflowController.captureActiveWorkflow()
         self.session.checkpoint()
         if hasattr(self, 'chrome'):
@@ -57,7 +60,7 @@ class PageCoordinator:
             self.sync()
             return True
         except ValueError as error:
-            self.preview.message('请先修正未提交的页面输入：' + str(error))
+            self.preview.message('请先修正未提交的输入：' + str(error))
             self.chrome.update()
             return False
 
@@ -90,6 +93,27 @@ class PageCoordinator:
 
     def pageActive(self):
         return self.editor is not None and self.stack.currentWidget() is self.editor
+
+    def deviceActive(self):
+        return self.devices is not None and self.stack.currentWidget() is self.devices
+
+    def flowActive(self):
+        return not self.pageActive() and not self.deviceActive()
+
+    def showDevices(self):
+        if not self._canSync():
+            return
+        if self.devices is None:
+            from emo_master.apps.designer.ui.device_workspace import DeviceWorkspace
+            self.devices = DeviceWorkspace(self)
+            self.stack.addWidget(self.devices)
+            self.devices.loadMetadata()
+        else:
+            self.devices.refresh()
+        self.stack.setCurrentWidget(self.devices)
+        if self.preview.observer is not None:
+            self.preview.observer.hide()
+        self.chrome.update()
 
     def showFlow(self):
         if not self._canSync():
@@ -130,6 +154,8 @@ class PageCoordinator:
             self.window.workflowController._renderActive()
             self.window.activeWorkflowId = self.session.workflows.activeWorkflowId
             self.window._refreshWorkflowTabs()
+            if self.devices:
+                self.devices.refresh()
             if self.editor:
                 if self.session.document().presentation is None:
                     self.showFlow()
@@ -295,6 +321,11 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
+        if self.devices:
+            self.devices.shutdown()
+            self.stack.removeWidget(self.devices)
+            self.devices.deleteLater()
+            self.devices = None
         self.preview.retireObserver()
         if not self.preview.active():
             self.preview.coverage = None

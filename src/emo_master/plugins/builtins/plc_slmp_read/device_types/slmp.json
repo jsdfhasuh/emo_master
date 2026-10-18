@@ -1,0 +1,241 @@
+{
+  "deviceTypeId": "device.plc.mitsubishi_slmp",
+  "version": "1.0.0",
+  "displayName": "三菱 SLMP PLC",
+  "category": "PLC",
+  "iconKey": "plc-read",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "driverEntry": "emo_master.apps.runtime.devices.slmp:ManagedSlmp",
+  "executionLocation": "io_thread",
+  "connectionSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "host": {
+        "title": "主机地址",
+        "type": "string",
+        "default": "127.0.0.1",
+        "minLength": 1,
+        "xResourcePurpose": "device_address",
+        "xDeviceIdentity": true,
+        "xAddressLiteral": true
+      },
+      "port": {
+        "xDeviceIdentity": true,
+        "title": "端口",
+        "type": "integer",
+        "default": 10001,
+        "minimum": 1,
+        "maximum": 65535
+      },
+      "frameEncoding": {
+        "title": "通信格式",
+        "type": "string",
+        "default": "binary",
+        "enum": [
+          "binary",
+          "ascii"
+        ]
+      },
+      "connectTimeoutMs": {
+        "title": "连接超时 (ms)",
+        "type": "integer",
+        "default": 2000,
+        "minimum": 1,
+        "maximum": 60000
+      },
+      "responseTimeoutMs": {
+        "title": "响应超时 (ms)",
+        "type": "integer",
+        "default": 2000,
+        "minimum": 1,
+        "maximum": 60000
+      },
+      "networkNo": {
+        "title": "网络编号",
+        "type": "integer",
+        "default": 0,
+        "minimum": 0,
+        "maximum": 255
+      },
+      "pcNo": {
+        "title": "PC 编号",
+        "type": "integer",
+        "default": 255,
+        "minimum": 0,
+        "maximum": 255
+      },
+      "moduleIoNo": {
+        "title": "模块 I/O 编号",
+        "type": "integer",
+        "default": 1023,
+        "minimum": 0,
+        "maximum": 65535
+      },
+      "moduleStationNo": {
+        "title": "模块站号",
+        "type": "integer",
+        "default": 0,
+        "minimum": 0,
+        "maximum": 255
+      },
+      "monitoringTimer": {
+        "title": "监视定时器 (250 ms)",
+        "type": "integer",
+        "default": 0,
+        "minimum": 0,
+        "maximum": 65535
+      }
+    },
+    "required": [
+      "host",
+      "port",
+      "frameEncoding",
+      "connectTimeoutMs",
+      "responseTimeoutMs",
+      "networkNo",
+      "pcNo",
+      "moduleIoNo",
+      "moduleStationNo",
+      "monitoringTimer"
+    ]
+  },
+  "defaultsSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {},
+    "required": []
+  },
+  "policiesSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "connectionRetryCount": {"title": "建连失败重试次数（不重放读写）", "type": "integer", "minimum": 0, "maximum": 5, "default": 0},
+      "recoveryTimeoutMs": {"title": "建连恢复总时限 (ms)", "type": "integer", "minimum": 1, "maximum": 60000, "default": 5000},
+      "recoveryBackoffMs": {"title": "建连恢复退避 (ms)", "type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
+      "connect": {
+        "title": "连接策略",
+        "type": "string",
+        "default": "on_first_use",
+        "enum": [
+          "on_first_use", "on_project_open", "on_project_run", "manual"
+        ]
+      },
+      "release": {
+        "title": "释放策略",
+        "type": "string",
+        "default": "on_project_close",
+        "enum": [
+          "on_project_close", "when_unused", "idle_timeout", "manual"
+        ]
+      },
+      "idleTimeoutMs": {"title": "空闲释放时长 (ms)", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 30000},
+      "deviceWaitTimeoutMs": {
+        "title": "排队超时 (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 1,
+        "maximum": 600000
+      },
+      "operationTimeoutMs": {
+        "title": "操作超时 (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 1,
+        "maximum": 600000
+      }
+    },
+    "required": [
+      "connect",
+      "release",
+      "deviceWaitTimeoutMs",
+      "operationTimeoutMs"
+    ]
+  },
+  "capabilities": [
+    "connect",
+    "read",
+    "write"
+  ],
+  "actionSchemas": {
+    "connect": {"type": "object", "additionalProperties": false, "properties": {}},
+    "read": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unit": {"type": "string", "enum": ["word", "bit"], "default": "word"},
+        "device": {
+          "title": "软元件",
+          "type": "string",
+          "default": "D",
+          "enum": [
+            "D",
+            "M"
+          ]
+        },
+        "startAddress": {
+          "title": "起始地址",
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 16777215
+        },
+        "count": {
+          "title": "数量",
+          "type": "integer",
+          "default": 1,
+          "minimum": 1,
+          "maximum": 960
+        }
+      },
+      "required": [
+        "device",
+        "startAddress",
+        "count"
+      ]
+    },
+    "write": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "unit": {"type": "string", "enum": ["word", "bit"], "default": "word"},
+        "device": {
+          "title": "软元件",
+          "type": "string",
+          "default": "D",
+          "enum": [
+            "D",
+            "M"
+          ]
+        },
+        "startAddress": {
+          "title": "起始地址",
+          "type": "integer",
+          "default": 0,
+          "minimum": 0,
+          "maximum": 16777215
+        },
+        "words": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 960,
+          "items": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 65535
+          }
+        }
+      },
+      "required": [
+        "device",
+        "startAddress",
+        "words"
+      ]
+    }
+  }
+}

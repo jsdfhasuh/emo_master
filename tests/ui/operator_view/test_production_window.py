@@ -23,6 +23,36 @@ def preferences(tmp_path):
     return QSettings(str(tmp_path / "preferences.ini"), QSettings.IniFormat)
 
 
+def testOnlinePagePublicationRetiresOldDisplayAndDoesNotRebindOldResult(qtApp, tmp_path):
+    from copy import deepcopy
+    from emo_master.core.project.migration import migrateProjectPayload
+    from emo_master.core.project.models import ProjectDocument
+    root = tmp_path / "project"
+    document = productionProject(root, mode="single", autoStart=True, save=False)
+    saveDocument(root, ProjectDocument.model_validate(migrateProjectPayload(document.model_dump(), enableDevices=True)))
+    window = OperatorWindow(root, dataRoot=tmp_path / "data", preferences=preferences(tmp_path))
+    window.show()
+    try:
+        waitFor(lambda: window.pages is not None and bool(window.pages.displayed) or window.error)
+        assert not window.error
+        waitFor(lambda: not window.busy and window.state["canStart"])
+        oldPages = window.pages
+        assert window.session is not None
+        coordinator = window.controller.runtime.projectConfiguration
+        candidate = deepcopy(coordinator.snapshot()["payload"])
+        candidate["presentation"]["pages"]["main"]["name"] = "Published"
+        coordinator.start(dict(requestId="page-publication", expectedRuntimeInstanceId=window.controller.runtime.runtimeInstanceId,
+            expectedRevision=1, localPayload=candidate, selectedPaths=["/presentation/pages/main/name"]))
+        waitFor(lambda: coordinator.active is None)
+        assert coordinator.status("page-publication")["state"] == "COMMITTED"
+        waitFor(lambda: window.pages is not None and window.pages is not oldPages and not window.busy)
+        assert window.session is None and window.hub is None
+        assert not window.pages.displayed
+        assert window.controller.presentationForWorkflow("main").pages["main"].name == "Published"
+    finally:
+        closeWindow(window)
+
+
 def closeWindow(window):
     if not window.done:
         window.close()

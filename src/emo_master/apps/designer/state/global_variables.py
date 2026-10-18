@@ -10,6 +10,8 @@ def referencedVariables(payload):
     for workflow in payload.get("workflows", {}).values():
         for node in workflow.get("nodes", []):
             found.update(item["variableId"] for item in node.get("globalVariableBindings", []))
+            for values in node.get("deviceValueBindings", {}).values():
+                found.update(item["variableId"] for item in values.values() if item.get("source") == "variable")
             if node.get("operatorId") in {READ_VARIABLE, WRITE_VARIABLE}:
                 found.add(node.get("params", {}).get("variableId"))
             loop = node.get("loop") or {}

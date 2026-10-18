@@ -16,6 +16,37 @@ message ValidateProjectRequest {
   string project_id = 1;
 }
 
+message OnlineProjectRequest { string project_id = 1; }
+message OnlineGraphRequest {
+  string project_id = 1;
+  int64 document_revision = 2;
+  string job_id = 3;
+}
+message ProjectConfigurationWriteRequest {
+  string request_id = 1;
+  string expected_runtime_instance_id = 2;
+  int64 expected_revision = 3;
+  string local_payload_json = 4;
+  repeated string selected_paths = 5;
+  string replacement_policy = 6;
+}
+message ProjectWriteLookup { string request_id = 1; }
+message ProjectResourceTransferRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string transfer_id = 3;
+  string action = 4; // LOOKUP, BEGIN, CHUNK, COMMIT, STATUS, CANCEL.
+  string resource_json = 5;
+  uint64 offset = 6;
+  bytes data = 7;
+}
+message ProjectConfigurationReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string result_json = 4;
+}
+
 message ValidateProjectReply {
   bool ok = 1;
   repeated string errors = 2;
@@ -104,6 +135,67 @@ message JobEvent {
 
 message ListOperatorsRequest {}
 
+message ListDeviceTypesRequest {}
+message ListDeviceTypesReply {
+  string types_json = 1;
+  string requirements_json = 2;
+  string rejected_json = 3;
+}
+
+message GetDeviceStatesRequest { string project_id = 1; }
+message ControlDeviceRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string expected_generation = 4;
+  string expected_definition_revision = 5;
+  string action = 6;
+  bool confirmed = 7;
+  string expected_control_revision = 8;
+}
+message CameraDiagnosticRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string expected_definition_revision = 4;
+  string expected_generation = 5;
+  string session_id = 6;
+  string action = 7;
+  int64 sequence = 8;
+  bool confirmed = 9;
+}
+message CameraDiagnosticReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string session_id = 4;
+  string metadata_json = 5;
+  bytes preview_jpeg = 6;
+}
+message RecoverDeviceRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string expected_generation = 4;
+  string expected_definition_revision = 5;
+  bool hardware_synchronized = 6;
+}
+message DeviceNetworkRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string request_id = 4;
+  string action = 5;
+  string payload_json = 6;
+}
+message GetDeviceStatesReply {
+  bool ok = 1;
+  string runtime_instance_id = 2;
+  string project_id = 3;
+  string states_json = 4;
+  string message = 5;
+}
+
 message OperatorInfo {
   string operator_id = 1;
   string display_name = 2;
@@ -120,6 +212,8 @@ message OperatorInfo {
   string editor_issues_json = 13;
   OperatorIconInfo icon = 14;
   repeated OperatorIconIssue icon_issues = 15;
+  string device_requirements_json = 16;
+  string device_binding_since = 17;
 }
 
 message OperatorIconInfo {
@@ -451,6 +545,13 @@ message GlobalVariablesReply {
 }
 
 service RuntimeService {
+  rpc GetOnlineProjectSnapshot(OnlineProjectRequest) returns (ProjectConfigurationReply);
+  rpc GetOnlineGraphSnapshot(OnlineGraphRequest) returns (ProjectConfigurationReply);
+  rpc ValidateProjectWrite(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);
+  rpc WriteProjectConfiguration(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);
+  rpc GetProjectWriteStatus(ProjectWriteLookup) returns (ProjectConfigurationReply);
+  rpc CancelProjectWrite(ProjectWriteLookup) returns (ProjectConfigurationReply);
+  rpc TransferProjectResource(ProjectResourceTransferRequest) returns (ProjectConfigurationReply);
   rpc GetOperatorDebugCapabilities(OperatorDebugRequest) returns (OperatorDebugReply);
   rpc OpenOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
   rpc GetOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
@@ -502,6 +603,12 @@ service RuntimeService {
   rpc GetJobStatus(GetJobStatusRequest) returns (GetJobStatusReply);
   rpc StreamJobEvents(StreamJobEventsRequest) returns (stream JobEvent);
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
+  rpc ListDeviceTypes(ListDeviceTypesRequest) returns (ListDeviceTypesReply);
+  rpc GetDeviceStates(GetDeviceStatesRequest) returns (GetDeviceStatesReply);
+  rpc RecoverDevice(RecoverDeviceRequest) returns (GetDeviceStatesReply);
+  rpc DeviceNetworkCommand(DeviceNetworkRequest) returns (ProjectConfigurationReply);
+  rpc ControlDevice(ControlDeviceRequest) returns (GetDeviceStatesReply);
+  rpc CameraDiagnostic(CameraDiagnosticRequest) returns (CameraDiagnosticReply);
   rpc GetOperatorIconAsset(GetOperatorIconAssetRequest) returns (GetOperatorIconAssetReply);
   rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);
   rpc ListNodePreviewSources(ListNodePreviewSourcesRequest) returns (ListNodePreviewSourcesReply);

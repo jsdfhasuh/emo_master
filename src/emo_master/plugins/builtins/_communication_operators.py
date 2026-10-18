@@ -141,6 +141,7 @@ _PLC_COMMON_PROPERTIES: dict[str, object] = {
 
 PLC_READ_PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
+    "xDeviceActionFields": ["device", "startAddress", "dataType", "count", "outputIndex"],
     "properties": {
         **_PLC_COMMON_PROPERTIES,
         "dataType": {
@@ -168,6 +169,7 @@ PLC_READ_PARAM_SCHEMA: dict[str, object] = {
 
 PLC_WRITE_PARAM_SCHEMA: dict[str, object] = {
     "type": "object",
+    "xDeviceActionFields": ["device", "startAddress", "dataType", "values"],
     "properties": {
         **_PLC_COMMON_PROPERTIES,
         "retryCount": {
@@ -408,6 +410,8 @@ class PlcSlmpReadOperator:
         params: dict[str, object],
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
+        if callable(runtimeContext.get("executeDevice")):
+            return _executeManagedPlc(self, "read", inputs, params, runtimeContext)
         _ = inputs
         logger = getOperatorLogger(runtimeContext)
         startedAt = perf_counter()
@@ -536,6 +540,8 @@ class PlcSlmpWriteOperator:
         params: dict[str, object],
         runtimeContext: dict[str, object],
     ) -> dict[str, Any]:
+        if callable(runtimeContext.get("executeDevice")):
+            return _executeManagedPlc(self, "write", inputs, params, runtimeContext)
         logger = getOperatorLogger(runtimeContext)
         startedAt = perf_counter()
         paramError = self.validateParams(params)
@@ -611,6 +617,56 @@ class PlcSlmpWriteOperator:
                 f"{device}{startAddress}"
             },
         }
+
+
+def _executeManagedPlc(operator, action, inputs, params, context):
+    """Typed legacy ports over the managed Runtime channel, never a local socket."""
+    from emo_master.core.project.snapshots import _parameters
+
+    started = perf_counter()
+    schema = operator.meta.paramSchema
+    fields = schema["xDeviceActionFields"]
+    actionSchema = dict(type="object", additionalProperties=False,
+                        properties={key: schema["properties"][key] for key in fields})
+    outcome = "NOT_EXECUTED"
+    try:
+        checked = _parameters(dict(params), actionSchema, "PLC action parameters")
+        # Schema numbers normalize to float; integer PLC codecs require the
+        # original integral type, not a lossy round trip through float.
+        if "values" in params:
+            checked["values"] = params["values"]
+        params = checked
+        error = operator.validateParams(params)
+        if error:
+            return {"status": "error", "error": error}
+        if action == "read":
+            device = params["device"].upper()
+            address, dataType = params["startAddress"], params["dataType"]
+            count = params["count"] * plcWordsPerValue(dataType)
+            outcome = "UNKNOWN"
+            reply = context["executeDevice"]("plc", "read", dict(device=device, startAddress=address, count=count))
+            outcome = reply["outcome"]
+            values = decodePlcWords(reply["words"], dataType)
+            outputs = {"values": PlcValueCollection(device=device, startAddress=address, dataType=dataType,
+                        values=values, wordCount=count).toPayload(),
+                       "booleanValue" if dataType == "bit" else "numberValue": values[params["outputIndex"]]}
+        else:
+            device, address, dataType, values = _plcWriteSource(inputs, params)
+            words = encodePlcValues(values, dataType)
+            count = len(words)
+            outcome = "UNKNOWN"
+            reply = context["executeDevice"]("plc", "write", dict(device=device, startAddress=address, words=words))
+            outcome = reply["outcome"]
+            outputs = {"receipt": PlcWriteReceipt(device=device, startAddress=address, dataType=dataType,
+                        valueCount=len(values), wordCount=count, attempts=1).toPayload()}
+        return dict(status="ok", outputs=outputs,
+                    metrics=dict(attempts=1, wordCount=count, valueCount=len(values),
+                                 latencyMs=round((perf_counter() - started) * 1000, 3)),
+                    diagnostics={"deviceOperation": {"action": action, "outcome": reply["outcome"],
+                                 "connectionGeneration": reply["connectionGeneration"]}})
+    except Exception as error:
+        return dict(status="error", error=dict(code=getattr(error, "code", "E_PARAM_INVALID"), message=str(error)),
+                    diagnostics={"deviceOperation": {"action": action, "outcome": getattr(error, "outcome", outcome)}})
 
 
 class TcpClientOperator:

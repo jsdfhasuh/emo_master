@@ -27,6 +27,7 @@ def testControlFlowLibraryContainsSystemNodes() -> None:
     payloads = window._getOperatorsByCategory()
 
     assert {payload.get("systemNodeKind") for payload in payloads} == {
+        "dispatch", "join",
         "subflow",
         "loop:repeat",
         "loop:foreach",
@@ -34,6 +35,7 @@ def testControlFlowLibraryContainsSystemNodes() -> None:
     }
     assert all(payload.get("category") == "控制流" for payload in payloads)
     assert {payload.get("operatorId") for payload in payloads} == {
+        "system.dispatch", "system.join",
         "system.subflow",
         "system.repeat",
         "system.foreach",
@@ -154,6 +156,7 @@ def testSystemNodeCatalogAndInteractiveConfiguration() -> None:
     window = MainWindow(_RuntimeClientStub())
     catalog = window.getSystemNodeCatalog()
     assert {item["kind"] for item in catalog} == {
+        "dispatch", "join",
         "workflow_input",
         "workflow_output",
         "subflow",

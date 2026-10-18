@@ -95,7 +95,14 @@ def validateBindings(
         for component in walkComponents(page.components):
             path = f"presentation.pages.{pageId}.components.{component.componentId}"
             static = ((component.type == "text" and bool(component.props.text))
+                      or (component.type == "image" and bool(component.props.imageResourceId))
                       or component.type == "runtime_status")
+            for field, purpose in (("imageResourceId", "page_image"), ("iconResourceId", "icon")):
+                resourceId = getattr(component.props, field)
+                if resourceId:
+                    resource = project.resources.items.get(resourceId) if project.resources else None
+                    if resource is None or resource.purpose != purpose:
+                        report(f"{path}.props.{field}", "static resource missing or incompatible purpose", "resource_invalid")
             if publish and component.type in accepted and not component.bindings and not static:
                 report(path, "unbound component cannot be published", "unbound")
             for prop, sourceId in component.bindings.items():

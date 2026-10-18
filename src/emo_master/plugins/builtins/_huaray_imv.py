@@ -12,6 +12,8 @@ from typing import Any, Callable, Mapping, Protocol, cast
 
 import numpy as np
 
+from ._huaray_device_info import DeviceInfo as _IMV_DeviceInfo
+
 
 IMV_OK = 0
 IMV_TIMEOUT = -119
@@ -96,10 +98,6 @@ class ImvApiProtocol(Protocol):
         outputColor: str,
         demosaic: str,
     ) -> np.ndarray[Any, Any]: ...
-
-
-class _IMV_DeviceInfo(ctypes.Structure):
-    pass
 
 
 class IMV_DeviceList(ctypes.Structure):
@@ -349,6 +347,22 @@ class ImvApi:
         devices = IMV_DeviceList()
         result = self._enumDevices(ctypes.byref(devices), ctypes.c_uint(interfaceType))
         return int(result), int(devices.nDevNum)
+
+    def enumerate_device_info(self):
+        import re
+        from ._huaray_device_info import deviceRecord
+        if not re.search(r'(?:^|[^0-9])2\.4\.2(?:[^0-9]|$)', self.version()):
+            raise HuarayCameraError('E_CAMERA_SDK_ABI', 'network discovery requires reviewed IMV 2.4.2 ABI')
+        devices = IMV_DeviceList()
+        result = self._enumDevices(ctypes.byref(devices), ctypes.c_uint(IMV_INTERFACE_ALL))
+        _checkSdkResult(result, 'E_CAMERA_DISCOVERY', 'device enumeration failed', 'enumerate device info')
+        if devices.nDevNum > 100 or (devices.nDevNum and not devices.pDevInfo):
+            raise HuarayCameraError('E_CAMERA_DISCOVERY', 'invalid SDK device list')
+        return [deviceRecord(devices.pDevInfo[index]) for index in range(devices.nDevNum)]
+
+    def force_ip_address(self, handle, address, mask, gateway):
+        function = self._configure('IMV_GIGE_ForceIpAddress', [ctypes.c_void_p, ctypes.c_char_p, ctypes.c_char_p, ctypes.c_char_p])
+        return int(function(handle, address.encode('ascii'), mask.encode('ascii'), gateway.encode('ascii')))
 
     def create_handle(self, mode: int, identifier: str | int) -> tuple[int, ctypes.c_void_p]:
         handle = ctypes.c_void_p()
@@ -841,6 +855,7 @@ class CameraSession:
         raiseIfCancelled: Callable[[], object] | None = None,
         *,
         sendSoftwareTrigger: bool = True,
+        maxOutputBytes: int | None = None,
     ) -> CapturedFrame:
         if not self.opened or not self.grabbing or self.handle is None:
             raise HuarayCameraError(
@@ -916,6 +931,9 @@ class CameraSession:
                     f"invalid frame: status={status}, width={width}, height={height}, size={size}",
                     operation="validate frame",
                 )
+            if maxOutputBytes is not None and width * height * (1 if outputColor == "gray" else 3) > maxOutputBytes:
+                raise HuarayCameraError("E_CAMERA_FRAME_CAPACITY", "SDK frame exceeds reserved original capacity",
+                                        operation="validate frame capacity")
             try:
                 image = self.api.convert_frame(self.handle, frame, outputColor, demosaic)
             except HuarayCameraError:

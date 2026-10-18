@@ -63,6 +63,12 @@ class JobProcessSpec:
     cycleIntervalMs: int = 100
     copyArtifacts: bool = True
     usesCommunication: bool = False
+    deviceIds: tuple[str, ...] = ()
+    managedConfiguration: bool = False
+    planRevision: int = 0
+    dispatchSlots: tuple[tuple[str, str, int], ...] = ()
+    runGroupId: str = ""
+    targetSlotId: str = ""
 
     @property
     def inputs_json(self) -> str:

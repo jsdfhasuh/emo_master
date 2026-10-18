@@ -4,6 +4,13 @@
 
 参数中文显示名的 `title` 约定、专用编辑器接入与旧工程兼容，见[算子参数显示名称](operator-parameter-titles.md)。
 
+设备管理扩展使用声明式 deviceTypes/deviceRequirements，不在主窗口增加品牌分支。
+类型扫描只读取元数据，不连接硬件；驱动由 Runtime 持有，算子通过声明的设备槽
+访问共享队列。connection/defaults/policies、逐次动作 schema、资源用途、周期安全
+字段及可取消等待的完整契约见[设备目录契约](guides/device-catalog-contract-v1.md)。
+第三方示例位于 `examples/device_plugin/`；真实 SDK 能力必须单独验证，不能由
+Python 元数据声明推导“已支持”或“已验收”。
+
 ## 1. 先回答最常见的问题
 
 如果你是第一次接触这套系统，最常见的问题通常是：

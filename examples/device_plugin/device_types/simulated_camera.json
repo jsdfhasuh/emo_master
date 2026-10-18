@@ -1,0 +1,40 @@
+{
+  "schemaVersion": "1.0",
+  "deviceTypeId": "device.example.simulated_camera",
+  "version": "1.0.0",
+  "displayName": "Simulated camera",
+  "category": "Camera",
+  "iconKey": "camera",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "platforms": ["windows", "linux"],
+  "connectionSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {"source": {"type": "string", "minLength": 1}},
+    "required": ["source"]
+  },
+  "defaultsSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "exposureMode": {"type": "string", "enum": ["manual", "auto", "keep"]},
+      "exposureUs": {"type": "number", "minimum": 1, "maximum": 1000000, "xUnit": "us"},
+      "gain": {"type": "number", "minimum": 0, "maximum": 24},
+      "enabled": {"type": "boolean"}
+    },
+    "required": ["exposureMode", "gain", "enabled"]
+  },
+  "policiesSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "connect": {"type": "string", "enum": ["on_first_use", "manual"], "default": "on_first_use"},
+      "release": {"type": "string", "enum": ["on_project_close"], "default": "on_project_close"},
+      "failure": {"type": "string", "enum": ["stop_affected"], "default": "stop_affected"},
+      "deviceWaitTimeoutMs": {"type": "integer", "minimum": 1, "default": 5000}
+    },
+    "required": ["connect", "release", "failure", "deviceWaitTimeoutMs"]
+  },
+  "overridePaths": ["exposureMode", "exposureUs", "gain", "enabled"],
+  "dynamicPaths": ["exposureUs", "gain"],
+  "parameterRules": [{"present": "exposureUs", "requires": {"exposureMode": "manual"}}],
+  "capabilities": []
+}

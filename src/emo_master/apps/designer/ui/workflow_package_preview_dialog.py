@@ -65,6 +65,8 @@ def _warningText(preview: WorkflowPackageImportPreview) -> str:
         warnings.append(
             f"{len(preview.missingOperators)} 个算子尚未加载，导入后暂时无法运行"
         )
+    if preview.devices:
+        warnings.append("设备必须逐项映射；新建设备保持禁用，复用要求类型、驱动版本及默认参数一致")
     pathWarnings = [
         item for item in preview.externalPaths if item.status != "available"
     ]
@@ -78,7 +80,9 @@ def _warningText(preview: WorkflowPackageImportPreview) -> str:
 try:
     from PySide2.QtWidgets import (
         QCheckBox,
+        QComboBox,
         QDialog,
+        QFormLayout,
         QHBoxLayout,
         QLabel,
         QListWidget,
@@ -154,6 +158,25 @@ try:
             self._operatorList.addItems(self._operatorTexts or ["无算子依赖"])
             rootLayout.addWidget(self._operatorList)
 
+            self._deviceCombos: dict[str, QComboBox] = {}
+            if preview.devices:
+                rootLayout.addWidget(QLabel("设备依赖映射"))
+                deviceForm = QFormLayout()
+                deviceForm.setRowWrapPolicy(QFormLayout.WrapAllRows)
+                for device in preview.devices:
+                    combo = QComboBox()
+                    combo.setObjectName("workflowPackageDevice-" + device.sourceDeviceId)
+                    combo.addItem("请选择", "unselected")
+                    combo.addItem("新建设备（禁用，待核对）", None)
+                    for targetId, name in device.compatibleTargets:
+                        combo.addItem(f"复用：{name} ({targetId})", targetId)
+                    label = WrapLabel(f"{device.name} ({device.sourceDeviceId}) | "
+                                      f"{device.deviceTypeId} @ {device.driverVersion}")
+                    combo.currentIndexChanged.connect(self._updateDeviceSelection)
+                    deviceForm.addRow(label, combo)
+                    self._deviceCombos[device.sourceDeviceId] = combo
+                rootLayout.addLayout(deviceForm)
+
             rootLayout.addWidget(QLabel("外部文件路径"))
             self._externalPathList = QListWidget()
             self._externalPathList.setObjectName("workflowPackageExternalPathList")
@@ -197,6 +220,17 @@ try:
 
             self._importButton.clicked.connect(self._onImportClicked)
             self._cancelButton.clicked.connect(self._onCancelClicked)
+            self._updateDeviceSelection()
+
+        def _updateDeviceSelection(self, *_args) -> None:
+            if hasattr(self, "_importButton"):
+                self._importButton.setEnabled(all(combo.currentIndex() > 0
+                                                  for combo in self._deviceCombos.values()))
+
+        def getDeviceMapping(self) -> dict[str, str | None]:
+            if any(combo.currentIndex() == 0 for combo in self._deviceCombos.values()):
+                raise ValueError("设备依赖尚未完成映射")
+            return {key: combo.currentData() for key, combo in self._deviceCombos.items()}
 
         def execSelection(self) -> tuple[bool, bool]:
             _ = self.exec_()
@@ -234,6 +268,8 @@ try:
             return list(self._externalPathTexts)
 
         def _onImportClicked(self) -> None:
+            if any(combo.currentIndex() == 0 for combo in self._deviceCombos.values()):
+                return
             self._accepted = True
             self._insertSubflow = bool(self._insertSubflowCheckBox.isChecked())
             self.accept()

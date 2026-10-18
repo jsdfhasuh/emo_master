@@ -1,5 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
+from emo_master.core.plugin.devices import DeviceRequirement, DeviceType
 
 
 @dataclass(frozen=True)
@@ -29,6 +30,9 @@ class PluginManifest:
   maxCoreVersion: str
   editor: OperatorEditorSpec | None = None
   iconResource: str = ""
+  deviceRequirements: dict[str, DeviceRequirement] = field(default_factory=dict)
+  deviceBindingSince: str = ""
+  nextCycleParameterPaths: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -65,3 +69,5 @@ class PluginDescriptor:
 class RegistryScanResult:
   activeOperators: dict[str, PluginDescriptor]
   rejectedOperators: dict[str, list[ValidationIssue]]
+  deviceTypes: dict[str, DeviceType] = field(default_factory=dict)
+  rejectedDeviceTypes: dict[str, list[ValidationIssue]] = field(default_factory=dict)

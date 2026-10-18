@@ -88,6 +88,26 @@ def _checkDesignerStyle() -> dict[str, object]:
     return {"path": str(qssPath), "bytes": qssPath.stat().st_size}
 
 
+def _checkManagedDevices() -> dict[str, object]:
+    from pydantic import JsonValue
+    from emo_master.apps.runtime.devices.drivers import BUILTINS
+    from emo_master.core.project.devices import DeviceDefinition
+    types, rejected = PluginRegistry(emo_master.__version__).scanDeviceTypes([_packageRoot() / "plugins" / "builtins"])
+    if rejected:
+        raise RuntimeError("managed device metadata rejected: " + ", ".join(rejected))
+    expected: dict[str, dict[str, JsonValue]] = {"device.camera.huaray_imv": {"cameraKey": "SELF-TEST-NO-HARDWARE"},
+                "device.plc.mitsubishi_slmp": {}, "device.simulated.camera": {"serial": "SELF-TEST"}}
+    for key, connection in expected.items():
+        declaration = types[key]
+        driver = BUILTINS[declaration.driverEntry]
+        definition = declaration.validateDefinition(DeviceDefinition(name=key, deviceTypeId=key,
+            driverVersion=declaration.version, connection=connection))
+        adapter = driver(definition)
+        adapter.close()
+    return dict(types=sorted(expected), drivers=sorted(BUILTINS), hardwareAccessed=False,
+                scope="metadata and side-effect-free adapter construction; not Host or hardware acceptance")
+
+
 def _iconDescriptors():
     scan = PluginRegistry(coreVersion=emo_master.__version__).scan(_packageRoot() / "plugins" / "builtins")
     descriptors = {}
@@ -272,11 +292,13 @@ def runSelfTest(
     expectedDetections: int | None = None,
     progressCallback: Callable[[str], None] | None = None,
     guiIcons: bool = False,
+    managedRuntime: bool = False,
 ) -> dict[str, object]:
     checks: dict[str, object] = {}
     errors: list[str] = []
     checkFunctions: tuple[tuple[str, Callable[[], dict[str, object]]], ...] = (
         ("builtins", _checkBuiltins),
+        ("managedDevices", _checkManagedDevices),
         ("operatorIcons", _checkIconResources),
         ("designerQss", _checkDesignerStyle),
         ("migrations", _checkMigrations),
@@ -284,6 +306,9 @@ def runSelfTest(
     )
     if guiIcons:
         checkFunctions += (("guiIcons", _checkGuiIcons),)
+    if managedRuntime:
+        from emo_master.apps.managed_device_selftest import checkManagedRuntime
+        checkFunctions += (("managedRuntime", checkManagedRuntime),)
     for name, checkFunction in checkFunctions:
         if progressCallback is not None:
             progressCallback(f"checking:{name}")
@@ -327,6 +352,7 @@ def _argumentParser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Validate an Emo Master frozen package")
     parser.add_argument("--self-test", action="store_true", required=True)
     parser.add_argument("--gui-icons", action="store_true", help="Require real Qt SVG rendering and example pixels")
+    parser.add_argument("--managed-runtime", action="store_true", help="Run two synthetic managed-device Jobs using spawn")
     parser.add_argument("--model", type=Path)
     parser.add_argument("--image", type=Path)
     parser.add_argument("--result-json", type=Path)
@@ -358,6 +384,7 @@ def runSelfTestCommand(arguments: Sequence[str]) -> int:
         expectedDetections=parsed.expected_detections,
         progressCallback=writeProgress,
         guiIcons=parsed.gui_icons,
+        managedRuntime=parsed.managed_runtime,
     )
     serialized = json.dumps(payload, ensure_ascii=False, indent=2)
     if parsed.result_json is not None:

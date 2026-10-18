@@ -8,6 +8,12 @@
 
 本指南负责从源码开发和调试；交付 EXE、安装包和正式发布见 [部署与发布指南](deployment-guide.md)，架构边界见 [工程师导读](engineer-guide.md)。
 
+设备平台 2.6 的正常操作见[设备与在线配置指南](guides/device-dispatch-online-configuration.md)。
+测试时使用独立 Runtime 数据目录和模拟设备；不要把默认发现/自动连接加到启动链。
+`python -m emo_master.apps.windows_entry --self-test --managed-runtime --result-json <path>`
+在配置源码模块路径后执行无真实硬件的 spawn/Dispatch/资源租约/模拟网络 Host 自检。
+完整命令、排除的私有旧基线测试及交接边界见[交接检查表](testing/2026-10-18-device-platform-handoff.md)。
+
 ## 0. 已有环境：直接从源码启动
 
 本机已经安装 `emo_master` Python 3.10 环境时，从本节开始即可。源码启动会读取当前工作副本的 `src`，不需要编译 EXE。仓库中的 `start_designer.cmd` 也是源码启动包装入口。

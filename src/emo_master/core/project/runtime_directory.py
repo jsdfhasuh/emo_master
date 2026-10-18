@@ -10,22 +10,41 @@ from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.files import projectFiles
 from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
+from emo_master.core.project.resources import DeviceParameterTarget
+from emo_master.core.project.device_resources import deviceDeclaration, deviceTarget
 
 
 def prepareRuntimeProject(
     document: ProjectDocument, root: Path,
     registry: Mapping[str, PluginDescriptor], *, protectedPaths: tuple[Path, ...] = (),
+    deviceTypes=None, siteValues: Mapping[str, str] | None = None, resourcePaths=None,
 ) -> ProjectDocument:
+    from emo_master.core.project.dependencies import validateOperatorDependencies
+    validateOperatorDependencies(document, registry)
     root = root.resolve(strict=True)
     prepared = document.model_copy(deep=True)
     nodes = {(wid, node.nodeId): node for wid, workflow in prepared.workflows.items()
              for node in workflow.nodes}
     inputs = {root / "project.json", *projectFiles(root)}
+    sites = dict(siteValues or {})
+    deviceSites = {b.field for b in prepared.resources.siteBindings
+                   if isinstance(b.target, DeviceParameterTarget)} if prepared.resources else set()
+    if set(sites) - deviceSites:
+        raise ValueError("undeclared device site field")
     if prepared.resources is not None:
-        resources = verifyResources(prepared, root)
+        resources = verifyResources(prepared, root, resourcePaths=resourcePaths)
+        prepared._pageResourcePaths = {key: path for key, path in resources.items()
+            if prepared.resources.items[key].purpose in {"page_image", "icon"}}
         inputs.update(Path(path).resolve() for path in resources.values())
         for binding in prepared.resources.parameterBindings:
             target = binding.target
+            if isinstance(target, DeviceParameterTarget):
+                item = prepared.resources.items.get(binding.resourceId)
+                if item is None:
+                    raise ValueError("device resource reference missing")
+                params = deviceTarget(prepared, target, deviceTypes, item.purpose)
+                _setPath(params, target.parameterPath, resources[binding.resourceId])
+                continue
             node = nodes.get((target.workflowId, target.nodeId))
             if node is None or node.kind != "operator" or binding.resourceId not in resources:
                 raise ValueError("resource reference/parameter target missing")
@@ -40,10 +59,26 @@ def prepareRuntimeProject(
             _setPath(node.params, target.parameterPath, resources[binding.resourceId])
         for siteBinding in prepared.resources.siteBindings:
             target = siteBinding.target
+            if isinstance(target, DeviceParameterTarget):
+                params = deviceTarget(prepared, target, deviceTypes, siteBinding.purpose)
+                if siteBinding.field in sites:
+                    if not isinstance(sites[siteBinding.field], str) or not sites[siteBinding.field]:
+                        raise ValueError("device site field must be a nonempty string")
+                    _setPath(params, target.parameterPath, sites[siteBinding.field])
+                value: object = params
+                for part in target.parameterPath:
+                    value = value.get(part) if isinstance(value, dict) else None
+                if siteBinding.required and (not isinstance(value, str) or not value):
+                    raise ValueError(f"required device site field missing: {siteBinding.field}")
+                if siteBinding.purpose == "secret_ref" and value:
+                    import re
+                    if not isinstance(value, str) or not re.fullmatch(r"secret://[A-Za-z0-9_./-]+@[A-Za-z0-9_.-]+", value):
+                        raise ValueError("device secrets must be versioned references, never plaintext")
+                continue
             node = nodes.get((target.workflowId, target.nodeId))
             if node is None or node.kind != "operator":
                 raise ValueError("site parameter target missing")
-            value: object = node.params if node is not None else None
+            value = node.params if node is not None else None
             for part in target.parameterPath:
                 value = value.get(part) if isinstance(value, dict) else None
             if siteBinding.required and (not isinstance(value, str) or not value):
@@ -51,6 +86,12 @@ def prepareRuntimeProject(
                                  + "/".join(target.parameterPath))
 
     outputs: list[Path] = []
+    for deviceId, definition in prepared.devices.definitions.items():
+        declaration = deviceDeclaration(definition, deviceTypes)
+        definition = declaration.validateDefinition(definition)
+        for section, schema in (("connection", declaration.connectionSchema), ("defaults", declaration.defaultsSchema)):
+            _resolveFiles(getattr(definition, section), schema, root, inputs, outputs, f"devices/{deviceId}/{section}")
+        prepared.devices.definitions[deviceId] = declaration.validateDefinition(definition)
     for (wid, nid), node in nodes.items():
         if node.kind != "operator":
             continue
@@ -61,6 +102,13 @@ def prepareRuntimeProject(
         # paths, including at export/install time (before any package is written).
         validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)
         _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, f"{wid}/{nid}")
+        for slot, deviceBinding in node.deviceBindings.items():
+            definition = prepared.devices.definitions[deviceBinding.deviceId]
+            declaration = deviceDeclaration(definition, deviceTypes)
+            overrides = node.deviceOverrides.get(slot, {})
+            _resolveFiles(overrides, declaration.defaultsSchema, root, inputs, outputs,
+                          f"{wid}/{nid}/{slot}", materializeDefaults=False)
+            declaration.validateNodeSources(definition, overrides, node.deviceValueBindings.get(slot, {}))
     protected = [path.resolve() for path in (*inputs, *protectedPaths)]
     for output in outputs:
         if any(output == path or output.is_relative_to(path) or path.is_relative_to(output)
@@ -69,7 +117,7 @@ def prepareRuntimeProject(
     return prepared
 
 
-def _resolveFiles(value, schema, root, inputs, outputs, location):
+def _resolveFiles(value, schema, root, inputs, outputs, location, *, materializeDefaults=True):
     if schema.get("xWidget") == "file":
         if not isinstance(value, str) or not value:
             return value  # Leave optional/default values to the compiler and operator.
@@ -93,12 +141,14 @@ def _resolveFiles(value, schema, root, inputs, outputs, location):
         if not isinstance(value, dict):
             return value
         for key, child in schema.get("properties", {}).items():
-            if key not in value and child.get("xWidget") == "file" and "default" in child:
+            if materializeDefaults and key not in value and child.get("xWidget") == "file" and "default" in child:
                 value[key] = child["default"]
             if key not in value:
                 continue
-            value[key] = _resolveFiles(value[key], child, root, inputs, outputs, f"{location}/{key}")
+            value[key] = _resolveFiles(value[key], child, root, inputs, outputs, f"{location}/{key}",
+                                      materializeDefaults=materializeDefaults)
     elif schema.get("type") == "array" and isinstance(value, list):
         for index, item in enumerate(value):
-            value[index] = _resolveFiles(item, schema.get("items", {}), root, inputs, outputs, f"{location}/{index}")
+            value[index] = _resolveFiles(item, schema.get("items", {}), root, inputs, outputs, f"{location}/{index}",
+                                        materializeDefaults=materializeDefaults)
     return value

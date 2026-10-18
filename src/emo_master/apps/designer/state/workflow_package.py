@@ -306,6 +306,7 @@ def importWorkflowPackage(
             {key: value.model_dump() for key, value in document.globalVariables.items()})
     workflowIdMap = _allocateImportedWorkflowIds(workingStore, document)
 
+    slotIdMap = _allocateImportedSlots(store, document)
     nodeIdMaps = {}
     for sourceWorkflowId in document.workflowOrder:
         nodeIdMaps[sourceWorkflowId] = _populateImportedWorkflow(
@@ -314,6 +315,7 @@ def importWorkflowPackage(
             workflowIdMap[sourceWorkflowId],
             workflowIdMap,
             deviceIdMap,
+            slotIdMap,
         )
 
     _mergeRequiredOperators(workingStore, document.requiredOperators)
@@ -707,19 +709,43 @@ def _requiredOperatorIds(
     return sorted(operatorIds)
 
 
+def _allocateImportedSlots(store, document):
+    used = {target["targetSlotId"] for workflow in store.workflows.values() for node in workflow.nodes
+            if node.get("kind") == "dispatch" for target in node["params"]["targets"]}
+    mapped = {}
+    for workflow in document.workflows.values():
+        for node in workflow.nodes:
+            if node.kind != "dispatch":
+                continue
+            for target in node.params["targets"]:
+                key = (target["targetSlotId"], target["workflowId"], target.get("queueCapacity", 4))
+                if key in mapped:
+                    continue
+                slot = key[0]
+                index = 1
+                while slot in used:
+                    suffix = f"_copy{index}"
+                    slot = key[0][:80 - len(suffix)] + suffix
+                    index += 1
+                used.add(slot)
+                mapped[key] = slot
+    return mapped
+
+
 def _populateImportedWorkflow(
     store: WorkflowStore,
     source: WorkflowDefinition,
     targetWorkflowId: str,
     workflowIdMap: dict[str, str],
     deviceIdMap: dict[str, str],
+    slotIdMap: dict[tuple[str, str, int], str] | None = None,
 ) -> dict[str, str]:
-    target = store.get(targetWorkflowId)
-    target.inputs = deepcopy(source.inputs)
-    target.outputs = deepcopy(source.outputs)
+    targetWorkflow = store.get(targetWorkflowId)
+    targetWorkflow.inputs = deepcopy(source.inputs)
+    targetWorkflow.outputs = deepcopy(source.outputs)
     boundaryIds = {
         str(node.get("kind")): str(node.get("nodeId"))
-        for node in target.nodes
+        for node in targetWorkflow.nodes
         if node.get("kind") in {"workflow_input", "workflow_output"}
         and isinstance(node.get("nodeId"), str)
     }
@@ -733,6 +759,12 @@ def _populateImportedWorkflow(
         nodeIdMap[sourceNode.nodeId] = mappedNodeId
         usedNodeIds.add(mappedNodeId)
 
+    slotIdMap = slotIdMap or {}
+    dispatchPorts = {node.nodeId: {t["targetSlotId"]: slotIdMap.get(
+        (t["targetSlotId"], t["workflowId"], t.get("queueCapacity", 4)), t["targetSlotId"])
+        for t in cast(list[dict], node.params["targets"])} for node in source.nodes if node.kind == "dispatch"}
+    joinPorts = {node.nodeId: dispatchPorts[cast(str, node.params["dispatchNodeId"])]
+                 for node in source.nodes if node.kind == "join"}
     transformedNodes: list[dict[str, object]] = []
     for sourceNode in source.nodes:
         node = sourceNode.model_dump(mode="python")
@@ -743,6 +775,11 @@ def _populateImportedWorkflow(
         if sourceNode.operatorId == "vision.io.sqlite_writer":
             from emo_master.core.contracts.sqlite_writer import rebindParams
             node["params"] = rebindParams(sourceNode.params, nodeIdMap)
+            for oldRow, row in zip(cast(list[dict], sourceNode.params.get("mappings", [])), node["params"].get("mappings", [])):
+                oldSource = oldRow.get("source", {})
+                if oldSource.get("kind") == "node_output":
+                    ports = joinPorts.get(oldSource.get("nodeId"), {})
+                    row["source"]["port"] = ports.get(oldSource.get("port"), oldSource.get("port"))
         if sourceNode.kind == "subflow":
             node["targetWorkflowId"] = _mappedWorkflowId(
                 sourceNode.targetWorkflowId,
@@ -750,10 +787,13 @@ def _populateImportedWorkflow(
                 "targetWorkflowId",
             )
         if sourceNode.kind == "dispatch":
-            for target in node["params"]["targets"]:
-                target["workflowId"] = _mappedWorkflowId(target["workflowId"], workflowIdMap, "Dispatch workflowId")
+            for dispatchTarget in node["params"]["targets"]:
+                dispatchTarget["targetSlotId"] = dispatchPorts[sourceNode.nodeId][dispatchTarget["targetSlotId"]]
+                dispatchTarget["workflowId"] = _mappedWorkflowId(dispatchTarget["workflowId"], workflowIdMap, "Dispatch workflowId")
         if sourceNode.kind == "join":
             node["params"]["dispatchNodeId"] = nodeIdMap[cast(str, sourceNode.params["dispatchNodeId"])]
+            node["outputPorts"] = {joinPorts[sourceNode.nodeId].get(key, key): value
+                                   for key, value in sourceNode.outputPorts.items()}
         if sourceNode.kind == "loop":
             loop = deepcopy(sourceNode.loop)
             for fieldName in loopWorkflowReferenceFields(loop):
@@ -770,6 +810,7 @@ def _populateImportedWorkflow(
         edge = sourceEdge.model_dump(mode="python")
         edge["fromNode"] = nodeIdMap[sourceEdge.fromNode]
         edge["toNode"] = nodeIdMap[sourceEdge.toNode]
+        edge["fromPort"] = joinPorts.get(sourceEdge.fromNode, {}).get(sourceEdge.fromPort, sourceEdge.fromPort)
         transformedEdges.append(edge)
 
     transformedPositions: dict[str, dict[str, float]] = {}
@@ -778,9 +819,9 @@ def _populateImportedWorkflow(
         if mappedPositionNodeId is not None:
             transformedPositions[mappedPositionNodeId] = deepcopy(position)
 
-    target.nodes = transformedNodes
-    target.edges = transformedEdges
-    target.layout = {"nodePositions": transformedPositions}
+    targetWorkflow.nodes = transformedNodes
+    targetWorkflow.edges = transformedEdges
+    targetWorkflow.layout = {"nodePositions": transformedPositions}
     store.ensureBoundaryNodes(targetWorkflowId)
     return nodeIdMap
 

@@ -26,4 +26,23 @@ and the affected `test_loop_cycle_configuration.py`, `test_review_dispatch_lifec
 `test_frame_dispatch.py`, `test_review_cycle_sources.py`. Ruff and diff checks pass.
 No physical camera, PLC or network reconfiguration was performed.
 
-N02, N03 and final frozen/publication verification are pending at this checkpoint.
+## N02 Checkpoint
+
+Workflow import no longer shadows its target workflow with a Dispatch dictionary.
+Import-closure slot mappings preserve legitimate sharing while avoiding existing
+slots. Join ports, edges and typed SQLite writer sources follow the mapping.
+
+- `n02-before.xml`: three failures; both public entrypoints reproduce the original
+  AttributeError, and the new typed-port test requires the mapping interface.
+- `n02-first.xml` / `n02-final.xml`: preserved fixture failures (Join output ports
+  were absent from the editable fixture, so boundary normalization removed edges).
+- `n02-recheck.xml`: 25 passed after supplying actual editor port metadata.
+- `n02-native.xml`: 26 passed, including combined original/copy spawn execution,
+  legacy package compatibility, resource guards, actual native import cancellation,
+  confirmation, undo/redo, save/reopen with Dispatch and resource dependencies.
+
+Command: `python -m pytest -q tests/designer/test_targeted_dispatch_package.py
+tests/designer/test_workflow_package.py tests/designer/test_workflow_package_resources.py`
+with `QT_QPA_PLATFORM=windows`. Scoped Ruff/mypy pass. Counts overlap.
+
+N03 and final frozen/publication verification are pending at this checkpoint.

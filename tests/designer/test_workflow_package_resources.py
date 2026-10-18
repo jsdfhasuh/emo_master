@@ -151,7 +151,8 @@ def testDependentDevicesCannotOverwriteExistingSiteBindings(tmp_path):
     assert target.toPayload() == before
 
 
-def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path, ownedDesignerWindow, monkeypatch):
+@pytest.mark.parametrize('withDispatch', [False, True])
+def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path, ownedDesignerWindow, monkeypatch, withDispatch):
     from PySide2.QtCore import QTimer
     from PySide2.QtWidgets import QListWidget
     from emo_master.apps.designer.state.project_store import saveProject
@@ -160,6 +161,17 @@ def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path
     from tests.designer.qt_wait import waitForCatalog
     from tests.designer.test_main_window_workflow_tabs import _RuntimeClientStub
     store, data = source(tmp_path)
+    if withDispatch:
+        from tests.runtime.test_frame_dispatch import dispatchProject
+        payload = store.toPayload()
+        graph = dispatchProject()
+        payload['workflows']['consumer'] = graph['workflows']['consumer']
+        payload['workflowOrder'].append('consumer')
+        payload['workflows']['main']['nodes'].extend(n for n in graph['workflows']['main']['nodes']
+                                                     if n.get('kind') in {'dispatch', 'join'})
+        payload['workflows']['main']['edges'].extend(e for e in graph['workflows']['main']['edges']
+                                                     if e['toNode'] in {'dispatch', 'join'})
+        store = WorkflowStore(payload)
     package = buildWorkflowPackage(store, "main", sourceRoot=tmp_path)
     path = writeWorkflowPackage(tmp_path / "portable", package)
     root = tmp_path / "destination"
@@ -172,6 +184,7 @@ def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path
     window.pageCoordinator.sync()
     session = window.pageCoordinator.session
     before, disk = session.payload(), projectFile.read_bytes()
+    cancel = True
     def previewDialog(preview):
         dialog = WorkflowPackagePreviewDialog(preview, window)
         assert dialog.findChild(QListWidget, "workflowPackageResourceDependencies").count() == 3
@@ -180,10 +193,13 @@ def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path
         dialog._deviceCombos["camera"].setCurrentIndex(1)
         assert dialog._importButton.isEnabled()
         dialog.setInsertSubflowChecked(False)
-        QTimer.singleShot(10, dialog._importButton.click)
+        QTimer.singleShot(10, dialog.reject if cancel else dialog._importButton.click)
         return dialog
     monkeypatch.setattr(window, "_createWorkflowPackagePreviewDialog", previewDialog)
     monkeypatch.setattr(module.QFileDialog, "getOpenFileName", lambda *args: (str(path), ""))
+    assert window.importWorkflowPackageAction() is None
+    assert session.payload() == before and projectFile.read_bytes() == disk
+    cancel = False
     imported = window.importWorkflowPackageAction()
     assert imported and imported != "main"
     after = session.payload()
@@ -195,3 +211,10 @@ def testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes(tmp_path
     window.pageCoordinator.history(redo=True)
     assert session.payload() == after and resource.read_bytes() == data
     assert projectFile.read_bytes() == disk
+    saveProject(projectFile, session.payload())
+    assert window.loadProjectDirectory(str(projectFile), confirmed=True)
+    assert resource.read_bytes() == data
+    if withDispatch:
+        from emo_master.core.workflow.dispatch_contracts import groupSlots
+        reopened = ProjectDocument.model_validate(window.pageCoordinator.session.payload())
+        assert len(groupSlots(reopened, imported)) == 2

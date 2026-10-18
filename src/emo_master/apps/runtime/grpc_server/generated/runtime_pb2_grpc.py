@@ -69,6 +69,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.ProjectResourceTransferRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
                 _registered_method=True)
+        self.RetryProjectResourceRecovery = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/RetryProjectResourceRecovery',
+                request_serializer=runtime__pb2.RetryProjectResourceRecoveryRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
+                _registered_method=True)
         self.GetOperatorDebugCapabilities = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetOperatorDebugCapabilities',
                 request_serializer=runtime__pb2.OperatorDebugRequest.SerializeToString,
@@ -501,6 +506,12 @@ class RuntimeServiceServicer(object):
         raise NotImplementedError('Method not implemented!')
 
     def TransferProjectResource(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def RetryProjectResourceRecovery(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -1010,6 +1021,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
             'TransferProjectResource': grpc.unary_unary_rpc_method_handler(
                     servicer.TransferProjectResource,
                     request_deserializer=runtime__pb2.ProjectResourceTransferRequest.FromString,
+                    response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
+            ),
+            'RetryProjectResourceRecovery': grpc.unary_unary_rpc_method_handler(
+                    servicer.RetryProjectResourceRecovery,
+                    request_deserializer=runtime__pb2.RetryProjectResourceRecoveryRequest.FromString,
                     response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
             ),
             'GetOperatorDebugCapabilities': grpc.unary_unary_rpc_method_handler(
@@ -1591,6 +1607,33 @@ class RuntimeService(object):
             target,
             '/emo_master.runtime.RuntimeService/TransferProjectResource',
             runtime__pb2.ProjectResourceTransferRequest.SerializeToString,
+            runtime__pb2.ProjectConfigurationReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def RetryProjectResourceRecovery(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/RetryProjectResourceRecovery',
+            runtime__pb2.RetryProjectResourceRecoveryRequest.SerializeToString,
             runtime__pb2.ProjectConfigurationReply.FromString,
             options,
             channel_credentials,

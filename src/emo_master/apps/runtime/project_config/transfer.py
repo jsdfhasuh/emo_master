@@ -12,13 +12,14 @@ from emo_master.core.project.resources import Resource
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
 from .resources import fileDigest
 from .store import ConfigurationError
+from .transfer_repair import ResourceRepair
 
 
 MAX_TRANSFER_BYTES = 4 * 1024 * 1024 * 1024
 MAX_CHUNK_BYTES = 512 * 1024
 
 
-class ResourceTransfers:
+class ResourceTransfers(ResourceRepair):
     _registryLock = RLock()
     _locks: WeakValueDictionary[tuple[Path, Path], Any] = WeakValueDictionary()
 
@@ -42,6 +43,7 @@ class ResourceTransfers:
                 token TEXT NOT NULL, instanceId TEXT NOT NULL, projectId TEXT NOT NULL, manifest TEXT NOT NULL)""")
             connection.execute("""CREATE TABLE IF NOT EXISTS projectResourceIngestions (
                 transferId TEXT PRIMARY KEY)""")
+            self._initializeRepair(connection)
 
     def _path(self, name):
         if not re.fullmatch(r"[0-9a-f]{32}(\.[a-z0-9]{1,16})?", name):
@@ -62,9 +64,11 @@ class ResourceTransfers:
     def _cancel(self, transferId, row):
         with self.sqlite.connection() as connection:
             beginImmediate(connection)
-            if row[3] == "READY":
-                pinned = connection.execute("SELECT 1 FROM projectResourcePins WHERE projectId=? AND manifest=? LIMIT 1",
-                                            (row[0], row[1])).fetchone()
+            pinned = connection.execute("SELECT 1 FROM projectResourcePins WHERE transferId=? OR (transferId='' AND projectId=? AND manifest=?) LIMIT 1",
+                                        (transferId, row[0], row[1])).fetchone()
+            if pinned:
+                raise ConfigurationError("E_RESOURCE_TRANSFER_READY", "resource is pinned by prepared configuration")
+            if row[3] in {"READY", "CORRUPT"}:
                 online = None
                 if connection.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='onlineProject'").fetchone():
                     online = connection.execute("SELECT payload FROM onlineProject WHERE singleton=1").fetchone()
@@ -75,7 +79,7 @@ class ResourceTransfers:
                 if pinned or referenced:
                     raise ConfigurationError("E_RESOURCE_TRANSFER_READY", "resource is referenced by online or prepared configuration")
             self._path(row[2]).unlink(missing_ok=True)
-            connection.execute("UPDATE projectResourceTransfers SET state='CANCELLED', offset=0 WHERE transferId=?", (transferId,))
+            connection.execute("UPDATE projectResourceTransfers SET state='CANCELLED', active=0, offset=0 WHERE transferId=?", (transferId,))
 
     def recover(self, *, onlyInstance=None):
         with self.lock, self.sqlite.connection() as connection:
@@ -86,6 +90,7 @@ class ResourceTransfers:
             connection.execute("DELETE FROM projectResourcePins WHERE (? IS NULL OR instanceId=?)", (onlyInstance, onlyInstance))
         with self.lock:
             self._reclaimIngestions()
+            self._reclaimSuperseded()
 
     def execute(self, request):
         with self.lock:
@@ -98,31 +103,31 @@ class ResourceTransfers:
                 raise ConfigurationError("E_RESOURCE_TRANSFER_LIMIT", "resource chunk exceeds budget")
             if request.action == "LOOKUP":
                 item = Resource.model_validate(json.loads(request.resource_json))
-                with self.sqlite.connection() as connection:
-                    ready = connection.execute("""SELECT transferId, filename FROM projectResourceTransfers
-                        WHERE projectId=? AND manifest=? AND state='READY' LIMIT 1""",
-                        (request.project_id, item.model_dump_json())).fetchone()
-                if ready is None:
-                    return dict(state="MISSING")
-                path = self._path(ready[1])
-                if not path.is_file() or path.stat().st_size != item.size or fileDigest(path) != item.sha256:
-                    raise ConfigurationError("E_RESOURCE_TRANSFER_DIGEST", "completed upload is missing or corrupt")
-                return dict(transferId=ready[0], state="READY", offset=item.size, size=item.size, sha256=item.sha256)
+                return self._lookup(request.project_id, item)
             if request.action == "BEGIN":
                 item = Resource.model_validate(json.loads(request.resource_json))
                 manifest = item.model_dump_json()
+                replacement = getattr(request, 'replacement_of', '')
+                revision = getattr(request, 'expected_document_revision', 0)
                 with self.sqlite.connection() as connection:
                     beginImmediate(connection)
-                    existing = connection.execute("SELECT projectId, manifest FROM projectResourceTransfers WHERE transferId=?", (transferId,)).fetchone()
+                    existing = connection.execute("SELECT projectId, manifest, replacementOf, expectedRevision FROM projectResourceTransfers WHERE transferId=?", (transferId,)).fetchone()
                     if existing:
-                        if existing != (request.project_id, manifest):
+                        if existing != (request.project_id, manifest, replacement, revision):
                             raise ConfigurationError("E_RESOURCE_TRANSFER_CONFLICT", "transfer ID content changed")
                     else:
+                        active = self._authority(connection, request.project_id, manifest)
+                        if replacement:
+                            self._checkRepairFence(connection, request.project_id, revision, self.instanceId)
+                            if active is None or active[0] != replacement:
+                                raise ConfigurationError('E_RESOURCE_REPAIR_CONFLICT', 'repair target is no longer authoritative')
+                        elif active and not self._healthy(active[1], item):
+                            raise ConfigurationError('E_RESOURCE_REPAIR_CONFIRM', 'confirm repair of corrupt resource')
                         # Retain a small status window; an expired BEGIN is a new
                         # empty upload, never a replay of publication or bytes.
                         connection.execute("""DELETE FROM projectResourceTransfers WHERE state='CANCELLED' AND rowid NOT IN
                             (SELECT rowid FROM projectResourceTransfers WHERE state='CANCELLED' ORDER BY rowid DESC LIMIT 256)""")
-                        rows = connection.execute("SELECT manifest, state FROM projectResourceTransfers").fetchall()
+                        rows = connection.execute("SELECT manifest, state FROM projectResourceTransfers WHERE state NOT IN ('SUPERSEDED','REUSED')").fetchall()
                         reserved = sum(json.loads(value)["size"] for value, state in rows if state != "CANCELLED")
                         disk = sum(path.stat().st_size for path in self.root.iterdir() if path.is_file())
                         if sum(state != "CANCELLED" for _, state in rows) >= 4096 or max(reserved, disk) + item.size > MAX_TRANSFER_BYTES:
@@ -131,8 +136,8 @@ class ResourceTransfers:
                         if suffix and not re.fullmatch(r"\.[a-z0-9]{1,16}", suffix):
                             raise ConfigurationError("E_RESOURCE_PATH", "resource extension is unsupported")
                         name = uuid4().hex + suffix
-                        connection.execute("INSERT INTO projectResourceTransfers VALUES (?,?,?,?, 'PENDING',0,?)",
-                                           (transferId, request.project_id, manifest, name, self.instanceId))
+                        connection.execute("INSERT INTO projectResourceTransfers (transferId,projectId,manifest,filename,state,offset,instanceId,replacementOf,expectedRevision) VALUES (?,?,?,?, 'PENDING',0,?,?,?)",
+                                           (transferId, request.project_id, manifest, name, self.instanceId, replacement, revision))
                 row = self._read(transferId)
                 if not existing:
                     self._path(row[2]).touch(exist_ok=False)
@@ -163,17 +168,20 @@ class ResourceTransfers:
                             connection.execute("UPDATE projectResourceTransfers SET offset=? WHERE transferId=?",
                                                (row[4] + len(request.data), transferId))
             elif request.action == "COMMIT":
+                if row[3] == 'REUSED':
+                    return dict(self._lookup(row[0], item), requestTransferId=transferId)
                 if row[3] not in {"PENDING", "READY"} or row[4] != item.size:
                     raise ConfigurationError("E_RESOURCE_TRANSFER_INCOMPLETE", "resource transfer is incomplete")
                 if not path.is_file() or path.stat().st_size != item.size or fileDigest(path) != item.sha256:
                     raise ConfigurationError("E_RESOURCE_TRANSFER_DIGEST", "uploaded resource size or digest mismatch")
-                with self.sqlite.connection() as connection:
-                    connection.execute("UPDATE projectResourceTransfers SET state='READY' WHERE transferId=?", (transferId,))
+                self._promote(transferId, row, item)
             elif request.action == "CANCEL":
                 self._cancel(transferId, row)
             elif request.action not in {"BEGIN", "STATUS"}:
                 raise ConfigurationError("E_RESOURCE_TRANSFER_ACTION", "unknown resource transfer action")
             row = self._read(transferId)
+            if row[3] == 'REUSED':
+                return dict(self._lookup(row[0], item), requestTransferId=transferId)
             return dict(transferId=transferId, state=row[3], offset=row[4], size=item.size, sha256=item.sha256)
 
     def pin(self, document, root, *, cancelled=None):
@@ -227,8 +235,9 @@ class ResourceTransfers:
                         self._cancel(request.transfer_id, self._read(request.transfer_id))
                     raise
             with self.sqlite.connection() as connection:
-                connection.executemany("INSERT INTO projectResourcePins VALUES (?,?,?,?)",
-                    [(token, self.instanceId, document.project.projectId, item.model_dump_json())
+                connection.executemany("INSERT INTO projectResourcePins VALUES (?,?,?,?,?)",
+                    [(token, self.instanceId, document.project.projectId, item.model_dump_json(),
+                      self._authority(connection, document.project.projectId, item.model_dump_json())[0])
                      for item in document.resources.items.values()])
 
     def unpin(self, token):
@@ -236,6 +245,7 @@ class ResourceTransfers:
             with self.sqlite.connection() as connection:
                 connection.execute("DELETE FROM projectResourcePins WHERE token=? AND instanceId=?", (token, self.instanceId))
             self._reclaimIngestions()
+            self._reclaimSuperseded()
 
     def _reclaimIngestions(self):
         # Only automatically ingested copies are implicit cleanup candidates.
@@ -256,12 +266,15 @@ class ResourceTransfers:
     def resolve(self, document):
         if document.resources is None:
             return {}
-        with self.lock, self.sqlite.connection() as connection:
-            available = {manifest: name for manifest, name in connection.execute(
-                "SELECT manifest, filename FROM projectResourceTransfers WHERE projectId=? AND state='READY'",
-                (document.project.projectId,))}
-            return {key: self._path(available[item.model_dump_json()]) for key, item in document.resources.items.items()
-                    if item.model_dump_json() in available}
+        with self.lock:
+            result = {}
+            for key, item in document.resources.items.items():
+                found = self._lookup(document.project.projectId, item)
+                if found['state'] == 'CORRUPT':
+                    raise ConfigurationError('E_RESOURCE_TRANSFER_DIGEST', 'completed upload is missing or corrupt')
+                if found['state'] == 'READY':
+                    result[key] = self._path(self._read(found['transferId'])[2])
+            return result
 
     def close(self):
         with self.lock:

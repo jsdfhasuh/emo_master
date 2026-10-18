@@ -430,13 +430,31 @@ class RuntimeClient:
     def cancelProjectWrite(self, requestId):
         return self._projectConfigurationCall("CancelProjectWrite", runtime_pb2.ProjectWriteLookup(request_id=requestId))
 
-    def transferProjectResource(self, snapshot, transferId, action, *, resource=None, offset=0, data=b""):
+    def transferProjectResource(self, snapshot, transferId, action, *, resource=None, offset=0, data=b"", replacementOf=""):
         return self._projectConfigurationCall("TransferProjectResource", runtime_pb2.ProjectResourceTransferRequest(
             runtime_instance_id=snapshot["runtimeInstanceId"], project_id=snapshot["payload"]["project"]["projectId"],
             transfer_id=transferId, action=action, resource_json=json.dumps(resource) if resource is not None else "",
-            offset=offset, data=data))
+            offset=offset, data=data, replacement_of=replacementOf,
+            expected_document_revision=snapshot['documentRevision'] if replacementOf else 0))
 
-    def uploadProjectResources(self, snapshot, payload, root, cancelled=None):
+    def retryProjectResourceRecovery(self, snapshot, requestId):
+        if not snapshot.get('resourceRepair'):
+            raise RuntimeClientError('UNIMPLEMENTED', 'Runtime does not support resource recovery; upgrade Runtime')
+        return self._projectConfigurationCall('RetryProjectResourceRecovery', runtime_pb2.RetryProjectResourceRecoveryRequest(
+            request_id=requestId, project_id=snapshot['payload']['project']['projectId'],
+            expected_runtime_instance_id=snapshot['runtimeInstanceId'], expected_document_revision=snapshot['documentRevision']))
+
+    def reconcileProjectResources(self):
+        uploaded = []
+        for transferId, (snapshot, key) in list(getattr(self, 'pendingResourceTransfers', {}).items()):
+            result = self.transferProjectResource(snapshot, transferId, 'STATUS')
+            if result['state'] != 'READY':
+                raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', f'resource {transferId}: {result["state"]}; no upload was replayed')
+            uploaded.append(dict(resourceId=key, **result))
+            del self.pendingResourceTransfers[transferId]
+        return dict(uploaded=uploaded)
+
+    def uploadProjectResources(self, snapshot, payload, root, cancelled=None, *, repairConfirmed=False):
         from pathlib import Path
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.project.snapshots import verifyResources
@@ -445,6 +463,9 @@ class RuntimeClient:
         root = Path(root).resolve()
         paths = verifyResources(document, root.parent if root.is_file() else root)
         uploaded = []
+        if getattr(self, 'pendingResourceTransfers', {}):
+            raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', 'query the original pending resource transfer before another upload')
+        self.pendingResourceTransfers = {}
         for key, path in paths.items():
             if cancelled is not None and cancelled.is_set():
                 raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
@@ -454,8 +475,18 @@ class RuntimeClient:
             if existing["state"] == "READY":
                 uploaded.append(dict(resourceId=key, **existing))
                 continue
+            replacement = ''
+            if existing['state'] == 'CORRUPT':
+                if not repairConfirmed:
+                    raise RuntimeClientError('E_RESOURCE_REPAIR_CONFIRM', 'confirm repair using the matching local original')
+                if not snapshot.get('resourceRepair'):
+                    raise RuntimeClientError('UNIMPLEMENTED', 'Runtime does not support explicit resource repair')
+                replacement = existing['transferId']
+            elif existing['state'] != 'MISSING':
+                raise RuntimeClientError('E_RESOURCE_TRANSFER_STATE', 'unexpected resource lookup state')
+            committing = False
             try:
-                self.transferProjectResource(snapshot, transferId, "BEGIN", resource=resource)
+                self.transferProjectResource(snapshot, transferId, "BEGIN", resource=resource, replacementOf=replacement)
                 offset = 0
                 with Path(path).open("rb") as stream:
                     while chunk := stream.read(512 * 1024):
@@ -463,11 +494,25 @@ class RuntimeClient:
                             raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
                         self.transferProjectResource(snapshot, transferId, "CHUNK", offset=offset, data=chunk)
                         offset += len(chunk)
+                committing = True
+                self.pendingResourceTransfers[transferId] = (snapshot, key)
                 result = self.transferProjectResource(snapshot, transferId, "COMMIT")
+                del self.pendingResourceTransfers[transferId]
                 uploaded.append(dict(resourceId=key, **result))
             except Exception:
-                # A lost COMMIT reply may already be READY. Cancellation only
-                # removes unreferenced uploads; publication is never retried.
+                if committing:
+                    # STATUS is a read, never a second COMMIT or implicit repair.
+                    try:
+                        status = self.transferProjectResource(snapshot, transferId, 'STATUS')
+                    except Exception as error:
+                        raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', f'query original resource transfer {transferId}; no retry') from error
+                    if status['state'] == 'READY':
+                        del self.pendingResourceTransfers[transferId]
+                        uploaded.append(dict(resourceId=key, **status))
+                        continue
+                    if status['state'] not in {'PENDING', 'CANCELLED'}:
+                        raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', f'resource transfer {transferId}: {status["state"]}')
+                    del self.pendingResourceTransfers[transferId]
                 try:
                     self.transferProjectResource(snapshot, transferId, "CANCEL")
                 except Exception:

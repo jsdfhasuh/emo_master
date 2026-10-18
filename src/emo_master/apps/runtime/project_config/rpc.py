@@ -53,13 +53,17 @@ class ProjectConfigurationRpcMixin:
             beforeCommit=self._checkConfigurationAdmission, discard=self._discardProjectConfiguration,
             transition=self._transitionProjectConfiguration)
         runtime.onlineRecoveryError = ""
+        runtime.onlineRecoveryKind = ""
         runtime.deviceManager.configuration = runtime.projectConfiguration
         current = runtime.projectConfiguration.current
         if current:
             pin = ""
+            resourcePhase = False
             try:
                 document = ProjectDocument.model_validate(current["payload"])
+                resourcePhase = True
                 pin = runtime.projectResourceTransfers.pin(document, Path(current["sourcePath"]).parent)
+                resourcePhase = False
                 from emo_master.core.project.runtime_directory import prepareRuntimeProject
                 document = prepareRuntimeProject(document, Path(current["sourcePath"]).parent,
                     runtime.pluginScanResult.activeOperators, deviceTypes=runtime.pluginScanResult.deviceTypes,
@@ -84,6 +88,7 @@ class ProjectConfigurationRpcMixin:
                     runtime.loadedProjectFile, document.project.projectId)
             except Exception as error:
                 runtime.onlineRecoveryError = str(error)
+                runtime.onlineRecoveryKind = 'resource' if resourcePhase or getattr(error, 'code', '').startswith('E_RESOURCE_') else 'other'
             finally:
                 if pin:
                     runtime.projectResourceTransfers.unpin(pin)
@@ -339,6 +344,7 @@ class ProjectConfigurationRpcMixin:
         runtime.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
         runtime.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
         runtime.onlineRecoveryError = ""
+        runtime.onlineRecoveryKind = ""
 
     @staticmethod
     def _configurationReply(action):
@@ -356,6 +362,8 @@ class ProjectConfigurationRpcMixin:
             result["recoveryError"] = runtime.onlineRecoveryError or runtime.projectConfiguration.publicationError
             result["retainedResourceCount"] = len(runtime.configurationResourceJournal.retainedAfterCrash())
             result["versionedStart"] = True
+            result['resourceRepair'] = True
+            result['resourceRecoveryAvailable'] = runtime.onlineRecoveryKind == 'resource' and not runtime.projectConfiguration.publicationError
             return result
         return self._configurationReply(snapshot)
 
@@ -472,3 +480,30 @@ class ProjectConfigurationRpcMixin:
                     raise ConfigurationError("E_CONFIG_CANCELLED", "resource transfer cancelled")
             return runtime.projectResourceTransfers.execute(request)
         return self._configurationReply(transfer)
+
+    def RetryProjectResourceRecovery(self, request, context):
+        runtime: Any = self
+        def admission():
+            current = runtime.projectConfiguration.current
+            if current is None or request.project_id != current['payload']['project']['projectId']:
+                raise ConfigurationError('E_CONFIG_PROJECT', 'recovery belongs to another project')
+            if runtime.onlineRecoveryKind != 'resource' or not runtime.onlineRecoveryError:
+                raise ConfigurationError('E_CONFIG_RECOVERY', 'only resource recovery failures can be retried here')
+            with runtime.deviceManager.lock:
+                for executor in runtime.deviceManager.executors.values():
+                    with executor.condition:
+                        if executor.quarantined or executor.closed or executor.active or executor.queue:
+                            raise ConfigurationError('E_CONFIG_REQUIRES_STOP', 'device recovery or retirement is still required')
+            if (runtime.deviceManager.workers or runtime.deviceManager.permissions or runtime.deviceManager.maintenanceOwners
+                    or runtime.operatorDebugManager.ownsResources() or runtime.livePreviewManager.hasConfigurationSession()
+                    or any(not r.isTerminal or runtime.jobSupervisor.ownsJobResources(r.jobId) for r in runtime.jobRepository.all())
+                    or runtime.projectConfiguration.cycles or runtime.projectConfiguration.childCycles
+                    or any(v.connected or v.controlPending for v in runtime.deviceManager.lifecycles.values())
+                    or runtime.communicationManager.snapshot()['state'] not in {'STOPPED', 'DISABLED'}):
+                raise ConfigurationError('E_CONFIG_REQUIRES_STOP', 'retire old users and connections before resource recovery')
+        def start():
+            runtime.jobSupervisor.assertMutationAllowed()
+            return runtime.projectConfiguration.startRecovery(dict(requestId=request.request_id,
+                expectedRuntimeInstanceId=request.expected_runtime_instance_id,
+                expectedRevision=request.expected_document_revision, projectId=request.project_id), admission)
+        return self._configurationReply(start)

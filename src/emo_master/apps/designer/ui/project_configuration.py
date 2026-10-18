@@ -60,11 +60,14 @@ class ProjectConfigurationDialog(QDialog):
         from emo_master.apps.designer.ui.icon_map import icon
         self.uploadButton.setIcon(icon("upload"))
         self.uploadButton.clicked.connect(self.uploadResources)
+        self.recoverButton = QPushButton('重试资源恢复')
+        self.recoverButton.setIcon(icon('refresh'))
+        self.recoverButton.clicked.connect(self.retryRecovery)
         for button in (self.refreshButton, self.readButton, self.validateButton, self.writeButton):
             row.addWidget(button)
         layout.addLayout(row)
         row = QHBoxLayout()
-        for button in (self.uploadButton, self.queryButton, self.cancelButton, self.graphButton, self.closeButton):
+        for button in (self.uploadButton, self.recoverButton, self.queryButton, self.cancelButton, self.graphButton, self.closeButton):
             row.addWidget(button)
         layout.addLayout(row)
         self.runButton = QPushButton("运行在线版本") if allowRun else None
@@ -125,8 +128,10 @@ class ProjectConfigurationDialog(QDialog):
         self.readButton.setEnabled(ready)
         self.writeButton.setEnabled(writable and self.table.rowCount() > 0)
         self.validateButton.setEnabled(writable and self.table.rowCount() > 0)
-        self.uploadButton.setEnabled(ready and hasattr(self.client, "uploadProjectResources"))
-        self.queryButton.setEnabled(idle and bool(self.requestId))
+        uncertain = bool(getattr(self.client, 'pendingResourceTransfers', {}))
+        self.uploadButton.setEnabled(ready and not uncertain and hasattr(self.client, "uploadProjectResources"))
+        self.recoverButton.setEnabled(ready and not uncertain and self.snapshot.get('resourceRecoveryAvailable', False))
+        self.queryButton.setEnabled(idle and (bool(self.requestId) or uncertain))
         self.cancelButton.setEnabled(idle and self.writePending)
         self.table.setEnabled(ready)
         self.replacementPolicy.setEnabled(ready)
@@ -218,8 +223,21 @@ class ProjectConfigurationDialog(QDialog):
             self.snapshot, self.local, paths, requestId, validate=validate, **options))
 
     def query(self):
+        if getattr(self.client, 'pendingResourceTransfers', {}):
+            self._submit('upload', self.client.reconcileProjectResources)
+            return
         if self.requestId:
             self._submit("write", self.client.getProjectWriteStatus, self.requestId)
+
+    def retryRecovery(self):
+        if not self.recoverButton.isEnabled():
+            return
+        if QMessageBox.question(self, '重试资源恢复', '重新准备当前在线配置，不修改版本，不连接设备或启动任务？',
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+        self.requestId = uuid4().hex
+        self.writePending = True
+        self._submit('write', self.client.retryProjectResourceRecovery, deepcopy(self.snapshot), self.requestId)
 
     def uploadResources(self):
         if self.snapshot is None or self.pending is not None or self.writePending or not self._valid():
@@ -238,12 +256,13 @@ class ProjectConfigurationDialog(QDialog):
             if not self.c.directory:
                 raise ValueError("请先保存工程以确定资源目录")
             details = "\n".join(f"{key}: {item.path} ({item.size} bytes)" for key, item in items.items())
-            if QMessageBox.question(self, "上传候选资源", "将以下资源传输到 Runtime；不会提交配置或启动设备：\n" + details,
+            if QMessageBox.question(self, "上传候选资源", "将以下资源传输到 Runtime；若同清单副本损坏，将用本地正确原件修复。不会提交配置或启动设备：\n" + details,
                                     QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
                 return
             self.uploadCancelled.clear()
-            self._submit("upload", self.client.uploadProjectResources, deepcopy(self.snapshot), candidate,
-                         self.c.directory, self.uploadCancelled)
+            snapshot = deepcopy(self.snapshot)
+            self._submit("upload", lambda: self.client.uploadProjectResources(snapshot, candidate,
+                         self.c.directory, self.uploadCancelled, repairConfirmed=True))
         except Exception as error:
             self.status.setText(str(error))
 
@@ -262,7 +281,7 @@ class ProjectConfigurationDialog(QDialog):
             if self.kind == "snapshot":
                 self._showSnapshot(result)
             elif self.kind == "upload":
-                self.status.setText(f"{len(result['uploaded'])} 项资源上传并校验完成；在线配置未改变")
+                self.status.setText(f"{len(result['uploaded'])} 项资源副本上传／修复并校验完成；在线配置未改变。恢复未完成时请点击重试资源恢复。")
             elif self.kind == "validate":
                 details = []
                 if not result.get("cycleSafe", True) and result.get("affectedJobs"):
@@ -275,14 +294,14 @@ class ProjectConfigurationDialog(QDialog):
             else:
                 state = result["state"]
                 self.writePending = state in {"VALIDATING", "WAITING"}
-                labels = {"COMMITTED": "已提交", "FAILED": "失败", "CANCELLED": "已取消", "VALIDATING": "校验中", "WAITING": "等待条件"}
+                labels = {"RECOVERED": "Runtime 已恢复就绪", "COMMITTED": "已提交", "FAILED": "失败", "CANCELLED": "已取消", "VALIDATING": "校验中", "WAITING": "等待条件"}
                 self.status.setText(f"{labels.get(state, state)}；请求 {self.requestId}；{result.get('message', '')}"
                                     + ("；发布错误：" + result["publicationError"] if result.get("publicationError") else "")
                                     + ("；资源释放错误：" + result["cleanupError"] if result.get("cleanupError") else ""))
                 if result.get("connections") or result.get("connectionError"):
                     self.status.setText(self.status.text() + "；连接控制：" + json.dumps(
                         result.get("connections", result.get("connectionError")), ensure_ascii=False))
-                if state == "COMMITTED":
+                if state in {"COMMITTED", "RECOVERED"}:
                     self.refresh()
                 elif self.writePending:
                     QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)

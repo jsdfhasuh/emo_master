@@ -113,7 +113,7 @@ def testClosingAnotherInProcessServiceCannotCancelPendingTransfer(transfers):
 
 def testCancelledTransferTombstonesCannotExhaustAdmission(transfers):
     with transfers.sqlite.connection() as connection:
-        connection.executemany("INSERT INTO projectResourceTransfers VALUES (?,?,?,?, 'CANCELLED',0,?)",
+        connection.executemany("INSERT INTO projectResourceTransfers (transferId,projectId,manifest,filename,state,offset,instanceId) VALUES (?,?,?,?, 'CANCELLED',0,?)",
             [(f"expired-{index}", "project", json.dumps(manifest()), f"{index:032x}.bin", "old")
              for index in range(4096)])
     assert transfers.execute(request("BEGIN"))["state"] == "PENDING"

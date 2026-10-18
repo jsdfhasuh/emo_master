@@ -309,6 +309,8 @@ def runSelfTest(
     if managedRuntime:
         from emo_master.apps.managed_device_selftest import checkManagedRuntime
         checkFunctions += (("managedRuntime", checkManagedRuntime),)
+        from emo_master.apps.targeted_repair_selftest import checkTargetedDesignerRepairs
+        checkFunctions += (("targetedRepairs", checkTargetedDesignerRepairs),)
     for name, checkFunction in checkFunctions:
         if progressCallback is not None:
             progressCallback(f"checking:{name}")

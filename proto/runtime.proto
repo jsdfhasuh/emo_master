@@ -39,6 +39,14 @@ message ProjectResourceTransferRequest {
   string resource_json = 5;
   uint64 offset = 6;
   bytes data = 7;
+  string replacement_of = 8;
+  int64 expected_document_revision = 9;
+}
+message RetryProjectResourceRecoveryRequest {
+  string request_id = 1;
+  string project_id = 2;
+  string expected_runtime_instance_id = 3;
+  int64 expected_document_revision = 4;
 }
 message ProjectConfigurationReply {
   bool ok = 1;
@@ -553,6 +561,7 @@ service RuntimeService {
   rpc GetProjectWriteStatus(ProjectWriteLookup) returns (ProjectConfigurationReply);
   rpc CancelProjectWrite(ProjectWriteLookup) returns (ProjectConfigurationReply);
   rpc TransferProjectResource(ProjectResourceTransferRequest) returns (ProjectConfigurationReply);
+  rpc RetryProjectResourceRecovery(RetryProjectResourceRecoveryRequest) returns (ProjectConfigurationReply);
   rpc GetOperatorDebugCapabilities(OperatorDebugRequest) returns (OperatorDebugReply);
   rpc OpenOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);
   rpc GetOperatorDebugSession(OperatorDebugRequest) returns (OperatorDebugReply);

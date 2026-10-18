@@ -111,6 +111,66 @@ class ConfigurationCoordinator:
             if key != self.active and entry["expectedRevision"] < self.current["documentRevision"]:
                 del self.requests[key]
 
+    def startRecovery(self, request, admission):
+        request = dict(request, operation='resourceRecovery')
+        requestId = request['requestId']
+        if not requestId or len(requestId) > 160:
+            raise ConfigurationError('E_CONFIG_REQUEST_ID', 'a bounded unique request ID is required')
+        fingerprint = digest(request)
+        with self.lock:
+            existing = self.requests.get(requestId)
+            if existing:
+                if existing['fingerprint'] != fingerprint:
+                    raise ConfigurationError('E_CONFIG_REQUEST_MISMATCH', 'request ID content changed')
+                return deepcopy(existing['status'])
+            if self.store.receipt(requestId):
+                raise ConfigurationError('E_CONFIG_REQUEST_MISMATCH', 'request ID belongs to a configuration write')
+            self._check(request)
+            if self.active:
+                raise ConfigurationError('E_CONFIG_WRITER_BUSY', 'another configuration operation is pending')
+            admission()
+            self._retireRequests()
+            if len(self.requests) >= REQUEST_WINDOW:
+                raise ConfigurationError('E_CONFIG_CAPACITY', 'recovery request window is full; no revision was changed')
+            entry = dict(fingerprint=fingerprint, expectedRevision=request['expectedRevision'], cancelled=Event(),
+                         status=dict(state='VALIDATING', requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
+            self.requests[requestId] = entry
+            self.active = requestId
+            self.thread = Thread(target=self._recover, args=(request, entry, admission), name='resource-recovery', daemon=True)
+            self.thread.start()
+            return deepcopy(entry['status'])
+
+    def _recover(self, request, entry, admission):
+        prepared = None
+        installed = False
+        try:
+            prepared = self.prepare(deepcopy(self.current['payload']), entry['cancelled'])
+            with self.lock:
+                self._check(request)
+                admission()
+                if entry['cancelled'].is_set():
+                    raise ConfigurationError('E_CONFIG_CANCELLED', 'resource recovery cancelled')
+                installed = True
+                self.publish(prepared, self.current)
+            self.discard(prepared)
+            prepared = None
+            entry['status'].update(state='RECOVERED', documentRevision=self.current['documentRevision'],
+                                  executionRevision=self.current['executionRevision'], message='Runtime resources ready; no jobs or connections started')
+        except Exception as error:
+            if installed:
+                self.publicationError = str(error)
+            entry['status'].update(state='CANCELLED' if entry['cancelled'].is_set() else 'FAILED',
+                                  code=getattr(error, 'code', 'E_CONFIG_RECOVERY'), message=str(error))
+        finally:
+            try:
+                if prepared is not None:
+                    self.discard(prepared)
+            except Exception as error:
+                self.publicationError = str(error)
+                entry['status'].update(state='FAILED', cleanupError=str(error))
+            with self.lock:
+                self.active = None
+
     def _write(self, request, candidate, entry):
         prepared = None
         transition = None

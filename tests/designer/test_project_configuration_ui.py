@@ -169,7 +169,8 @@ def testResourceUploadRequiresConfirmationAndDoesNotPublishDraft(ownedDesignerWi
     import hashlib
     window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
     uploads = []
-    def upload(snapshot, payload, root, cancelled):
+    def upload(snapshot, payload, root, cancelled, *, repairConfirmed=False):
+        assert repairConfirmed
         uploads.append((snapshot, payload, root, cancelled))
         return dict(uploaded=[dict(resourceId="model", state="READY")])
     dialog.client.uploadProjectResources = upload

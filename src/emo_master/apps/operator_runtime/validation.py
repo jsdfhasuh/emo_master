@@ -181,8 +181,9 @@ def runValidationCommand(arguments) -> int:
         if phase != "continuous" or time.monotonic() >= nextReport:
             atomicJson(args.result_json, dict(status="running", phase=phase, **values))
             nextReport = time.monotonic() + .5
+    from emo_master.apps.targeted_repair_selftest import checkTargetedRepairs
     for name, check in (("builtins", _checkBuiltins), ("migrations", _checkMigrations),
-                        ("onnxruntime", _checkOnnxRuntime)):
+                        ("onnxruntime", _checkOnnxRuntime), ("targetedRepairs", checkTargetedRepairs)):
         report(name)
         try:
             checks[name] = dict(status="ok", **check())

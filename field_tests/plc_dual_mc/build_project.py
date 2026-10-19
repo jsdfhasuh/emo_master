@@ -37,6 +37,8 @@ def designer_metadata(payload):
                 manifest = registry[node["operatorId"]].manifest
                 inputs, outputs = manifest.inputPorts, manifest.outputPorts
                 node["paramSchema"] = deepcopy(manifest.paramSchema)
+                # This reproducible fixture intentionally remains schema 2.4.
+                node["paramSchema"].pop("xDeviceActionFields", None)
             elif kind == "subflow":
                 target = payload["workflows"][node["targetWorkflowId"]]
                 inputs, outputs = target["inputs"], target["outputs"]

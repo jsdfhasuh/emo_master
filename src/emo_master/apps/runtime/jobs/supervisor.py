@@ -10,6 +10,7 @@ from dataclasses import replace
 from typing import Any, Callable, cast
 
 from emo_master.apps.runtime.events.event_store import EventStore
+from emo_master.apps.runtime.jobs.cancellation import JobCancellation
 from emo_master.apps.runtime.jobs.event_bridge import EventBridge
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
 from emo_master.apps.runtime.jobs.models import JobProcessSpec, JobStatus, nowMs
@@ -81,7 +82,7 @@ class JobSupervisor:
             if spec.jobId in self._handles:
                 raise ValueError(f"duplicate job id: {spec.jobId}")
 
-            cancelEvent = self._context.Event()
+            cancelEvent = JobCancellation(self._context)
             # Continuous diagnostics must backpressure the producer, not accumulate
             # an unbounded feeder backlog that outlives cancellation and retention.
             eventQueue = self._context.Queue(maxsize=64)

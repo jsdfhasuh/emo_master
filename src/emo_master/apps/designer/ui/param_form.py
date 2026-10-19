@@ -164,9 +164,11 @@ def getFieldDefinitions(paramSchema: dict[str, object]) -> list[FieldDefinition]
 
 
 try:
-    from PySide2.QtCore import Qt, Signal, QRegularExpression
-    from PySide2.QtGui import QRegularExpressionValidator
+    from PySide2.QtCore import QEvent, QPointF, Qt, Signal, QRegularExpression
+    from PySide2.QtGui import QRegularExpressionValidator, QWheelEvent
     from PySide2.QtWidgets import (
+        QAbstractSpinBox,
+        QApplication,
         QCheckBox,
         QComboBox,
         QDoubleSpinBox,
@@ -177,6 +179,7 @@ try:
         QLabel,
         QLineEdit,
         QPushButton,
+        QScrollArea,
         QSpinBox,
         QTextEdit,
         QWidget,
@@ -313,6 +316,24 @@ try:
             self._suppliedFields: set[str] = set()
             self._workflowOptions: list[str] = []
 
+        def eventFilter(self, control, event):
+            if event.type() != QEvent.Wheel:
+                return super().eventFilter(control, event)
+            # Focus often remains after a deliberate edit. Wheel gestures
+            # always scroll the containing form; clicks, keys and popup lists
+            # remain the explicit ways to change a parameter.
+            parent = control.parentWidget()
+            while parent is not None and not isinstance(parent, QScrollArea):
+                parent = parent.parentWidget()
+            if parent is not None:
+                viewport = parent.viewport()
+                forwarded = QWheelEvent(QPointF(viewport.mapFromGlobal(event.globalPos())),
+                    event.globalPosF(), event.pixelDelta(), event.angleDelta(),
+                    event.buttons(), event.modifiers(), event.phase(), event.inverted(), event.source())
+                QApplication.sendEvent(viewport, forwarded)
+            event.accept()
+            return True  # Neither mutate the field nor propagate a second scroll.
+
         def setWorkflowOptions(self, options: list[str]) -> None:
             self._workflowOptions = [option for option in options if isinstance(option, str)]
             if self._rawSchema:
@@ -381,6 +402,12 @@ try:
             self._updateDependentFields()
             if all(f"case{i}Value" in self._controls for i in range(4)):
                 self._buildSwitchPreview()
+            # Include spin-box line edits, optional wrappers and nested forms.
+            # Do not filter combo popup viewports: their normal list scrolling
+            # and explicit selection must remain available.
+            for control in self.findChildren(QWidget):
+                if isinstance(control, (QAbstractSpinBox, QComboBox, QLineEdit)):
+                    control.installEventFilter(self)
 
         def _buildSwitchPreview(self):
             from .widgets import WrapLabel

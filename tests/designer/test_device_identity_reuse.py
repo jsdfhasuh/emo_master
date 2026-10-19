@@ -85,11 +85,12 @@ def testNodeWizardExplicitlyReusesWithoutOverwritingDefaults(ownedDesignerWindow
         candidate['defaults']['exposureUs'] = 12000
         class DefinitionDialog:
             Accepted = 1
+            Rejected = 0
             value = candidate
             def __init__(self, *args, **kwargs):
-                pass
+                self.beforeAccept = kwargs['beforeAccept']
             def exec_(self):
-                return self.Accepted
+                return self.Accepted if self.beforeAccept(self.value) else self.Rejected
         monkeypatch.setattr(module, 'DeviceDefinitionDialog', DefinitionDialog)
         monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes if confirm else QMessageBox.No)
         next(button for button in dialog.findChildren(QPushButton) if button.text() == '新建设备').click()

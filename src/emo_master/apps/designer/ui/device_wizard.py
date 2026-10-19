@@ -3,7 +3,7 @@ from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 from uuid import uuid4
 
-from PySide2.QtCore import QTimer
+from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit,
     QDialogButtonBox, QTabWidget, QScrollArea, QWidget, QComboBox, QPushButton, QMessageBox,
@@ -16,13 +16,28 @@ from emo_master.apps.designer.ui.param_form import SchemaParamForm
 from emo_master.core.project.devices import DeviceDefinition
 
 
-def configurationForm(schema, values):
+def configurationSchema(schema):
+    """Add form-only hints without changing the device declaration or enum data."""
     schema = deepcopy(schema)
+    policyLabels = {
+        'connect': {'on_first_use': '首次使用时连接', 'on_project_open': '打开工程时连接',
+                    'on_project_run': '运行工程时连接', 'manual': '手动连接'},
+        'release': {'on_project_close': '关闭工程时释放', 'when_unused': '不再使用时释放',
+                    'idle_timeout': '空闲超时后释放', 'manual': '手动释放'},
+    }
     for key, spec in schema.get("properties", {}).items():
         if spec.get("xUnit"):
             spec["title"] = f"{spec.get('title', key)} ({spec['xUnit']})"
         if key not in schema.get("required", []) and "default" not in spec:
             spec["xOptionalPresence"] = True
+        if key in policyLabels:
+            labels = {value: label for value, label in policyLabels[key].items() if value in spec.get('enum', [])}
+            spec['xOptionLabels'] = {**labels, **spec.get('xOptionLabels', {})}
+    return schema
+
+
+def configurationForm(schema, values):
+    schema = configurationSchema(schema)
     form = SchemaParamForm()
     form.setSchema(schema, values)
     for key, spec in schema.get("properties", {}).items():
@@ -38,12 +53,55 @@ def scrollWidget(widget):
     return scroll
 
 
+def _showControlTab(tabs, control):
+    if tabs is not None:
+        for index in range(tabs.count()):
+            page = tabs.widget(index)
+            if page is control or page.isAncestorOf(control):
+                tabs.setCurrentIndex(index)
+                break
+
+
+def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base=None):
+    """Validate editor fields before core validation, retaining existing metadata."""
+    name = nameControl.text().strip()
+    message = '设备名称不能为空' if not name else '设备名称不能超过 160 个字符' if len(name) > 160 else ''
+    nameControl.setAccessibleDescription(message)
+    nameControl.setStyleSheet('border: 1px solid #d93025;' if message else '')
+    if message:
+        _showControlTab(tabs, nameControl)
+        nameControl.setFocus(Qt.OtherFocusReason)
+        raise ValueError(message)
+    for form in forms.values():
+        message = form.validationMessage()
+        if message:
+            _showControlTab(tabs, form)
+            form.validationMessage()  # Focus the invalid control after revealing its tab.
+            raise ValueError(message)
+    payload = deepcopy(base) if base is not None else dict(
+        deviceTypeId=declaration.deviceTypeId, driverVersion=declaration.version)
+    payload.update(name=name, **{key: form.getValues() for key, form in forms.items()})
+    try:
+        return declaration.validateDefinition(DeviceDefinition.model_validate(payload)).model_dump()
+    except ValueError as error:
+        if str(error).startswith('when_unused requires on_first_use'):
+            message = '释放策略：选择“不再使用时释放”时，连接策略必须为“首次使用时连接”'
+            form = forms['policies']
+            _showControlTab(tabs, form)
+            form._showFieldError('release', message)
+            raise ValueError(message) from error
+        raise
+
+
 class DeviceDefinitionDialog(QDialog):
-    def __init__(self, declaration, parent=None, *, initial=None, client=None):
+    """Keep the draft open when beforeAccept returns False or a commit fails."""
+
+    def __init__(self, declaration, parent=None, *, initial=None, client=None, beforeAccept=None):
         super().__init__(parent)
         self.declaration = declaration
         self.value = None
         self.client = client
+        self.beforeAccept = beforeAccept
         self.setupPool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='device-setup')
         self.setupPending = None
         self.setupTimer = QTimer(self)
@@ -55,13 +113,13 @@ class DeviceDefinitionDialog(QDialog):
         names = QFormLayout()
         names.addRow("设备名称", self.name)
         layout.addLayout(names)
-        tabs = QTabWidget()
+        self.tabs = QTabWidget()
         self.forms = {}
         for key, title in (("connection", "连接"), ("defaults", "工作参数"), ("policies", "策略")):
             schema = getattr(declaration, key + "Schema")
             self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})))
-            tabs.addTab(scrollWidget(self.forms[key]), title)
-        layout.addWidget(tabs)
+            self.tabs.addTab(scrollWidget(self.forms[key]), title)
+        layout.addWidget(self.tabs)
         self.error = QLabel()
         self.error.setWordWrap(True)
         layout.addWidget(self.error)
@@ -83,9 +141,7 @@ class DeviceDefinitionDialog(QDialog):
         layout.addWidget(buttons)
 
     def definition(self):
-        definition = DeviceDefinition(name=self.name.text().strip(), deviceTypeId=self.declaration.deviceTypeId,
-            driverVersion=self.declaration.version, **{key: form.getValues() for key, form in self.forms.items()})
-        return self.declaration.validateDefinition(definition).model_dump()
+        return validateDeviceDefinition(self.declaration, self.name, self.forms, self.tabs)
 
     def discover(self):
         if self.setupPending is None:
@@ -145,11 +201,18 @@ class DeviceDefinitionDialog(QDialog):
         super().done(result)
 
     def accept(self):
+        if self.setupPending is not None:
+            self.error.setText('等待连接测试或发现请求返回后可创建')
+            return
+        self.error.clear()
         try:
-            self.value = self.definition()
-        except ValueError as error:
+            value = self.definition()
+            if self.beforeAccept is not None and self.beforeAccept(value) is False:
+                return
+        except (ValueError, KeyError, OSError) as error:
             self.error.setText(str(error))
             return
+        self.value = value
         super().accept()
 
 
@@ -457,30 +520,38 @@ class DeviceNodeDialog(QDialog):
             initial = {group: {key: value for key, value in legacy.items()
                                if key in getattr(declaration, group + "Schema")["properties"]}
                        for group in ("connection", "defaults")}
-        dialog = DeviceDefinitionDialog(declaration, self, initial=initial, client=self.c.window.runtimeClient)
-        if dialog.exec_() == dialog.Accepted:
+        selected = None
+
+        def chooseDefinition(value):
+            nonlocal selected
+            self._checkContext()
             from emo_master.core.project.device_identity import matchingDevices
             definitions = {**self.c.session.workflows.devices.get('definitions', {}), **self.newDefinitions}
-            matches = matchingDevices(dialog.value, definitions, declaration)
+            matches = matchingDevices(value, definitions, declaration)
             if matches:
                 if len(matches) != 1:
-                    self.error.setText('多个已有设备使用相同标识，请先处理重复定义：' + ', '.join(matches))
-                    return
+                    raise ValueError('多个已有设备使用相同标识，请先处理重复定义：' + ', '.join(matches))
                 key = matches[0]
                 label = f"{definitions[key]['name']} ({key})"
-                if QMessageBox.question(self, '复用已有设备',
+                if QMessageBox.question(dialog, '复用已有设备',
                         '相同设备标识已存在：' + label + '\n复用已有设备？刚输入的默认值和策略不会覆盖已有配置。',
-                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No) == QMessageBox.Yes:
-                    combo = self.slots[slot][0]
-                    if combo.findData(key) < 0:
-                        combo.addItem(label, key)
-                    combo.setCurrentIndex(combo.findData(key))
-                return
-            key = "device-" + uuid4().hex
-            self.newDefinitions[key] = dialog.value
+                        QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+                    return False
+                selected = (key, definitions[key], False)
+            else:
+                selected = ("device-" + uuid4().hex, value, True)
+            return True
+
+        dialog = DeviceDefinitionDialog(declaration, self, initial=initial, client=self.c.window.runtimeClient,
+                                        beforeAccept=chooseDefinition)
+        if dialog.exec_() == dialog.Accepted:
+            key, value, isNew = selected
+            if isNew:
+                self.newDefinitions[key] = value
             combo = self.slots[slot][0]
-            combo.addItem(f"{dialog.value['name']} ({key})", key)
-            combo.setCurrentIndex(combo.count() - 1)
+            if combo.findData(key) < 0:
+                combo.addItem(f"{value['name']} ({key})", key)
+            combo.setCurrentIndex(combo.findData(key))
 
     def _sources(self, slot):
         combo, layout = self.slots[slot]

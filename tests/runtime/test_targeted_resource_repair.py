@@ -19,6 +19,78 @@ def uploadCandidate(snapshot, root, names=('first', 'second', 'third'), size=32)
     return candidate
 
 
+@pytest.mark.parametrize('size', [32, 600 * 1024])
+def testUploadCancelledAfterFinalChunkDoesNotCommit(normalUploadRuntime, monkeypatch, size):
+    from threading import Event
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent, names=('first',), size=size)
+    disk = project.read_bytes()
+    original, calls = client.transferProjectResource, []
+    cancelled = Event()
+
+    def transfer(snap, tid, action, **kwargs):
+        calls.append((tid, action))
+        result = original(snap, tid, action, **kwargs)
+        if action == 'CHUNK' and kwargs['offset'] + len(kwargs['data']) == size:
+            # Runtime accepted the last bytes, but the client has not received
+            # the reply yet. Closing the dialog here requests cancellation.
+            assert result['state'] == 'PENDING' and result['offset'] == size
+            cancelled.set()
+        return result
+
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', transfer)
+        try:
+            with pytest.raises(RuntimeClientError) as caught:
+                client.uploadProjectResources(snapshot, candidate, project.parent, cancelled)
+        finally:
+            print('CANCEL_AFTER_FINAL_CHUNK', size, 'CALLS', calls)
+    assert caught.value.code == 'E_CONFIG_CANCELLED'
+    result = caught.value.resourceResult
+    tid = calls[0][0]
+    assert result['aborted'] and not result['uploaded'] and not result['pending']
+    assert result['errors'][0]['stage'] == 'CHECK_CANCELLED'
+    assert [item['requestTransferId'] for item in result['cancelled']] == [tid]
+    assert [action for _, action in calls] == ['LOOKUP', 'BEGIN'] + ['CHUNK'] * (1 if size == 32 else 2) + ['CANCEL']
+    assert all(transferId == tid for transferId, _ in calls)
+    assert runtime.projectResourceTransfers._read(tid)[3] == 'CANCELLED'
+    assert not client.pendingResourceTransfers
+    # A later explicit upload can proceed; cancellation never commits for us.
+    assert client.uploadProjectResources(snapshot, candidate, project.parent)['uploaded'][0]['state'] == 'READY'
+    assert client.getOnlineProjectSnapshot() == snapshot and not runtime.jobRepository.all()
+    assert project.read_bytes() == disk
+
+
+@pytest.mark.parametrize('lostReply', [False, True])
+def testUploadCancelledAfterCommitKeepsOutcomeWithoutReplay(normalUploadRuntime, monkeypatch, lostReply):
+    from threading import Event
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent, names=('first',))
+    original, calls = client.transferProjectResource, []
+    cancelled = Event()
+
+    def transfer(snap, tid, action, **kwargs):
+        calls.append((tid, action))
+        result = original(snap, tid, action, **kwargs)
+        if action == 'COMMIT':
+            cancelled.set()
+            if lostReply:
+                raise TimeoutError('commit reply lost after cancellation')
+        return result
+
+    monkeypatch.setattr(client, 'transferProjectResource', transfer)
+    result = client.uploadProjectResources(snapshot, candidate, project.parent, cancelled)
+    assert cancelled.is_set() and len(result['uploaded']) == 1
+    assert not result['cancelled'] and not result['pending'] and not result['errors']
+    assert [action for _, action in calls] == ['LOOKUP', 'BEGIN', 'CHUNK', 'COMMIT'] + (['STATUS'] if lostReply else [])
+    assert all(tid == calls[0][0] for tid, _ in calls)
+    assert not client.pendingResourceTransfers
+    assert client.getOnlineProjectSnapshot() == snapshot and not runtime.jobRepository.all()
+
+
 def testUploadChunkDisconnectRetainsRealBeginIdentity(normalUploadRuntime, monkeypatch):
     from emo_master.apps.designer.services.runtime_client import RuntimeClientError
     runtime, client, project = normalUploadRuntime

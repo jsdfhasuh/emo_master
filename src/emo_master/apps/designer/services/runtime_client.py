@@ -571,6 +571,11 @@ class RuntimeClient:
                         stage = 'CHUNK'
                         self.transferProjectResource(snapshot, transferId, "CHUNK", offset=offset, data=chunk)
                         offset += len(chunk)
+                # Cancellation can arrive while the final CHUNK reply is in
+                # flight. Honor it before starting a new COMMIT at EOF.
+                stage = 'CHECK_CANCELLED'
+                if cancelled is not None and cancelled.is_set():
+                    raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
                 stage = 'COMMIT'
                 committing = True
                 try:

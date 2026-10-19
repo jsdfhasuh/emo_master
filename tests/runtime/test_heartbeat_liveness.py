@@ -253,9 +253,10 @@ def testFailedCellAllocationClosesExistingQueue(monkeypatch) -> None:
                     closed.append(True)
             return ClosableQueue()
 
-        def Value(self, *args, **kwargs):
-            raise OSError("shared allocation failed")
+    def failedCell(_context):
+        raise OSError("shared allocation failed")
 
+    monkeypatch.setattr(supervisorModule, "HeartbeatCell", failedCell)
     supervisor._context = FailingContext(process)
     with pytest.raises(OSError, match="shared allocation failed"):
         supervisor.startJob(JobProcessSpec("job-stop", "project.json", "main"))

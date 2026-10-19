@@ -134,6 +134,7 @@ class ProjectConfigurationDialog(QDialog):
 
     def _controls(self):
         idle = self.pending is None and self._valid()
+        uploading = self.pending is not None and self.kind == 'upload' and self._valid()
         ready = idle and self.snapshot is not None and not self.writePending
         writable = ready
         self.refreshButton.setEnabled(idle and not self.writePending)
@@ -145,7 +146,9 @@ class ProjectConfigurationDialog(QDialog):
         self.recoverButton.setEnabled(ready and not uncertain and self.snapshot.get('resourceRecoveryAvailable', False))
         self.queryButton.setEnabled(idle and (bool(self.requestId) or uncertain))
         self.queryButton.setText('查询上传结果' if uncertain else '查询写入结果')
-        self.cancelUploadButton.setEnabled(ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers'))
+        self.cancelUploadButton.setEnabled(
+            (uploading and not self.uploadCancelled.is_set())
+            or (ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers')))
         self.cancelButton.setEnabled(idle and self.writePending)
         self.table.setEnabled(ready)
         self.replacementPolicy.setEnabled(ready)
@@ -301,7 +304,7 @@ class ProjectConfigurationDialog(QDialog):
 
     def query(self):
         if getattr(self.client, 'pendingResourceTransfers', {}):
-            self._submit('upload', self.client.reconcileProjectResources)
+            self._submit('uploadQuery', self.client.reconcileProjectResources)
             return
         if self.requestId:
             self._submit("write", self.client.getProjectWriteStatus, self.requestId)
@@ -309,12 +312,18 @@ class ProjectConfigurationDialog(QDialog):
     def cancelUploads(self):
         if not self.cancelUploadButton.isEnabled() or not self._valid():
             return
+        if self.pending is not None and self.kind == 'upload':
+            self.uploadCancelled.set()
+            self.status.setText('已请求取消上传；等待当前请求返回后停止后续上传。'
+                                '已进入提交的资源按实际结果核对；在线配置未改变。')
+            self._controls()
+            return
         transfers = tuple(getattr(self.client, 'pendingResourceTransfers', {}))
         details = '\n'.join(transfers)
         if QMessageBox.question(self, '取消上传', '取消以下待核对的原上传请求？已被在线配置引用的资源不会删除。\n' + details,
                                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
-        self._submit('upload', self.client.cancelProjectResourceTransfers, transfers)
+        self._submit('uploadCancel', self.client.cancelProjectResourceTransfers, transfers)
 
     def _showResourceResults(self, result):
         remaining = getattr(self.client, 'pendingResourceTransfers', {})
@@ -366,6 +375,7 @@ class ProjectConfigurationDialog(QDialog):
                 return
             self.uploadCancelled.clear()
             snapshot = deepcopy(self.snapshot)
+            self.status.setText('正在上传候选资源；可取消本批上传，在线配置未改变。')
             self._submit("upload", lambda: self.client.uploadProjectResources(snapshot, candidate,
                          self.c.directory, self.uploadCancelled, repairConfirmed=True))
         except Exception as error:
@@ -385,7 +395,7 @@ class ProjectConfigurationDialog(QDialog):
             result = future.result()
             if self.kind == "snapshot":
                 self._showSnapshot(result)
-            elif self.kind == "upload":
+            elif self.kind in {'upload', 'uploadQuery', 'uploadCancel'}:
                 self._showResourceResults(result)
             elif self.kind in {"validate", 'prewrite'}:
                 prewrite = self.kind == 'prewrite'

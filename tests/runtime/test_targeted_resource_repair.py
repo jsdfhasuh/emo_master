@@ -7,6 +7,141 @@ from tests.runtime.test_review_resource_lifecycle import resourceProject, INPUT
 from emo_master.core.project.models import ProjectDocument
 
 
+@pytest.fixture
+def normalUploadRuntime(tmp_path):
+    project, _source = resourceProject(tmp_path / 'source')
+    runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(project)), None).ok
+    try:
+        yield runtime, RuntimeClient(runtimeService=runtime), project
+    finally:
+        runtime.close()
+
+
+def pendingUpload(client, snapshot, transferId, state='PENDING'):
+    item = snapshot['payload']['resources']['items']['image']
+    client.transferProjectResource(snapshot, transferId, 'BEGIN', resource=item)
+    client.transferProjectResource(snapshot, transferId, 'CHUNK', data=INPUT)
+    if state == 'READY':
+        client.transferProjectResource(snapshot, transferId, 'COMMIT')
+    elif state == 'CANCELLED':
+        client.transferProjectResource(snapshot, transferId, 'CANCEL')
+    if not hasattr(client, 'pendingResourceTransfers'):
+        client.pendingResourceTransfers = {}
+    client.pendingResourceTransfers[transferId] = (snapshot, 'image')
+
+
+@pytest.mark.parametrize('state,category', [('READY', 'uploaded'), ('CANCELLED', 'cancelled'), ('PENDING', 'pending')])
+def testNormalUploadQueryClassifiesTerminalAndPending(normalUploadRuntime, state, category):
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    pendingUpload(client, snapshot, 'original-request', state)
+    result = client.reconcileProjectResources()
+    assert len(result[category]) == 1 and not result['errors']
+    assert result[category][0]['requestTransferId'] == 'original-request'
+    assert bool(client.pendingResourceTransfers) == (state == 'PENDING')
+    if state != 'PENDING':
+        assert client.reconcileProjectResources()['uploaded'] == []
+        assert client.uploadProjectResources(snapshot, snapshot['payload'], project.parent)['uploaded']
+    assert client.getOnlineProjectSnapshot() == snapshot
+    assert not runtime.jobRepository.all()
+
+
+def testNormalUploadMixedQueryKeepsConfirmedResultsDespiteAnotherError(normalUploadRuntime, monkeypatch):
+    _runtime, client, _project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    for name, state in [('unreachable', 'PENDING'), ('ready', 'READY'), ('cancelled', 'CANCELLED'), ('waiting', 'PENDING')]:
+        pendingUpload(client, snapshot, name, state)
+    original = client.transferProjectResource
+    def query(snap, transferId, action, **kwargs):
+        assert action == 'STATUS'
+        if transferId == 'unreachable':
+            raise TimeoutError('temporary disconnection')
+        return original(snap, transferId, action, **kwargs)
+    monkeypatch.setattr(client, 'transferProjectResource', query)
+    result = client.reconcileProjectResources()
+    assert [v['requestTransferId'] for v in result['uploaded']] == ['ready']
+    assert [v['requestTransferId'] for v in result['cancelled']] == ['cancelled']
+    assert [v['requestTransferId'] for v in result['pending']] == ['waiting']
+    assert result['errors'][0]['message'] == 'temporary disconnection'
+    assert set(client.pendingResourceTransfers) == {'unreachable', 'waiting'}
+
+
+@pytest.mark.parametrize('action', ['query', 'cancel'])
+def testNormalUploadUnavailableActionKeepsIdentityAndCanBeRetried(normalUploadRuntime, monkeypatch, action):
+    _runtime, client, _project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    pendingUpload(client, snapshot, 'original')
+    saved = dict(client.pendingResourceTransfers)
+    original = client.transferProjectResource
+    calls = []
+    def unavailable(snap, transferId, operation, **kwargs):
+        calls.append((snap, transferId, operation))
+        if operation == 'CANCEL':
+            original(snap, transferId, operation, **kwargs)
+        raise TimeoutError('lost response')
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', unavailable)
+        result = (client.reconcileProjectResources() if action == 'query'
+                  else client.cancelProjectResourceTransfers(['original']))
+    assert result['errors'] and not result['uploaded'] and not result['cancelled']
+    assert client.pendingResourceTransfers == saved
+    assert calls == [(snapshot, 'original', 'STATUS' if action == 'query' else 'CANCEL')]
+    result = client.reconcileProjectResources()
+    assert result['pending' if action == 'query' else 'cancelled']
+
+
+def testNormalUploadExplicitCancelHonorsSelectionIdentityAndOnlineProtection(normalUploadRuntime):
+    runtime, client, _project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    pendingUpload(client, snapshot, 'cancel-this')
+    pendingUpload(client, snapshot, 'keep-this')
+    online = client.transferProjectResource(snapshot, 'lookup', 'LOOKUP',
+        resource=snapshot['payload']['resources']['items']['image'])['transferId']
+    client.pendingResourceTransfers[online] = (snapshot, 'image')
+    result = client.cancelProjectResourceTransfers(['cancel-this', online])
+    assert [v['requestTransferId'] for v in result['cancelled']] == ['cancel-this']
+    assert result['errors'][0]['code'] == 'E_RESOURCE_TRANSFER_READY'
+    assert set(client.pendingResourceTransfers) == {'keep-this', online}
+    client.pendingResourceTransfers['keep-this'] = (dict(snapshot, runtimeInstanceId='stale'), 'image')
+    result = client.cancelProjectResourceTransfers(['keep-this'])
+    assert result['errors'][0]['code'] == 'E_CONFIG_INSTANCE'
+    assert 'keep-this' in client.pendingResourceTransfers
+    assert client.transferProjectResource(snapshot, 'keep-this', 'STATUS')['state'] == 'PENDING'
+    assert client.getOnlineProjectSnapshot() == snapshot and not runtime.jobRepository.all()
+
+
+@pytest.mark.parametrize('state', ['PENDING', 'CANCELLED'])
+def testUploadExceptionUsesSameStateClassificationWithoutImplicitCancel(normalUploadRuntime, monkeypatch, state):
+    from copy import deepcopy
+    _runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = deepcopy(snapshot['payload'])
+    candidate['resources']['items']['image']['path'] = 'replacement.png'
+    (project.parent / 'replacement.png').write_bytes(INPUT)
+    original, calls = client.transferProjectResource, []
+    def interrupted(snap, transferId, action, **kwargs):
+        calls.append((transferId, action))
+        if action == 'COMMIT':
+            if state == 'CANCELLED':
+                original(snap, transferId, 'CANCEL')
+            raise TimeoutError('commit unavailable')
+        return original(snap, transferId, action, **kwargs)
+    monkeypatch.setattr(client, 'transferProjectResource', interrupted)
+    result = client.uploadProjectResources(snapshot, candidate, project.parent)
+    assert result['pending' if state == 'PENDING' else 'cancelled']
+    assert not result['uploaded']
+    assert [action for _, action in calls] == ['LOOKUP', 'BEGIN', 'CHUNK', 'COMMIT', 'STATUS']
+    assert bool(client.pendingResourceTransfers) == (state == 'PENDING')
+    monkeypatch.setattr(client, 'transferProjectResource', original)
+    if state == 'PENDING':
+        assert client.cancelProjectResourceTransfers(list(client.pendingResourceTransfers))['cancelled']
+    result = client.uploadProjectResources(snapshot, candidate, project.parent)
+    assert result['uploaded'][0]['state'] == 'READY'
+    assert result['uploaded'][0]['requestTransferId'] != calls[0][0]
+    assert client.getOnlineProjectSnapshot() == snapshot
+
+
 def brokenRuntime(tmp_path, missing=False):
     project, source = resourceProject(tmp_path / 'source')
     runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')

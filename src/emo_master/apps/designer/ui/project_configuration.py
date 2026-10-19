@@ -60,6 +60,9 @@ class ProjectConfigurationDialog(QDialog):
         from emo_master.apps.designer.ui.icon_map import icon
         self.uploadButton.setIcon(icon("upload"))
         self.uploadButton.clicked.connect(self.uploadResources)
+        self.cancelUploadButton = QPushButton('取消上传')
+        self.cancelUploadButton.setIcon(icon('x'))
+        self.cancelUploadButton.clicked.connect(self.cancelUploads)
         self.recoverButton = QPushButton('重试资源恢复')
         self.recoverButton.setIcon(icon('refresh'))
         self.recoverButton.clicked.connect(self.retryRecovery)
@@ -67,7 +70,8 @@ class ProjectConfigurationDialog(QDialog):
             row.addWidget(button)
         layout.addLayout(row)
         row = QHBoxLayout()
-        for button in (self.uploadButton, self.recoverButton, self.queryButton, self.cancelButton, self.graphButton, self.closeButton):
+        for button in (self.uploadButton, self.cancelUploadButton, self.recoverButton, self.queryButton,
+                       self.cancelButton, self.graphButton, self.closeButton):
             row.addWidget(button)
         layout.addLayout(row)
         self.runButton = QPushButton("运行在线版本") if allowRun else None
@@ -132,6 +136,8 @@ class ProjectConfigurationDialog(QDialog):
         self.uploadButton.setEnabled(ready and not uncertain and hasattr(self.client, "uploadProjectResources"))
         self.recoverButton.setEnabled(ready and not uncertain and self.snapshot.get('resourceRecoveryAvailable', False))
         self.queryButton.setEnabled(idle and (bool(self.requestId) or uncertain))
+        self.queryButton.setText('查询上传结果' if uncertain else '查询写入结果')
+        self.cancelUploadButton.setEnabled(ready and uncertain and hasattr(self.client, 'cancelProjectResourceTransfers'))
         self.cancelButton.setEnabled(idle and self.writePending)
         self.table.setEnabled(ready)
         self.replacementPolicy.setEnabled(ready)
@@ -229,6 +235,30 @@ class ProjectConfigurationDialog(QDialog):
         if self.requestId:
             self._submit("write", self.client.getProjectWriteStatus, self.requestId)
 
+    def cancelUploads(self):
+        if not self.cancelUploadButton.isEnabled() or not self._valid():
+            return
+        transfers = tuple(getattr(self.client, 'pendingResourceTransfers', {}))
+        details = '\n'.join(transfers)
+        if QMessageBox.question(self, '取消上传', '取消以下待核对的原上传请求？已被在线配置引用的资源不会删除。\n' + details,
+                                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+        self._submit('upload', self.client.cancelProjectResourceTransfers, transfers)
+
+    def _showResourceResults(self, result):
+        remaining = getattr(self.client, 'pendingResourceTransfers', {})
+        text = (f"完成 {len(result.get('uploaded', []))} 项，取消 {len(result.get('cancelled', []))} 项，"
+                f"仍待核对 {len(remaining)} 项；在线配置未改变。")
+        if result.get('cancelled'):
+            text += ' 原上传已取消；未自动重传。'
+        if remaining:
+            text += ' 原请求：' + '、'.join(remaining) + '；可继续查询或取消上传。'
+        if result.get('errors'):
+            text += '\n' + '\n'.join(f"{v['requestTransferId']}：{v['code']}；{v['message']}" for v in result['errors'])
+        if self.snapshot and self.snapshot.get('resourceRecoveryAvailable'):
+            text += ' 资源副本完成后仍需单独重试资源恢复。'
+        self.status.setText(text)
+
     def retryRecovery(self):
         if not self.recoverButton.isEnabled():
             return
@@ -281,7 +311,7 @@ class ProjectConfigurationDialog(QDialog):
             if self.kind == "snapshot":
                 self._showSnapshot(result)
             elif self.kind == "upload":
-                self.status.setText(f"{len(result['uploaded'])} 项资源副本上传／修复并校验完成；在线配置未改变。恢复未完成时请点击重试资源恢复。")
+                self._showResourceResults(result)
             elif self.kind == "validate":
                 details = []
                 if not result.get("cycleSafe", True) and result.get("affectedJobs"):
@@ -306,11 +336,15 @@ class ProjectConfigurationDialog(QDialog):
                 elif self.writePending:
                     QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)
         except Exception as error:
+            resourceResult = getattr(error, 'resourceResult', None)
             if getattr(error, "code", "") in {"E_CONFIG_CONFLICT", "E_CONFIG_INSTANCE", "E_CONFIG_WRITER_BUSY",
                     "E_CONFIG_REQUEST_ID", "E_CONFIG_REQUEST_MISMATCH", "E_CONFIG_CAPACITY", "E_CONFIG_INVALID",
                     "E_CONFIG_LIMIT", "E_RUNTIME_CLOSING", "E_CONFIG_NOT_READY"}:
                 self.writePending = False
-            self.status.setText(str(error) + (f"；请求 {self.requestId}，请查询结果；未自动重试" if self.writePending else ""))
+            if resourceResult is not None:
+                self._showResourceResults(resourceResult)
+            else:
+                self.status.setText(str(error) + (f"；请求 {self.requestId}，请查询结果；未自动重试" if self.writePending else ""))
         self._controls()
 
     def readBack(self):

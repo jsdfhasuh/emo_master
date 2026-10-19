@@ -172,6 +172,7 @@ message CameraDiagnosticRequest {
   string action = 7;
   int64 sequence = 8;
   bool confirmed = 9;
+  string changes_json = 10;
 }
 message CameraDiagnosticReply {
   bool ok = 1;

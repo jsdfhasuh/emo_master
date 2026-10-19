@@ -27,13 +27,16 @@ class WorkspaceChrome(QObject):
             toolbar.removeAction(action)
         self.workspaceActions = []
         group = QActionGroup(self)
-        for text, command in [('流程设计', coordinator.showFlow), ('页面设计', coordinator.showPages),
-                              ('设备管理', coordinator.showDevices)]:
+        for text, command in [('流程设计', coordinator.showFlow), ('页面设计', coordinator.showPages)]:
             action = QAction(text, self)
             action.setCheckable(True)
             group.addAction(action)
             action.triggered.connect(command)
             self.workspaceActions.append(action)
+        self.deviceAction = self.action('设备管理', coordinator.showDevices)
+        w.menuBar().addAction(self.deviceAction)
+        self.runtimeConnectionAction = self.action('连接 Runtime…', coordinator.connectRuntime)
+        self.menus['文件'].addAction(self.runtimeConnectionAction)
         self.selector = WorkspaceSwitch(self.workspaceActions, toolbar)
         toolbar.addWidget(self.selector)
         toolbar.addSeparator()
@@ -222,7 +225,7 @@ class WorkspaceChrome(QObject):
     def update(self):
         pages = self.c.pageActive()
         flow = self.c.flowActive()
-        index = 0 if flow else 1 if pages else 2
+        index = 1 if pages else 0
         self.testStatus.setVisible(flow and self.c.preview.backend is not None)
         self.workspaceActions[index].setChecked(True)
         self.selector.setCurrentIndex(index)
@@ -230,8 +233,8 @@ class WorkspaceChrome(QObject):
         for action in self.flowActions:
             action.setVisible(flow)
             action.setEnabled(flow)
-        self.window.deleteShortcut.setEnabled(flow)
-        self.window.backspaceDeleteShortcut.setEnabled(flow)
+        self.window.deleteShortcut.setEnabled(flow and not self.c.deviceActive())
+        self.window.backspaceDeleteShortcut.setEnabled(flow and not self.c.deviceActive())
         for action in self.pageActions:
             action.setVisible(pages)
             action.setEnabled(pages)
@@ -243,11 +246,6 @@ class WorkspaceChrome(QObject):
         for key, allowed in [('开始运行', self.window.loadedProjectPath is not None and runtime.canStart()),
                              ('停止运行', runtime.canStop())]:
             self.window._toolbarActions[key].setEnabled(flow and allowed)
-        # Production stop remains reachable from the device workspace.
-        if self.c.deviceActive() and runtime.canStop():
-            stop = self.window._toolbarActions['停止运行']
-            stop.setVisible(True)
-            stop.setEnabled(True)
         preview = self.c.preview
         self.testActions['开始测试'].setEnabled(flow and not preview.busy and preview.backend is None)
         self.testActions['停止测试'].setEnabled(flow and preview.backend is not None and not preview.busy)

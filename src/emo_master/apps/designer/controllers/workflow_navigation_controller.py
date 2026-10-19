@@ -38,7 +38,7 @@ class WorkflowNavigationController:
         w = self.window
         workflowId = workflowId or w.activeWorkflowId
         if workflowId == w.activeWorkflowId:
-            center = w.flowView.mapToScene(w.flowView.viewport().rect().center())
+            center = w.flowView.mapToScene(w.flowView.viewport().rect()).boundingRect().center()
             view = (w.flowView.getZoomFactor(), center.x(), center.y())
             nodeId = nodeId or w.flowScene.getSelectedNodeId()
         else:

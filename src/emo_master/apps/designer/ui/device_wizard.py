@@ -39,10 +39,15 @@ def scrollWidget(widget):
 
 
 class DeviceDefinitionDialog(QDialog):
-    def __init__(self, declaration, parent=None, *, initial=None):
+    def __init__(self, declaration, parent=None, *, initial=None, client=None):
         super().__init__(parent)
         self.declaration = declaration
         self.value = None
+        self.client = client
+        self.setupPool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='device-setup')
+        self.setupPending = None
+        self.setupTimer = QTimer(self)
+        self.setupTimer.timeout.connect(self.setupReady)
         self.setWindowTitle("新建设备 · " + declaration.displayName)
         self.resize(600, 540)
         layout = QVBoxLayout(self)
@@ -60,6 +65,16 @@ class DeviceDefinitionDialog(QDialog):
         self.error = QLabel()
         self.error.setWordWrap(True)
         layout.addWidget(self.error)
+        actions = QHBoxLayout()
+        self.discoverButton = QPushButton('发现设备')
+        self.discoverButton.clicked.connect(self.discover)
+        self.discoverButton.setEnabled(client is not None and declaration.deviceTypeId == 'device.camera.huaray_imv')
+        self.testButton = QPushButton('测试连接')
+        self.testButton.clicked.connect(self.testConnection)
+        self.testButton.setEnabled(client is not None)
+        actions.addWidget(self.discoverButton)
+        actions.addWidget(self.testButton)
+        layout.addLayout(actions)
         buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         buttons.button(QDialogButtonBox.Ok).setText("创建")
         buttons.button(QDialogButtonBox.Cancel).setText("取消")
@@ -67,12 +82,71 @@ class DeviceDefinitionDialog(QDialog):
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
 
+    def definition(self):
+        definition = DeviceDefinition(name=self.name.text().strip(), deviceTypeId=self.declaration.deviceTypeId,
+            driverVersion=self.declaration.version, **{key: form.getValues() for key, form in self.forms.items()})
+        return self.declaration.validateDefinition(definition).model_dump()
+
+    def discover(self):
+        if self.setupPending is None:
+            self.setupKind = 'discover'
+            self.setupPending = self.setupPool.submit(self.client.deviceNetworkCommand, '', '', 'info')
+            self.setupTimer.start(40)
+
+    def testConnection(self):
+        if self.setupPending is not None:
+            return
+        try:
+            definition = self.definition()
+        except ValueError as error:
+            self.error.setText(str(error))
+            return
+        if QMessageBox.question(self, '测试连接', '将实际连接设备，不拍照、不写 PLC，也不保存或发布配置。继续？',
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
+            return
+        def test():
+            info = self.client.deviceNetworkCommand('', '', 'info')
+            if info.get('deviceSetupVersion', 0) < 1:
+                raise ValueError('Runtime 不支持连接测试，请升级 Runtime')
+            return self.client.deviceNetworkCommand(info['projectId'], info['runtimeInstanceId'], 'test_connection',
+                payload=dict(confirmed=True, definition=definition))
+        self.setupKind = 'test'
+        self.setupPending = self.setupPool.submit(test)
+        self.setupTimer.start(40)
+        self.error.setText('正在测试连接')
+
+    def setupReady(self):
+        if self.setupPending is None or not self.setupPending.done():
+            return
+        future, self.setupPending = self.setupPending, None
+        self.setupTimer.stop()
+        try:
+            result = future.result()
+            if self.setupKind == 'discover':
+                from .device_network import DeviceNetworkDialog
+                dialog = DeviceNetworkDialog(self.client, result['projectId'], result['runtimeInstanceId'], '', {}, self,
+                                             discoveryOnly=True)
+                dialog.exec_()
+                if dialog.selectedCameraKey:
+                    values = self.forms['connection'].getValues()
+                    values['cameraKey'] = dialog.selectedCameraKey
+                    self.forms['connection'].setSchema(self.declaration.connectionSchema, values)
+            else:
+                self.error.setText('连接测试通过；未修改工程或在线配置；原有连接保持不变')
+        except Exception as error:
+            self.error.setText(str(error))
+
+    def done(self, result):
+        if self.setupPending is not None:
+            self.error.setText('等待连接测试或发现请求返回后可关闭')
+            return
+        self.setupTimer.stop()
+        self.setupPool.shutdown(wait=False, cancel_futures=True)
+        super().done(result)
+
     def accept(self):
         try:
-            definition = DeviceDefinition(name=self.name.text().strip(), deviceTypeId=self.declaration.deviceTypeId,
-                                          driverVersion=self.declaration.version,
-                                          **{key: form.getValues() for key, form in self.forms.items()})
-            self.value = self.declaration.validateDefinition(definition).model_dump()
+            self.value = self.definition()
         except ValueError as error:
             self.error.setText(str(error))
             return
@@ -83,6 +157,9 @@ class SourceEditor(QWidget):
     def __init__(self, declaration, definition, node, slot, variables):
         super().__init__()
         self.rows = {}
+        self.onlineLabels = {}
+        self.declaration, self.definition, self.node, self.slot = declaration, deepcopy(definition), deepcopy(node), slot
+        self.online = None
         layout = QFormLayout(self)
         layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
         for path in declaration.overridePaths:
@@ -118,6 +195,10 @@ class SourceEditor(QWidget):
             rowLayout.setContentsMargins(0, 0, 0, 0)
             for widget in (modes, label, form, variable, inputs):
                 rowLayout.addWidget(widget)
+            onlineLabel = QLabel('在线配置未读取')
+            onlineLabel.setWordWrap(True)
+            rowLayout.addWidget(onlineLabel)
+            self.onlineLabels[path] = onlineLabel
             def update(_index=0, modes=modes, label=label, form=form, variable=variable, inputs=inputs):
                 source = modes.currentData()
                 label.setVisible(source == "inherit")
@@ -140,6 +221,64 @@ class SourceEditor(QWidget):
             title.setFixedWidth(180)
             layout.addRow(title, row)
             self.rows[path] = (modes, form, variable, inputs)
+            for control in (modes, variable, inputs, *form._controls.values()):
+                for signal in ('textChanged', 'currentIndexChanged', 'toggled'):
+                    if hasattr(control, signal):
+                        getattr(control, signal).connect(lambda *_args, path=path: self._compareField(path))
+                        break
+
+    def setOnline(self, definition, node, *, revision, deviceId):
+        self.online = (definition, node, revision, deviceId)
+        for path in self.rows:
+            self._compareField(path)
+
+    def onlineUnavailable(self, message):
+        self.online = None
+        for label in self.onlineLabels.values():
+            label.setText(message)
+
+    @staticmethod
+    def _field(definition, node, slot, path):
+        binding = node.get('deviceValueBindings', {}).get(slot, {}).get(path)
+        if binding:
+            return binding['source'], binding.get('variableId') or binding.get('inputName')
+        override = node.get('deviceOverrides', {}).get(slot, {})
+        for part in path.split('.'):
+            if not isinstance(override, dict) or part not in override:
+                break
+            override = override[part]
+        else:
+            return 'constant', override
+        value = definition.get('defaults', {})
+        for part in path.split('.'):
+            if not isinstance(value, dict) or part not in value:
+                return 'inherit', None
+            value = value[part]
+        return 'inherit', value
+
+    def _compareField(self, path):
+        if self.online is None:
+            return
+        definition, node, revision, deviceId = self.online
+        label = self.onlineLabels[path]
+        if definition is None or node is None or self.slot not in node.get('deviceBindings', {}):
+            label.setText(f'在线 R{revision} · 此设备 / 节点绑定尚未配置 · 草稿未应用')
+            return
+        onlineDevice = node['deviceBindings'][self.slot]['deviceId']
+        source, value = self._field(definition, node, self.slot, path)
+        sourceName = {'inherit': '继承设备', 'constant': '常量覆写', 'variable': '全局变量', 'input': '节点输入'}[source]
+        text = str(value) if value is not None else '未设置 / 保留设备值'
+        if source in {'input', 'variable'}:
+            text += '（运行时取值）'
+        elif value is not None:
+            text += ' ' + self.declaration.parameterSpec(path).get('xUnit', '')
+        try:
+            draft = self.apply(deepcopy(self.node), self.slot)
+            same = onlineDevice == deviceId and (source, value) == self._field(self.definition, draft, self.slot, path)
+            difference = '与在线一致' if same else '草稿未应用'
+        except ValueError:
+            difference = '草稿值无效，未应用'
+        label.setText(f'在线 R{revision} · {onlineDevice} · {sourceName}：{text} · {difference}')
 
     def apply(self, node, slot):
         for path, (modes, form, variable, inputs) in self.rows.items():
@@ -163,6 +302,9 @@ class DeviceNodeDialog(QDialog):
         self.newDefinitions = {}
         self.slots = {}
         self.sources = {}
+        self.onlineSnapshot = None
+        self.onlineMessage = '在线配置未读取'
+        self.onlinePending = None
         self.setWindowTitle("设备绑定与参数 · " + str(node.get("displayName") or node["operatorId"]))
         self.resize(700, 650)
         layout = QVBoxLayout(self)
@@ -185,6 +327,11 @@ class DeviceNodeDialog(QDialog):
         self.error = QLabel("正在读取 Runtime 设备类型…")
         self.error.setWordWrap(True)
         layout.addWidget(self.error)
+        self.onlineButton = QPushButton('刷新在线字段对比')
+        from .icon_map import icon
+        self.onlineButton.setIcon(icon('refresh-cw'))
+        self.onlineButton.clicked.connect(self.refreshOnline)
+        layout.addWidget(self.onlineButton)
         self.buttons = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         self.buttons.button(QDialogButtonBox.Ok).setText("完成")
         self.buttons.button(QDialogButtonBox.Cancel).setText("取消")
@@ -198,11 +345,57 @@ class DeviceNodeDialog(QDialog):
         self.timer = QTimer(self)
         self.timer.timeout.connect(self._ready)
         self.timer.start(30)
+        self.onlineTimer = QTimer(self)
+        self.onlineTimer.timeout.connect(self.onlineReady)
+        self.refreshOnline()
         self.finished.connect(self._finish)
 
     def _finish(self, _result):
         self.timer.stop()
+        self.onlineTimer.stop()
         self.reader.shutdown(wait=False, cancel_futures=True)
+
+    def refreshOnline(self):
+        reader = getattr(self.c.window.runtimeClient, 'getOnlineProjectSnapshot', None)
+        if self.onlinePending is not None:
+            return
+        if not callable(reader):
+            self.onlineMessage = 'Runtime 不支持在线字段对比，请升级 Runtime'
+            self.onlineButton.setEnabled(False)
+            return
+        self.onlineButton.setEnabled(False)
+        self.onlinePending = self.reader.submit(reader, self.c.session.document().project.projectId)
+        self.onlineTimer.start(40)
+
+    def onlineReady(self):
+        if self.onlinePending is None or not self.onlinePending.done():
+            return
+        future, self.onlinePending = self.onlinePending, None
+        self.onlineTimer.stop()
+        self.onlineButton.setEnabled(True)
+        try:
+            self._checkContext()
+            snapshot = future.result()
+            if snapshot['payload']['project']['projectId'] != self.c.session.document().project.projectId:
+                raise ValueError('Runtime 在线工程不同')
+            self.onlineSnapshot = snapshot
+        except Exception as error:
+            self.onlineSnapshot = None
+            self.onlineMessage = '在线字段未获取：' + str(error)
+        for slot, editor in self.sources.items():
+            self._compareSource(slot, editor)
+
+    def _compareSource(self, slot, editor):
+        if self.onlineSnapshot is None:
+            editor.onlineUnavailable(self.onlineMessage)
+            return
+        payload = self.onlineSnapshot['payload']
+        node = next((n for n in payload.get('workflows', {}).get(self.workflowId, {}).get('nodes', [])
+                     if n['nodeId'] == self.node['nodeId']), None)
+        onlineId = (node or {}).get('deviceBindings', {}).get(slot, {}).get('deviceId')
+        definition = payload.get('devices', {}).get('definitions', {}).get(onlineId)
+        editor.setOnline(definition, node, revision=self.onlineSnapshot['documentRevision'],
+                         deviceId=self.slots[slot][0].currentData())
 
     def _runtimeScope(self):
         client = self.c.window.runtimeClient
@@ -264,7 +457,7 @@ class DeviceNodeDialog(QDialog):
             initial = {group: {key: value for key, value in legacy.items()
                                if key in getattr(declaration, group + "Schema")["properties"]}
                        for group in ("connection", "defaults")}
-        dialog = DeviceDefinitionDialog(declaration, self, initial=initial)
+        dialog = DeviceDefinitionDialog(declaration, self, initial=initial, client=self.c.window.runtimeClient)
         if dialog.exec_() == dialog.Accepted:
             from emo_master.core.project.device_identity import matchingDevices
             definitions = {**self.c.session.workflows.devices.get('definitions', {}), **self.newDefinitions}
@@ -319,6 +512,7 @@ class DeviceNodeDialog(QDialog):
         editor = SourceEditor(declaration, definitions[key], editorNode, slot,
                               self.c.session.document().globalVariables)
         self.sources[slot] = editor
+        self._compareSource(slot, editor)
         layout.addWidget(editor)
 
     def accept(self):

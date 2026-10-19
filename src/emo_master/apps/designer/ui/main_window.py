@@ -4033,7 +4033,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
         if self.workflowNavigation is not None and self._focusedWorkflowId[1] == self.activeWorkflowId:
             self.workflowNavigation.captureCurrent()
-        center = self.flowView.mapToScene(self.flowView.viewport().rect().center())
+        center = self.flowView.mapToScene(self.flowView.viewport().rect()).boundingRect().center()
         zoom = self.flowView.getZoomFactor()
         self._workflowViewStates[self._focusedWorkflowId] = (zoom, center)
         self.settingsStore.setValue(self._workflowViewSettingsKey(self._focusedWorkflowId), [zoom, center.x(), center.y()])

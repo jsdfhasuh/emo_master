@@ -3,8 +3,8 @@ import hashlib
 from copy import deepcopy
 from pathlib import Path
 
-from PySide2.QtCore import QSize
-from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame
+from PySide2.QtCore import QSize, Qt
+from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame, QWidget, QVBoxLayout, QTabBar
 
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
 
@@ -23,6 +23,7 @@ class PageCoordinator:
         self.directory = None
         self.editor = None
         self.devices = None
+        self.monitor = None
         self.closeApproved = None
         from .preview import PreviewController
         self.preview = PreviewController(self)
@@ -38,7 +39,19 @@ class PageCoordinator:
         flowScroll.setFrameShape(QFrame.NoFrame)
         flowScroll.setWidgetResizable(True)
         flowScroll.setWidget(flowWidget)
-        self.stack.addWidget(flowScroll)
+        flowArea = QWidget()
+        flowLayout = QVBoxLayout(flowArea)
+        flowLayout.setContentsMargins(0, 0, 0, 0)
+        flowLayout.setSpacing(0)
+        self.flowModes = QTabBar()
+        self.flowModes.addTab('编辑工程')
+        self.flowModes.addTab('在线监视')
+        flowLayout.addWidget(self.flowModes)
+        self.flowStack = QStackedWidget()
+        self.flowStack.addWidget(flowScroll)
+        flowLayout.addWidget(self.flowStack, 1)
+        self.flowModes.currentChanged.connect(self.changeFlowMode)
+        self.stack.addWidget(flowArea)
         window.setCentralWidget(self.stack)
         window.projectController.editCoordinator = self
         window.flowScene.editCompleted = self.sync
@@ -95,30 +108,108 @@ class PageCoordinator:
         return self.editor is not None and self.stack.currentWidget() is self.editor
 
     def deviceActive(self):
-        return self.devices is not None and self.stack.currentWidget() is self.devices
+        return self.devices is not None and self.devices.isVisible()
 
     def flowActive(self):
-        return not self.pageActive() and not self.deviceActive()
+        return not self.pageActive() and self.flowStack.currentIndex() == 0
+
+    def changeFlowMode(self, index):
+        if index == 1:
+            if not self._canSync():
+                self.flowModes.setCurrentIndex(0)
+                return
+            if self.monitor is None:
+                from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+                self.monitor = OnlineGraphDialog(self.window.runtimeClient, '', self.flowStack)
+                self.monitor.setWindowFlags(Qt.Widget)
+                self.flowStack.addWidget(self.monitor)
+            self.flowStack.setCurrentWidget(self.monitor)
+        else:
+            self.flowStack.setCurrentIndex(0)
+        self.chrome.update()
+
+    def showOnline(self, projectId=None):
+        if not self._canSync():
+            return
+        self.stack.setCurrentIndex(0)
+        if self.monitor and projectId and self.monitor.projectId != projectId:
+            self.monitor.done(0)
+            self.flowStack.removeWidget(self.monitor)
+            self.monitor.deleteLater()
+            self.monitor = None
+        if projectId and self.monitor is None:
+            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+            self.monitor = OnlineGraphDialog(self.window.runtimeClient, projectId, self.flowStack)
+            self.monitor.setWindowFlags(Qt.Widget)
+            self.flowStack.addWidget(self.monitor)
+        self.flowModes.setCurrentIndex(1)
+        self.changeFlowMode(1)
 
     def showDevices(self):
+        if self.deviceActive():
+            self.devices.raise_()
+            self.devices.activateWindow()
+            return
         if not self._canSync():
             return
         if self.devices is None:
             from emo_master.apps.designer.ui.device_workspace import DeviceWorkspace
             self.devices = DeviceWorkspace(self)
-            self.stack.addWidget(self.devices)
             self.devices.loadMetadata()
         else:
             self.devices.refresh()
-        self.stack.setCurrentWidget(self.devices)
-        if self.preview.observer is not None:
-            self.preview.observer.hide()
+        self.devices.show()
+        self.devices.raise_()
+        self.devices.activateWindow()
+        self.chrome.update()
+
+    def connectRuntime(self):
+        from emo_master.apps.designer.ui.runtime_connection import RuntimeConnectionDialog
+        if self._canSync():
+            RuntimeConnectionDialog(self).exec_()
+
+    def attachRuntime(self, candidate):
+        if self.window.isJobRunning or self.preview.active():
+            raise ValueError('当前窗口仍有运行任务或页面观察者，请先结束这些操作')
+        if self.devices and self.devices.pending is not None:
+            raise ValueError('设备操作尚未返回，请等待完成后切换')
+        if self.window._activeDebugWindows():
+            raise ValueError('当前窗口的流程或算子调试尚未结束，请先关闭调试会话')
+        communication = getattr(self.window, 'communicationController', None)
+        if communication:
+            communication.poll()
+        if communication and (communication.thread is not None or communication.disableSave is not None):
+            raise ValueError('通信请求尚未返回，请等待完成后切换')
+        if not self.window.operatorEditorManager.closeCameraConfigurations():
+            raise ValueError('相机配置会话尚未退出')
+        if not self._canSync():
+            raise ValueError('请先修正工程输入')
+        self.window.runtimeClient.switchConnection(candidate)
+        if self.devices:
+            self.devices.shutdown()
+            self.devices.deleteLater()
+            self.devices = None
+        if self.monitor:
+            self.monitor.done(0)
+            self.flowStack.removeWidget(self.monitor)
+            self.monitor.deleteLater()
+            self.monitor = None
+        self.flowModes.setCurrentIndex(0)
+        self.window._resetRuntimeVisualState(clearHistory=True)
+        if communication:
+            communication.contextKey = None
+            communication.nextPoll = 0
+            communication.state = communication.identity = None
+            communication.history.clear()
+            communication._render()
+        self.window.refreshOperators()
         self.chrome.update()
 
     def showFlow(self):
         if not self._canSync():
             return
         self.stack.setCurrentIndex(0)
+        self.flowModes.setCurrentIndex(0)
         if self.preview.observer is not None:
             self.preview.observer.hide()
         self.chrome.update()
@@ -321,9 +412,14 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
+        if self.monitor:
+            self.monitor.done(0)
+            self.flowStack.removeWidget(self.monitor)
+            self.monitor.deleteLater()
+            self.monitor = None
+        self.flowModes.setCurrentIndex(0)
         if self.devices:
             self.devices.shutdown()
-            self.stack.removeWidget(self.devices)
             self.devices.deleteLater()
             self.devices = None
         self.preview.retireObserver()

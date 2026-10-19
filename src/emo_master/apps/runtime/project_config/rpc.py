@@ -47,7 +47,8 @@ class ProjectConfigurationRpcMixin:
         if runtime._runtimeDataLockIsPrimary:
             runtime.projectResourceTransfers.recover()
         runtime.projectConfiguration = ConfigurationCoordinator(ConfigurationStore(runtime.sqliteStore,
-            commitState=self._commitProjectState),
+            commitState=self._commitProjectState,
+            exportPath=runtime.workspaceRoot.parent / 'online-project.json' if runtime._runtimeDataLockIsPrimary else None),
             runtime.runtimeInstanceId, lock=runtime._projectStateLock,
             prepare=self._prepareProjectConfiguration, publish=self._publishProjectConfiguration,
             beforeCommit=self._checkConfigurationAdmission, discard=self._discardProjectConfiguration,
@@ -363,6 +364,7 @@ class ProjectConfigurationRpcMixin:
             result["retainedResourceCount"] = len(runtime.configurationResourceJournal.retainedAfterCrash())
             result["versionedStart"] = True
             result['resourceRepair'] = True
+            result['exportCopyError'] = runtime.projectConfiguration.store.exportError
             result['resourceRecoveryAvailable'] = runtime.onlineRecoveryKind == 'resource' and not runtime.projectConfiguration.publicationError
             return result
         return self._configurationReply(snapshot)
@@ -427,7 +429,7 @@ class ProjectConfigurationRpcMixin:
                 candidate = runtime.projectConfiguration._candidate(write)
                 _document, prepared = self._validateProjectConfiguration(candidate,
                     checkAdmission=write["replacementPolicy"] == "reject")
-                from .impact import affectedJobs
+                from .impact import affectedJobs, changeEffects
                 from emo_master.apps.runtime.devices.replacement import requiresReplacement
                 affected = affectedJobs(runtime, candidate)
                 active = [r.jobId for r in runtime.jobRepository.all() if r.jobId in affected
@@ -438,6 +440,7 @@ class ProjectConfigurationRpcMixin:
                     and (projectChanged or key not in after or requiresReplacement(before[key], after[key],
                         runtime.pluginScanResult.deviceTypes[after[key].deviceTypeId]))]
                 return dict(candidate=candidate, cycleSafe=self._supportsCycleChange(candidate),
+                    changeEffects=changeEffects(runtime, candidate),
                     affectedJobs=sorted(active), disconnectDevices=sorted(disconnect),
                     projectChanged=projectChanged,
                     communicationRestart=(projectChanged or runtime.loadedDocument is None or prepared.communication != runtime.loadedDocument.communication)
@@ -462,6 +465,23 @@ class ProjectConfigurationRpcMixin:
     def DeviceNetworkCommand(self, request, context):
         runtime: Any = self
         try:
+            if request.action == 'info':
+                return pb.ProjectConfigurationReply(ok=True, result_json=json.dumps(dict(
+                    runtimeInstanceId=runtime.runtimeInstanceId, projectId=runtime.loadedProjectId,
+                    deviceSetupVersion=1)))
+            if request.action == 'test_connection':
+                def admission():
+                    if (not runtime._runtimeDataLockIsPrimary or runtime._closing or request.runtime_instance_id != runtime.runtimeInstanceId
+                            or request.project_id != runtime.loadedProjectId or runtime.projectConfiguration.active):
+                        raise ValueError('Runtime/project changed or configuration is being written')
+                    runtime.jobSupervisor.assertMutationAllowed()
+                payload = json.loads(request.payload_json)
+                if payload.get('confirmed') is not True:
+                    raise ValueError('connection test requires explicit confirmation')
+                result = runtime.deviceManager.testConnection(payload['definition'],
+                    lambda: context is not None and not context.is_active(),
+                    admissionLock=runtime._projectStateLock, admission=admission)
+                return pb.ProjectConfigurationReply(ok=True, result_json=json.dumps(result))
             result = runtime.deviceNetwork.execute(request)
             return pb.ProjectConfigurationReply(ok=True, result_json=json.dumps(result))
         except Exception as error:

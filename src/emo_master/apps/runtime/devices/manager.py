@@ -1,5 +1,6 @@
 """Project-scoped authority for device identity, operations, and original frames."""
 from copy import deepcopy
+from contextlib import nullcontext
 import platform
 from threading import RLock
 from time import monotonic
@@ -28,6 +29,7 @@ class DeviceManager:
         self.replacement = None
         self.dispatchGroups = {}
         self.resourceLeasePath = None
+        self.frameObserver = None
 
     def _validatedDefinitions(self, document):
         definitions = {}
@@ -93,7 +95,13 @@ class DeviceManager:
             self.drivers, self.executors = drivers, executors
             self.lifecycles = lifecycles
 
-    def execute(self, owner, deviceId, action, params, *, cycleId, arguments=None, cancelled=lambda: False):
+    def productionOwners(self, deviceId):
+        with self.lock:
+            return sorted(owner for owner, ids in self.permissions.items()
+                          if deviceId in ids and owner not in self.maintenanceOwners)
+
+    def execute(self, owner, deviceId, action, params, *, cycleId, arguments=None, cancelled=lambda: False,
+                previewOnly=False):
         if cancelled():
             raise DeviceError("E_DEVICE_CANCELLED", "request cancelled before device admission")
         planRevision = (self.configuration.requireCycle(owner, cycleId)
@@ -112,6 +120,12 @@ class DeviceManager:
             from emo_master.core.project.snapshots import _parameters
             params = _parameters(deepcopy(params), declaration.defaultsSchema, "device parameters")
             declaration.validateRules(params)
+            production = self.productionOwners(deviceId)
+            if previewOnly and production:
+                raise DeviceError('E_CAMERA_PRODUCTION_ACTIVE', 'production started; watch existing results instead')
+            if owner in self.maintenanceOwners and action == 'capture' and params.get('triggerMode') == 'hardware' and (previewOnly or production):
+                raise DeviceError('E_CAMERA_PREVIEW_UNSAFE', 'hardware-triggered preview cannot consume production triggers')
+            observe = action == 'capture' and owner not in self.maintenanceOwners
             executor, driver = self.executors[deviceId], self.drivers[deviceId]
             lifecycle = self.lifecycles[deviceId]
             with executor.condition:
@@ -151,8 +165,13 @@ class DeviceManager:
                         metadata = None
                         if declaration.executionLocation == "camera_host":
                             result, metadata = result
-                        return self.frames.publish(reservation, result, cycleId=cycleId,
+                        descriptor = self.frames.publish(reservation, result, cycleId=cycleId,
                             generation=generation, requestId=requestId, planRevision=planRevision, metadata=metadata)
+                        if observe and self.frameObserver is not None:
+                            # Observation owns only a bounded JPEG copy, never the
+                            # original lease or admission of another acquisition.
+                            self.frameObserver(deviceId, owner, result, descriptor)
+                        return descriptor
                     return result
                 finally:
                     lifecycle.touched()
@@ -169,6 +188,97 @@ class DeviceManager:
                 raise
             if reservation:
                 operation.future.add_done_callback(lambda _future: self.frames.discardReservation(reservation))
+        return executor.wait(operation, cancelled)
+
+    def testConnection(self, value, cancelled=lambda: False, *, admissionLock=None, admission=None):
+        """Borrow the physical owner, or register a temporary owner until cleanup."""
+        from types import SimpleNamespace
+        from emo_master.core.project.devices import DeviceDefinition
+        key, owner = 'test-' + uuid4().hex, 'setup-' + uuid4().hex
+        definition = DeviceDefinition.model_validate(value)
+        definitions, identities, classes = self._validatedDefinitions(
+            SimpleNamespace(devices=SimpleNamespace(definitions={key: definition})))
+        temporary = False
+        with (admissionLock or nullcontext()), self.lock:
+            if admission is not None:
+                admission()
+            if self.replacement is not None:
+                raise DeviceError('E_DEVICE_REPLACING', 'configuration replacement is pending')
+            existing = next((k for k, identity in self.identities.items() if identity == identities[key]), None)
+            if existing is not None:
+                key = existing
+                if self.definitions[key].connection != definition.connection:
+                    raise DeviceError('E_DEVICE_IDENTITY', 'existing physical device has different connection settings')
+            else:
+                driver = classes[key](definitions[key])
+                self.definitions[key], self.identities[key], self.drivers[key] = definitions[key], identities[key], driver
+                self.lifecycles[key] = DeviceLifecycle(definitions[key], driver)
+                self.executors[key] = DeviceExecutor(identities[key], idleAction=self.lifecycles[key].idleAction)
+                temporary = True
+            self.authorizeMaintenance(owner, key)
+            executor, lifecycle = self.executors[key], self.lifecycles[key]
+            lifecycle.keepAlive.add(owner)
+            def perform(cancel, deadline, _generation):
+                wasConnected = lifecycle.connected
+                try:
+                    lifecycle.connect(lambda: cancel() or cancelled(), deadline)
+                    return dict(connected=True, reused=not temporary, deviceId='' if temporary else key)
+                finally:
+                    if not wasConnected:
+                        lifecycle.disconnect()
+            try:
+                operation = executor.submit(owner, perform, waitTimeout=5,
+                    operationTimeout=connectionBudget(definition.policies))
+            except BaseException:
+                lifecycle.keepAlive.discard(owner)
+                self.retire(owner)
+                raise
+        try:
+            return executor.wait(operation, cancelled)
+        finally:
+            # The native owner, not RPC abandonment, determines when it is safe
+            # to remove temporary identity and release the physical connection.
+            with executor.condition:
+                executor.condition.wait_for(lambda: executor.active is None or executor.active.owner != owner)
+            with self.lock:
+                lifecycle.keepAlive.discard(owner)
+                self.retire(owner)
+                if temporary and not lifecycle.connected:
+                    executor.close()
+                    for mapping in (self.definitions, self.identities, self.drivers, self.lifecycles, self.executors):
+                        mapping.pop(key, None)
+
+    def cameraDiagnostic(self, owner, deviceId, action, changes, cancelled):
+        if action not in {'read_parameters', 'trial_capture'}:
+            raise DeviceError('E_DEVICE_ACTION', 'unsupported camera diagnostic')
+        if not isinstance(changes, dict) or set(changes) - {'exposureMode', 'exposureUs', 'gainMode', 'gainRaw'}:
+            raise DeviceError('E_DEVICE_PARAMETERS', 'trial accepts exposure and gain only')
+        with self.lock:
+            self._checkReplacement([deviceId])
+            if deviceId not in self.permissions.get(owner, set()) or owner not in self.maintenanceOwners:
+                raise DeviceError('E_DEVICE_OWNER', 'diagnostic owner is not authorized')
+            definition = self.definitions[deviceId]
+            if not definition.enabled:
+                raise DeviceError('E_DEVICE_DISABLED', 'device is disabled')
+            declaration = self.types[definition.deviceTypeId]
+            if definition.deviceTypeId != 'device.camera.huaray_imv':
+                raise DeviceError('E_DEVICE_ACTION', 'camera diagnostic requires IMV')
+            checked = definition.model_copy(deep=True)
+            checked.defaults.update(changes)
+            declaration.validateDefinition(checked)
+            executor, lifecycle, driver = self.executors[deviceId], self.lifecycles[deviceId], self.drivers[deviceId]
+            with executor.condition:
+                lifecycle.admit()
+            def perform(cancel, deadline, _generation):
+                def stopped():
+                    return cancel() or cancelled()
+                lifecycle.connect(stopped, deadline)
+                try:
+                    return driver.execute(action, definition.defaults, stopped, deadline, changes=changes)
+                finally:
+                    lifecycle.touched()
+            operation = executor.submit(owner, perform, waitTimeout=definition.policies.get('deviceWaitTimeoutMs', 5000) / 1000,
+                operationTimeout=connectionBudget(definition.policies) + definition.policies.get('operationTimeoutMs', 5000) / 1000)
         return executor.wait(operation, cancelled)
 
     def authorize(self, owner, deviceIds):

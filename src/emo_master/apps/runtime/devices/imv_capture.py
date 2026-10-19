@@ -154,6 +154,61 @@ class ImvCapture:
                               outcome="UNKNOWN" if triggered or acquiring and not clean else "NOT_EXECUTED",
                               unhealthy=not clean) from error
 
+    def readParameters(self, params, cancelled, deadline):
+        from emo_master.plugins.builtins.huaray_camera.configuration import CameraConfiguration
+        self.connect(params, cancelled, deadline)
+        configuration = CameraConfiguration(self.session.api, self._settings(params), lambda _value: None, camera=self.session)
+        return dict(configuration.refresh(), connectionGeneration=self.connectionGeneration)
+
+    def trialCapture(self, params, changes, cancelled, deadline, capacity):
+        from emo_master.plugins.builtins.huaray_camera.configuration import CameraConfiguration
+        if not changes or set(changes) - {'exposureMode', 'exposureUs', 'gainMode', 'gainRaw'}:
+            raise DeviceError('E_DEVICE_PARAMETERS', 'trial accepts exposure and gain only')
+        if params['triggerMode'] == 'hardware':
+            raise DeviceError('E_CAMERA_SYNC_REQUIRED', 'stop external triggers and use software/free-run diagnostic capture before tuning')
+        self.connect(params, cancelled, deadline)
+        previous = deepcopy(self.params)
+        settings = deepcopy(self.session.settings)
+        resume = self.session.grabbing
+        configuration = CameraConfiguration(self.session.api, self._settings(params), lambda _value: None, camera=self.session)
+        configuration.refresh()
+        if configuration.actualParams().get('triggerMode') == 'hardware':
+            raise DeviceError('E_CAMERA_SYNC_REQUIRED', 'actual hardware triggering requires explicit synchronization before tuning')
+        try:
+            configuration.apply(dict(changes, triggerMode=params['triggerMode']))
+            configuration.prepareAcquisition()
+            effective = dict(params, **configuration.actualParams())
+            # Configuration owns all native writes and their restoration. Mark
+            # the actual trial settings prepared so capture cannot apply defaults.
+            self.params = deepcopy(effective)
+            self.session.actualExposureUs = self.session._getDouble('ExposureTime')
+            self.session.offsetX = self.session._getInt('OffsetX')
+            self.session.offsetY = self.session._getInt('OffsetY')
+            self.session.clearBuffer()
+            self.session.startAcquisition()
+            self.streamGeneration = uuid4().hex
+            self.lastBlockId = None
+            image, metadata = self.capture(effective, cancelled, deadline, capacity)
+            metadata['trialParameters'] = changes
+            metadata['actualParameters'] = configuration.refresh()['actual']
+            return image, metadata
+        finally:
+            try:
+                configuration.restore()
+                self.session.settings = settings
+                self.params = previous
+                self.session.actualExposureUs = self.session._getDouble('ExposureTime')
+                self.session.offsetX = self.session._getInt('OffsetX')
+                self.session.offsetY = self.session._getInt('OffsetY')
+                if resume:
+                    self.session.clearBuffer()
+                    self.session.startAcquisition()
+                self.streamGeneration = uuid4().hex
+                self.lastBlockId = None
+            except Exception as error:
+                self.quarantined = True
+                raise DeviceError('E_CAMERA_RESTORE_FAILED', str(error), outcome='UNKNOWN', unhealthy=True) from error
+
     def close(self):
         if self.session is not None:
             error = self.session.close()

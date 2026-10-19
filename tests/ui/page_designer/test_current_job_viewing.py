@@ -125,7 +125,8 @@ def testNormalEntryDoesNotMigrateWithoutExplicitEnable(qtApp, monkeypatch):
     coordinator = window.pageCoordinator
     assert coordinator is not None
     assert window.pageCoordinator.chrome.selector.text() == '当前：流程设计'
-    assert [a.text() for a in window.pageCoordinator.chrome.workspaceActions] == ['流程设计', '页面设计', '设备管理']
+    assert [a.text() for a in window.pageCoordinator.chrome.workspaceActions] == ['流程设计', '页面设计']
+    assert window.pageCoordinator.chrome.deviceAction.text() == '设备管理'
     assert coordinator.session.document().schemaVersion == '2.1'
     coordinator.showPages()
     assert coordinator.editor is None

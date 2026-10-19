@@ -57,6 +57,10 @@ def operatorIcon(iconKey: str):
                "output": "upload", "flow": "git-branch"}.get(iconKey, "layout-grid"))
 
 
+def deviceIcon(iconKey: str):
+  return icon({"plc-read": "cpu", "default": "layout-grid"}.get(iconKey, iconKey))
+
+
 def getOperatorGlyph(iconKey: str) -> str:
   glyphs = {
     "source": "◉",

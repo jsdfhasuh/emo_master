@@ -98,7 +98,8 @@ def testNarrowWorkspaceLabelsSurviveActionChanges(designerApplication):
             action.setChecked(True)
             chrome.resizeTools()
             settle(designerApplication)
-            assert [button.text() for button in chrome.selector.buttons] == ['流程', '页面', '设备']
+            assert [button.text() for button in chrome.selector.buttons] == ['流程', '页面']
+            assert chrome.deviceAction.text() == '设备管理'
             assert all(button.accessibleName() == action.text()
                        for button, action in zip(chrome.selector.buttons, chrome.workspaceActions))
             assert window.stopButton.isVisible()

@@ -281,12 +281,15 @@ class RuntimeClient:
         self.deadlineMs = deadlineMs
         self._ownedRuntimeService = ownedRuntimeService
         self._ownedChannel = ownedChannel
+        self._retiredTransports: list[RuntimeClient] = []
         self._streamLock = threading.RLock()
         self._activeStreams: dict[str, RuntimeEventStream] = {}
         self._retiringStreams: set[RuntimeEventStream] = set()
         self._closed = False
         self._closing = False
         self._closeLock = threading.RLock()
+        self._transportLock = threading.RLock()
+        self._rpcCalls = 0
         self.inspectionPeakScratchBytes = 0
         self._runtimeTarget = runtimeTarget
         self._displayService = displayService
@@ -326,6 +329,34 @@ class RuntimeClient:
             contexts = [ctx for calls in self._displayCalls.values() for ctx in calls]
         for context in contexts:
             context.cancel()
+
+    def switchConnection(self, candidate):
+        """Keep controller references stable; never close an old embedded owner implicitly."""
+        with self._closeLock, self._transportLock, self._streamLock, self._displayLock:
+            if self._closed or self._closing or self._rpcCalls or self._activeStreams or self._retiringStreams or self._displayCalls:
+                raise RuntimeClientError('E_RUNTIME_BUSY', '当前请求尚未结束，请等待当前操作完成后切换 Runtime')
+            fields = ('runtimeService', '_ownedRuntimeService', '_ownedChannel', '_runtimeTarget', '_displayService',
+                      '_displayChannel', '_presentationService', '_presentationServer')
+            previous = RuntimeClient(self.runtimeService)
+            for field in fields:
+                setattr(previous, field, getattr(self, field))
+            unsubscribe = getattr(self._ownedChannel, 'unsubscribe', None)
+            if callable(unsubscribe):
+                unsubscribe(self._onChannelState)
+            unsubscribe = getattr(candidate._ownedChannel, 'unsubscribe', None)
+            if callable(unsubscribe):
+                unsubscribe(candidate._onChannelState)
+            for field in fields:
+                setattr(self, field, getattr(candidate, field))
+                if field not in {'runtimeService', '_runtimeTarget'}:
+                    setattr(candidate, field, None)
+            candidate._closed = True
+            self._retiredTransports.append(previous)
+            self.runtimeScope = uuid4().hex
+            self._displayDisconnected = False
+            subscribe = getattr(self._ownedChannel, 'subscribe', None)
+            if callable(subscribe):
+                subscribe(self._onChannelState, try_to_connect=False)
 
     def closeDisplayOwner(self, owner: str) -> None:
         with self._displayLock:
@@ -424,9 +455,14 @@ class RuntimeClient:
         return self._projectConfigurationCall("GetProjectWriteStatus", runtime_pb2.ProjectWriteLookup(request_id=requestId))
 
     def deviceNetworkCommand(self, projectId, runtimeId, action, *, deviceId='', requestId='', payload=None):
-        return self._projectConfigurationCall('DeviceNetworkCommand', runtime_pb2.DeviceNetworkRequest(
-            project_id=projectId, runtime_instance_id=runtimeId, device_id=deviceId, request_id=requestId,
-            action=action, payload_json=json.dumps(payload or {})))
+        try:
+            return self._projectConfigurationCall('DeviceNetworkCommand', runtime_pb2.DeviceNetworkRequest(
+                project_id=projectId, runtime_instance_id=runtimeId, device_id=deviceId, request_id=requestId,
+                action=action, payload_json=json.dumps(payload or {})))
+        except RuntimeClientError as error:
+            if action == 'info' and error.code in {'E_NETWORK_IDENTITY', 'StatusCode.UNIMPLEMENTED', 'UNIMPLEMENTED'}:
+                raise RuntimeClientError('UNIMPLEMENTED', 'Runtime 不支持独立设备设置与连接探测，请升级 Runtime') from error
+            raise
 
     def cancelProjectWrite(self, requestId):
         return self._projectConfigurationCall("CancelProjectWrite", runtime_pb2.ProjectWriteLookup(request_id=requestId))
@@ -612,11 +648,11 @@ class RuntimeClient:
         return reply.runtime_instance_id, json.loads(reply.states_json)
 
     def cameraDiagnostic(self, projectId, runtimeInstanceId, deviceId, state, action, *, sessionId="", sequence=0,
-                         confirmed=False):
+                         confirmed=False, changes=None):
         reply = self._call("CameraDiagnostic", runtime_pb2.CameraDiagnosticRequest(project_id=projectId,
             runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
             expected_definition_revision=state["definitionRevision"], action=action, session_id=sessionId,
-            sequence=sequence, confirmed=confirmed))
+            sequence=sequence, confirmed=confirmed, changes_json=json.dumps(changes or {})))
         if not reply.ok:
             raise ValueError(reply.code + ": " + reply.message)
         return dict(sessionId=reply.session_id, metadata=json.loads(reply.metadata_json or "{}"), preview=reply.preview_jpeg)
@@ -1444,6 +1480,9 @@ class RuntimeClient:
                 resource = getattr(self, field)
                 self._closeOwned(resource)
                 setattr(self, field, None)
+            for previous in self._retiredTransports:
+                previous.close()
+            self._retiredTransports.clear()
             # PresentationService is owned by RuntimeService, including when a
             # debug viewer borrows it. This adapter never disposes a borrowed owner.
             self._closed = True
@@ -1461,7 +1500,9 @@ class RuntimeClient:
                 self._activeStreams.pop(jobId, None)
 
     def _call(self, methodName: str, request: object, useDeadline: bool = True):
-        method = getattr(self.runtimeService, methodName)
+        with self._transportLock:
+            method = getattr(self.runtimeService, methodName)
+            self._rpcCalls += 1
         try:
             if useDeadline and self.deadlineMs > 0:
                 parameters = _signatureParameters(method)
@@ -1477,6 +1518,9 @@ class RuntimeClient:
                 detail = err.details() or "runtime RPC failed"
                 raise RuntimeClientError(str(code), detail) from err
             raise
+        finally:
+            with self._transportLock:
+                self._rpcCalls -= 1
 
     def communicationState(self, projectId="", afterSequence=0, *, projectPath="", cancellation=None):
         request = runtime_pb2.CommunicationRequest(protocol_version="1.1", project_id=projectId,

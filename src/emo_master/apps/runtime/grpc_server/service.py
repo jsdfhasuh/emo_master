@@ -808,6 +808,13 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 if callable(snapshot):
                     states[key].update(snapshot())
                 states[key].update(self.deviceManager.lifecycles[key].snapshot())
+                states[key]['productionOwners'] = self.deviceManager.productionOwners(key)
+                discovery = self.deviceNetwork.discovery
+                if discovery:
+                    selector = self.deviceManager.definitions[key].connection.get('cameraKey')
+                    matches = [row for row in discovery[1]['devices'] if selector and row.get('cameraKey') == selector]
+                    if len(matches) == 1:
+                        states[key]['hardwareInfo'] = matches[0]
                 replacement = self.deviceManager.replacement
                 if replacement is not None and key in replacement.changed:
                     states[key]["admissionState"] = "REPLACING"
@@ -858,6 +865,11 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
     def CameraDiagnostic(self, request, context):
         from emo_master.core.project.snapshots import revisionOf
         try:
+            if len(request.changes_json.encode()) > 4096:
+                raise ValueError('camera trial parameters exceed limit')
+            changes = json.loads(request.changes_json or '{}')
+            if not isinstance(changes, dict) or (request.action != 'trial_capture' and changes):
+                raise ValueError('only trial capture accepts parameter changes')
             with self._projectStateLock:
                 if request.runtime_instance_id != self.runtimeInstanceId or request.project_id != self.loadedProjectId:
                     raise ValueError("Runtime/project identity changed")
@@ -878,14 +890,17 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 if request.action == "open":
                     sessionId = self.cameraDiagnostics.open(request.device_id, request.expected_definition_revision,
                                                              request.expected_generation)
-                    return runtime_pb2.CameraDiagnosticReply(ok=True, session_id=sessionId)
-                if request.action != "capture" or session is None:
+                    return runtime_pb2.CameraDiagnosticReply(ok=True, session_id=sessionId,
+                        metadata_json='{"cameraTuningVersion":1,"cameraPreviewVersion":1}')
+                if request.action not in {"capture", "read_parameters", "trial_capture", 'watch', 'preview_capture'} or session is None:
                     raise ValueError("unknown camera diagnostic session/action")
                 if (session.deviceId, session.definitionRevision, session.generation) != (
                         request.device_id, request.expected_definition_revision, request.expected_generation):
                     raise ValueError("camera diagnostic session identity mismatch")
-            result = session.capture(request.sequence, request.confirmed,
-                                     lambda: not getattr(context, "is_active", lambda: True)())
+            result = (self.cameraDiagnostics.watch(session, request.sequence) if request.action == 'watch' else
+                session.capture(request.sequence, request.confirmed,
+                                     lambda: not getattr(context, "is_active", lambda: True)(),
+                                     action=request.action, changes=changes))
             return runtime_pb2.CameraDiagnosticReply(ok=result["ok"], code=result.get("code", ""),
                 message=result.get("message", ""), session_id=request.session_id,
                 metadata_json=json.dumps(result.get("metadata", {})), preview_jpeg=result.get("preview", b""))

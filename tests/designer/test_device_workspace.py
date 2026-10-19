@@ -1,8 +1,9 @@
 from types import SimpleNamespace
 import time
 
-from PySide2.QtCore import QSettings, QPoint
-from PySide2.QtWidgets import QDialogButtonBox, QApplication, QMessageBox
+from PySide2.QtCore import QSettings, Qt
+from PySide2.QtWidgets import QDialog, QDialogButtonBox, QApplication, QMessageBox
+from PySide2.QtTest import QTest
 
 from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
@@ -28,15 +29,19 @@ def waitUntil(predicate):
     assert predicate()
 
 
-def testThirdWorkspaceEditHistoryAndSwitch(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+def testDeviceDialogEditHistoryAndReopen(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     coordinator = window.pageCoordinator
     before = coordinator.session.payload()
+    active = coordinator.stack.currentWidget()
     coordinator.showDevices()
     devices = coordinator.devices
     waitUntil(lambda: devices.pending is None)
     assert coordinator.deviceActive()
-    assert len(coordinator.chrome.workspaceActions) == 3
+    assert isinstance(devices, QDialog) and devices.isWindow()
+    assert devices.parentWidget() is window and devices.windowModality() == Qt.WindowModal
+    assert coordinator.stack.indexOf(devices) == -1 and coordinator.stack.currentWidget() is active
+    assert len(coordinator.chrome.workspaceActions) == 2
     assert not window.deleteShortcut.isEnabled()
     assert coordinator.session.payload() == before
     devices.table.setCurrentCell(0, 0)
@@ -47,23 +52,117 @@ def testThirdWorkspaceEditHistoryAndSwitch(ownedDesignerWindow, tmp_path, defini
     assert coordinator.session.document().devices.definitions["camera"].name == definition.name
     coordinator.history(True)
     assert devices.name.text() == "Renamed camera"
-    coordinator.showFlow()
+    devices.closeButton.click()
+    assert not devices.isVisible() and coordinator.stack.currentWidget() is active
     coordinator.showDevices()
+    assert coordinator.devices is devices
     assert devices.name.text() == "Renamed camera"
 
 
-def testThirdSelectorHighlightUsesThirdButton(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+def testDeviceMenuOpensDialogWithoutChangingWorkspace(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     window.resize(1280, 800)
     window.show()
-    window.pageCoordinator.showDevices()
-    selector = window.pageCoordinator.chrome.selector
-    waitUntil(lambda: selector.animation.state() == selector.animation.Stopped)
-    rect = selector.selectedRect().toRect()
-    assert selector.buttons[2].geometry().contains(QPoint(rect.center().x(), rect.center().y()))
+    c = window.pageCoordinator
+    action = c.chrome.deviceAction
+    assert action in window.menuBar().actions() and not action.isCheckable()
+    active, count = c.stack.currentWidget(), c.stack.count()
+    action.trigger()
+    devices = c.devices
+    waitUntil(lambda: devices.pending is None)
+    assert devices.isVisible() and devices.isWindow()
+    assert c.stack.currentWidget() is active and c.stack.count() == count
+    assert len(c.chrome.selector.buttons) == 2 and c.chrome.workspaceActions[0].isChecked()
+    action.trigger()
+    assert c.devices is devices and len(window.findChildren(QDialog)) == 1
+    devices.table.setCurrentCell(0, 0)
+    QApplication.processEvents()
+    assert devices.rect().contains(devices.closeButton.geometry())
+    assert devices.grab().save(str(tmp_path / 'device-dialog.png'))
+    print('DEVICE_DIALOG_SCREENSHOT=' + str(tmp_path / 'device-dialog.png'))
+    QTest.keyClick(devices, Qt.Key_Escape)
+    assert not devices.isVisible() and c.flowActive() and not c.deviceActive()
+    assert window.deleteShortcut.isEnabled()
+    action.trigger()
+    assert c.devices is devices and devices.isVisible()
+    assert devices.close() and not devices.isVisible()
+
+
+def testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch(ownedDesignerWindow, tmp_path, definition, declaration, monkeypatch):  # noqa: F811
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = window.pageCoordinator
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    c.showPages()
+    active = c.stack.currentWidget()
+    c.chrome.deviceAction.trigger()
+    devices = c.devices
+    waitUntil(lambda: devices.pending is None)
+    assert c.pageActive() and c.stack.currentWidget() is active
+    devices.closeButton.click()
+    assert c.pageActive() and c.chrome.workspaceActions[1].isChecked()
+    c.chrome.deviceAction.trigger()
+    source = tmp_path / 'another.emoproj'
+    payload = project(definition)
+    payload['project']['projectId'] = 'another-project'
+    saveProject(source, payload)
+    assert window.loadProjectDirectory(str(source), confirmed=True)
+    assert not devices.isVisible() and not devices.timer.isActive() and c.devices is None
+    c.chrome.deviceAction.trigger()
+    assert c.devices is not devices
+    waitUntil(lambda: c.devices.pending is None)
+    assert c.devices._scope()[-1] == 'another-project'
+
+
+def testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = window.pageCoordinator
+    disk = (tmp_path / 'device.emoproj').read_bytes()
+    c.showDevices()
+    devices = c.devices
+    waitUntil(lambda: devices.pending is None)
+    devices.table.setCurrentCell(0, 0)
+    devices.name.setText('Dialog edit')
+    devices.closeButton.click()
+    assert not devices.isVisible()
+    assert c.session.document().devices.definitions['camera'].name == 'Dialog edit'
+    assert c.session.dirty and (tmp_path / 'device.emoproj').read_bytes() == disk
+    c.showDevices()
+    devices.name.setText('')
+    assert not devices.close() and devices.isVisible()
+    assert devices.status.text()
+    devices.buttons['revert'].click()
+    assert devices.close()
+
+
+def testDeviceDialogCloseDuringMetadataReadCanReopen(ownedDesignerWindow, tmp_path, definition, declaration):  # noqa: F811
+    from threading import Event
+    window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    entered, release = Event(), Event()
+    def metadata():
+        entered.set()
+        assert release.wait(5)
+        return {declaration.deviceTypeId: declaration}, requirements, {}
+    window.runtimeClient.listDeviceTypes = metadata
+    c = window.pageCoordinator
+    try:
+        c.chrome.deviceAction.trigger()
+        devices = c.devices
+        assert entered.wait(2)
+        devices.closeButton.click()
+        assert not devices.isVisible() and not c.deviceActive()
+        release.set()
+        waitUntil(lambda: devices.pending is None)
+        c.chrome.deviceAction.trigger()
+        assert c.devices is devices and devices.isVisible()
+        devices.buttons['refresh'].click()
+        waitUntil(lambda: devices.pending is None)
+        assert declaration.deviceTypeId in devices.deviceTypes
+    finally:
+        release.set()
 
 
 def testDeviceControlNeedsConfirmationAndNeverEditsDraft(ownedDesignerWindow, tmp_path, definition, declaration, monkeypatch):  # noqa: F811
+    declaration = declaration.model_copy(update={'capabilities': ['connect', 'disconnect', 'capture']})
     window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
     c = window.pageCoordinator
     c.showDevices()

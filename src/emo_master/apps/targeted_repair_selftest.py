@@ -75,6 +75,32 @@ def checkTargetedRepairs(*, includeDesigner=False):
             model = ProjectDocument.model_validate(store.toPayload())
             if set(groupSlots(model, 'main')) & set(groupSlots(model, imported.rootWorkflowId)):
                 raise RuntimeError('copied Dispatch slots collide')
+            from emo_master.apps.designer.state.device_package import exportDevices, importDevices
+            from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+            from emo_master.core.project.device_resources import trustedDeviceTypes
+            session = ProjectEditSession(payload)
+            devicePackage = exportDevices(session, ['camera'], root)
+            importedDevices = importDevices(session, devicePackage, trustedDeviceTypes(), root)
+            if session.document().devices.definitions[importedDevices['camera']].enabled:
+                raise RuntimeError('portable device must remain disabled')
+            if not session.undo() or set(session.document().devices.definitions) != {'camera'}:
+                raise RuntimeError('portable device import must be one reversible edit')
+            from PySide2.QtCore import QCoreApplication, QEvent
+            from PySide2.QtWidgets import QApplication
+            from emo_master.apps.designer.ui.device_wizard import SourceEditor
+            application = QApplication.instance() or QApplication([])
+            sourceNode = next(n for n in payload['workflows']['main']['nodes'] if n['nodeId'] == 'capture')
+            onlineDefinition = deepcopy(payload['devices']['definitions']['camera'])
+            onlineDefinition['defaults']['exposureUs'] = 12000
+            sourceEditor = SourceEditor(trustedDeviceTypes()['device.simulated.camera'],
+                payload['devices']['definitions']['camera'], sourceNode, 'camera', {})
+            sourceEditor.setOnline(onlineDefinition, sourceNode, revision=42, deviceId='camera')
+            label = sourceEditor.onlineLabels['exposureUs'].text()
+            if '12000' not in label or 'R42' not in label or '\u672a\u5e94\u7528' not in label:
+                raise RuntimeError('online field comparison lost its effective value or revision')
+            sourceEditor.deleteLater()
+            QCoreApplication.sendPostedEvents(None, QEvent.DeferredDelete)
+            application.processEvents()
         service = RuntimeService(dbPath=root / 'runtime.db', workspaceRoot=root / 'jobs')
         entered, release = Event(), Event()
         original = RunGroup.handle
@@ -145,10 +171,40 @@ def checkTargetedRepairs(*, includeDesigner=False):
                     or service.projectConfiguration.snapshot()['documentRevision'] != snap['documentRevision']
                     or any(v.connected for v in service.deviceManager.lifecycles.values())):
                 raise RuntimeError('same-revision recovery did not remain software-only')
+            connected = service.deviceManager.testConnection(service.deviceManager.definitions['camera'].model_dump())
+            if not connected['reused'] or service.deviceManager.maintenanceOwners:
+                raise RuntimeError('setup test did not release its borrowed simulated device')
+            copy = json.loads((root / 'online-project.json').read_text(encoding='utf-8'))
+            if copy != service.projectConfiguration.store.snapshot():
+                raise RuntimeError('reconstructible configuration copy differs from SQLite')
+            manager = service.deviceManager
+            from emo_master.core.project.snapshots import revisionOf
+            observerId = service.cameraDiagnostics.open('camera', revisionOf(manager.definitions['camera'].model_dump()),
+                                                       manager.executors['camera'].generation)
+            observer = service.cameraDiagnostics.sessions[observerId]
+            service.cameraDiagnostics.watch(observer, 0)
+            if manager.permissions or manager.maintenanceOwners:
+                raise RuntimeError('passive camera observation owns production admission')
+            owner = 'observation-selftest'
+            manager.authorize(owner, ['camera'])
+            cycle = service.projectConfiguration.beginCycle(owner, -1)
+            frame = manager.execute(owner, 'camera', 'capture', manager.definitions['camera'].defaults, cycleId=cycle['cycleId'])
+            manager.frames.release(frame['frameId'], owner)
+            observed = service.cameraDiagnostics.watch(observer, 0)
+            if (not observed['preview'] or observed['metadata']['frameId'] != frame['frameId']
+                    or observed['metadata']['cycleId'] != cycle['cycleId'] or manager.frames.frames):
+                raise RuntimeError('camera observation did not retain an independent bounded display copy')
+            service.projectConfiguration.endCycle(owner, cycle['cycleId'])
+            manager.retire(owner)
+            observer.close()
+            if observer.observed is not None or manager.maintenanceOwners:
+                raise RuntimeError('camera observer did not release its display copy')
         finally:
             service.close()
     return dict(oldInputValue=1, publishedValue=99, originalFramesRetired=True, sameManifestRepaired=True,
-                sameRevisionRecovered=True, hardwareAccessed=False, runtimeClosed=True, designerPackageChecked=includeDesigner)
+                sameRevisionRecovered=True, hardwareAccessed=False, runtimeClosed=True, designerPackageChecked=includeDesigner,
+                deviceSetupChecked=True, configurationCopyChecked=True, portableDevicesChecked=includeDesigner,
+                sourceFieldCompared=includeDesigner, cameraObserverChecked=True)
 
 
 def checkTargetedDesignerRepairs():

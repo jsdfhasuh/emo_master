@@ -1,13 +1,12 @@
 """Conservative dependency-scoped retirement for non-cycle-safe changes."""
 from emo_master.core.project.configuration import projectChanges, presentationExecution
-from emo_master.core.project.models import ProjectDocument
 from emo_master.core.workflow.loop_contracts import loopWorkflowReferenceFields
 
 
-def affectedJobs(runtime, payload):
-    before = runtime.projectConfiguration.current["payload"]
+def affectedObjects(before, payload):
     if before["project"]["projectId"] != payload["project"]["projectId"]:
-        return {record.jobId for record in runtime.jobRepository.all()}
+        return (set(before['workflows']) | set(payload['workflows']),
+                set(before['devices']['definitions']) | set(payload['devices']['definitions']), True)
     flows, devices = set(), set()
     for change in projectChanges(before, payload):
         p = change["parts"]
@@ -49,29 +48,61 @@ def affectedJobs(runtime, payload):
                 flows.update(key for key, flow in document["workflows"].items()
                              if any(node.get("operatorId") in MANAGED_TCP_OPERATORS for node in flow["nodes"]))
         else:
-            return {record.jobId for record in runtime.jobRepository.all()}
+            return set(before['workflows']) | set(payload['workflows']), devices, True
     edges = {}
     for data in (before, payload):
-        document = ProjectDocument.model_validate(data)
-        for key, workflow in document.workflows.items():
+        for key, workflow in data['workflows'].items():
             targets = edges.setdefault(key, set())
-            for node in workflow.nodes:
-                if any(binding.deviceId in devices for binding in node.deviceBindings.values()):
+            for node in workflow['nodes']:
+                if any(binding['deviceId'] in devices for binding in node.get('deviceBindings', {}).values()):
                     flows.add(key)
-                if node.kind == "subflow" and node.targetWorkflowId:
-                    targets.add(node.targetWorkflowId)
-                if node.kind == "loop":
-                    targets.update(node.loop[f] for f in loopWorkflowReferenceFields(node.loop) if node.loop.get(f))
-                if node.kind == "dispatch":
-                    targets.update(t["workflowId"] for t in node.params["targets"])
+                if node.get('kind') == "subflow" and node.get('targetWorkflowId'):
+                    targets.add(node['targetWorkflowId'])
+                if node.get('kind') == "loop":
+                    config = node.get('loop') or {}
+                    targets.update(config[f] for f in loopWorkflowReferenceFields(config) if config.get(f))
+                if node.get('kind') == "dispatch":
+                    targets.update(t['workflowId'] for t in node.get('params', {}).get('targets', []))
     while True:
         expanded = flows | {key for key, targets in edges.items() if targets & flows}
         if expanded == flows:
             break
         flows = expanded
-    jobs = {record.jobId for record in runtime.jobRepository.all() if record.workflowId in flows}
+    return flows, devices, False
+
+
+def affectedJobs(runtime, payload):
+    flows, _devices, allJobs = affectedObjects(runtime.projectConfiguration.current['payload'], payload)
+    jobs = {record.jobId for record in runtime.jobRepository.all() if allJobs or record.workflowId in flows}
     for owner in tuple(jobs):
         group = runtime.deviceManager.dispatchGroups.get(owner)
         if group is not None:
             jobs.update(group.members)
     return jobs
+
+
+def changeEffects(runtime, candidate):
+    """Describe explicit preflight changes using the same cycle/replacement rules."""
+    from emo_master.core.project.configuration import executionDigest, selectedCandidate
+    before = runtime.projectConfiguration.current['payload']
+    projectChanged = before['project']['projectId'] != candidate['project']['projectId']
+    result = {}
+    for change in projectChanges(before, candidate):
+        partial = selectedCandidate(before, candidate, [change['path']])
+        scope = candidate if projectChanged else partial
+        flows, devices, _all = affectedObjects(before, scope)
+        if projectChanged:
+            effect = 'stop'
+        elif executionDigest(partial) == executionDigest(before):
+            effect = 'document'
+        elif runtime._supportsCycleChange(partial):
+            effect = 'next_cycle'
+        elif devices and change['parts'][0] in {'devices', 'resources'}:
+            effect = 'reconnect' if any(key in before['devices']['definitions'] for key in devices) else 'idle'
+        else:
+            effect = 'stop'
+        affected = affectedJobs(runtime, scope)
+        jobs = sorted(record.jobId for record in runtime.jobRepository.all() if record.jobId in affected
+                      and (not record.isTerminal or runtime.jobSupervisor.ownsJobResources(record.jobId)))
+        result[change['path']] = dict(effect=effect, devices=sorted(devices), workflows=sorted(flows), jobs=jobs)
+    return result

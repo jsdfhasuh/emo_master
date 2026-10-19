@@ -10,10 +10,11 @@ from .icon_map import icon
 
 
 class DeviceNetworkDialog(QDialog):
-    def __init__(self, client, projectId, runtimeId, deviceId, state, parent=None):
+    def __init__(self, client, projectId, runtimeId, deviceId, state, parent=None, *, discoveryOnly=False):
         super().__init__(parent)
         self.client, self.projectId, self.runtimeId, self.deviceId = client, projectId, runtimeId, deviceId
         self.state = dict(state)
+        self.discoveryOnly = discoveryOnly
         self.discovery = None
         self.selectedCameraKey = None
         self.pending = None
@@ -64,6 +65,11 @@ class DeviceNetworkDialog(QDialog):
         self.receiptButton.clicked.connect(lambda: self.start('status', requestId=self.receiptId.text().strip()))
         form.addRow(self.receiptButton)
         layout.addLayout(form)
+        if discoveryOnly:
+            for index in range(form.count()):
+                widget = form.itemAt(index).widget()
+                if widget is not None:
+                    widget.hide()
         self.status = QLabel('尚未发现设备')
         self.status.setWordWrap(True)
         self.status.setTextFormat(Qt.PlainText)
@@ -136,6 +142,8 @@ class DeviceNetworkDialog(QDialog):
             self.accept()
 
     def forceIp(self):
+        if self.discoveryOnly:
+            return
         row = self.row()
         if row is None or self.pending is not None:
             return

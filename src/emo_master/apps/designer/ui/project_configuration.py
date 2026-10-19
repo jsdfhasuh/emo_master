@@ -27,6 +27,8 @@ class ProjectConfigurationDialog(QDialog):
         self.writePending = False
         self.pending = None
         self.kind = ""
+        self.validatedSelection = None
+        self.validationSelection = None
         self.uploadCancelled = Event()
         self.pool = ThreadPoolExecutor(max_workers=1, thread_name_prefix="online-configuration")
         self.setWindowTitle("工程与 Runtime 配置")
@@ -36,16 +38,22 @@ class ProjectConfigurationDialog(QDialog):
         self.status.setWordWrap(True)
         self.status.setTextInteractionFlags(Qt.TextSelectableByMouse)
         layout.addWidget(self.status)
-        self.table = QTableWidget(0, 4)
-        self.table.setHorizontalHeaderLabels(["选中变更", "Runtime 在线值", "工程草稿值", "变更类别"])
+        self.table = QTableWidget(0, 6)
+        self.table.setHorizontalHeaderLabels(["选中变更", "Runtime 在线值", "工程草稿值", "变更类别", '生效方式', '影响对象'])
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().hide()
         layout.addWidget(self.table, 1)
+        self.impact = QLabel('选中变更未校验')
+        self.impact.setWordWrap(True)
+        self.impact.setTextInteractionFlags(Qt.TextSelectableByMouse)
+        layout.addWidget(self.impact)
+        self.table.itemChanged.connect(self._invalidateEffects)
         self.replacementPolicy = QComboBox()
         self.replacementPolicy.addItem("不自动停止或重连", "reject")
         self.replacementPolicy.addItem("停止受影响任务，替换后恢复原连接", "stopAffected")
         self.replacementPolicy.addItem("排空受影响周期，再停止并替换 / 恢复原连接", "drainAffected")
+        self.replacementPolicy.currentIndexChanged.connect(self._invalidateEffects)
         layout.addWidget(self.replacementPolicy)
         row = QHBoxLayout()
         self.refreshButton = QPushButton("与 Runtime 比较")
@@ -99,11 +107,11 @@ class ProjectConfigurationDialog(QDialog):
     def openGraph(self):
         if not self._valid():
             return
-        from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
         projectId = self.snapshot["payload"]["project"]["projectId"] if self.snapshot else self.projectId
-        dialog = OnlineGraphDialog(self.client, projectId, self)
-        dialog.setAttribute(Qt.WA_DeleteOnClose)
-        dialog.show()
+        self.reject()
+        if self.c.devices:
+            self.c.devices.accept()
+        self.c.showOnline(projectId)
 
     def runOnline(self):
         if not self._valid() or self.pending is not None or self.writePending or not self.snapshot or self.snapshot.get("recoveryError"):
@@ -164,6 +172,7 @@ class ProjectConfigurationDialog(QDialog):
         replacing = snapshot["payload"]["project"]["projectId"] != self.projectId
         if replacing and self.replacementPolicy.currentData() == "reject":
             self.replacementPolicy.setCurrentIndex(self.replacementPolicy.findData("stopAffected"))
+        self.table.blockSignals(True)
         self.table.setRowCount(len(changes))
         for row, change in enumerate(changes):
             item = QTableWidgetItem(change["path"])
@@ -183,9 +192,64 @@ class ProjectConfigurationDialog(QDialog):
                 "device_binding": "设备引用", "workflow_structure": "流程结构", "resources": "资源 / 现场绑定",
                 "presentation": "工作页面", "runtime_configuration": "运行配置"}
             self.table.setItem(row, 3, QTableWidgetItem(categories[changeCategory(change["parts"])]))
+            self.table.setItem(row, 4, QTableWidgetItem('待校验'))
+            self.table.setItem(row, 5, QTableWidgetItem('待校验'))
+        self.table.blockSignals(False)
+        self._invalidateEffects()
         self.status.setText(f"在线文档 R{snapshot['documentRevision']} / 执行计划 R{snapshot['executionRevision']}；{len(changes)} 项差异"
                             + (f"；更换工程：{snapshot['payload']['project']['projectId']} → {self.projectId}" if replacing else "")
-                            + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else ""))
+                            + ("；恢复未完成：" + snapshot["recoveryError"] if snapshot.get("recoveryError") else "")
+                            + ("；配置副本导出失败（SQLite 已提交）：" + snapshot['exportCopyError'] if snapshot.get('exportCopyError') else ''))
+
+    def _invalidateEffects(self, *_args):
+        self.validatedSelection = None
+        self.impact.setText('选中变更未校验')
+        self.table.blockSignals(True)
+        try:
+            for row in range(self.table.rowCount()):
+                for col in (4, 5):
+                    item = self.table.item(row, col)
+                    if item is not None:
+                        item.setText('待校验')
+                        item.setToolTip('')
+        finally:
+            self.table.blockSignals(False)
+
+    def _showEffects(self, result):
+        self.validatedSelection = self.validationSelection
+        labels = dict(document='仅文档 / 页面外观', next_cycle='下一检测周期', idle='设备空闲后安装',
+                      reconnect='退出使用后替换 / 按策略重连', stop='停止或排空受影响任务后生效')
+        effects = result.get('changeEffects', {})
+        self.table.blockSignals(True)
+        try:
+            for row in range(self.table.rowCount()):
+                item = self.table.item(row, 0)
+                effect = effects.get(item.data(Qt.UserRole))
+                if item.checkState() != Qt.Checked or not effect:
+                    continue
+                self.table.item(row, 4).setText(labels.get(effect['effect'], 'Runtime 未声明'))
+                details = []
+                for key, title in [('devices', '设备'), ('workflows', '流程'), ('jobs', '任务')]:
+                    if effect.get(key):
+                        details.append(title + '：' + '、'.join(effect[key]))
+                text = '\n'.join(details) or '无运行对象'
+                self.table.item(row, 5).setText(text)
+                self.table.item(row, 5).setToolTip(text)
+            self.table.resizeRowsToContents()
+        finally:
+            self.table.blockSignals(False)
+        consequence = []
+        if result.get('cycleSafe'):
+            consequence.append('无需停止；新检测采用新配置，已受理周期保持原配置')
+        elif result.get('affectedJobs'):
+            consequence.append('需退出的任务：' + '、'.join(result['affectedJobs']))
+        if result.get('disconnectDevices'):
+            consequence.append('需断开的设备：' + '、'.join(result['disconnectDevices']))
+        if result.get('communicationRestart'):
+            consequence.append('需切换 TCP 监听')
+        if not effects:
+            consequence.append('此 Runtime 未提供逐项生效说明，请升级 Runtime')
+        self.impact.setText('选中变更已校验 · ' + ('；'.join(consequence) or '无正在运行的受影响对象'))
 
     def write(self, checked=False, *, validate=False):
         if (self.snapshot is None or self.pending is not None
@@ -212,19 +276,26 @@ class ProjectConfigurationDialog(QDialog):
                 if item.data(Qt.UserRole) in dependencies:
                     item.setCheckState(Qt.Checked)
             paths.extend(path for path in dependencies if path not in paths)
+        selection = (tuple(sorted(paths)), self.replacementPolicy.currentData())
+        options = {} if self.replacementPolicy.currentData() == "reject" else {"replacementPolicy": self.replacementPolicy.currentData()}
+        if not validate and self.validatedSelection != selection:
+            self.validationSelection = selection
+            self._submit('prewrite', lambda: self.client.writeProjectConfiguration(
+                self.snapshot, self.local, paths, uuid4().hex, validate=True, **options))
+            return
         requestId = uuid4().hex
+        self.validationSelection = selection
         if not validate:
             consequence = ("\n将停止受影响的任务并可能断开 / 重连设备；不执行采集或 PLC 写入。取消不能撤销已经发生的停止。"
                            if self.replacementPolicy.currentData() != "reject" else "")
             if self.snapshot["payload"]["project"]["projectId"] != self.projectId:
                 consequence += f"\n将完整替换工程 {self.snapshot['payload']['project']['projectId']} 为 {self.projectId}；旧任务、连接意图不自动恢复。"
-            answer = QMessageBox.question(self, "写入 Runtime", f"将选中的 {len(paths)} 项变更写入在线工程？" + consequence,
+            answer = QMessageBox.question(self, "写入 Runtime", f"将选中的 {len(paths)} 项变更写入在线工程？\n" + self.impact.text() + consequence,
                                           QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if answer != QMessageBox.Yes:
                 return
             self.requestId = requestId
             self.writePending = True
-        options = {} if self.replacementPolicy.currentData() == "reject" else {"replacementPolicy": self.replacementPolicy.currentData()}
         self._submit("validate" if validate else "write", lambda: self.client.writeProjectConfiguration(
             self.snapshot, self.local, paths, requestId, validate=validate, **options))
 
@@ -316,7 +387,9 @@ class ProjectConfigurationDialog(QDialog):
                 self._showSnapshot(result)
             elif self.kind == "upload":
                 self._showResourceResults(result)
-            elif self.kind == "validate":
+            elif self.kind in {"validate", 'prewrite'}:
+                prewrite = self.kind == 'prewrite'
+                self._showEffects(result)
                 details = []
                 if not result.get("cycleSafe", True) and result.get("affectedJobs"):
                     details.append("受影响任务：" + ", ".join(result["affectedJobs"]))
@@ -325,6 +398,8 @@ class ProjectConfigurationDialog(QDialog):
                 if result.get("communicationRestart"):
                     details.append("需切换 TCP 监听")
                 self.status.setText("选中变更校验通过；尚未写入" + ("；" + "；".join(details) if details else ""))
+                if prewrite:
+                    self.write()
             else:
                 state = result["state"]
                 self.writePending = state in {"VALIDATING", "WAITING"}
@@ -332,6 +407,8 @@ class ProjectConfigurationDialog(QDialog):
                 self.status.setText(f"{labels.get(state, state)}；请求 {self.requestId}；{result.get('message', '')}"
                                     + ("；发布错误：" + result["publicationError"] if result.get("publicationError") else "")
                                     + ("；资源释放错误：" + result["cleanupError"] if result.get("cleanupError") else ""))
+                if result.get('exportError'):
+                    self.status.setText(self.status.text() + '；配置副本导出失败：' + result['exportError'])
                 if result.get("connections") or result.get("connectionError"):
                     self.status.setText(self.status.text() + "；连接控制：" + json.dumps(
                         result.get("connections", result.get("connectionError")), ensure_ascii=False))

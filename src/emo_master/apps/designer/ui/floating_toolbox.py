@@ -223,6 +223,8 @@ class FloatingToolbox(QFrame):
         try:
             area = self.visibleCanvasRect()
             margin = min(12, max(0, min(area.width(), area.height()) // 8))
+            if self._expanded and area.height() < 180:
+                margin = 0
             area = area.adjusted(margin, margin, -margin, -margin)
             width = min(308 if self._expanded else 148, max(1, area.width()))
             height = min(560 if self._expanded else 46, max(1, area.height()))

@@ -222,6 +222,8 @@ class OnlineGraphDialog(QDialog):
             self.instance = data["runtimeInstanceId"]
             self.data = deepcopy(data)
             snapshot = data["snapshot"]
+            if not self.projectId:
+                self.projectId = snapshot['payload']['project']['projectId']
             self.replaceChoices(self.revision, [("当前在线", 0)] + [
                 (f"文档 R{r['documentRevision']} / 执行 R{r['executionRevision']}", r["documentRevision"])
                 for r in data["history"]], self.revision.currentData())
@@ -232,7 +234,7 @@ class OnlineGraphDialog(QDialog):
             self.replaceChoices(self.workflow, [(payload["workflows"][k]["name"], k)
                                 for k in order if k in payload["workflows"]],
                                 self.workflow.currentData() or payload.get("entryWorkflowId"))
-            self.status.setText(f"只读 · 文档 R{snapshot['documentRevision']} / 执行 R{snapshot['executionRevision']}"
+            self.status.setText(f"只读 · {self.projectId} · 文档 R{snapshot['documentRevision']} / 执行 R{snapshot['executionRevision']}"
                                 + (" · 当前选择版本无保留结果" if self.job.currentData() and not data["events"] else ""))
             self.render()
         except Exception as error:
@@ -284,6 +286,10 @@ class OnlineGraphDialog(QDialog):
         nodeId = event["nodeId"] if event and event["nodeId"] else self.node.currentData()
         node = next((n for n in flow["nodes"] if n["nodeId"] == nodeId), None)
         self.details.setPlainText(json.dumps(dict(node=node, result=event), ensure_ascii=False, indent=2))
+
+    def reject(self):
+        if self.isWindow():
+            super().reject()
 
     def done(self, result):
         if self.command is not None:

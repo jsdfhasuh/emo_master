@@ -38,9 +38,15 @@ def runImvHost(pipe, cancellation, connection, generation, apiFactory=None):
                     raise DeviceError("E_DEVICE_BUDGET", "unlimited Host budget requires cancellable hardware capture")
                 if request["action"] == "connect":
                     reply = dict(ok=True, metadata=camera.connect(request["params"], cancellation.is_set, deadline))
-                elif request["action"] == "capture":
+                elif request['action'] == 'read_parameters':
+                    reply = dict(ok=True, metadata=camera.readParameters(request['params'], cancellation.is_set, deadline))
+                elif request["action"] in {"capture", "trial_capture"}:
                     memory = SharedMemory(name=request["memory"])
-                    image, metadata = camera.capture(request["params"], cancellation.is_set, deadline, memory.size)
+                    if request['action'] == 'trial_capture':
+                        image, metadata = camera.trialCapture(request['params'], request['changes'], cancellation.is_set, deadline, memory.size)
+                        metadata['restored'] = True
+                    else:
+                        image, metadata = camera.capture(request["params"], cancellation.is_set, deadline, memory.size)
                     if image.nbytes > memory.size:
                         raise DeviceError("E_FRAME_CAPACITY", "SDK frame exceeds Host memory", unhealthy=True)
                     target = np.ndarray(image.shape, dtype=np.uint8, buffer=memory.buf)
@@ -117,8 +123,8 @@ class ManagedImv:
         finally:
             child.close()
 
-    def execute(self, action, params, cancelled, deadline):
-        if action not in {"capture", "connect"}:
+    def execute(self, action, params, cancelled, deadline, *, changes=None):
+        if action not in {"capture", "connect", "read_parameters", "trial_capture"}:
             raise DeviceError("E_DEVICE_ACTION", "unsupported camera action")
         if self.unhealthy:
             raise DeviceError("E_DEVICE_UNAVAILABLE", "camera requires explicit recovery", unhealthy=True)
@@ -126,10 +132,10 @@ class ManagedImv:
             raise DeviceError("E_DEVICE_CANCELLED", "camera request cancelled before dispatch")
         self._start()
         self.cancellation.clear()
-        self.memory = SharedMemory(create=True, size=self.frameBytes(params)) if action == "capture" else None
+        self.memory = SharedMemory(create=True, size=self.frameBytes(params)) if action in {"capture", "trial_capture"} else None
         self.sequence += 1
         request = dict(action=action, params=params, memory=self.memory.name if self.memory else None, generation=self.generation,
-                       sequence=self.sequence, budget=None if math.isinf(deadline) else max(.001, deadline - monotonic()))
+                       changes=changes, sequence=self.sequence, budget=None if math.isinf(deadline) else max(.001, deadline - monotonic()))
         try:
             sendBytes(self.pipe, json.dumps(request, allow_nan=False).encode(), cancelled, min(deadline, monotonic() + 2))
             interrupted = None
@@ -152,7 +158,7 @@ class ManagedImv:
             if cancelled() or monotonic() >= deadline:
                 raise DeviceError("E_DEVICE_CANCELLED", "discarded late camera frame", outcome="UNKNOWN", unhealthy=True)
             self.connectionGeneration = reply["metadata"]["connectionGeneration"]
-            if action == "connect":
+            if action in {"connect", "read_parameters"}:
                 return reply["metadata"]
             self.hardwareStream = params["triggerMode"] == "hardware"
             shape = reply["shape"]

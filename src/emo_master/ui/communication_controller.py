@@ -35,6 +35,7 @@ class CommunicationController(QObject):
         self.events = queue.Queue(maxsize=1)
         self.message = ""
         self.closing = False
+        self.observationPaused = False
         self.unsynced = False
         self.settingsDialog = None
         self.disableSave = None
@@ -122,7 +123,7 @@ class CommunicationController(QObject):
                         self.message = "项目配置与 Runtime 不同，请先同步已保存配置；禁止启动旧配置。"
                 self._render()
             self.nextPoll = time.monotonic() + (0.4 if kind != "state" else 1.0)
-        if self.closing or self.thread is not None or time.monotonic() < self.nextPoll:
+        if self.closing or self.observationPaused or self.thread is not None or time.monotonic() < self.nextPoll:
             return
         if not project.get("path"):
             if self.state is None:

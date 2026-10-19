@@ -43,12 +43,12 @@ def equalValue(actual: object, target: object) -> bool:
 
 
 class CameraConfiguration:
-    def __init__(self, api: Any, params: dict[str, object], persist: Callable[[dict], None]) -> None:
+    def __init__(self, api: Any, params: dict[str, object], persist: Callable[[dict], None], *, camera=None) -> None:
         validation = HuarayCameraOperator().validateParams({key: value for key, value in params.items()
             if key in {"selectionMode", "ipAddress", "cameraKey", "userId", "deviceIndex"} | SOFTWARE_FIELDS})
         if validation:
             raise HuarayCameraError("E_PARAM_INVALID", validation["message"])
-        self.camera = CameraSession(api, {**DEFAULTS, **params})
+        self.camera = camera if camera is not None else CameraSession(api, {**DEFAULTS, **params})
         self.persist = persist
         self.actual: dict[str, object] = {}
         self.properties: dict[str, dict] = {}
@@ -61,7 +61,7 @@ class CameraConfiguration:
         self.records: list[dict] = []
         self.failed = False
         self.pending = False
-        self.identity = ""
+        self.identity = self.camera.sourceId if camera is not None else ""
         self.restoring = False
 
     def connect(self) -> None:

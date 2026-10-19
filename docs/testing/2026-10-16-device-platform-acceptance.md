@@ -59,7 +59,7 @@
 | D17 | 写入等待时旧 LoadProject 或其他 mutation 路径不能绕过单写入通道；不阻塞停止命令。 | M3 / M6 | PARTIAL | 已激活 2.6 拒绝旧 LoadProject 和 TCP SYNC/UNLOAD；完整替换仲裁仍待补；见 UI/Runtime 进展报告 |
 | D18 | 只选曝光而本地还有无效未完成节点／未选 PLC 地址时，合成在线候选不夹带未选修改。 | M3 / M6 | PARTIAL | 选中曝光不夹带未完成节点或未选连接标识，候选/Runtime 测试通过；见 UI/Runtime 进展报告 |
 | D19 | 提交完成响应丢失，查询原 requestId／读回版本确认；不以新请求自动重复提交。 | M3 / M6 | PARTIAL | 同 requestId 查询/重复调用不重放，重启后回执保留；真实断网桌面场景待补；见 UI/Runtime 进展报告 |
-| D20 | SQLite 提交失败保持旧版；提交成功但导出副本写失败不抹掉已提交事实；重启读权威版本。 | M3 / M6 | PARTIAL | SQLite 回执插入失败回滚配置，发布失败不抹掉提交；完整副本导出未实现；见 UI/Runtime 进展报告 |
+| D20 | SQLite 提交失败保持旧版；提交成功但导出副本写失败不抹掉已提交事实；重启读权威版本。 | M3 / M6 | PARTIAL | SQLite 回执插入失败回滚配置；已补充完整配置 JSON 副本、独立导出错误及重启重建，见 [2026-10-19 修复记录](2026-10-19-device-plan-completion.md)；正式人工验收仍未执行 |
 | D21 | 普通参数新版周期可在旧消费者仍运行时开始，旧消费者继续用旧版；不兼容连接变更才等待相关退出。 | M3 / M6 | PARTIAL | 持久消费者和旧排队 delivery 租约已实现；新生产者周期与旧消费者并存、旧计划不提前释放已测；完整现场链待验收 |
 | D22 | 在线与本地图结构／阈值不同，在线只读图与结果使用相应快照；旧结果不套新参数，布局差异不阻监视。 | M3 / M6 | PARTIAL | SQLite 历史快照与提交同事务；独立只读 FlowScene 按文档+执行版本匹配结果，无历史明确报错；原生 Windows 150% 截图及不重置缩放通过；完整历史保留策略待验收 |
 | D23 | 长期 While 的 condition 与本次 body 使用同一 token；无合法边界不在任意节点中热切换。 | M3 / M6 | PARTIAL | 显式迭代 child lease、condition/body 同 token、异常/false 退休、外层旧计划恢复及跨 owner 拒绝已测；完整 UI/现场待验收 |

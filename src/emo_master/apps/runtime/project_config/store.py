@@ -1,5 +1,6 @@
 """Configuration and committed receipt share one SQLite commit boundary."""
 import json
+from threading import Lock
 
 from emo_master.core.project.configuration import canonical, executionDigest
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
@@ -14,9 +15,12 @@ class ConfigurationError(ValueError):
 
 
 class ConfigurationStore:
-    def __init__(self, sqliteStore, *, commitState=None):
+    def __init__(self, sqliteStore, *, commitState=None, exportPath=None):
         self.sqlite = sqliteStore
         self.commitState = commitState
+        self.exportPath = exportPath
+        self.exportError = ''
+        self.exportLock = Lock()
         with self.sqlite.connection() as connection:
             connection.execute("""CREATE TABLE IF NOT EXISTS onlineProject (
                 singleton INTEGER PRIMARY KEY CHECK(singleton=1),
@@ -29,6 +33,22 @@ class ConfigurationStore:
                 payload TEXT NOT NULL, sourcePath TEXT NOT NULL)""")
             connection.execute("""INSERT OR IGNORE INTO onlineProjectHistory
                 SELECT documentRevision, executionRevision, payload, sourcePath FROM onlineProject""")
+        self.exportCopy()
+
+    def exportCopy(self):
+        if self.exportPath is None:
+            return
+        from emo_master.core.project.delivery_store import atomicJson
+        with self.exportLock:
+            try:
+                snapshot = self.snapshot()
+                if snapshot is not None:
+                    atomicJson(self.exportPath, snapshot)
+                self.exportError = ''
+            except Exception as error:
+                # This is a reconstructible copy, never a second authority or
+                # a reason to report an already committed write as failed.
+                self.exportError = str(error)
 
     @staticmethod
     def _snapshot(row):
@@ -85,6 +105,7 @@ class ConfigurationStore:
                 raise ConfigurationError("E_CONFIG_ACTIVE", "an online configuration already exists; compare before writing")
             connection.execute("INSERT INTO onlineProject VALUES (1,1,1,?,?)", (canonical(payload), sourcePath))
             connection.execute("INSERT INTO onlineProjectHistory VALUES (1,1,?,?)", (canonical(payload), sourcePath))
+        self.exportCopy()
         return self.snapshot()
 
     def advanceRequestFence(self, expectedRevision):
@@ -96,6 +117,7 @@ class ConfigurationStore:
                 raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
             connection.execute("UPDATE onlineProject SET documentRevision=? WHERE singleton=1", (expectedRevision + 1,))
             connection.execute("INSERT INTO onlineProjectHistory VALUES (?,?,?,?)", (expectedRevision + 1, *row[1:]))
+        self.exportCopy()
         return self.snapshot()
 
     def commit(self, expectedRevision, payload, requestId, fingerprint, runtimeInstanceId, *, sourcePath=None):
@@ -130,4 +152,7 @@ class ConfigurationStore:
                 (SELECT rowid FROM projectWriteReceipts ORDER BY rowid DESC LIMIT ?)""", (RECEIPT_WINDOW,))
             connection.execute("INSERT INTO onlineProjectHistory VALUES (?,?,?,?)",
                                (revision, execution, canonical(payload), sourcePath))
+        self.exportCopy()
+        if self.exportError:
+            receipt = dict(receipt, exportError=self.exportError)
         return receipt

@@ -485,66 +485,98 @@ class RuntimeClient:
         from pathlib import Path
         from emo_master.core.project.models import ProjectDocument
         from emo_master.core.project.snapshots import verifyResources
-        document = ProjectDocument.model_validate(payload)
-        snapshot = dict(snapshot, payload=payload)
-        root = Path(root).resolve()
-        paths = verifyResources(document, root.parent if root.is_file() else root)
         results = dict(uploaded=[], cancelled=[], pending=[], errors=[])
-        if getattr(self, 'pendingResourceTransfers', {}):
-            raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', 'query the original pending resource transfer before another upload')
-        self.pendingResourceTransfers = {}
-        for key, path in paths.items():
-            if cancelled is not None and cancelled.is_set():
-                raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
-            transferId = uuid4().hex
-            resource = document.resources.items[key].model_dump(mode="json")
-            existing = self.transferProjectResource(snapshot, transferId, "LOOKUP", resource=resource)
-            if existing["state"] == "READY":
-                results['uploaded'].append(dict(existing, resourceId=key, requestTransferId=existing['transferId']))
-                continue
-            replacement = ''
-            if existing['state'] == 'CORRUPT':
-                if not repairConfirmed:
-                    raise RuntimeClientError('E_RESOURCE_REPAIR_CONFIRM', 'confirm repair using the matching local original')
-                if not snapshot.get('resourceRepair'):
-                    raise RuntimeClientError('UNIMPLEMENTED', 'Runtime does not support explicit resource repair')
-                replacement = existing['transferId']
-            elif existing['state'] != 'MISSING':
-                raise RuntimeClientError('E_RESOURCE_TRANSFER_STATE', 'unexpected resource lookup state')
-            committing = False
-            try:
+        key, transferId, stage = '', '', 'VALIDATE'
+        begun = committing = False
+        try:
+            document = ProjectDocument.model_validate(payload)
+            snapshot = dict(snapshot, payload=payload)
+            root = Path(root).resolve()
+            paths = verifyResources(document, root.parent if root.is_file() else root)
+            if getattr(self, 'pendingResourceTransfers', {}):
+                raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN', 'query the original pending resource transfer before another upload')
+            self.pendingResourceTransfers = {}
+            for key, path in paths.items():
+                transferId, stage = '', 'CHECK_CANCELLED'
+                begun = committing = False
+                if cancelled is not None and cancelled.is_set():
+                    raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
+                transferId, stage = uuid4().hex, 'LOOKUP'
+                resource = document.resources.items[key].model_dump(mode="json")
+                existing = self.transferProjectResource(snapshot, transferId, "LOOKUP", resource=resource)
+                if existing["state"] == "READY":
+                    results['uploaded'].append(dict(existing, resourceId=key, requestTransferId=existing['transferId']))
+                    continue
+                replacement = ''
+                stage = 'CONFIRM_REPAIR'
+                if existing['state'] == 'CORRUPT':
+                    if not repairConfirmed:
+                        raise RuntimeClientError('E_RESOURCE_REPAIR_CONFIRM', 'confirm repair using the matching local original')
+                    if not snapshot.get('resourceRepair'):
+                        raise RuntimeClientError('UNIMPLEMENTED', 'Runtime does not support explicit resource repair')
+                    replacement = existing['transferId']
+                elif existing['state'] != 'MISSING':
+                    raise RuntimeClientError('E_RESOURCE_TRANSFER_STATE', 'unexpected resource lookup state')
+                stage = 'BEGIN'
+                self.pendingResourceTransfers[transferId] = (snapshot, key)
                 self.transferProjectResource(snapshot, transferId, "BEGIN", resource=resource, replacementOf=replacement)
+                begun = True
+                stage = 'OPEN'
                 offset = 0
                 with Path(path).open("rb") as stream:
-                    while chunk := stream.read(512 * 1024):
+                    while True:
+                        stage = 'READ'
+                        chunk = stream.read(512 * 1024)
+                        if not chunk:
+                            break
+                        stage = 'CHECK_CANCELLED'
                         if cancelled is not None and cancelled.is_set():
                             raise RuntimeClientError("E_CONFIG_CANCELLED", "resource upload cancelled")
+                        stage = 'CHUNK'
                         self.transferProjectResource(snapshot, transferId, "CHUNK", offset=offset, data=chunk)
                         offset += len(chunk)
+                stage = 'COMMIT'
                 committing = True
-                self.pendingResourceTransfers[transferId] = (snapshot, key)
-                result = self.transferProjectResource(snapshot, transferId, "COMMIT")
-                if self._recordResourceTransfer(results, transferId, key, result) != 'uploaded':
-                    return results
-            except Exception:
-                if committing:
+                try:
+                    result = self.transferProjectResource(snapshot, transferId, "COMMIT")
+                except Exception as error:
                     # STATUS is a read, never a second COMMIT or implicit repair.
                     checked = self._queryResourceTransfers('STATUS', [transferId])
                     for category, items in checked.items():
-                        results[category].extend(items)
+                        results[category].extend(dict(item, stage='STATUS') for item in items)
                     if checked['errors']:
-                        error = RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN',
-                            f'query original resource transfer {transferId}; no retry: {checked["errors"][0]["message"]}')
-                        error.resourceResult = results
-                        raise error
+                        if isinstance(error, RuntimeClientError):
+                            raise
+                        raise RuntimeClientError('E_RESOURCE_OUTCOME_UNKNOWN',
+                            f'query original resource transfer {transferId}; no retry: {error}') from error
                     if checked['uploaded']:
                         continue
+                    results['errors'].append(dict(resourceId=key, requestTransferId=transferId, stage=stage,
+                        code=getattr(error, 'code', 'E_RESOURCE_OUTCOME_UNKNOWN'), message=str(error)))
+                    results['aborted'] = True
                     return results
-                try:
-                    self.transferProjectResource(snapshot, transferId, "CANCEL")
-                except Exception:
-                    pass
+                if self._recordResourceTransfer(results, transferId, key, result) != 'uploaded':
+                    results['aborted'] = True
+                    return results
+        except Exception as error:
+            results['aborted'] = True
+            results['errors'].append(dict(resourceId=key, requestTransferId=transferId, stage=stage,
+                code=getattr(error, 'code', 'E_RESOURCE_UPLOAD'), message=str(error)))
+            # These BEGIN errors precede insertion in the existing Runtime.
+            # UNKNOWN, storage failures and lost replies do not prove rejection.
+            if stage == 'BEGIN' and isinstance(error, RuntimeClientError) and error.code in {
+                    'E_CONFIG_INSTANCE', 'E_RESOURCE_TRANSFER_CAPACITY'}:
+                self.pendingResourceTransfers.pop(transferId, None)
+            elif begun and not committing:
+                checked = self._queryResourceTransfers('CANCEL', [transferId])
+                for category, items in checked.items():
+                    results[category].extend(dict(item, stage='CANCEL') for item in items)
+            if isinstance(error, RuntimeClientError):
+                error.resourceResult = results
                 raise
+            wrapped = RuntimeClientError('E_RESOURCE_UPLOAD', str(error))
+            wrapped.resourceResult = results
+            raise wrapped from error
         return results
 
     def listDeviceTypes(self):

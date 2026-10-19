@@ -7,6 +7,158 @@ from tests.runtime.test_review_resource_lifecycle import resourceProject, INPUT
 from emo_master.core.project.models import ProjectDocument
 
 
+def uploadCandidate(snapshot, root, names=('first', 'second', 'third'), size=32):
+    from copy import deepcopy
+    from tests.runtime.test_project_resource_transfer import manifest
+    candidate = deepcopy(snapshot['payload'])
+    candidate['resources'] = dict(items={}, parameterBindings=[])
+    for index, name in enumerate(names):
+        data = bytes([index + 1]) * size
+        (root / (name + '.bin')).write_bytes(data)
+        candidate['resources']['items'][name] = manifest(data, name + '.bin')
+    return candidate
+
+
+def testUploadChunkDisconnectRetainsRealBeginIdentity(normalUploadRuntime, monkeypatch):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent, names=('first',), size=600 * 1024)
+    original, calls = client.transferProjectResource, []
+    disconnected = False
+    def transfer(snap, tid, action, **kwargs):
+        nonlocal disconnected
+        calls.append((snap, tid, action))
+        if action == 'CHUNK' and kwargs['offset']:
+            disconnected = True
+        if disconnected:
+            raise TimeoutError('one connection loss')
+        return original(snap, tid, action, **kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', transfer)
+        with pytest.raises(Exception) as caught:
+            client.uploadProjectResources(snapshot, candidate, project.parent)
+    tid = calls[1][1]
+    assert original(calls[1][0], tid, 'STATUS')['offset'] == 512 * 1024
+    assert client.pendingResourceTransfers == {tid: (calls[1][0], 'first')}
+    assert isinstance(caught.value, RuntimeClientError)
+    assert [action for _, _, action in calls] == ['LOOKUP', 'BEGIN', 'CHUNK', 'CHUNK', 'CANCEL']
+    assert caught.value.__cause__ is not None
+    assert {e['stage'] for e in caught.value.resourceResult['errors']} == {'CHUNK', 'CANCEL'}
+    assert client.reconcileProjectResources()['pending'][0]['requestTransferId'] == tid
+    assert client.cancelProjectResourceTransfers([tid])['cancelled'][0]['requestTransferId'] == tid
+    assert not client.pendingResourceTransfers
+    assert client.uploadProjectResources(snapshot, candidate, project.parent)['uploaded'][0]['state'] == 'READY'
+    assert client.getOnlineProjectSnapshot() == snapshot and not runtime.jobRepository.all()
+
+
+@pytest.mark.parametrize('phase', ['LOOKUP', 'BEGIN', 'CHUNK', 'CHECK_CANCELLED'])
+@pytest.mark.parametrize('cleanupLost', [False, True])
+def testUploadBatchFailurePreservesEarlierReady(normalUploadRuntime, monkeypatch, phase, cleanupLost):
+    from threading import Event
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent)
+    original, calls, ids = client.transferProjectResource, [], {}
+    cancelled = Event()
+    def transfer(snap, tid, action, **kwargs):
+        calls.append((tid, action))
+        if action == 'LOOKUP':
+            ids[kwargs['resource']['path']] = tid
+        if tid == ids.get('second.bin') and action == phase:
+            if phase == 'BEGIN':
+                original(snap, tid, action, **kwargs)
+            raise TimeoutError('second failed at ' + phase)
+        if action == 'CANCEL' and cleanupLost:
+            raise TimeoutError('cleanup unavailable')
+        result = original(snap, tid, action, **kwargs)
+        if tid == ids.get('first.bin') and action == 'COMMIT' and phase == 'CHECK_CANCELLED':
+            cancelled.set()
+        return result
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', transfer)
+        with pytest.raises(Exception) as caught:
+            client.uploadProjectResources(snapshot, candidate, project.parent, cancelled)
+    result = getattr(caught.value, 'resourceResult', None)
+    assert result is not None
+    assert result['aborted']
+    assert isinstance(caught.value, RuntimeClientError)
+    assert [v['resourceId'] for v in result['uploaded']] == ['first']
+    assert any(v['resourceId'] == 'second' and v['stage'] == phase for v in result['errors'])
+    assert 'third.bin' not in ids
+    first = runtime.projectResourceTransfers._read(ids['first.bin'])
+    assert first[3] == 'READY'
+    assert runtime.projectResourceTransfers._path(first[2]).read_bytes() == (project.parent / 'first.bin').read_bytes()
+    pending = phase == 'BEGIN' or (phase == 'CHUNK' and cleanupLost)
+    assert bool(client.pendingResourceTransfers) == pending
+    assert len(result['cancelled']) == int(phase == 'CHUNK' and not cleanupLost)
+    if pending:
+        assert client.cancelProjectResourceTransfers(list(client.pendingResourceTransfers))['cancelled']
+    calls.clear()
+    def retry(snap, tid, action, **kwargs):
+        calls.append((tid, action))
+        return original(snap, tid, action, **kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', retry)
+        result = client.uploadProjectResources(snapshot, candidate, project.parent)
+    assert len(result['uploaded']) == 3 and not result['errors']
+    assert [action for _, action in calls].count('BEGIN') == 2
+    assert calls[0][1] == 'LOOKUP' and calls[1][1] == 'LOOKUP'
+    assert client.getOnlineProjectSnapshot() == snapshot and not runtime.jobRepository.all()
+
+
+@pytest.mark.parametrize('mode', ['lost', 'instance', 'capacity', 'lookup', 'unknown'])
+def testUploadBeginAdmissionBoundary(normalUploadRuntime, monkeypatch, mode):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent, names=('first',))
+    original, calls = client.transferProjectResource, []
+    def transfer(snap, tid, action, **kwargs):
+        calls.append((tid, action))
+        if action == 'LOOKUP' and mode == 'lookup':
+            raise TimeoutError('lookup unavailable')
+        if action == 'BEGIN':
+            if mode == 'instance':
+                return original(dict(snap, runtimeInstanceId='stale'), tid, action, **kwargs)
+            if mode == 'capacity':
+                with monkeypatch.context() as patch:
+                    patch.setattr('emo_master.apps.runtime.project_config.transfer.MAX_TRANSFER_BYTES', 0)
+                    return original(snap, tid, action, **kwargs)
+            original(snap, tid, action, **kwargs)
+            if mode == 'unknown':
+                raise RuntimeClientError('E_RESOURCE_TRANSFER_UNKNOWN', 'one unknown is not proof of rejection')
+            raise TimeoutError('begin reply lost')
+        return original(snap, tid, action, **kwargs)
+    with monkeypatch.context() as patch:
+        patch.setattr(client, 'transferProjectResource', transfer)
+        with pytest.raises(RuntimeClientError) as caught:
+            client.uploadProjectResources(snapshot, candidate, project.parent)
+    assert caught.value.resourceResult['errors']
+    assert bool(client.pendingResourceTransfers) == (mode in {'lost', 'unknown'})
+    assert [action for _, action in calls] == (['LOOKUP'] if mode == 'lookup' else ['LOOKUP', 'BEGIN'])
+    if mode in {'lost', 'unknown'}:
+        assert client.reconcileProjectResources()['pending'][0]['requestTransferId'] == calls[1][0]
+        assert client.cancelProjectResourceTransfers([calls[1][0]])['cancelled']
+    elif mode != 'lookup':
+        assert caught.value.code == {'instance': 'E_CONFIG_INSTANCE', 'capacity': 'E_RESOURCE_TRANSFER_CAPACITY'}[mode]
+        with pytest.raises(Exception, match='not found'):
+            runtime.projectResourceTransfers._read(calls[1][0])
+
+
+def testUploadLocalPreflightHasNoFakePending(normalUploadRuntime):
+    from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+    _runtime, client, project = normalUploadRuntime
+    snapshot = client.getOnlineProjectSnapshot()
+    candidate = uploadCandidate(snapshot, project.parent, names=('first',))
+    candidate['resources']['items']['first']['size'] += 1
+    with pytest.raises(RuntimeClientError) as caught:
+        client.uploadProjectResources(snapshot, candidate, project.parent)
+    assert caught.value.resourceResult['errors'][0]['stage'] == 'VALIDATE'
+    assert not getattr(client, 'pendingResourceTransfers', {})
+
+
 @pytest.fixture
 def normalUploadRuntime(tmp_path):
     project, _source = resourceProject(tmp_path / 'source')
@@ -130,6 +282,7 @@ def testUploadExceptionUsesSameStateClassificationWithoutImplicitCancel(normalUp
     monkeypatch.setattr(client, 'transferProjectResource', interrupted)
     result = client.uploadProjectResources(snapshot, candidate, project.parent)
     assert result['pending' if state == 'PENDING' else 'cancelled']
+    assert result['aborted']
     assert not result['uploaded']
     assert [action for _, action in calls] == ['LOOKUP', 'BEGIN', 'CHUNK', 'COMMIT', 'STATUS']
     assert bool(client.pendingResourceTransfers) == (state == 'PENDING')

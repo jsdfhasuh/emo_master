@@ -254,7 +254,11 @@ class ProjectConfigurationDialog(QDialog):
         if remaining:
             text += ' 原请求：' + '、'.join(remaining) + '；可继续查询或取消上传。'
         if result.get('errors'):
-            text += '\n' + '\n'.join(f"{v['requestTransferId']}：{v['code']}；{v['message']}" for v in result['errors'])
+            text += '\n' + '\n'.join(
+                f"{v.get('resourceId', '')} {v.get('stage', '')} {v['requestTransferId']}：{v['code']}；{v['message']}"
+                for v in result['errors'])
+        if result.get('aborted'):
+            text += '\n本批已中止；未开始项尚未上传。'
         if self.snapshot and self.snapshot.get('resourceRecoveryAvailable'):
             text += ' 资源副本完成后仍需单独重试资源恢复。'
         self.status.setText(text)

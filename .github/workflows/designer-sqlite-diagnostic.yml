@@ -1,0 +1,53 @@
+name: Designer first-run SQLite call costs (diagnostic only)
+
+on:
+  push:
+    branches: [agent/diagnostic-designer-sqlite-20261020]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Execute the original Designer test once with its unchanged ten-second waits
+        shell: pwsh
+        run: |
+          python -m pytest -q -p scripts.designer_sqlite_diagnostic --designer-sqlite-report "$env:RUNNER_TEMP/designer-sqlite.json" tests/designer/test_node_image_viewer.py::testTwoRealRunsFollowSelectionWithoutExtraReadsAndViewerCloseKeepsRuntime
+          exit $LASTEXITCODE
+      - name: Print and validate observation, without reclassifying the original test
+        if: always()
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'designer-sqlite.json'
+          assert path.is_file() and 0 < path.stat().st_size <= 1024 * 1024
+          text = path.read_text(encoding='utf-8')
+          print('DESIGNER_SQLITE_DIAGNOSTIC_BEGIN')
+          print(text)
+          print('DESIGNER_SQLITE_DIAGNOSTIC_END')
+          row = json.loads(text)
+          assert row['valid']
+          print('EXACT_SOURCE_SHA', os.environ['GITHUB_SHA'])
+          print('FAILURE_SNAPSHOT_AVAILABLE', row['failure_snapshot_available'])
+          assert row['original_pytest_exit'] in (0, 1)
+          print('Diagnostic only. A passing isolated test does not resolve prior full-suite failures.')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: designer-sqlite-call-costs
+          path: ${{ runner.temp }}/designer-sqlite.json
+          if-no-files-found: error

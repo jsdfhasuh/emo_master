@@ -1,0 +1,48 @@
+FE
+=================================== ERRORS ====================================
+_ ERROR at teardown of testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication _
+tests\runtime\test_tcp_device_integration.py:103: in chain
+    service.close()
+src\emo_master\apps\runtime\grpc_server\service.py:90: in locked
+    return method(self, *args, **kwargs)
+src\emo_master\apps\runtime\grpc_server\service.py:1921: in close
+    self._closeStep("devices", self.deviceManager.close, retryable=True)
+src\emo_master\apps\runtime\grpc_server\service.py:1984: in _closeStep
+    action()
+src\emo_master\apps\runtime\devices\manager.py:631: in close
+    self._closeDevices()
+src\emo_master\apps\runtime\devices\manager.py:469: in _closeDevices
+    executor.wait(operation)
+src\emo_master\apps\runtime\devices\executor.py:146: in wait
+    return operation.future.result()
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\_base.py:451: in result
+    return self.__get_result()
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\_base.py:403: in __get_result
+    raise self._exception
+src\emo_master\apps\runtime\devices\executor.py:106: in _run
+    result = operation.action(operation.cancellation.is_set, deadline, operation.generation)
+src\emo_master\apps\runtime\devices\manager.py:467: in <lambda>
+    operation = executor.submit('__dispose__', lambda _c, deadline, _g, driver=driver: driver.dispose(deadline),
+src\emo_master\apps\runtime\devices\tcp.py:81: in dispose
+    self.backend.close()
+src\emo_master\apps\runtime\communication\manager.py:548: in close
+    self.stop()
+src\emo_master\apps\runtime\communication\manager.py:373: in stop
+    self._record("event", "������ֹͣ���������ͷţ���ǰ�ѷ����ݲ��᳷��")
+src\emo_master\apps\runtime\communication\manager.py:101: in _record
+    self.eventSink("device.tcp." + kind, message, **{k: v for k, v in record.items() if k != "message"})
+E   TypeError: DeviceManager.makeBackend.<locals>.<lambda>() got multiple values for argument 'kind'
+================================== FAILURES ===================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+tests\runtime\test_tcp_device_integration.py:125: in testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+    assert receipt['connections']['server'] == 'LISTENING', receipt
+E   AssertionError: {'state': 'COMMITTED', 'requestId': 'a1-write', 'runtimeInstanceId': '3bba2197-4b6e-4268-a503-e5a49bbd6f2c', 'documentRevision': 1, ...}
+E   assert "FAILED: Devi...gument 'kind'" == 'LISTENING'
+E     
+E     - LISTENING
+E     + FAILED: DeviceManager.makeBackend.<locals>.<lambda>() got multiple values for argument 'kind'
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+ERROR tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 2 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 1 error in 1.66s

@@ -1,0 +1,11 @@
+..........................F
+================================== FAILURES ===================================
+________ testCommittedPendingIsObservedReadOnlyAndLateFailureWarnsOnce ________
+tests\designer\test_runtime_validation_feedback.py:380: in testCommittedPendingIsObservedReadOnlyAndLateFailureWarnsOnce
+    assert dialog.connectionObserve and not dialog.writePending and not messages
+E   assert (None)
+E    +  where None = <emo_master.apps.designer.ui.project_configuration.ProjectConfigurationDialog(0x23cab2ce180) at 0x0000023CACA75A00>.connectionObserve
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedPendingIsObservedReadOnlyAndLateFailureWarnsOnce
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed, 26 passed in 18.40s

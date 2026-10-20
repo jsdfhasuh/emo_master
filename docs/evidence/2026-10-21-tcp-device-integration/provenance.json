@@ -1,0 +1,211 @@
+{
+  "sourceSha": "ba779fe356e61997b1b776802aa06b363412d037",
+  "sourceTree": "a3f5ef2c24722589daf75580b88f24265aa64922",
+  "baselineSha": "59f3f63b653d6c021ceb7c33700bdfcd3e7e4e6a",
+  "planSha": "f47a9e584904e098f43c9431d461f093594ceb60",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "pythonExecutable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "qtPlatform": "windows",
+  "acceptanceRoot": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0",
+  "thirdPartyRoot": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\testA6ThirdPartyServiceUsesSam0",
+  "receiptExtraction": "read-only SQLite SELECT; no database copied",
+  "evidenceLevel": [
+    "source simulation",
+    "Windows native Qt automation"
+  ],
+  "notRun": [
+    "human manual GUI",
+    "frozen executable",
+    "real camera/PLC",
+    "cross-machine/field deployment",
+    "full repository test suite"
+  ],
+  "origins": [
+    {
+      "path": "verification/final-regression.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\final-regression.log"
+    },
+    {
+      "path": "verification/source-snapshot.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\source-snapshot.log"
+    },
+    {
+      "path": "verification/offline-import-final.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\offline-import-final.log"
+    },
+    {
+      "path": "verification/static-checks.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\static-checks.log"
+    },
+    {
+      "path": "verification/static-checks.json",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\static-checks.json"
+    },
+    {
+      "path": "verification/cli-checks.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\cli-checks.log"
+    },
+    {
+      "path": "verification/source-candidate.json",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\source-candidate.json"
+    },
+    {
+      "path": "verification/source-snapshot-check.json",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\source-snapshot-check.json"
+    },
+    {
+      "path": "first-failures/integration-ui-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\integration-ui-first.log"
+    },
+    {
+      "path": "first-failures/vertical-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\vertical-first.log"
+    },
+    {
+      "path": "first-failures/native-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\native-first.log"
+    },
+    {
+      "path": "first-failures/runtime-final.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\runtime-final.log"
+    },
+    {
+      "path": "first-failures/contracts-final.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\contracts-final.log"
+    },
+    {
+      "path": "first-failures/transport-worker-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\transport-worker-first.log"
+    },
+    {
+      "path": "first-failures/regression-third.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\regression-third.log"
+    },
+    {
+      "path": "first-failures/regression-fourth.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\regression-fourth.log"
+    },
+    {
+      "path": "first-failures/management-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\management-first.log"
+    },
+    {
+      "path": "first-failures/final-acceptance.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\final-acceptance.log"
+    },
+    {
+      "path": "first-failures/source-snapshot-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\source-snapshot-first.log"
+    },
+    {
+      "path": "first-failures/cli-first.log",
+      "originalPath": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-v1\\cli-first.log"
+    },
+    {
+      "path": "acceptance/acceptance-results.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\acceptance-results.json"
+    },
+    {
+      "path": "acceptance/device-diagnostics-before-export.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\device-diagnostics-before-export.json"
+    },
+    {
+      "path": "acceptance/devices.emodev.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\devices.emodev.json"
+    },
+    {
+      "path": "acceptance/workflow.emowf.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\workflow.emowf.json"
+    },
+    {
+      "path": "acceptance/qt-device-connection.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\qt-device-connection.png"
+    },
+    {
+      "path": "acceptance/qt-first-write.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\qt-first-write.png"
+    },
+    {
+      "path": "acceptance/engineering/acceptance.emoproj",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\engineering\\acceptance.emoproj"
+    },
+    {
+      "path": "acceptance/engineering/sample.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\engineering\\sample.png"
+    },
+    {
+      "path": "acceptance/device-import/imported.emoproj",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\device-import\\imported.emoproj"
+    },
+    {
+      "path": "acceptance/device-import/sample.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\device-import\\sample.png"
+    },
+    {
+      "path": "acceptance/device-import/device-diagnostics.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\device-import\\device-diagnostics.json"
+    },
+    {
+      "path": "acceptance/workflow-import/imported.emoproj",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\workflow-import\\imported.emoproj"
+    },
+    {
+      "path": "acceptance/workflow-import/device-diagnostics.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\workflow-import\\device-diagnostics.json"
+    },
+    {
+      "path": "acceptance/workflow-import/workflow-resources-futd5t7n/resource-55844ba6253640cf834ebf71a7c034ba.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\workflow-import\\workflow-resources-futd5t7n\\resource-55844ba6253640cf834ebf71a7c034ba.png"
+    },
+    {
+      "path": "acceptance/runtime-import/imported.emoproj",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-import\\imported.emoproj"
+    },
+    {
+      "path": "acceptance/runtime-import/project.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-import\\project.json"
+    },
+    {
+      "path": "acceptance/runtime-import/sample.png",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-import\\sample.png"
+    },
+    {
+      "path": "acceptance/runtime-import/device-diagnostics.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-import\\device-diagnostics.json"
+    },
+    {
+      "path": "acceptance/runtime-package/runtime-5e793a6ffa324a7083693ec93c82478e.vxpkg",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-package\\runtime-5e793a6ffa324a7083693ec93c82478e.vxpkg"
+    },
+    {
+      "path": "third-party/service.emoproj",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\testA6ThirdPartyServiceUsesSam0\\service.emoproj"
+    },
+    {
+      "path": "third-party/third-party-diagnostics.json",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\testA6ThirdPartyServiceUsesSam0\\third-party-diagnostics.json"
+    },
+    {
+      "path": "runtime-logs/original/runtime-20261020-171517-28644-0001.jsonl",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime\\logs\\runtime-20261020-171517-28644-0001.jsonl"
+    },
+    {
+      "path": "runtime-logs/device-import/runtime-20261020-171529-28644-0001.jsonl",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\device-import\\runtime\\logs\\runtime-20261020-171529-28644-0001.jsonl"
+    },
+    {
+      "path": "runtime-logs/workflow-import/runtime-20261020-171531-28644-0001.jsonl",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\workflow-import\\runtime\\logs\\runtime-20261020-171531-28644-0001.jsonl"
+    },
+    {
+      "path": "runtime-logs/runtime-import/runtime-20261020-171532-28644-0001.jsonl",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\tcp-device-chain0\\runtime-import\\runtime\\logs\\runtime-20261020-171532-28644-0001.jsonl"
+    },
+    {
+      "path": "runtime-logs/third-party/runtime-20261020-171534-28644-0001.jsonl",
+      "originalPath": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2672\\testA6ThirdPartyServiceUsesSam0\\runtime\\logs\\runtime-20261020-171534-28644-0001.jsonl"
+    }
+  ]
+}

@@ -1,0 +1,11 @@
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2650\tcp-device-chain0
+F
+================================== FAILURES ===================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+tests\runtime\test_tcp_device_integration.py:167: in testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+    port.setText('invalid')
+E   AttributeError: 'PySide2.QtWidgets.QSpinBox' object has no attribute 'setText'
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+!!!!!!!!!!!!!!!!!!!!!!!!!! stopping after 1 failures !!!!!!!!!!!!!!!!!!!!!!!!!!
+1 failed in 3.07s

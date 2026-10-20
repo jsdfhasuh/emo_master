@@ -1,0 +1,41 @@
+[
+  {
+    "connections": {
+      "server": "LISTENING"
+    },
+    "documentRevision": 1,
+    "executionRevision": 1,
+    "message": "首次写入成功；未启动任务",
+    "requestId": "195bdae25992431dbee612e3db5d00fc",
+    "runtimeInstanceId": "41c42305-73e2-4439-a231-e1f6d100fc6f",
+    "state": "COMMITTED"
+  },
+  {
+    "affectedJobs": [
+      "572af62c-8a23-4695-b499-423de49afecc"
+    ],
+    "code": "",
+    "connections": {
+      "server": "LISTENING"
+    },
+    "documentRevision": 2,
+    "executionRevision": 2,
+    "message": "configuration committed",
+    "requestId": "a4-channels",
+    "runtimeInstanceId": "41c42305-73e2-4439-a231-e1f6d100fc6f",
+    "state": "COMMITTED"
+  },
+  {
+    "affectedJobs": [],
+    "code": "",
+    "connections": {
+      "server": "FAILED: [WinError 10048] 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。"
+    },
+    "documentRevision": 3,
+    "executionRevision": 3,
+    "message": "configuration committed",
+    "requestId": "a4-occupied",
+    "runtimeInstanceId": "41c42305-73e2-4439-a231-e1f6d100fc6f",
+    "state": "COMMITTED"
+  }
+]

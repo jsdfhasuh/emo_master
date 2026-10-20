@@ -1,0 +1,162 @@
+.........F.....F..F...............................FFFFFFFFFFFFFF........ [ 69%]
+.....................FF.....F..                                          [100%]
+================================== FAILURES ===================================
+_______ testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects ________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\runtime\test_device_runtime.py:95: in testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects
+    assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera"}}
+E   AssertionError: assert {'camera': {'...ies': False}}} == {'camera': {'...ated.camera'}}
+E     
+E     Differing items:
+E     {'camera': {'deviceTypeId': 'device.simulated.camera', 'requiredCapabilities': [], 'selectorSchema': {'type': 'object', 'properties': {}, 'additionalProperties': False}}} != {'camera': {'deviceTypeId': 'device.simulated.camera'}}
+E     Use -v to get more diff
+____________ testDeviceControlNeedsConfirmationAndNeverEditsDraft _____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_workspace.py:191: in testDeviceControlNeedsConfirmationAndNeverEditsDraft
+    assert len(calls) == 1 and calls[0][0][-1] == "disconnect" and calls[0][1] == {"confirmed": True}
+E   assert (0 == 1)
+E    +  where 0 = len([])
+__________________ testNormalDropWizardAtomicFinishAndCancel __________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_workspace.py:262: in testNormalDropWizardAtomicFinishAndCancel
+    assert window.flowModel.nodes[newId].deviceBindings == {"camera": {"deviceId": "camera"}}
+E   AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}
+E     
+E     Differing items:
+E     {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}
+E     Use -v to get more diff
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded] _______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:106: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_______ testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback] _______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:106: in testLegacyValidationOffersUpgradeWithoutMutatingDraft
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.1] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.5] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:32: in legacyDialog
+    saveProject(path, payload)
+src\emo_master\apps\designer\state\project_store.py:105: in saveProject
+    canonical = migrateProjectPayload(payload)
+src\emo_master\core\project\migration.py:118: in migrateProjectPayload
+    return ProjectDocument.model_validate(source).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.5', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.1] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+___ testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.5] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:125: in testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, version=version)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:32: in legacyDialog
+    saveProject(path, payload)
+src\emo_master\apps\designer\state\project_store.py:105: in saveProject
+    canonical = migrateProjectPayload(payload)
+src\emo_master\core\project\migration.py:118: in migrateProjectPayload
+    return ProjectDocument.model_validate(source).model_dump(mode="python")
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E     Value error, project 2.5 requires communication settings [type=value_error, input_value={'schemaVersion': '2.5', ..., 'globalVariables': {}}, input_type=dict]
+E       For further information visit https://errors.pydantic.dev/2.13/v/value_error
+__________ testUpgradeActionFromPopupDoesNotResumePrewrite[embedded] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:164: in testUpgradeActionFromPopupDoesNotResumePrewrite
+    _window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+__________ testUpgradeActionFromPopupDoesNotResumePrewrite[loopback] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:164: in testUpgradeActionFromPopupDoesNotResumePrewrite
+    _window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded] ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:192: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, badOperator=True)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback] ____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:192: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path, badOperator=True)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_________ testMigrationStructureFailureLeavesNoHalfUpgrade[embedded] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:212: in testMigrationStructureFailureLeavesNoHalfUpgrade
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_________ testMigrationStructureFailureLeavesNoHalfUpgrade[loopback] __________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:212: in testMigrationStructureFailureLeavesNoHalfUpgrade
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    _window, dialog, _path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    _window, dialog, _path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:582: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_____ testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback] ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:582: in testUpgradedDraftResourceFailureCanBeFixedAndRevalidated
+    window, dialog, path = legacyDialog(ownedDesignerWindow, client, tmp_path)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:27: in legacyDialog
+    payload.pop(key)
+E   KeyError: 'communication'
+_____ testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner ______
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:715: in testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner
+    waitUntil(lambda: window.communicationController.thread is None)
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_workspace.py:26: in waitUntil
+    while not predicate() and time.monotonic() < deadline:
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py:715: in <lambda>
+    waitUntil(lambda: window.communicationController.thread is None)
+E   AttributeError: 'NoneType' object has no attribute 'thread'
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_runtime.py::testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects
+FAILED tests/designer/test_device_workspace.py::testDeviceControlNeedsConfirmationAndNeverEditsDraft
+FAILED tests/designer/test_device_workspace.py::testNormalDropWizardAtomicFinishAndCancel
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.1]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.5]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.1]
+FAILED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.5]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner
+20 failed, 83 passed in 75.44s (0:01:15)

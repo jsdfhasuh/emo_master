@@ -1,0 +1,194 @@
+{
+  "original": [
+    {
+      "jobId": "1f036bc3-0299-414d-afed-25411a164175",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "camera-plc",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:18.487023+00:00",
+      "endAt": "2026-10-20T17:15:20.004000+00:00",
+      "durationMs": 1516.9768333435059
+    },
+    {
+      "jobId": "35f3c06f-8309-41cf-80c9-e2218d491b3e",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "other",
+      "projectRevision": 3,
+      "status": "ABORTED",
+      "errorCode": "E_CANCELLED",
+      "errorMessage": "execution cancelled",
+      "stopMode": "graceful",
+      "startAt": "2026-10-20T17:15:20.067520+00:00",
+      "endAt": "2026-10-20T17:15:22.237000+00:00",
+      "durationMs": 2169.480085372925
+    },
+    {
+      "jobId": "e85609ca-5dc2-465f-925c-154f0f2a9295",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "main",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:21.099566+00:00",
+      "endAt": "2026-10-20T17:15:22.151000+00:00",
+      "durationMs": 1051.43404006958
+    },
+    {
+      "jobId": "159fe0b2-032a-4ab0-b59f-304866116321",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "single",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:22.241356+00:00",
+      "endAt": "2026-10-20T17:15:23.278000+00:00",
+      "durationMs": 1036.6442203521729
+    },
+    {
+      "jobId": "c6a34eb9-f681-4385-bd42-ebbdb6d395e9",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "receive",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:23.512592+00:00",
+      "endAt": "2026-10-20T17:15:24.638000+00:00",
+      "durationMs": 1125.4079341888428
+    },
+    {
+      "jobId": "95310ce2-3839-4881-b79d-2f8808a6cbea",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "main",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:24.742071+00:00",
+      "endAt": "2026-10-20T17:15:26.271000+00:00",
+      "durationMs": 1528.9289951324463
+    },
+    {
+      "jobId": "572af62c-8a23-4695-b499-423de49afecc",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "other",
+      "projectRevision": 3,
+      "status": "FAILED",
+      "errorCode": "E_CANCELLED",
+      "errorMessage": "等待连接已取消",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:26.399690+00:00",
+      "endAt": "2026-10-20T17:15:27.406000+00:00",
+      "durationMs": 1006.309986114502
+    },
+    {
+      "jobId": "22a91fc4-0316-4d4b-a169-7fc6f8e0641d",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "main",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:27.936579+00:00",
+      "endAt": "2026-10-20T17:15:29.007000+00:00",
+      "durationMs": 1070.4209804534912
+    }
+  ],
+  "device-import": [
+    {
+      "jobId": "00e4c5da-a5c6-4799-8808-2d5d1b2e4b80",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "main",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:29.457375+00:00",
+      "endAt": "2026-10-20T17:15:30.513000+00:00",
+      "durationMs": 1055.6249618530273
+    }
+  ],
+  "workflow-import": [
+    {
+      "jobId": "c83617b6-0f89-40a7-9ab1-219d4c1ebcb0",
+      "projectId": "69976663-f497-410b-b680-a41919597f05",
+      "workflowId": "main-2",
+      "projectRevision": 2,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:31.008549+00:00",
+      "endAt": "2026-10-20T17:15:32.088000+00:00",
+      "durationMs": 1079.451084136963
+    }
+  ],
+  "runtime-import": [
+    {
+      "jobId": "cedce0fd-4d82-4ad8-826e-bce527d054e2",
+      "projectId": "db5cb2d4-6647-4bad-93db-e9d39ff330a1",
+      "workflowId": "main",
+      "projectRevision": 3,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:32.621285+00:00",
+      "endAt": "2026-10-20T17:15:33.700000+00:00",
+      "durationMs": 1078.7150859832764
+    }
+  ],
+  "third-party": [
+    {
+      "jobId": "b9e8dfed-d6fc-49bb-8686-303bcde88bec",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "workflowId": "main",
+      "projectRevision": 2,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:34.185565+00:00",
+      "endAt": "2026-10-20T17:15:35.208000+00:00",
+      "durationMs": 1022.4349498748779
+    },
+    {
+      "jobId": "8543afe4-c044-4642-afdf-54936cc56715",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "workflowId": "reject",
+      "projectRevision": 2,
+      "status": "FAILED",
+      "errorCode": "E_SAMPLE_REJECTED",
+      "errorMessage": "示例采样被拒绝；服务可继续使用",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:35.443439+00:00",
+      "endAt": "2026-10-20T17:15:36.469000+00:00",
+      "durationMs": 1025.5610942840576
+    },
+    {
+      "jobId": "33812d46-60ff-406d-8bf6-4106db0e3609",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "workflowId": "main",
+      "projectRevision": 2,
+      "status": "COMPLETED",
+      "errorCode": null,
+      "errorMessage": "job.completed",
+      "stopMode": null,
+      "startAt": "2026-10-20T17:15:36.884467+00:00",
+      "endAt": "2026-10-20T17:15:37.945000+00:00",
+      "durationMs": 1060.533046722412
+    }
+  ]
+}

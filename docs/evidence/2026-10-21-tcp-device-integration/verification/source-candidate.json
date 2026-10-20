@@ -1,0 +1,602 @@
+{
+  "planSha": "f47a9e584904e098f43c9431d461f093594ceb60",
+  "baselineSha": "59f3f63b653d6c021ceb7c33700bdfcd3e7e4e6a",
+  "tree": "a3f5ef2c24722589daf75580b88f24265aa64922",
+  "files": [
+    {
+      "path": "docs/guides/device-catalog-contract-v1.md",
+      "bytes": 10481,
+      "sha256": "cdc9485487e6ef86697fba0c92f6e0e497b5ff7581a1b5348d90d68dd8a82d58"
+    },
+    {
+      "path": "docs/guides/device-dispatch-online-configuration.md",
+      "bytes": 30726,
+      "sha256": "b99b0dd78f6dbb3f6ed1af7b17c661bcca8894d6e54df09533dfc936b600b858"
+    },
+    {
+      "path": "docs/guides/project-tcp-service.md",
+      "bytes": 7672,
+      "sha256": "4c5de25d1983a510e792a6f04e6ff03e051495c42f76fac00c90916f7421db6f"
+    },
+    {
+      "path": "examples/device_plugin/device_types/simulated_camera.json",
+      "bytes": 2341,
+      "sha256": "6bc7385d431751d0424e4611f0c6e0ff0ceb6f9a6a437ff34d61469e4c328e0f"
+    },
+    {
+      "path": "examples/device_service/README.md",
+      "bytes": 2227,
+      "sha256": "5b830648ed4a1fda021bc19c85befa9d510c9a83c62945e39f66f2cb2a8aab74"
+    },
+    {
+      "path": "examples/device_service/device_types/ticker.json",
+      "bytes": 1197,
+      "sha256": "46ff2d81672fc2369955eecff6b29187ee375abd1deb15f0cb727e6149341079"
+    },
+    {
+      "path": "examples/device_service/driver.py",
+      "bytes": 3028,
+      "sha256": "e1b4b69ec3f6e973bcb6b79973b8ee1e06186987e8ae3b8187aebd56a9e12fd6"
+    },
+    {
+      "path": "examples/device_service/manifest.json",
+      "bytes": 574,
+      "sha256": "769af1f8e477bc04fb4074d70dd48f9203d74aabdb4d6c69c512f61b8d322975"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "bytes": 28649,
+      "sha256": "51834fd3a682d68a66a9020f9f2c589b0435454fbe4621b969da6b5d4b61dd79"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/operator_catalog_controller.py",
+      "bytes": 4714,
+      "sha256": "618b1662befae582841f74f276006251392640cf4f49f2bc6c91b3f9160791a5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/project_controller.py",
+      "bytes": 20855,
+      "sha256": "435c3aec560c71b8e4314fe8db509688cd187dd1c9aa1c6c28ea12726bb1f1af"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/workflow_controller.py",
+      "bytes": 23071,
+      "sha256": "13de197aff76ae2049ed4ae10904d4c1a24709dbb382b060045595f111f123b0"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "bytes": 12476,
+      "sha256": "bf2b55f3ae1382036d411f454a653bc66166b2ab87b087527da54927b7c0a321"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "bytes": 18340,
+      "sha256": "28d1e6b65479334e00ea28c1399a66cb750dc3b8925fc5f35fdd4ab75479c3b3"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "bytes": 86084,
+      "sha256": "0ca5b6cdc6568d2a5fb1506d918791a65b05d794ee9faa05b86a202d1f47c75c"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/device_catalog.py",
+      "bytes": 12155,
+      "sha256": "2a505caeea8eb878e2b7c0b5893086ba073f169cad22e7af905bd741b7bfdb30"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/project_edit_session.py",
+      "bytes": 7473,
+      "sha256": "e20b0c2cfeade8c357e97f680da60e0399232a1a12a65896e825f5f68603c5a1"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/workflow_package.py",
+      "bytes": 40561,
+      "sha256": "dc83b6d488aeef14182d0e7baaec094b771965c02f1a11d13c9729b08bb944c6"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/workflow_store.py",
+      "bytes": 36772,
+      "sha256": "48e5515c82525756e1600fddf49d2c0baca28ca2af3b597ce38d3d175b790f28"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_wizard.py",
+      "bytes": 35011,
+      "sha256": "b5c128300605c49db5e8fbd79d846af8ec388f202e54e749208c75e620db23b6"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "bytes": 60036,
+      "sha256": "970cbf48b9510053e568102ccd74894067d76a6c637ada44f7b8349ca5849949"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "bytes": 229975,
+      "sha256": "1d56447926d44d1602b5af9956e2e29c0bbab9dabbc3fdf0d56372e65197862c"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/param_form.py",
+      "bytes": 43022,
+      "sha256": "97d5cf08e32e6f2eb8b9975f140d093d84b26029822e8cd8c5d3e439d96c0fba"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "bytes": 46478,
+      "sha256": "54990dd34c4c3f7cff17a511142175716e5b54d8ac3f15ac8ed5eef5ff744f98"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/tcp_device_form.py",
+      "bytes": 1901,
+      "sha256": "c18a66f81c032f8adac8c03b55a88a47af19d761176d2daf1db8ff0eaf10ba0b"
+    },
+    {
+      "path": "src/emo_master/apps/operator_runtime/main.py",
+      "bytes": 25696,
+      "sha256": "35bebbc5c51b01599a9ba167727e930a56f3d12016d68468a2aa06470a024cbc"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/communication/ipc.py",
+      "bytes": 6606,
+      "sha256": "881f79da9988c978ed495aa3891dcd13a0e3f18f51c75b7899b94b43bfdf689a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/communication/manager.py",
+      "bytes": 29200,
+      "sha256": "e5b8ee492d255bfacf57eb97010e6bc1b088a378c70954115e9d4f3328ae0e90"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/communication/rpc.py",
+      "bytes": 10049,
+      "sha256": "6ef436348b00a9e60d99963e7be31397ed0048fb90a36ae22c7123ddfe0775b8"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/diagnostics.py",
+      "bytes": 4870,
+      "sha256": "f0cc4c3f773de6298414551bd4b4969ff8b4dbb77a39e645d41380617da78e75"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/drivers.py",
+      "bytes": 1801,
+      "sha256": "185a3c823bec3cc3fd64386f49a57bde86acb3be0d6daec7127febaafb93407f"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/executor.py",
+      "bytes": 7783,
+      "sha256": "c97427c7c87c25672bbc9fb9a6a7c5e42265d44dc9e9b2e5aae8b07129370c1b"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/imv_host.py",
+      "bytes": 12078,
+      "sha256": "4e5449eccc1b2805bd302069cf3fd304f3b74d6dcb41c50024a4ccd749d1ebda"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/ipc.py",
+      "bytes": 10014,
+      "sha256": "9794174e5b3ee7d26a9057713499d54bde7e48cdd079615ffd1eadfd648542c6"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/lifecycle.py",
+      "bytes": 3463,
+      "sha256": "6defb55d8ae7410e7278f47a2e212443ed027394b93b544815991ace6f64cdc4"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/manager.py",
+      "bytes": 38922,
+      "sha256": "de3e724e6057219520de9ee51b173aafd3fb70d4ace096a029d74d17d81284e0"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/replacement.py",
+      "bytes": 5729,
+      "sha256": "c05fc0a19f6069aab12ea0c91394af6d86350a98e77c25ab7140cddb6442e44a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/service_executor.py",
+      "bytes": 2391,
+      "sha256": "c91ec297df3ddb4d4da13ec844b54160d27ad00d9906ac4368b1e013de9f84a3"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/simulated.py",
+      "bytes": 2247,
+      "sha256": "9a592e68e8316180effa31749e284b0a3a067819ac86f2c7fb7baa75fd220e2a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/slmp.py",
+      "bytes": 5842,
+      "sha256": "16b230cd4ffd169f053bbcd27d0db2e630643ad243af17d8b9d4eb0e825d77a0"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "bytes": 11755,
+      "sha256": "5986c2bfe2588ba0c4189e834d3c870871df214312a03f2d008de3042dfe516e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/events/jsonl_writer.py",
+      "bytes": 15598,
+      "sha256": "c681667ad056fc677e360ea3ce1c90b2a4fb118ffe93b485923c848bf739d4d4"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/events/operator_logger.py",
+      "bytes": 17625,
+      "sha256": "3e558a9f4578e64c4d0109dcb2cc3f3752b549d9e92326009398eb33eca9f39a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/execution/operator_executor.py",
+      "bytes": 23020,
+      "sha256": "3e716a8c44502d90f550e4b2e34203581d05782e491ac492a6064905d7759d75"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "bytes": 59006,
+      "sha256": "aab75557dd50b972953b473acbcc160e91bc56c2bedf3f145f2589a32b6c1e5e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "bytes": 185180,
+      "sha256": "d41c74f6c84e104ea1b00401cda1b8b527b5e4f9c667d63c9a5acc29b1dda0ac"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "bytes": 129187,
+      "sha256": "ea670fe304a60b517a65ec638de14e0427bd05e6251b865db6849b63fa8d488e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/supervisor.py",
+      "bytes": 62602,
+      "sha256": "fb7205e7acd118b7b6452a7c32682b2b02c40c9799a4ef1f5bc64a6e71071fb9"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "bytes": 13593,
+      "sha256": "0253f8ec88b5d4a936014c22783487e8aa983b176db42cd254ebbedde981987c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/rpc.py",
+      "bytes": 13557,
+      "sha256": "085773ab759840bb7269669d74a84a40618df4a75bd6bee0f0f86fc449ab6631"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/presentation/normal_capture.py",
+      "bytes": 3994,
+      "sha256": "64bed4b3042f36ed5df2cf0ccb7ada093ee66427d2a5e6a2bb268a77cd5b51d5"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "bytes": 20779,
+      "sha256": "cac9f57d40f1efbdd58fe964d159bbff50de5e426d67a5f8eea82a3c9d60ba61"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/cycle_plan.py",
+      "bytes": 2267,
+      "sha256": "45218b99145b4f69a9946645d5e6e4174ce9074b61768959518d852e47b677b9"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "bytes": 37244,
+      "sha256": "eee4662e97d766061d754117c160aa70cc1c8b81e779100726ce2e345b5519fa"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/transition.py",
+      "bytes": 8636,
+      "sha256": "79088f4b658c781506ef4a7e059e45db8d49d9aacb537416f7133585daf30ef9"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/workflow/runner.py",
+      "bytes": 22768,
+      "sha256": "fd04561ff6993ebec4e8e67f29e294be567aa0a39397e5a7ace7fbf89392318d"
+    },
+    {
+      "path": "src/emo_master/clients/runtime/devices.py",
+      "bytes": 5394,
+      "sha256": "0715194fe9117383daf51692d85a4c9ac0a587fbea2a50dabc9ed278b4534bba"
+    },
+    {
+      "path": "src/emo_master/core/contracts/communication.py",
+      "bytes": 20676,
+      "sha256": "d91f8bf90f7db43eb7310cff75e5147a0dc72f2a2f6715e53f7b3e5a3ed642d8"
+    },
+    {
+      "path": "src/emo_master/core/contracts/device_driver.py",
+      "bytes": 2799,
+      "sha256": "82b4f92f94336c4d3954a929fb6ab7a8ec13f9cf3b813fc9cc400e1c5a65ed8d"
+    },
+    {
+      "path": "src/emo_master/core/contracts/operator_logging.py",
+      "bytes": 2956,
+      "sha256": "034be7ae02632fa0068e139ad7857a36a993e55c471a3c7f7de95770c6f0fe1c"
+    },
+    {
+      "path": "src/emo_master/core/contracts/port_types.py",
+      "bytes": 8073,
+      "sha256": "e56adf1fb4f167d56794269714936c46fb03dcc295adae8da584872adb32c512"
+    },
+    {
+      "path": "src/emo_master/core/contracts/tcp_service.py",
+      "bytes": 3308,
+      "sha256": "5e39e69979ad4bdebedc3205be2866b3de10d18c9c186807eb8bb8fab92d8b11"
+    },
+    {
+      "path": "src/emo_master/core/plugin/devices.py",
+      "bytes": 18924,
+      "sha256": "9d3cfe11f8af6f26956d299a3c1736806b6be39f70139c4ba2718fbbe2515c0a"
+    },
+    {
+      "path": "src/emo_master/core/plugin/models.py",
+      "bytes": 1789,
+      "sha256": "a86f78fa57127884e0dee07c1a64d5bbb2fcce09290675e24ed7a852484a7b9a"
+    },
+    {
+      "path": "src/emo_master/core/plugin/registry.py",
+      "bytes": 17059,
+      "sha256": "2b7fdbaedbd7362bcfeea108da3e3bde3da90b44f2c89e9b2cb63893907ceec2"
+    },
+    {
+      "path": "src/emo_master/core/plugin/validator.py",
+      "bytes": 20883,
+      "sha256": "0d92af09236848e0c76aef59b1de73cc558d7ea3f63a1e1304bb236532ee78bc"
+    },
+    {
+      "path": "src/emo_master/core/project/communication.py",
+      "bytes": 4289,
+      "sha256": "f8690af48bfda59cc85c1d458725898bba4dd1ec5d750d72e0aaac80d4660cd8"
+    },
+    {
+      "path": "src/emo_master/core/project/configuration.py",
+      "bytes": 18004,
+      "sha256": "52f6c57c5802855e0b2a96273e4c3eef7e8fd135f61ef85abf258679309176ce"
+    },
+    {
+      "path": "src/emo_master/core/project/device_identity.py",
+      "bytes": 1590,
+      "sha256": "8f19fab819d478d58b72d253fabf3acb6c407bc29b49ea46f5cdbf269f62da10"
+    },
+    {
+      "path": "src/emo_master/core/project/devices.py",
+      "bytes": 5688,
+      "sha256": "62fd0439b26b9cd687af410af05be4a200212690d3df973ca46ac04901c26f46"
+    },
+    {
+      "path": "src/emo_master/core/project/migration.py",
+      "bytes": 20323,
+      "sha256": "e2829a06d635329c033c765d4d21a6372521d440058ac89f3be48ec4e1f946f2"
+    },
+    {
+      "path": "src/emo_master/core/project/models.py",
+      "bytes": 13612,
+      "sha256": "d933441f9e45015019833e060bffd7761f762392627021d29e68a168daf3e964"
+    },
+    {
+      "path": "src/emo_master/core/project/package_builder.py",
+      "bytes": 7591,
+      "sha256": "3410613358f8c7368115336b8668ac662d8a91cd2c4fad62802dfa166bd8b026"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_package.py",
+      "bytes": 19145,
+      "sha256": "33f189b3cf060e81ea6bdd12fa9d6c9714833f78eafaeaa48bdc43517e1565dc"
+    },
+    {
+      "path": "src/emo_master/core/project/snapshots.py",
+      "bytes": 18402,
+      "sha256": "7787ef9bcd07eb0fdce424e136882112bd45c30c2ac81b9d78acc8d9bcc1155c"
+    },
+    {
+      "path": "src/emo_master/core/project/tcp_dependencies.py",
+      "bytes": 1442,
+      "sha256": "a64c344c6451fcb9b5405a9b45300fc48520b8edd44c011f491d66a9268a7e20"
+    },
+    {
+      "path": "src/emo_master/core/project/test_delivery.py",
+      "bytes": 8343,
+      "sha256": "a8bec1f716e4e0f829e8371d79f8240e4f6cd5919c11148d748c82bb3b946df6"
+    },
+    {
+      "path": "src/emo_master/core/workflow/compiler.py",
+      "bytes": 26578,
+      "sha256": "6e344d3a758579129881da7cb32d1f00b665dc2c1317ae1bd499bc7b42d1afa5"
+    },
+    {
+      "path": "src/emo_master/core/workflow/dispatch_contracts.py",
+      "bytes": 4322,
+      "sha256": "55bf2a564ba2a81f5151005f701e496a35c459d84c8b6cd3a91b5156d2fc1d17"
+    },
+    {
+      "path": "src/emo_master/core/workflow/validation.py",
+      "bytes": 13993,
+      "sha256": "fe942c70eb180e2ebdbef29d2da9c70f57ec69c76dccca2987f3c57813241204"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_communication_operators.py",
+      "bytes": 37891,
+      "sha256": "b37819700c8503b1cae3a5f0677395996a4b8ef60bb56cf4b6300f6805559c30"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_managed_tcp.py",
+      "bytes": 5531,
+      "sha256": "37c49348c6468ad263dd18eae6b604df785cc9023111dbc966c099e2a80e9500"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_tcp_transport.py",
+      "bytes": 11300,
+      "sha256": "734f340d37ba245b3deaba9ae52efbe7196a881eb7cf17c05eead3ed24652cf4"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json",
+      "bytes": 8398,
+      "sha256": "8cbae73f93ef56a06facd500ff4d0d1c41469da13ff72c3e7e26128fcc254a59"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/manifest.json",
+      "bytes": 6965,
+      "sha256": "34ece9100aa923a8012a6232750d94206a9206d71cef905d9e242bb748d2e53d"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/plc_slmp_read/device_types/slmp.json",
+      "bytes": 6607,
+      "sha256": "7d0244be511696a7266de90437d296467a36d328abc972b79493eb8ed1caaba8"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/plc_slmp_read/manifest.json",
+      "bytes": 4433,
+      "sha256": "4a54d16f6475255ed8e703e54a72b14f353cbdf2f1068a0a82335a6c0db0b791"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/plc_slmp_write/manifest.json",
+      "bytes": 4379,
+      "sha256": "552926a40af0a04e314422964c913281c904ae4ec960877fe944d4a430d58e0e"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/simulated_camera/device_types/camera.json",
+      "bytes": 3544,
+      "sha256": "b39664682d1685764eaf0463530544ef9991bacf8b039d92bb265b47b81de111"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/simulated_camera/manifest.json",
+      "bytes": 714,
+      "sha256": "25f751939dbc18a634b6a80b7f83776b75b0bb03c4e29c153fe8ae2d15920613"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_client/device_types/client_once.json",
+      "bytes": 5661,
+      "sha256": "d6d16b8fe5d7ae5d80ed86f59f9636537511a09839d9eef24898db9ed7e02568"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_client/manifest.json",
+      "bytes": 1648,
+      "sha256": "589bbf61389d3b7e738079e6e3993317d32ef815ea2cd96d92c200e259ccbc86"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_receive_once/device_types/receive_once.json",
+      "bytes": 4918,
+      "sha256": "bb4ad9dd4f4dd42dd483fdb8c572a4d45978cb5b0d6d775afd224d62af23a37c"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_receive_once/manifest.json",
+      "bytes": 1176,
+      "sha256": "a1e0ac071e552b5d9886d626aa87f69e9cae0048f462d4e0d10a8828d74393bd"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_session/device_types/server.json",
+      "bytes": 4903,
+      "sha256": "0c88b5b3c1353183359920d5c4407c3ccd0fcbf00683f28420aba177b4f2571d"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_session/manifest.json",
+      "bytes": 1175,
+      "sha256": "3a1cbc5fd273e18ce41f35b59bcd4f2d2e4f36117ccd344efb9586680de65297"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_session_send/manifest.json",
+      "bytes": 1113,
+      "sha256": "077df588d1f4afcecca7fd905dbc4317076ddaf47cee6b1e439659748cf38ab9"
+    },
+    {
+      "path": "src/emo_master/ui/communication_panel.py",
+      "bytes": 23509,
+      "sha256": "ca666d043580e7b692de75ab548d772a839d9356a56408c3e686067a006a44f2"
+    },
+    {
+      "path": "src/emo_master/ui/device_actions.py",
+      "bytes": 3757,
+      "sha256": "cf7d4076348dc0fb00821b522fb784325052c1d37b804e582665149411cd570f"
+    },
+    {
+      "path": "src/emo_master/ui/device_management.py",
+      "bytes": 8264,
+      "sha256": "dc13884865d527efa1f6928ca120567b617023215926dc3d5b7aa5d799bf6321"
+    },
+    {
+      "path": "tests/core/plugin/test_device_registry.py",
+      "bytes": 4244,
+      "sha256": "b4e0134af3bb148abf4e5f5e28ad171bbcdf7d9a50588f80dd416855e64ecb23"
+    },
+    {
+      "path": "tests/core/project/test_device_resources.py",
+      "bytes": 21700,
+      "sha256": "4621228bf61bb2bc6db787ac1659247c2daeb309872c7ee7324b64782caa17dd"
+    },
+    {
+      "path": "tests/core/project/test_devices.py",
+      "bytes": 10427,
+      "sha256": "b0a433df3b59e689ee21bccefe7d233b9fb20b7e23d6ae2ba25afec1c264eaf3"
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "bytes": 13323,
+      "sha256": "79ec88f776b26af3861c0a9c9b510db75e3af6ac7a13673527c9b1655ba48149"
+    },
+    {
+      "path": "tests/designer/test_runtime_validation_feedback.py",
+      "bytes": 40893,
+      "sha256": "2e358fa445e6ae727c1345e4c536c825c3e4f2d008be1a609b668e7c6c2477e2"
+    },
+    {
+      "path": "tests/designer/test_workflow_package_devices.py",
+      "bytes": 16867,
+      "sha256": "6756c200694427b134f490a540ab69cef268bc4e5fefce737eb85fad96603728"
+    },
+    {
+      "path": "tests/designer/test_workflow_package_resources.py",
+      "bytes": 11683,
+      "sha256": "f84ed82b1707c7b52b5dabbf09b9827432af598422beb1efa30cf69bd5a69eaf"
+    },
+    {
+      "path": "tests/plugins/test_managed_tcp_operators.py",
+      "bytes": 1999,
+      "sha256": "f1f9b0cbea1913e97e24a7128068caceaf233cd0c4bda784184d84b376f7c878"
+    },
+    {
+      "path": "tests/runtime/test_configuration_owners.py",
+      "bytes": 14009,
+      "sha256": "bbc01db9d20e48690d6f90108ce775b54528b0c3f09ffaae7f55aaa308e86aa1"
+    },
+    {
+      "path": "tests/runtime/test_configuration_transition.py",
+      "bytes": 7240,
+      "sha256": "1dc138a2039a998859145161175bbd7e38094de07a9bd536cc4183c76b6ab3e9"
+    },
+    {
+      "path": "tests/runtime/test_device_lifecycle.py",
+      "bytes": 16510,
+      "sha256": "2929a1ce19a2b283a8d5e03c6dcc3e9e353897cb488a3405d72a6e6d2e31d7a3"
+    },
+    {
+      "path": "tests/runtime/test_device_manager.py",
+      "bytes": 4879,
+      "sha256": "8387c8ef6c7d1ab0ac613848e2860bb083ce63b3b4ede38e7d0282e5d81788c8"
+    },
+    {
+      "path": "tests/runtime/test_device_production_outcomes.py",
+      "bytes": 3464,
+      "sha256": "2d4f566a524ef559706a19db256a085af0f21f8c5d5e00e646ce9fc25be206f7"
+    },
+    {
+      "path": "tests/runtime/test_device_replacement.py",
+      "bytes": 11797,
+      "sha256": "be2b156931fe1437dfaee95f071120656aca056bf8ce8c182fa67941ee1646c1"
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "bytes": 5198,
+      "sha256": "1318d3e15598d476a631bb5c0c4f041cc1646aa0804d7b3d15d0cb240c390601"
+    },
+    {
+      "path": "tests/runtime/test_initial_project_configuration.py",
+      "bytes": 15745,
+      "sha256": "34abfc9184108f38f618fd9e6ecbc94a6561d2fa32b46e841cd392c92dd44a2b"
+    },
+    {
+      "path": "tests/runtime/test_loop_cycle_configuration.py",
+      "bytes": 10788,
+      "sha256": "daa0973c2fb8e9556ccae97f69106a63508c5eb7d02546c9f9293c55d30025cf"
+    },
+    {
+      "path": "tests/runtime/test_managed_tcp.py",
+      "bytes": 15179,
+      "sha256": "c141a4639dfd9c7b1891eb55c98707244a2bd99bf3978b11c259f4e7e952f166"
+    },
+    {
+      "path": "tests/runtime/test_tcp_device_integration.py",
+      "bytes": 35850,
+      "sha256": "295fc28d3309f6c15fca722cc265067c4ac30266081412b269b846885321e716"
+    }
+  ]
+}

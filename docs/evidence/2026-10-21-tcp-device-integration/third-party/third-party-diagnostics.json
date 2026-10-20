@@ -1,0 +1,251 @@
+{
+  "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+  "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+  "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+  "deviceId": "ticker",
+  "records": [
+    {
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 1,
+      "eventType": "device.ticker.started",
+      "message": "后台计数已启动",
+      "timestampMs": 1792516534175
+    },
+    {
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 2,
+      "eventType": "device.connect.completed",
+      "message": "设备连接已就绪",
+      "timestampMs": 1792516534175
+    },
+    {
+      "ownerId": "b9e8dfed-d6fc-49bb-8686-303bcde88bec",
+      "cycleId": "c1c0a84959d4498294f6d7362d750a3b",
+      "requestId": "9b99c248048b4139aea8197bb89f9497",
+      "source": {
+        "workflowId": "main",
+        "nodeId": "sample",
+        "nodeRunId": "adbfcd6d-f941-428b-a797-90aa80fbb432",
+        "workflowRunId": "11789df7-f728-43d4-9ae8-b531dfb46ae4",
+        "iterationPath": [],
+        "slot": "service"
+      },
+      "selectors": {},
+      "result": {
+        "ticks": 20
+      },
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 3,
+      "eventType": "device.action.completed",
+      "message": "sample",
+      "timestampMs": 1792516535198
+    },
+    {
+      "slot": "service",
+      "selectors": {},
+      "jobId": "b9e8dfed-d6fc-49bb-8686-303bcde88bec",
+      "workflowId": "main",
+      "nodeId": "sample",
+      "code": "",
+      "diagnostics": {},
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 4,
+      "eventType": "node.log",
+      "message": "采样完成",
+      "timestampMs": 1792516535203
+    },
+    {
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 5,
+      "eventType": "device.connect.completed",
+      "message": "设备连接已就绪",
+      "timestampMs": 1792516535443
+    },
+    {
+      "ownerId": "8543afe4-c044-4642-afdf-54936cc56715",
+      "cycleId": "a342a1a854a34bf385b57fd84784de9a",
+      "requestId": "b6610a793ccf45948f267864ddd7ec10",
+      "source": {
+        "workflowId": "reject",
+        "nodeId": "sample",
+        "nodeRunId": "db10559c-02fb-4f11-9e40-1b864b089ae8",
+        "workflowRunId": "9c86b855-6a8b-4299-a71a-b03e89a1e0c8",
+        "iterationPath": [],
+        "slot": "service"
+      },
+      "selectors": {},
+      "code": "E_SAMPLE_REJECTED",
+      "diagnostics": {},
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 6,
+      "eventType": "device.action.failed",
+      "message": "示例采样被拒绝；服务可继续使用",
+      "timestampMs": 1792516536465
+    },
+    {
+      "slot": "service",
+      "selectors": {},
+      "jobId": "8543afe4-c044-4642-afdf-54936cc56715",
+      "workflowId": "reject",
+      "nodeId": "sample",
+      "code": "E_SAMPLE_REJECTED",
+      "diagnostics": {
+        "deviceSlot": "service"
+      },
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 7,
+      "eventType": "node.failed",
+      "message": "示例采样被拒绝；服务可继续使用",
+      "timestampMs": 1792516536469
+    },
+    {
+      "ownerId": "device-page-c50910e88d494799b86e60ce251b1e37",
+      "cycleId": "cf8808ba8ff44713adcb1972e3b5fafe",
+      "requestId": "9b21a22a8c8a453db1eb3a9af749d1eb",
+      "source": {
+        "kind": "management",
+        "client": "device-page"
+      },
+      "selectors": {},
+      "result": {
+        "ticks": 45
+      },
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 8,
+      "eventType": "device.action.completed",
+      "message": "sample",
+      "timestampMs": 1792516536480
+    },
+    {
+      "ownerId": "device-page-cea74f8cf70541a48264ced601b562d2",
+      "cycleId": "1e567ca716144162b6c258f00561402f",
+      "requestId": "7c859278dac84d929c164106f6fc7803",
+      "source": {
+        "kind": "management",
+        "client": "device-page"
+      },
+      "selectors": {},
+      "code": "E_SAMPLE_REJECTED",
+      "diagnostics": {},
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 9,
+      "eventType": "device.action.failed",
+      "message": "示例采样被拒绝；服务可继续使用",
+      "timestampMs": 1792516536481
+    },
+    {
+      "ownerId": "device-page-8451a24fce1b4bb99fa327fd61277bb5",
+      "cycleId": "6c8ca851dd174d16992e1a46f096b11d",
+      "requestId": "80616a98ae1d4639a4301fc1dc5d992b",
+      "source": {
+        "kind": "management",
+        "client": "device-page"
+      },
+      "selectors": {},
+      "result": {
+        "ticks": 50
+      },
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 10,
+      "eventType": "device.action.completed",
+      "message": "sample",
+      "timestampMs": 1792516536761
+    },
+    {
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 11,
+      "eventType": "device.connect.completed",
+      "message": "设备连接已就绪",
+      "timestampMs": 1792516536884
+    },
+    {
+      "ownerId": "33812d46-60ff-406d-8bf6-4106db0e3609",
+      "cycleId": "25ec567c0b0c4813bdaac5b37c67488f",
+      "requestId": "90c8775ace3e4771875beedcd7754d7b",
+      "source": {
+        "workflowId": "main",
+        "nodeId": "sample",
+        "nodeRunId": "3fd40209-9de5-40d0-b476-43118a2e1e5e",
+        "workflowRunId": "ff9bd8b7-eef9-49a7-bdf8-1d1e0a3b9643",
+        "iterationPath": [],
+        "slot": "service"
+      },
+      "selectors": {},
+      "result": {
+        "ticks": 69
+      },
+      "deviceGeneration": "942fbbde1b634a46b96c6e84a1e3ded9",
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 12,
+      "eventType": "device.action.completed",
+      "message": "sample",
+      "timestampMs": 1792516537935
+    },
+    {
+      "slot": "service",
+      "selectors": {},
+      "jobId": "33812d46-60ff-406d-8bf6-4106db0e3609",
+      "workflowId": "main",
+      "nodeId": "sample",
+      "code": "",
+      "diagnostics": {},
+      "runtimeInstanceId": "c4b688d1-e453-42c7-b5ca-ad91ba2aa59a",
+      "projectId": "75eb9e6b-d2ee-47aa-8999-afe9cbe54cca",
+      "projectLoadGeneration": "ad0083069dba498cb349ac97d70f5788",
+      "deviceId": "ticker",
+      "cursor": 13,
+      "eventType": "node.log",
+      "message": "采样完成",
+      "timestampMs": 1792516537938
+    }
+  ],
+  "cursor": 13,
+  "more": false,
+  "dropped": 0,
+  "truncated": false
+}

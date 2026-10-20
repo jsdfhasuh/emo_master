@@ -1,0 +1,4 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\build\tcp-device-v1\verify-cli.py", line 6, in <module>
+    third=Path(re.search(r'THIRD_PARTY_ACCEPTANCE_ROOT=(.+)$',text)[1].strip())
+TypeError: 'NoneType' object is not subscriptable

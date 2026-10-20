@@ -8,6 +8,7 @@ from pathlib import Path
 import shutil
 import stat
 import tempfile
+import time
 from uuid import uuid4
 import zipfile
 
@@ -29,6 +30,20 @@ MAX_TOTAL = 16 * 1024 ** 3
 MAX_METADATA = 8 * 1024 ** 2
 MAX_ENTRIES = 10000
 RESERVED = {"project.json", "manifest.json", ".delivery.lock"}
+
+
+def _replaceInstalledFile(source: Path, target: Path) -> None:
+    # Windows may deny replacement while a short-lived reader holds the target
+    # without delete sharing. Retry only this atomic operation, never extraction,
+    # backup, or the entire update. Permanent denial still reaches rollback.
+    for attempt in range(5):
+        try:
+            os.replace(source, target)
+            return
+        except PermissionError as error:
+            if getattr(error, "winerror", None) not in {5, 32, 33} or attempt == 4:
+                raise
+            time.sleep(.05 * 2 ** attempt)
 
 
 def _digest(stream, target=None):
@@ -309,13 +324,13 @@ def installRuntimePackage(package: Path, destination: Path, *, registry=None, de
                         old.parent.mkdir(parents=True, exist_ok=True)
                         shutil.copy2(target, old)
                     target.parent.mkdir(parents=True, exist_ok=True)
-                    os.replace(stage / name, target)
+                    _replaceInstalledFile(stage / name, target)
                     replaced.append(targetName)
             except BaseException:
                 for name in reversed(replaced):
                     old = backup / name
                     if old.exists():
-                        os.replace(old, destination / name)
+                        _replaceInstalledFile(old, destination / name)
                     else:
                         (destination / name).unlink(missing_ok=True)
                 raise

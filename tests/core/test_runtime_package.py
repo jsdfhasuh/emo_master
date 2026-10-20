@@ -1,4 +1,5 @@
 import json
+import os
 from pathlib import Path
 import zipfile
 
@@ -175,3 +176,108 @@ def testExporterRejectsOutputInsideSource(tmp_path):
     productionProject(source)
     with pytest.raises(ValueError, match="outside"):
         buildRuntimePackage(source, source / "packages")
+
+
+@pytest.mark.parametrize("winerror", [5, 32, 33])
+def testUpdateWaitsForTransientWindowsReplacementDenial(tmp_path, monkeypatch, winerror):
+    import emo_master.core.project.runtime_package as module
+    source = tmp_path / "source"
+    document = productionProject(source)
+    destination = tmp_path / "installed"
+    installRuntimePackage(buildRuntimePackage(source, tmp_path / "packages"), destination)
+    original = (destination / "project.json").read_bytes()
+    (destination / "outputs").mkdir()
+    history = destination / "outputs/history.csv"
+    history.write_bytes(b"site history")
+    document.production.cycleIntervalMs = 200
+    saveDocument(source, document)
+    package = buildRuntimePackage(source, tmp_path / "packages")
+    replace = module.os.replace
+    attempts = []
+
+    def temporaryDenial(source, target):
+        if Path(target) == destination / "project.json" and ".runtime-stage-" in str(source):
+            attempts.append((source, target))
+            if len(attempts) == 1:
+                if os.name == "nt" and winerror == 32:
+                    # Exercise an actual non-delete-sharing reader on Windows;
+                    # the other cases keep their exact synthetic error codes.
+                    import ctypes
+                    from ctypes import wintypes
+                    kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+                    create = kernel.CreateFileW
+                    create.argtypes = (wintypes.LPCWSTR, wintypes.DWORD, wintypes.DWORD,
+                                       ctypes.c_void_p, wintypes.DWORD, wintypes.DWORD, wintypes.HANDLE)
+                    create.restype = wintypes.HANDLE
+                    close = kernel.CloseHandle
+                    close.argtypes = (wintypes.HANDLE,)
+                    close.restype = wintypes.BOOL
+                    handle = create(str(target), 0x80000000, 0x1 | 0x2, None, 3, 0, None)
+                    assert handle != ctypes.c_void_p(-1).value, ctypes.get_last_error()
+                    try:
+                        with pytest.raises(PermissionError) as blocked:
+                            replace(source, target)
+                        assert blocked.value.winerror in {5, 32, 33}
+                        raise blocked.value
+                    finally:
+                        assert close(handle)
+                error = PermissionError(13, "Windows replacement denied while a file handle is active")
+                error.winerror = winerror
+                raise error
+        return replace(source, target)
+
+    monkeypatch.setattr(module.os, "replace", temporaryDenial)
+    installed = installRuntimePackage(package, destination)
+    assert len(attempts) == 2 and attempts[0] == attempts[1]
+    assert installed.production.cycleIntervalMs == 200
+    assert json.loads((destination / "project.json").read_text())["production"]["cycleIntervalMs"] == 200
+    assert history.read_bytes() == b"site history"
+    assert any((backup / "project.json").read_bytes() == original
+               for backup in tmp_path.glob(".runtime-backup-*") if (backup / "project.json").exists())
+
+
+@pytest.mark.parametrize("winerror, expectedAttempts", [(5, 5), (32, 5), (33, 5), (None, 1), (2, 1)])
+def testPermanentReplacementDenialRemainsBoundedAndRestoresInputs(tmp_path, monkeypatch, winerror, expectedAttempts):
+    import hashlib
+    import emo_master.core.project.runtime_package as module
+    source = tmp_path / "source"
+    document = productionProject(source)
+    destination = tmp_path / "installed"
+    installRuntimePackage(buildRuntimePackage(source, tmp_path / "packages"), destination)
+    original = {name: (destination / name).read_bytes() for name in ("project.json", "input.png")}
+    # A valid PNG can carry trailing bytes; ensure rollback restores different
+    # input bytes, rather than merely copying an identical resource twice.
+    changedInput = original["input.png"] + b"updated package input"
+    (source / "input.png").write_bytes(changedInput)
+    document.resources.items["input"].sha256 = hashlib.sha256(changedInput).hexdigest()
+    document.resources.items["input"].size = len(changedInput)
+    document.production.cycleIntervalMs = 200
+    saveDocument(source, document)
+    package = buildRuntimePackage(source, tmp_path / "packages")
+    replace = module.os.replace
+    attempts = []
+    rollbackAttempts = []
+    error = PermissionError(13, "persistent permission denial")
+    if winerror is not None:
+        error.winerror = winerror
+
+    def denied(source, target):
+        if Path(target) == destination / "project.json" and ".runtime-stage-" in str(source):
+            assert (destination / "input.png").read_bytes() == changedInput
+            attempts.append((source, target))
+            raise error
+        if Path(target) == destination / "input.png" and ".runtime-backup-" in str(source):
+            rollbackAttempts.append((source, target))
+            if winerror == 5 and len(rollbackAttempts) == 1:
+                occupied = PermissionError(13, "Windows reader still holds the rollback target")
+                occupied.winerror = 32
+                raise occupied
+        return replace(source, target)
+
+    monkeypatch.setattr(module.os, "replace", denied)
+    with pytest.raises(PermissionError) as failure:
+        installRuntimePackage(package, destination)
+    assert failure.value is error
+    assert len(attempts) == expectedAttempts
+    assert len(rollbackAttempts) == (2 if winerror == 5 else 1)
+    assert all((destination / name).read_bytes() == data for name, data in original.items())

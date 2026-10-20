@@ -22,6 +22,8 @@ def testGlobalCounterWorkerRunsBlockingRpcOffCallingThread() -> None:
 
     client = Client()
     worker = GlobalCounterWorker(client, "list", "project", 5)
+    # Native Qt startup must not query the PySide metaobject for a thread name.
+    assert worker.objectName() == "GlobalCounterWorker"
     worker.start()
 
     assert client.started.wait(timeout=2.0)
@@ -52,6 +54,8 @@ def testGlobalCounterWorkerDispatchesMutationMethods() -> None:
         name="parts",
         value=12,
     )
+    # Native Qt startup must not query the PySide metaobject for a thread name.
+    assert worker.objectName() == "GlobalCounterWorker"
     worker.start()
     assert worker.wait(2000)
     assert client.calls == [("project", "parts", 12)]

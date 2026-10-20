@@ -73,3 +73,35 @@ Windows multi_capture/300joins原等待失败仍需新精确SHA的普通CI确认
 - 恢复后使用独立云端 checkout，从相同 704d098 基线逐文件复制全部候选改动。27 个源码/测试文件加本文共 28 项在完整执行前后 SHA-256 一致。外置独立取消锁、旧 API 与真实 loopback gRPC 探针 3 passed；其首次收集因外置脚本 PYTHONPATH 不含测试包而失败，修正运行路径后执行，不作为产品失败或删除证据。
 - 最终候选完整 `scripts/ci_check.py`：proto-drift、Ruff、mypy（496 source files）全部通过；pytest **6317 passed、23 skipped、42 subtests passed，1595.86 秒，exit 0**。没有新 skip/xfail，没有修改 workflow、CI 脚本、deadline 或 durability。本次是该最终候选第一次完整执行，不是把分段结果累加，也不是重跑同一失败候选取绿。
 - 本次未出现原先偶发原生 SIGSEGV，但原生根因尚未得到精确归因，不能把本次通过表述为已证明该崩溃永远消除。Windows 与冻结程序须看推送后精确源码 SHA 的远端结果；本机 Linux 通过不替代它们或真实设备验收。
+
+## 后续首失败与最小修复（47ca9d54 之后）
+
+### 远端结果与仍需处理的首失败
+
+`47ca9d54f338a79f5dcf7a0ad42a4fee1db0dfb1` 精确 push [39365856132](https://github.com/jsdfhasuh/emo_master/actions/runs/39365856132)：Linux 6317 passed / 23 skipped / 42 subtests，Windows 6335 passed / 5 skipped / 42 subtests，均成功。Frozen Windows [39365863154](https://github.com/jsdfhasuh/emo_master/actions/runs/39365863154) 和 display/live contract [39365856103](https://github.com/jsdfhasuh/emo_master/actions/runs/39365856103) 也通过。
+
+同树 PR Windows [39365862268](https://github.com/jsdfhasuh/emo_master/actions/runs/39365862268) 则有 1 failed / 6334 passed / 5 skipped / 42 subtests：安装工程更新时原子替换 `installed/project.json` 返回 WinError 5。实际 merge SHA 为 `7ec00ecee26581ded97f330805d9e24d2666fead`，与精确 head 的源码差异为空。精确 push 通过不覆盖此首红。
+
+### Windows 原子替换的有界恢复
+
+安装器自身的读取、解压与备份句柄均正确关闭；日志不能证明拒绝者身份，不声称杀毒软件导致。新增确定性首红证明单次 Windows 5/32/33 拒绝会中止更新。现在只对这些明确 Windows 拒绝重试同一个 `os.replace`，最多5次，累计等待750ms；不重做整个更新，不修改权限或测试deadline。永久拒绝、POSIX EACCES及未知错误继续抛出，已替换资源仍回滚。回滚遇一次同类临时占用也覆盖。
+
+39项相关测试通过；Windows专用分支使用真实不含 FILE_SHARE_DELETE 的 CreateFileW 句柄验证实际拒绝，本机 Linux 未执行该平台分支，须由新 SHA 的 hosted CI 验证。
+
+### QThread 启动原生崩溃：新增归因证据
+
+仅含上述文件替换修复的本机完整 check 在约19%再次 SIGSEGV，原失败保留，没有重跑该候选取绿。进程内 libc backtrace 诊断捕获到另一原始场景第22次对话框生命周期的实际崩溃链：`QThreadPrivate::start → QThreadWrapper::metaObject → Shiboken::BindingManager::retrieveWrapper`。同时GUI Python栈处在事件等待/resize，不是实际崩溃指令。
+
+对已安装二进制反汇编证实：Qt5在线程 objectName 为空时，启动代码虚调 metaObject 取名字；PySide该查询未取得GIL，而稍后的 Python `run` 才取GIL。因此新增线程可能在GUI更新wrapper映射时访问该映射。最小修复只在 GlobalCounterWorker 构造时设置明确线程名，绕过这条原生命名回退；不改GC、theme、全局锁或其他线程。两个已有worker测试增加启动前命名断言。
+
+修复后同一原测试循环首轮1000次完整完成，32项变量/计数器/生命周期相关测试通过。该证据定位并覆盖观察到的路径，不声称解释所有历史堆变化或所有可能原生缺陷。未使用ptrace、内存转储或系统安全设置更改。
+
+### 五路 DisplaySession 的临时控制准入竞争
+
+包含上述两个修复的首次完整 check：6324 passed / 1 failed / 23 skipped / 42 subtests，未再出现SIGSEGV。唯一首红为五路DisplaySession健康测试的原始 `errors == []` 断言，实际出现 `RESOURCE_EXHAUSTED('control')`。四个受控真实gRPC查询占位、第五会话启动的反例复现同一错误。
+
+最小修复仅在 DisplaySession 的 Capabilities/Snapshot/GetJob 三种只读查询上，对精确的临时 `RESOURCE_EXHAUSTED('control')` 做可取消退避，并共享原先0.5秒总预算（含各次RPC耗时）。不重放写入、执行控制或其他配额错误，不增加服务端线程池/配额，不放宽原3秒健康测试deadline，不删除错误断言。预算耗尽仍报告原错误；关闭可打断等待。
+
+本轮候选仍需要完整本机与精确SHA hosted结果。定向通过不是全套完成，也不把前面不同候选的通过数累加成一次验证。
+
+最终DisplaySession相邻冻结选择：96 passed（含13项新增回归），Ruff、mypy、diff-check通过，执行前后两文件指纹一致。

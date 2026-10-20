@@ -38,6 +38,10 @@ try:
             value: int = 0,
         ) -> None:
             super().__init__()
+            # Qt 5 names an unnamed native thread via virtual metaObject() before
+            # Python run() acquires the GIL. PySide2's wrapper lookup can race
+            # GUI wrapper changes there; name this worker before it starts.
+            self.setObjectName("GlobalCounterWorker")
             self.runtimeClient = runtimeClient
             self.operation = operation
             self.projectId = projectId

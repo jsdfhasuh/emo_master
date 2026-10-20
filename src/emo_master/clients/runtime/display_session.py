@@ -389,6 +389,23 @@ class DisplaySession:
                 else:
                     self.stats["dropped"] += 1
 
+    def _controlRead(self, method, request):
+        # These read-only calls were rejected before execution. Share their
+        # original 0.5s budget across brief control-admission contention; never
+        # retry a write, a different quota/error, or extend the call deadline.
+        deadline = time.monotonic() + .5
+        delay = .01
+        while True:
+            try:
+                return method(request, timeout=max(0, deadline - time.monotonic()))
+            except grpc.RpcError as error:
+                if error.code() != grpc.StatusCode.RESOURCE_EXHAUSTED or error.details() != "control":
+                    raise
+                remaining = deadline - time.monotonic()
+                if remaining <= 0 or self.stop.wait(min(delay, remaining)) or time.monotonic() >= deadline:
+                    raise
+                delay = min(.05, delay * 2)
+
     def _receive(self):
         while not self.stop.is_set():
             with self.lock:
@@ -404,7 +421,7 @@ class DisplaySession:
                 continue
             stream = None
             try:
-                capabilities = self.stub.Capabilities(pb.DisplayEmpty(), timeout=.5)
+                capabilities = self._controlRead(self.stub.Capabilities, pb.DisplayEmpty())
                 with self.lock:
                     if not self._current(token):
                         continue
@@ -447,7 +464,7 @@ class DisplaySession:
                     generation = self.generation
                     request = pb.DisplayRequest(runtime_instance_id=self.instanceId, job_id=self.jobId,
                                                 after_cursor=self.cursor, replay=True)
-                snapshot = self.stub.Snapshot(request, timeout=.5)
+                snapshot = self._controlRead(self.stub.Snapshot, request)
                 with self.lock:
                     if not self._current(token) or not self._canReadResults() or generation != self.generation:
                         continue
@@ -498,7 +515,7 @@ class DisplaySession:
             request = pb.DisplayJobRequest(runtime_instance_id=self.expectedRuntimeInstanceId,
                                            project_id=self.projectId, job_id=self.jobId)
         try:
-            self._acceptJob(self.stub.GetJob(request, timeout=.5), token)
+            self._acceptJob(self._controlRead(self.stub.GetJob, request), token)
         except grpc.RpcError as error:
             with self.lock:
                 if not self._current(token):
@@ -544,7 +561,7 @@ class DisplaySession:
                 request = pb.DisplayRequest(runtime_instance_id=self.instanceId,
                     job_id=self.jobId, after_cursor=self.cursor, replay=True)
             try:
-                snapshot = self.stub.Snapshot(request, timeout=.5)
+                snapshot = self._controlRead(self.stub.Snapshot, request)
                 with self.lock:
                     if self._current(token) and generation == self.generation and self._canReadResults():
                         self._accept(snapshot)
@@ -568,7 +585,7 @@ class DisplaySession:
     def _healthCapabilities(self, token):
         """Old status-only peers still need bounded transport/identity health."""
         try:
-            reply = self.stub.Capabilities(pb.DisplayEmpty(), timeout=.5)
+            reply = self._controlRead(self.stub.Capabilities, pb.DisplayEmpty())
             with self.lock:
                 if not self._current(token):
                     return

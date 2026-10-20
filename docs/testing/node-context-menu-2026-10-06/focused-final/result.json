@@ -1,0 +1,11 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_node_context_menu.py"
+  ],
+  "exitCode": 0,
+  "seconds": 4.733999999938533
+}

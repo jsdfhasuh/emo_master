@@ -1,0 +1,4875 @@
+{
+  "schemaVersion": "draft-1.0",
+  "documentState": "FINAL_ACCEPTANCE_REPORT",
+  "generatedAtUtc": "2026-10-11T10:13:47.854486+00:00",
+  "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "overallGate": "FAIL",
+  "reason": "Debian全量首次FAIL保留；GUI验收仍继续，未覆盖项NOT_RUN。",
+  "acceptanceWorkComplete": true,
+  "uiCutoffUtc": "2026-10-11T10:04:24.393342+00:00",
+  "scopeRules": [
+    "自动化/真实GUI/远端CI三层分别记录。",
+    "历史编号沿用，历史PASS/FAIL不继承。",
+    "专项、41编号映射和CI均可能重叠，不与全量总数相加。",
+    "全量统计4828 passed+1 failed+19 skipped，另有29 subtests；JUnit tests=4877包含subtests，不是4877独立用例。",
+    "NOT_RUN不等于失败，也不得写PASS；草稿不做发布/上线放行。"
+  ],
+  "numberedCases": [
+    {
+      "id": "D01",
+      "subject": "number独立临时参数99",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testStandaloneNodeUsesOnlyExplicitInputs[01-nested-calls.emoproj-child-number]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.295
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D01",
+            "status": "PASS",
+            "kind": "native-ui",
+            "actual": "trial99 export value99, formal reopen7; no afterinput/upstream; Esc retires Worker then newflow READY",
+            "screens": [
+              "009-number-trial99.jpg",
+              "014-formal-value-seven.jpg"
+            ],
+            "artifact": "projects/d01-trial99.emodebug.zip",
+            "utc": "2026-10-11T09:03:33.499818+00:00"
+          }
+        ],
+        "evidence": [
+          "ui/009-number-trial99.jpg",
+          "ui/014-formal-value-seven.jpg"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D02",
+      "subject": "threshold独立原图127完整输出",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testStandaloneNodeUsesOnlyExplicitInputs[03-image.emoproj-process-threshold]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.29
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D02",
+            "status": "PASS",
+            "kind": "native-ui+read-only-export-verification",
+            "utc": "2026-10-11T09:20:19.252391+00:00",
+            "actual": "Independent threshold127 uploaded original samplePNG;full320x240export exactOpenCVthreshold oforiginal,zero mismatchedpixels",
+            "screens": [
+              "068",
+              "069",
+              "070",
+              "072"
+            ],
+            "verification": "export-pixel-verification.json"
+          }
+        ],
+        "evidence": [
+          "ui/068-threshold-independent.jpg",
+          "ui/069-D02-upload-original.jpg",
+          "ui/070-D02-result.jpg",
+          "ui/072-D02-complete-mask.jpg",
+          "ui/export-pixel-verification.json"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D03",
+      "subject": "进入/跳出/跳过及正式结果7",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testFlowSingleStepIntoOutOverAndTrialIsolation",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.553
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D03",
+            "status": "PASS",
+            "kind": "native-ui",
+            "actual": "seq1seed->2first->3child/number->4firstcall.return->5second->6secondcall.return, eachoneclick; bothoutputs7",
+            "screens": [
+              "021-D03-seed-paused.jpg",
+              "022-D03-first.jpg",
+              "023-D03-child-number.jpg",
+              "026-D03-first-return7.jpg",
+              "027-D03-second-before.jpg",
+              "028-D03-second-return.jpg",
+              "030-second-output7.jpg",
+              "032-first-history-output.jpg"
+            ],
+            "utc": "2026-10-11T09:04:39.051872+00:00"
+          }
+        ],
+        "evidence": [
+          "ui/021-D03-seed-paused.jpg",
+          "ui/022-D03-first.jpg",
+          "ui/023-D03-child-number.jpg",
+          "ui/026-D03-first-return7.jpg",
+          "ui/027-D03-second-before.jpg",
+          "ui/028-D03-second-return.jpg",
+          "ui/030-second-output7.jpg",
+          "ui/032-first-history-output.jpg"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D04",
+      "subject": "普通断点两次调用身份",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testFlowSingleBreakpointStopsBeforeExactInvocation[-1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.683
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D04",
+            "status": "PASS",
+            "kind": "native-ui",
+            "utc": "2026-10-11T09:05:59.136533+00:00",
+            "actual": "Prestart unconditional child/number hitstart1; beforeexecution pauses seq2,3; nodeRunId be16d26b-ad50-4c2f-8a53-e68d2b559f8e vs269ccbc1-66f1-4767-9197-63a4448180a9; final7",
+            "screens": [
+              "034-D04-breakpoints-beforestart.jpg",
+              "037-D04-first-identity.jpg",
+              "039-D04-second-identity.jpg",
+              "040-D04-completed7.jpg"
+            ]
+          }
+        ],
+        "evidence": [
+          "ui/034-D04-breakpoints-beforestart.jpg",
+          "ui/037-D04-first-identity.jpg",
+          "ui/039-D04-second-identity.jpg",
+          "ui/040-D04-completed7.jpg"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D05",
+      "subject": "条件断点与命中起点2",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testFlowSingleBreakpointStopsBeforeExactInvocation[params[\"value\"] == 7-2]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.751
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "coverage": "原会话确认条件params[\"value\"] == 7、命中起点2、第二次调用身份；补充会话再次走该条件路径并导出最终7.0，补齐先前缺失项。",
+        "observations": [
+          {
+            "case": "D05",
+            "status": "PASS",
+            "kind": "native-ui",
+            "utc": "2026-10-11T09:07:40.684893+00:00",
+            "actual": "conditionparamsvalue7,hitstart2; onlyseq2child/number,payloadhits2,mainstacksecond; finalSUCCEEDED; finalvalue not separately selected for screenshot",
+            "screens": [
+              "042-D05-condition-hit2.jpg",
+              "045-D05-hitcount2.jpg",
+              "047-D05-stack-main-second.jpg",
+              "048-D05-completed7.jpg"
+            ]
+          },
+          {
+            "case": "D05",
+            "status": "PASS",
+            "kind": "native-ui",
+            "utc": "2026-10-11T09:38:10.034780+00:00",
+            "actual": "Supplemental new session for missing final-value evidence: conditionparamsvalue7hit2 seq2 childnumber only then final7.0 fullJSON export;firstattempt preserved not a failedtest retry",
+            "screens": [
+              "145",
+              "146",
+              "147"
+            ],
+            "limitations": ""
+          }
+        ],
+        "evidence": [
+          "ui/042-D05-condition-hit2.jpg",
+          "ui/045-D05-hitcount2.jpg",
+          "ui/047-D05-stack-main-second.jpg",
+          "ui/048-D05-completed7.jpg",
+          "ui/145-D05-supplement-breakpoints.jpg",
+          "ui/146-D05-supplement-secondpause.jpg",
+          "ui/147-D05-finalvalue7.jpg",
+          "ui/projects/d05-final7.emodebug.zip",
+          "report/d05-export-readonly-verification.json"
+        ],
+        "remaining": [],
+        "limitation": "第一次观察最终值未单独选择的记录仍保留；补充会话是补证，不将失败重跑改判。"
+      }
+    },
+    {
+      "id": "D06",
+      "subject": "ForEach当前轮次条件与结果",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testLoopConditionalPointUsesCurrentIteration",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.51
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D06",
+            "status": "PASS",
+            "kind": "native-ui+read-only-export-verification",
+            "utc": "2026-10-11T09:20:19.252366+00:00",
+            "actual": "Conditional pauses left5 iteration1 and left9 iteration2;82.923s natural pause then one continue;finalindex[0,1,2],result[false,true,true];rawJSONverified",
+            "screens": [
+              "056",
+              "058",
+              "059",
+              "062",
+              "063"
+            ],
+            "verification": "export-pixel-verification.json"
+          }
+        ],
+        "evidence": [
+          "ui/056-D06-left5-pause-start.jpg",
+          "ui/058-D06-over80s-before-continue.jpg",
+          "ui/059-D06-left9-after83s.jpg",
+          "ui/062-D06-current.jpg",
+          "ui/063-D06-result-complete.jpg",
+          "ui/export-pixel-verification.json"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D07",
+      "subject": "运行到threshold并核对blur输入",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testImageRunToPointUsesUpstreamPixelsAndTrialKeepsOriginalThreshold",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.005
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D07",
+            "status": "PASS",
+            "kind": "native-ui+read-only-export-verification",
+            "utc": "2026-10-11T09:20:19.252402+00:00",
+            "actual": "Run-to process/threshold seq2 beforeexecution; fullinput image exactGaussianBlur3x3 ofcurrentuploadedoriginal,not original",
+            "screens": [
+              "076",
+              "077",
+              "079"
+            ],
+            "verification": "export-pixel-verification.json"
+          }
+        ],
+        "evidence": [
+          "ui/076-D07-selected-threshold.jpg",
+          "ui/077-D07-threshold-before.jpg",
+          "ui/079-D07-blur-image.jpg",
+          "ui/export-pixel-verification.json"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "D08",
+      "subject": "数字与图像临时试运行不改变主流程",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testFlowSingleStepIntoOutOverAndTrialIsolation",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.553
+          },
+          {
+            "nodeid": "tests/designer/test_debug_example_interactions.py::testImageRunToPointUsesUpstreamPixelsAndTrialKeepsOriginalThreshold",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.005
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "observations": [
+          {
+            "case": "D08-number",
+            "status": "PASS",
+            "kind": "native-ui",
+            "actual": "trial99 at seq3 returns99, seq3mainlocationunchanged; mainfirstsecondoutput7",
+            "screens": [
+              "024-D08-trial-dialog.jpg",
+              "025-D08-trial99-seq3.jpg",
+              "030-second-output7.jpg"
+            ],
+            "utc": "2026-10-11T09:04:39.051917+00:00"
+          },
+          {
+            "case": "D08-image",
+            "status": "PASS",
+            "kind": "native-ui+read-only-export-verification",
+            "utc": "2026-10-11T09:20:19.252408+00:00",
+            "actual": "Trialthreshold200 changesmask;pausedseq2same nodeRunId;continueformal127;both320x240fullPNG pixel-exact;trialmetadata200 formalproject127",
+            "screens": [
+              "081",
+              "084",
+              "085"
+            ],
+            "verification": "export-pixel-verification.json"
+          }
+        ],
+        "evidence": [
+          "ui/024-D08-trial-dialog.jpg",
+          "ui/025-D08-trial99-seq3.jpg",
+          "ui/030-second-output7.jpg",
+          "ui/081-D08-trial-editor.jpg",
+          "ui/084-D08-trial-threshold200.jpg",
+          "ui/085-D08-main-completed.jpg",
+          "ui/export-pixel-verification.json"
+        ],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": []
+      }
+    },
+    {
+      "id": "O01",
+      "subject": "默认缓存/模拟相机编辑器",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_live_preview_draft_context.py::testActualCameraSingleFrameButtonUsesUnsavedCanvasSnapshot",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.444
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O02",
+      "subject": "PLC小窗 未连接 / 高级项关 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.099
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "closed",
+        "advanced": false,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O03",
+      "subject": "PLC小窗 未连接 / 高级项关 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.085
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "closed",
+        "advanced": false,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O04",
+      "subject": "PLC小窗 未连接 / 高级项开 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.087
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "closed",
+        "advanced": true,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O05",
+      "subject": "PLC小窗 未连接 / 高级项开 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.075
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "closed",
+        "advanced": true,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O06",
+      "subject": "PLC小窗 已连接 / 高级项关 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.08
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "connected",
+        "advanced": false,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O07",
+      "subject": "PLC小窗 已连接 / 高级项关 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.077
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "connected",
+        "advanced": false,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O08",
+      "subject": "PLC小窗 已连接 / 高级项开 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.08
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "connected",
+        "advanced": true,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O09",
+      "subject": "PLC小窗 已连接 / 高级项开 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.078
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "connected",
+        "advanced": true,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O10",
+      "subject": "PLC小窗 写入态 / 高级项关 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.122
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "write",
+        "advanced": false,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O11",
+      "subject": "PLC小窗 写入态 / 高级项关 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.12
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "write",
+        "advanced": false,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O12",
+      "subject": "PLC小窗 写入态 / 高级项开 / 640×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.123
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "write",
+        "advanced": true,
+        "width": 640,
+        "height": 430
+      }
+    },
+    {
+      "id": "O13",
+      "subject": "PLC小窗 写入态 / 高级项开 / 800×430",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.122
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      },
+      "parameterScope": {
+        "state": "write",
+        "advanced": true,
+        "width": 800,
+        "height": 430
+      }
+    },
+    {
+      "id": "O14",
+      "subject": "长工作流名",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_workflow_relationship_layout.py::testLongWorkflowNameFitsAfterOpeningHiddenRelations",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.21
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O15",
+      "subject": "Linux pidfd / Windows进程句柄",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径；本地为Linux路径，不能据此宣称本地Windows路径执行。",
+        "tests": [
+          {
+            "nodeid": "tests/runtime/test_operator_debug_acceptance.py::testParentProcessDeathRetiresOrphanWorkerAndOwnedAssets[wait]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.925
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O16",
+      "subject": "Linux pidfd / Windows进程句柄",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径；本地为Linux路径，不能据此宣称本地Windows路径执行。",
+        "tests": [
+          {
+            "nodeid": "tests/runtime/test_operator_debug_acceptance.py::testParentProcessDeathRetiresOrphanWorkerAndOwnedAssets[ignore]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 3.875
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O17",
+      "subject": "模拟PLC确定性accept",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/runtime/test_plc_debug.py::test_client_paths_reject_missing_invalid_and_stale_write_tokens_without_wire_payload[INPROCESS-missing]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.049
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O18",
+      "subject": "Linux Python / Windows batch入口",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径；本地为Linux路径，不能据此宣称本地Windows路径执行。",
+        "tests": [
+          {
+            "nodeid": "tests/runtime/test_production_boundaries.py::testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.927
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O19",
+      "subject": "Job资源退休",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/runtime/test_run_inspection_rpc.py::testFrozenSessionCanRenewReadAndCloseAfterAnotherProjectCopyLoads",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.859
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "原编号原生范围尚未完成；软件映射通过不等于真实桌面或实体设备通过。"
+      }
+    },
+    {
+      "id": "O20",
+      "subject": "默认缓存+双Job SQLite",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/sqlite_writer/test_user_path.py::testCompleteSqliteDesignerPath",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.126
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "PASS",
+        "coverage": "历史工程副本+本次全新空表，两次原生正式Job写入7/13、COMMITTED、保存/切换/重载与正常退出后的新Designer重开；不是从零UI建工程/建表。",
+        "observations": [
+          {
+            "case": "O20-native",
+            "status": "PASS",
+            "kind": "native-ui",
+            "utc": "2026-10-11T10:04:24.393257+00:00",
+            "actual": "GUI COMMITTED 7 then 13 in distinct Jobs, workers retired; save/switch/reopen; normal app exit then new process reopens saved13 with business DB[7,13]",
+            "screens": [
+              "135",
+              "136",
+              "137",
+              "138",
+              "139",
+              "140",
+              "141",
+              "142",
+              "143",
+              "144"
+            ],
+            "limitations": "Resource-held refusal separately software checked; not artificially forced in O20 UI."
+          }
+        ],
+        "evidence": [
+          "ui/projects/o20-native-final-summary.json",
+          "ui/134-O20-native-project.jpg",
+          "ui/135-O20-first-receipt.jpg",
+          "ui/136-O20-second-receipt.jpg",
+          "ui/137-O20-switch-after-retirement.jpg",
+          "ui/138-O20-reloaded13.jpg",
+          "ui/139-O20-reloaded-mapping.jpg",
+          "ui/140-O20-mapping-scroll.jpg",
+          "ui/141-new-process-entry.jpg",
+          "ui/142-O20-new-process-reopen.jpg",
+          "ui/143-O20-new-process-success.jpg",
+          "ui/144-O20-new-process13.jpg",
+          "ui/projects/o20-native-fixture-manifest.json",
+          "ui/projects/o20-before-ui.json",
+          "ui/projects/o20-live-during-ui-with-resource-observer.json",
+          "ui/projects/o20-second-job-observed.json",
+          "ui/projects/o20-after-designer-exit.json",
+          "ui/projects/o20-saved-project-after-exit.json",
+          "ui/projects/o20-final-new-process-reopened.json"
+        ],
+        "remaining": [],
+        "jobIds": [
+          "d90e57ef-a6e0-42ec-8e0a-58af4dcaf223",
+          "202419ac-8147-4357-b094-76250e70ac03"
+        ],
+        "workflowRunIds": [
+          "08328025-27f3-49ac-bda2-5d2b8919ec86",
+          "94c75ebc-833e-4f4d-bc91-452dcf063738"
+        ],
+        "writeIds": [
+          "408facfe-b4ff-4dd1-9a46-204030572d54",
+          "4883aa11-c33b-4ff2-ab8a-7f7b969f6b0d"
+        ],
+        "workerPids": [
+          3162,
+          3177
+        ],
+        "newDesignerPid": 3195,
+        "values": [
+          7,
+          13
+        ]
+      }
+    },
+    {
+      "id": "U01",
+      "subject": "原子编辑、变量迁移取消/回滚、无效草稿恢复",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testCancelExplicitMigrationChangesNothing[ReadVariableOperator]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.133
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testCancelExplicitMigrationChangesNothing[WriteVariableOperator]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.135
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testExceptionAfterModelMutationRestoresCanvasHistoryAndDirty",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.138
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testRecoveryExportsInvalidMemoryBeforeRestoringValidCheckpoint",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.138
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testFailedWorkflowCreationRestoresOriginalActiveTab",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.187
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：InRange无效JSON/类型/语义拒绝且文本保留、文件hash不变；变量迁移取消/回滚和完整异常恢复未逐条原生测完。",
+        "evidence": [
+          "ui/129-inrange-invalid-json.jpg",
+          "ui/130-inrange-wrong-type.jpg",
+          "ui/131-inrange-empty-semantics.jpg",
+          "ui/132-inrange-corrected.jpg",
+          "ui/133-inrange-reopened.jpg",
+          "ui/projects/inrange-invalid-file-integrity.json"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U02",
+      "subject": "读轮询不丢点击、ACK/暂停序号、历史身份",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_window_recovery.py::testUnknownExecutionAckSurvivesPollAndCannotResend",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.916
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testOldOperatorReadCannotUndoNewCommandOrReleaseCommandBusy",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.704
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[continue]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.632
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[into]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.608
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[over]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.899
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowControlPointerHeldAcrossNaturalPollSendsOnce[out]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.851
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowCommandQueuesBehindPollAndLocksUntilPostAckState",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.42
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowFastCommandCompletionCannotOvertakeQueuedPoll",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.137
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowQueuedCommandKeepsExpiredPauseAndDoesNotRetry",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.621
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowHistorySelectionDoesNotRetargetPausedControl",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.301
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowTerminalSelectsResultAlreadyListedBeforeTerminalState",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.018
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowCloseRetiresResourcesDuringReadOnlyPoll[False]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.013
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowCloseRetiresResourcesDuringReadOnlyPoll[True]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.997
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowLostAckStaysUncertainAfterPollWithoutResend",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.258
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testNativeWorkflowControlsUseActualPausedInvocation",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.311
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowWindowCloseDuringOpenWaitsForResourceRetirement",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.457
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testWorkflowWindowInvalidationClosesPinnedRuntime",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.958
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_window.py::testCanonicalWorkflowEntryUsesUnsavedDraftAndSurvivesChildNavigation",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.099
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testLostControlAcknowledgementReconcilesOriginalRequestWithoutReplay",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.577
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：D03的seq1–6主链、D04/D05暂停身份；CLAHE准备失败后跨自然poll保留历史执行身份，修正后一次新执行。未知ACK、不重发和全部读写交错未逐条原生覆盖。",
+        "evidence": [
+          "ui/175-CLAHE-success.jpg",
+          "ui/177-CLAHE-prepare-failed.jpg",
+          "ui/178-CLAHE-error-logs.jpg",
+          "ui/179-CLAHE-oneclick-recovered.jpg",
+          "ui/180-CLAHE-recovered-success.jpg",
+          "ui/188-operator-bad-input-error.jpg",
+          "ui/189-operator-input-error-logs.jpg",
+          "ui/clahe-history-verification/verification.json"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U03",
+      "subject": "Blob条件输出与required/optional/nullable预检",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testConditionalOverlayOnlyRejectsDefiniteRequiredConflict[False-True-False-1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testConditionalOverlayOnlyRejectsDefiniteRequiredConflict[True-True-False-0]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testConditionalOverlayOnlyRejectsDefiniteRequiredConflict[False-False-False-0]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testConditionalOverlayOnlyRejectsDefiniteRequiredConflict[False-True-True-0]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    },
+    {
+      "id": "U04",
+      "subject": "Switch字符串语义、真假快捷键、预览/真实下游",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params0]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.168
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.16
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params2]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.161
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params3]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.166
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.196
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchDefaultsDoNotInventConfiguredCases",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_control_flow_config_safety.py::testSwitchPresenceRoundTripsThroughUndoRedoAndProjectSave",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.236
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSwitchVisibleRulesShortcutsAndPreviewKeepLegacyStrings",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.006
+          },
+          {
+            "nodeid": "tests/plugins/test_flow_switch_operator.py::testFlowSwitchRoutesToMatchingCase",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/plugins/test_flow_switch_operator.py::testFlowSwitchRoutesToDefaultWhenNoCaseMatches",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/plugins/test_flow_switch_operator.py::testFlowSwitchIgnoresUnconfiguredEmptyCase",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/runtime/test_dot_branch_acceptance.py::testSwitchExecutesOnlyTheSelectedDownstreamConsumer[True-case0-true]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.005
+          },
+          {
+            "nodeid": "tests/runtime/test_dot_branch_acceptance.py::testSwitchExecutesOnlyTheSelectedDownstreamConsumer[False-case1-false]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.005
+          },
+          {
+            "nodeid": "tests/runtime/test_dot_branch_acceptance.py::testSwitchExecutesOnlyTheSelectedDownstreamConsumer[1-case2-true]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.004
+          },
+          {
+            "nodeid": "tests/runtime/test_dot_branch_acceptance.py::testSwitchExecutesOnlyTheSelectedDownstreamConsumer[true-default-true]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.004
+          },
+          {
+            "nodeid": "tests/runtime/test_dot_branch_acceptance.py::testSwitchExecutesOnlyTheSelectedDownstreamConsumer[unmatched-default-true]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.004
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    },
+    {
+      "id": "U05",
+      "subject": "启动前断点应用/确认/未知ACK与混合版本拒绝",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testCheckedBreakpointsApplyBeforeStart[-1-1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.946
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testCheckedBreakpointsApplyBeforeStart[-2-2]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.088
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testCheckedBreakpointsApplyBeforeStart[hits == 2-1-2]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.021
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testRejectedStartupBreakpointsDoNotStartAndCanBeCorrected",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.842
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testStartupWaitsForBreakpointAckAndCannotBeRepeated[False]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.844
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testStartupWaitsForBreakpointAckAndCannotBeRepeated[True]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.769
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testLostStartupBreakpointAckDoesNotStartOrRetry",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.146
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testLegacyRuntimeCanStartWithoutBreakpointsButRejectsUnsupportedPresets[False]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.767
+          },
+          {
+            "nodeid": "tests/designer/test_workflow_debug_startup.py::testLegacyRuntimeCanStartWithoutBreakpointsButRejectsUnsupportedPresets[True]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.843
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testReadyBreakpointsAreConfirmedIdempotentAndReplaceable[False]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.634
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testReadyBreakpointsAreConfirmedIdempotentAndReplaceable[True]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.695
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testReadyStillRejectsExecutionControlsAndTerminalRejectsBreakpoints",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.684
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：D04/D05启动前普通/条件断点和命中起点已测；拒绝/未知ACK/混合版本等分支未逐条原生测完。",
+        "evidence": [
+          "ui/034-D04-breakpoints-beforestart.jpg",
+          "ui/037-D04-first-identity.jpg",
+          "ui/039-D04-second-identity.jpg",
+          "ui/042-D05-condition-hit2.jpg",
+          "ui/045-D05-hitcount2.jpg",
+          "ui/047-D05-stack-main-second.jpg",
+          "ui/145-D05-supplement-breakpoints.jpg",
+          "ui/146-D05-supplement-secondpause.jpg",
+          "ui/147-D05-finalvalue7.jpg"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U06",
+      "subject": "视口本地保存、切换恢复、低缩放与导航",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testViewPreferencesAreLocalAndRestoreBelowOldZoomFloor",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.379
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testWorkflowViewIsCapturedBeforeSwitchChangesSceneBounds",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.189
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    },
+    {
+      "id": "U07",
+      "subject": "编辑器新建与Save/Discard/Cancel、活动任务保护",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testNewProjectResolvesUnsavedDraftExactlyOnce[answer0]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.156
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testNewProjectResolvesUnsavedDraftExactlyOnce[answer1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.151
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testNewProjectResolvesUnsavedDraftExactlyOnce[answer2]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.153
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testNewDoesNotStopActiveWork[job]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.139
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testNewDoesNotStopActiveWork[debug]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.142
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：从空白工程建立number、连线、运行/保存/重开；调试占用切换项目被拒绝。Save/Discard/Cancel与正式Job占用完整矩阵未原生测完。",
+        "evidence": [
+          "ui/011-switch-refusal-front.jpg",
+          "ui/101-new-project-name.jpg",
+          "ui/102-native-empty-project.jpg",
+          "ui/104-find-number.jpg",
+          "ui/107-number1.2345-blur.jpg",
+          "ui/108-number1.2345-debug.jpg",
+          "ui/112-workflow-interface-editor.jpg",
+          "ui/115-types-open.jpg",
+          "ui/117-native-connected-layout.jpg",
+          "ui/118-native-blank-run.jpg",
+          "ui/119-native-reloaded.jpg",
+          "ui/120-number-reopen-precision.jpg"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U08",
+      "subject": "命名输入集、完整数据/来源/原子失败及恢复",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[0-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[-9-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[1-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[9-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[True-boolean]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[False-boolean]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[true-string]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[-string]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[2.5-number]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[value9-list<integer>]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureMaterializesPairedImageAndFrameAcrossSessions",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[hash]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[path]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[version]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[type]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[extra]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[duplicate]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[value-type]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[name]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[parameters]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[companion]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureRejectsMixedImageFrameCaptureBeforeAnyUpload",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCompleteResultExportPreservesExactRawAssetAndIdentity[image/png]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCompleteResultExportPreservesExactRawAssetAndIdentity[application/json]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testExportInlineAndOutputReferenceAreComplete",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCancelledOrExpiredExportKeepsExistingTargetAndNoTemporaryFiles",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testRawExportKeepsExactBytesAndDoesNotPretendToHaveMetadata[image/png-.png]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testRawExportKeepsExactBytesAndDoesNotPretendToHaveMetadata[application/json-.json]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_feedback.py::testInvalidInputSetKeepsOldRowsAndErrorUntilSuccessfulLoad[operator]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.472
+          },
+          {
+            "nodeid": "tests/designer/test_debug_feedback.py::testInvalidInputSetKeepsOldRowsAndErrorUntilSuccessfulLoad[workflow]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.504
+          },
+          {
+            "nodeid": "tests/designer/test_debug_window_recovery.py::testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt[ports-operator]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.604
+          },
+          {
+            "nodeid": "tests/designer/test_debug_window_recovery.py::testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt[ports-workflow]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.605
+          },
+          {
+            "nodeid": "tests/designer/test_debug_window_recovery.py::testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt[hash-operator]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.598
+          },
+          {
+            "nodeid": "tests/designer/test_debug_window_recovery.py::testFixtureFailureSurvivesNaturalPollAndOnlySuccessfulLoadClearsIt[hash-workflow]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.654
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testOperatorFixtureSurvivesSessionAndHistoricalRawExportKeepsSelectedValue",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.993
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testWorkflowFixtureAndFullResultUiRoundtrip",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.679
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testWorkflowFixtureParameterSnapshotIncludesChildBindingsWithoutApplying",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.547
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_data.py::testImageAssetsMultiInputOutputAndReuse",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.572
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_data.py::testFrameProvenanceMismatchRejectedBeforeExecution",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.474
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_data.py::testMaskCompanionsRejectOtherCapture[mask-frame]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.005
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_data.py::testMaskCompanionsRejectOtherCapture[maskA-frameA]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.005
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_data.py::testMaskCompanionsRejectOtherCapture[maskB-frameB]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.004
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：流程及算子保存/加载命名输入集，损坏包拒绝、旧输入保留、错误跨poll、正常包恢复。类型、所有来源及全部原子失败矩阵未逐条原生测完。",
+        "evidence": [
+          "ui/154-flow-inputset-save-dialog.jpg",
+          "ui/155-flow-inputset-saved.jpg",
+          "ui/156-flow-bad-inputset-error.jpg",
+          "ui/157-flow-input-error-logs.jpg",
+          "ui/158-flow-inputset-recovered.jpg",
+          "ui/183-operator-input-save.jpg",
+          "ui/184-operator-input-saved.jpg",
+          "ui/185-operator-load-dialog.jpg",
+          "ui/186-operator-load-bad-dialog.jpg",
+          "ui/187-operator-invalid-input.jpg",
+          "ui/188-operator-bad-input-error.jpg",
+          "ui/189-operator-input-error-logs.jpg",
+          "ui/190-operator-recovery-dialog.jpg",
+          "ui/191-operator-input-recovered.jpg"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U09",
+      "subject": "完整PNG/JSON、历史调用身份、取消/过期原子导出",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[0-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[-9-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[1-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[9-integer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[True-boolean]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[False-boolean]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[true-string]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[-string]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[2.5-number]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureKeepsTypedManualValues[value9-list<integer>]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureMaterializesPairedImageAndFrameAcrossSessions",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[hash]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[path]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[version]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[type]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[extra]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[duplicate]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[value-type]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[name]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[parameters]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.003
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testInvalidFixtureDoesNotUploadOrPartiallyApply[companion]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testFixtureRejectsMixedImageFrameCaptureBeforeAnyUpload",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCompleteResultExportPreservesExactRawAssetAndIdentity[image/png]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCompleteResultExportPreservesExactRawAssetAndIdentity[application/json]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testExportInlineAndOutputReferenceAreComplete",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testCancelledOrExpiredExportKeepsExistingTargetAndNoTemporaryFiles",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testRawExportKeepsExactBytesAndDoesNotPretendToHaveMetadata[image/png-.png]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_debug_artifacts.py::testRawExportKeepsExactBytesAndDoesNotPretendToHaveMetadata[application/json-.json]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testOperatorFixtureSurvivesSessionAndHistoricalRawExportKeepsSelectedValue",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.993
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testWorkflowFixtureAndFullResultUiRoundtrip",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.679
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：D02/D05/D07/D08完整PNG/JSON身份和像素、CLAHE历史PNG已核验；取消/过期/全部原子导出未逐条原生测完。专用ROI预览缺查看/导出入口另记易用性FAIL。",
+        "evidence": [
+          "ui/147-D05-finalvalue7.jpg",
+          "ui/164-ROI-full-output-menu.jpg",
+          "ui/175-CLAHE-success.jpg",
+          "ui/177-CLAHE-prepare-failed.jpg",
+          "ui/180-CLAHE-recovered-success.jpg",
+          "ui/export-pixel-verification.json",
+          "ui/clahe-history-verification/verification.json",
+          "ui/roi-preview-export-boundary.json"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U10",
+      "subject": "保存后缀/重复后缀确认与原文件保护",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testProjectSuffixBoundary[name-name.emoproj]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.135
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testProjectSuffixBoundary[name.emoproj-name.emoproj]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.143
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testProjectSuffixBoundary[name.EMOPROJ-name.EMOPROJ]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.146
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testDuplicateSuffixRequiresExplicitChoice[answer0-name.emoproj]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.13
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testDuplicateSuffixRequiresExplicitChoice[answer1-name.emoproj.emoproj]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.13
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testDuplicateSuffixRequiresExplicitChoice[answer2-]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.128
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testOpenSaveAndRuntimeSyncKeepExactFileInSharedDirectory",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.171
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testSaveAsCreatesNamedFileAndLeavesOriginalUntouched",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.161
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testFailedOpenAndCancelledSaveAsPreserveActiveFile",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.155
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testFilePickersUseNamedProjectTypeAndCompleteSuffix",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.142
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testNamedSaveAsCopiesDeclaredResourcesAndPreservesOriginal",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.17
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testCompletedSuffixDoesNotOverwriteWithoutConfirmation",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.138
+          },
+          {
+            "nodeid": "tests/designer/test_named_project_files.py::testSaveAsIsBlockedWhileJobIsRunning",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.146
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "coverage": "部分完成：GTK保存自动追加.emoproj并成功重开；重复后缀确认/覆盖与原文件保护完整组合未逐条原生测完。",
+        "evidence": [
+          "ui/118-native-blank-run.jpg",
+          "ui/119-native-reloaded.jpg",
+          "ui/120-number-reopen-precision.jpg"
+        ],
+        "remaining": [
+          "原编号全范围尚未完成，代表场景不可提升为整项PASS。"
+        ]
+      }
+    },
+    {
+      "id": "U11",
+      "subject": "整数0/-1/1/9鼠标/键盘跨poll并执行",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[0-keyboard]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.806
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[0-mouse]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.745
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[-1-keyboard]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 2.0
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[-1-mouse]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.754
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[1-keyboard]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.742
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[1-mouse]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.752
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[9-keyboard]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.635
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testReadyIntegerModeSurvivesNaturalPollAndSubmitsInteger[9-mouse]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 1.771
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    },
+    {
+      "id": "U12",
+      "subject": "五类安全拒绝中文引导、无Worker/Job/设备动作",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSafetyExplanationIsChineseWithoutSuggestingBypass[vision.io.huaray_camera]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.001
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSafetyExplanationIsChineseWithoutSuggestingBypass[communication.plc.slmp_write]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.001
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSafetyExplanationIsChineseWithoutSuggestingBypass[communication.tcp.client]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.001
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSafetyExplanationIsChineseWithoutSuggestingBypass[vision.io.result_writer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.002
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testSafetyExplanationIsChineseWithoutSuggestingBypass[vision.inference.yolo]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.001
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources[vision.io.huaray_camera-\\u76f8\\u673a\\u4e13\\u7528\\u91c7\\u96c6\\u9884\\u89c8]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.093
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources[communication.plc.slmp_write-\\u5199\\u5165\\u9700\\u660e\\u786e\\u89e3\\u9501]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.102
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources[communication.tcp.client-\\u4e0d\\u4f1a\\u4e3a\\u89e3\\u9664\\u8c03\\u8bd5\\u62d2\\u7edd\\u800c\\u81ea\\u52a8\\u542f\\u52a8\\u6b63\\u5f0f\\u4efb\\u52a1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.096
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources[vision.io.result_writer-\\u4e0d\\u4f1a\\u4e3a\\u89e3\\u9664\\u8c03\\u8bd5\\u62d2\\u7edd\\u800c\\u81ea\\u52a8\\u542f\\u52a8\\u6b63\\u5f0f\\u4efb\\u52a1]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.095
+          },
+          {
+            "nodeid": "tests/designer/test_dot_debug_contracts.py::testActualOperatorRefusalUiExplainsSafetyWithoutOpeningResources[vision.inference.yolo-\\u6a21\\u578b\\u914d\\u7f6e\\u5165\\u53e3]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.089
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_rpc.py::testUnreviewedOrSideEffectingOperatorsCannotOpen[vision.io.huaray_camera]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.039
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_rpc.py::testUnreviewedOrSideEffectingOperatorsCannotOpen[communication.plc.slmp_write]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.038
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_rpc.py::testUnreviewedOrSideEffectingOperatorsCannotOpen[vision.io.sqlite_writer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.039
+          },
+          {
+            "nodeid": "tests/runtime/test_operator_debug_rpc.py::testUnreviewedOrSideEffectingOperatorsCannotOpen[vision.inference.yolo]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.039
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testWorkflowRejectsUnreviewedPluginBeforeWorkerConstruction[vision.io.huaray_camera]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.048
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testWorkflowRejectsUnreviewedPluginBeforeWorkerConstruction[vision.io.sqlite_writer]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.051
+          },
+          {
+            "nodeid": "tests/runtime/test_workflow_debug_rpc.py::testWorkflowRejectsUnreviewedPluginBeforeWorkerConstruction[third.party]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.044
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    },
+    {
+      "id": "U13",
+      "subject": "纯导航不产生dirty/重排，真实编辑可撤销",
+      "historicalScopeSource": {
+        "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+        "sha": "012081423dff794a1e7bf69202b55af8076b90dd",
+        "reuse": "仅复用编号、范围、exactNodeids；不复用历史状态/截图/结果"
+      },
+      "automated": {
+        "status": "PASS",
+        "sourceSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "scope": "仅所列本轮Linux/offscreen自动化路径",
+        "tests": [
+          {
+            "nodeid": "tests/core/presentation/test_workflow_interface_order.py::testOrderOnlyTransactionIsDirtyUndoableAndPersisted[main-inputs]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.017
+          },
+          {
+            "nodeid": "tests/core/presentation/test_workflow_interface_order.py::testOrderOnlyTransactionIsDirtyUndoableAndPersisted[main-outputs]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.016
+          },
+          {
+            "nodeid": "tests/core/presentation/test_workflow_interface_order.py::testOrderOnlyTransactionIsDirtyUndoableAndPersisted[child-inputs]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.016
+          },
+          {
+            "nodeid": "tests/core/presentation/test_workflow_interface_order.py::testOrderOnlyTransactionIsDirtyUndoableAndPersisted[child-outputs]",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.019
+          },
+          {
+            "nodeid": "tests/core/presentation/test_workflow_interface_order.py::testDescriptorFieldOrderAndSaveMetadataAreNotEditingCommands",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.011
+          },
+          {
+            "nodeid": "tests/designer/test_dot_editing_repairs.py::testFirstNavigationPreservesUntouchedPayloadAndRealMoveIsUndoable",
+            "status": "PASS",
+            "evidence": "automation/full/junit.xml",
+            "seconds": 0.208
+          }
+        ],
+        "countedIn": "本轮full suite，存在跨组重复"
+      },
+      "nativeUi": {
+        "status": "NOT_RUN",
+        "observations": [],
+        "evidence": [],
+        "scope": "本轮真实桌面记录；整理者没有操作GUI，不以pytest PASS替代。",
+        "remaining": [
+          "待主验收补充本编号原生路径；历史PASS/FAIL均未继承。"
+        ],
+        "coverage": "本轮未完成该原编号完整原生路径；不复用历史结果。"
+      }
+    }
+  ],
+  "keywords": [
+    {
+      "id": "K01",
+      "keyword": "SQLite 高并发／计数器事务／保存重载",
+      "softwareStatus": "FAIL",
+      "coverage": "并发和持久化专项通过；全量BEGIN可见性首次FAIL未关闭",
+      "scope": "软件实际连接、并发和重启持久化",
+      "findings": [
+        "12个writer共720次调用成功；变量、旧计数器、持久事件序列各为1–240，无重复/丢失。",
+        "独立进程重开后计数器/变量240、240事件仍在，integrity_check=ok。",
+        "已有计数器在另一写事务占锁时读取已提交值240，用时0.266ms，仅BEGIN，无BEGIN IMMEDIATE。",
+        "10个独立SQLite用户路径进程共20个测试成功，每轮DB值[7,13]，20个唯一Job与workflowRun身份核验。",
+        "全量的BEGIN瞬时active-span可见性测试首次FAIL仍保留；不可把本关键词概括为全绿。",
+        "O20原生两次正式Job/COMMITTED、不同Job/workflowRun/writeId，数据库[7,13]；保存切换后保留13和INTEGER映射，正常退出后新Designer3195重开13且无第三Job/新增行。"
+      ],
+      "evidence": [
+        "targeted/mixed-sqlite/report.json",
+        "targeted/mixed-sqlite/mixed.sqlite3",
+        "automation/sqlite-database-resource-verification.json",
+        "automation/sqlite-ten-summary.json",
+        "automation/full/first-failure.json",
+        "ui/projects/o20-native-final-summary.json"
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "remaining": [
+        "并发/计数器事务软件专项见下；全量首次FAIL未关闭。GUI高并发组合未执行。"
+      ],
+      "nativeUiCoverage": "部分完成：O20代表路径原生PASS；完整高并发/事务原生组合未覆盖。"
+    },
+    {
+      "id": "K02",
+      "keyword": "5 路 While 并行带图像",
+      "softwareStatus": "PASS",
+      "scope": "真实spawn worker、合成图像、paced测试算子",
+      "findings": [
+        "5个独立PID在首停边界均RUNNING，完成body轮次6/6/5/4/4。",
+        "停止首Job后其余4个仍RUNNING；最终停止轮次6/10/12/15/18，全部按预期ABORTED/E_CANCELLED。",
+        "61 COMPLETE、5主动CANCELLED，无INCOMPLETE/FAILED，图像hash及120×160×3解码成功；关闭后资源退休。"
+      ],
+      "evidence": [
+        "targeted/summary.json",
+        "targeted/actual-workers-junit.xml"
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "remaining": [
+        "不等同于GUI多页或实体设备并发验收，不把轮次当吞吐性能。"
+      ]
+    },
+    {
+      "id": "K03",
+      "keyword": "持续图像／双网络消费者／完整覆盖",
+      "softwareStatus": "PASS",
+      "coverage": "当前软件场景断言通过，附一次非致命grpc回调栈",
+      "scope": "本机loopback实际runner/网络及合成图像",
+      "findings": [
+        "45轮包含5轮warmup；两个消费者各收全40/40测量图像，ordinals6–45，覆盖率各100%，INCOMPLETE=0，客户端错误=0。",
+        "最终memory/staging/cache/lease记账及owners均0。",
+        "15个网络兼容/取消/中断/清理断言通过；pipeline饱和、slow-reader取消、原deadline、running-export关闭断言通过。",
+        "网络fault进程有一次非致命grpc PollerCompletionQueue BlockingIOError(errno11)回调栈；原stderr保留，根因/生产影响未证实。"
+      ],
+      "evidence": [
+        "targeted/p0-continuous/report.json",
+        "targeted/p0-network-faults/report.json",
+        "targeted/p0-network-faults/stderr.log",
+        "targeted/p0-pipeline-faults/report.json"
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "remaining": [
+        "非生产TCP/硬件链路验收；不宣称stderr干净。"
+      ]
+    },
+    {
+      "id": "K04",
+      "keyword": "业务 NG 不终止／图像计数同一调用",
+      "softwareStatus": "PASS",
+      "coverage": "仅本轮实际worker/RPC场景，历史1657未定因",
+      "scope": "本轮实际worker/RPC合成场景",
+      "findings": [
+        "3个结果均COMPLETE且count=2、judge=false、可读图像属于同一result identity/invocation。",
+        "每轮都有同一invocation的workflow.completed；主动stop前Job仍RUNNING。",
+        "本轮无无法解释的INCOMPLETE；历史1657生产NG→INCOMPLETE的精确阶段/根因仍未证实。"
+      ],
+      "evidence": [
+        "targeted/summary.json",
+        "targeted/TARGETED_ACCEPTANCE.md"
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "remaining": [
+        "历史1657问题保持开放；当前PASS不能替代历史闭环。"
+      ]
+    },
+    {
+      "id": "K05",
+      "keyword": "PLC 滚轮安全",
+      "softwareStatus": "PASS",
+      "scope": "仅当前JUnit列出的焦点/页面/读写参数化路径",
+      "tests": [
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[False-parameters-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[False-parameters-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[False-runtime-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[False-runtime-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[True-parameters-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[True-parameters-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[True-runtime-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testWheelScrollsWithoutChangingPlcValues[True-runtime-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_wheel_safety.py::testExplicitKeyboardEditingSurvivesSchemaReload",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        }
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "remaining": [
+        "本轮未单独原生测试SLMP Read编辑器；原生通过仅限上述Write离线路径。",
+        "680×500不等同于原O02–O13的640/800×430矩阵；原编号仍待主验收。"
+      ],
+      "evidence": [
+        "automation/full/junit.xml",
+        "ui/observations.jsonl",
+        "ui/087-PLC-parameters.jpg",
+        "ui/088-PLC-focused-port-wheel.jpg",
+        "ui/089-PLC-port-remains10001.jpg",
+        "ui/090-PLC-focused-combo-wheel.jpg",
+        "ui/091-PLC-runtime-offline.jpg",
+        "ui/092-PLC-small-runtime.jpg",
+        "ui/093-PLC-focused-table-wheel.jpg",
+        "ui/095-PLC-runtime-focused-combo.jpg",
+        "ui/096-PLC-runtime-focused-port.jpg",
+        "ui/097-PLC-runtime-unfocused-port.jpg",
+        "ui/098-PLC-runtime-unfocused-combo.jpg",
+        "ui/099-PLC-runtime-unfocused-table.jpg"
+      ],
+      "nativeUiCoverage": "部分完成：Write离线路径通过；Read未测，整个关键词原生范围未完成",
+      "observations": [
+        {
+          "case": "PLC-wheel-native",
+          "status": "PASS",
+          "kind": "native-ui-offline",
+          "utc": "2026-10-11T09:22:50.666850+00:00",
+          "actual": "Write editor param numericport10001 andcomboD, runtimefocused/unfocusedport10001,typeuint16,tablevalue0 remainunchanged whilepage scrolls;smallwindow680x500advancedsettingsscrollable;neverConnect/enableWrite/Apply",
+          "screens": [
+            "087",
+            "088",
+            "089",
+            "090",
+            "091",
+            "092",
+            "093",
+            "095",
+            "096",
+            "097",
+            "098",
+            "099"
+          ],
+          "limits": "SLMP Read editor not separately native-tested; full suite coversread/write"
+        }
+      ],
+      "findings": [
+        "本轮离线SLMP Write编辑器已测：参数页port=10001、D组合项，以及运行页焦点/无焦点port=10001、uint16、表格值0，滚轮仅滚动页面而不改变值。",
+        "680×500小窗口的展开高级项可通过滚动访问。未Connect、enableWrite或Apply。"
+      ]
+    },
+    {
+      "id": "K06",
+      "keyword": "启动加载失败可恢复",
+      "softwareStatus": "PASS",
+      "tests": [
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[cancel-runtime]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[cancel-transport]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[cancel-json]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[cancel-missing]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[open-runtime]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[open-transport]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[open-json]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testStartupFailureExplainsAndWaitsForExplicitSelection[open-missing]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testRealLegacyHuarayValidationFailureRemainsInChooser",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testProjectRefusalNoticeBelongsToForegroundDebug[operator]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_startup_load_feedback.py::testProjectRefusalNoticeBelongsToForegroundDebug[workflow]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        }
+      ],
+      "nativeUiStatus": "PASS",
+      "observations": [
+        {
+          "case": "STARTUP-INVALID",
+          "status": "PASS",
+          "kind": "native-ui",
+          "expected": "invalid legacy camera project reports path/code/workflow/node and permits new selection",
+          "actual": "E_PARAM_INVALID [main/bad-camera]: ipAddress must be a valid IPv4 address; path /workspace/shared/ab/invalid.emoproj; next open 01 succeeds",
+          "screens": [
+            "002-invalid-load-result.jpg",
+            "003-startup-recovered.jpg"
+          ],
+          "utc": "2026-10-11T09:00:19.483153+00:00"
+        }
+      ],
+      "scope": "原生已测无效camera项目的E_PARAM_INVALID后重新选择有效项目",
+      "remaining": [
+        "transport/json/missing/cancel等其他错误分支只有列明自动化，不扩称全部原生已测。"
+      ],
+      "evidence": [
+        "ui/observations.jsonl",
+        "automation/full/junit.xml"
+      ]
+    },
+    {
+      "id": "K07",
+      "keyword": "调试占用／切换工程拒绝／提示前置",
+      "softwareStatus": "PASS",
+      "tests": [
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[directory-operator]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[directory-workflow]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[runtime-operator]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[runtime-workflow]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[startup-operator]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testProjectReplacementRefusesLiveDebugBeforeMutations[startup-workflow]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testMainCloseWaitsForAllDebugOwnersWithoutSiblingFailureReplay",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testNoProjectNoDebugStillAllowsNormalClose",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_debug_main_window_boundaries.py::testMainCloseRetainsRealRuntimeUntilExplicitCleanupRecovery",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        }
+      ],
+      "nativeUiStatus": "PASS",
+      "observations": [
+        {
+          "case": "DEBUG-SWITCH",
+          "status": "PASS",
+          "kind": "native-ui",
+          "actual": "Select foreach while number debug active -> front notice 当前项目保持不变; session result99 remains; no teardown triggered",
+          "screens": [
+            "011-switch-refusal-front.jpg"
+          ],
+          "utc": "2026-10-11T09:03:33.499850+00:00"
+        }
+      ],
+      "scope": "原生已测number debug活跃时切换foreach，提示前置、原项目与结果99保留",
+      "remaining": [
+        "不替代U07全部Save/Discard/Cancel和正式Job占用原生分支。"
+      ],
+      "evidence": [
+        "ui/observations.jsonl",
+        "automation/full/junit.xml",
+        "ui/211-flow-ready.jpg",
+        "ui/213-workflow-switch-refusal.jpg",
+        "ui/214-workflow-switch-original-session-continue.jpg",
+        "ui/215-workflow-original-succeeded.jpg"
+      ],
+      "findings": [
+        "算子调试011占用切换保护通过。",
+        "流程会话seq1 main/seed时打开02，前置拒绝保留snapshot26c85124和原invocation；dismiss后继续原会话SUCCEEDED7（211/213–215）。"
+      ]
+    },
+    {
+      "id": "K08",
+      "keyword": "小窗口／中文控件／原主路径回归",
+      "softwareStatus": "PASS",
+      "coverage": "仅映射软件路径；原生只完成部分",
+      "tests": [
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraLabelsAreChineseAndValuesRemainCompatible",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-cameraKey-active0-inactive0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-userId-active1-inactive1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-index-active2-inactive2]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[triggerMode-hardware-active3-inactive3]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[triggerMode-software-active4-inactive4]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[exposureMode-manual-active5-inactive5]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[gainMode-manual-active6-inactive6]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[frameRateMode-manual-active7-inactive7]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[roiMode-custom-active8-inactive8]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[roiMode-full-active9-inactive9]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[pixelFormat-Mono8-active10-inactive10]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[pixelFormat-BayerRG8-active11-inactive11]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_camera_parameter_form.py::testCameraRetryAndRepeatedLoadPreserveValues",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[None]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[  ]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[123]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[title4]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testInvalidTitleFallsBackToInternalKey[title5]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testLabelsTooltipsAndNestedValuesRemainIndependentOfTitles",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testTitleOverlayPreservesOldContractAndMissingCatalog",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testOldProjectOpensChineseWithoutDirtyingAndRoundTrips",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testLongChineseLabelWrapsWithoutOverlappingInput[320]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_parameter_titles.py::testLongChineseLabelWrapsWithoutOverlappingInput[720]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPlcParameterTitlesCoverAdvancedAndDebugControls[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPlcParameterTitlesCoverAdvancedAndDebugControls[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testManifestEditorUsesOperatorPackageAndOwnResource[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testManifestEditorUsesOperatorPackageAndOwnResource[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[custom-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[custom-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[asset_failure-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[asset_failure-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[controller_failure-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExistingManagerLoadsOrFallsBackWithoutNetwork[controller_failure-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFirstEnterUsesCurrentDraftAndDebugDoesNotDirtyParameters[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFirstEnterUsesCurrentDraftAndDebugDoesNotDirtyParameters[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFormalValidationUsesExistingOperatorValidator[plc_slmp_read-params0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFormalValidationUsesExistingOperatorValidator[plc_slmp_read-params1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFormalValidationUsesExistingOperatorValidator[plc_slmp_read-params2]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFormalValidationUsesExistingOperatorValidator[plc_slmp_write-params3]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testMalformedFormalValuesJsonCannotApply",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testDebugTypeLimitsAndAddressStride[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testDebugTypeLimitsAndAddressStride[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWideValuesUseBoundedValidatedLineEdits[uint32-4294967295-4294967296]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWideValuesUseBoundedValidatedLineEdits[int32--2147483648--2147483649]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWideValuesUseBoundedValidatedLineEdits[int32-2147483647-2147483648]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWideValuesUseBoundedValidatedLineEdits[float32-3.4e38-3.5e38]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFailedReadReplyIsNeverDisplayedAsSuccess",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testReadResultKeepsCapturedSpecWhenControlsChangeInFlight",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPlcTimestampAndElapsedDoNotFollowControlReplies[renew]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPlcTimestampAndElapsedDoNotFollowControlReplies[lock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPlcTimestampAndElapsedDoNotFollowControlReplies[unlock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testLateConnectedControlReplyCannotDowngradeVerifiedConnection[renew]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testLateConnectedControlReplyCannotDowngradeVerifiedConnection[lock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRawBitHeaderUsesReplyTypeAndRestoresForWordReads",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPollHasNoBacklogAndSchedulesAfterLastCompletion",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testHeartbeatUsesIndependentLaneDuringBlockedDataRequest[read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testHeartbeatUsesIndependentLaneDuringBlockedDataRequest[write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRenewCoalescesAndCloseDoesNotWaitForIt",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWriteCapturesValuesOnceAndResumesOnlyExplicitPoll[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWriteCapturesValuesOnceAndResumesOnlyExplicitPoll[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testExplicitWriteWaitsForBlockedReadAndKeepsOneCapturedDraft",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFakeRuntimeRejectsMissingInvalidOrStaleWritePermission[token0-E_PARAM_INVALID]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFakeRuntimeRejectsMissingInvalidOrStaleWritePermission[token1-E_PARAM_INVALID]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testFakeRuntimeRejectsMissingInvalidOrStaleWritePermission[token2-E_PLC_WRITE_LOCK_STALE]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWaitingWriteKeepsCapturedPermissionAndRejectsExternalRelock[plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWaitingWriteKeepsCapturedPermissionAndRejectsExternalRelock[plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteKeepsOriginalPermissionAndCancelsAfterRenewedVersion",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[pageleave]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[lock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[reload]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[disconnect]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[error]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[invalidate]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPendingWriteIsCanceledAtEveryLifecycleBoundary[dispose]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testNonSuccessfulWriteReceiptsArePlainAndNeverResumePolling[unknown-True-]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testNonSuccessfulWriteReceiptsArePlainAndNeverResumePolling[unknown-False-lost response]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testNonSuccessfulWriteReceiptsArePlainAndNeverResumePolling[rejected-False-]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testNonSuccessfulWriteReceiptsArePlainAndNeverResumePolling[confirmed-False-readback timeout]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testNonSuccessfulWriteReceiptsArePlainAndNeverResumePolling[confirmed-True-readback timeout]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testWriteTransportExceptionIsUnknownNotRejected",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testConfirmedWriteWithCanceledReadbackStaysConfirmed",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPageLeaveFencesBlockedDataAndReturnDoesNotResume[False-read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPageLeaveFencesBlockedDataAndReturnDoesNotResume[False-write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPageLeaveFencesBlockedDataAndReturnDoesNotResume[True-read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testPageLeaveFencesBlockedDataAndReturnDoesNotResume[True-write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCanceledSlowUnlockCannotUndoPageLeaveFence",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testStaleUiGenerationLockRepliesStillRefreshPermissionVersion",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testOldRenewReplyCannotRegressFenceVersionOrReenableWrites",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testUncertainPermissionRequiresRenewThenAnotherExplicitUnlock",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testMissingFakeReplyPermissionVersionDefaultsToZero",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testManualLockBypassesBlockedDataWithoutCanceling[read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testManualLockBypassesBlockedDataWithoutCanceling[write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-read-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-read-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-write-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-write-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-write_readback-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[pageleave-write_readback-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-read-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-read-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-write-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-write-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-write_readback-plc_slmp_read]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEmbeddedRuntimePauseRetainsBlockedDataSocketAndReceipt[lock-write_readback-plc_slmp_write]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testReloadWaitsForCloseBeforeUpdatingCapturedDraft",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testReloadDuringOpenClosesLateSessionBeforeUpdating",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCloseFailureIsCheckedAndDoesNotApplyReloadDraft",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCleanupCancelsBlockedReadWithoutJoiningOrAcceptingStaleResult[disconnect]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCleanupCancelsBlockedReadWithoutJoiningOrAcceptingStaleResult[reloadParameters]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCleanupCancelsBlockedReadWithoutJoiningOrAcceptingStaleResult[onClose]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCleanupCancelsBlockedReadWithoutJoiningOrAcceptingStaleResult[invalidate]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testCleanupCancelsBlockedReadWithoutJoiningOrAcceptingStaleResult[dispose]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testDisposeReleasesLateOrUnconsumedOpenReply[False]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testDisposeReleasesLateOrUnconsumedOpenReply[True]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEveryControlReplyChecksOkAndResetsWriteLock[open]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEveryControlReplyChecksOkAndResetsWriteLock[unlock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEveryControlReplyChecksOkAndResetsWriteLock[renew]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testEveryControlReplyChecksOkAndResetsWriteLock[lock]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testEmptyInterfacesCanBeAcceptedAndHaveAddActions",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testInvalidNamesPreventConfirmWithoutLosingRows[-\\u8bf7\\u586b\\u5199\\u63a5\\u53e3\\u540d\\u79f0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testInvalidNamesPreventConfirmWithoutLosingRows[   -\\u8bf7\\u586b\\u5199\\u63a5\\u53e3\\u540d\\u79f0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testInvalidNamesPreventConfirmWithoutLosingRows[value-\\u91cd\\u590d]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testInvalidNamesPreventConfirmWithoutLosingRows[ value-\\u9996\\u5c3e\\u4e0d\\u80fd\\u6709\\u7a7a\\u683c]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testInvalidNamesPreventConfirmWithoutLosingRows[value -\\u9996\\u5c3e\\u4e0d\\u80fd\\u6709\\u7a7a\\u683c]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testBothDirectionsMayUseSameNameAndCustomTypes",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testLegacyAliasesAndStructuredDescriptorsRoundTripWithoutMutation",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testSemanticVersionIsNotSilentlyDroppedOnInvalidTypeChange",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testDeletingMiddleRowKeepsOrderAndRemoveButtonsCorrect",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testBoundaryDoubleClickOpensCorrectEditorNotOperatorEditor[workflow_input-inputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testBoundaryDoubleClickOpensCorrectEditorNotOperatorEditor[workflow_output-outputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testCatalogDescriptorTypesAreAvailableInDropdown",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-False-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-False-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-True-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-True-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-unchanged-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[title-unchanged-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-False-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-False-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-True-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-True-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-unchanged-workflow_input-0]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRealCanvasDoubleClickAndModalConfirmAreSafe[body-unchanged-workflow_output-1]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testOrderOnlyChangeUpdatesCanvasHistoryAndSavedProject[False-inputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testOrderOnlyChangeUpdatesCanvasHistoryAndSavedProject[False-outputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testOrderOnlyChangeUpdatesCanvasHistoryAndSavedProject[True-inputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testOrderOnlyChangeUpdatesCanvasHistoryAndSavedProject[True-outputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testPropertiesButtonCanCreateOptionalNullablePorts[inputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testPropertiesButtonCanCreateOptionalNullablePorts[outputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testIncompatibleVersionCanBeExplicitlyRemovedFromProperties",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[bool]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[list<int>]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[spec2]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[spec3]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[spec4]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testUnchangedPropertiesPreserveRepresentationAndFieldPresence[spec5]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testPropertyValidationCanEditVersionAndRemoveExplicitFlags",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testCancelledOrUnchangedPropertiesDoNotModifyInterface[False]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testCancelledOrUnchangedPropertiesDoNotModifyInterface[True]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testQueuedInterfaceOpenIsDiscardedWhenNativeItemDisappears[switch]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testQueuedInterfaceOpenIsDiscardedWhenNativeItemDisappears[close]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testCancelAndUnchangedConfirmDoNotCaptureGraphOrDirtyDraft",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testConfirmedInterfacesPersistAndRefreshSubflowReferences",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRunningWorkflowDoesNotOpenOrApplyInterfaceEditor",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testRuntimeStartingDuringModalPreventsApplyingDraft",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testEscapeCancelsBothDirectionsAtomically",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testSmallDialogKeepsControlsAccessible[inputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        },
+        {
+          "nodeid": "tests/designer/test_workflow_interface_dialog.py::testSmallDialogKeepsControlsAccessible[outputs]",
+          "status": "PASS",
+          "evidence": "automation/full/junit.xml"
+        }
+      ],
+      "nativeUiStatus": "NOT_RUN",
+      "nativeUiCoverage": "部分完成；全部中文控件、小窗口/DPI和原41项原生范围尚未完成。",
+      "findings": [
+        "D01–D08均完成本轮原生主路径，D05已补完整JSON=7.0。",
+        "O20代表原生保存/切换/重载/新进程重开通过。",
+        "从零新建number、连线、1.2345执行与保存重开；高精度/科学计数法和非法nan，InRange非法JSON拒绝与恢复有原生观察。",
+        "fresh Designer3285的ROI/Histogram预览、坏图恢复、临时参数不Apply和源文件保护已有验证。",
+        "离线Write小窗口680×500高级项可滚动；原O02–O13的640/800×430和剩余O/U原生矩阵不据此关闭。",
+        "794×573主窗中文菜单及toolbar overflow扩展能到整理流程；仅QT_SCALE_FACTOR=1，actual DPR未测，125/150/200%均NOT_RUN。"
+      ],
+      "remaining": [
+        "实际PLC小窗口、中文控件、DPI和其他O/U原生路径待主验收补充。"
+      ],
+      "evidence": [
+        "ui/observations.jsonl",
+        "ui/export-pixel-verification.json",
+        "automation/full/junit.xml",
+        "ui/projects/o20-native-final-summary.json",
+        "ui/fresh-preview-final-summary.json",
+        "ui/roi-preview-export-boundary.json",
+        "ui/195-main-small-window.jpg",
+        "ui/199-overflow-keyboard.jpg",
+        "ui/200-small-file-menu.jpg",
+        "ui/203-small-nested.jpg",
+        "ui/204-run-menu.jpg",
+        "ui/209-edit-debug-menu.jpg"
+      ]
+    }
+  ],
+  "fullSuite": {
+    "status": "FAIL",
+    "passed": 4828,
+    "failed": 1,
+    "skipped": 19,
+    "subtestsPassed": 29,
+    "wallSeconds": 936.61,
+    "exitCode": 1,
+    "junitCaseCount": 4848,
+    "junitTestsIncludingSubtests": 4877,
+    "firstFailure": {
+      "class": "tests.test_r3_sqlite_phases",
+      "test": "testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows",
+      "seconds": "2.014",
+      "kind": "failure",
+      "message": "Failed: writer never entered measured BEGIN IMMEDIATE",
+      "traceback": "tmp_path = PosixPath('/workspace/shared/emo-master-abc7ae-acceptance-20261011/evidence/automation/full/basetemp/testRealWriterContentionIsVisi0')\n\n    def testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows(tmp_path):\n        from emo_master.apps.runtime.context.sqlite_store import SqliteStore\n        store = SqliteStore(tmp_path / \"runtime.db\")\n        store.initialize()\n        store.retainIdleConnection()\n        blocker = sqlite3.connect(store.dbPath)\n        blocker.execute(\"BEGIN IMMEDIATE\")\n        probe = SqlitePhases()\n        probe.install(store)\n        result, failures = [], []\n    \n        def append():\n            try:\n                result.append(store.appendJobEvent(\"job\", \"node\", \"node.completed\", \"INFO\", \"\", \"private\", \"{}\"))\n            except BaseException as error:\n                failures.append(error)\n    \n        thread = threading.Thread(target=append)\n        thread.start()\n        try:\n            deadline = time.monotonic() + 2\n            while time.monotonic() < deadline:\n                report = probe.snapshot()\n                if any(row[\"phase\"] == \"begin_immediate\" for row in report[\"active\"]):\n                    break\n                threading.Event().wait(0.005)\n            else:\n>               pytest.fail(\"writer never entered measured BEGIN IMMEDIATE\")\nE               Failed: writer never entered measured BEGIN IMMEDIATE\n\ntests/test_r3_sqlite_phases.py:493: Failed"
+    },
+    "evidence": [
+      "automation/full/pytest.log",
+      "automation/full/junit.xml",
+      "automation/full/first-failure.json"
+    ]
+  },
+  "firstFailureDiagnostic": {
+    "status": "NOT_RUN",
+    "coverage": "根因尚未证实；已完成一次独立限定诊断",
+    "assessment": "INFERENCE_NOT_PROVEN_ROOT_CAUSE",
+    "preserveFailure": true,
+    "finding": "单独观察631次失败native BEGIN，629次小于1ms，389次5ms采样仅1次捕到active span；释放锁后一次BEGIN/COMMIT成功、seq1持久。",
+    "limitation": "原失败没有phase快照；该诊断不是原失败精确调度证明。原DBseq1/integrity_ok是finally后状态，非断言瞬间。",
+    "notEstablished": [
+      "数据丢失",
+      "永久饥饿",
+      "原始失败精确根因",
+      "历史1657 NG根因"
+    ],
+    "evidence": [
+      "targeted/phase-observation/report.json",
+      "targeted/original-full-failure-db-readonly.json",
+      "targeted/TARGETED_ACCEPTANCE.md"
+    ]
+  },
+  "independentAutomation": {
+    "overall": "FAIL: full-suite gate remains red",
+    "commit": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+    "source_integrity": {
+      "expected_commit": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+      "actual_commit": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+      "git_status": "",
+      "git_diff_check_exit": 0,
+      "tracked_files_checked": 5034,
+      "changed_tracked_files": [],
+      "verified": true
+    },
+    "static_checks": {
+      "proto": {
+        "exit_code": 0,
+        "command": "/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/bin/python scripts/gen_proto.py --check"
+      },
+      "ruff": {
+        "exit_code": 0,
+        "command": "/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/bin/python -m ruff check src tests"
+      },
+      "mypy": {
+        "exit_code": 0,
+        "command": "/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/bin/python -m mypy --config-file mypy.ini src"
+      }
+    },
+    "full_pytest": {
+      "exit_code": 1,
+      "passed": 4828,
+      "failed": 1,
+      "skipped": 19,
+      "subtests_passed": 29,
+      "wall_seconds": 936.61,
+      "failure_nodes": [
+        "tests.test_r3_sqlite_phases::testRealWriterContentionIsVisibleAtBeginAndPreservesAllDurableRows"
+      ],
+      "evidence": "full/"
+    },
+    "independent_runs": {
+      "stress1000-retire50": {
+        "exit_code": 0,
+        "elapsed_seconds": 56.15531797199219,
+        "test_count": 1,
+        "test_seconds": 55.133,
+        "real_spawn_worker_count": 50,
+        "resource_peaks": {
+          "rss_kib": 295872,
+          "native_threads": 23,
+          "file_descriptors": 34
+        },
+        "observed_processes_remaining": [],
+        "properties": {
+          "resources": "{\"before\": {\"handles\": 12, \"handleKind\": \"linux-file-descriptors\", \"threads\": 1, \"rss\": 182693888}, \"after\": {\"handles\": 15, \"handleKind\": \"linux-file-descriptors\", \"threads\": 1, \"rss\": 183058432}, \"sessions\": 50, \"executions\": 1049}"
+        }
+      },
+      "lease65": {
+        "exit_code": 0,
+        "elapsed_seconds": 66.64475611699163,
+        "test_count": 1,
+        "test_seconds": 65.75,
+        "real_spawn_worker_count": 1,
+        "resource_peaks": {
+          "rss_kib": 247532,
+          "native_threads": 29,
+          "file_descriptors": 38
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-01": {
+        "exit_code": 0,
+        "elapsed_seconds": 3.8284500560112065,
+        "test_count": 2,
+        "test_seconds": 2.98,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 382024,
+          "native_threads": 56,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-02": {
+        "exit_code": 0,
+        "elapsed_seconds": 4.028013634990202,
+        "test_count": 2,
+        "test_seconds": 2.96,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 377780,
+          "native_threads": 55,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-03": {
+        "exit_code": 0,
+        "elapsed_seconds": 4.026909555002931,
+        "test_count": 2,
+        "test_seconds": 3.066,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 380236,
+          "native_threads": 56,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-04": {
+        "exit_code": 0,
+        "elapsed_seconds": 4.23055475000001,
+        "test_count": 2,
+        "test_seconds": 3.043,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 383172,
+          "native_threads": 55,
+          "file_descriptors": 52
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-05": {
+        "exit_code": 0,
+        "elapsed_seconds": 4.026977399000316,
+        "test_count": 2,
+        "test_seconds": 3.043,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 381900,
+          "native_threads": 55,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-06": {
+        "exit_code": 0,
+        "elapsed_seconds": 3.825428825992276,
+        "test_count": 2,
+        "test_seconds": 3.024,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 381788,
+          "native_threads": 56,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-07": {
+        "exit_code": 0,
+        "elapsed_seconds": 3.8260323439899366,
+        "test_count": 2,
+        "test_seconds": 2.988,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 384168,
+          "native_threads": 56,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-08": {
+        "exit_code": 0,
+        "elapsed_seconds": 4.031899967012578,
+        "test_count": 2,
+        "test_seconds": 3.0989999999999998,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 377320,
+          "native_threads": 53,
+          "file_descriptors": 52
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-09": {
+        "exit_code": 0,
+        "elapsed_seconds": 3.824870710988762,
+        "test_count": 2,
+        "test_seconds": 2.95,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 383540,
+          "native_threads": 54,
+          "file_descriptors": 52
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      },
+      "sqlite-round-10": {
+        "exit_code": 0,
+        "elapsed_seconds": 3.8256716320029227,
+        "test_count": 2,
+        "test_seconds": 2.884,
+        "real_spawn_worker_count": 2,
+        "resource_peaks": {
+          "rss_kib": 382196,
+          "native_threads": 56,
+          "file_descriptors": 53
+        },
+        "observed_processes_remaining": [],
+        "properties": {}
+      }
+    },
+    "sqlite_cross_verification": {
+      "verified": true,
+      "independent_process_rounds": 10,
+      "unique_job_count": 20,
+      "unique_workflow_run_count": 20
+    },
+    "scope_notes": [
+      "QT_QPA_PLATFORM=offscreen used for software regression only. This is not visible-desktop UI acceptance.",
+      "All specified tests ran with source assertions and watchdogs unchanged. No failure rerun was used to claim success.",
+      "Stress and lease opt-ins passed independently; the original full-suite skip counts are preserved.",
+      "Native process resources sampled every 0.2 seconds; process-tree peaks are sampled maxima, not continuous exhaustive maxima.",
+      "Hardware camera and Windows-specific coverage remain unrun on Debian.",
+      "No source edits, pushes, or external hardware access were performed."
+    ]
+  },
+  "ci": {
+    "status": "PASS",
+    "evidence": "ci/findings-zh.md",
+    "runs": [
+      {
+        "id": 38124944740,
+        "event": "pull_request",
+        "status": "PASS",
+        "externalStatus": "completed",
+        "conclusion": "success",
+        "attempt": 1,
+        "headSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38124944740",
+        "actualSourceCheckoutSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a"
+      },
+      {
+        "id": 38124943996,
+        "event": "pull_request",
+        "status": "PASS",
+        "externalStatus": "completed",
+        "conclusion": "success",
+        "attempt": 1,
+        "headSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38124943996",
+        "actualSourceCheckoutSha": "29154d04f29b1d4ae50c659fcc30531c8f9000fb"
+      },
+      {
+        "id": 38124940288,
+        "event": "push",
+        "status": "PASS",
+        "externalStatus": "completed",
+        "conclusion": "success",
+        "attempt": 1,
+        "headSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+        "url": "https://github.com/jsdfhasuh/emo_master/actions/runs/38124940288",
+        "actualSourceCheckoutSha": "abc7ae0541e997be0bbe3a4794ad604c239de79a"
+      }
+    ],
+    "warning": "CI成功不覆盖本地Debian全量FAIL。Frozen Windows源码为head SHA，packager为另一个仓库revision。"
+  },
+  "additionalNativeObservations": [
+    {
+      "case": "STARTUP-INVALID",
+      "status": "PASS",
+      "kind": "native-ui",
+      "expected": "invalid legacy camera project reports path/code/workflow/node and permits new selection",
+      "actual": "E_PARAM_INVALID [main/bad-camera]: ipAddress must be a valid IPv4 address; path /workspace/shared/ab/invalid.emoproj; next open 01 succeeds",
+      "screens": [
+        "002-invalid-load-result.jpg",
+        "003-startup-recovered.jpg"
+      ],
+      "utc": "2026-10-11T09:00:19.483153+00:00"
+    },
+    {
+      "case": "DEBUG-SWITCH",
+      "status": "PASS",
+      "kind": "native-ui",
+      "actual": "Select foreach while number debug active -> front notice 当前项目保持不变; session result99 remains; no teardown triggered",
+      "screens": [
+        "011-switch-refusal-front.jpg"
+      ],
+      "utc": "2026-10-11T09:03:33.499850+00:00"
+    },
+    {
+      "case": "PLC-wheel-native",
+      "status": "PASS",
+      "kind": "native-ui-offline",
+      "utc": "2026-10-11T09:22:50.666850+00:00",
+      "actual": "Write editor param numericport10001 andcomboD, runtimefocused/unfocusedport10001,typeuint16,tablevalue0 remainunchanged whilepage scrolls;smallwindow680x500advancedsettingsscrollable;neverConnect/enableWrite/Apply",
+      "screens": [
+        "087",
+        "088",
+        "089",
+        "090",
+        "091",
+        "092",
+        "093",
+        "095",
+        "096",
+        "097",
+        "098",
+        "099"
+      ],
+      "limits": "SLMP Read editor not separately native-tested; full suite coversread/write"
+    },
+    {
+      "case": "Native-build",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T09:38:10.034809+00:00",
+      "actual": "Createdblank project viaUI;draggednumber;1.2345 independentdebug;applied;definednumberoutputresult;connectedports;autolayout;formalrun1.2345;saveandreopen retains1.2345;GTKautoappends.emoproj",
+      "screens": [
+        "101",
+        "102",
+        "104",
+        "107",
+        "108",
+        "112",
+        "115",
+        "117",
+        "118",
+        "119",
+        "120"
+      ],
+      "limitations": ""
+    },
+    {
+      "case": "Param-precision",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T09:38:10.034819+00:00",
+      "actual": "1.2345 blur/debug/apply/save/reopencorrect;17digits1.2345678901234567 persistedexactfloat;scientific1.2345e-10 applied;nanrejectwithfieldredtext retained;corrected1.2345",
+      "screens": [
+        "120",
+        "121",
+        "122",
+        "124"
+      ],
+      "limitations": ""
+    },
+    {
+      "case": "InRange-json",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T09:38:10.034826+00:00",
+      "actual": "Savedlower[60,40,20];[1, rejected fieldlower row1col4 preservedtext;fileSHAunchanged;{} rejectedarraytype;[] rejected3itemssemantic;correctedandSaveReopenretainslower",
+      "screens": [
+        "129",
+        "130",
+        "131",
+        "132",
+        "133"
+      ],
+      "limitations": "No direct memory read of undo stack; field/model protection additionally covered by software assertions"
+    },
+    {
+      "case": "D05-final-export",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393288+00:00",
+      "actual": "Condition params[\"value\"] == 7 hit2 pauses only second child/number; final value7, full ZIP JSON7.0",
+      "screens": [
+        "146",
+        "147"
+      ],
+      "limitations": "New supplementary session to capture final value; not replacing an earlier failure."
+    },
+    {
+      "case": "Inputset-workflow",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393299+00:00",
+      "actual": "Bad archive E_DEBUG_INPUT retains original image asset and persistent error across natural polls; normal fixture restores same-window input and clears action error",
+      "screens": [
+        "155",
+        "156",
+        "157",
+        "158"
+      ],
+      "limitations": "Bad archive tested natively; missing-material archive cases software evidence."
+    },
+    {
+      "case": "Fresh-ROI",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393307+00:00",
+      "actual": "Fresh Runtime no formal Jobs; bad PNG then good PNG recovery; temporary X32 changes preview, discard restores X16; three UI previews and complete assets pixel-verified; all five temporary assets retired",
+      "screens": [
+        "160",
+        "161",
+        "162",
+        "163",
+        "165",
+        "166",
+        "167"
+      ],
+      "limitations": "Complete pixels captured read-only from cache, not user-facing export. Race/reconnect native variants NOT_RUN."
+    },
+    {
+      "case": "ROI-native-export-entry",
+      "status": "FAIL",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393314+00:00",
+      "actual": "Dedicated ROI preview presents scaled thumbnails with no complete-image view/export action; right-click has no menu",
+      "screens": [
+        "163",
+        "164",
+        "165"
+      ],
+      "limitations": "Usability gap; user can instead use generic operator debug export, at cost of reselecting inputs/session. Source confirms PreviewLabel scaled-pixmap only."
+    },
+    {
+      "case": "Fresh-Histogram",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393320+00:00",
+      "actual": "Fresh Runtime no formal Job; sample320x240 reports pixelCount76800; unApplied bins16 to32 changes graph; close/discard saved baseline unchanged",
+      "screens": [
+        "169",
+        "170",
+        "171"
+      ],
+      "limitations": "No full native async-race permutations."
+    },
+    {
+      "case": "CLAHE-preparation-recovery",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393325+00:00",
+      "actual": "Legal execution 5c31fdccf6d549a2a7ed2d9c82cd9fac clip2; temporary0 prepare E_PARAM_INVALID no new Execute; error persists natural polls; historical ZIP retains old identity/params and exact pixels; corrected2 once yields cf6834b050944ac7aa91b8f89548bffd success",
+      "screens": [
+        "175",
+        "177",
+        "178",
+        "180",
+        "189"
+      ],
+      "limitations": "Export feedback changes toolbar position; an initial coordinate missed execution button before actual successful single click."
+    },
+    {
+      "case": "Inputset-operator",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393331+00:00",
+      "actual": "Bad archive E_DEBUG_INPUT preserves asset7514d65daf3d454090b4f963df6c89e7; natural polls retain error; same-window valid fixture restores docs/image and clears action error",
+      "screens": [
+        "188",
+        "189",
+        "191"
+      ],
+      "limitations": "GTK save dialog selection/navigation produced source/docs.emofixture instead of intended path; preserved and copied as provenance, no tracked source change."
+    },
+    {
+      "case": "Small-window-Chinese",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393336+00:00",
+      "actual": "Main client794x573 supports icon-only open/save, Chinese menu text and toolbar extension containing layout; PLC approx680x500 scrollable controls tested earlier",
+      "screens": [
+        "195",
+        "199",
+        "200",
+        "203",
+        "204",
+        "209"
+      ],
+      "limitations": "Representative windows only; actual DPR not measured; 125/150/200% native scale NOT_RUN."
+    },
+    {
+      "case": "Workflow-busy-switch",
+      "status": "PASS",
+      "kind": "native-ui",
+      "utc": "2026-10-11T10:04:24.393342+00:00",
+      "actual": "Paused sequence1 main/seed; opening02 displays foreground refusal above debug, keeps snapshot26c85124 and invocation5a53ce5b-f3d; dismiss then continue original session SUCCEEDED value7",
+      "screens": [
+        "211",
+        "213",
+        "214",
+        "215"
+      ],
+      "limitations": "No duplicate cleanup observed; detailed duplicate-close assertions automated."
+    }
+  ],
+  "sourceManifest": [
+    {
+      "path": "automation/REPORT.md",
+      "bytes": 2456,
+      "sha256": "cf15668878ab2d672a296e46ef312a353039298e65b9e6af8f34ea7cc74c6fb0"
+    },
+    {
+      "path": "automation/acceptance-summary.json",
+      "bytes": 6866,
+      "sha256": "e7f94539c4ce4129d670a38891fd09d82ca06bac6f17f1ddec44dc8749b4ec90"
+    },
+    {
+      "path": "automation/full/junit.xml",
+      "bytes": 734856,
+      "sha256": "84d625f02ebbb4a3494ab316bd1695be9d0f334ee8c7d74d3ab8c7e4fdc43969"
+    },
+    {
+      "path": "automation/full/summary.json",
+      "bytes": 10403,
+      "sha256": "ddac6a59657eee5d5cd8152ae713a2a8a31d62ee2e968e96000cfb8e052e8da5"
+    },
+    {
+      "path": "automation/full/first-failure.json",
+      "bytes": 1756,
+      "sha256": "03fc8334a155b039985a7ba6a3094ad23894434266ea0e439ba117740bfa3118"
+    },
+    {
+      "path": "automation/source-integrity.json",
+      "bytes": 262,
+      "sha256": "117f8b69b78f620360916073a07ea453d2b7de45f237d5baf46e8966f85a0ec1"
+    },
+    {
+      "path": "targeted/TARGETED_ACCEPTANCE.md",
+      "bytes": 7227,
+      "sha256": "661b9678a4fffabfadd61aeec6f359bfd1315fffdfd363befa3d05f1de97f862"
+    },
+    {
+      "path": "targeted/summary.json",
+      "bytes": 20392,
+      "sha256": "a8f692218e4d92839832e0670811a2de5b4d382a17b552f39342a1b2e162315d"
+    },
+    {
+      "path": "ci/findings-zh.md",
+      "bytes": 3854,
+      "sha256": "03cb61014b9d7f92e8cbe4dfac3843bae582c9fe7603b0c57d1a68d0d346fb50"
+    },
+    {
+      "path": "ci/runs-final.json",
+      "bytes": 40648,
+      "sha256": "2808300948b42a76370e20eea49880b74025125cf333f303889b1ba7400a276a"
+    },
+    {
+      "path": "ui/observations.jsonl",
+      "bytes": 12860,
+      "sha256": "8de642913a3a79e05337cb49ff4621950e465067f3c7847d45c67ed10a7bd26d"
+    },
+    {
+      "path": "ui/export-pixel-verification.json",
+      "bytes": 3745,
+      "sha256": "463ca3604dfcfbc49cbdf8e7cd513c45a3d45bc79fee4947b2b20777fc2e1c1c"
+    },
+    {
+      "path": "/workspace/shared/emo-master-0120814-acceptance/evidence/acceptance-matrix.json",
+      "sha256": "e294d3e252b3d8a473f9f63228d39a55490b5c3e7681800a1a73190bf1834e40",
+      "purpose": "历史scope/编号映射，不作为本轮结果"
+    }
+  ],
+  "pendingFinalization": [],
+  "parentAdditionalEvidenceCutoffUtc": "2026-10-11T10:06:28Z",
+  "currentFindings": [
+    {
+      "id": "FULL-SQLITE-BEGIN",
+      "status": "FAIL",
+      "category": "本地全量门禁",
+      "finding": "原两秒watchdog未看到active native BEGIN span；首次failure保持。",
+      "evidence": [
+        "automation/full/first-failure.json",
+        "automation/full/pytest.log",
+        "targeted/phase-observation/report.json"
+      ],
+      "interpretation": "独立诊断支持active-span观测竞态推断，但不是原运行精确根因证明。"
+    },
+    {
+      "id": "ROI-PREVIEW-EXPORT",
+      "status": "FAIL",
+      "category": "易用性",
+      "finding": "专用ROI预览缺完整图查看/导出按钮、右键保存和双击完整查看入口。",
+      "evidence": [
+        "ui/roi-preview-export-boundary.json",
+        "ui/164-ROI-full-output-menu.jpg"
+      ],
+      "interpretation": "预览成功/完整缓存像素正确与用户可导出不同。只读留存asset不是原生用户导出PASS。"
+    },
+    {
+      "id": "GRPC-CALLBACK-STDERR",
+      "status": "PASS",
+      "coverage": "断言与退出通过，stderr有诊断告警",
+      "category": "保留观察",
+      "finding": "P0 network-faults一次非致命BlockingIOError errno11回调栈；根因和生产影响未证实。",
+      "evidence": [
+        "targeted/p0-network-faults/stderr.log"
+      ]
+    },
+    {
+      "id": "HISTORICAL-NG-1657",
+      "status": "NOT_RUN",
+      "coverage": "历史精确根因未证实，本轮未复现",
+      "category": "历史开放项",
+      "finding": "当前业务NG COMPLETE不关闭历史NG→INCOMPLETE问题。",
+      "evidence": [
+        "targeted/TARGETED_ACCEPTANCE.md"
+      ]
+    }
+  ],
+  "freshPreview": {
+    "status": "PASS",
+    "scope": "已测native schema2.4 ROI/Histogram预览；代表场景",
+    "designerPid": 3285,
+    "formalJobsBeforeAfter": [
+      0,
+      0,
+      0
+    ],
+    "jobEventsBeforeAfter": [
+      0,
+      0,
+      0
+    ],
+    "sourceFileUnchanged": true,
+    "roiAssetCollection": "只读采证，不是用户导出",
+    "roiParametersForCapturedAssets": {
+      "x": 32,
+      "y": 16,
+      "width": 32,
+      "height": 24
+    },
+    "roiFiveAssetsPixelExact": true,
+    "roiAssetsRetiredOnClose": true,
+    "histogramPixelCount": 76800,
+    "histogramPerBinSerialization": "NOT_RUN",
+    "notProven": [
+      "从数据库零行直接证明未调用LoadProject",
+      "直接检查本轮live loadedDocument",
+      "所有历史schema版本真实GUI预览"
+    ],
+    "evidence": [
+      "ui/fresh-preview-final-summary.json",
+      "ui/roi-native-preview-assets/pixel-verification.json",
+      "ui/roi-after-close-asset-retirement.json",
+      "ui/histogram-native-preview-assets/capture-and-source-integrity.json"
+    ]
+  },
+  "claheAndFixtures": {
+    "status": "PASS",
+    "scope": "本轮代表原生错误恢复/历史身份路径",
+    "retainedExecution": "5c31fdccf6d549a2a7ed2d9c82cd9fac",
+    "recoveredExecution": "cf6834b050944ac7aa91b8f89548bffd",
+    "recoveredExecutionSource": "主验收原生观察；截图180可见cf6834b0前缀",
+    "details": [
+      "clipLimit0准备失败E_PARAM_INVALID，无新execute，旧SUCCEEDED历史身份跨自然poll保留。",
+      "完整历史PNG为clipLimit2，320×240，像素差异0。",
+      "修正clipLimit2后一次执行生成新身份。",
+      "流程/算子损坏输入集拒绝且旧输入保留，错误跨poll，加载正常包恢复。"
+    ],
+    "evidence": [
+      "ui/clahe-history-verification/verification.json",
+      "ui/156-flow-bad-inputset-error.jpg",
+      "ui/157-flow-input-error-logs.jpg",
+      "ui/158-flow-inputset-recovered.jpg",
+      "ui/175-CLAHE-success.jpg",
+      "ui/177-CLAHE-prepare-failed.jpg",
+      "ui/178-CLAHE-error-logs.jpg",
+      "ui/179-CLAHE-oneclick-recovered.jpg",
+      "ui/180-CLAHE-recovered-success.jpg",
+      "ui/188-operator-bad-input-error.jpg",
+      "ui/189-operator-input-error-logs.jpg",
+      "ui/190-operator-recovery-dialog.jpg",
+      "ui/191-operator-input-recovered.jpg"
+    ]
+  },
+  "finalCleanup": {
+    "status": "PASS",
+    "coverage": "本轮相关进程正常UI关闭，桌面实际/proc复查为空；不代表扫描所有无关系统进程。",
+    "retiredAtUtc": "2026-10-11T10:04:36.442558+00:00",
+    "directCheckUtc": "2026-10-11T10:08:44.300637+00:00",
+    "actualDesktopNamespace": "pid:[4026532208]",
+    "sameNamespace": true,
+    "invalidEarlierCheck": "10:05:46 CUA REPL的/proc属于不同PID namespace，原记录保留，不用作桌面退休证明",
+    "trackedFiles": 5034,
+    "trackedDiff": "",
+    "gitStatus": "?? docs.emofixture\n",
+    "gitFullyClean": false,
+    "untrackedExplanation": "docs.emofixture is this round GUI-created test input set; original retained and byte-identical evidence copy retained.",
+    "evidence": [
+      "final-cleanup.json",
+      "final-tracked-sha256.json",
+      "ui/final-actual-desktop-process-check.json",
+      "ui/process-timeline.jsonl",
+      "ui/projects/o20-after-designer-exit.json",
+      "ui/roi-after-close-asset-retirement.json"
+    ]
+  },
+  "scaleCoverage": {
+    "status": "NOT_RUN",
+    "configuredQtScaleFactor": "1",
+    "actualDprMeasured": false,
+    "nativeScales125150200": "NOT_RUN",
+    "representativeMainClient": [
+      794,
+      573
+    ],
+    "representativePlcWindow": [
+      680,
+      500
+    ]
+  },
+  "executionComplete": true,
+  "reviewSourceManifest": [
+    {
+      "path": "final-cleanup.json",
+      "bytes": 1226,
+      "sha256": "c3d0df14ab7612e5b21b24302900197ca35449d4c02f1d37b54728676218d08b"
+    },
+    {
+      "path": "final-tracked-sha256.json",
+      "bytes": 692615,
+      "sha256": "7d158d95df6edf6abc52a624fab32cd2564bb9739c158aa46df88859c01bb765"
+    },
+    {
+      "path": "ui/final-actual-desktop-process-check.json",
+      "bytes": 198,
+      "sha256": "2482657680ae0512725e1623a6ba964639d2e9a3a40d48e31cbcb007b748ca2a"
+    },
+    {
+      "path": "ui/projects/o20-native-final-summary.json",
+      "bytes": 7439,
+      "sha256": "798bf590d4cfda01afecd2deda2969f78442db0d63f63ecb74b34cc56a95d04a"
+    },
+    {
+      "path": "ui/fresh-preview-final-summary.json",
+      "bytes": 7504,
+      "sha256": "8cfe855cddaae8229d2577549741617276050854757f3b9e1a4efefc74c2761d"
+    },
+    {
+      "path": "ui/roi-native-preview-assets/pixel-verification.json",
+      "bytes": 2797,
+      "sha256": "07d2ddf014581fae5803264125f342ed8ba09fc3335ea5bfb7fb89d161eb0104"
+    },
+    {
+      "path": "ui/roi-preview-export-boundary.json",
+      "bytes": 13857,
+      "sha256": "8f7e2a8fadb3abfcfdd5fa8ddf02588568f39cd799bb00332bbda9dfa5d4d8ba"
+    },
+    {
+      "path": "ui/roi-after-close-asset-retirement.json",
+      "bytes": 1393,
+      "sha256": "76fcfc33125aba2d6f348eee37989e048c631fa4fdbe6be72e276e342f727106"
+    },
+    {
+      "path": "ui/clahe-history-verification/verification.json",
+      "bytes": 2081,
+      "sha256": "749304da0346186a69ce9528298f9fb04a71b535f7f747d517da501d796f69c5"
+    },
+    {
+      "path": "ui/projects/d05-final7.emodebug.zip",
+      "bytes": 657,
+      "sha256": "0f0ef129978a3e94fb88920d901748c49354828394874f0e052e1f5992869056"
+    },
+    {
+      "path": "targeted/CODEX_HANDOFF.md",
+      "bytes": 12549,
+      "sha256": "698fcb8f2421a251222eb251e3e48c0fef1a56c8e818e574e5c52921cbc494f4"
+    }
+  ],
+  "accepted": false,
+  "statusMeaning": "本轮执行/证据收尾完成，不代表产品验收通过；全量FAIL和未覆盖范围保留。",
+  "codexHandoff": "targeted/CODEX_HANDOFF.md"
+}

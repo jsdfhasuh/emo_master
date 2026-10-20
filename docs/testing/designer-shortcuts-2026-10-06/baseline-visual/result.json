@@ -1,0 +1,12 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\designer-shortcuts-20261006-202344-625093\\baseline-start-dirty",
+  "exitCode": 1,
+  "seconds": 3.452999999979511
+}

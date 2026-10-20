@@ -1,0 +1,4 @@
+Committed Git archive only; no local camera example or ignored files.
+........................................................................ [ 64%]
+.......................................                                  [100%]
+111 passed in 19.47s

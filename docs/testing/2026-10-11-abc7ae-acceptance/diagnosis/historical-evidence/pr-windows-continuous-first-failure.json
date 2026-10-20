@@ -1,0 +1,3349 @@
+{
+  "enabled": true,
+  "viewers": 2,
+  "count": 40,
+  "warmup": 5,
+  "rows": [
+    {
+      "index": 0,
+      "ordinal": 1,
+      "warmup": true,
+      "scheduled_ns": 944965055100,
+      "start_ns": 944965059600,
+      "end_ns": 945213535000,
+      "execution_ms": 248.4754,
+      "lateness_ms": 0.0045
+    },
+    {
+      "index": 1,
+      "ordinal": 2,
+      "warmup": true,
+      "scheduled_ns": 945165055100,
+      "start_ns": 945214089900,
+      "end_ns": 945559909800,
+      "execution_ms": 345.8199,
+      "lateness_ms": 49.0348
+    },
+    {
+      "index": 2,
+      "ordinal": 3,
+      "warmup": true,
+      "scheduled_ns": 945365055100,
+      "start_ns": 945559916700,
+      "end_ns": 945879522400,
+      "execution_ms": 319.6057,
+      "lateness_ms": 194.8616
+    },
+    {
+      "index": 3,
+      "ordinal": 4,
+      "warmup": true,
+      "scheduled_ns": 945565055100,
+      "start_ns": 945879530100,
+      "end_ns": 946211172600,
+      "execution_ms": 331.6425,
+      "lateness_ms": 314.475
+    },
+    {
+      "index": 4,
+      "ordinal": 5,
+      "warmup": true,
+      "scheduled_ns": 945765055100,
+      "start_ns": 946211181100,
+      "end_ns": 946555130500,
+      "execution_ms": 343.9494,
+      "lateness_ms": 446.126
+    },
+    {
+      "index": 5,
+      "ordinal": 6,
+      "warmup": false,
+      "scheduled_ns": 945965055100,
+      "start_ns": 946555137100,
+      "end_ns": 946876816700,
+      "execution_ms": 321.6796,
+      "lateness_ms": 590.082
+    },
+    {
+      "index": 6,
+      "ordinal": 7,
+      "warmup": false,
+      "scheduled_ns": 946165055100,
+      "start_ns": 946876823200,
+      "end_ns": 947220286700,
+      "execution_ms": 343.4635,
+      "lateness_ms": 711.7681
+    },
+    {
+      "index": 7,
+      "ordinal": 8,
+      "warmup": false,
+      "scheduled_ns": 946365055100,
+      "start_ns": 947220292900,
+      "end_ns": 947551831600,
+      "execution_ms": 331.5387,
+      "lateness_ms": 855.2378
+    },
+    {
+      "index": 8,
+      "ordinal": 9,
+      "warmup": false,
+      "scheduled_ns": 946565055100,
+      "start_ns": 947551840100,
+      "end_ns": 947863420000,
+      "execution_ms": 311.5799,
+      "lateness_ms": 986.785
+    },
+    {
+      "index": 9,
+      "ordinal": 10,
+      "warmup": false,
+      "scheduled_ns": 946765055100,
+      "start_ns": 947868957300,
+      "end_ns": 948201485000,
+      "execution_ms": 332.5277,
+      "lateness_ms": 1103.9022
+    },
+    {
+      "index": 10,
+      "ordinal": 11,
+      "warmup": false,
+      "scheduled_ns": 946965055100,
+      "start_ns": 948201491900,
+      "end_ns": 948521573700,
+      "execution_ms": 320.0818,
+      "lateness_ms": 1236.4368
+    },
+    {
+      "index": 11,
+      "ordinal": 12,
+      "warmup": false,
+      "scheduled_ns": 947165055100,
+      "start_ns": 948521580700,
+      "end_ns": 948861940400,
+      "execution_ms": 340.3597,
+      "lateness_ms": 1356.5256
+    },
+    {
+      "index": 12,
+      "ordinal": 13,
+      "warmup": false,
+      "scheduled_ns": 947365055100,
+      "start_ns": 948861947700,
+      "end_ns": 949183102400,
+      "execution_ms": 321.1547,
+      "lateness_ms": 1496.8926
+    },
+    {
+      "index": 13,
+      "ordinal": 14,
+      "warmup": false,
+      "scheduled_ns": 947565055100,
+      "start_ns": 949183110700,
+      "end_ns": 949502527800,
+      "execution_ms": 319.4171,
+      "lateness_ms": 1618.0556
+    },
+    {
+      "index": 14,
+      "ordinal": 15,
+      "warmup": false,
+      "scheduled_ns": 947765055100,
+      "start_ns": 949502534900,
+      "end_ns": 949855188400,
+      "execution_ms": 352.6535,
+      "lateness_ms": 1737.4798
+    },
+    {
+      "index": 15,
+      "ordinal": 16,
+      "warmup": false,
+      "scheduled_ns": 947965055100,
+      "start_ns": 949855195300,
+      "end_ns": 950236548000,
+      "execution_ms": 381.3527,
+      "lateness_ms": 1890.1402
+    },
+    {
+      "index": 16,
+      "ordinal": 17,
+      "warmup": false,
+      "scheduled_ns": 948165055100,
+      "start_ns": 950236556600,
+      "end_ns": 950572337900,
+      "execution_ms": 335.7813,
+      "lateness_ms": 2071.5015
+    },
+    {
+      "index": 17,
+      "ordinal": 18,
+      "warmup": false,
+      "scheduled_ns": 948365055100,
+      "start_ns": 950575757600,
+      "end_ns": 950911033900,
+      "execution_ms": 335.2763,
+      "lateness_ms": 2210.7025
+    },
+    {
+      "index": 18,
+      "ordinal": 19,
+      "warmup": false,
+      "scheduled_ns": 948565055100,
+      "start_ns": 950911040500,
+      "end_ns": 951220841100,
+      "execution_ms": 309.8006,
+      "lateness_ms": 2345.9854
+    },
+    {
+      "index": 19,
+      "ordinal": 20,
+      "warmup": false,
+      "scheduled_ns": 948765055100,
+      "start_ns": 951220847800,
+      "end_ns": 952182273300,
+      "execution_ms": 961.4255,
+      "lateness_ms": 2455.7927
+    },
+    {
+      "index": 20,
+      "ordinal": 21,
+      "warmup": false,
+      "scheduled_ns": 948965055100,
+      "start_ns": 952182285800,
+      "end_ns": 952998168500,
+      "execution_ms": 815.8827,
+      "lateness_ms": 3217.2307
+    },
+    {
+      "index": 21,
+      "ordinal": 22,
+      "warmup": false,
+      "scheduled_ns": 949165055100,
+      "start_ns": 952998178200,
+      "end_ns": 953807163200,
+      "execution_ms": 808.985,
+      "lateness_ms": 3833.1231
+    },
+    {
+      "index": 22,
+      "ordinal": 23,
+      "warmup": false,
+      "scheduled_ns": 949365055100,
+      "start_ns": 953807171600,
+      "end_ns": 954305022800,
+      "execution_ms": 497.8512,
+      "lateness_ms": 4442.1165
+    },
+    {
+      "index": 23,
+      "ordinal": 24,
+      "warmup": false,
+      "scheduled_ns": 949565055100,
+      "start_ns": 954305032500,
+      "end_ns": 954741206800,
+      "execution_ms": 436.1743,
+      "lateness_ms": 4739.9774
+    },
+    {
+      "index": 24,
+      "ordinal": 25,
+      "warmup": false,
+      "scheduled_ns": 949765055100,
+      "start_ns": 954741214800,
+      "end_ns": 955145410500,
+      "execution_ms": 404.1957,
+      "lateness_ms": 4976.1597
+    },
+    {
+      "index": 25,
+      "ordinal": 26,
+      "warmup": false,
+      "scheduled_ns": 949965055100,
+      "start_ns": 955150119900,
+      "end_ns": 955552770000,
+      "execution_ms": 402.6501,
+      "lateness_ms": 5185.0648
+    },
+    {
+      "index": 26,
+      "ordinal": 27,
+      "warmup": false,
+      "scheduled_ns": 950165055100,
+      "start_ns": 955552778500,
+      "end_ns": 955925528400,
+      "execution_ms": 372.7499,
+      "lateness_ms": 5387.7234
+    },
+    {
+      "index": 27,
+      "ordinal": 28,
+      "warmup": false,
+      "scheduled_ns": 950365055100,
+      "start_ns": 955925535800,
+      "end_ns": 956251844000,
+      "execution_ms": 326.3082,
+      "lateness_ms": 5560.4807
+    },
+    {
+      "index": 28,
+      "ordinal": 29,
+      "warmup": false,
+      "scheduled_ns": 950565055100,
+      "start_ns": 956251851400,
+      "end_ns": 956582785200,
+      "execution_ms": 330.9338,
+      "lateness_ms": 5686.7963
+    },
+    {
+      "index": 29,
+      "ordinal": 30,
+      "warmup": false,
+      "scheduled_ns": 950765055100,
+      "start_ns": 956582793200,
+      "end_ns": 956918934200,
+      "execution_ms": 336.141,
+      "lateness_ms": 5817.7381
+    },
+    {
+      "index": 30,
+      "ordinal": 31,
+      "warmup": false,
+      "scheduled_ns": 950965055100,
+      "start_ns": 956918941600,
+      "end_ns": 957289559800,
+      "execution_ms": 370.6182,
+      "lateness_ms": 5953.8865
+    },
+    {
+      "index": 31,
+      "ordinal": 32,
+      "warmup": false,
+      "scheduled_ns": 951165055100,
+      "start_ns": 957289568200,
+      "end_ns": 957642440100,
+      "execution_ms": 352.8719,
+      "lateness_ms": 6124.5131
+    },
+    {
+      "index": 32,
+      "ordinal": 33,
+      "warmup": false,
+      "scheduled_ns": 951365055100,
+      "start_ns": 957642447800,
+      "end_ns": 957989791200,
+      "execution_ms": 347.3434,
+      "lateness_ms": 6277.3927
+    },
+    {
+      "index": 33,
+      "ordinal": 34,
+      "warmup": false,
+      "scheduled_ns": 951565055100,
+      "start_ns": 957994702000,
+      "end_ns": 958435306500,
+      "execution_ms": 440.6045,
+      "lateness_ms": 6429.6469
+    },
+    {
+      "index": 34,
+      "ordinal": 35,
+      "warmup": false,
+      "scheduled_ns": 951765055100,
+      "start_ns": 958435313600,
+      "end_ns": 958791572200,
+      "execution_ms": 356.2586,
+      "lateness_ms": 6670.2585
+    },
+    {
+      "index": 35,
+      "ordinal": 36,
+      "warmup": false,
+      "scheduled_ns": 951965055100,
+      "start_ns": 958791579200,
+      "end_ns": 959122205000,
+      "execution_ms": 330.6258,
+      "lateness_ms": 6826.5241
+    },
+    {
+      "index": 36,
+      "ordinal": 37,
+      "warmup": false,
+      "scheduled_ns": 952165055100,
+      "start_ns": 959122212800,
+      "end_ns": 959459766700,
+      "execution_ms": 337.5539,
+      "lateness_ms": 6957.1577
+    },
+    {
+      "index": 37,
+      "ordinal": 38,
+      "warmup": false,
+      "scheduled_ns": 952365055100,
+      "start_ns": 959459773700,
+      "end_ns": 959786308600,
+      "execution_ms": 326.5349,
+      "lateness_ms": 7094.7186
+    },
+    {
+      "index": 38,
+      "ordinal": 39,
+      "warmup": false,
+      "scheduled_ns": 952565055100,
+      "start_ns": 959786315400,
+      "end_ns": 960124986300,
+      "execution_ms": 338.6709,
+      "lateness_ms": 7221.2603
+    },
+    {
+      "index": 39,
+      "ordinal": 40,
+      "warmup": false,
+      "scheduled_ns": 952765055100,
+      "start_ns": 960124993600,
+      "end_ns": 960460344400,
+      "execution_ms": 335.3508,
+      "lateness_ms": 7359.9385
+    },
+    {
+      "index": 40,
+      "ordinal": 41,
+      "warmup": false,
+      "scheduled_ns": 952965055100,
+      "start_ns": 960460351400,
+      "end_ns": 960817214500,
+      "execution_ms": 356.8631,
+      "lateness_ms": 7495.2963
+    },
+    {
+      "index": 41,
+      "ordinal": 42,
+      "warmup": false,
+      "scheduled_ns": 953165055100,
+      "start_ns": 960821026700,
+      "end_ns": 961148887900,
+      "execution_ms": 327.8612,
+      "lateness_ms": 7655.9716
+    },
+    {
+      "index": 42,
+      "ordinal": 43,
+      "warmup": false,
+      "scheduled_ns": 953365055100,
+      "start_ns": 961148895100,
+      "end_ns": 961553058200,
+      "execution_ms": 404.1631,
+      "lateness_ms": 7783.84
+    },
+    {
+      "index": 43,
+      "ordinal": 44,
+      "warmup": false,
+      "scheduled_ns": 953565055100,
+      "start_ns": 961553065500,
+      "end_ns": 961883089300,
+      "execution_ms": 330.0238,
+      "lateness_ms": 7988.0104
+    },
+    {
+      "index": 44,
+      "ordinal": 45,
+      "warmup": false,
+      "scheduled_ns": 953765055100,
+      "start_ns": 961883096700,
+      "end_ns": 962200540000,
+      "execution_ms": 317.4433,
+      "lateness_ms": 8118.0416
+    }
+  ],
+  "commits": [
+    {
+      "key": "7352e776-ec85-4465-88d3-7d7d36f459ba",
+      "ordinal": 1,
+      "status": "COMMITTED",
+      "scope_end_ns": 945213333600,
+      "commit_ns": 945229954800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "64a0ca6b-3416-4763-a222-8fbc799b13ab",
+            "job": "measurement",
+            "result_key": "7352e776-ec85-4465-88d3-7d7d36f459ba",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "cda13884-7301-4c0a-92c3-6154fb69cff5",
+          "copy_ms": 2.8936,
+          "queue_ms": 0.2282,
+          "encode_read_ms": 122.892,
+          "adoption_ms": 0.7435
+        }
+      ]
+    },
+    {
+      "key": "a9a04431-bd86-4dcc-a4c1-0c9cd19b6c94",
+      "ordinal": 2,
+      "status": "COMMITTED",
+      "scope_end_ns": 945559645000,
+      "commit_ns": 945559659400,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "c8466da0-06c9-4764-b76e-4ccb99a5fb57",
+            "job": "measurement",
+            "result_key": "a9a04431-bd86-4dcc-a4c1-0c9cd19b6c94",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "b74379d3-0429-4b57-8325-9aedb00c91d8",
+          "copy_ms": 4.5719,
+          "queue_ms": 6.4377,
+          "encode_read_ms": 119.2572,
+          "adoption_ms": 0.8078
+        }
+      ]
+    },
+    {
+      "key": "fd9167e0-2565-4d61-a76c-701d51460836",
+      "ordinal": 3,
+      "status": "COMMITTED",
+      "scope_end_ns": 945879169100,
+      "commit_ns": 945879186300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "db281326-0928-41a4-bd96-d337303247eb",
+            "job": "measurement",
+            "result_key": "fd9167e0-2565-4d61-a76c-701d51460836",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "b0be7104-033d-4b7e-b633-d04245d9bd27",
+          "copy_ms": 4.5593,
+          "queue_ms": 0.3095,
+          "encode_read_ms": 131.1291,
+          "adoption_ms": 1.7724
+        }
+      ]
+    },
+    {
+      "key": "a148bae2-2ca0-4080-a99e-19b8f4a150e8",
+      "ordinal": 4,
+      "status": "COMMITTED",
+      "scope_end_ns": 946210869900,
+      "commit_ns": 946219188100,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "c1743342-d9d3-4c18-a7af-b64a69bbf947",
+            "job": "measurement",
+            "result_key": "a148bae2-2ca0-4080-a99e-19b8f4a150e8",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "36a4e48f-7a98-4652-a2de-0b08cb54b127",
+          "copy_ms": 3.9883,
+          "queue_ms": 11.3016,
+          "encode_read_ms": 114.9145,
+          "adoption_ms": 0.5504
+        }
+      ]
+    },
+    {
+      "key": "bd27df0b-f052-46ea-b4ff-fc32b9ffd0b1",
+      "ordinal": 5,
+      "status": "COMMITTED",
+      "scope_end_ns": 946554859700,
+      "commit_ns": 946554873600,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "7511419e-b04a-4e27-841a-aab4cc319979",
+            "job": "measurement",
+            "result_key": "bd27df0b-f052-46ea-b4ff-fc32b9ffd0b1",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "f7dfe62d-06e6-44c5-a86c-d182fe71d735",
+          "copy_ms": 2.8145,
+          "queue_ms": 0.3087,
+          "encode_read_ms": 154.5896,
+          "adoption_ms": 0.6084
+        }
+      ]
+    },
+    {
+      "key": "5988f965-e627-44a9-8719-966cd6c762e0",
+      "ordinal": 6,
+      "status": "COMMITTED",
+      "scope_end_ns": 946876548900,
+      "commit_ns": 946876562300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "92a72374-1b7b-4f7a-9098-bcf25b0dbfc2",
+            "job": "measurement",
+            "result_key": "5988f965-e627-44a9-8719-966cd6c762e0",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "83686659-aca4-4834-b114-e0e061175031",
+          "copy_ms": 3.7507,
+          "queue_ms": 0.2236,
+          "encode_read_ms": 141.5004,
+          "adoption_ms": 0.735
+        }
+      ]
+    },
+    {
+      "key": "cc2dd017-a4b8-4dd3-b816-c560ca04ce40",
+      "ordinal": 7,
+      "status": "COMMITTED",
+      "scope_end_ns": 947219991500,
+      "commit_ns": 947220007400,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "c1734ffa-93ef-41d8-91bf-1fa095936941",
+            "job": "measurement",
+            "result_key": "cc2dd017-a4b8-4dd3-b816-c560ca04ce40",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "556df225-46d8-4e23-926f-82672c6cb0e2",
+          "copy_ms": 5.2785,
+          "queue_ms": 1.0623,
+          "encode_read_ms": 150.0098,
+          "adoption_ms": 0.819
+        }
+      ]
+    },
+    {
+      "key": "d1b4654f-e269-43d1-b96f-ee2fcdbe8cf4",
+      "ordinal": 8,
+      "status": "COMMITTED",
+      "scope_end_ns": 947551469600,
+      "commit_ns": 947551488000,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "70c5d3e4-36ca-4eee-b113-64875fda7ebe",
+            "job": "measurement",
+            "result_key": "d1b4654f-e269-43d1-b96f-ee2fcdbe8cf4",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "2cdd81ca-9951-4040-ad8b-e2b5e0a00797",
+          "copy_ms": 2.8198,
+          "queue_ms": 0.2124,
+          "encode_read_ms": 144.2049,
+          "adoption_ms": 0.8104
+        }
+      ]
+    },
+    {
+      "key": "2b5157c2-b64d-4af1-883d-62a6be0b8503",
+      "ordinal": 9,
+      "status": "COMMITTED",
+      "scope_end_ns": 947863124300,
+      "commit_ns": 947863138200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "009c7f9c-0566-4ea1-8707-176854803221",
+            "job": "measurement",
+            "result_key": "2b5157c2-b64d-4af1-883d-62a6be0b8503",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "b415e357-f6f0-4051-aba2-b0946bbc4728",
+          "copy_ms": 3.9131,
+          "queue_ms": 0.4889,
+          "encode_read_ms": 147.9951,
+          "adoption_ms": 0.5789
+        }
+      ]
+    },
+    {
+      "key": "25f5102a-757d-4f38-8610-44f555a5cf7e",
+      "ordinal": 10,
+      "status": "COMMITTED",
+      "scope_end_ns": 948201199900,
+      "commit_ns": 948201214400,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "ef267a0a-3726-4d0d-84f8-47d1dc2d5e4b",
+            "job": "measurement",
+            "result_key": "25f5102a-757d-4f38-8610-44f555a5cf7e",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "465df4dd-8de1-48cc-83cc-b3044a045851",
+          "copy_ms": 5.4096,
+          "queue_ms": 1.5859,
+          "encode_read_ms": 138.4938,
+          "adoption_ms": 0.6193
+        }
+      ]
+    },
+    {
+      "key": "140aca38-e9f3-46b4-979f-995006fd7066",
+      "ordinal": 11,
+      "status": "COMMITTED",
+      "scope_end_ns": 948521290800,
+      "commit_ns": 948521305000,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b7939c99-5459-44f8-822e-674925057201",
+            "job": "measurement",
+            "result_key": "140aca38-e9f3-46b4-979f-995006fd7066",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "0239555f-cf35-4a89-a08c-1f6140dabb61",
+          "copy_ms": 4.7968,
+          "queue_ms": 1.3348,
+          "encode_read_ms": 125.2171,
+          "adoption_ms": 0.812
+        }
+      ]
+    },
+    {
+      "key": "93f1e7a6-fd73-497c-8322-ad27793977d3",
+      "ordinal": 12,
+      "status": "COMMITTED",
+      "scope_end_ns": 948861666700,
+      "commit_ns": 948861680900,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "ca03ff3f-f1d3-403c-b1d4-1933b5e964e5",
+            "job": "measurement",
+            "result_key": "93f1e7a6-fd73-497c-8322-ad27793977d3",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "4287d1d5-b03d-477b-b67b-46b139fa19a9",
+          "copy_ms": 5.013,
+          "queue_ms": 0.4971,
+          "encode_read_ms": 137.4512,
+          "adoption_ms": 0.8472
+        }
+      ]
+    },
+    {
+      "key": "118b0a52-09bd-4331-9bb1-cfd0e431e8be",
+      "ordinal": 13,
+      "status": "COMMITTED",
+      "scope_end_ns": 949182731300,
+      "commit_ns": 949182748800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "aaa1851b-0532-4853-a1a6-dc4ce8def85f",
+            "job": "measurement",
+            "result_key": "118b0a52-09bd-4331-9bb1-cfd0e431e8be",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "ff946210-da36-4379-a82e-35514d458640",
+          "copy_ms": 4.3777,
+          "queue_ms": 1.549,
+          "encode_read_ms": 121.5934,
+          "adoption_ms": 0.7428
+        }
+      ]
+    },
+    {
+      "key": "68616e6a-85a5-473c-9a97-465e3bf715e0",
+      "ordinal": 14,
+      "status": "COMMITTED",
+      "scope_end_ns": 949502253500,
+      "commit_ns": 949502266800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "73996d51-4fa5-408b-9496-55d91cd572d9",
+            "job": "measurement",
+            "result_key": "68616e6a-85a5-473c-9a97-465e3bf715e0",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "6edddaa1-45c2-48b1-b4fd-975e0cdd7037",
+          "copy_ms": 3.9535,
+          "queue_ms": 0.2596,
+          "encode_read_ms": 124.6914,
+          "adoption_ms": 0.8414
+        }
+      ]
+    },
+    {
+      "key": "8d3c9303-e4d8-44f2-add8-bf8da48aac8f",
+      "ordinal": 15,
+      "status": "COMMITTED",
+      "scope_end_ns": 949854880800,
+      "commit_ns": 949854932400,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "fa66c35f-6381-4515-aa90-07ce195e9322",
+            "job": "measurement",
+            "result_key": "8d3c9303-e4d8-44f2-add8-bf8da48aac8f",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "24c1e7bc-ffb1-4839-94ab-4ce1f5c88c81",
+          "copy_ms": 4.7171,
+          "queue_ms": 0.3966,
+          "encode_read_ms": 148.2107,
+          "adoption_ms": 2.3003
+        }
+      ]
+    },
+    {
+      "key": "bc3ad5e6-6e5a-4388-a721-d8ae3cb774e8",
+      "ordinal": 16,
+      "status": "COMMITTED",
+      "scope_end_ns": 950236207800,
+      "commit_ns": 950236225100,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "cee1c36a-23e2-46a4-971f-e7099324f5d8",
+            "job": "measurement",
+            "result_key": "bc3ad5e6-6e5a-4388-a721-d8ae3cb774e8",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "fa489848-e56d-41e1-8ee3-315105f935b1",
+          "copy_ms": 2.8138,
+          "queue_ms": 0.2059,
+          "encode_read_ms": 146.7319,
+          "adoption_ms": 0.6376
+        }
+      ]
+    },
+    {
+      "key": "e2b47ca1-408a-4a3c-8de5-cae454cf1c12",
+      "ordinal": 17,
+      "status": "COMMITTED",
+      "scope_end_ns": 950572051200,
+      "commit_ns": 950572066100,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "032ddbe5-236c-4225-8203-ec8f8ff29480",
+            "job": "measurement",
+            "result_key": "e2b47ca1-408a-4a3c-8de5-cae454cf1c12",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "52f7ebb9-db80-48d5-888d-f1d59aae02da",
+          "copy_ms": 5.8813,
+          "queue_ms": 0.3823,
+          "encode_read_ms": 124.1834,
+          "adoption_ms": 0.7907
+        }
+      ]
+    },
+    {
+      "key": "5749fc29-1cc7-4d61-8052-ec5e3b78d7bf",
+      "ordinal": 18,
+      "status": "COMMITTED",
+      "scope_end_ns": 950910718300,
+      "commit_ns": 950910734800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "5b603606-0a79-47a5-aef8-a5bfbeef8ee3",
+            "job": "measurement",
+            "result_key": "5749fc29-1cc7-4d61-8052-ec5e3b78d7bf",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "83c716db-850d-42db-a7c3-aa450bed6623",
+          "copy_ms": 5.4116,
+          "queue_ms": 0.9177,
+          "encode_read_ms": 133.3449,
+          "adoption_ms": 0.615
+        }
+      ]
+    },
+    {
+      "key": "c646de40-3b11-4ad6-80c5-cd69ec889d03",
+      "ordinal": 19,
+      "status": "COMMITTED",
+      "scope_end_ns": 951220543100,
+      "commit_ns": 951220558600,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "d31e73ff-a53e-4e14-a8a9-d8db696f27c3",
+            "job": "measurement",
+            "result_key": "c646de40-3b11-4ad6-80c5-cd69ec889d03",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "49c87368-0e8b-417e-a064-9d398f9dc203",
+          "copy_ms": 4.5251,
+          "queue_ms": 0.3533,
+          "encode_read_ms": 137.6305,
+          "adoption_ms": 0.9237
+        }
+      ]
+    },
+    {
+      "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+      "ordinal": 20,
+      "status": "INCOMPLETE",
+      "scope_end_ns": 952181950700,
+      "commit_ns": 952235998700,
+      "image": [
+        "UNAVAILABLE",
+        {
+          "status": "UNAVAILABLE",
+          "reason": "TimeoutError",
+          "task_id": "1055159d-9f71-43c7-915b-8785b96b95fc"
+        }
+      ]
+    },
+    {
+      "key": "65241c22-0564-4d23-9b76-4cceb811cee0",
+      "ordinal": 21,
+      "status": "COMMITTED",
+      "scope_end_ns": 952997494200,
+      "commit_ns": 952997520200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "8dd483d2-ff30-4930-affa-344705afcbdd",
+            "job": "measurement",
+            "result_key": "65241c22-0564-4d23-9b76-4cceb811cee0",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "8cb75f96-e45e-4f2e-b716-86bfd45ec4f7",
+          "copy_ms": 3.9433,
+          "queue_ms": 1.8058,
+          "encode_read_ms": 329.6701,
+          "adoption_ms": 0.8561
+        }
+      ]
+    },
+    {
+      "key": "0476558a-d106-42ba-ae78-066d0bc6f67a",
+      "ordinal": 22,
+      "status": "COMMITTED",
+      "scope_end_ns": 953806759500,
+      "commit_ns": 953806778600,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "96c9ed46-2bae-473c-91c3-d28c24aee131",
+            "job": "measurement",
+            "result_key": "0476558a-d106-42ba-ae78-066d0bc6f67a",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "0b8ccb05-fe94-426a-baa3-c6d36b29d375",
+          "copy_ms": 4.9378,
+          "queue_ms": 2.7652,
+          "encode_read_ms": 289.9747,
+          "adoption_ms": 0.8754
+        }
+      ]
+    },
+    {
+      "key": "12d75f9c-4242-43e8-add3-5a3c065805d2",
+      "ordinal": 23,
+      "status": "COMMITTED",
+      "scope_end_ns": 954304616100,
+      "commit_ns": 954304637800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "3a37ecda-8282-4bcb-a8b2-04db94aa61f7",
+            "job": "measurement",
+            "result_key": "12d75f9c-4242-43e8-add3-5a3c065805d2",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "e7087aaf-70f1-46a7-98b4-f98c9f03be8d",
+          "copy_ms": 7.5243,
+          "queue_ms": 2.0728,
+          "encode_read_ms": 222.2676,
+          "adoption_ms": 3.3002
+        }
+      ]
+    },
+    {
+      "key": "a6fb12de-c77f-4d8b-bcef-613a891a177e",
+      "ordinal": 24,
+      "status": "COMMITTED",
+      "scope_end_ns": 954740919900,
+      "commit_ns": 954745971700,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "5e743ca2-8dd9-4483-b817-2f31fc2945c4",
+            "job": "measurement",
+            "result_key": "a6fb12de-c77f-4d8b-bcef-613a891a177e",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "4603cba6-2b28-4024-9b71-736c69822650",
+          "copy_ms": 4.0378,
+          "queue_ms": 1.3163,
+          "encode_read_ms": 199.6278,
+          "adoption_ms": 0.7568
+        }
+      ]
+    },
+    {
+      "key": "750f6e12-d3df-4f48-881e-01bff7df39b8",
+      "ordinal": 25,
+      "status": "COMMITTED",
+      "scope_end_ns": 955145106000,
+      "commit_ns": 955145120300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "61700ca6-3b3f-4e04-b44b-97f856e71f1f",
+            "job": "measurement",
+            "result_key": "750f6e12-d3df-4f48-881e-01bff7df39b8",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "e2d05f8a-fa7c-448f-a722-f89ccf57c2cc",
+          "copy_ms": 6.3382,
+          "queue_ms": 0.6078,
+          "encode_read_ms": 166.6931,
+          "adoption_ms": 0.6794
+        }
+      ]
+    },
+    {
+      "key": "dd8d036a-468f-4073-b473-ef8a9fe943af",
+      "ordinal": 26,
+      "status": "COMMITTED",
+      "scope_end_ns": 955552359800,
+      "commit_ns": 955552377300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "da0d8d7c-f3e2-4857-9a83-d38edf326f11",
+            "job": "measurement",
+            "result_key": "dd8d036a-468f-4073-b473-ef8a9fe943af",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "fca6ef40-1b1a-432d-b7c6-00117ff7d879",
+          "copy_ms": 3.7773,
+          "queue_ms": 1.1915,
+          "encode_read_ms": 134.6498,
+          "adoption_ms": 0.7406
+        }
+      ]
+    },
+    {
+      "key": "2726dcd6-a06d-49bf-b798-efcef71c4e09",
+      "ordinal": 27,
+      "status": "COMMITTED",
+      "scope_end_ns": 955925230100,
+      "commit_ns": 955925243800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "f25a4d4d-7575-41c9-afcc-bad6327d75da",
+            "job": "measurement",
+            "result_key": "2726dcd6-a06d-49bf-b798-efcef71c4e09",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "253950e4-c5b5-4d1b-a9b0-f260ea5f5753",
+          "copy_ms": 3.7998,
+          "queue_ms": 0.2596,
+          "encode_read_ms": 111.1206,
+          "adoption_ms": 0.834
+        }
+      ]
+    },
+    {
+      "key": "54145750-916f-484f-aa2e-fff7b5694585",
+      "ordinal": 28,
+      "status": "COMMITTED",
+      "scope_end_ns": 956251544400,
+      "commit_ns": 956251559200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "937876e8-4271-49c3-8a1a-10afe8c4dc95",
+            "job": "measurement",
+            "result_key": "54145750-916f-484f-aa2e-fff7b5694585",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "94ef1049-7aeb-4efb-9590-1372ed9c60a8",
+          "copy_ms": 4.3263,
+          "queue_ms": 0.4934,
+          "encode_read_ms": 145.5513,
+          "adoption_ms": 10.671
+        }
+      ]
+    },
+    {
+      "key": "2093f39d-63bc-4d01-8380-2d64889efdce",
+      "ordinal": 29,
+      "status": "COMMITTED",
+      "scope_end_ns": 956582440500,
+      "commit_ns": 956582456200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "3b3e4bc8-f721-483a-b55a-a5c35eab19d1",
+            "job": "measurement",
+            "result_key": "2093f39d-63bc-4d01-8380-2d64889efdce",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "e5842ae2-469c-4339-95a1-1978388d9f72",
+          "copy_ms": 3.2411,
+          "queue_ms": 0.5112,
+          "encode_read_ms": 120.6864,
+          "adoption_ms": 1.0301
+        }
+      ]
+    },
+    {
+      "key": "84939951-a706-4178-a950-0f1ac9fc0a1c",
+      "ordinal": 30,
+      "status": "COMMITTED",
+      "scope_end_ns": 956918627000,
+      "commit_ns": 956918643100,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b79c2760-d14d-4396-8da5-ad7791062b65",
+            "job": "measurement",
+            "result_key": "84939951-a706-4178-a950-0f1ac9fc0a1c",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "7d1b6b04-eea1-428e-9c90-9f9681e7ea5a",
+          "copy_ms": 2.8984,
+          "queue_ms": 0.2271,
+          "encode_read_ms": 139.7837,
+          "adoption_ms": 1.0446
+        }
+      ]
+    },
+    {
+      "key": "133b96b3-419f-4d0a-938e-838ed519e4dd",
+      "ordinal": 31,
+      "status": "COMMITTED",
+      "scope_end_ns": 957289195700,
+      "commit_ns": 957289212300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "c1efb0ac-3e95-4eca-9f22-1df6eae63500",
+            "job": "measurement",
+            "result_key": "133b96b3-419f-4d0a-938e-838ed519e4dd",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "c923c946-ce24-4eec-8462-e87e773cfcc4",
+          "copy_ms": 4.0945,
+          "queue_ms": 0.2825,
+          "encode_read_ms": 112.0085,
+          "adoption_ms": 1.0262
+        }
+      ]
+    },
+    {
+      "key": "302d9684-d983-49f9-b522-a4ab6104a81d",
+      "ordinal": 32,
+      "status": "COMMITTED",
+      "scope_end_ns": 957642148400,
+      "commit_ns": 957642162900,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b5bb4f25-efe5-4f0e-b09f-da0e6f7d24b1",
+            "job": "measurement",
+            "result_key": "302d9684-d983-49f9-b522-a4ab6104a81d",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "7a020b7c-cb78-4eeb-96f9-0e6560f97055",
+          "copy_ms": 4.305,
+          "queue_ms": 0.5248,
+          "encode_read_ms": 144.1981,
+          "adoption_ms": 1.1937
+        }
+      ]
+    },
+    {
+      "key": "7685057e-d6ad-4973-be68-26a02a22f2a6",
+      "ordinal": 33,
+      "status": "COMMITTED",
+      "scope_end_ns": 957989484800,
+      "commit_ns": 957989499300,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b2757673-07c2-4546-9e5a-175b2c7656cb",
+            "job": "measurement",
+            "result_key": "7685057e-d6ad-4973-be68-26a02a22f2a6",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "0cc18634-7f49-4864-b3b8-62250cc98a88",
+          "copy_ms": 4.7731,
+          "queue_ms": 1.5949,
+          "encode_read_ms": 158.2582,
+          "adoption_ms": 1.1103
+        }
+      ]
+    },
+    {
+      "key": "0ba31991-3214-4066-8f5a-aacf68fac3f2",
+      "ordinal": 34,
+      "status": "COMMITTED",
+      "scope_end_ns": 958435000100,
+      "commit_ns": 958435015800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "f199079d-5854-4428-bee3-69ac9a3f4564",
+            "job": "measurement",
+            "result_key": "0ba31991-3214-4066-8f5a-aacf68fac3f2",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "95f3d7ab-6647-4389-a5c5-8060511e6e20",
+          "copy_ms": 4.8895,
+          "queue_ms": 0.3804,
+          "encode_read_ms": 146.5859,
+          "adoption_ms": 115.4347
+        }
+      ]
+    },
+    {
+      "key": "163b5cf6-b16b-4180-bfe9-1e86b9debe29",
+      "ordinal": 35,
+      "status": "COMMITTED",
+      "scope_end_ns": 958791274900,
+      "commit_ns": 958791289200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "89df851e-0797-46fc-b94a-97a5620ec9ae",
+            "job": "measurement",
+            "result_key": "163b5cf6-b16b-4180-bfe9-1e86b9debe29",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "3ee0eb56-d529-42ae-a739-66cd54f32630",
+          "copy_ms": 4.6954,
+          "queue_ms": 0.385,
+          "encode_read_ms": 130.9103,
+          "adoption_ms": 1.686
+        }
+      ]
+    },
+    {
+      "key": "3fa3bb36-5480-4c08-8289-25b82b740081",
+      "ordinal": 36,
+      "status": "COMMITTED",
+      "scope_end_ns": 959121882600,
+      "commit_ns": 959121897700,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b8e548a1-3488-49ed-82a4-1e449c61fde3",
+            "job": "measurement",
+            "result_key": "3fa3bb36-5480-4c08-8289-25b82b740081",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "0f61a008-53ea-47fe-9831-654943ee520c",
+          "copy_ms": 4.9394,
+          "queue_ms": 0.257,
+          "encode_read_ms": 133.9222,
+          "adoption_ms": 2.017
+        }
+      ]
+    },
+    {
+      "key": "2460125e-e3d4-47fb-9dda-8f448b38a728",
+      "ordinal": 37,
+      "status": "COMMITTED",
+      "scope_end_ns": 959459467900,
+      "commit_ns": 959459482500,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "7d55fde8-8189-4577-87a6-94f94f00a34c",
+            "job": "measurement",
+            "result_key": "2460125e-e3d4-47fb-9dda-8f448b38a728",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "9a6bd49e-591d-4e32-864b-62931e0106c0",
+          "copy_ms": 4.2858,
+          "queue_ms": 0.3758,
+          "encode_read_ms": 130.9347,
+          "adoption_ms": 1.7382
+        }
+      ]
+    },
+    {
+      "key": "37c9ffb4-901d-4ae9-a8be-9929f4b6b297",
+      "ordinal": 38,
+      "status": "COMMITTED",
+      "scope_end_ns": 959786024400,
+      "commit_ns": 959786038000,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "00abc7af-6c3e-43b4-a296-0480268efac6",
+            "job": "measurement",
+            "result_key": "37c9ffb4-901d-4ae9-a8be-9929f4b6b297",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "117ffdee-af54-4f9d-abe4-553ad81df760",
+          "copy_ms": 3.7884,
+          "queue_ms": 1.2765,
+          "encode_read_ms": 132.8062,
+          "adoption_ms": 1.4939
+        }
+      ]
+    },
+    {
+      "key": "f0e61fd9-7415-460d-9f7a-ebd75e742b12",
+      "ordinal": 39,
+      "status": "COMMITTED",
+      "scope_end_ns": 960124630600,
+      "commit_ns": 960124683200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "007c2724-d4e3-46f6-ab5f-e25816b5a401",
+            "job": "measurement",
+            "result_key": "f0e61fd9-7415-460d-9f7a-ebd75e742b12",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "b7953a45-d486-4f1c-be58-410e40e45d9e",
+          "copy_ms": 3.817,
+          "queue_ms": 0.2261,
+          "encode_read_ms": 153.288,
+          "adoption_ms": 1.9774
+        }
+      ]
+    },
+    {
+      "key": "4f215024-9fc1-4e41-b1ad-b9c891e4dff2",
+      "ordinal": 40,
+      "status": "COMMITTED",
+      "scope_end_ns": 960460057200,
+      "commit_ns": 960460071700,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "5bcd4590-f200-4baa-829f-786cc86c3a3c",
+            "job": "measurement",
+            "result_key": "4f215024-9fc1-4e41-b1ad-b9c891e4dff2",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "fb821ca4-0084-49c3-b71a-e16175f30bd7",
+          "copy_ms": 4.7354,
+          "queue_ms": 0.4338,
+          "encode_read_ms": 146.9851,
+          "adoption_ms": 2.2391
+        }
+      ]
+    },
+    {
+      "key": "607d8cff-929b-4bba-9214-836ffdc562d4",
+      "ordinal": 41,
+      "status": "COMMITTED",
+      "scope_end_ns": 960816894000,
+      "commit_ns": 960816909700,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "3e6abf68-aaa2-4608-a042-3f650d1b3775",
+            "job": "measurement",
+            "result_key": "607d8cff-929b-4bba-9214-836ffdc562d4",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "2b902ca2-84f8-426e-b0fd-14e81be7774a",
+          "copy_ms": 4.8458,
+          "queue_ms": 0.2713,
+          "encode_read_ms": 154.9016,
+          "adoption_ms": 1.5736
+        }
+      ]
+    },
+    {
+      "key": "dfbb954e-e26f-494d-a2b0-4ee013e001a5",
+      "ordinal": 42,
+      "status": "COMMITTED",
+      "scope_end_ns": 961148606500,
+      "commit_ns": 961148619800,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "b196dffd-cbb3-4de8-8a1f-e887c6f96815",
+            "job": "measurement",
+            "result_key": "dfbb954e-e26f-494d-a2b0-4ee013e001a5",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "2ed3e4af-b0a3-4b46-8f70-af7ea605f9c3",
+          "copy_ms": 4.2036,
+          "queue_ms": 0.3251,
+          "encode_read_ms": 129.1409,
+          "adoption_ms": 1.5726
+        }
+      ]
+    },
+    {
+      "key": "1a619976-928f-443a-9800-5bc689764e31",
+      "ordinal": 43,
+      "status": "COMMITTED",
+      "scope_end_ns": 961552755100,
+      "commit_ns": 961552768900,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "6e1a1f57-913e-4f0f-bb79-c2752e40e67b",
+            "job": "measurement",
+            "result_key": "1a619976-928f-443a-9800-5bc689764e31",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "62bde0c2-a51d-4ece-9f6b-be43e1ce45e8",
+          "copy_ms": 2.8762,
+          "queue_ms": 1.0447,
+          "encode_read_ms": 99.152,
+          "adoption_ms": 1.7015
+        }
+      ]
+    },
+    {
+      "key": "b34a081c-f8eb-4ebe-a5c8-e6bdce9f125e",
+      "ordinal": 44,
+      "status": "COMMITTED",
+      "scope_end_ns": 961882773600,
+      "commit_ns": 961882794200,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "932ce7bc-acc2-4cd8-9df7-c1e05985e94a",
+            "job": "measurement",
+            "result_key": "b34a081c-f8eb-4ebe-a5c8-e6bdce9f125e",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "f849a154-22e1-4702-9471-50b1adaa17d1",
+          "copy_ms": 3.3102,
+          "queue_ms": 0.2614,
+          "encode_read_ms": 116.1341,
+          "adoption_ms": 1.6015
+        }
+      ]
+    },
+    {
+      "key": "93dfdafa-c0e7-4ae4-957c-f87961d424fc",
+      "ordinal": 45,
+      "status": "COMMITTED",
+      "scope_end_ns": 962200248500,
+      "commit_ns": 962200262500,
+      "image": [
+        "VALID",
+        {
+          "status": "VALID",
+          "asset": {
+            "asset_id": "44a59bbe-73b0-4970-b5f6-afdafa90d595",
+            "job": "measurement",
+            "result_key": "93dfdafa-c0e7-4ae4-957c-f87961d424fc",
+            "size": 6232951,
+            "sha256": "da18583fb8e3118e7eee799451516a06de92d3c5f9d584becc890393644bd210",
+            "shape": [
+              1080,
+              1920,
+              3
+            ]
+          },
+          "raw_sha256": "0c214ad41e85f101248a0040a64a70a0e26e9d1605f8364c659f61cbcc0378a1",
+          "task_id": "43d958f4-ddaf-457c-8cf2-fb17a3405c84",
+          "copy_ms": 4.0196,
+          "queue_ms": 1.2564,
+          "encode_read_ms": 100.4073,
+          "adoption_ms": 1.4956
+        }
+      ]
+    }
+  ],
+  "clients": [
+    [
+      {
+        "key": "5988f965-e627-44a9-8719-966cd6c762e0",
+        "ordinal": 6,
+        "status": "COMMITTED",
+        "scope_end_ns": 946876548900,
+        "received_ns": 946878513800,
+        "decoded": true,
+        "asset_id": "92a72374-1b7b-4f7a-9098-bcf25b0dbfc2",
+        "transfer_ms": 266.544,
+        "decode_verify_ms": 32.1527,
+        "commit_ns": 947177215800,
+        "latency_ms": 300.6669
+      },
+      {
+        "key": "cc2dd017-a4b8-4dd3-b816-c560ca04ce40",
+        "ordinal": 7,
+        "status": "COMMITTED",
+        "scope_end_ns": 947219991500,
+        "received_ns": 947221852200,
+        "decoded": true,
+        "asset_id": "c1734ffa-93ef-41d8-91bf-1fa095936941",
+        "transfer_ms": 219.5839,
+        "decode_verify_ms": 29.8039,
+        "commit_ns": 947471244900,
+        "latency_ms": 251.2534
+      },
+      {
+        "key": "d1b4654f-e269-43d1-b96f-ee2fcdbe8cf4",
+        "ordinal": 8,
+        "status": "COMMITTED",
+        "scope_end_ns": 947551469600,
+        "received_ns": 947553602800,
+        "decoded": true,
+        "asset_id": "70c5d3e4-36ca-4eee-b113-64875fda7ebe",
+        "transfer_ms": 235.9935,
+        "decode_verify_ms": 25.8675,
+        "commit_ns": 947815469000,
+        "latency_ms": 263.9994
+      },
+      {
+        "key": "2b5157c2-b64d-4af1-883d-62a6be0b8503",
+        "ordinal": 9,
+        "status": "COMMITTED",
+        "scope_end_ns": 947863124300,
+        "received_ns": 947865244900,
+        "decoded": true,
+        "asset_id": "009c7f9c-0566-4ea1-8707-176854803221",
+        "transfer_ms": 207.0959,
+        "decode_verify_ms": 60.7416,
+        "commit_ns": 948133086500,
+        "latency_ms": 269.9622
+      },
+      {
+        "key": "25f5102a-757d-4f38-8610-44f555a5cf7e",
+        "ordinal": 10,
+        "status": "COMMITTED",
+        "scope_end_ns": 948201199900,
+        "received_ns": 948203197600,
+        "decoded": true,
+        "asset_id": "ef267a0a-3726-4d0d-84f8-47d1dc2d5e4b",
+        "transfer_ms": 203.5403,
+        "decode_verify_ms": 32.5867,
+        "commit_ns": 948439330400,
+        "latency_ms": 238.1305
+      },
+      {
+        "key": "140aca38-e9f3-46b4-979f-995006fd7066",
+        "ordinal": 11,
+        "status": "COMMITTED",
+        "scope_end_ns": 948521290800,
+        "received_ns": 948523274700,
+        "decoded": true,
+        "asset_id": "b7939c99-5459-44f8-822e-674925057201",
+        "transfer_ms": 233.8532,
+        "decode_verify_ms": 29.9797,
+        "commit_ns": 948787112000,
+        "latency_ms": 265.8212
+      },
+      {
+        "key": "93f1e7a6-fd73-497c-8322-ad27793977d3",
+        "ordinal": 12,
+        "status": "COMMITTED",
+        "scope_end_ns": 948861666700,
+        "received_ns": 948863693500,
+        "decoded": true,
+        "asset_id": "ca03ff3f-f1d3-403c-b1d4-1933b5e964e5",
+        "transfer_ms": 199.7952,
+        "decode_verify_ms": 27.6641,
+        "commit_ns": 949091156400,
+        "latency_ms": 229.4897
+      },
+      {
+        "key": "118b0a52-09bd-4331-9bb1-cfd0e431e8be",
+        "ordinal": 13,
+        "status": "COMMITTED",
+        "scope_end_ns": 949182731300,
+        "received_ns": 949184697900,
+        "decoded": true,
+        "asset_id": "aaa1851b-0532-4853-a1a6-dc4ce8def85f",
+        "transfer_ms": 194.8034,
+        "decode_verify_ms": 29.3647,
+        "commit_ns": 949408872100,
+        "latency_ms": 226.1408
+      },
+      {
+        "key": "68616e6a-85a5-473c-9a97-465e3bf715e0",
+        "ordinal": 14,
+        "status": "COMMITTED",
+        "scope_end_ns": 949502253500,
+        "received_ns": 949504576700,
+        "decoded": true,
+        "asset_id": "73996d51-4fa5-408b-9496-55d91cd572d9",
+        "transfer_ms": 238.8896,
+        "decode_verify_ms": 45.317,
+        "commit_ns": 949788789000,
+        "latency_ms": 286.5355
+      },
+      {
+        "key": "8d3c9303-e4d8-44f2-add8-bf8da48aac8f",
+        "ordinal": 15,
+        "status": "COMMITTED",
+        "scope_end_ns": 949854880800,
+        "received_ns": 949856818400,
+        "decoded": true,
+        "asset_id": "fa66c35f-6381-4515-aa90-07ce195e9322",
+        "transfer_ms": 250.5932,
+        "decode_verify_ms": 27.9161,
+        "commit_ns": 950135332800,
+        "latency_ms": 280.452
+      },
+      {
+        "key": "bc3ad5e6-6e5a-4388-a721-d8ae3cb774e8",
+        "ordinal": 16,
+        "status": "COMMITTED",
+        "scope_end_ns": 950236207800,
+        "received_ns": 950238103300,
+        "decoded": true,
+        "asset_id": "cee1c36a-23e2-46a4-971f-e7099324f5d8",
+        "transfer_ms": 216.8458,
+        "decode_verify_ms": 32.8851,
+        "commit_ns": 950487838800,
+        "latency_ms": 251.631
+      },
+      {
+        "key": "e2b47ca1-408a-4a3c-8de5-cae454cf1c12",
+        "ordinal": 17,
+        "status": "COMMITTED",
+        "scope_end_ns": 950572051200,
+        "received_ns": 950574348200,
+        "decoded": true,
+        "asset_id": "032ddbe5-236c-4225-8203-ec8f8ff29480",
+        "transfer_ms": 192.8662,
+        "decode_verify_ms": 29.4259,
+        "commit_ns": 950796644000,
+        "latency_ms": 224.5928
+      },
+      {
+        "key": "5749fc29-1cc7-4d61-8052-ec5e3b78d7bf",
+        "ordinal": 18,
+        "status": "COMMITTED",
+        "scope_end_ns": 950910718300,
+        "received_ns": 950912562300,
+        "decoded": true,
+        "asset_id": "5b603606-0a79-47a5-aef8-a5bfbeef8ee3",
+        "transfer_ms": 277.1505,
+        "decode_verify_ms": 28.0772,
+        "commit_ns": 951217793800,
+        "latency_ms": 307.0755
+      },
+      {
+        "key": "c646de40-3b11-4ad6-80c5-cd69ec889d03",
+        "ordinal": 19,
+        "status": "COMMITTED",
+        "scope_end_ns": 951220543100,
+        "received_ns": 951222534100,
+        "decoded": true,
+        "asset_id": "d31e73ff-a53e-4e14-a8a9-d8db696f27c3",
+        "transfer_ms": 239.9647,
+        "decode_verify_ms": 42.5372,
+        "commit_ns": 951505040700,
+        "latency_ms": 284.4976
+      },
+      {
+        "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+        "ordinal": 20,
+        "status": "INCOMPLETE",
+        "scope_end_ns": 952181950700,
+        "received_ns": 952237780900,
+        "decoded": false,
+        "commit_ns": 952237784500,
+        "latency_ms": 55.8338
+      },
+      {
+        "key": "65241c22-0564-4d23-9b76-4cceb811cee0",
+        "ordinal": 21,
+        "status": "COMMITTED",
+        "scope_end_ns": 952997494200,
+        "received_ns": 953071823300,
+        "decoded": true,
+        "asset_id": "8dd483d2-ff30-4930-affa-344705afcbdd",
+        "transfer_ms": 268.4291,
+        "decode_verify_ms": 69.5622,
+        "commit_ns": 953409819600,
+        "latency_ms": 412.3254
+      },
+      {
+        "key": "0476558a-d106-42ba-ae78-066d0bc6f67a",
+        "ordinal": 22,
+        "status": "COMMITTED",
+        "scope_end_ns": 953806759500,
+        "received_ns": 953809057100,
+        "decoded": true,
+        "asset_id": "96c9ed46-2bae-473c-91c3-d28c24aee131",
+        "transfer_ms": 279.7299,
+        "decode_verify_ms": 79.1535,
+        "commit_ns": 954167945800,
+        "latency_ms": 361.1863
+      },
+      {
+        "key": "12d75f9c-4242-43e8-add3-5a3c065805d2",
+        "ordinal": 23,
+        "status": "COMMITTED",
+        "scope_end_ns": 954304616100,
+        "received_ns": 954306896400,
+        "decoded": true,
+        "asset_id": "3a37ecda-8282-4bcb-a8b2-04db94aa61f7",
+        "transfer_ms": 205.1093,
+        "decode_verify_ms": 26.8109,
+        "commit_ns": 954538821400,
+        "latency_ms": 234.2053
+      },
+      {
+        "key": "a6fb12de-c77f-4d8b-bcef-613a891a177e",
+        "ordinal": 24,
+        "status": "COMMITTED",
+        "scope_end_ns": 954740919900,
+        "received_ns": 954747495900,
+        "decoded": true,
+        "asset_id": "5e743ca2-8dd9-4483-b817-2f31fc2945c4",
+        "transfer_ms": 269.8972,
+        "decode_verify_ms": 26.4354,
+        "commit_ns": 955043833100,
+        "latency_ms": 302.9132
+      },
+      {
+        "key": "750f6e12-d3df-4f48-881e-01bff7df39b8",
+        "ordinal": 25,
+        "status": "COMMITTED",
+        "scope_end_ns": 955145106000,
+        "received_ns": 955147144700,
+        "decoded": true,
+        "asset_id": "61700ca6-3b3f-4e04-b44b-97f856e71f1f",
+        "transfer_ms": 201.9005,
+        "decode_verify_ms": 33.2021,
+        "commit_ns": 955382276200,
+        "latency_ms": 237.1702
+      },
+      {
+        "key": "dd8d036a-468f-4073-b473-ef8a9fe943af",
+        "ordinal": 26,
+        "status": "COMMITTED",
+        "scope_end_ns": 955552359800,
+        "received_ns": 955554874900,
+        "decoded": true,
+        "asset_id": "da0d8d7c-f3e2-4857-9a83-d38edf326f11",
+        "transfer_ms": 204.2521,
+        "decode_verify_ms": 29.2437,
+        "commit_ns": 955788374400,
+        "latency_ms": 236.0146
+      },
+      {
+        "key": "2726dcd6-a06d-49bf-b798-efcef71c4e09",
+        "ordinal": 27,
+        "status": "COMMITTED",
+        "scope_end_ns": 955925230100,
+        "received_ns": 955927082400,
+        "decoded": true,
+        "asset_id": "f25a4d4d-7575-41c9-afcc-bad6327d75da",
+        "transfer_ms": 257.6473,
+        "decode_verify_ms": 40.0171,
+        "commit_ns": 956224750700,
+        "latency_ms": 299.5206
+      },
+      {
+        "key": "54145750-916f-484f-aa2e-fff7b5694585",
+        "ordinal": 28,
+        "status": "COMMITTED",
+        "scope_end_ns": 956251544400,
+        "received_ns": 956253407500,
+        "decoded": true,
+        "asset_id": "937876e8-4271-49c3-8a1a-10afe8c4dc95",
+        "transfer_ms": 219.089,
+        "decode_verify_ms": 26.4209,
+        "commit_ns": 956498924100,
+        "latency_ms": 247.3797
+      },
+      {
+        "key": "2093f39d-63bc-4d01-8380-2d64889efdce",
+        "ordinal": 29,
+        "status": "COMMITTED",
+        "scope_end_ns": 956582440500,
+        "received_ns": 956584488400,
+        "decoded": true,
+        "asset_id": "3b3e4bc8-f721-483a-b55a-a5c35eab19d1",
+        "transfer_ms": 221.4102,
+        "decode_verify_ms": 27.287,
+        "commit_ns": 956833189200,
+        "latency_ms": 250.7487
+      },
+      {
+        "key": "84939951-a706-4178-a950-0f1ac9fc0a1c",
+        "ordinal": 30,
+        "status": "COMMITTED",
+        "scope_end_ns": 956918627000,
+        "received_ns": 956920472300,
+        "decoded": true,
+        "asset_id": "b79c2760-d14d-4396-8da5-ad7791062b65",
+        "transfer_ms": 167.8824,
+        "decode_verify_ms": 34.9953,
+        "commit_ns": 957123355000,
+        "latency_ms": 204.728
+      },
+      {
+        "key": "133b96b3-419f-4d0a-938e-838ed519e4dd",
+        "ordinal": 31,
+        "status": "COMMITTED",
+        "scope_end_ns": 957289195700,
+        "received_ns": 957291100400,
+        "decoded": true,
+        "asset_id": "c1efb0ac-3e95-4eca-9f22-1df6eae63500",
+        "transfer_ms": 227.2757,
+        "decode_verify_ms": 27.3697,
+        "commit_ns": 957545752800,
+        "latency_ms": 256.5571
+      },
+      {
+        "key": "302d9684-d983-49f9-b522-a4ab6104a81d",
+        "ordinal": 32,
+        "status": "COMMITTED",
+        "scope_end_ns": 957642148400,
+        "received_ns": 957644022800,
+        "decoded": true,
+        "asset_id": "b5bb4f25-efe5-4f0e-b09f-da0e6f7d24b1",
+        "transfer_ms": 271.0865,
+        "decode_verify_ms": 46.1547,
+        "commit_ns": 957961269500,
+        "latency_ms": 319.1211
+      },
+      {
+        "key": "7685057e-d6ad-4973-be68-26a02a22f2a6",
+        "ordinal": 33,
+        "status": "COMMITTED",
+        "scope_end_ns": 957989484800,
+        "received_ns": 957991552900,
+        "decoded": true,
+        "asset_id": "b2757673-07c2-4546-9e5a-175b2c7656cb",
+        "transfer_ms": 268.478,
+        "decode_verify_ms": 31.4904,
+        "commit_ns": 958291528100,
+        "latency_ms": 302.0433
+      },
+      {
+        "key": "0ba31991-3214-4066-8f5a-aacf68fac3f2",
+        "ordinal": 34,
+        "status": "COMMITTED",
+        "scope_end_ns": 958435000100,
+        "received_ns": 958437077200,
+        "decoded": true,
+        "asset_id": "f199079d-5854-4428-bee3-69ac9a3f4564",
+        "transfer_ms": 241.2621,
+        "decode_verify_ms": 33.6677,
+        "commit_ns": 958712011100,
+        "latency_ms": 277.011
+      },
+      {
+        "key": "163b5cf6-b16b-4180-bfe9-1e86b9debe29",
+        "ordinal": 35,
+        "status": "COMMITTED",
+        "scope_end_ns": 958791274900,
+        "received_ns": 958793164700,
+        "decoded": true,
+        "asset_id": "89df851e-0797-46fc-b94a-97a5620ec9ae",
+        "transfer_ms": 209.3521,
+        "decode_verify_ms": 40.4624,
+        "commit_ns": 959042983200,
+        "latency_ms": 251.7083
+      },
+      {
+        "key": "3fa3bb36-5480-4c08-8289-25b82b740081",
+        "ordinal": 36,
+        "status": "COMMITTED",
+        "scope_end_ns": 959121882600,
+        "received_ns": 959123945500,
+        "decoded": true,
+        "asset_id": "b8e548a1-3488-49ed-82a4-1e449c61fde3",
+        "transfer_ms": 217.7162,
+        "decode_verify_ms": 36.4277,
+        "commit_ns": 959378095700,
+        "latency_ms": 256.2131
+      },
+      {
+        "key": "2460125e-e3d4-47fb-9dda-8f448b38a728",
+        "ordinal": 37,
+        "status": "COMMITTED",
+        "scope_end_ns": 959459467900,
+        "received_ns": 959461513800,
+        "decoded": true,
+        "asset_id": "7d55fde8-8189-4577-87a6-94f94f00a34c",
+        "transfer_ms": 237.5158,
+        "decode_verify_ms": 25.7954,
+        "commit_ns": 959724831400,
+        "latency_ms": 265.3635
+      },
+      {
+        "key": "37c9ffb4-901d-4ae9-a8be-9929f4b6b297",
+        "ordinal": 38,
+        "status": "COMMITTED",
+        "scope_end_ns": 959786024400,
+        "received_ns": 959787994900,
+        "decoded": true,
+        "asset_id": "00abc7af-6c3e-43b4-a296-0480268efac6",
+        "transfer_ms": 269.7794,
+        "decode_verify_ms": 26.4706,
+        "commit_ns": 960084251700,
+        "latency_ms": 298.2273
+      },
+      {
+        "key": "f0e61fd9-7415-460d-9f7a-ebd75e742b12",
+        "ordinal": 39,
+        "status": "COMMITTED",
+        "scope_end_ns": 960124630600,
+        "received_ns": 960127146000,
+        "decoded": true,
+        "asset_id": "007c2724-d4e3-46f6-ab5f-e25816b5a401",
+        "transfer_ms": 244.0521,
+        "decode_verify_ms": 36.6156,
+        "commit_ns": 960407817300,
+        "latency_ms": 283.1867
+      },
+      {
+        "key": "4f215024-9fc1-4e41-b1ad-b9c891e4dff2",
+        "ordinal": 40,
+        "status": "COMMITTED",
+        "scope_end_ns": 960460057200,
+        "received_ns": 960462043700,
+        "decoded": true,
+        "asset_id": "5bcd4590-f200-4baa-829f-786cc86c3a3c",
+        "transfer_ms": 235.9842,
+        "decode_verify_ms": 49.9454,
+        "commit_ns": 960747978200,
+        "latency_ms": 287.921
+      },
+      {
+        "key": "607d8cff-929b-4bba-9214-836ffdc562d4",
+        "ordinal": 41,
+        "status": "COMMITTED",
+        "scope_end_ns": 960816894000,
+        "received_ns": 960818976800,
+        "decoded": true,
+        "asset_id": "3e6abf68-aaa2-4608-a042-3f650d1b3775",
+        "transfer_ms": 241.2633,
+        "decode_verify_ms": 26.7398,
+        "commit_ns": 961086983700,
+        "latency_ms": 270.0897
+      },
+      {
+        "key": "dfbb954e-e26f-494d-a2b0-4ee013e001a5",
+        "ordinal": 42,
+        "status": "COMMITTED",
+        "scope_end_ns": 961148606500,
+        "received_ns": 961150599500,
+        "decoded": true,
+        "asset_id": "b196dffd-cbb3-4de8-8a1f-e887c6f96815",
+        "transfer_ms": 172.0035,
+        "decode_verify_ms": 22.289,
+        "commit_ns": 961344896400,
+        "latency_ms": 196.2899
+      },
+      {
+        "key": "1a619976-928f-443a-9800-5bc689764e31",
+        "ordinal": 43,
+        "status": "COMMITTED",
+        "scope_end_ns": 961552755100,
+        "received_ns": 961554767000,
+        "decoded": true,
+        "asset_id": "6e1a1f57-913e-4f0f-bb79-c2752e40e67b",
+        "transfer_ms": 171.7596,
+        "decode_verify_ms": 21.3648,
+        "commit_ns": 961747894100,
+        "latency_ms": 195.139
+      },
+      {
+        "key": "b34a081c-f8eb-4ebe-a5c8-e6bdce9f125e",
+        "ordinal": 44,
+        "status": "COMMITTED",
+        "scope_end_ns": 961882773600,
+        "received_ns": 961884547100,
+        "decoded": true,
+        "asset_id": "932ce7bc-acc2-4cd8-9df7-c1e05985e94a",
+        "transfer_ms": 171.891,
+        "decode_verify_ms": 27.0077,
+        "commit_ns": 962083451000,
+        "latency_ms": 200.6774
+      },
+      {
+        "key": "93dfdafa-c0e7-4ae4-957c-f87961d424fc",
+        "ordinal": 45,
+        "status": "COMMITTED",
+        "scope_end_ns": 962200248500,
+        "received_ns": 962202195600,
+        "decoded": true,
+        "asset_id": "44a59bbe-73b0-4970-b5f6-afdafa90d595",
+        "transfer_ms": 158.3064,
+        "decode_verify_ms": 23.6741,
+        "commit_ns": 962384181200,
+        "latency_ms": 183.9327
+      }
+    ],
+    [
+      {
+        "key": "5988f965-e627-44a9-8719-966cd6c762e0",
+        "ordinal": 6,
+        "status": "COMMITTED",
+        "scope_end_ns": 946876548900,
+        "received_ns": 946878276300,
+        "decoded": true,
+        "asset_id": "92a72374-1b7b-4f7a-9098-bcf25b0dbfc2",
+        "transfer_ms": 268.4928,
+        "decode_verify_ms": 28.7565,
+        "commit_ns": 947175533700,
+        "latency_ms": 298.9848
+      },
+      {
+        "key": "cc2dd017-a4b8-4dd3-b816-c560ca04ce40",
+        "ordinal": 7,
+        "status": "COMMITTED",
+        "scope_end_ns": 947219991500,
+        "received_ns": 947222083100,
+        "decoded": true,
+        "asset_id": "c1734ffa-93ef-41d8-91bf-1fa095936941",
+        "transfer_ms": 235.3685,
+        "decode_verify_ms": 42.4643,
+        "commit_ns": 947499923000,
+        "latency_ms": 279.9315
+      },
+      {
+        "key": "d1b4654f-e269-43d1-b96f-ee2fcdbe8cf4",
+        "ordinal": 8,
+        "status": "COMMITTED",
+        "scope_end_ns": 947551469600,
+        "received_ns": 947554291000,
+        "decoded": true,
+        "asset_id": "70c5d3e4-36ca-4eee-b113-64875fda7ebe",
+        "transfer_ms": 234.1059,
+        "decode_verify_ms": 31.1052,
+        "commit_ns": 947819505800,
+        "latency_ms": 268.0362
+      },
+      {
+        "key": "2b5157c2-b64d-4af1-883d-62a6be0b8503",
+        "ordinal": 9,
+        "status": "COMMITTED",
+        "scope_end_ns": 947863124300,
+        "received_ns": 947865381000,
+        "decoded": true,
+        "asset_id": "009c7f9c-0566-4ea1-8707-176854803221",
+        "transfer_ms": 199.8805,
+        "decode_verify_ms": 61.0009,
+        "commit_ns": 948126268300,
+        "latency_ms": 263.144
+      },
+      {
+        "key": "25f5102a-757d-4f38-8610-44f555a5cf7e",
+        "ordinal": 10,
+        "status": "COMMITTED",
+        "scope_end_ns": 948201199900,
+        "received_ns": 948203852700,
+        "decoded": true,
+        "asset_id": "ef267a0a-3726-4d0d-84f8-47d1dc2d5e4b",
+        "transfer_ms": 208.2499,
+        "decode_verify_ms": 44.7682,
+        "commit_ns": 948456876300,
+        "latency_ms": 255.6764
+      },
+      {
+        "key": "140aca38-e9f3-46b4-979f-995006fd7066",
+        "ordinal": 11,
+        "status": "COMMITTED",
+        "scope_end_ns": 948521290800,
+        "received_ns": 948523007300,
+        "decoded": true,
+        "asset_id": "b7939c99-5459-44f8-822e-674925057201",
+        "transfer_ms": 233.0603,
+        "decode_verify_ms": 28.6329,
+        "commit_ns": 948784707300,
+        "latency_ms": 263.4165
+      },
+      {
+        "key": "93f1e7a6-fd73-497c-8322-ad27793977d3",
+        "ordinal": 12,
+        "status": "COMMITTED",
+        "scope_end_ns": 948861666700,
+        "received_ns": 948863442400,
+        "decoded": true,
+        "asset_id": "ca03ff3f-f1d3-403c-b1d4-1933b5e964e5",
+        "transfer_ms": 187.8266,
+        "decode_verify_ms": 36.0261,
+        "commit_ns": 949087300200,
+        "latency_ms": 225.6335
+      },
+      {
+        "key": "118b0a52-09bd-4331-9bb1-cfd0e431e8be",
+        "ordinal": 13,
+        "status": "COMMITTED",
+        "scope_end_ns": 949182731300,
+        "received_ns": 949185967800,
+        "decoded": true,
+        "asset_id": "aaa1851b-0532-4853-a1a6-dc4ce8def85f",
+        "transfer_ms": 204.6126,
+        "decode_verify_ms": 35.4939,
+        "commit_ns": 949426079800,
+        "latency_ms": 243.3485
+      },
+      {
+        "key": "68616e6a-85a5-473c-9a97-465e3bf715e0",
+        "ordinal": 14,
+        "status": "COMMITTED",
+        "scope_end_ns": 949502253500,
+        "received_ns": 949504170500,
+        "decoded": true,
+        "asset_id": "73996d51-4fa5-408b-9496-55d91cd572d9",
+        "transfer_ms": 229.4938,
+        "decode_verify_ms": 39.3625,
+        "commit_ns": 949773032600,
+        "latency_ms": 270.7791
+      },
+      {
+        "key": "8d3c9303-e4d8-44f2-add8-bf8da48aac8f",
+        "ordinal": 15,
+        "status": "COMMITTED",
+        "scope_end_ns": 949854880800,
+        "received_ns": 949856665100,
+        "decoded": true,
+        "asset_id": "fa66c35f-6381-4515-aa90-07ce195e9322",
+        "transfer_ms": 250.1979,
+        "decode_verify_ms": 27.152,
+        "commit_ns": 950134021000,
+        "latency_ms": 279.1402
+      },
+      {
+        "key": "bc3ad5e6-6e5a-4388-a721-d8ae3cb774e8",
+        "ordinal": 16,
+        "status": "COMMITTED",
+        "scope_end_ns": 950236207800,
+        "received_ns": 950238596900,
+        "decoded": true,
+        "asset_id": "cee1c36a-23e2-46a4-971f-e7099324f5d8",
+        "transfer_ms": 220.6508,
+        "decode_verify_ms": 42.1251,
+        "commit_ns": 950501376600,
+        "latency_ms": 265.1688
+      },
+      {
+        "key": "e2b47ca1-408a-4a3c-8de5-cae454cf1c12",
+        "ordinal": 17,
+        "status": "COMMITTED",
+        "scope_end_ns": 950572051200,
+        "received_ns": 950574213800,
+        "decoded": true,
+        "asset_id": "032ddbe5-236c-4225-8203-ec8f8ff29480",
+        "transfer_ms": 204.0663,
+        "decode_verify_ms": 35.1112,
+        "commit_ns": 950813395000,
+        "latency_ms": 241.3438
+      },
+      {
+        "key": "5749fc29-1cc7-4d61-8052-ec5e3b78d7bf",
+        "ordinal": 18,
+        "status": "COMMITTED",
+        "scope_end_ns": 950910718300,
+        "received_ns": 950912799100,
+        "decoded": true,
+        "asset_id": "5b603606-0a79-47a5-aef8-a5bfbeef8ee3",
+        "transfer_ms": 279.0713,
+        "decode_verify_ms": 28.3989,
+        "commit_ns": 951220272500,
+        "latency_ms": 309.5542
+      },
+      {
+        "key": "c646de40-3b11-4ad6-80c5-cd69ec889d03",
+        "ordinal": 19,
+        "status": "COMMITTED",
+        "scope_end_ns": 951220543100,
+        "received_ns": 951222296400,
+        "decoded": true,
+        "asset_id": "d31e73ff-a53e-4e14-a8a9-d8db696f27c3",
+        "transfer_ms": 238.3853,
+        "decode_verify_ms": 40.3461,
+        "commit_ns": 951501032200,
+        "latency_ms": 280.4891
+      },
+      {
+        "key": "710600a5-1b09-4680-ac22-acf826f6234c",
+        "ordinal": 20,
+        "status": "INCOMPLETE",
+        "scope_end_ns": 952181950700,
+        "received_ns": 952237596600,
+        "decoded": false,
+        "commit_ns": 952237600400,
+        "latency_ms": 55.6497
+      },
+      {
+        "key": "65241c22-0564-4d23-9b76-4cceb811cee0",
+        "ordinal": 21,
+        "status": "COMMITTED",
+        "scope_end_ns": 952997494200,
+        "received_ns": 953090162900,
+        "decoded": true,
+        "asset_id": "8dd483d2-ff30-4930-affa-344705afcbdd",
+        "transfer_ms": 267.9412,
+        "decode_verify_ms": 56.5895,
+        "commit_ns": 953414698300,
+        "latency_ms": 417.2041
+      },
+      {
+        "key": "0476558a-d106-42ba-ae78-066d0bc6f67a",
+        "ordinal": 22,
+        "status": "COMMITTED",
+        "scope_end_ns": 953806759500,
+        "received_ns": 953809751300,
+        "decoded": true,
+        "asset_id": "96c9ed46-2bae-473c-91c3-d28c24aee131",
+        "transfer_ms": 256.5633,
+        "decode_verify_ms": 85.6629,
+        "commit_ns": 954151984700,
+        "latency_ms": 345.2252
+      },
+      {
+        "key": "12d75f9c-4242-43e8-add3-5a3c065805d2",
+        "ordinal": 23,
+        "status": "COMMITTED",
+        "scope_end_ns": 954304616100,
+        "received_ns": 954307426000,
+        "decoded": true,
+        "asset_id": "3a37ecda-8282-4bcb-a8b2-04db94aa61f7",
+        "transfer_ms": 204.7161,
+        "decode_verify_ms": 61.9722,
+        "commit_ns": 954574123200,
+        "latency_ms": 269.5071
+      },
+      {
+        "key": "a6fb12de-c77f-4d8b-bcef-613a891a177e",
+        "ordinal": 24,
+        "status": "COMMITTED",
+        "scope_end_ns": 954740919900,
+        "received_ns": 954748717100,
+        "decoded": true,
+        "asset_id": "5e743ca2-8dd9-4483-b817-2f31fc2945c4",
+        "transfer_ms": 250.7104,
+        "decode_verify_ms": 26.546,
+        "commit_ns": 955025978600,
+        "latency_ms": 285.0587
+      },
+      {
+        "key": "750f6e12-d3df-4f48-881e-01bff7df39b8",
+        "ordinal": 25,
+        "status": "COMMITTED",
+        "scope_end_ns": 955145106000,
+        "received_ns": 955147426100,
+        "decoded": true,
+        "asset_id": "61700ca6-3b3f-4e04-b44b-97f856e71f1f",
+        "transfer_ms": 203.8409,
+        "decode_verify_ms": 31.932,
+        "commit_ns": 955383201900,
+        "latency_ms": 238.0959
+      },
+      {
+        "key": "dd8d036a-468f-4073-b473-ef8a9fe943af",
+        "ordinal": 26,
+        "status": "COMMITTED",
+        "scope_end_ns": 955552359800,
+        "received_ns": 955554474700,
+        "decoded": true,
+        "asset_id": "da0d8d7c-f3e2-4857-9a83-d38edf326f11",
+        "transfer_ms": 204.9444,
+        "decode_verify_ms": 29.6161,
+        "commit_ns": 955789038500,
+        "latency_ms": 236.6787
+      },
+      {
+        "key": "2726dcd6-a06d-49bf-b798-efcef71c4e09",
+        "ordinal": 27,
+        "status": "COMMITTED",
+        "scope_end_ns": 955925230100,
+        "received_ns": 955927326100,
+        "decoded": true,
+        "asset_id": "f25a4d4d-7575-41c9-afcc-bad6327d75da",
+        "transfer_ms": 252.3652,
+        "decode_verify_ms": 42.3426,
+        "commit_ns": 956222039600,
+        "latency_ms": 296.8095
+      },
+      {
+        "key": "54145750-916f-484f-aa2e-fff7b5694585",
+        "ordinal": 28,
+        "status": "COMMITTED",
+        "scope_end_ns": 956251544400,
+        "received_ns": 956253572100,
+        "decoded": true,
+        "asset_id": "937876e8-4271-49c3-8a1a-10afe8c4dc95",
+        "transfer_ms": 211.4828,
+        "decode_verify_ms": 52.892,
+        "commit_ns": 956517952700,
+        "latency_ms": 266.4083
+      },
+      {
+        "key": "2093f39d-63bc-4d01-8380-2d64889efdce",
+        "ordinal": 29,
+        "status": "COMMITTED",
+        "scope_end_ns": 956582440500,
+        "received_ns": 956584254700,
+        "decoded": true,
+        "asset_id": "3b3e4bc8-f721-483a-b55a-a5c35eab19d1",
+        "transfer_ms": 220.879,
+        "decode_verify_ms": 26.195,
+        "commit_ns": 956831333600,
+        "latency_ms": 248.8931
+      },
+      {
+        "key": "84939951-a706-4178-a950-0f1ac9fc0a1c",
+        "ordinal": 30,
+        "status": "COMMITTED",
+        "scope_end_ns": 956918627000,
+        "received_ns": 956920714200,
+        "decoded": true,
+        "asset_id": "b79c2760-d14d-4396-8da5-ad7791062b65",
+        "transfer_ms": 170.216,
+        "decode_verify_ms": 26.4428,
+        "commit_ns": 957117378400,
+        "latency_ms": 198.7514
+      },
+      {
+        "key": "133b96b3-419f-4d0a-938e-838ed519e4dd",
+        "ordinal": 31,
+        "status": "COMMITTED",
+        "scope_end_ns": 957289195700,
+        "received_ns": 957291767400,
+        "decoded": true,
+        "asset_id": "c1efb0ac-3e95-4eca-9f22-1df6eae63500",
+        "transfer_ms": 226.0772,
+        "decode_verify_ms": 31.114,
+        "commit_ns": 957548963000,
+        "latency_ms": 259.7673
+      },
+      {
+        "key": "302d9684-d983-49f9-b522-a4ab6104a81d",
+        "ordinal": 32,
+        "status": "COMMITTED",
+        "scope_end_ns": 957642148400,
+        "received_ns": 957644251800,
+        "decoded": true,
+        "asset_id": "b5bb4f25-efe5-4f0e-b09f-da0e6f7d24b1",
+        "transfer_ms": 269.6832,
+        "decode_verify_ms": 28.4064,
+        "commit_ns": 957942347200,
+        "latency_ms": 300.1988
+      },
+      {
+        "key": "7685057e-d6ad-4973-be68-26a02a22f2a6",
+        "ordinal": 33,
+        "status": "COMMITTED",
+        "scope_end_ns": 957989484800,
+        "received_ns": 957991688400,
+        "decoded": true,
+        "asset_id": "b2757673-07c2-4546-9e5a-175b2c7656cb",
+        "transfer_ms": 266.3181,
+        "decode_verify_ms": 38.345,
+        "commit_ns": 958296356400,
+        "latency_ms": 306.8716
+      },
+      {
+        "key": "0ba31991-3214-4066-8f5a-aacf68fac3f2",
+        "ordinal": 34,
+        "status": "COMMITTED",
+        "scope_end_ns": 958435000100,
+        "received_ns": 958436889400,
+        "decoded": true,
+        "asset_id": "f199079d-5854-4428-bee3-69ac9a3f4564",
+        "transfer_ms": 239.7312,
+        "decode_verify_ms": 31.4576,
+        "commit_ns": 958708083400,
+        "latency_ms": 273.0833
+      },
+      {
+        "key": "163b5cf6-b16b-4180-bfe9-1e86b9debe29",
+        "ordinal": 35,
+        "status": "COMMITTED",
+        "scope_end_ns": 958791274900,
+        "received_ns": 958793424100,
+        "decoded": true,
+        "asset_id": "89df851e-0797-46fc-b94a-97a5620ec9ae",
+        "transfer_ms": 207.186,
+        "decode_verify_ms": 27.2041,
+        "commit_ns": 959027819800,
+        "latency_ms": 236.5449
+      },
+      {
+        "key": "3fa3bb36-5480-4c08-8289-25b82b740081",
+        "ordinal": 36,
+        "status": "COMMITTED",
+        "scope_end_ns": 959121882600,
+        "received_ns": 959123710600,
+        "decoded": true,
+        "asset_id": "b8e548a1-3488-49ed-82a4-1e449c61fde3",
+        "transfer_ms": 208.1197,
+        "decode_verify_ms": 28.2812,
+        "commit_ns": 959360117300,
+        "latency_ms": 238.2347
+      },
+      {
+        "key": "2460125e-e3d4-47fb-9dda-8f448b38a728",
+        "ordinal": 37,
+        "status": "COMMITTED",
+        "scope_end_ns": 959459467900,
+        "received_ns": 959461283900,
+        "decoded": true,
+        "asset_id": "7d55fde8-8189-4577-87a6-94f94f00a34c",
+        "transfer_ms": 205.8166,
+        "decode_verify_ms": 30.6563,
+        "commit_ns": 959697760900,
+        "latency_ms": 238.293
+      },
+      {
+        "key": "37c9ffb4-901d-4ae9-a8be-9929f4b6b297",
+        "ordinal": 38,
+        "status": "COMMITTED",
+        "scope_end_ns": 959786024400,
+        "received_ns": 959787765200,
+        "decoded": true,
+        "asset_id": "00abc7af-6c3e-43b4-a296-0480268efac6",
+        "transfer_ms": 270.924,
+        "decode_verify_ms": 30.5193,
+        "commit_ns": 960089213100,
+        "latency_ms": 303.1887
+      },
+      {
+        "key": "f0e61fd9-7415-460d-9f7a-ebd75e742b12",
+        "ordinal": 39,
+        "status": "COMMITTED",
+        "scope_end_ns": 960124630600,
+        "received_ns": 960126648800,
+        "decoded": true,
+        "asset_id": "007c2724-d4e3-46f6-ab5f-e25816b5a401",
+        "transfer_ms": 243.1804,
+        "decode_verify_ms": 31.6473,
+        "commit_ns": 960401483000,
+        "latency_ms": 276.8524
+      },
+      {
+        "key": "4f215024-9fc1-4e41-b1ad-b9c891e4dff2",
+        "ordinal": 40,
+        "status": "COMMITTED",
+        "scope_end_ns": 960460057200,
+        "received_ns": 960461810700,
+        "decoded": true,
+        "asset_id": "5bcd4590-f200-4baa-829f-786cc86c3a3c",
+        "transfer_ms": 236.6651,
+        "decode_verify_ms": 43.2379,
+        "commit_ns": 960741719400,
+        "latency_ms": 281.6622
+      },
+      {
+        "key": "607d8cff-929b-4bba-9214-836ffdc562d4",
+        "ordinal": 41,
+        "status": "COMMITTED",
+        "scope_end_ns": 960816894000,
+        "received_ns": 960818824200,
+        "decoded": true,
+        "asset_id": "3e6abf68-aaa2-4608-a042-3f650d1b3775",
+        "transfer_ms": 240.8302,
+        "decode_verify_ms": 25.5901,
+        "commit_ns": 961085249700,
+        "latency_ms": 268.3557
+      },
+      {
+        "key": "dfbb954e-e26f-494d-a2b0-4ee013e001a5",
+        "ordinal": 42,
+        "status": "COMMITTED",
+        "scope_end_ns": 961148606500,
+        "received_ns": 961150881400,
+        "decoded": true,
+        "asset_id": "b196dffd-cbb3-4de8-8a1f-e887c6f96815",
+        "transfer_ms": 176.4203,
+        "decode_verify_ms": 22.1189,
+        "commit_ns": 961349423600,
+        "latency_ms": 200.8171
+      },
+      {
+        "key": "1a619976-928f-443a-9800-5bc689764e31",
+        "ordinal": 43,
+        "status": "COMMITTED",
+        "scope_end_ns": 961552755100,
+        "received_ns": 961554567700,
+        "decoded": true,
+        "asset_id": "6e1a1f57-913e-4f0f-bb79-c2752e40e67b",
+        "transfer_ms": 170.7034,
+        "decode_verify_ms": 21.3723,
+        "commit_ns": 961746646400,
+        "latency_ms": 193.8913
+      },
+      {
+        "key": "b34a081c-f8eb-4ebe-a5c8-e6bdce9f125e",
+        "ordinal": 44,
+        "status": "COMMITTED",
+        "scope_end_ns": 961882773600,
+        "received_ns": 961884712400,
+        "decoded": true,
+        "asset_id": "932ce7bc-acc2-4cd8-9df7-c1e05985e94a",
+        "transfer_ms": 175.4259,
+        "decode_verify_ms": 26.6105,
+        "commit_ns": 962086752900,
+        "latency_ms": 203.9793
+      },
+      {
+        "key": "93dfdafa-c0e7-4ae4-957c-f87961d424fc",
+        "ordinal": 45,
+        "status": "COMMITTED",
+        "scope_end_ns": 962200248500,
+        "received_ns": 962202018300,
+        "decoded": true,
+        "asset_id": "44a59bbe-73b0-4970-b5f6-afdafa90d595",
+        "transfer_ms": 157.9673,
+        "decode_verify_ms": 26.3958,
+        "commit_ns": 962386384400,
+        "latency_ms": 186.1359
+      }
+    ]
+  ],
+  "samples": [
+    {
+      "index": 0,
+      "pipeline": {
+        "generated": 1,
+        "sealed": 1,
+        "final": 0,
+        "rejected": 0,
+        "open": 1,
+        "history": 0,
+        "runs": 0,
+        "metadata": 1,
+        "diagnostics": 12,
+        "assets": 0,
+        "evictions": 0,
+        "resources": {
+          "used": {
+            "memory": 54691840,
+            "staging": 16777216,
+            "cache": 0,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 54691840,
+            "staging": 16777216,
+            "cache": 0,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 54691840
+          },
+          "owners": 4
+        }
+      },
+      "host": {
+        "rss_bytes": 100077568,
+        "peak_rss_bytes": 118767616,
+        "handles": 513,
+        "cpu_seconds": 1.09375
+      },
+      "threads": 17,
+      "exporters": [
+        {
+          "rss_bytes": 98934784,
+          "peak_rss_bytes": 98934784,
+          "handles": 351,
+          "cpu_seconds": 0.71875
+        },
+        {
+          "rss_bytes": 77414400,
+          "peak_rss_bytes": 77414400,
+          "handles": 351,
+          "cpu_seconds": 0.5625
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "pipeline": {
+        "generated": 9,
+        "sealed": 9,
+        "final": 9,
+        "rejected": 0,
+        "open": 0,
+        "history": 9,
+        "runs": 0,
+        "metadata": 9,
+        "diagnostics": 64,
+        "assets": 9,
+        "evictions": 0,
+        "resources": {
+          "used": {
+            "memory": 22122496,
+            "staging": 0,
+            "cache": 56096559,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 59836416,
+            "staging": 16777216,
+            "cache": 56096559,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 22122496
+          },
+          "owners": 28
+        }
+      },
+      "host": {
+        "rss_bytes": 98500608,
+        "peak_rss_bytes": 147615744,
+        "handles": 528,
+        "cpu_seconds": 5.03125
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 77942784,
+          "peak_rss_bytes": 109076480,
+          "handles": 351,
+          "cpu_seconds": 1.78125
+        },
+        {
+          "rss_bytes": 77414400,
+          "peak_rss_bytes": 77414400,
+          "handles": 351,
+          "cpu_seconds": 0.5625
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "pipeline": {
+        "generated": 17,
+        "sealed": 17,
+        "final": 17,
+        "rejected": 0,
+        "open": 0,
+        "history": 17,
+        "runs": 0,
+        "metadata": 17,
+        "diagnostics": 64,
+        "assets": 17,
+        "evictions": 0,
+        "resources": {
+          "used": {
+            "memory": 26873856,
+            "staging": 0,
+            "cache": 105960167,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 64587776,
+            "staging": 16777216,
+            "cache": 105960167,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 26873856
+          },
+          "owners": 52
+        }
+      },
+      "host": {
+        "rss_bytes": 97468416,
+        "peak_rss_bytes": 149401600,
+        "handles": 529,
+        "cpu_seconds": 9.09375
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 77946880,
+          "peak_rss_bytes": 109080576,
+          "handles": 351,
+          "cpu_seconds": 2.8125
+        },
+        {
+          "rss_bytes": 77414400,
+          "peak_rss_bytes": 77414400,
+          "handles": 351,
+          "cpu_seconds": 0.5625
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "pipeline": {
+        "generated": 25,
+        "sealed": 25,
+        "final": 25,
+        "rejected": 0,
+        "open": 0,
+        "history": 25,
+        "runs": 0,
+        "metadata": 25,
+        "diagnostics": 64,
+        "assets": 24,
+        "evictions": 0,
+        "resources": {
+          "used": {
+            "memory": 31621120,
+            "staging": 0,
+            "cache": 149590824,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 69335040,
+            "staging": 16777216,
+            "cache": 149590824,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 31621120
+          },
+          "owners": 74
+        }
+      },
+      "host": {
+        "rss_bytes": 99667968,
+        "peak_rss_bytes": 149401600,
+        "handles": 529,
+        "cpu_seconds": 12.890625
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 78057472,
+          "peak_rss_bytes": 109191168,
+          "handles": 351,
+          "cpu_seconds": 1.109375
+        },
+        {
+          "rss_bytes": 78041088,
+          "peak_rss_bytes": 109174784,
+          "handles": 351,
+          "cpu_seconds": 0.984375
+        }
+      ]
+    },
+    {
+      "index": 32,
+      "pipeline": {
+        "generated": 33,
+        "sealed": 33,
+        "final": 33,
+        "rejected": 0,
+        "open": 0,
+        "history": 32,
+        "runs": 0,
+        "metadata": 32,
+        "diagnostics": 64,
+        "assets": 32,
+        "evictions": 0,
+        "resources": {
+          "used": {
+            "memory": 35782656,
+            "staging": 0,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 74086400,
+            "staging": 16777216,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 35782656
+          },
+          "owners": 97
+        }
+      },
+      "host": {
+        "rss_bytes": 97710080,
+        "peak_rss_bytes": 153866240,
+        "handles": 530,
+        "cpu_seconds": 16.84375
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 78057472,
+          "peak_rss_bytes": 109191168,
+          "handles": 351,
+          "cpu_seconds": 2.109375
+        },
+        {
+          "rss_bytes": 78041088,
+          "peak_rss_bytes": 109174784,
+          "handles": 351,
+          "cpu_seconds": 0.984375
+        }
+      ]
+    },
+    {
+      "index": 40,
+      "pipeline": {
+        "generated": 41,
+        "sealed": 41,
+        "final": 41,
+        "rejected": 0,
+        "open": 0,
+        "history": 32,
+        "runs": 0,
+        "metadata": 32,
+        "diagnostics": 64,
+        "assets": 32,
+        "evictions": 8,
+        "resources": {
+          "used": {
+            "memory": 35782656,
+            "staging": 0,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 74090496,
+            "staging": 16777216,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 35782656
+          },
+          "owners": 97
+        }
+      },
+      "host": {
+        "rss_bytes": 97558528,
+        "peak_rss_bytes": 155893760,
+        "handles": 529,
+        "cpu_seconds": 20.921875
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 78061568,
+          "peak_rss_bytes": 109195264,
+          "handles": 351,
+          "cpu_seconds": 3.171875
+        },
+        {
+          "rss_bytes": 78041088,
+          "peak_rss_bytes": 109174784,
+          "handles": 351,
+          "cpu_seconds": 0.984375
+        }
+      ]
+    },
+    {
+      "index": 44,
+      "pipeline": {
+        "generated": 45,
+        "sealed": 45,
+        "final": 45,
+        "rejected": 0,
+        "open": 0,
+        "history": 32,
+        "runs": 0,
+        "metadata": 32,
+        "diagnostics": 64,
+        "assets": 32,
+        "evictions": 12,
+        "resources": {
+          "used": {
+            "memory": 35782656,
+            "staging": 0,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "peak": {
+            "memory": 74090496,
+            "staging": 16777216,
+            "cache": 199454432,
+            "lease": 0
+          },
+          "jobs": {
+            "measurement": 35782656
+          },
+          "owners": 97
+        }
+      },
+      "host": {
+        "rss_bytes": 99311616,
+        "peak_rss_bytes": 155893760,
+        "handles": 529,
+        "cpu_seconds": 22.71875
+      },
+      "threads": 19,
+      "exporters": [
+        {
+          "rss_bytes": 78065664,
+          "peak_rss_bytes": 109199360,
+          "handles": 351,
+          "cpu_seconds": 3.59375
+        },
+        {
+          "rss_bytes": 78041088,
+          "peak_rss_bytes": 109174784,
+          "handles": 351,
+          "cpu_seconds": 0.984375
+        }
+      ]
+    }
+  ],
+  "stats": {
+    "generated": 45,
+    "sealed": 45,
+    "final": 45,
+    "rejected": 0,
+    "open": 0,
+    "history": 32,
+    "runs": 0,
+    "metadata": 32,
+    "diagnostics": 64,
+    "assets": 32,
+    "evictions": 12,
+    "resources": {
+      "used": {
+        "memory": 35782656,
+        "staging": 0,
+        "cache": 199454432,
+        "lease": 0
+      },
+      "peak": {
+        "memory": 74090496,
+        "staging": 16777216,
+        "cache": 199454432,
+        "lease": 0
+      },
+      "jobs": {
+        "measurement": 35782656
+      },
+      "owners": 97
+    }
+  },
+  "before": {
+    "rss_bytes": 90918912,
+    "peak_rss_bytes": 90918912,
+    "handles": 462,
+    "cpu_seconds": 0.90625
+  },
+  "after": {
+    "rss_bytes": 98533376,
+    "peak_rss_bytes": 155893760,
+    "handles": 533,
+    "cpu_seconds": 22.921875
+  },
+  "execution_p95_ms": 809.329885,
+  "client_errors": [
+    null,
+    null
+  ],
+  "max_schedule_lateness_ms": 8118.0416,
+  "incomplete": 1,
+  "model_p95_ms": 323.0367149999998,
+  "achieved_hz": 2.5443699629792866,
+  "coverage": [
+    0.975,
+    0.975
+  ],
+  "max_live_age_ms": [
+    1227.8689,
+    1232.7476
+  ],
+  "correctness_status": "FAIL",
+  "cleanup": {
+    "used": {
+      "memory": 0,
+      "staging": 0,
+      "cache": 0,
+      "lease": 0
+    },
+    "peak": {
+      "memory": 74090496,
+      "staging": 16777216,
+      "cache": 199454432,
+      "lease": 0
+    },
+    "jobs": {},
+    "owners": 0
+  },
+  "after_close": {
+    "rss_bytes": 98340864,
+    "peak_rss_bytes": 155893760,
+    "handles": 475,
+    "cpu_seconds": 22.984375
+  }
+}

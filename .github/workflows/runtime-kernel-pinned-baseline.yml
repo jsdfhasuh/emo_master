@@ -1,0 +1,231 @@
+name: One approved Windows kernel trace of original baseline (not acceptance)
+
+on:
+  push:
+    branches: [agent/runtime-workflow-architecture-v1]
+    paths: [.github/workflows/runtime-kernel-pinned-baseline.yml]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: one-windows-kernel-baseline-19d4e683
+  cancel-in-progress: false
+
+jobs:
+  trace:
+    if: >-
+      github.run_attempt == 1 &&
+      github.event.before == '0c1ac2fddf453913a29e03b2cb84043ca7d92afe' &&
+      github.event.head_commit.message == 'diagnostic: one pinned baseline Windows trace 655eeac 19d4e683'
+    runs-on: windows-latest
+    timeout-minutes: 30
+    env:
+      QT_QPA_PLATFORM: offscreen
+      PYTEST_ADDOPTS: ''
+    steps:
+      - name: Reserve the finite runner budget
+        shell: pwsh
+        run: |
+          $deadline = [DateTimeOffset]::UtcNow.ToUnixTimeSeconds() + 29 * 60
+          "R3_JOB_DEADLINE_UNIX=$deadline" >> $env:GITHUB_ENV
+      - name: Check out the original execution source and its parent
+        uses: actions/checkout@v4
+        with:
+          ref: ecf8bcfcf193e05807556340d670f05c0f3d9e15
+          path: execution
+          persist-credentials: false
+          fetch-depth: 2
+      - name: Check out the corrected offline fixtures separately
+        uses: actions/checkout@v4
+        with:
+          ref: 0c1ac2fddf453913a29e03b2cb84043ca7d92afe
+          path: tools
+          persist-credentials: false
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - name: Install only original baseline CI project dependencies
+        working-directory: execution
+        run: python -m pip install -r requirements-dev.txt
+      - name: Verify exact source pins and baseline import origins without capture
+        id: sources
+        working-directory: execution
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "r3-kernel-$env:GITHUB_RUN_ID-1"
+          try {
+            if (Test-Path $root) { throw 'preexisting' }
+            New-Item -ItemType Directory $root | Out-Null
+            @'
+          import importlib
+          import os
+          from pathlib import Path
+          import subprocess
+          import sys
+
+          BASE = '655eeac84d0602aa670c76af67679509782bbd7f'
+          EXECUTION = 'ecf8bcfcf193e05807556340d670f05c0f3d9e15'
+          TOOLS = '0c1ac2fddf453913a29e03b2cb84043ca7d92afe'
+          workspace = Path(sys.argv[1]).resolve()
+          execution = workspace / 'execution'
+          tools = workspace / 'tools'
+          if Path.cwd().resolve() != execution or execution == tools:
+              raise RuntimeError('checkout_location')
+          if os.environ.get('PYTHONPATH') or os.environ.get('PYTEST_PLUGINS'):
+              raise RuntimeError('unexpected_import_environment')
+
+          def git(repo, *args):
+              result = subprocess.run(['git', '-C', str(repo), *args], capture_output=True, timeout=15)
+              if result.returncode or len(result.stdout) > 4 * 1024 * 1024 or len(result.stderr) > 4 * 1024 * 1024:
+                  raise RuntimeError('git_source')
+              return result.stdout.decode('utf-8').strip()
+
+          for repo, pin in ((execution, EXECUTION), (tools, TOOLS)):
+              if git(repo, 'rev-parse', 'HEAD') != pin or git(repo, 'status', '--porcelain', '--untracked-files=all'):
+                  raise RuntimeError('checkout_identity')
+          if git(execution, 'rev-parse', 'HEAD^') != BASE or git(tools, 'rev-parse', 'HEAD^') != EXECUTION:
+              raise RuntimeError('checkout_parent')
+          allowed = {
+              '.github/workflows/runtime-kernel-trace-diagnostics.yml',
+              'docs/testing/2026-10-02-windows-commit-trace-design.md',
+              'scripts/windows_commit_trace.wprp', 'scripts/windows_commit_trace_reader.cpp',
+              'scripts/r3_windows_commit_trace.py', 'scripts/diagnostics/windows_commit_trace_fixtures.py',
+          }
+          if set(git(execution, 'diff', '--name-only', BASE, 'HEAD').splitlines()) != allowed:
+              raise RuntimeError('baseline_difference')
+          for path in ('src', 'tests', 'pyproject.toml', 'requirements.txt', 'requirements-dev.txt', 'scripts/r3_sqlite_phases.py'):
+              if git(execution, 'rev-parse', BASE + ':' + path) != git(execution, 'rev-parse', 'HEAD:' + path):
+                  raise RuntimeError('baseline_tree')
+          for path in ('scripts/r3_windows_commit_trace.py', 'scripts/windows_commit_trace_reader.cpp',
+                       'scripts/windows_commit_trace.wprp', 'scripts/r3_sqlite_phases.py'):
+              if git(execution, 'rev-parse', 'HEAD:' + path) != git(tools, 'rev-parse', 'HEAD:' + path):
+                  raise RuntimeError('tool_tree')
+              if (execution / path).read_bytes() != (tools / path).read_bytes():
+                  raise RuntimeError('tool_bytes')
+
+          # Configure pytest exactly from the execution checkout, without collecting
+          # or running tests. This applies its pythonpath=src and imports its observer.
+          # No tools path is inserted or persisted into the later test process.
+          import pytest
+          config = pytest.Config.fromdictargs({}, ['-p', 'scripts.r3_windows_commit_trace'])
+          try:
+              if config.rootpath.resolve() != execution or [Path(p).resolve() for p in config.getini('pythonpath')] != [execution / 'src']:
+                  raise RuntimeError('pytest_source')
+              expected = {
+                  'scripts.r3_windows_commit_trace': 'scripts/r3_windows_commit_trace.py',
+                  'scripts.r3_sqlite_phases': 'scripts/r3_sqlite_phases.py',
+                  'emo_master.apps.runtime.context.sqlite_store': 'src/emo_master/apps/runtime/context/sqlite_store.py',
+                  'emo_master.apps.runtime.presentation.rpc': 'src/emo_master/apps/runtime/presentation/rpc.py',
+                  'emo_master.apps.runtime.presentation.store': 'src/emo_master/apps/runtime/presentation/store.py',
+              }
+              for name, path in expected.items():
+                  module = importlib.import_module(name)
+                  if Path(module.__file__).resolve() != execution / path:
+                      raise RuntimeError('import_origin')
+              for name, module in tuple(sys.modules.items()):
+                  if name == 'emo_master' or name.startswith('emo_master.') or name == 'scripts' or name.startswith('scripts.'):
+                      origin = getattr(module, '__file__', None)
+                      if origin is not None and not Path(origin).resolve().is_relative_to(execution):
+                          raise RuntimeError('import_contamination')
+                      if any(not Path(p).resolve().is_relative_to(execution) for p in getattr(module, '__path__', ())):
+                          raise RuntimeError('namespace_contamination')
+              trace = sys.modules['scripts.r3_windows_commit_trace']
+              trace.source_preflight(execution, Path(sys.argv[2]))
+          finally:
+              config._ensure_unconfigure()
+          '@ | python - $env:GITHUB_WORKSPACE $root *> (Join-Path $root 'provenance.private')
+            if ($LASTEXITCODE -ne 0) { throw 'provenance' }
+            'ready=true' >> $env:GITHUB_OUTPUT
+            Write-Output 'KERNEL_TRACE_SOURCE_PINS {"baseline":"655eeac84d0602aa670c76af67679509782bbd7f","execution":"ecf8bcfcf193e05807556340d670f05c0f3d9e15","tools":"0c1ac2fddf453913a29e03b2cb84043ca7d92afe","identity":"verified","import_isolation":"verified"}'
+          } catch {
+            Write-Output 'KERNEL_TRACE_STOP: source identity or import isolation invalid; no capture attempted'
+            exit 2
+          }
+      - name: Validate corrected fixtures and matching reader without capture
+        id: preflight
+        if: steps.sources.outputs.ready == 'true'
+        working-directory: tools
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "r3-kernel-$env:GITHUB_RUN_ID-1"
+          $stage = 'offline_fixtures'; $reason = 'offline_fixtures_failed'; $nativeExit = $null
+          try {
+            python -m pytest -q scripts/diagnostics/windows_commit_trace_fixtures.py *> (Join-Path $root 'fixtures.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0) { throw 'fixtures' }
+            $stage = 'compiler_discovery'; $reason = 'compiler_discovery_failed'; $nativeExit = $null
+            $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+            if (!(Test-Path $vswhere)) { throw 'compiler' }
+            $installation = & $vswhere -latest -products '*' -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath 2> (Join-Path $root 'discovery.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0 -or !$installation -or $installation.Count -gt 1) { throw 'compiler' }
+            $vcvars = Join-Path $installation 'VC\Auxiliary\Build\vcvars64.bat'
+            if (!(Test-Path $vcvars)) { throw 'compiler' }
+            $source = Join-Path $env:GITHUB_WORKSPACE 'tools\scripts\windows_commit_trace_reader.cpp'
+            $reader = Join-Path $root 'reader.exe'
+            $object = Join-Path $root 'reader.obj'
+            $stage = 'compiler_build'; $reason = 'compiler_build_failed'; $nativeExit = $null
+            & cmd.exe /d /c "call `"$vcvars`" >nul 2>&1 && cl.exe /nologo /std:c++17 /EHsc /W4 /O2 `"$source`" /Fo`"$object`" /Fe`"$reader`" tdh.lib advapi32.lib" *> (Join-Path $root 'compiler.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0 -or !(Test-Path $reader)) { throw 'compiler' }
+            $stage = 'native_preflight'; $reason = 'native_preflight_failed'; $nativeExit = $null
+            & $reader --preflight *> (Join-Path $root 'native-preflight.private')
+            $nativeExit = [int]$LASTEXITCODE
+            if ($nativeExit -ne 0) { throw 'schema' }
+            'ready=true' >> $env:GITHUB_OUTPUT
+            Write-Output ('KERNEL_TRACE_PREFLIGHT ' + ([ordered]@{stage='complete'; status='PASS'; reason='ok'; native_exit=0; capture_attempted=$false} | ConvertTo-Json -Compress))
+          } catch {
+            # Fixed enums and a numeric status only. Never stringify errors.
+            Write-Output ('KERNEL_TRACE_PREFLIGHT ' + ([ordered]@{stage=$stage; status='FAIL'; reason=$reason; native_exit=$nativeExit; capture_attempted=$false} | ConvertTo-Json -Compress))
+            exit 2
+          }
+      - name: Make the single approved capture around original baseline full pytest order
+        id: original_tests
+        if: steps.preflight.outputs.ready == 'true'
+        working-directory: execution
+        shell: pwsh
+        run: |
+          $root = Join-Path $env:RUNNER_TEMP "r3-kernel-$env:GITHUB_RUN_ID-1"
+          $reader = Join-Path $root 'reader.exe'
+          python scripts/r3_windows_commit_trace.py --control $root $reader
+          exit $LASTEXITCODE
+      - name: Validate diagnostics independently of original pytest outcome
+        if: ${{ always() && steps.preflight.outputs.ready == 'true' }}
+        shell: pwsh
+        env:
+          DIAGNOSTIC_VALID: ${{ steps.original_tests.outputs.diagnostic_valid }}
+        run: |
+          if ($env:DIAGNOSTIC_VALID -ne 'true') {
+            Write-Output 'KERNEL_TRACE_INVALID: no validated attribution; original pytest outcome remains separate'
+            exit 2
+          }
+      - name: Contain and remove private runner evidence
+        if: always()
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $root = Join-Path $env:RUNNER_TEMP "r3-kernel-$env:GITHUB_RUN_ID-1"
+          try {
+            if (Test-Path $root) {
+              # No capture starts here. Cleanup only an owned, attempted session.
+              $attempt = Join-Path $root 'start-attempted.private'
+              if (Test-Path $attempt) {
+                $instance = "R3CommitTrace_$($env:GITHUB_RUN_ID)_1"
+                $wpr = Join-Path $env:SystemRoot 'System32\wpr.exe'
+                $process = Start-Process -FilePath $wpr -ArgumentList @('-cancel', '-instancename', $instance) -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $root 'cleanup.private') -RedirectStandardError (Join-Path $root 'cleanup-error.private')
+                if (!$process.WaitForExit(15000)) { $process.Kill(); throw 'stop' }
+                $check = Start-Process -FilePath $wpr -ArgumentList @('-status', '-instancename', $instance) -PassThru -NoNewWindow -RedirectStandardOutput (Join-Path $root 'cleanup-status.private') -RedirectStandardError (Join-Path $root 'cleanup-status-error.private')
+                if (!$check.WaitForExit(15000)) { $check.Kill(); throw 'status' }
+                if (($check.ExitCode -band 0xffffffffL) -ne 0xc5583000L) { throw 'active' }
+              }
+              Remove-Item -LiteralPath $root -Recurse -Force
+            }
+            Write-Output 'KERNEL_TRACE_PRIVATE_FILES_REMOVED'
+          } catch {
+            Write-Output 'KERNEL_TRACE_CLEANUP_UNCONFIRMED: ephemeral runner remains the containment boundary'
+            exit 2
+          }

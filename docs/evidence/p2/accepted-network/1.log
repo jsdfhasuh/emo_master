@@ -1,0 +1,6 @@
+.....C1 control_ms [0.0, 0.0, 0.0, 15.000000013969839, 0.0, 0.0, 0.0, 0.0, 0.0, 15.999999945051968] active {'control': 1, 'events': 1, 'display': 1, 'camera': 0, 'asset': 0, 'bulk': 0}
+C2 control_ms [16.00000006146729, 0.0, 0.0, 15.999999945051968, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0] active {'control': 0, 'events': 1, 'display': 1, 'camera': 1, 'asset': 0, 'bulk': 0}
+C3 control_ms [0.0, 0.0, 0.0, 0.0, 15.000000013969839, 0.0, 0.0, 0.0, 0.0, 0.0] active {'control': 1, 'events': 1, 'display': 2, 'camera': 1, 'asset': 0, 'bulk': 0}
+C4 control_ms [0.0, 16.00000006146729, 0.0, 0.0, 0.0, 15.999999945051968, 0.0, 0.0, 0.0, 0.0] active {'control': 0, 'events': 2, 'display': 2, 'camera': 1, 'asset': 0, 'bulk': 0}
+.....
+10 passed in 18.84s

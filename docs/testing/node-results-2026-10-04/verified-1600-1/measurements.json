@@ -1,0 +1,1995 @@
+{
+  "head": "cd36f3bf2b244ba736124c1fcc63dbd21da63dbf",
+  "dirty": [
+    "M docs/development-guide.md",
+    " M docs/evidence/p4/a-first/evidence.json",
+    " M docs/runtime-node-results-contract.md",
+    " M scripts/validate_page_editor.py",
+    " M src/emo_master/apps/designer/controllers/runtime_controller.py",
+    " M src/emo_master/apps/designer/page_designer/canvas_tools.py",
+    " M src/emo_master/apps/designer/page_designer/coordinator.py",
+    " M src/emo_master/apps/designer/page_designer/grid_geometry.py",
+    " M src/emo_master/apps/designer/page_designer/palette.py",
+    " M src/emo_master/apps/designer/page_designer/preview.py",
+    " M src/emo_master/apps/designer/page_designer/property_panel.py",
+    " M src/emo_master/apps/designer/page_designer/tools.py",
+    " M src/emo_master/apps/designer/page_designer/workspace.py",
+    " M src/emo_master/apps/designer/services/inspection_images.py",
+    " M src/emo_master/apps/designer/services/runtime_client.py",
+    " M src/emo_master/apps/designer/state/run_result_history.py",
+    " M src/emo_master/apps/designer/ui/main_window.py",
+    " M src/emo_master/apps/designer/ui/node_image_decode.py",
+    " M src/emo_master/apps/designer/ui/node_image_surface.py",
+    " M src/emo_master/apps/designer/ui/node_result_coordinator.py",
+    " M src/emo_master/apps/designer/ui/node_result_panel.py",
+    " M src/emo_master/apps/designer/ui/styles/app.qss",
+    " M src/emo_master/apps/runtime/grpc_server/service.py",
+    " M src/emo_master/apps/runtime/preview/run_inspection.py",
+    " M src/emo_master/ui/presentation/design_examples.py",
+    " M src/emo_master/ui/presentation/renderer.py",
+    " M tests/designer/test_inspection_images.py",
+    " M tests/designer/test_node_result_panel.py",
+    " M tests/designer/test_runtime_client.py",
+    " M tests/designer/test_visual_layout.py",
+    " M tests/runtime/test_run_inspection_rpc.py",
+    " M tests/ui/page_designer/test_current_job_viewing.py",
+    " M tests/ui/page_designer/test_delivery_path.py",
+    " M tests/ui/page_designer/test_normal_run_path.py",
+    " M tests/ui/page_designer/test_normal_run_viewing.py",
+    " M tests/ui/page_designer/test_page_navigation.py",
+    " M tests/ui/page_designer/test_preview.py",
+    " M tests/ui/page_designer/test_retained_acceptance_multiscope.py",
+    " M tests/ui/page_designer/test_two_job_observation.py",
+    " M tests/ui/page_designer/test_usable_properties.py",
+    " M tests/ui/page_designer/test_user_path.py",
+    " M tests/ui/page_designer/test_visual_editor.py",
+    "?? docs/testing/node-results-2026-10-04/capture.py",
+    "?? docs/testing/node-results-2026-10-04/native-1280-1-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1280-1_25-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1280-1_5-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1280-2-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-1-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-100-first/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-100-second/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-1_25-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-1_5-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1600-2-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1920-1-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1920-1_25-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1920-1_5-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-1920-2-matrix/",
+    "?? docs/testing/node-results-2026-10-04/native-200-arrows-fixed/",
+    "?? docs/testing/node-results-2026-10-04/native-200-wrapped-fixed/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1280-1/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1280-1_25/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1280-1_5/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1280-2/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1600-100/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1600-1_25/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1600-1_5/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1600-2/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1920-1/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1920-1_25/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1920-1_5/",
+    "?? docs/testing/node-results-2026-10-04/native-final-1920-2/",
+    "?? docs/testing/node-results-2026-10-04/native-final-200-first/",
+    "?? docs/testing/node-results-2026-10-04/native-final-200-layout-diagnostic/",
+    "?? docs/testing/node-results-2026-10-04/native-final-200-minimum-diagnostic/",
+    "?? docs/testing/node-results-2026-10-04/native-final-200-scroll/",
+    "?? docs/testing/node-results-2026-10-04/native-final-fullscreen-1920/",
+    "?? docs/testing/node-results-2026-10-04/raw/affected-regression-final.json",
+    "?? docs/testing/node-results-2026-10-04/raw/affected-regression-final.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/affected-regression-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/affected-regression-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-contracts-sixth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-contracts-sixth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-diagnostic.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-diagnostic.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fifth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fifth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fourth.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-fourth.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-third.json",
+    "?? docs/testing/node-results-2026-10-04/raw/batch-c-qt-third.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/before-task-layout-observer.json",
+    "?? docs/testing/node-results-2026-10-04/raw/before-task-layout-observer.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/candidate-c-regression.json",
+    "?? docs/testing/node-results-2026-10-04/raw/candidate-c-regression.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/final-code-ci.json",
+    "?? docs/testing/node-results-2026-10-04/raw/final-code-ci.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/final-layout-ci.json",
+    "?? docs/testing/node-results-2026-10-04/raw/final-layout-ci.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci-final-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci-final-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci-final.json",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci-final.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci.json",
+    "?? docs/testing/node-results-2026-10-04/raw/full-ci.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-third.json",
+    "?? docs/testing/node-results-2026-10-04/raw/layout-scroll-third.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1_25-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1_25-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1_5-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-1_5-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-2-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1280-2-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-100-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1_25-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1_25-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1_5-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-1_5-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-2-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1600-2-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1_25-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1_25-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1_5-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-1_5-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-2-matrix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-1920-2-matrix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-200-arrows-fixed.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-200-arrows-fixed.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-200-wrapped-fixed.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-200-wrapped-fixed.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1_25.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1_25.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1_5.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-1_5.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-2.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1280-2.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-100.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-100.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-1_25.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-1_25.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-1_5.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-1_5.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-2.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1600-2.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1_25.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1_25.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1_5.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-1_5.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-2.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-1920-2.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-first.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-first.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-layout-diagnostic.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-layout-diagnostic.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-minimum-diagnostic.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-minimum-diagnostic.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-scroll.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-200-scroll.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-fullscreen-1920.json",
+    "?? docs/testing/node-results-2026-10-04/raw/native-final-fullscreen-1920.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/verified-1280-1.json",
+    "?? docs/testing/node-results-2026-10-04/raw/verified-1280-1.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/verified-1600-1.json",
+    "?? docs/testing/node-results-2026-10-04/raw/verified-1600-1.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-after-fix-second.json",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-after-fix-second.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-after-fix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-after-fix.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-and-tabs-final.json",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-and-tabs-final.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-before-fix-splitter.json",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-before-fix-splitter.txt",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-before-fix.json",
+    "?? docs/testing/node-results-2026-10-04/raw/wrapped-header-before-fix.txt",
+    "?? docs/testing/node-results-2026-10-04/verified-1280-1/",
+    "?? docs/testing/workspace-switch-2026-10-03.md",
+    "?? docs/testing/workspace-switch-2026-10-03/",
+    "?? docs/testing/workspace-ui-2026-10-03.md",
+    "?? docs/testing/workspace-ui-2026-10-03/",
+    "?? scripts/validate_designer_workspaces.py",
+    "?? src/emo_master/apps/designer/page_designer/chrome.py",
+    "?? src/emo_master/apps/designer/page_designer/preview_window.py",
+    "?? src/emo_master/apps/designer/page_designer/workspace_switch.py",
+    "?? src/emo_master/apps/designer/ui/node_image_viewer.py",
+    "?? tests/designer/test_node_image_viewer.py",
+    "?? tests/ui/page_designer/test_palette.py",
+    "?? tests/ui/page_designer/test_workspace_modes.py",
+    "?? tests/ui/page_designer/test_workspace_switch.py"
+  ],
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "platform": "windows",
+  "qtScale": "1",
+  "requestedLogicalClient": [
+    1600,
+    900
+  ],
+  "runtimeTarget": "127.0.0.1:56319",
+  "mainFullscreen": false,
+  "load": "240x360 fixed local fixture; A=2 objects, B=3; three explicit spawn Jobs including missing-input failure",
+  "clock": "time.monotonic_ns; model delivery and QWidget paint completion measured separately",
+  "screenshots": [
+    {
+      "file": "01-before-run.png",
+      "sha256": "857e4b4594849afdfa37c0a60e65ec28b1bcdf193fae22cdf2867057457004c4",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "",
+        "main",
+        "load",
+        "",
+        "image",
+        ""
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 0,
+      "panelPaintNs": 1326743984000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": null,
+      "viewerImageSetNs": null,
+      "viewerFirstImagePaintNs": null,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        183
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    },
+    {
+      "file": "02-current-B-image.png",
+      "sha256": "b9a564d9df95dd54200115586efb27845ba942f17afad75aefe67e927041c7bb",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "load",
+        "ce007567-bfa3-4879-8b9b-828890e4b487",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326747125000000,
+      "panelPaintNs": 1326747171000000,
+      "panelFirstImagePaintNs": 1326747140000000,
+      "viewerPaintNs": null,
+      "viewerImageSetNs": null,
+      "viewerFirstImagePaintNs": null,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-7f82b25b12703212e7871c6b300ac9d950f9b0b68940e3c5d5bd70392996ec04",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "originProjectRevision": 3,
+        "captureId": "799d3364-4b11-41d5-8dc2-39401444224c",
+        "createdAtMs": 1791118741271,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "8f2a0efd-2ddb-4b16-b49d-a1c0c4a17e34",
+        "nodeRunId": "ce007567-bfa3-4879-8b9b-828890e4b487",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5360119185410,
+        "viewerCacheKey": null
+      }
+    },
+    {
+      "file": "02b-current-B-image-scrolled.png",
+      "sha256": "b9a564d9df95dd54200115586efb27845ba942f17afad75aefe67e927041c7bb",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "load",
+        "ce007567-bfa3-4879-8b9b-828890e4b487",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326747125000000,
+      "panelPaintNs": 1326747218000000,
+      "panelFirstImagePaintNs": 1326747140000000,
+      "viewerPaintNs": null,
+      "viewerImageSetNs": null,
+      "viewerFirstImagePaintNs": null,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-7f82b25b12703212e7871c6b300ac9d950f9b0b68940e3c5d5bd70392996ec04",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "originProjectRevision": 3,
+        "captureId": "799d3364-4b11-41d5-8dc2-39401444224c",
+        "createdAtMs": 1791118741271,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "8f2a0efd-2ddb-4b16-b49d-a1c0c4a17e34",
+        "nodeRunId": "ce007567-bfa3-4879-8b9b-828890e4b487",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5360119185410,
+        "viewerCacheKey": null
+      }
+    },
+    {
+      "file": "03-previous-A-image.png",
+      "sha256": "6c10584a3b81fac7c9961de72c7fe5a48e42c03a0c74dc5711f6c5edccfdb479",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "main",
+        "load",
+        "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747453000000,
+      "panelFirstImagePaintNs": 1326747437000000,
+      "viewerPaintNs": 1326747453000000,
+      "viewerImageSetNs": 1326747437000000,
+      "viewerFirstImagePaintNs": 1326747437000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-203699ef1541d38436a7a14da708fc4c8e56a86a4d235b27cdd10408fcefe1ed",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "originProjectRevision": 2,
+        "captureId": "bfe59a0d-ba44-4e7f-92b0-78d000813e4d",
+        "createdAtMs": 1791118739734,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "366ebffb-33f9-4128-8723-f40b47515ff9",
+        "nodeRunId": "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5579162517506,
+        "viewerCacheKey": 5579162517506
+      }
+    },
+    {
+      "file": "03b-previous-A-image-scrolled.png",
+      "sha256": "6c10584a3b81fac7c9961de72c7fe5a48e42c03a0c74dc5711f6c5edccfdb479",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "main",
+        "load",
+        "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 1326747437000000,
+      "viewerPaintNs": 1326747453000000,
+      "viewerImageSetNs": 1326747437000000,
+      "viewerFirstImagePaintNs": 1326747437000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-203699ef1541d38436a7a14da708fc4c8e56a86a4d235b27cdd10408fcefe1ed",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "originProjectRevision": 2,
+        "captureId": "bfe59a0d-ba44-4e7f-92b0-78d000813e4d",
+        "createdAtMs": 1791118739734,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "366ebffb-33f9-4128-8723-f40b47515ff9",
+        "nodeRunId": "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5579162517506,
+        "viewerCacheKey": 5579162517506
+      }
+    },
+    {
+      "file": "04-previous-A-viewer.png",
+      "sha256": "f4f0270d490943e917d9b237244fa9a7e6c79a651004191a4eea8c0f25993aef",
+      "clientLogical": [
+        1000,
+        740
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "main",
+        "load",
+        "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "image",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 1326747437000000,
+      "viewerPaintNs": 1326747531000000,
+      "viewerImageSetNs": 1326747437000000,
+      "viewerFirstImagePaintNs": 1326747437000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-203699ef1541d38436a7a14da708fc4c8e56a86a4d235b27cdd10408fcefe1ed",
+        "label": "image",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "load",
+        "port": "image",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "originProjectRevision": 2,
+        "captureId": "bfe59a0d-ba44-4e7f-92b0-78d000813e4d",
+        "createdAtMs": 1791118739734,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "366ebffb-33f9-4128-8723-f40b47515ff9",
+        "nodeRunId": "fc4e45f7-7d58-4015-bbed-9e7dad52b5ce",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 5579162517506,
+        "viewerCacheKey": 5579162517506
+      }
+    },
+    {
+      "file": "05-previous-A-count.png",
+      "sha256": "f371b20b4559e6cfa3d94479f22981a2e6e1a6c4d2e07a5d398764ced54e9de3",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+        "main",
+        "count",
+        "494c8324-beb8-47a9-afa3-9a7de7b0bc25",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "数值输出",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1326747593000000,
+      "viewerImageSetNs": 1326747578000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 492,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    },
+    {
+      "file": "06-current-B-count.png",
+      "sha256": "01dc5bf0cb25ea840dfa8e657e7c219896d29dc35b5fadb89f130ead13c85eb9",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "count",
+        "adf52549-f1c2-4f5a-a2a9-3750a27f7c00",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "数值输出",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1326747671000000,
+      "viewerImageSetNs": 1326747671000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 492,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    },
+    {
+      "file": "07-current-B-execution.png",
+      "sha256": "7a994828846e40b68cf0a7acc074789071e19cc3d1f3d8a635c0a45714b2f4c5",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "count",
+        "adf52549-f1c2-4f5a-a2a9-3750a27f7c00",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "执行信息",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1326747671000000,
+      "viewerImageSetNs": 1326747671000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 492,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    },
+    {
+      "file": "08-current-B-inputs.png",
+      "sha256": "36944052f94ce1dfdfb468494411cf78637c450ef4ed18cf85d490d01c5d7414",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "presence",
+        "45ff1d1f-62a8-4cbf-8097-a55009acb583",
+        null,
+        "COMPLETED"
+      ],
+      "tab": "输入数据",
+      "modelUpdatedNs": 1326747437000000,
+      "panelPaintNs": 1326747500000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1326747812000000,
+      "viewerImageSetNs": 1326747796000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 492,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    },
+    {
+      "file": "09-current-B-overlay.png",
+      "sha256": "75141ced0ff3592fb6f98d5a18b7ecfbafd4a0e3af53c777b06cc2d0c792ed5a",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "blob",
+        "ace55d50-0e10-452a-ad2a-24abd40cb055",
+        "overlay",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326748015000000,
+      "panelPaintNs": 1326748046000000,
+      "panelFirstImagePaintNs": 1326748031000000,
+      "viewerPaintNs": 1326748046000000,
+      "viewerImageSetNs": 1326748015000000,
+      "viewerFirstImagePaintNs": 1326748015000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-4b2570c42c7710b49aece02268b1935d67ed00a0f5f8b0615c80fd5901ae7fa2",
+        "label": "overlay",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "blob",
+        "port": "overlay",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "originProjectRevision": 3,
+        "captureId": "4e736eea-df8e-4077-8581-24f500d52b89",
+        "createdAtMs": 1791118741293,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "8f2a0efd-2ddb-4b16-b49d-a1c0c4a17e34",
+        "nodeRunId": "ace55d50-0e10-452a-ad2a-24abd40cb055",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 6296422055938,
+        "viewerCacheKey": 6296422055938
+      }
+    },
+    {
+      "file": "10-saved-result.png",
+      "sha256": "32c08997a641412dbb70658c4249a8addf94271b0a024d7b3ed193641ba4c250",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "main",
+        "save",
+        "87a5290c-b74b-4c03-ba6b-dbcc1c6ba577",
+        "__saved_result__",
+        "COMPLETED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326748140000000,
+      "panelPaintNs": 1326748156000000,
+      "panelFirstImagePaintNs": 1326748156000000,
+      "viewerPaintNs": 1326748140000000,
+      "viewerImageSetNs": 1326748140000000,
+      "viewerFirstImagePaintNs": 1326748140000000,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        210
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        343
+      ],
+      "panelMinimum": [
+        272,
+        374
+      ],
+      "panelHeightForWidth": 543,
+      "panelMinimumHeightForWidth": 374,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        375
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430,
+      "actualImage": {
+        "sourceId": "inspection-21d1f8cbe1bf705a7faee288ed861217c7558fd2f0951c54c12073e981bbeb38",
+        "label": "__saved_result__",
+        "sourceKind": "current",
+        "workflowId": "main",
+        "nodeId": "save",
+        "port": "__saved_result__",
+        "width": 360,
+        "height": 240,
+        "mimeType": "image/png",
+        "iterationPath": [],
+        "originJobId": "477b6e3f-731e-4789-a7aa-28b72abf093a",
+        "originProjectRevision": 3,
+        "captureId": "9f72d4ee-5dc1-4ce1-81dd-a3fd5a4ef0fb",
+        "createdAtMs": 1791118741358,
+        "snapshotState": "CURRENT",
+        "workflowRunId": "8f2a0efd-2ddb-4b16-b49d-a1c0c4a17e34",
+        "nodeRunId": "87a5290c-b74b-4c03-ba6b-dbcc1c6ba577",
+        "format": "PNG",
+        "decodedBytes": 345600,
+        "bytesPerLine": 1440,
+        "panelCacheKey": 6416681140226,
+        "viewerCacheKey": 6416681140226
+      }
+    },
+    {
+      "file": "11-third-run-missing-input.png",
+      "sha256": "1e93076ca4db7593329c880893be7d84023c4a4d3c17627466bae7afc1aedb8a",
+      "clientLogical": [
+        1600,
+        900
+      ],
+      "dpr": 1.0,
+      "availableScreen": [
+        0,
+        0,
+        1920,
+        1032
+      ],
+      "nativeScreen": [
+        0,
+        0,
+        1920,
+        1080
+      ],
+      "screenLogicalDpi": 96.0,
+      "selection": [
+        "fd389069-f6f4-4ea7-b34c-41a85cb7c0bc",
+        "main",
+        "load",
+        "7b3f6904-2ee9-4be1-91fb-0dabff4d3856",
+        "image",
+        "FAILED"
+      ],
+      "tab": "图像输出",
+      "modelUpdatedNs": 1326748312000000,
+      "panelPaintNs": 1326749578000000,
+      "panelFirstImagePaintNs": 0,
+      "viewerPaintNs": 1326749562000000,
+      "viewerImageSetNs": 1326749531000000,
+      "viewerFirstImagePaintNs": 0,
+      "panelRect": [
+        0,
+        125,
+        430,
+        639
+      ],
+      "imageRect": [
+        0,
+        46,
+        406,
+        204
+      ],
+      "activeTabRect": [
+        0,
+        0,
+        406,
+        317
+      ],
+      "panelMinimum": [
+        272,
+        400
+      ],
+      "panelHeightForWidth": 569,
+      "panelMinimumHeightForWidth": 400,
+      "tabsRect": [
+        12,
+        213,
+        406,
+        349
+      ],
+      "tabsMinimum": [
+        0,
+        110
+      ],
+      "tabBarRect": [
+        0,
+        0,
+        406,
+        32
+      ],
+      "configureRectInPanel": [
+        12,
+        594,
+        122,
+        35
+      ],
+      "tabButtons": [
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            69,
+            0,
+            16,
+            30
+          ],
+          "arrow": 3
+        },
+        {
+          "name": "",
+          "visible": false,
+          "rect": [
+            84,
+            0,
+            16,
+            30
+          ],
+          "arrow": 4
+        }
+      ],
+      "tabBarMinimum": 113,
+      "panelWidth": 430
+    }
+  ],
+  "resources": [
+    {
+      "stage": "A complete",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 5676,
+        "jobs": 1,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 7600,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 1,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 2932
+    },
+    {
+      "stage": "A+B retained",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 11835,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 15201,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 2,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 3158
+    },
+    {
+      "stage": "previous A selected with shared large window",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 11835,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 15201,
+      "qtImageBytes": 691200,
+      "peakQtImageBytes": 691200,
+      "imageReads": 3,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 3158
+    },
+    {
+      "stage": "third acceptance evicts A",
+      "server": {
+        "sessions": 1,
+        "readers": 0,
+        "encodedBytes": 6159,
+        "jobs": 2,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 9950,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 8,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 86400
+    },
+    {
+      "stage": "project switched; external Runtime remains alive",
+      "server": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 0,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 9,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 86400
+    },
+    {
+      "stage": "Designer closed",
+      "server": {
+        "sessions": 0,
+        "readers": 0,
+        "encodedBytes": 0,
+        "jobs": 0,
+        "retiredJobs": 0,
+        "pendingFiles": 0
+      },
+      "summariesBytes": 0,
+      "qtImageBytes": 0,
+      "peakQtImageBytes": 691200,
+      "imageReads": 9,
+      "workerMailboxBytes": 0,
+      "peakDecodedBytes": 345600,
+      "peakScratchBytes": 86400
+    }
+  ],
+  "jobs": [
+    {
+      "jobId": "83af56dc-7901-47b7-97c4-7298a2c3e51a",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 2,
+      "workflowId": "main",
+      "status": "COMPLETED",
+      "pid": 18076,
+      "acceptedAtMs": 1791118738718,
+      "startedAtMs": 1791118739732,
+      "endedAtMs": 1791118739874,
+      "errorCode": "",
+      "message": "job.completed",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "43b791519090c77b4e8449801ed86ed81721ab781e35e1f8de43434151a50ff3"
+    },
+    {
+      "jobId": "477b6e3f-731e-4789-a7aa-28b72abf093a",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 3,
+      "workflowId": "main",
+      "status": "COMPLETED",
+      "pid": 19820,
+      "acceptedAtMs": 1791118740235,
+      "startedAtMs": 1791118741269,
+      "endedAtMs": 1791118741390,
+      "errorCode": "",
+      "message": "job.completed",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "43b791519090c77b4e8449801ed86ed81721ab781e35e1f8de43434151a50ff3"
+    },
+    {
+      "jobId": "fd389069-f6f4-4ea7-b34c-41a85cb7c0bc",
+      "projectId": "flow-inspection-local-fixture",
+      "projectRevision": 4,
+      "workflowId": "main",
+      "status": "FAILED",
+      "pid": 48024,
+      "acceptedAtMs": 1791118743058,
+      "startedAtMs": 1791118744106,
+      "endedAtMs": 1791118744135,
+      "errorCode": "E_INPUT_MISSING",
+      "message": "image file not found: C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-node-results-7gh1tqsi\\临时 工程 A\\missing.png",
+      "stopMode": "",
+      "executionMode": "runtime",
+      "legacySnapshotPolicy": "ALL",
+      "previewProjectKey": "43b791519090c77b4e8449801ed86ed81721ab781e35e1f8de43434151a50ff3"
+    }
+  ],
+  "windowConstructionMs": 359.0,
+  "captureSourceSha256": "b9ac022ce07e83ae59de93ed488cf38fa3ef892423e4460825a76e839b69e38a",
+  "fixtureSourceSha256": "bd809040c4fcc49f24bfca05cd6994fb23d139209ca4dd85432c7eef862716fe",
+  "projectLoadMs": 31.0,
+  "explicitFlowLayoutMs": 16.0,
+  "previousCount": "count = 2  [integer]",
+  "currentCount": "count = 3  [integer]",
+  "savedResultMeta": "保存结果图 · __saved_result__ · 360 × 240 · PNG\n2026-10-04 20:59:01.358 · 任务 477b6e3f · 执行 87a5290c",
+  "failedText": "本次运行 · 执行失败\n任务：fd389069 · 流程：main\n节点执行：7b3f6904\n更新：20:59:04.127\n实际输入：\n  无传入端口值（参数默认值见配置）\n实际输出：\n  无结果（执行失败或跳过）\n错误：E_INPUT_MISSING image file not found: C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-node-results-7gh1tqsi\\临时 工程 A\\missing.png\n节点完成状态表示执行状态；判定值以实际输出为准。\n流程执行：af3d056e-b7c6-4e38-8c6f-3872819036cb\n节点执行完整标识：7b3f6904-2ee9-4be1-91fb-0dabff4d3856",
+  "status": "PASS",
+  "windowClosed": true,
+  "inspectionAfterWindowClose": {
+    "sessions": 0,
+    "readers": 0,
+    "encodedBytes": 0,
+    "jobs": 0,
+    "retiredJobs": 0,
+    "pendingFiles": 0
+  },
+  "runtimeAliveAfterWindowClose": true,
+  "runtimeClosedByTestOwner": true
+}

@@ -1,0 +1,43 @@
+F....................................................................... [ 75%]
+........................                                                 [100%]
+================================== FAILURES ===================================
+________________ testRealImageAndCountOwnershipLeaseAndExpiry _________________
+
+channel = <emo_master.apps.runtime.presentation.service.PresentationService object at 0x000002EE4B3E5BA0>
+sample = <function sampleProject at 0x000002EE4B236950>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-366/testRealImageAndCountOwnership0')
+
+    def testRealImageAndCountOwnershipLeaseAndExpiry(channel, sample, tmp_path):
+        record = channel.prepare(sample(tmp_path), tmp_path)
+        job = channel.start(record.snapshot.snapshotId)
+        result = waitFor(lambda: channel.store.snapshot(job)["results"])[0]
+        assert result.status == "COMPLETE"
+        count, image = result.sources
+        assert count.valueJson == "2" and image.image.ownerResultKey == result.identity.resultKey
+        data, digest = channel.assets.read(job, image.image.resourceId)
+        assert hashlib.sha256(data).hexdigest() == digest == image.image.sha256
+        decoded = cv2.imdecode(np.frombuffer(data, np.uint8), cv2.IMREAD_UNCHANGED)
+        assert decoded.shape == (120, 160, 3)
+        lease = channel.assets.lease(job, image.image.resourceId, 150)
+        waitFor(lambda: channel.runtime.jobRepository.get(job).isTerminal)
+        waitFor(lambda: not any(s["busy"] for s in channel.exporter.slots))
+        waitFor(lambda: not channel.readers[job].is_alive())
+        channel.release(job)
+>       assert channel.assets.read(job, image.image.resourceId)[0] == data
+
+tests\runtime\presentation\test_images.py:40: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.presentation.assets.AssetStore object at 0x000002EE4B3E5C00>
+jobId = '34419164-501c-4c0d-b420-2b0613172ccf'
+resourceId = '6fb15be0-4864-4512-8fec-5c558c4322e3'
+
+    def read(self, jobId, resourceId):
+        started = time.monotonic()
+        with self.lock:
+            self._collect()
+>           item = self.items[resourceId]
+E           KeyError: '6fb15be0-4864-4512-8fec-5c558c4322e3'
+
+src\emo_master\apps\runtime\presentation\assets.py:62: KeyError
+1 failed, 95 passed in 37.18s

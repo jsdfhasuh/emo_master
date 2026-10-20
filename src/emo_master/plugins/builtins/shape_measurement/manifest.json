@@ -1,0 +1,19 @@
+{
+  "operatorId": "vision.analysis.shape_measurement",
+  "displayName": "Shape Measurement",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._shape_operators:ShapeMeasurementOperator",
+  "category": "分析",
+  "iconKey": "measure",
+  "summary": "测量轮廓或 Blob 的面积、周长、质心、圆度及最小外接矩形。",
+  "inputPorts": {
+    "contours": {"type": "contourCollection", "required": false, "nullable": false, "schemaVersion": "1.2"},
+    "blobs": {"type": "blobCollection", "required": false, "nullable": false, "schemaVersion": "1.x"}
+  },
+  "outputPorts": {
+    "measurements": {"type": "shapeMeasurementCollection", "required": true, "nullable": false, "schemaVersion": "1.2"}
+  },
+  "paramSchema": {"type": "object", "properties": {}},
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

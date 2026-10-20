@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SqliteWriterEditor</class>
+ <widget class="QWidget" name="SqliteWriterEditor">
+  <property name="windowTitle"><string>SQLite 字段映射</string></property>
+  <layout class="QVBoxLayout" name="editorLayout"/>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

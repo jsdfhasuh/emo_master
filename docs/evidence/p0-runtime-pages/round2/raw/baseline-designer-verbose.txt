@@ -1,0 +1,244 @@
+============================= test session starts =============================
+platform win32 -- Python 3.10.21, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe
+cachedir: .pytest_cache
+rootdir: C:\Users\jsdfhasuh\my_scripts\emo_master
+configfile: pyproject.toml
+plugins: anyio-4.15.1, cov-7.1.0
+collecting ... collected 333 items
+
+tests/designer/test_app_qss.py::testAppQssUsesLightWorkstationPalette <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_app_qss.py PASSED [  0%]
+tests/designer/test_app_qss.py::testAppQssHighlightsSelectedWorkflowTab <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_app_qss.py PASSED [  0%]
+tests/designer/test_app_qss.py::testAppQssIncludesOfflineControlIconsAndWarningStates <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_app_qss.py PASSED [  0%]
+tests/designer/test_builtin_operator_editor_ui.py::testBuiltinCameraRoiAndHistogramUiControllersLoad <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  1%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[None-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  1%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[bad-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  1%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[nan-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  2%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[-1-0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  2%]
+tests/designer/test_builtin_operator_editor_ui.py::testHistogramEditorToleratesMalformedPixelCount[12-12] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  2%]
+tests/designer/test_builtin_operator_editor_ui.py::testCameraEditorShowsOriginalStreamFailure[False] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  3%]
+tests/designer/test_builtin_operator_editor_ui.py::testCameraEditorShowsOriginalStreamFailure[True] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_builtin_operator_editor_ui.py PASSED [  3%]
+tests/designer/test_camera_parameter_form.py::testCameraLabelsAreChineseAndValuesRemainCompatible <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  3%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-cameraKey-active0-inactive0] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  3%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-userId-active1-inactive1] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  4%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[selectionMode-index-active2-inactive2] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  4%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[triggerMode-hardware-active3-inactive3] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  4%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[triggerMode-software-active4-inactive4] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  5%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[exposureMode-manual-active5-inactive5] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  5%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[gainMode-manual-active6-inactive6] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  5%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[frameRateMode-manual-active7-inactive7] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  6%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[roiMode-custom-active8-inactive8] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  6%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[roiMode-full-active9-inactive9] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  6%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[pixelFormat-Mono8-active10-inactive10] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  6%]
+tests/designer/test_camera_parameter_form.py::testCameraFieldsFollowModeWithoutLosingValues[pixelFormat-BayerRG8-active11-inactive11] <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  7%]
+tests/designer/test_camera_parameter_form.py::testCameraRetryAndRepeatedLoadPreserveValues <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_camera_parameter_form.py PASSED [  7%]
+tests/designer/test_canvas_area.py::testMainWindowUsesLargeFixedCanvasArea <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_area.py PASSED [  7%]
+tests/designer/test_canvas_view_navigation.py::testCanvasViewWheelZoomChangesScale <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_view_navigation.py PASSED [  8%]
+tests/designer/test_canvas_view_navigation.py::testCanvasViewBlankDragStartsPanMode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_view_navigation.py PASSED [  8%]
+tests/designer/test_canvas_view_navigation.py::testCanvasViewNodeRegionDoesNotStartPanMode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_view_navigation.py PASSED [  8%]
+tests/designer/test_canvas_view_navigation.py::testMainWindowUsesDesignerGraphicsView <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_view_navigation.py PASSED [  9%]
+tests/designer/test_canvas_view_navigation.py::testCanvasViewHidesScrollBars <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_canvas_view_navigation.py PASSED [  9%]
+tests/designer/test_current_node_details.py::testCurrentNodePanelShowsEmptyState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [  9%]
+tests/designer/test_current_node_details.py::testMainWindowRestoresRuntimeStateFromCurrentJobOnly <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [  9%]
+tests/designer/test_current_node_details.py::testMainWindowIgnoresUnknownWorkflowEventFromAnotherJob <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 10%]
+tests/designer/test_current_node_details.py::testMainWindowIgnoresSameWorkflowEventFromAnotherJob <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 10%]
+tests/designer/test_current_node_details.py::testMainWindowIgnoresEventWithoutJobIdWhenJobIsActive <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 10%]
+tests/designer/test_current_node_details.py::testMainWindowRejectsLateEventDuringNewJobStart <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 11%]
+tests/designer/test_current_node_details.py::testMainWindowClearsVisibleRuntimeStateWhenJobChanges <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 11%]
+tests/designer/test_current_node_details.py::testNodeDetailsPresenterBuildsEmptyState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 11%]
+tests/designer/test_current_node_details.py::testCurrentNodePanelShowsSelectedNodeSummary <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 12%]
+tests/designer/test_current_node_details.py::testNodeDetailsPresenterBuildsIfSummary <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 12%]
+tests/designer/test_current_node_details.py::testNodeDetailsPresenterBuildsSwitchSummary <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 12%]
+tests/designer/test_current_node_details.py::testCurrentNodePanelUpdatesAfterParamChange <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 12%]
+tests/designer/test_current_node_details.py::testCurrentNodePanelShowsIfBranchInfo <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 13%]
+tests/designer/test_current_node_details.py::testCurrentNodePanelUpdatesFromRuntimeEventPayload <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 13%]
+tests/designer/test_current_node_details.py::testMainWindowUsesPresenterModelForRuntimePanelText <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 13%]
+tests/designer/test_current_node_details.py::testMainWindowBuildsStructuredNodeDetailViewModel <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_current_node_details.py PASSED [ 14%]
+tests/designer/test_delete_shortcut.py::testDeleteUsesShortcutHandlerAndNoDeleteButton <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_delete_shortcut.py PASSED [ 14%]
+tests/designer/test_designer_bootstrap.py::testResolveRuntimeTargetUsesEnvVar <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_designer_bootstrap.py PASSED [ 14%]
+tests/designer/test_designer_bootstrap.py::testConfigureHighDpiRunsBeforeApplicationCreation <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_designer_bootstrap.py PASSED [ 15%]
+tests/designer/test_designer_bootstrap.py::testConfigureHighDpiDoesNotMutateRunningApplication <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_designer_bootstrap.py PASSED [ 15%]
+tests/designer/test_flow_graph_model.py::testAddNodeAndSelectNode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 15%]
+tests/designer/test_flow_graph_model.py::testConnectNodesAndValidateGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 15%]
+tests/designer/test_flow_graph_model.py::testParameterBindingForSelectedNode <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 16%]
+tests/designer/test_flow_graph_model.py::testConnectNodesByDefaultPortsRejectsTypeMismatch <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 16%]
+tests/designer/test_flow_graph_model.py::testConnectNodesReplacesExistingInputEdge <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 16%]
+tests/designer/test_flow_graph_model.py::testValidateGraphIncludesSchemaErrors <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 17%]
+tests/designer/test_flow_graph_model.py::testRemoveNodeRemovesConnectedEdges <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 17%]
+tests/designer/test_flow_graph_model.py::testRemoveEdgeByIdentity <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_model.py PASSED [ 17%]
+tests/designer/test_flow_graph_project_codec.py::testFlowGraphModelCanExportProjectGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_project_codec.py PASSED [ 18%]
+tests/designer/test_flow_graph_project_codec.py::testFlowGraphModelCanLoadProjectGraph <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_graph_project_codec.py PASSED [ 18%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneNodeDoubleClickHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 18%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneCanvasClickHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 18%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneOperatorDropHandlerTriggered <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 19%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneConnectionReasonShowsTypeMismatch <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 19%]
+tests/designer/test_flow_scene_interactions.py::testFlowScenePreviewConnectionTargetWithSnapHint <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 19%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneSelectedEdgeStyleIsEnhanced <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 20%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDragPreviewSupportsSnapRadius <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 20%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDragHintOnlyVisibleDuringDrag <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 20%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneIfNodeStyleUsesSpecialPalette <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 21%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneSwitchNodeStyleUsesSpecialPalette <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 21%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneDoesNotInferSwitchVariantForOtherOperator <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 21%]
+tests/designer/test_flow_scene_interactions.py::testFlowSceneNodeRuntimeStateChangesVisualStyle <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_scene_interactions.py PASSED [ 21%]
+tests/designer/test_global_counter_client.py::testRuntimeClientMapsGlobalCounterDtosAndRequests <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_client.py PASSED [ 22%]
+tests/designer/test_global_counter_client.py::testRuntimeClientRaisesStableGlobalCounterReplyError <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_client.py PASSED [ 22%]
+tests/designer/test_global_counter_worker.py::testGlobalCounterWorkerRunsBlockingRpcOffCallingThread <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_worker.py PASSED [ 22%]
+tests/designer/test_global_counter_worker.py::testGlobalCounterWorkerDispatchesMutationMethods <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counter_worker.py PASSED [ 23%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogRefreshIsNonBlockingAndSkipsOverlap <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 23%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogNewSetAndResetUseBackgroundClient <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 23%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogIgnoresReplyFromPreviousProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 24%]
+tests/designer/test_global_counters_dialog.py::testGlobalCountersDialogSurfacesRpcFailure <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_global_counters_dialog.py PASSED [ 24%]
+tests/designer/test_log_dialog.py::testLogDialogSetAndAppendLogs <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 24%]
+tests/designer/test_log_dialog.py::testStructuredLogEntryPreservesRuntimeContextAndPayload <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 24%]
+tests/designer/test_log_dialog.py::testRuntimeLogDockClearOnlyClearsCurrentView <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 25%]
+tests/designer/test_log_dialog.py::testStructuredLogViewRestoresFiltersBeforeHistoricalEntriesArrive <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 25%]
+tests/designer/test_log_dialog.py::testStructuredLogViewBatchesAndBoundsEntries <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 25%]
+tests/designer/test_log_dialog.py::testClearViewResetsDynamicFiltersAndClearsOwnerCache <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_log_dialog.py PASSED [ 26%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesExpectedToolbarGroups <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 26%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesBalancedPanelWidths <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 26%]
+tests/designer/test_main_window_layout.py::testMainWindowDelegatesLayoutStateToController <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 27%]
+tests/designer/test_main_window_layout.py::testMainWindowDelegatesOperatorCatalogToController <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 27%]
+tests/designer/test_main_window_layout.py::testMainWindowDoesNotKeepLegacyLayoutStateFields <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 27%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesCompactCategoryLabelsAndRightSections <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 27%]
+tests/designer/test_main_window_layout.py::testMainWindowClassifiesFlowOperatorsAsControlFlow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 28%]
+tests/designer/test_main_window_layout.py::testMainWindowUsesHorizontalSplitterAndPersistsSizes <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 28%]
+tests/designer/test_main_window_layout.py::testMainWindowKeepsRightPanelMinWidthIndependentFromDefaultWidth <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 28%]
+tests/designer/test_main_window_layout.py::testCollapsedSidebarUsesLiveSplitterSizes <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 29%]
+tests/designer/test_main_window_layout.py::testMainWindowDoesNotLimitCanvasMaxWidth <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 29%]
+tests/designer/test_main_window_layout.py::testRuntimeLogDockIsBottomDockedAndRestoresLocalSettings <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 29%]
+tests/designer/test_main_window_layout.py::testRuntimeLogDockClearAlsoReleasesMainWindowViewCache <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_layout.py PASSED [ 30%]
+tests/designer/test_main_window_menubar.py::testMainWindowBuildsMenuBarGroups <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 30%]
+tests/designer/test_main_window_menubar.py::testControlFlowNodesAreNotAddedFromFileMenu <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 30%]
+tests/designer/test_main_window_menubar.py::testWorkflowActionsAreNotDuplicatedInFileMenu <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 30%]
+tests/designer/test_main_window_menubar.py::testRecentProjectsMenuEntriesExist <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 31%]
+tests/designer/test_main_window_menubar.py::testRecentProjectsMenuCanOpenProject <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 31%]
+tests/designer/test_main_window_menubar.py::testMenuBarFontSizeIsStableAcrossWindowWidths <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 31%]
+tests/designer/test_main_window_menubar.py::testGlobalCounterDialogUsesLoadedProjectAndShutsDown <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_menubar.py PASSED [ 32%]
+tests/designer/test_main_window_project_save_load.py::testMainWindowCanSaveAndLoadProjectDirectory <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 32%]
+tests/designer/test_main_window_project_save_load.py::testSaveProjectActionOverwritesLoadedProjectWithoutChooser <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 32%]
+tests/designer/test_main_window_project_save_load.py::testFailedProjectSaveDoesNotAdvanceRevision <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 33%]
+tests/designer/test_main_window_project_save_load.py::testFailedProjectLoadPreservesCurrentWorkflowAndTabs <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_project_save_load.py PASSED [ 33%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabsUseTabBarMetadataAndSwitchWithoutCreating <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 33%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuSetsSelectedTabAsEntry <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 33%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowTabContextMenuActionsTargetClickedWorkflow <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 34%]
+tests/designer/test_main_window_workflow_tabs.py::testPlusTabPromptsForNameAndCancelRestoresActiveTab <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 34%]
+tests/designer/test_main_window_workflow_tabs.py::testReferencedWorkflowDeleteFailureShowsReasonAndPreservesState <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 34%]
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageExportDialogWritesDedicatedPackage <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py PASSED [ 35%]
+Windows fatal exception: access violation
+
+Thread 0x0000ad98 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0000e68c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0000c4e0 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00007b10 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x0000f0b8 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00009e20 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00006770 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00000afc (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x000097c4 (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Thread 0x00003d9c (most recent call first):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 320 in wait
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 355 in wait_for
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\services\operator_icon_worker.py", line 88 in _run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953 in run
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016 in _bootstrap_inner
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 973 in _bootstrap
+
+Current thread 0x00002c68 (most recent call first):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\qt_wait.py", line 11 in waitUntil
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\qt_wait.py", line 16 in waitForCatalog
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py", line 300 in testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 167 in pytest_pyfunc_call
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 1707 in runtest
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 184 in pytest_runtest_call
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 250 in <lambda>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 361 in from_call
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 249 in call_and_report
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 139 in runtestprotocol
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 118 in pytest_runtest_protocol
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 408 in pytest_runtestloop
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 384 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 330 in wrap_session
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 377 in pytest_cmdline_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 229 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 253 in _console_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pytest\__main__.py", line 9 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 86 in _run_code
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 196 in _run_module_as_main
+tests/designer/test_main_window_workflow_tabs.py::testWorkflowPackageImportDialogPreservesEntryAndOpensImportedRoot <- D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_main_window_workflow_tabs.py 

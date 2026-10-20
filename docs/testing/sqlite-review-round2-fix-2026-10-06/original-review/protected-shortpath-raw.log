@@ -1,0 +1,64 @@
+REVIEW_EVIDENCE {"probe": "protected-prepare", "mode": "debug", "dbPath": "D:\\sqlite-r2-zf90g_kw\\debug\\control-state.sqlite3", "managementAccepted": false, "managementCode": "E_SQLITE_TARGET", "normalAccepted": false, "normalMessage": "\u4e0d\u80fd\u4f7f\u7528 Runtime \u5185\u90e8\u5e93\u3001\u7f13\u5b58\u6216\u4efb\u52a1\u4e34\u65f6\u76ee\u5f55", "loaded": true, "prepareAccepted": true, "prepareError": null, "frozenWriterTarget": "D:\\sqlite-r2-zf90g_kw\\debug\\jobs-presentation\\bdb6ca30d14e260cfc8ea30c3592d0ad\\debug\\7bfb862c-f7d2-4140-9632-e72ede9cac55\\business-sqlite\\5ff0843eb96b345348a89764.sqlite3", "jobId": "fbcb6547-e95d-48d2-a8c2-e8c0fa22ef64", "jobStatus": "COMPLETED", "receipt": {"writeId": "11d910d8-fb97-4061-8548-4f91569657e9", "status": "COMMITTED", "rowsAffected": 1, "primaryKey": null, "execution": {"jobId": "fbcb6547-e95d-48d2-a8c2-e8c0fa22ef64", "projectId": "sqlite-test", "workflowId": "main", "workflowRunId": "e08fca20-e033-4205-bd15-7a518217d1da", "nodeId": "writer", "nodeRunId": "ac184167-e79c-4794-8454-c32bb9379aa6", "iterationPath": []}, "elapsedMs": 156.99999989010394, "error": null}, "runtimeInternalRows": [], "frozenRows": [["review-owned", "probe", 123]]}
+FREVIEW_EVIDENCE {"probe": "protected-prepare", "mode": "release", "dbPath": "D:\\sqlite-r2-acmejmyg\\release\\control-state.sqlite3", "managementAccepted": false, "managementCode": "E_SQLITE_TARGET", "normalAccepted": false, "normalMessage": "\u4e0d\u80fd\u4f7f\u7528 Runtime \u5185\u90e8\u5e93\u3001\u7f13\u5b58\u6216\u4efb\u52a1\u4e34\u65f6\u76ee\u5f55", "loaded": true, "prepareAccepted": true, "prepareError": null, "frozenWriterTarget": "D:\\sqlite-r2-acmejmyg\\release\\control-state.sqlite3", "jobId": "0eaa2688-26d6-4cad-bff1-92a0196fa504", "jobStatus": "COMPLETED", "receipt": {"writeId": "23034fa0-175e-4ff5-a894-f94054daf614", "status": "COMMITTED", "rowsAffected": 1, "primaryKey": null, "execution": {"jobId": "0eaa2688-26d6-4cad-bff1-92a0196fa504", "projectId": "sqlite-test", "workflowId": "main", "workflowRunId": "99dd10da-f20d-4e0e-91fc-f917808c96fd", "nodeId": "writer", "nodeRunId": "586b09c6-32c3-4555-b0b3-cd90dd0f5f32", "iterationPath": []}, "elapsedMs": 266.0000000614673, "error": null}, "runtimeInternalRows": [["review-owned", "probe", 123]], "frozenRows": [["review-owned", "probe", 123]]}
+F
+================================== FAILURES ===================================
+_______ testPreparedPathRejectsSameProtectedTargetAsNormalStart[debug] ________
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/protected-short-temp/testPreparedPathRejectsSamePro0')
+mode = 'debug'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedPathRejectsSameProtectedTargetAsNormalStart(tmp_path, mode):
+        # Keep Runtime namespace names below Windows MAX_PATH. Preserve the earlier
+        # long-path raw log separately; it did not validate rejection in debug mode.
+        dataRoot = Path(tempfile.mkdtemp(prefix='sqlite-r2-', dir='D:/'))
+        context = multiprocessing.get_context('spawn')
+        receive, send = context.Pipe(duplex=False)
+        process = context.Process(target=protectedProbe, args=(str(dataRoot / mode), mode, send))
+        process.start()
+        send.close()
+        try:
+            assert receive.poll(25), 'outer watchdog; final terminate/kill/join still required'
+            result = receive.recv()
+            process.join(5)
+            print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'protected-prepare', **result}, ensure_ascii=True))
+            assert not process.is_alive() and process.exitcode == 0
+            assert 'probeError' not in result
+            assert result['managementAccepted'] is False and result['normalAccepted'] is False
+>           assert result['prepareAccepted'] is False, 'formal prepared path bypassed Runtime state-file protection'
+E           AssertionError: formal prepared path bypassed Runtime state-file protection
+E           assert True is False
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py:111: AssertionError
+______ testPreparedPathRejectsSameProtectedTargetAsNormalStart[release] _______
+
+tmp_path = WindowsPath('D:/jsdfhasuh/documents/emo-master-backups/sqlite-review-round2-20261005-231441-0683317/protected-short-temp/testPreparedPathRejectsSamePro1')
+mode = 'release'
+
+    @pytest.mark.parametrize('mode', ['debug', 'release'])
+    def testPreparedPathRejectsSameProtectedTargetAsNormalStart(tmp_path, mode):
+        # Keep Runtime namespace names below Windows MAX_PATH. Preserve the earlier
+        # long-path raw log separately; it did not validate rejection in debug mode.
+        dataRoot = Path(tempfile.mkdtemp(prefix='sqlite-r2-', dir='D:/'))
+        context = multiprocessing.get_context('spawn')
+        receive, send = context.Pipe(duplex=False)
+        process = context.Process(target=protectedProbe, args=(str(dataRoot / mode), mode, send))
+        process.start()
+        send.close()
+        try:
+            assert receive.poll(25), 'outer watchdog; final terminate/kill/join still required'
+            result = receive.recv()
+            process.join(5)
+            print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'protected-prepare', **result}, ensure_ascii=True))
+            assert not process.is_alive() and process.exitcode == 0
+            assert 'probeError' not in result
+            assert result['managementAccepted'] is False and result['normalAccepted'] is False
+>           assert result['prepareAccepted'] is False, 'formal prepared path bypassed Runtime state-file protection'
+E           AssertionError: formal prepared path bypassed Runtime state-file protection
+E           assert True is False
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py:111: AssertionError
+=========================== short test summary info ===========================
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py::testPreparedPathRejectsSameProtectedTargetAsNormalStart[debug]
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_protected_prepare.py::testPreparedPathRejectsSameProtectedTargetAsNormalStart[release]
+2 failed in 12.14s

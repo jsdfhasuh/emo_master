@@ -1,0 +1,53 @@
+[
+  {
+    "original": "EmoMaster-8c13404-evidence-1-data-project-audits.zip",
+    "bytes": 13422701,
+    "sha256": "8202dee4e7c2d0ef946c17a2f27468d9f2b25799e3d651eaa40b91b2a1d76cf0",
+    "parts": [
+      {
+        "name": "EmoMaster-8c13404-evidence-1-data-project-audits.zip.part01",
+        "bytes": 8000000,
+        "sha256": "3dfeee646be9b0ebcfcca0efd4b2f4f7975e350664684fa138d0d7b3dae706a3"
+      },
+      {
+        "name": "EmoMaster-8c13404-evidence-1-data-project-audits.zip.part02",
+        "bytes": 5422701,
+        "sha256": "26edc2e7f8d5beac3a88a68cc4a9751f865e1ca3272a1020ab203f92729883b6"
+      }
+    ]
+  },
+  {
+    "original": "EmoMaster-8c13404-evidence-3-video-abba.zip",
+    "bytes": 14240795,
+    "sha256": "f63d434731d98bbf7ba82cab684726ae9f31da21ad9fcb50771365be2c6752cf",
+    "parts": [
+      {
+        "name": "EmoMaster-8c13404-evidence-3-video-abba.zip.part01",
+        "bytes": 8000000,
+        "sha256": "c30f5bc8460068712c2e06b0eb6605c127d56bc43c80e774c917ec1d08f5ae5b"
+      },
+      {
+        "name": "EmoMaster-8c13404-evidence-3-video-abba.zip.part02",
+        "bytes": 6240795,
+        "sha256": "cd2b89802f78e31b87c040b4409ac24637d1c54c29ffc5bc46dc6807b17d4718"
+      }
+    ]
+  },
+  {
+    "original": "EmoMaster-8c13404-evidence-5-video-designer-runtime.zip",
+    "bytes": 14126042,
+    "sha256": "3a407190fab2e61fb0c2eb633629193f1cbd26f4254dbcc585721dae80f1c094",
+    "parts": [
+      {
+        "name": "EmoMaster-8c13404-evidence-5-video-designer-runtime.zip.part01",
+        "bytes": 8000000,
+        "sha256": "2e9907cc654ee3eab73422e7b08135a4ab0b7804b7ed0b9d0f6d845a62dfb3eb"
+      },
+      {
+        "name": "EmoMaster-8c13404-evidence-5-video-designer-runtime.zip.part02",
+        "bytes": 6126042,
+        "sha256": "2cfa79772ed22155cb5dc29a04585585bc57b2258cbb496217ced186a19c0e9f"
+      }
+    ]
+  }
+]

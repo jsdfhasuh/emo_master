@@ -1,0 +1,16 @@
+F.........                                                               [100%]
+================================== FAILURES ===================================
+_____________ testPackageGuiGateRequiresNineCustomRenderedSamples _____________
+
+    def testPackageGuiGateRequiresNineCustomRenderedSamples():
+        result = runSelfTest(guiIcons=True)
+>       assert result["status"] == "ok"
+E       AssertionError: assert 'error' == 'ok'
+E
+E         - ok
+E         + error
+
+D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_package_gui_icons.py:9: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_package_gui_icons.py::testPackageGuiGateRequiresNineCustomRenderedSamples
+1 failed, 9 passed in 3.13s

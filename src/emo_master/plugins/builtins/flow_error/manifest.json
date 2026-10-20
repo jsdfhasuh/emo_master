@@ -1,0 +1,37 @@
+{
+  "operatorId": "vision.flow.error",
+  "displayName": "停止并报告技术错误",
+  "version": "1.0.0",
+  "inputPorts": {
+    "after": {
+      "type": "any",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {},
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "code": {
+        "title": "错误码",
+        "type": "string",
+        "default": "E_WORKFLOW_GUARD",
+        "pattern": "^E_[A-Z0-9_]+$"
+      },
+      "message": {
+        "title": "错误说明",
+        "type": "string",
+        "default": "技术条件不满足，停止当前流程",
+        "minLength": 1
+      }
+    }
+  },
+  "entry": "emo_master.plugins.builtins.flow_error.operator:FlowErrorOperator",
+  "category": "控制流",
+  "summary": "仅在依赖分支被选中时停止并报告技术错误，不实现业务 NG。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "iconKey": "default"
+}

@@ -121,6 +121,25 @@ def testClearRecentProjects() -> None:
     assert recent == []
 
 
+def testClearRecentProjectsButtonImmediatelyClearsDialogList() -> None:
+    from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+
+    ensureQApp()
+    dialog = ProjectEntryDialog()
+    dialog.setRecentProjects(
+        [{"projectName": "demo", "projectPath": "C:/demo/project.json"}]
+    )
+
+    clearButton = getattr(dialog, "_clearRecentButton", None)
+    if clearButton is not None:
+        clearButton.click()
+    else:
+        dialog._onClearRecentProjects()
+
+    assert dialog.shouldClearRecentProjects() is True
+    assert dialog.getRecentProjectDisplayTexts() == []
+
+
 def testRecentProjectsRenderedAsProjectCards() -> None:
     from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
@@ -143,7 +162,7 @@ def testRecentProjectsExposeHomepageCardMode() -> None:
     assert getRecentCardMode() == "card-list"
 
 
-def testRecentProjectsShowEmptyStateGuidance() -> None:
+def testRecentProjectsShowEmptyStateAndKeepProjectActions() -> None:
     from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
 
     ensureQApp()
@@ -153,7 +172,9 @@ def testRecentProjectsShowEmptyStateGuidance() -> None:
     assert callable(getRecentEmptyStateText)
     emptyState = getRecentEmptyStateText()
     assert "暂无最近项目" in emptyState
-    assert "打开项目" in emptyState
+    assert dialog._openProjectButton.text() == "打开项目"
+    assert dialog._openProjectButton.isEnabled()
+    assert dialog._newBlankButton.isEnabled()
 
 
 def testRecentProjectsExposeInlineRemoveMode() -> None:

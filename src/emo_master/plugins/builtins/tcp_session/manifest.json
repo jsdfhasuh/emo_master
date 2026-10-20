@@ -1,0 +1,45 @@
+{
+  "operatorId": "communication.tcp.session",
+  "displayName": "TCP 通道会话",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins._managed_tcp:TcpSessionOperator",
+  "category": "通讯",
+  "iconKey": "tcp-client",
+  "summary": "取得当前轮次的通道会话；请放在图像采集或结果计算之前，不创建监听。",
+  "inputPorts": {},
+  "outputPorts": {
+    "session": {
+      "type": "tcpSessionRef",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "serviceId": {
+        "title": "项目通信服务",
+        "type": "string",
+        "default": "tcp-server",
+        "minLength": 1
+      },
+      "channelId": {
+        "title": "逻辑通道",
+        "type": "string",
+        "default": "",
+        "minLength": 1
+      },
+      "timeoutMs": {
+        "title": "等待连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 5000
+      }
+    }
+  },
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

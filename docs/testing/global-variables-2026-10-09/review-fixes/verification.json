@@ -1,0 +1,35 @@
+{
+  "date": "2026-10-09",
+  "scope": "Four confirmed global-variable review findings only; unrelated working-tree changes retained",
+  "fileBindingDecision": "Fail closed: file/directory parameters cannot bind either mutable variables or constants in this version. Fixed paths and resource/site bindings remain supported. No claim of dynamic file dependency packaging support.",
+  "fixes": [
+    "Shared binding and execute-time validation reject file substitution with E_VARIABLE_FILE_BINDING",
+    "Runtime directory/package preparation rejects unsupported file bindings before inspecting dormant literal paths or publishing a package",
+    "Writes queued behind refresh retain expected revision and project/task/generation; pending writes are cancelled on context change or shutdown; no automatic retry",
+    "Open generic and specialized editors refresh variable names/choices while preserving draft literals, selected IDs and invalid references; project undo/redo also refreshes"
+  ],
+  "python": "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+  "tests": [
+    {"result": "PASS", "passed": 57, "log": "focused-final.txt", "newRegressionCases": 26},
+    {"result": "PASS", "passed": 170, "log": "regression-final.txt"}
+  ],
+  "staticChecks": [
+    {"result": "PASS", "check": "mypy src/emo_master", "sourceFiles": 353, "log": "mypy-final.txt"},
+    {"result": "PASS", "check": "ruff on files changed in this repair", "log": "ruff-final.txt"},
+    {"result": "PASS", "check": "git diff --check"}
+  ],
+  "ui": {
+    "result": "PASS",
+    "platform": "windows",
+    "scales": [1, 1.5],
+    "logicalWidths": [460, 640, 980],
+    "captures": 14,
+    "reports": ["native-100/report.json", "native-150/report.json"],
+    "checks": "Isolated native Qt controls; Chinese text, narrow layout, long-name tooltip, renamed selected reference, preserved literal and invalid-reference apply rejection",
+    "liveUserApplicationsTouched": false
+  },
+  "fullRepositorySuite": "NOT_RUN",
+  "frozenApplicationBuild": "NOT_RUN",
+  "hardwareAndFieldAcceptance": "NOT_RUN",
+  "commitPushPublishOrRestart": "NOT_RUN"
+}

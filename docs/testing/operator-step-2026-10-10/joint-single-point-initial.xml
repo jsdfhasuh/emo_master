@@ -1,0 +1,307 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="7" skipped="0" tests="7" time="16.280" timestamp="2026-10-10T08:59:28.340473+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_debug_example_interactions" name="testStandaloneNodeUsesOnlyExplicitInputs[01-nested-calls.emoproj-child-number]" time="1.839"><failure message="AttributeError: 'MainWindow' object has no attribute '_workflowDebugWindow'">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FB7B37F0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FB83EC20&gt;
+filename = '01-nested-calls.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+&gt;           assert not session.dirty and path.read_bytes() == original
+E           assert (not True)
+E            +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F0FBB0E890&gt;.dirty
+
+tests\designer\test_debug_example_interactions.py:41: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FB7B37F0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FB83EC20&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001F0FB7B3C70&gt;
+filename = '01-nested-calls.emoproj', workflowId = 'child', nodeId = 'number'
+
+    @pytest.mark.parametrize("filename,workflowId,nodeId", [
+        ("01-nested-calls.emoproj", "child", "number"),
+        ("03-image.emoproj", "process", "threshold"),
+    ])
+    def testStandaloneNodeUsesOnlyExplicitInputs(runtime, ownedDesignerWindow, monkeypatch, filename, workflowId, nodeId):
+&gt;       with exampleWindow(runtime, ownedDesignerWindow, filename) as window:
+
+tests\designer\test_debug_example_interactions.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FB7B37F0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FB83EC20&gt;
+filename = '01-nested-calls.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+            assert not session.dirty and path.read_bytes() == original
+            assert runtime.loadedDocument is loaded and not runtime.jobRepository.all()
+        finally:
+&gt;           dialog = window._workflowDebugWindow
+E           AttributeError: 'MainWindow' object has no attribute '_workflowDebugWindow'
+
+tests\designer\test_debug_example_interactions.py:44: AttributeError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testStandaloneNodeUsesOnlyExplicitInputs[03-image.emoproj-process-threshold]" time="1.547"><failure message="AttributeError: 'MainWindow' object has no attribute '_workflowDebugWindow'">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FCCF2980&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FBB3E140&gt;
+filename = '03-image.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+&gt;           assert not session.dirty and path.read_bytes() == original
+E           assert (not True)
+E            +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F0FD0B5780&gt;.dirty
+
+tests\designer\test_debug_example_interactions.py:41: AssertionError
+
+During handling of the above exception, another exception occurred:
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FCCF2980&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FBB3E140&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001F0FCCF3C40&gt;
+filename = '03-image.emoproj', workflowId = 'process', nodeId = 'threshold'
+
+    @pytest.mark.parametrize("filename,workflowId,nodeId", [
+        ("01-nested-calls.emoproj", "child", "number"),
+        ("03-image.emoproj", "process", "threshold"),
+    ])
+    def testStandaloneNodeUsesOnlyExplicitInputs(runtime, ownedDesignerWindow, monkeypatch, filename, workflowId, nodeId):
+&gt;       with exampleWindow(runtime, ownedDesignerWindow, filename) as window:
+
+tests\designer\test_debug_example_interactions.py:116: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FCCF2980&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FBB3E140&gt;
+filename = '03-image.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+            assert not session.dirty and path.read_bytes() == original
+            assert runtime.loadedDocument is loaded and not runtime.jobRepository.all()
+        finally:
+&gt;           dialog = window._workflowDebugWindow
+E           AttributeError: 'MainWindow' object has no attribute '_workflowDebugWindow'
+
+tests\designer\test_debug_example_interactions.py:44: AttributeError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testFlowSingleStepIntoOutOverAndTrialIsolation" time="2.381"><failure message="KeyError: 'phase'">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FB83E0B0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FD1154B0&gt;
+
+    def testFlowSingleStepIntoOutOverAndTrialIsolation(runtime, ownedDesignerWindow):
+        with exampleWindow(runtime, ownedDesignerWindow, "01-nested-calls.emoproj") as window:
+            dialog = startFlow(window)
+            paused(dialog, "seed", "main")
+            step(dialog, "into", "first", "main")
+            child = step(dialog, "into", "number", "child")
+&gt;           assert trial(dialog, {"value": 99})["outputs"] == {"value": 99}
+
+tests\designer\test_debug_example_interactions.py:158: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\designer\test_debug_example_interactions.py:105: in trial
+    wait(lambda: dialog.displayed is not None and dialog.displayed["phase"] == "trial.result"
+tests\designer\test_operator_debug_window.py:26: in wait
+    if predicate():
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   wait(lambda: dialog.displayed is not None and dialog.displayed["phase"] == "trial.result"
+         and dialog.buttons["continue"].isEnabled())
+E   KeyError: 'phase'
+
+tests\designer\test_debug_example_interactions.py:105: KeyError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testFlowSingleBreakpointStopsBeforeExactInvocation[-1]" time="2.364"><failure message="assert (not True)&#10; +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F0FD2551B0&gt;.dirty">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FD299B40&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FD115390&gt;
+condition = '', hits = 1
+
+    @pytest.mark.parametrize("condition,hits", [("", 1), ('params["value"] == 7', 2)])
+    def testFlowSingleBreakpointStopsBeforeExactInvocation(runtime, ownedDesignerWindow, condition, hits):
+&gt;       with exampleWindow(runtime, ownedDesignerWindow, "01-nested-calls.emoproj") as window:
+
+tests\designer\test_debug_example_interactions.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FD299B40&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FD115390&gt;
+filename = '01-nested-calls.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+&gt;           assert not session.dirty and path.read_bytes() == original
+E           assert (not True)
+E            +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F0FD2551B0&gt;.dirty
+
+tests\designer\test_debug_example_interactions.py:41: AssertionError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testFlowSingleBreakpointStopsBeforeExactInvocation[params[&quot;value&quot;] == 7-2]" time="2.085"><failure message="assert (not True)&#10; +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F08121F280&gt;.dirty">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FD29AFE0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FD254EE0&gt;
+condition = 'params["value"] == 7', hits = 2
+
+    @pytest.mark.parametrize("condition,hits", [("", 1), ('params["value"] == 7', 2)])
+    def testFlowSingleBreakpointStopsBeforeExactInvocation(runtime, ownedDesignerWindow, condition, hits):
+&gt;       with exampleWindow(runtime, ownedDesignerWindow, "01-nested-calls.emoproj") as window:
+
+tests\designer\test_debug_example_interactions.py:170: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0FD29AFE0&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F0FD254EE0&gt;
+filename = '01-nested-calls.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+&gt;           assert not session.dirty and path.read_bytes() == original
+E           assert (not True)
+E            +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F08121F280&gt;.dirty
+
+tests\designer\test_debug_example_interactions.py:41: AssertionError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testLoopConditionalPointUsesCurrentIteration" time="2.352"><failure message="assert (not True)&#10; +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F081262BC0&gt;.dirty">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F08121D180&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F08121D8A0&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001F08121D2D0&gt;
+
+    def testLoopConditionalPointUsesCurrentIteration(runtime, ownedDesignerWindow, monkeypatch):
+&gt;       with exampleWindow(runtime, ownedDesignerWindow, "02-foreach.emoproj") as window:
+
+tests\designer\test_debug_example_interactions.py:190: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+..\..\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F08121D180&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F08121D8A0&gt;
+filename = '02-foreach.emoproj'
+
+    @contextmanager
+    def exampleWindow(runtime, ownedDesignerWindow, filename):
+        path = EXAMPLES / filename
+        original = path.read_bytes()
+        window = ownedDesignerWindow(RuntimeClient(runtime))
+        waitForCatalog(window)
+        assert window.loadProjectDirectory(str(path))
+        for workflowId in window.pageCoordinator.session.payload()["workflows"]:
+            window.activateWorkflow(workflowId)
+        window.activateWorkflow("main")
+        session = window.pageCoordinator.session
+        before, undo, loaded = deepcopy(session.payload()), len(session._undo), runtime.loadedDocument
+        try:
+            yield window
+            assert session.payload() == before and len(session._undo) == undo
+&gt;           assert not session.dirty and path.read_bytes() == original
+E           assert (not True)
+E            +  where True = &lt;emo_master.apps.designer.state.project_edit_session.ProjectEditSession object at 0x000001F081262BC0&gt;.dirty
+
+tests\designer\test_debug_example_interactions.py:41: AssertionError</failure></testcase><testcase classname="tests.designer.test_debug_example_interactions" name="testImageRunToPointUsesUpstreamPixelsAndTrialKeepsOriginalThreshold" time="2.159"><failure message="KeyError: 'phase'">runtime = &lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001F0D26E1930&gt;
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F081262F50&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x000001F0D26E0850&gt;
+
+    def testImageRunToPointUsesUpstreamPixelsAndTrialKeepsOriginalThreshold(runtime, ownedDesignerWindow, monkeypatch):
+        with exampleWindow(runtime, ownedDesignerWindow, "03-image.emoproj") as window:
+            dialog = startFlow(window, monkeypatch, "sample.png", "image")
+            row = next(index for index, row in enumerate(dialog.breakpointRows) if row[:2] == ("process", "threshold"))
+            dialog.breakpoints.selectRow(row)
+            sequence = dialog.pauseSequence
+            QTest.mouseClick(dialog.runTo, Qt.LeftButton)
+            current = paused(dialog, "threshold", "process", after=sequence)
+            assert current["reason"] == "run-to"
+            raw, _ = decode((EXAMPLES / "sample.png").read_bytes(), "image/png")
+            expected = cv2.GaussianBlur(raw, (3, 3), 0)
+            downloaded = dialog.connection.download(current["inputsAssets"]["image"]["assetId"])
+            actual, _ = decode(downloaded["content"], "image/png")
+            np.testing.assert_array_equal(actual, expected)
+            assert not np.array_equal(actual, raw)
+&gt;           trialResult = trial(dialog, dict(current["params"], threshold=200))
+
+tests\designer\test_debug_example_interactions.py:219: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\designer\test_debug_example_interactions.py:105: in trial
+    wait(lambda: dialog.displayed is not None and dialog.displayed["phase"] == "trial.result"
+tests\designer\test_operator_debug_window.py:26: in wait
+    if predicate():
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+&gt;   wait(lambda: dialog.displayed is not None and dialog.displayed["phase"] == "trial.result"
+         and dialog.buttons["continue"].isEnabled())
+E   KeyError: 'phase'
+
+tests\designer\test_debug_example_interactions.py:105: KeyError</failure></testcase></testsuite></testsuites>

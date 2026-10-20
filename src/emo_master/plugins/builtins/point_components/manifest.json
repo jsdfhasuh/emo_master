@@ -1,0 +1,35 @@
+{
+  "operatorId": "vision.geometry.point_components",
+  "displayName": "单点拆分 X/Y",
+  "version": "1.0.0",
+  "inputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "x": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    },
+    "y": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._numeric_bridges:PointComponentsOperator",
+  "category": "几何",
+  "iconKey": "calculator",
+  "summary": "拆分单个点的 X/Y 原始数值；不改变坐标系或单位，空点和多点报错。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

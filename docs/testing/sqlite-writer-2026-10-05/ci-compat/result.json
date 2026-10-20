@@ -1,0 +1,17 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_main_window_project_save_load.py",
+    "tests/runtime/presentation/test_normal_capture_status_validation.py",
+    "tests/runtime/test_builtin_communication_operator_workflows.py",
+    "tests/runtime/test_builtin_coordinate_operator_workflow.py",
+    "tests/runtime/test_builtin_vision_operator_workflows.py",
+    "tests/runtime/test_real_onnx_result_pipeline.py",
+    "tests/sqlite_writer/test_dependencies.py::testBuiltinSqlitePreservesActualCoreCapabilityGate"
+  ],
+  "exitCode": 0,
+  "seconds": 4.530999999959022
+}

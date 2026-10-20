@@ -1,0 +1,16 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "--tb=short",
+    "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\testing\\operator-step-2026-10-09\\baseline\\pytest.xml",
+    "tests/runtime",
+    "tests/core",
+    "tests/plugins",
+    "tests/sqlite_writer"
+  ],
+  "returnCode": 0,
+  "sourceChangedDuringRun": []
+}

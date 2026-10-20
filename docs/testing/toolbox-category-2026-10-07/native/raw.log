@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\toolbox-category-2026-10-07\capture.py", line 71, in <module>
+    main()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\docs\testing\toolbox-category-2026-10-07\capture.py", line 52, in main
+    assertSelection(window, category)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_category_selection.py", line 31, in assertSelection
+    assert color == ('#edf3ff' if name == category else '#ffffff'), (name, category, color)
+AssertionError: ('其他', '全部', '#ffde9d')

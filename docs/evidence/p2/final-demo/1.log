@@ -1,0 +1,55 @@
+Exception in thread display-snapshot-health:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 1016, in _bootstrap_inner
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\threading.py", line 953, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\clients\runtime\display_session.py", line 166, in _health
+    self._accept(self.stub.Snapshot(pb.DisplayRequest(runtime_instance_id=self.instanceId,
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\grpc\_channel.py", line 1156, in __call__
+    state, call = self._blocking(
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\grpc\_channel.py", line 1127, in _blocking
+    call = self._channel.segregated_call(
+  File "src/python/grpcio/grpc/_cython/_cygrpc/channel.pyx.pxi", line 547, in grpc._cython.cygrpc.Channel.segregated_call
+  File "src/python/grpcio/grpc/_cython/_cygrpc/channel.pyx.pxi", line 403, in grpc._cython.cygrpc._segregated_call
+  File "src/python/grpcio/grpc/_cython/_cygrpc/channel.pyx.pxi", line 407, in grpc._cython.cygrpc._segregated_call
+ValueError: Cannot invoke RPC on closed channel!
+{
+  "job": "d26126d6-8cda-4433-8d15-1113dae7edcd",
+  "same_result": "e17b743f-bd5d-4a95-b519-1915a021d926",
+  "count": 2,
+  "image_sha256": "02590659c189056bbcb8d7a0b1c6297a8a20563395d7600a9dbaedcab19196a3",
+  "clients": [
+    {
+      "received": 1,
+      "decoded": 1,
+      "dropped": 0,
+      "read_failed": 0,
+      "resets": 1
+    },
+    {
+      "received": 1,
+      "decoded": 1,
+      "dropped": 0,
+      "read_failed": 0,
+      "resets": 1
+    }
+  ],
+  "resources": {
+    "cache_bytes": 654,
+    "lease_handles": 0,
+    "readers": 0,
+    "assets": 1,
+    "open_results": 0,
+    "history_results": 1,
+    "history_bytes": 1379,
+    "rejected": 0,
+    "shared_capacity": 16777216,
+    "export_reserved": 100663296,
+    "metadata_reserved": 67108864,
+    "read_reserved": 16777216,
+    "total_reserved": 201326592,
+    "limit": 268435456
+  },
+  "single_client_exit_preserved_job": true
+}

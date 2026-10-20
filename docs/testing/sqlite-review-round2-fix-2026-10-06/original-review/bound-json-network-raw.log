@@ -1,0 +1,46 @@
+Process emo-master-job-b5756310-84ae-43af-a27e-0a98ccd52454:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 84, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 93, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 227, in _runWorkflow
+    boundValues.setdefault(binding.toNode, {})[binding.mappingIndex] = captureBoundValue(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\workflow\parameter_bindings.py", line 68, in captureBoundValue
+    stored = toStorage(value, binding.storageType)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\contracts\sqlite_writer.py", line 162, in toStorage
+    if len(result.encode("utf-8")) > MAX_RECORD_BYTES:
+UnicodeEncodeError: 'utf-8' codec can't encode character '\ud800' in position 9: surrogates not allowed
+REVIEW_EVIDENCE {"probe": "bound-json-network", "accepted": true, "jobId": "b5756310-84ae-43af-a27e-0a98ccd52454", "jobStatus": "FAILED", "nodeEvents": [{"eventType": "node.started", "nodeId": "input", "code": "", "message": "node started: input", "payload": {"ioSummary": {"version": 1, "inputs": {"items": [], "portCount": 0, "omitted": 0}, "outputs": null}}}, {"eventType": "workflow.failed", "nodeId": "", "code": "E_EXEC_FAILED", "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed", "payload": {"status": "FAILED", "code": "E_EXEC_FAILED", "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed", "metrics": {}, "diagnostics": {}}}], "databaseRows": 0, "remainingPendingWrites": 0}
+F
+================================== FAILURES ===================================
+____________ testBoundEncodingFailureStillRunsWriterContinuePolicy ____________
+
+    def testBoundEncodingFailureStillRunsWriterContinuePolicy():
+        root = tempfile.mkdtemp(prefix='sqlite-r2-json-', dir='D:/')
+        context = multiprocessing.get_context('spawn')
+        receive, send = context.Pipe(duplex=False)
+        process = context.Process(target=boundEncodingProbe, args=(root, send))
+        process.start()
+        send.close()
+        try:
+            assert receive.poll(25), 'outer watchdog'
+            result = receive.recv()
+            process.join(5)
+            print('REVIEW_EVIDENCE ' + json.dumps({'probe': 'bound-json-network', **result}, ensure_ascii=True))
+            assert not process.is_alive() and process.exitcode == 0 and 'probeError' not in result
+>           assert result['jobStatus'] == 'COMPLETED', 'writer continue policy was bypassed'
+E           AssertionError: writer continue policy was bypassed
+E           assert 'FAILED' == 'COMPLETED'
+E             
+E             - COMPLETED
+E             + FAILED
+
+..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_bound_encoding_network.py:77: AssertionError
+=========================== short test summary info ===========================
+FAILED ..\..\emo-master-backups\sqlite-review-round2-20261005-231441-0683317\test_bound_encoding_network.py::testBoundEncodingFailureStillRunsWriterContinuePolicy
+1 failed in 4.13s

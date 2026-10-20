@@ -1,0 +1,55 @@
+...F....                                                                 [100%]
+================================== FAILURES ===================================
+_______________ testDraftOnSameRuntimeReloadObserveAndAsyncExit _______________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x2623098d5c0) at 0x0000026231EF98F0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-402/testDraftOnSameRuntimeReloadOb0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000026231F51F90>
+
+    def testDraftOnSameRuntimeReloadObserveAndAsyncExit(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
+        root = tmp_path/'project'
+        root.mkdir()
+        document = sampleProject(root)
+        saveProject(root, document.model_dump())
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        window = MainWindow(client)
+        preview = window.pageCoordinator.preview
+        try:
+            assert window.loadProjectDirectory(str(root))
+            window.show()
+            c = window.pageCoordinator
+            c.showPages()
+            preview.startDebug()
+            waitFor(lambda: preview.hub is not None or preview.error is not None)
+            assert preview.error is None
+            backend = preview.backend
+            assert backend.runtime is runtime
+            waitFor(lambda: bool(c.editor.renderer.displayed))
+            scope = next(iter(c.editor.renderer.displayed.values()))
+>           assert scope.result.status == 'COMPLETE'
+E           AssertionError: assert 'FAILED' == 'COMPLETE'
+E             
+E             - COMPLETE
+E             + FAILED
+
+tests\ui\page_designer\test_preview.py:48: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-7ddc242a-3d0a-4829-a5ce-f10517a0eb15:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 68, in runJobProcess
+    runner.run(spec.workflowId, inputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 90, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 165, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 274, in _runNode
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.workflow.runner.WorkflowExecutionError: node inputs are missing: image
+1 failed, 7 passed in 4.05s

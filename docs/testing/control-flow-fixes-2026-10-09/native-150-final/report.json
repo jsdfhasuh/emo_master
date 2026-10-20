@@ -1,0 +1,32 @@
+{
+  "platform": "windows",
+  "scale": "1.5",
+  "font": "Microsoft YaHei UI",
+  "runtimeCalls": 0,
+  "cases": [
+    {
+      "case": "switch",
+      "requestedWidth": 460,
+      "actualWidth": 460,
+      "result": "PASS"
+    },
+    {
+      "case": "switch",
+      "requestedWidth": 640,
+      "actualWidth": 640,
+      "result": "PASS"
+    },
+    {
+      "case": "foreach-conflict",
+      "requestedWidth": 460,
+      "actualWidth": 460,
+      "result": "PASS"
+    },
+    {
+      "case": "foreach-conflict",
+      "requestedWidth": 640,
+      "actualWidth": 640,
+      "result": "PASS"
+    }
+  ]
+}

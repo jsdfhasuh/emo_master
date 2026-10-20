@@ -1,0 +1,57 @@
+{
+  "date": "2026-10-10",
+  "status": "COMPLETE_RESTRICTED_SOFTWARE_SCOPE",
+  "workspace": "C:/Users/jsdfhasuh/my_scripts/emo_master",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "head": "61a42bf3ab181c3b2339f0425edfb40a60d0ec7b",
+  "includesUncommittedChanges": true,
+  "python": "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+  "stages": {
+    "A0-A5": "COMPLETE",
+    "B0-B2": "COMPLETE",
+    "B3": "EVALUATION_COMPLETE_IMPLEMENTATION_DEFERRED"
+  },
+  "fullRegressionBeforeFinalNarrowFixes": {
+    "evidence": "b-final-full/result.json",
+    "log": "b-final-full/pytest.log",
+    "source": "b-final-full/source-after.json",
+    "passed": 4276,
+    "skipped": 10,
+    "subtestsPassed": 28,
+    "seconds": 1135.31,
+    "sourceChangedDuringRun": []
+  },
+  "afterFinalNarrowFixes": {
+    "source": "b-review-static/source-after.json",
+    "fullSuiteRerun": false,
+    "focused": {"evidence": "b-review-final.xml", "passed": 42, "skipped": 1, "failures": 0, "errors": 0},
+    "relatedRegression": {"evidence": "b-review-regression.xml", "passed": 136, "skipped": 0, "failures": 0, "errors": 0},
+    "static": {
+      "evidence": "b-review-static/result.json",
+      "proto": "PASS",
+      "ruff": "PASS",
+      "mypy": "BASELINE_FAIL",
+      "baselineErrors": 10,
+      "baselineFiles": 5,
+      "sourceChangedDuringRun": []
+    },
+    "longIdentityNativeUi": {"evidence": "b-native-long/", "screenshots": 72, "scales": [1, 1.25, 1.5, 2], "sizes": [[1280, 720], [1600, 900], [1920, 1080]], "status": "PASS"}
+  },
+  "additionalAcceptance": {
+    "flow": {"evidence": "b-acceptance-final.xml", "passed": 5, "pauseLeaseSeconds": 65},
+    "operatorStress": {"evidence": "a5-post-b-stress.xml", "passed": 6, "executions": 1049, "sessions": 50, "handlesBeforeAfter": [539, 458], "threadsBeforeAfter": [1, 1], "rssBytesBeforeAfter": [139931648, 134565888]},
+    "nativeUi": {"evidence": "b-native-final/", "screenshots": 72, "status": "PASS"}
+  },
+  "limitations": {
+    "supportedReviewedBuiltins": 47,
+    "unsupportedBuiltins": 13,
+    "thirdPartyPlugins": "UNSUPPORTED",
+    "wholeDraftAdmissionRequired": true,
+    "realDevices": "NOT_RUN",
+    "externalWrites": "NOT_RUN",
+    "packagingPublishingDeploymentFieldAcceptance": "NOT_RUN",
+    "commitPush": "NOT_RUN",
+    "existingUserProcessesRestarted": false
+  },
+  "review": "B0-B3-review.md"
+}

@@ -1,0 +1,515 @@
+{
+  "scope": "Review only; no repository edits, commits, pushes, or live business databases",
+  "head": "89b2c276ba06bc710eb7dace95cbe0dcc54302ae",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "sourceDigest": "3c470da76a690f8ad7b561d8b0faac4cbdbd3056015fc7976d29480729ddeb77",
+  "preservation": {
+    "head": true,
+    "branch": true,
+    "sourceDigest": true,
+    "sourceHashes": true,
+    "dirty": true,
+    "dirtyHashes": true,
+    "index": true,
+    "dirtyFileCount": 160,
+    "indexEmpty": true
+  },
+  "existingSuite": {
+    "command": [
+      "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/sqlite_writer",
+      "tests/runtime/test_runtime_grpc_network.py",
+      "tests/runtime/test_runtime_project_execution.py",
+      "tests/runtime/test_runner_io_summary.py"
+    ],
+    "exitCode": 0,
+    "seconds": 35.218000000109896,
+    "result": "114 PASS; 0 FAIL; 0 SKIP"
+  },
+  "reviewExpectations": {
+    "latestRelevantRuns": "1 PASS / 7 FAIL, confirming four findings",
+    "initialProtectedRun": "1 FAIL / 1 apparent PASS. Debug failed for unrelated MAX_PATH; not counted as protection validation. Raw retained. Short path rerun required E_SQLITE_TARGET and failed in both modes.",
+    "monitoredFaultTests": "Real spawn; 25-second outer watchdog; service/channel/server close plus terminate/kill/join finally"
+  },
+  "notRun": [
+    "Complete CI this review",
+    "Visible Qt UI this review",
+    "Performance/resource-steady-state acceptance"
+  ],
+  "findings": [
+    {
+      "id": "R2-1",
+      "priority": "P1",
+      "file": "src/emo_master/apps/runtime/presentation/preparation.py",
+      "line": 73,
+      "title": "Prepared project path does not receive actual Runtime protected paths",
+      "evidence": "Loopback management/StartJob reject internal state file. Debug/release preparation accept it. Actual release spawn Job COMMITTED a row into Runtime globalCounters."
+    },
+    {
+      "id": "R2-2",
+      "priority": "P2",
+      "file": "src/emo_master/apps/runtime/business_sqlite/backend.py",
+      "line": 119,
+      "title": "SQL literals misclassified as table syntax",
+      "evidence": "Normal text defaults WITHOUT ROWID and CREATE VIRTUAL TABLE cause invalid metadata or management failure after CREATE commit."
+    },
+    {
+      "id": "R2-3",
+      "priority": "P2",
+      "file": "src/emo_master/core/workflow/parameter_bindings.py",
+      "line": 70,
+      "title": "UTF-8 conversion errors escape writer continue policy",
+      "evidence": "Escaped lone surrogate accepted through typed StartJob, real spawn fails at captureBoundValue; no writer receipt and source has node.started only."
+    },
+    {
+      "id": "R2-4",
+      "priority": "P2",
+      "file": "src/emo_master/apps/runtime/business_sqlite/backend.py",
+      "line": 102,
+      "title": "Confirmed commit lost when exiting connection context raises",
+      "evidence": "Fault injection AFTER actual guard.close: real row/writeId exists but receipt is FAILED/0; no live interrupt monitors.",
+      "qualification": "Controlled fault injection, not an observed spontaneous sqlite3.close failure"
+    }
+  ],
+  "evidence": [
+    {
+      "rawLog": "probes-raw.log",
+      "probe": "normal",
+      "receipt": {
+        "writeId": "343ed907-48d9-424d-a689-f00b5f75c44c",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": 1,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "609b424e-20ca-4bcc-89dc-92eecc6f780d",
+          "nodeId": "writer",
+          "nodeRunId": "534587d0-36c5-4bda-a10f-b8dae69a9299",
+          "iterationPath": []
+        },
+        "elapsedMs": 108.99999993853271,
+        "error": null
+      },
+      "rows": [
+        [
+          "{\"actual\":[0,false,null,\"\"]}"
+        ]
+      ]
+    },
+    {
+      "rawLog": "probes-raw.log",
+      "probe": "schema-literal",
+      "literal": "WITHOUT ROWID",
+      "initializeError": null,
+      "structure": {
+        "table": "records",
+        "columns": [
+          {
+            "name": "id",
+            "declaredType": "INTEGER",
+            "affinity": "INTEGER",
+            "nullable": false,
+            "defaultSql": null,
+            "primaryKey": 1,
+            "generated": false,
+            "autoPrimaryKey": false
+          },
+          {
+            "name": "write_id",
+            "declaredType": "TEXT",
+            "affinity": "TEXT",
+            "nullable": false,
+            "defaultSql": null,
+            "primaryKey": 0,
+            "generated": false,
+            "autoPrimaryKey": false
+          },
+          {
+            "name": "value",
+            "declaredType": "TEXT",
+            "affinity": "TEXT",
+            "nullable": false,
+            "defaultSql": "'WITHOUT ROWID'",
+            "primaryKey": 0,
+            "generated": false,
+            "autoPrimaryKey": false
+          }
+        ],
+        "createSql": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'WITHOUT ROWID')",
+        "uniqueWriteId": true,
+        "externalIndexes": [],
+        "foreignKeys": [],
+        "triggers": []
+      },
+      "native": [
+        [
+          "main",
+          "sqlite_sequence",
+          "table",
+          2,
+          0,
+          0
+        ],
+        [
+          "main",
+          "records",
+          "table",
+          3,
+          0,
+          0
+        ],
+        [
+          "main",
+          "sqlite_schema",
+          "table",
+          5,
+          0,
+          0
+        ],
+        [
+          "temp",
+          "sqlite_temp_schema",
+          "table",
+          5,
+          0,
+          0
+        ]
+      ],
+      "ddl": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'WITHOUT ROWID')",
+      "receipt": {
+        "writeId": "78b170fb-9041-4ca5-b351-c51c1dd59ed4",
+        "status": "FAILED",
+        "rowsAffected": 0,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "20e4da2a-701a-45e3-beeb-795fc75a54d4",
+          "nodeId": "writer",
+          "nodeRunId": "26991d6d-eea8-4e08-9526-ccfa4b91d8ce",
+          "iterationPath": []
+        },
+        "elapsedMs": 0.0,
+        "error": {
+          "code": "E_SQLITE_SCHEMA",
+          "message": "未映射必填列：id",
+          "mappingRow": null
+        }
+      }
+    },
+    {
+      "rawLog": "probes-raw.log",
+      "probe": "schema-literal",
+      "literal": "CREATE VIRTUAL TABLE",
+      "initializeError": {
+        "type": "SqliteWriterError",
+        "code": "E_SQLITE_SCHEMA",
+        "message": "目标必须为普通表，不能为视图或虚拟表"
+      },
+      "structure": null,
+      "native": [
+        [
+          "main",
+          "sqlite_sequence",
+          "table",
+          2,
+          0,
+          0
+        ],
+        [
+          "main",
+          "records",
+          "table",
+          3,
+          0,
+          0
+        ],
+        [
+          "main",
+          "sqlite_schema",
+          "table",
+          5,
+          0,
+          0
+        ],
+        [
+          "temp",
+          "sqlite_temp_schema",
+          "table",
+          5,
+          0,
+          0
+        ]
+      ],
+      "ddl": "CREATE TABLE \"records\" (\"id\" INTEGER PRIMARY KEY AUTOINCREMENT, \"write_id\" TEXT NOT NULL UNIQUE, \"value\" TEXT NOT NULL DEFAULT 'CREATE VIRTUAL TABLE')",
+      "receipt": {
+        "writeId": "0a63bd70-8f16-4ebb-b287-621a75a4177c",
+        "status": "FAILED",
+        "rowsAffected": 0,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "099bb02a-2404-4b31-a94c-06c02c2abbd3",
+          "nodeId": "writer",
+          "nodeRunId": "6e27a0a2-7e61-400a-ab0f-09fe18ebbedf",
+          "iterationPath": []
+        },
+        "elapsedMs": 0.0,
+        "error": {
+          "code": "E_SQLITE_SCHEMA",
+          "message": "目标必须为普通表，不能为视图或虚拟表",
+          "mappingRow": null
+        }
+      }
+    },
+    {
+      "rawLog": "probes-raw.log",
+      "probe": "cleanup-after-commit",
+      "faultInjection": true,
+      "receipt": {
+        "writeId": "977892e3-e740-4800-b4bf-59f3bf1492db",
+        "status": "FAILED",
+        "rowsAffected": 0,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "d4bf86a1-3034-4e4a-ae27-7c41745225ec",
+          "nodeId": "writer",
+          "nodeRunId": "6a47888c-5325-40d3-82bf-6211f7de90b3",
+          "iterationPath": []
+        },
+        "elapsedMs": 109.99999986961484,
+        "error": {
+          "code": "E_SQLITE_WRITE",
+          "message": "injected cleanup failure after actual connection close",
+          "mappingRow": null
+        }
+      },
+      "rows": [
+        [
+          "\"confirmed\"",
+          "977892e3-e740-4800-b4bf-59f3bf1492db"
+        ]
+      ],
+      "liveMonitors": []
+    },
+    {
+      "rawLog": "probes-raw.log",
+      "probe": "invalid-unicode-bound-json",
+      "unboundControl": "PASS",
+      "failurePolicy": "continue",
+      "receipt": null,
+      "error": {
+        "type": "UnicodeEncodeError",
+        "code": "",
+        "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed"
+      },
+      "rows": 0
+    },
+    {
+      "rawLog": "protected-raw.log",
+      "probe": "protected-prepare",
+      "mode": "debug",
+      "dbPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro0\\debug\\control-state.sqlite3",
+      "managementAccepted": false,
+      "managementCode": "E_SQLITE_TARGET",
+      "normalAccepted": false,
+      "normalMessage": "不能使用 Runtime 内部库、缓存或任务临时目录",
+      "loaded": true,
+      "prepareAccepted": false,
+      "prepareError": {
+        "type": "FileNotFoundError",
+        "code": "",
+        "message": "[WinError 206] 文件名或扩展名太长。: 'D:\\\\jsdfhasuh\\\\documents\\\\emo-master-backups\\\\sqlite-review-round2-20261005-231441-0683317\\\\protected-temp\\\\testPreparedPathRejectsSamePro0\\\\debug\\\\jobs-presentation\\\\bdb6ca30d14e260cfc8ea30c3592d0ad\\\\debug\\\\c6f4a4f0-be5b-4c45-8d06-4f05eb3d0809\\\\business-sqlite'"
+      },
+      "runtimeInternalRows": [],
+      "frozenRows": []
+    },
+    {
+      "rawLog": "protected-raw.log",
+      "probe": "protected-prepare",
+      "mode": "release",
+      "dbPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro1\\release\\control-state.sqlite3",
+      "managementAccepted": false,
+      "managementCode": "E_SQLITE_TARGET",
+      "normalAccepted": false,
+      "normalMessage": "不能使用 Runtime 内部库、缓存或任务临时目录",
+      "loaded": true,
+      "prepareAccepted": true,
+      "prepareError": null,
+      "frozenWriterTarget": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-round2-20261005-231441-0683317\\protected-temp\\testPreparedPathRejectsSamePro1\\release\\control-state.sqlite3",
+      "jobId": "1b4eef48-3e5f-4741-b12f-50e6839ac3a0",
+      "jobStatus": "COMPLETED",
+      "receipt": {
+        "writeId": "f4979d6f-598b-4e28-abfb-430d001b9b87",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "1b4eef48-3e5f-4741-b12f-50e6839ac3a0",
+          "projectId": "sqlite-test",
+          "workflowId": "main",
+          "workflowRunId": "4ef56f68-e02c-4e68-ae78-61afb94d48f8",
+          "nodeId": "writer",
+          "nodeRunId": "b882aee7-9a67-45f0-ab49-bde7bb7d228d",
+          "iterationPath": []
+        },
+        "elapsedMs": 155.9999999590218,
+        "error": null
+      },
+      "runtimeInternalRows": [
+        [
+          "review-owned",
+          "probe",
+          123
+        ]
+      ],
+      "frozenRows": [
+        [
+          "review-owned",
+          "probe",
+          123
+        ]
+      ]
+    },
+    {
+      "rawLog": "protected-shortpath-raw.log",
+      "probe": "protected-prepare",
+      "mode": "debug",
+      "dbPath": "D:\\sqlite-r2-zf90g_kw\\debug\\control-state.sqlite3",
+      "managementAccepted": false,
+      "managementCode": "E_SQLITE_TARGET",
+      "normalAccepted": false,
+      "normalMessage": "不能使用 Runtime 内部库、缓存或任务临时目录",
+      "loaded": true,
+      "prepareAccepted": true,
+      "prepareError": null,
+      "frozenWriterTarget": "D:\\sqlite-r2-zf90g_kw\\debug\\jobs-presentation\\bdb6ca30d14e260cfc8ea30c3592d0ad\\debug\\7bfb862c-f7d2-4140-9632-e72ede9cac55\\business-sqlite\\5ff0843eb96b345348a89764.sqlite3",
+      "jobId": "fbcb6547-e95d-48d2-a8c2-e8c0fa22ef64",
+      "jobStatus": "COMPLETED",
+      "receipt": {
+        "writeId": "11d910d8-fb97-4061-8548-4f91569657e9",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "fbcb6547-e95d-48d2-a8c2-e8c0fa22ef64",
+          "projectId": "sqlite-test",
+          "workflowId": "main",
+          "workflowRunId": "e08fca20-e033-4205-bd15-7a518217d1da",
+          "nodeId": "writer",
+          "nodeRunId": "ac184167-e79c-4794-8454-c32bb9379aa6",
+          "iterationPath": []
+        },
+        "elapsedMs": 156.99999989010394,
+        "error": null
+      },
+      "runtimeInternalRows": [],
+      "frozenRows": [
+        [
+          "review-owned",
+          "probe",
+          123
+        ]
+      ]
+    },
+    {
+      "rawLog": "protected-shortpath-raw.log",
+      "probe": "protected-prepare",
+      "mode": "release",
+      "dbPath": "D:\\sqlite-r2-acmejmyg\\release\\control-state.sqlite3",
+      "managementAccepted": false,
+      "managementCode": "E_SQLITE_TARGET",
+      "normalAccepted": false,
+      "normalMessage": "不能使用 Runtime 内部库、缓存或任务临时目录",
+      "loaded": true,
+      "prepareAccepted": true,
+      "prepareError": null,
+      "frozenWriterTarget": "D:\\sqlite-r2-acmejmyg\\release\\control-state.sqlite3",
+      "jobId": "0eaa2688-26d6-4cad-bff1-92a0196fa504",
+      "jobStatus": "COMPLETED",
+      "receipt": {
+        "writeId": "23034fa0-175e-4ff5-a894-f94054daf614",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "0eaa2688-26d6-4cad-bff1-92a0196fa504",
+          "projectId": "sqlite-test",
+          "workflowId": "main",
+          "workflowRunId": "99dd10da-f20d-4e0e-91fc-f917808c96fd",
+          "nodeId": "writer",
+          "nodeRunId": "586b09c6-32c3-4555-b0b3-cd90dd0f5f32",
+          "iterationPath": []
+        },
+        "elapsedMs": 266.0000000614673,
+        "error": null
+      },
+      "runtimeInternalRows": [
+        [
+          "review-owned",
+          "probe",
+          123
+        ]
+      ],
+      "frozenRows": [
+        [
+          "review-owned",
+          "probe",
+          123
+        ]
+      ]
+    },
+    {
+      "rawLog": "bound-json-network-raw.log",
+      "probe": "bound-json-network",
+      "accepted": true,
+      "jobId": "b5756310-84ae-43af-a27e-0a98ccd52454",
+      "jobStatus": "FAILED",
+      "nodeEvents": [
+        {
+          "eventType": "node.started",
+          "nodeId": "input",
+          "code": "",
+          "message": "node started: input",
+          "payload": {
+            "ioSummary": {
+              "version": 1,
+              "inputs": {
+                "items": [],
+                "portCount": 0,
+                "omitted": 0
+              },
+              "outputs": null
+            }
+          }
+        },
+        {
+          "eventType": "workflow.failed",
+          "nodeId": "",
+          "code": "E_EXEC_FAILED",
+          "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed",
+          "payload": {
+            "status": "FAILED",
+            "code": "E_EXEC_FAILED",
+            "message": "'utf-8' codec can't encode character '\\ud800' in position 9: surrogates not allowed",
+            "metrics": {},
+            "diagnostics": {}
+          }
+        }
+      ],
+      "databaseRows": 0,
+      "remainingPendingWrites": 0
+    }
+  ]
+}

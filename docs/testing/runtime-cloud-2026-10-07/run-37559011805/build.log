@@ -1,0 +1,29 @@
+**********************
+PowerShell transcript start
+Start time: 20261007015234
+Username: runnervmfi6oq\runneradmin
+RunAs User: runnervmfi6oq\runneradmin
+Configuration Name: 
+Machine: runnervmfi6oq (Microsoft Windows NT 10.0.26100.0)
+Host Application: C:\Program Files\PowerShell\7\pwsh.dll -command . 'D:\a\_temp\517ad604-c34c-4881-b10d-a503283458bb.ps1'
+Process ID: 8048
+PSVersion: 7.6.6
+PSEdition: Core
+GitCommitId: 7.6.6
+OS: Microsoft Windows 10.0.26100
+Platform: Win32NT
+PSCompatibleVersions: 1.0, 2.0, 3.0, 4.0, 5.0, 5.1, 6.0, 7.0
+PSRemotingProtocolVersion: 2.4
+SerializationVersion: 1.1.0.1
+WSManStackVersion: 3.0
+**********************
+Transcript started, output file is D:\a\python_build_scripts\python_build_scripts\packager\release-output\build.log
+
+Frozen Runtime acceptance passed: C:\Users\runneradmin\AppData\Local\Temp\emo-runtime-check-859b4189547d4aefab2bc58b1c00feed\self-test.json
+Built D:\a\python_build_scripts\python_build_scripts\packager\release-output\emo-master-runtime-windows-v0.6.1.zip
+Built D:\a\python_build_scripts\python_build_scripts\packager\release-output\manifest.json
+Package SHA256: 5187a5c1e0b428efa7d2c40886c7bdd9c2e75d2e79893f79f8b59c145c1c774a
+**********************
+PowerShell transcript end
+End time: 20261007015348
+**********************

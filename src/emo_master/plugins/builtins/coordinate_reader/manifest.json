@@ -1,0 +1,200 @@
+{
+  "operatorId": "vision.io.coordinate_reader",
+  "displayName": "Coordinate Reader",
+  "version": "1.1.0",
+  "entry": "emo_master.plugins.builtins._coordinate_operators:CoordinateReaderOperator",
+  "category": "输入输出",
+  "iconKey": "source",
+  "summary": "Read TXT or CSV rows as strongly typed point2d coordinates.",
+  "inputPorts": {
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "points": {
+      "type": "list<point2d>",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "pointCount": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    },
+    "contentHash": {
+      "type": "string",
+      "required": true,
+      "nullable": false
+    },
+    "polygon": {
+      "type": "polygon2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "readMode": {
+        "title": "坐标文件读取方式",
+        "type": "string",
+        "enum": [
+          "perInvocation",
+          "session"
+        ],
+        "default": "perInvocation",
+        "xGlobalVariableBindingDisabled": true,
+        "xOptionLabels": {
+          "perInvocation": "每次调用读取（兼容默认）",
+          "session": "运行准入冻结内容"
+        },
+        "description": "会话模式在根流程开始前冻结所有可达坐标文件和解析参数。同一路径修改不会混入当前运行；停止并重新准入后更新。"
+      },
+      "filePath": {
+        "title": "坐标文件路径",
+        "type": "string",
+        "default": "",
+        "xWidget": "file",
+        "xFileMode": "open",
+        "xFilter": "Coordinate files (*.txt *.csv)"
+      },
+      "fileFormat": {
+        "title": "文件格式",
+        "type": "string",
+        "enum": [
+          "auto",
+          "csv",
+          "txt"
+        ],
+        "default": "auto"
+      },
+      "encoding": {
+        "title": "文本编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "utf-8-sig",
+          "gb18030",
+          "ascii"
+        ],
+        "default": "utf-8"
+      },
+      "delimiter": {
+        "title": "分隔符",
+        "type": "string",
+        "enum": [
+          "auto",
+          "comma",
+          "tab",
+          "space",
+          "semicolon"
+        ],
+        "default": "auto"
+      },
+      "headerMode": {
+        "title": "表头模式",
+        "type": "string",
+        "enum": [
+          "auto",
+          "present",
+          "absent"
+        ],
+        "default": "auto"
+      },
+      "xColumn": {
+        "title": "X 坐标列索引",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      },
+      "yColumn": {
+        "title": "Y 坐标列索引",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 1
+      },
+      "commentPrefix": {
+        "title": "注释前缀",
+        "type": "string",
+        "default": "#"
+      },
+      "onInvalidRow": {
+        "title": "无效行处理",
+        "type": "string",
+        "enum": [
+          "error",
+          "skip"
+        ],
+        "default": "error"
+      },
+      "maxPoints": {
+        "title": "最大坐标点数",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 100000,
+        "default": 10000
+      },
+      "maxFileBytes": {
+        "title": "最大文件大小（字节）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16777216,
+        "default": 4194304
+      },
+      "asPolygon": {
+        "title": "输出为多边形",
+        "type": "boolean",
+        "default": false
+      },
+      "sourceId": {
+        "title": "来源标识",
+        "type": "string",
+        "default": ""
+      },
+      "imageWidth": {
+        "title": "图像宽度（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000,
+        "default": 0
+      },
+      "imageHeight": {
+        "title": "图像高度（像素）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 1000000,
+        "default": 0
+      },
+      "transformToSource": {
+        "title": "到源坐标系的变换矩阵",
+        "type": "array",
+        "items": {
+          "type": "number"
+        },
+        "minItems": 6,
+        "maxItems": 6,
+        "default": [
+          1.0,
+          0.0,
+          0.0,
+          1.0,
+          0.0,
+          0.0
+        ]
+      }
+    },
+    "required": [
+      "filePath"
+    ]
+  },
+  "minCoreVersion": "0.3.0",
+  "maxCoreVersion": "1.x"
+}

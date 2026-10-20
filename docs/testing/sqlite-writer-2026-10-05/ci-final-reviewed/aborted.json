@@ -1,0 +1,8 @@
+{
+  "remainingSuite": "NOT_RUN",
+  "time": "2026-10-05T11:10:48.7894689+08:00",
+  "reason": "new source-catalog test used a dangling subflow rejected by ProjectDocument before catalog validation; correct new fixture then run complete final suite",
+  "command": "\"C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe\" scripts/sqlite_writer_validate.py --phase ci --output docs/testing/sqlite-writer-2026-10-05/ci-final-reviewed",
+  "action": "terminate owned validation process tree",
+  "pid": 88080
+}

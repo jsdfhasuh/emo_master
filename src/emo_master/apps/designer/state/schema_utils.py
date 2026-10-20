@@ -1,5 +1,49 @@
 from __future__ import annotations
 
+from copy import deepcopy
+
+
+def mergeParameterTitles(
+    schema: dict[str, object], catalogSchema: dict[str, object],
+) -> dict[str, object]:
+    """Overlay display annotations without changing a saved node's contract."""
+    result = deepcopy(schema)
+
+    def merge(target: dict[str, object], source: dict[str, object]) -> None:
+        properties = target.get("properties")
+        sourceProperties = source.get("properties")
+        if isinstance(properties, dict) and isinstance(sourceProperties, dict):
+            for name, field in properties.items():
+                sourceField = sourceProperties.get(name)
+                if not isinstance(field, dict) or not isinstance(sourceField, dict):
+                    continue
+                title = sourceField.get("title")
+                if isinstance(title, str) and title.strip():
+                    field["title"] = title.strip()
+                for key in ("description", "xOptionLabels", "xUnit", "xExample", "xMinimum", "xMaximum", "xOdd", "xBlankMeansEmpty"):
+                    if key in sourceField:
+                        field[key] = deepcopy(sourceField[key])
+                condition = sourceField.get("xEnabledWhen")
+                if isinstance(condition, dict) and all(key in properties for key in condition):
+                    field["xEnabledWhen"] = deepcopy(condition)
+                merge(field, sourceField)
+        channelBounds = source.get("xChannelBounds")
+        if isinstance(channelBounds, dict) and isinstance(properties, dict) and all(
+            channelBounds.get(key) in properties for key in ("selector", "lower", "upper")
+        ):
+            target["xChannelBounds"] = deepcopy(channelBounds)
+        items = target.get("items")
+        sourceItems = source.get("items")
+        if isinstance(items, dict) and isinstance(sourceItems, dict):
+            merge(items, sourceItems)
+        elif isinstance(items, list) and isinstance(sourceItems, list):
+            for item, sourceItem in zip(items, sourceItems):
+                if isinstance(item, dict) and isinstance(sourceItem, dict):
+                    merge(item, sourceItem)
+
+    merge(result, catalogSchema)
+    return result
+
 
 def applySchemaDefaults(schema: dict[str, object], value: object) -> object:
   schemaType = _getSchemaType(schema)
@@ -8,8 +52,12 @@ def applySchemaDefaults(schema: dict[str, object], value: object) -> object:
     properties = rawProperties if isinstance(rawProperties, dict) else {}
     rawValue = value if isinstance(value, dict) else {}
     result: dict[str, object] = {}
+    required = schema.get("required", [])
     for propertyName, propertySchema in properties.items():
       if not isinstance(propertyName, str) or not isinstance(propertySchema, dict):
+        continue
+      if (propertySchema.get("xOptionalPresence") and propertyName not in rawValue
+          and (not isinstance(required, list) or propertyName not in required)):
         continue
       currentValue = rawValue.get(propertyName)
       result[propertyName] = applySchemaDefaults(propertySchema, currentValue)

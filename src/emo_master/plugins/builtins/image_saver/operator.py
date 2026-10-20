@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from time import perf_counter
 from typing import Any
+import os
 
 import cv2
 import numpy as np
@@ -28,13 +29,14 @@ class ImageSaverOperator:
             "type": "object",
             "properties": {
                 "outputPath": {
+                    "title": "输出路径",
                     "type": "string",
                     "default": "",
                     "xWidget": "file",
                     "xFileMode": "save",
                     "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
                 },
-                "overwrite": {"type": "boolean", "default": True},
+                "overwrite": {"title": "覆盖已有文件", "type": "boolean", "default": True},
             },
             "required": ["outputPath"],
         },
@@ -98,7 +100,16 @@ class ImageSaverOperator:
             }
 
         outputFile.parent.mkdir(parents=True, exist_ok=True)
-        writeOk = cv2.imwrite(str(outputFile), image)
+        if os.name == 'nt' and not str(outputFile).isascii():
+            try:
+                writeOk, encoded = cv2.imencode(outputFile.suffix, image)
+                if writeOk:
+                    with outputFile.open('wb' if overwrite else 'xb') as stream:
+                        stream.write(encoded.tobytes())
+            except (OSError, cv2.error):
+                writeOk = False
+        else:
+            writeOk = cv2.imwrite(str(outputFile), image)
         if not writeOk:
             return {
                 "status": "error",

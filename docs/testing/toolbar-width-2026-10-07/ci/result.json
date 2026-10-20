@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "scripts/ci_check.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 878.0150000001304,
+  "outerWatchdogSeconds": 1800,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\toolbar-width-20261007-002955-281239\\test-runtime"
+}

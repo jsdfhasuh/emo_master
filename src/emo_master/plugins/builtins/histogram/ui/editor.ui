@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>HistogramEditor</class>
+ <widget class="QWidget" name="HistogramEditor">
+  <layout class="QVBoxLayout" name="rootLayout">
+   <item><layout class="QHBoxLayout" name="sourceLayout">
+    <item><widget class="QLabel" name="sourceLabel"><property name="text"><string>图源</string></property></widget></item>
+    <item><widget class="QComboBox" name="sourceCombo"/></item>
+    <item><widget class="QPushButton" name="localImageButton"><property name="text"><string>选择本地图片</string></property></widget></item>
+    <item><widget class="QLabel" name="binsLabel"><property name="text"><string>bins</string></property></widget></item>
+    <item><widget class="QSpinBox" name="binsSpin"><property name="minimum"><number>1</number></property><property name="maximum"><number>256</number></property><property name="value"><number>256</number></property></widget></item>
+    <item><widget class="QLabel" name="normalizationLabel"><property name="text"><string>normalization</string></property></widget></item>
+    <item><widget class="QComboBox" name="normalizationCombo"><item><property name="text"><string>counts</string></property></item><item><property name="text"><string>probability</string></property></item></widget></item>
+   </layout></item>
+   <item><widget class="QLabel" name="sourceImageLabel"><property name="minimumSize"><size><width>640</width><height>220</height></size></property><property name="text"><string>请选择图源</string></property><property name="alignment"><set>Qt::AlignCenter</set></property><property name="frameShape"><enum>QFrame::StyledPanel</enum></property></widget></item>
+   <item><widget class="QWidget" name="chartPlaceholder"><property name="minimumSize"><size><width>640</width><height>300</height></size></property><layout class="QVBoxLayout" name="chartLayout"/></widget></item>
+   <item><widget class="QLabel" name="pixelCountLabel"><property name="text"><string>pixelCount: 0（空选区）</string></property></widget></item>
+  </layout>
+ </widget>
+ <resources/>
+ <connections/>
+</ui>

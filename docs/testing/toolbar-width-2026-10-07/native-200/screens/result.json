@@ -1,0 +1,105 @@
+{
+  "status": "PASS",
+  "platform": "windows",
+  "qtScaleFactor": "2",
+  "syntheticControlStateOnly": true,
+  "cases": [
+    {
+      "requested": [
+        480,
+        500
+      ],
+      "actual": [
+        480,
+        483
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "480-idle.png"
+    },
+    {
+      "requested": [
+        480,
+        500
+      ],
+      "actual": [
+        480,
+        483
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "480-running.png"
+    },
+    {
+      "requested": [
+        640,
+        500
+      ],
+      "actual": [
+        640,
+        483
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "640-idle.png"
+    },
+    {
+      "requested": [
+        640,
+        500
+      ],
+      "actual": [
+        640,
+        483
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "640-running.png"
+    },
+    {
+      "requestedWidth": 960,
+      "status": "NOT_RUN",
+      "reason": "Requested window exceeds the current physical screen at this Qt scale."
+    },
+    {
+      "requestedWidth": 1280,
+      "status": "NOT_RUN",
+      "reason": "Requested window exceeds the current physical screen at this Qt scale."
+    }
+  ],
+  "calls": {
+    "startJob": 0,
+    "stopJob": 0
+  },
+  "screenAvailable": [
+    0,
+    0,
+    960,
+    516
+  ],
+  "dpr": 2.0
+}

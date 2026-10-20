@@ -1,0 +1,66 @@
+All checks passed!
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:728: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 288 source files
+
+=================================== ERRORS ====================================
+_ ERROR collecting manual_test_workspace/source-launch-check/baseline-20261002-192152/tests _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py:758: in _importconftest
+    mod = import_path(
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\pathlib.py:619: in import_path
+    raise ImportPathMismatchError(module_name, module_file, path)
+E   _pytest.pathlib.ImportPathMismatchError: ('tests.conftest', 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\tests\\conftest.py', WindowsPath('D:/jsdfhasuh/documents/my_project/emo_master/manual_test_workspace/source-launch-check/baseline-20261002-192152/tests/conftest.py'))
+________ ERROR collecting src/emo_master/core/project/test_delivery.py ________
+import file mismatch:
+imported module 'emo_master.core.project.test_delivery' has this __file__ attribute:
+  D:\jsdfhasuh\documents\my_project\emo_master\manual_test_workspace\source-launch-check\baseline-20261002-192152\src\emo_master\core\project\test_delivery.py
+which is not the same as the test file we want to collect:
+  D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\core\project\test_delivery.py
+HINT: remove __pycache__ / .pyc files and/or use a unique basename for your test file modules
+___________ ERROR collecting tests/designer/test_flow_layout_qt.py ____________
+ImportError while importing test module 'D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_layout_qt.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\designer\test_flow_layout_qt.py:11: in <module>
+    from emo_master.apps.designer.ui.flow_routing import Rect, intersects
+C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+E   ModuleNotFoundError: No module named 'emo_master.apps.designer.ui.flow_routing'
+_________ ERROR collecting tests/designer/test_flow_layout_routing.py _________
+ImportError while importing test module 'D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_flow_layout_routing.py'.
+Hint: make sure your test modules/packages have valid Python names.
+Traceback:
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\importlib\__init__.py:126: in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+tests\designer\test_flow_layout_routing.py:5: in <module>
+    from emo_master.apps.designer.ui.flow_layout import LayoutNode, flowPositions
+C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py:142: in _import
+    return original_import(name, *args, **kwargs)
+E   ModuleNotFoundError: No module named 'emo_master.apps.designer.ui.flow_layout'
+=========================== short test summary info ===========================
+ERROR manual_test_workspace/source-launch-check/baseline-20261002-192152/tests
+ERROR src/emo_master/core/project/test_delivery.py
+ERROR tests/designer/test_flow_layout_qt.py
+ERROR tests/designer/test_flow_layout_routing.py
+!!!!!!!!!!!!!!!!!!! Interrupted: 4 errors during collection !!!!!!!!!!!!!!!!!!!
+4 errors in 5.04s
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+[ci-check] failed pytest with code 2

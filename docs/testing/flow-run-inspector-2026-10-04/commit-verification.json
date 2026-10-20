@@ -1,0 +1,63 @@
+{
+  "baseHead": "9276d30d99df6bdf2af8b01862c3778ccd44d04d",
+  "codeCommit": "7b0ac467091c8188dbc5d7036d5f6898bd4d2eb6",
+  "files": {
+    "examples/flow_run_inspection.py": {
+      "sha256": "bd809040c4fcc49f24bfca05cd6994fb23d139209ca4dd85432c7eef862716fe",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/presenters/node_details_presenter.py": {
+      "sha256": "0695bd7f8f457b890033edb671c1662dc56dac286a57d6f5d7915c455c32f7ad",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/presenters/node_run_presenter.py": {
+      "sha256": "945669f6106701424c5855ab80d656a4e1f614b37c3904a883a4923c3b6ef1a8",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/state/node_run_inspection.py": {
+      "sha256": "fa85c69020b60038a92977aeae8e0306fb2be8628cec682a4dd1d11cec41f1b2",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/ui/main_window.py": {
+      "sha256": "0fbae121a05e3ff758cd4e0ad9713a85089e9457928717e8adcf9c6b7858fe43",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/ui/run_result_tools.py": {
+      "sha256": "ed2a83cd55434351a617da8ae88b05c6e7f8686d54a937d3f6ec3d528395a2a3",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/designer/ui/runtime_panel.py": {
+      "sha256": "a7d2e023a8abae394f16500e102cf8c4604ec1ac397e7aeca30a067dae362cd9",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/runtime/events/jsonl_writer.py": {
+      "sha256": "9c925c2a351a2a33615d6ee1a155c1fbe735d593785a61fcb5670b9ba82e0c12",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/apps/runtime/workflow/runner.py": {
+      "sha256": "5d59e1ce7f48e696137da44b864ceecc517361463148c86f31a8ed22e7c0f557",
+      "matchesTestedCandidate": true
+    },
+    "src/emo_master/core/contracts/run_inspection.py": {
+      "sha256": "9e5000d03ba62e9b0b57406503f2042c45925cd5875601f4f7d1c0a807245f89",
+      "matchesTestedCandidate": true
+    },
+    "tests/core/test_run_inspection.py": {
+      "sha256": "e253018b9b15772aa30a626681abb927cbda1a4d79f4cbb5a71f345e91a8b5fb",
+      "matchesTestedCandidate": true
+    },
+    "tests/designer/test_node_run_inspection.py": {
+      "sha256": "d479262e584c623e5375096502b31e045bfa4c16a07968aec967d264cc31a3bd",
+      "matchesTestedCandidate": true
+    },
+    "tests/designer/test_run_inspector_ui.py": {
+      "sha256": "a86d281ea2150ae36fc18f24bdc5093facd73d3859de9af2c7f6c04bd897c098",
+      "matchesTestedCandidate": true
+    },
+    "tests/runtime/test_runner_io_summary.py": {
+      "sha256": "84c93e7a3c667cc70dcb52190224e5b45428f6daa2b48fe1c32e6f62361d9c1d",
+      "matchesTestedCandidate": true
+    }
+  },
+  "unrelatedSourceChangesSinceBaseline": []
+}

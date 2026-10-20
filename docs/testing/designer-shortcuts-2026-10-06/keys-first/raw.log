@@ -1,0 +1,230 @@
+F.....FF..............E.E.                                               [100%]
+=================================== ERRORS ====================================
+_ ERROR at teardown of testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField _
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x223ff057930) at 0x00000223965ADFE0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022397E28FA0>
+
+    @pytest.fixture
+    def ownedDesignerWindow(retainedQtApplication, monkeypatch):
+        """Explicit native ownership for e2e tests which create Designer windows."""
+        from PySide2.QtWidgets import QMessageBox
+        from tests.qt_widget_owner import OwnedDesignerWindows
+>       with OwnedDesignerWindows(retainedQtApplication) as owner:
+
+tests\conftest.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000022397E2B070>
+
+    def retire(self):
+        from PySide2.QtCore import QCoreApplication, QEvent
+        from shiboken2 import isValid
+        self._assertGuiThread()
+        errors = []
+        accepted = []
+        # close() can pump Qt events. Close every root before deleting any root.
+        for index, (window, _scene, _bubble) in enumerate(self._owned):
+            if not isValid(window):
+                accepted.append(True)
+                continue
+            try:
+                closed = window.close()
+                accepted.append(bool(closed))
+                if not closed:
+                    errors.append(f'window {index} refused close')
+            except Exception as error:
+                accepted.append(False)
+                errors.append(f'window {index} close failed: {error}')
+    
+        safe = []
+        retained = []
+        for index, (owned, closed) in enumerate(zip(self._owned, accepted)):
+            window, _scene, _bubble = owned
+            ready = closed
+            if isValid(window):
+                if not window.runtimeController._closed:
+                    errors.append(f'window {index} runtime controller is not closed')
+                    ready = False
+                provider = window.operatorIconProvider
+                workers = [('icon', provider.worker if provider is not None else None),
+                           ('catalog', window.operatorCatalogWorker)]
+                for name, worker in workers:
+                    if worker is not None and worker.isRunning():
+                        errors.append(f'window {index} {name} workers are still running')
+                        ready = False
+            (safe if ready else retained).append(owned)
+    
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                window.deleteLater()
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                QCoreApplication.sendPostedEvents(window, QEvent.DeferredDelete)
+        for index, owned in enumerate(safe):
+            remaining = [name for name, obj in zip(('window', 'scene', 'bubble'), owned)
+                         if isValid(obj)]
+            if remaining:
+                errors.append(f'retired window {index} still has native objects: {remaining}')
+                retained.append(owned)
+        self._owned = retained
+        if errors:
+>           raise AssertionError('; '.join(errors))
+E           AssertionError: window 0 refused close; window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+
+tests\qt_widget_owner.py:102: AssertionError
+____ ERROR at teardown of testPageFlowOnlyKeysAndPreviewKeepTaskOwnership _____
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x223ff057930) at 0x00000223965ADFE0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000022397D8CE50>
+
+    @pytest.fixture
+    def ownedDesignerWindow(retainedQtApplication, monkeypatch):
+        """Explicit native ownership for e2e tests which create Designer windows."""
+        from PySide2.QtWidgets import QMessageBox
+        from tests.qt_widget_owner import OwnedDesignerWindows
+>       with OwnedDesignerWindows(retainedQtApplication) as owner:
+
+tests\conftest.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000022396D0F970>
+
+    def retire(self):
+        from PySide2.QtCore import QCoreApplication, QEvent
+        from shiboken2 import isValid
+        self._assertGuiThread()
+        errors = []
+        accepted = []
+        # close() can pump Qt events. Close every root before deleting any root.
+        for index, (window, _scene, _bubble) in enumerate(self._owned):
+            if not isValid(window):
+                accepted.append(True)
+                continue
+            try:
+                closed = window.close()
+                accepted.append(bool(closed))
+                if not closed:
+                    errors.append(f'window {index} refused close')
+            except Exception as error:
+                accepted.append(False)
+                errors.append(f'window {index} close failed: {error}')
+    
+        safe = []
+        retained = []
+        for index, (owned, closed) in enumerate(zip(self._owned, accepted)):
+            window, _scene, _bubble = owned
+            ready = closed
+            if isValid(window):
+                if not window.runtimeController._closed:
+                    errors.append(f'window {index} runtime controller is not closed')
+                    ready = False
+                provider = window.operatorIconProvider
+                workers = [('icon', provider.worker if provider is not None else None),
+                           ('catalog', window.operatorCatalogWorker)]
+                for name, worker in workers:
+                    if worker is not None and worker.isRunning():
+                        errors.append(f'window {index} {name} workers are still running')
+                        ready = False
+            (safe if ready else retained).append(owned)
+    
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                window.deleteLater()
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                QCoreApplication.sendPostedEvents(window, QEvent.DeferredDelete)
+        for index, owned in enumerate(safe):
+            remaining = [name for name, obj in zip(('window', 'scene', 'bubble'), owned)
+                         if isValid(obj)]
+            if remaining:
+                errors.append(f'retired window {index} still has native objects: {remaining}')
+                retained.append(owned)
+        self._owned = retained
+        if errors:
+>           raise AssertionError('; '.join(errors))
+E           AssertionError: window 0 refused close; window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+
+tests\qt_widget_owner.py:102: AssertionError
+================================== FAILURES ===================================
+__________ testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem __________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x223fed5f520) at 0x00000223EE26F8C0>, ['node-2bed6c23', 'node-a2e4ec65'], <tests.designer.test_node_context_menu.Client object at 0x0000022396BE2F80>)
+
+    def testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem(canvas):  # noqa: F811
+        window, (first, _second), _client = canvas
+        registry = window.designerActions
+        assert set(registry.actions) == set(SHORTCUTS)
+        assert window._toolbarActions['保存项目'] is registry.actions['save']
+        assert window._toolbarActions['开始运行'] is registry.actions['run']
+        assert window._menuActions['复制所选算子'] is registry.actions['copy']
+>       assert not window.deleteShortcut.isEnabled() and not window.backspaceDeleteShortcut.isEnabled()
+E       assert (not True)
+E        +  where True = <built-in method isEnabled of PySide2.QtWidgets.QShortcut object at 0x00000223FE587F00>()
+E        +    where <built-in method isEnabled of PySide2.QtWidgets.QShortcut object at 0x00000223FE587F00> = <PySide2.QtWidgets.QShortcut(0x22396d69370) at 0x00000223FE587F00>.isEnabled
+E        +      where <PySide2.QtWidgets.QShortcut(0x22396d69370) at 0x00000223FE587F00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x223fed5f520) at 0x00000223EE26F8C0>.deleteShortcut
+
+tests\designer\test_designer_shortcuts.py:57: AssertionError
+___________ testResultKeysReuseReadonlyZeroResultWhileRunning[key0] ___________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x223ff407a20) at 0x0000022397DB05C0>, ['node-593b6e49', 'node-39c82a10'], <tests.designer.test_node_context_menu.Client object at 0x0000022396D0D390>)
+key = PySide2.QtCore.Qt.Key.Key_Return
+
+    @pytest.mark.parametrize('key', [Qt.Key_Return, Qt.Key_Enter])
+    def testResultKeysReuseReadonlyZeroResultWhileRunning(canvas, key):  # noqa: F811
+        window, (first, _second), client = canvas
+        window.flowScene.setNodeSelected(first)
+        window._setCurrentJobId('keyboard-job')
+        window.nodeResultCoordinator.accepted('keyboard-job')
+        deliver(window, first, value=0)
+        before = window.pageCoordinator.session.payload()
+        window._setIsJobRunning(True)
+        try:
+            press(window, key, Qt.ControlModifier)
+>           assert 'count = 0' in window.nodeResultCoordinator.panel.values.toPlainText()
+E           assert 'count = 0' in '本次尚未收到此节点的执行记录'
+E            +  where '本次尚未收到此节点的执行记录' = <built-in method toPlainText of PySide2.QtWidgets.QTextEdit object at 0x0000022397D82580>()
+E            +    where <built-in method toPlainText of PySide2.QtWidgets.QTextEdit object at 0x0000022397D82580> = <PySide2.QtWidgets.QTextEdit(0x22397023ca0) at 0x0000022397D82580>.toPlainText
+E            +      where <PySide2.QtWidgets.QTextEdit(0x22397023ca0) at 0x0000022397D82580> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x223971fb500, name="nodeResultPanel") at 0x0000022397D7CF00>.values
+E            +        where <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x223971fb500, name="nodeResultPanel") at 0x0000022397D7CF00> = <emo_master.apps.designer.ui.node_result_coordinator.NodeResultCoordinator(0x22396d68ad0) at 0x0000022397DF9D80>.panel
+E            +          where <emo_master.apps.designer.ui.node_result_coordinator.NodeResultCoordinator(0x22396d68ad0) at 0x0000022397DF9D80> = <emo_master.apps.designer.ui.main_window.MainWindow(0x223ff407a20) at 0x0000022397DB05C0>.nodeResultCoordinator
+
+tests\designer\test_designer_shortcuts.py:118: AssertionError
+___________ testResultKeysReuseReadonlyZeroResultWhileRunning[key1] ___________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x22396f9a330) at 0x0000022396BE8580>, ['node-3ac1f27d', 'node-b1abd01e'], <tests.designer.test_node_context_menu.Client object at 0x0000022397E3F790>)
+key = PySide2.QtCore.Qt.Key.Key_Enter
+
+    @pytest.mark.parametrize('key', [Qt.Key_Return, Qt.Key_Enter])
+    def testResultKeysReuseReadonlyZeroResultWhileRunning(canvas, key):  # noqa: F811
+        window, (first, _second), client = canvas
+        window.flowScene.setNodeSelected(first)
+        window._setCurrentJobId('keyboard-job')
+        window.nodeResultCoordinator.accepted('keyboard-job')
+        deliver(window, first, value=0)
+        before = window.pageCoordinator.session.payload()
+        window._setIsJobRunning(True)
+        try:
+            press(window, key, Qt.ControlModifier)
+>           assert 'count = 0' in window.nodeResultCoordinator.panel.values.toPlainText()
+E           assert 'count = 0' in '本次尚未收到此节点的执行记录'
+E            +  where '本次尚未收到此节点的执行记录' = <built-in method toPlainText of PySide2.QtWidgets.QTextEdit object at 0x0000022397DF6680>()
+E            +    where <built-in method toPlainText of PySide2.QtWidgets.QTextEdit object at 0x0000022397DF6680> = <PySide2.QtWidgets.QTextEdit(0x22397025020) at 0x0000022397DF6680>.toPlainText
+E            +      where <PySide2.QtWidgets.QTextEdit(0x22397025020) at 0x0000022397DF6680> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x223971fa460, name="nodeResultPanel") at 0x0000022397CFCF80>.values
+E            +        where <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x223971fa460, name="nodeResultPanel") at 0x0000022397CFCF80> = <emo_master.apps.designer.ui.node_result_coordinator.NodeResultCoordinator(0x22396d63310) at 0x0000022397DF6100>.panel
+E            +          where <emo_master.apps.designer.ui.node_result_coordinator.NodeResultCoordinator(0x22396d63310) at 0x0000022397DF6100> = <emo_master.apps.designer.ui.main_window.MainWindow(0x22396f9a330) at 0x0000022396BE8580>.nodeResultCoordinator
+
+tests\designer\test_designer_shortcuts.py:118: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_designer_shortcuts.py::testCanonicalActionsOwnKeysAndContextMenuOnlyDisplaysThem
+FAILED tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key0]
+FAILED tests/designer/test_designer_shortcuts.py::testResultKeysReuseReadonlyZeroResultWhileRunning[key1]
+ERROR tests/designer/test_designer_shortcuts.py::testPageSaveKeyCommitsPendingFieldAndRejectsInvalidField
+ERROR tests/designer/test_designer_shortcuts.py::testPageFlowOnlyKeysAndPreviewKeepTaskOwnership
+3 failed, 21 passed, 2 errors in 6.91s

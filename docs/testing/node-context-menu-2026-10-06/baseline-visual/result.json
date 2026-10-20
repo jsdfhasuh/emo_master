@@ -1,0 +1,12 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\emo-master-backups\\operator-context-menu-20261006-193415-837042\\baseline-visual",
+  "exitCode": 0,
+  "seconds": 3.25
+}

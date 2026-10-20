@@ -1,0 +1,23 @@
+Validation record: 2026-10-02 UTC
+Repository: /workspace/scratch/a6c68496e0bc/emo_master
+Production HEAD: 655eeac
+Environment: existing cloud .venv, Python 3.10.21
+Scope: baseline deterministic gate tests only; production source unchanged
+
+$ .venv/bin/python -m pytest -q tests/runtime/presentation/test_subscribe_poll_gate.py
+...                                                                      [100%]
+3 passed in 0.05s
+
+$ .venv/bin/python -m ruff check tests/runtime/presentation/test_subscribe_poll_gate.py
+All checks passed!
+
+$ git diff --check
+(no output; exit 0)
+
+$ git diff --name-only -- src
+(no output; production source diff empty)
+
+Output copied verbatim from successful tool executions, except explanatory
+parenthetical lines for successful commands that produced no output.
+The pytest duration is total test runtime, not a measured Subscribe latency.
+No full CI, Windows, user-computer work, system trace, commit, or push was run.

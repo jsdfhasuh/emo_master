@@ -1,0 +1,49 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_________ testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll _________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1a1a683ebf0) at 0x000001A1FF24F930>
+
+    def testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll(designerApplication):
+        from PySide2.QtWidgets import QWidget, QVBoxLayout, QSplitter
+        from emo_master.apps.designer.ui.node_result_panel import NodeResultPanel
+        from emo_master.apps.designer.ui.widgets import scrollContent
+        from emo_master.apps.designer.state.run_result_history import RunResultHistory
+        history = RunResultHistory()
+        history.accept('12345678-1234-1234-1234-123456789012', [
+            {'workflowId': 'main', 'nodeId': 'load', 'displayName': '图像输入',
+             'operatorId': 'vision.io.image_loader', 'outputPorts': {'image': 'image'}}])
+        panel = NodeResultPanel(history)
+        host = QWidget()
+        layout = QVBoxLayout(host)
+        summary = QWidget()
+        summary.setFixedHeight(120)
+        layout.addWidget(summary)
+        layout.addWidget(panel, 1)
+        host.setFixedWidth(260)
+        splitter = QSplitter()
+        splitter.addWidget(QWidget())
+        splitter.addWidget(host)
+        scroll = scrollContent(splitter)
+        scroll.resize(540, 400)
+        try:
+            panel.render('main', 'load')
+            scroll.show()
+            for _ in range(8):
+                designerApplication.processEvents()
+>           assert panel.origin.height() >= panel.origin.heightForWidth(panel.origin.width())
+E           assert 49 >= 90
+E            +  where 49 = <built-in method height of WrapLabel object at 0x000001A1A773D940>()
+E            +    where <built-in method height of WrapLabel object at 0x000001A1A773D940> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940>.height
+E            +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x1a1a6991570, name="nodeResultPanel") at 0x000001A1A773C940>.origin
+E            +  and   90 = <built-in method heightForWidth of WrapLabel object at 0x000001A1A773D940>(218)
+E            +    where <built-in method heightForWidth of WrapLabel object at 0x000001A1A773D940> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940>.heightForWidth
+E            +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x1a1a6991570, name="nodeResultPanel") at 0x000001A1A773C940>.origin
+E            +    and   218 = <built-in method width of WrapLabel object at 0x000001A1A773D940>()
+E            +      where <built-in method width of WrapLabel object at 0x000001A1A773D940> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940>.width
+E            +        where <emo_master.apps.designer.ui.widgets.WrapLabel(0x1a1a6985170) at 0x000001A1A773D940> = <emo_master.apps.designer.ui.node_result_panel.NodeResultPanel(0x1a1a6991570, name="nodeResultPanel") at 0x000001A1A773C940>.origin
+
+tests\designer\test_node_result_panel.py:125: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_result_panel.py::testNarrowPanelReservesWrappedHeaderAndActionsInOuterScroll
+1 failed in 5.56s

@@ -1,0 +1,18 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "tests/designer/test_category_selection.py",
+    "-q"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 1,
+  "seconds": 6.390999999828637,
+  "outerWatchdogSeconds": 120,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\toolbar-width-20261007-002955-281239\\test-runtime"
+}

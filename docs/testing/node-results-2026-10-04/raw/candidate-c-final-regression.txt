@@ -1,0 +1,62 @@
+........................................................................ [ 32%]
+...................................................FF................... [ 65%]
+........................................................................ [ 98%]
+...                                                                      [100%]
+================================== FAILURES ===================================
+________________ testLongDetailsDoNotForceWindowBeyondViewport ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1db30eeca10) at 0x000001DB31C916E0>
+
+    def testLongDetailsDoNotForceWindowBeyondViewport(styledApp):
+        from tests.designer.qt_wait import waitForCatalog
+    
+        window = makeWindow()
+        try:
+            window.resize(1000, 600)
+            window.show()
+            waitForCatalog(window)
+            window.jobMessageCard.setText("C:/" + "very-long-directory/" * 60 + "project.json")
+            panel = window.nodeResultCoordinator.panel
+            panel.execution.setPlainText("\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80)))
+            panel.tabs.setCurrentWidget(panel.execution)
+            styledApp.processEvents()
+>           assert window.minimumSizeHint().height() < 500
+E           assert 573 < 500
+E            +  where 573 = <built-in method height of PySide2.QtCore.QSize object at 0x000001DB33F65EC0>()
+E            +    where <built-in method height of PySide2.QtCore.QSize object at 0x000001DB33F65EC0> = PySide2.QtCore.QSize(572, 573).height
+E            +      where PySide2.QtCore.QSize(572, 573) = <built-in method minimumSizeHint of MainWindow object at 0x000001DB31C82180>()
+E            +        where <built-in method minimumSizeHint of MainWindow object at 0x000001DB31C82180> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1db32f69630) at 0x000001DB31C82180>.minimumSizeHint
+
+tests\designer\test_visual_layout.py:148: AssertionError
+_______ testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible ________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1db30eeca10) at 0x000001DB31C916E0>
+
+    def testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible(styledApp):
+        from tests.designer.qt_wait import waitForCatalog
+    
+        window = makeWindow()
+        try:
+            window.show()
+            waitForCatalog(window)
+            window.addNodeFromOperatorPayload({'operatorId': 'test.layout', 'displayName': '布局检查',
+                'inputPorts': {}, 'outputPorts': {'image': 'image'}, 'paramSchema': {}})
+            panel = window.nodeResultCoordinator.panel
+            # Keep the 80-line, unchanged-font and last-line-reachability constraints
+            # on the visible result tabs replacing the old hidden detail section.
+            details = "\n".join(f"parameter_{i}: " + "x" * 120 for i in range(80))
+            panel.execution.setPlainText(details)
+            fontSize = panel.execution.font().pointSizeF()
+            window.resize(1000, 499)
+            styledApp.processEvents()
+    
+>           assert window.height() == 499
+E           assert 573 == 499
+E            +  where 573 = <built-in method height of MainWindow object at 0x000001DB34319780>()
+E            +    where <built-in method height of MainWindow object at 0x000001DB34319780> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1db32cde6d0) at 0x000001DB34319780>.height
+
+tests\designer\test_visual_layout.py:174: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testLongDetailsDoNotForceWindowBeyondViewport
+FAILED tests/designer/test_visual_layout.py::testShortWindowKeepsSummaryPreviewAndEveryDetailLineAccessible
+2 failed, 217 passed in 75.84s (0:01:15)

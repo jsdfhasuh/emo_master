@@ -1,0 +1,171 @@
+{
+  "status": "PASS",
+  "platform": "windows",
+  "qtScaleFactor": "1",
+  "syntheticControlStateOnly": true,
+  "cases": [
+    {
+      "requested": [
+        480,
+        500
+      ],
+      "actual": [
+        480,
+        500
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "480-idle.png"
+    },
+    {
+      "requested": [
+        480,
+        500
+      ],
+      "actual": [
+        480,
+        500
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "480-running.png"
+    },
+    {
+      "requested": [
+        640,
+        500
+      ],
+      "actual": [
+        640,
+        500
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "640-idle.png"
+    },
+    {
+      "requested": [
+        640,
+        500
+      ],
+      "actual": [
+        640,
+        500
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "640-running.png"
+    },
+    {
+      "requested": [
+        960,
+        500
+      ],
+      "actual": [
+        960,
+        500
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "960-idle.png"
+    },
+    {
+      "requested": [
+        960,
+        500
+      ],
+      "actual": [
+        960,
+        500
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": true,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "960-running.png"
+    },
+    {
+      "requested": [
+        1280,
+        500
+      ],
+      "actual": [
+        1280,
+        500
+      ],
+      "runningControlState": false,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": true,
+      "stopEnabled": false,
+      "overflowVisible": false,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "1280-idle.png"
+    },
+    {
+      "requested": [
+        1280,
+        500
+      ],
+      "actual": [
+        1280,
+        500
+      ],
+      "runningControlState": true,
+      "startVisible": true,
+      "stopVisible": true,
+      "startEnabled": false,
+      "stopEnabled": true,
+      "overflowVisible": false,
+      "frameFitsScreen": true,
+      "status": "PASS",
+      "screenshot": "1280-running.png"
+    }
+  ],
+  "calls": {
+    "startJob": 0,
+    "stopJob": 0
+  },
+  "screenAvailable": [
+    0,
+    0,
+    1920,
+    1032
+  ],
+  "dpr": 1.0
+}

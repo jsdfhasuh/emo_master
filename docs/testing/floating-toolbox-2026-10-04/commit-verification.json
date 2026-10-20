@@ -1,0 +1,153 @@
+{
+  "recordedUtc": "2026-10-03T17:19:41.362097+00:00",
+  "baseHead": "3a97f22a6faee442997acc4c0f263acd42d3240c",
+  "codeCommit": "5a3a85b08df35d9b0158a14ce2e9ec480d7f72a0",
+  "committedTree": "44fe15ec99577fdf1cbede9d36ec2bf7a87e9e93",
+  "matchesTestedCandidateTree": true,
+  "files": {
+    "src/emo_master/apps/designer/controllers/layout_controller.py": {
+      "sha256": "01c524530187e907bf947bc5becfa4dfbbaedd11a6e3bbc768c36631857a851b",
+      "matchesTestedFrozenSource": true
+    },
+    "src/emo_master/apps/designer/ui/floating_toolbox.py": {
+      "sha256": "0929d8b2a42dcda55cc8d5447376c61761bfd80ffc70c66d38e24bcebbc9d3ca",
+      "matchesTestedFrozenSource": true
+    },
+    "src/emo_master/apps/designer/ui/main_window.py": {
+      "sha256": "5b261b684ca5859dd79047db1c18c092aeccde2fe597203f4b781b70af6d4d8a",
+      "matchesTestedFrozenSource": true
+    },
+    "src/emo_master/apps/designer/ui/operator_bubble.py": {
+      "sha256": "26feddc71e5705618d04a76d3206515115665c02357f8a20dc1f767ab1ce3416",
+      "matchesTestedFrozenSource": true
+    },
+    "tests/designer/test_floating_toolbox.py": {
+      "sha256": "f0aaaa21a8f5956301089716a1a53b552ae3d49864cf4fbfeebb4e78162e9922",
+      "matchesTestedFrozenSource": true
+    },
+    "tests/designer/test_main_window_layout.py": {
+      "sha256": "136133d05d37e18a11ba9a28fb6c6872c0358d74de4924fb23f4c854d1dfb824",
+      "matchesTestedFrozenSource": true
+    },
+    "tests/designer/test_sidebar_collapse.py": {
+      "sha256": "c496407680da89d9bf403a8f647f3bd363215342120b998c0fbd7078b911123e",
+      "matchesTestedFrozenSource": true
+    },
+    "tests/designer/test_visual_layout.py": {
+      "sha256": "80d91b38b4e9d4585ced6fa2bb084f41da26a75fb4da5124390b098f725d4707",
+      "matchesTestedFrozenSource": true
+    }
+  },
+  "verifiedTestRecords": [
+    {
+      "record": "baseline-toolbar-offscreen-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "candidate-01-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "candidate-02-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "candidate-03-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "candidate-04-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "ci-clipped-final-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "ci-final-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "ci-final-verified-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "clip-final-native-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "clip-offscreen-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "final-native-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "final-native-verified-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "focused-final-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "headless-probe-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "isolated-clipped-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "isolated-native-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "isolated-native-verified-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "mypy-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    },
+    {
+      "record": "regression-native-provenance.json",
+      "exitCode": 1,
+      "changedDuringRun": []
+    },
+    {
+      "record": "ruff-provenance.json",
+      "exitCode": 0,
+      "changedDuringRun": []
+    }
+  ],
+  "finalMatrixCasesPassed": 12,
+  "ciScope": "recorded dirty worktree, not a clean-commit full CI",
+  "isolatedScope": "base HEAD plus the eight task code/test files",
+  "missingTemporaryP5Artifacts": {
+    "path": "C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-828/testDesignerExportRelocatedSta0/evidence",
+    "existsAtArchival": false,
+    "retainedEvidence": "raw/regression-native.txt",
+    "limitation": "Historical observation of viewer JSON is described in the report; missing JSON/runtime logs were not reconstructed."
+  },
+  "notArchived": "unrelated dirty source backups, frozen checkouts, databases, user resources"
+}

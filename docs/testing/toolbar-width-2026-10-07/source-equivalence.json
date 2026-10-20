@@ -1,0 +1,9 @@
+{
+  "testedHead": "b697ff864774ea922fe0bd676cb8020476fe86d2",
+  "sourceDigest": "de1fc06a113f446022207642cde8ecb657e69ef5979503e90a7283515c158f91",
+  "sourceFiles": 762,
+  "unchangedSinceCiStart": true,
+  "originalNarrowToolbarTestUnchanged": true,
+  "ciExitCode": 0,
+  "ciTimedOut": false
+}

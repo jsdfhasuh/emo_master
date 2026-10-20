@@ -1,0 +1,30 @@
+{
+  "operatorId": "vision.math.truncate",
+  "displayName": "截去小数",
+  "version": "1.0.0",
+  "inputPorts": {
+    "value": {
+      "type": "number",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "outputPorts": {
+    "value": {
+      "type": "integer",
+      "required": true,
+      "nullable": false
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {},
+    "additionalProperties": false
+  },
+  "entry": "emo_master.plugins.builtins._numeric_bridges:NumberTruncateOperator",
+  "category": "数值与逻辑",
+  "iconKey": "calculator",
+  "summary": "将有限数值向零截断为整数；不四舍五入，拒绝布尔值、文本和非有限值。",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x"
+}

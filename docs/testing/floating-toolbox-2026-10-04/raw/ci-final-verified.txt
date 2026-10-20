@@ -1,0 +1,105 @@
+All checks passed!
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:728: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 299 source files
+..................................................................s..... [  2%]
+........................................................................ [  5%]
+........................................................................ [  8%]
+........................................................................ [ 10%]
+........................................................................ [ 13%]
+........................................................................ [ 16%]
+.....................................F.................................. [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 24%]
+........................................................................ [ 27%]
+............................................................F........... [ 29%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 37%]
+....................................................................s... [ 40%]
+........................................................................ [ 43%]
+........................................................................ [ 45%]
+........................................................................ [ 48%]
+........................................................................ [ 51%]
+........................................................................ [ 54%]
+........................................................................ [ 56%]
+........................................................................ [ 59%]
+........................................................................ [ 62%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 70%]
+........................................................................ [ 72%]
+..................................................................................................................... [ 77%]
+........................................................................ [ 80%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+..ssss......................................................s........... [ 90%]
+........................................................................ [ 93%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+...........................                                              [100%]
+================================== FAILURES ===================================
+_____________ testPositionRestoreAndMalformedPreferences[stored0] _____________
+
+stored = [200, 80]
+designerApplication = <PySide2.QtWidgets.QApplication(0x2d66d585f70) at 0x000002D66C360600>
+
+    @pytest.mark.parametrize('stored', [[200, 80], ['nan', 3], [float('inf'), 2], [1], 'bad'])
+    def testPositionRestoreAndMalformedPreferences(stored, designerApplication):
+        settings = Settings()
+        settings.setValue(FloatingToolbox.positionKey, stored)
+        window, _ = makeWindow(settings)
+        window.expandSidebar()
+        QApplication.processEvents()
+        assert window.flowView.viewport().rect().contains(window.floatingToolbox.geometry())
+        if stored == [200, 80]:
+>           assert window.floatingToolbox.x() == 200
+E           assert 163 == 200
+E            +  where 163 = <built-in method x of FloatingToolbox object at 0x000002D66EE44480>()
+E            +    where <built-in method x of FloatingToolbox object at 0x000002D66EE44480> = <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x2d66db8c420, name="floatingToolbox") at 0x000002D66EE44480>.x
+E            +      where <emo_master.apps.designer.ui.floating_toolbox.FloatingToolbox(0x2d66db8c420, name="floatingToolbox") at 0x000002D66EE44480> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2d66da5a710) at 0x000002D66ED33980>.floatingToolbox
+
+tests\designer\test_floating_toolbox.py:225: AssertionError
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x2d66d585f70) at 0x000002D66C360600>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000002D66ED55140>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000002D66ED55140> = <PySide2.QtWidgets.QToolButton(0x2d66fa351e0, name="primaryButton") at 0x000002D66ED55140>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x2d66fa351e0, name="primaryButton") at 0x000002D66ED55140> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2d66f14ed50) at 0x000002D6706D3980>.startButton
+
+tests\designer\test_visual_layout.py:296: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_floating_toolbox.py::testPositionRestoreAndMalformedPreferences[stored0]
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+2 failed, 2655 passed, 8 skipped, 26 subtests passed in 687.56s (0:11:27)
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+[ci-check] failed pytest with code 1

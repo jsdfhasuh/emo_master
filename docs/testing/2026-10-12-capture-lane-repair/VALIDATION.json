@@ -1,0 +1,241 @@
+{
+  "base_sha": "17b7bc76d02d1b7d2c2ffe82aef2b229537aa251",
+  "pytest": {
+    "before": {
+      "tests": "1",
+      "failures": "1",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.100"
+    },
+    "after": {
+      "tests": "2",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "1.812"
+    },
+    "focused": {
+      "tests": "48",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "51.331"
+    },
+    "regression": {
+      "tests": "645",
+      "failures": "3",
+      "errors": "0",
+      "skipped": "1",
+      "time": "382.108"
+    },
+    "trace-final": {
+      "tests": "44",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "10.920"
+    }
+  },
+  "pytest_interpretation": "Initial baseline is expected red. Broad regression preserved 3 old lifecycle-assertion failures, 615 passed, 1 skipped, 26 subtests; only affected trace suite and new capture suite rerun after assertions were updated, 44 passed. Counts overlap and must not be summed. No final full-suite claim.",
+  "static": {
+    "ruff_src_tests": "PASS",
+    "mypy_src": "PASS (411 source files)",
+    "proto_drift": "PASS",
+    "ruff_changed_trace_test_and_replay": "PASS"
+  },
+  "abba": {
+    "qt_platform": "offscreen",
+    "measurement_status": "INVALID",
+    "performance_status": "NOT_ASSESSED",
+    "source_stable": true,
+    "arms": [
+      {
+        "arm": "trial-0-credit-off",
+        "executed_total": 96,
+        "source_images": 96,
+        "source_unavailable": 0,
+        "consumers": [
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 87,
+            "missing_measured_ordinals": []
+          },
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 86,
+            "missing_measured_ordinals": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 87,
+            "unique_painted": 84,
+            "missing_committed_ordinals": [
+              79
+            ],
+            "missing_painted_ordinals": [
+              67,
+              75,
+              79,
+              81
+            ]
+          },
+          {
+            "unique_committed": 87,
+            "unique_painted": 84,
+            "missing_committed_ordinals": [
+              79
+            ],
+            "missing_painted_ordinals": [
+              67,
+              75,
+              79,
+              81
+            ]
+          }
+        ]
+      },
+      {
+        "arm": "trial-1-credit-on",
+        "executed_total": 96,
+        "source_images": 96,
+        "source_unavailable": 0,
+        "consumers": [
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": []
+          },
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          },
+          {
+            "unique_committed": 88,
+            "unique_painted": 88,
+            "missing_committed_ordinals": [],
+            "missing_painted_ordinals": []
+          }
+        ],
+        "verified_reply_release_callback_order": 96,
+        "acquired": 96,
+        "refused": 0
+      },
+      {
+        "arm": "trial-2-credit-on",
+        "executed_total": 96,
+        "source_images": 96,
+        "source_unavailable": 0,
+        "consumers": [
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": []
+          },
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 88,
+            "missing_measured_ordinals": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 87,
+            "unique_painted": 87,
+            "missing_committed_ordinals": [
+              94
+            ],
+            "missing_painted_ordinals": [
+              94
+            ]
+          },
+          {
+            "unique_committed": 87,
+            "unique_painted": 87,
+            "missing_committed_ordinals": [
+              94
+            ],
+            "missing_painted_ordinals": [
+              94
+            ]
+          }
+        ],
+        "verified_reply_release_callback_order": 96,
+        "acquired": 96,
+        "refused": 0
+      },
+      {
+        "arm": "trial-3-credit-off",
+        "executed_total": 96,
+        "source_images": 96,
+        "source_unavailable": 0,
+        "consumers": [
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 87,
+            "missing_measured_ordinals": []
+          },
+          {
+            "unique_received": 88,
+            "unique_decoded": 88,
+            "unique_applied": 87,
+            "missing_measured_ordinals": []
+          }
+        ],
+        "ui": [
+          {
+            "unique_committed": 86,
+            "unique_painted": 86,
+            "missing_committed_ordinals": [
+              47,
+              48
+            ],
+            "missing_painted_ordinals": [
+              47,
+              48
+            ]
+          },
+          {
+            "unique_committed": 86,
+            "unique_painted": 86,
+            "missing_committed_ordinals": [
+              47,
+              48
+            ],
+            "missing_painted_ordinals": [
+              47,
+              48
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "not_closed": [
+    "Historical hosted pre-reply capture refusals at ordinals 6,11,15,21,24,26",
+    "End-to-end live-apply/Qt completeness in this local ABBA",
+    "Windows SQLite EOF and P0 performance are outside this change"
+  ],
+  "not_run": [
+    "Full pytest on final revision",
+    "Manual Qt/field/hardware acceptance",
+    "Exact pushed SHA CI at report creation"
+  ]
+}

@@ -1,0 +1,31 @@
+.....F......                                                             [100%]
+================================== FAILURES ===================================
+___________ testConfigCreatesDifferentLayoutIdsAndActualBoundValues ___________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x24fc785be50) at 0x0000024FC91CB240>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-384/testConfigCreatesDifferentLayo0')
+
+    def testConfigCreatesDifferentLayoutIdsAndActualBoundValues(qtApp,tmp_path):
+        project=sampleProjectP3(tmp_path)
+        config=project.presentation
+        window=RuntimePages(config)
+        window.show()
+        window.submit(resultView(count="0",capture=window.expectedCapture))
+        assert window.widgets['overview']['overview-count'][1].text()=="0 ¸ö"
+        assert window.displayed['root'].result.identity.resultKey=='result-1'
+        window.navigate('detail')
+        assert window.widgets['detail']['detail-count'][1].text()=="0 ¸ö"
+        raw=config.model_dump()
+        raw['pages']['alternate']=raw['pages'].pop('overview')
+        raw['pageOrder']=['detail','alternate']
+        raw['defaultPageId']='alternate'
+        raw['pages']['detail']['components'][-1]['actions']['clicked']['pageId']='alternate'
+        raw['pages']['alternate']['layout']['columns']=4
+>       second=RuntimePages(Presentation.model_validate(raw))
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for Presentation
+E       pages.detail.components.5.actions.clicked
+E         Value error, navigate requires pageId; other actions forbid pageId [type=value_error, input_value={'type': 'freeze', 'pageI...'resultScopeId': 'root'}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\ui\presentation\test_renderer.py:69: ValidationError
+1 failed, 11 passed in 29.06s

@@ -1,0 +1,376 @@
+FFFFFFFFFFFFF...................................................         [100%]
+================================== FAILURES ===================================
+_______ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[0] ________
+
+value = 0
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A3745A7460>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+_____ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[False] ______
+
+value = False
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A374BBBC40>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+________ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[] ________
+
+value = ''
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A374C2CC10>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+______ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[None] ______
+
+value = None
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A374B47A30>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+_____ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value4] _____
+
+value = [1, 2]
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A34CC8E350>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+_____ testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value5] _____
+
+value = {'x': [3]}
+
+    @pytest.mark.parametrize("value", [0, False, "", None, [1, 2], {"x": [3]}])
+    def testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation(value):
+        Probe.calls.clear()
+>       compiled = run(project(), value)
+
+tests\sqlite_writer\test_dependencies.py:57: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A34CCCACE0>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+________ testMissingTypeAndCycleAreCompileErrors[row0-E_BINDING_NODE] _________
+
+row = {'column': 'value', 'storageType': 'JSON', 'missing': 'error', 'source': {'kind': 'node_output', 'nodeId': 'removed', 'port': 'value'}}
+code = 'E_BINDING_NODE'
+
+    @pytest.mark.parametrize("row,code", [
+        (mapping(node="removed"), "E_BINDING_NODE"), (mapping(port="gone"), "E_BINDING_PORT"),
+        (mapping(storage="REAL"), "E_BINDING_TYPE"), (mapping(node="writer", port="receipt"), "E_WORKFLOW_CYCLE")])
+    def testMissingTypeAndCycleAreCompileErrors(row, code):
+        with pytest.raises(WorkflowCompileError) as error:
+            WorkflowCompiler({OPERATOR_ID: Probe}).compile(project([row]))
+>       assert code in {i.code for i in error.value.issues}
+E       AssertionError: assert 'E_BINDING_NODE' in {'E_WORKFLOW_OUTPUT_COUNT'}
+
+tests\sqlite_writer\test_dependencies.py:72: AssertionError
+________ testMissingTypeAndCycleAreCompileErrors[row1-E_BINDING_PORT] _________
+
+row = {'column': 'value', 'storageType': 'JSON', 'missing': 'error', 'source': {'kind': 'node_output', 'nodeId': 'input', 'port': 'gone'}}
+code = 'E_BINDING_PORT'
+
+    @pytest.mark.parametrize("row,code", [
+        (mapping(node="removed"), "E_BINDING_NODE"), (mapping(port="gone"), "E_BINDING_PORT"),
+        (mapping(storage="REAL"), "E_BINDING_TYPE"), (mapping(node="writer", port="receipt"), "E_WORKFLOW_CYCLE")])
+    def testMissingTypeAndCycleAreCompileErrors(row, code):
+        with pytest.raises(WorkflowCompileError) as error:
+            WorkflowCompiler({OPERATOR_ID: Probe}).compile(project([row]))
+>       assert code in {i.code for i in error.value.issues}
+E       AssertionError: assert 'E_BINDING_PORT' in {'E_WORKFLOW_OUTPUT_COUNT'}
+
+tests\sqlite_writer\test_dependencies.py:72: AssertionError
+________ testMissingTypeAndCycleAreCompileErrors[row2-E_BINDING_TYPE] _________
+
+row = {'column': 'value', 'storageType': 'REAL', 'missing': 'error', 'source': {'kind': 'node_output', 'nodeId': 'input', 'port': 'value'}}
+code = 'E_BINDING_TYPE'
+
+    @pytest.mark.parametrize("row,code", [
+        (mapping(node="removed"), "E_BINDING_NODE"), (mapping(port="gone"), "E_BINDING_PORT"),
+        (mapping(storage="REAL"), "E_BINDING_TYPE"), (mapping(node="writer", port="receipt"), "E_WORKFLOW_CYCLE")])
+    def testMissingTypeAndCycleAreCompileErrors(row, code):
+        with pytest.raises(WorkflowCompileError) as error:
+            WorkflowCompiler({OPERATOR_ID: Probe}).compile(project([row]))
+>       assert code in {i.code for i in error.value.issues}
+E       AssertionError: assert 'E_BINDING_TYPE' in {'E_WORKFLOW_OUTPUT_COUNT'}
+
+tests\sqlite_writer\test_dependencies.py:72: AssertionError
+_______ testMissingTypeAndCycleAreCompileErrors[row3-E_WORKFLOW_CYCLE] ________
+
+row = {'column': 'value', 'storageType': 'JSON', 'missing': 'error', 'source': {'kind': 'node_output', 'nodeId': 'writer', 'port': 'receipt'}}
+code = 'E_WORKFLOW_CYCLE'
+
+    @pytest.mark.parametrize("row,code", [
+        (mapping(node="removed"), "E_BINDING_NODE"), (mapping(port="gone"), "E_BINDING_PORT"),
+        (mapping(storage="REAL"), "E_BINDING_TYPE"), (mapping(node="writer", port="receipt"), "E_WORKFLOW_CYCLE")])
+    def testMissingTypeAndCycleAreCompileErrors(row, code):
+        with pytest.raises(WorkflowCompileError) as error:
+            WorkflowCompiler({OPERATOR_ID: Probe}).compile(project([row]))
+>       assert code in {i.code for i in error.value.issues}
+E       AssertionError: assert 'E_WORKFLOW_CYCLE' in {'E_WORKFLOW_OUTPUT_COUNT'}
+
+tests\sqlite_writer\test_dependencies.py:72: AssertionError
+___________________ testMixedCanvasAndMappingCycleRejected ____________________
+
+    def testMixedCanvasAndMappingCycleRejected():
+        row = mapping(node="producer", port="value")
+        nodes = [{"nodeId": "writer", "operatorId": OPERATOR_ID, "params": config(rows=[row])},
+                 {"nodeId": "producer", "kind": "operator", "operatorId": "test.producer",
+                  "inputPorts": {"receipt": "json"}, "outputPorts": {"value": "json"}}]
+        with pytest.raises(WorkflowCompileError) as error:
+            WorkflowCompiler({OPERATOR_ID: Probe, "test.producer": object()}).compile(project(nodes=nodes, rows=[row],
+                edges=[{"fromNode": "writer", "fromPort": "receipt", "toNode": "producer", "toPort": "receipt"}]))
+>       assert "E_WORKFLOW_CYCLE" in {i.code for i in error.value.issues}
+E       AssertionError: assert 'E_WORKFLOW_CYCLE' in {'E_WORKFLOW_INPUT_COUNT', 'E_WORKFLOW_OUTPUT_COUNT'}
+
+tests\sqlite_writer\test_dependencies.py:83: AssertionError
+____________________ testIndependentJobsNeverReuseDelivery ____________________
+
+    def testIndependentJobsNeverReuseDelivery():
+        Probe.calls.clear()
+>       run(project(), "A", "A")
+
+tests\sqlite_writer\test_dependencies.py:88: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A374C0E770>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+______________ testRepeatedSubflowAndLoopInvocationsAreIsolated _______________
+
+    def testRepeatedSubflowAndLoopInvocationsAreIsolated():
+        payload = project()
+        child = deepcopy(payload["workflows"]["main"])
+        main = {"name": "Main", "inputs": {"value": "json"}, "outputs": {}, "nodes": [
+            {"nodeId": "input", "kind": "workflow_input"},
+            {"nodeId": "A", "kind": "subflow", "targetWorkflowId": "body"},
+            {"nodeId": "B", "kind": "subflow", "targetWorkflowId": "body"},
+            {"nodeId": "repeat", "kind": "loop", "loop": {"mode": "repeat", "contractVersion": 2,
+                "bodyWorkflowId": "body", "repeatCount": 2, "maxIterations": 2, "timeoutMs": 0}}],
+            "edges": [{"fromNode": "input", "fromPort": "value", "toNode": key, "toPort": "value"} for key in ("A", "B", "repeat")]}
+        payload["workflows"] = {"main": main, "body": child}
+        payload["workflowOrder"] = ["main", "body"]
+        Probe.calls.clear()
+>       run(payload, {"data": "actual"})
+
+tests\sqlite_writer\test_dependencies.py:107: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\sqlite_writer\test_dependencies.py:48: in run
+    compiled = WorkflowCompiler(registry).compile(payload)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000002A374BF9870>
+project = {'schemaVersion': '2.1', 'project': {'projectId': 'sqlite-test', 'name': 'SQLite', 'revision': 1, 'createdAt': '2026-10-05T00:00:00Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: workflow must contain exactly one workflow_output node; loop ports do not match the referenced workflow contract; workflow must contain exactly one workflow_output node
+
+src\emo_master\core\workflow\compiler.py:48: WorkflowCompileError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[0]
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[False]
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[]
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[None]
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value4]
+FAILED tests/sqlite_writer/test_dependencies.py::testDeclaredDependencyWithoutCanvasEdgeUsesActualInvocation[value5]
+FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row0-E_BINDING_NODE]
+FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row1-E_BINDING_PORT]
+FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row2-E_BINDING_TYPE]
+FAILED tests/sqlite_writer/test_dependencies.py::testMissingTypeAndCycleAreCompileErrors[row3-E_WORKFLOW_CYCLE]
+FAILED tests/sqlite_writer/test_dependencies.py::testMixedCanvasAndMappingCycleRejected
+FAILED tests/sqlite_writer/test_dependencies.py::testIndependentJobsNeverReuseDelivery
+FAILED tests/sqlite_writer/test_dependencies.py::testRepeatedSubflowAndLoopInvocationsAreIsolated
+13 failed, 51 passed in 9.07s

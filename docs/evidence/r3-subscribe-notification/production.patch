@@ -1,0 +1,21 @@
+diff --git a/src/emo_master/apps/runtime/presentation/rpc.py b/src/emo_master/apps/runtime/presentation/rpc.py
+index 4b79ad8..172cd35 100644
+--- a/src/emo_master/apps/runtime/presentation/rpc.py
++++ b/src/emo_master/apps/runtime/presentation/rpc.py
+@@ -144 +144,3 @@ class DisplayRpc(rpc.DisplayServiceServicer):
+-            time.sleep(0.02)
++                time.sleep(0.02)
++            else:
++                self.service.store.waitForChange(result.cursor)
+diff --git a/src/emo_master/apps/runtime/presentation/store.py b/src/emo_master/apps/runtime/presentation/store.py
+index 179d3d4..b4f74ed 100644
+--- a/src/emo_master/apps/runtime/presentation/store.py
++++ b/src/emo_master/apps/runtime/presentation/store.py
+@@ -15,0 +16 @@ class ResultStore:
++        self.changed = threading.Condition(self.lock)
+@@ -29,0 +31,5 @@ class ResultStore:
++        self.changed.notify_all()
++
++    def waitForChange(self, cursor):
++        with self.changed:
++            return self.changed.wait_for(lambda: self.cursor != cursor, timeout=0.02)

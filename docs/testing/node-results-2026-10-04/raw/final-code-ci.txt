@@ -1,0 +1,90 @@
+All checks passed!
+src\emo_master\apps\designer\state\run_result_history.py:39: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\state\run_result_history.py:40: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:79: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:82: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:83: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:123: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:124: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:125: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:157: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:160: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:161: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:211: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:212: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:270: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:271: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\workflow\loop_runner.py:319: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\designer\ui\run_result_tools.py:15: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:68: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\preview\run_inspection.py:69: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+src\emo_master\apps\runtime\grpc_server\service.py:811: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 312 source files
+..................................................................s..... [  2%]
+........................................................................ [  5%]
+........................................................................ [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 13%]
+........................................................................ [ 15%]
+........................................................................ [ 18%]
+........................................................................ [ 21%]
+........................................................................ [ 23%]
+........................................................................ [ 26%]
+........................................................................ [ 28%]
+.......................................F................................ [ 31%]
+........................................................................ [ 34%]
+........................................................................ [ 36%]
+........................................................................ [ 39%]
+...............................................s........................ [ 42%]
+........................................................................ [ 44%]
+........................................................................ [ 47%]
+........................................................................ [ 49%]
+........................................................................ [ 52%]
+........................................................................ [ 55%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 63%]
+........................................................................ [ 65%]
+........................................................................ [ 68%]
+........................................................................ [ 70%]
+........................................................................ [ 73%]
+......................................................... [ 75%]
+............................................................ [ 77%]
+........................................................................ [ 80%]
+........................................................................ [ 83%]
+........................................................................ [ 85%]
+........................................................................ [ 88%]
+......ssss......................................................s....... [ 90%]
+...................................................................... [ 93%]
+........................................................................ [ 96%]
+........................................................................ [ 98%]
+...................................                                      [100%]
+================================== FAILURES ===================================
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x2217fa735d0) at 0x000002211BCDFE10>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000002211D8F1080>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000002211D8F1080> = <PySide2.QtWidgets.QToolButton(0x2211eb40c70, name="primaryButton") at 0x000002211D8F1080>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x2211eb40c70, name="primaryButton") at 0x000002211D8F1080> = <emo_master.apps.designer.ui.main_window.MainWindow(0x2211fcee310) at 0x000002211B824A00>.startButton
+
+tests\designer\test_visual_layout.py:311: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+1 failed, 2734 passed, 8 skipped, 28 subtests passed in 708.25s (0:11:48)
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] running mypy: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m mypy --config-file mypy.ini src
+[ci-check] running pytest: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m pytest -q
+[ci-check] failed pytest with code 1

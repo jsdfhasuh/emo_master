@@ -1,0 +1,11 @@
+{
+  "baseHead": "9737f04312a2803f824e4bbeab6ea845549edaf7",
+  "source": "original git archive without task overlay or user dirty changes",
+  "sourceComparison": "CRLF normalized to LF for archive-vs-blob verification; archive uses Windows checkout newline conversion",
+  "archiveSha256": "1ed8f49fb22f4a49849fd1c5b9328633b55bffac1a9873407075a653c9fc8eb2",
+  "checkedSourceHashes": {
+    "src/emo_master/apps/designer/ui/main_window.py": "d53d3c417c9e17c001bae2685523f697934d81c77909676c3caa89aa3da909a2",
+    "tests/designer/test_visual_layout.py": "f65080d6d50a2e7234fe42aea7fd53453c2a56ce8606ec82064e18888022c3f8",
+    "src/emo_master/apps/designer/ui/flow_scene.py": "ebcdd763147b5edc7f71bc5c6863a288037d8df79d50e92ec3620a0adf34d04c"
+  }
+}

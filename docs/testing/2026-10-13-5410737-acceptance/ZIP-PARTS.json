@@ -1,0 +1,36 @@
+[
+  {
+    "original": "EmoMaster-5410737-evidence-2.zip",
+    "bytes": 14132600,
+    "sha256": "791969ddf2686eb0d6b947399ce188c83b7f40d9b13c315e689fd8021b77f2a6",
+    "parts": [
+      {
+        "name": "EmoMaster-5410737-evidence-2.zip.part01",
+        "bytes": 8000000,
+        "sha256": "66edce7387443125d31aad1f0af13e1208912e645679782c2c4dbcc1043d5e9d"
+      },
+      {
+        "name": "EmoMaster-5410737-evidence-2.zip.part02",
+        "bytes": 6132600,
+        "sha256": "b803cc55d3028c49350be0b9825c4dff5b0b423fa3650702af36413430d27c08"
+      }
+    ]
+  },
+  {
+    "original": "EmoMaster-5410737-evidence-3.zip",
+    "bytes": 12329862,
+    "sha256": "68d7a258f691007ad7df4279cc79deb2be6bbdc7c907621acb76e842617e4e29",
+    "parts": [
+      {
+        "name": "EmoMaster-5410737-evidence-3.zip.part01",
+        "bytes": 8000000,
+        "sha256": "ba6edef4e8080b0e0c7135493fe6fd276325a5faf516fb098a328f7512ed569f"
+      },
+      {
+        "name": "EmoMaster-5410737-evidence-3.zip.part02",
+        "bytes": 4329862,
+        "sha256": "ea3bc6984c3831dc76abc25ee285a944615b604837efed165f59071276a4c7eb"
+      }
+    ]
+  }
+]

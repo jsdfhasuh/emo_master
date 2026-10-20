@@ -1,0 +1,63 @@
+{
+  "python": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "windows",
+  "qpaEnvironment": "windows",
+  "evidenceType": "automated-scene-render-not-independent-desktop",
+  "dense": {
+    "samples": 30,
+    "medianMs": 0.022499996703118086,
+    "p95Ms": 0.03339996328577399,
+    "visiblePaint": {
+      "focusAndPaint": {
+        "samples": 30,
+        "medianMs": 2.804299962008372,
+        "p95Ms": 4.543399962130934
+      },
+      "localDragAndPaint": {
+        "samples": 30,
+        "medianMs": 9.490900003584102,
+        "p95Ms": 11.178400018252432
+      }
+    }
+  },
+  "stress": {
+    "samples": 30,
+    "medianMs": 0.030149996746331453,
+    "p95Ms": 0.09469996439293027,
+    "visiblePaint": {
+      "focusAndPaint": {
+        "samples": 30,
+        "medianMs": 6.89980000606738,
+        "p95Ms": 11.262699961662292
+      },
+      "localDragAndPaint": {
+        "samples": 30,
+        "medianMs": 98.94004999659956,
+        "p95Ms": 125.01979997614399
+      }
+    }
+  },
+  "project": {
+    "path": "C:\\Users\\jsdfhasuh\\.codex\\worktrees\\flow-edge-readability\\emo_master\\examples\\flow_edge_readability\\project.emoproj",
+    "workflow": "fanout",
+    "nodes": 8,
+    "edges": 12,
+    "focus": {
+      "samples": 30,
+      "medianMs": 0.022400025045499206,
+      "p95Ms": 0.024600012693554163
+    },
+    "visiblePaint": {
+      "focusAndPaint": {
+        "samples": 30,
+        "medianMs": 3.274949995102361,
+        "p95Ms": 8.698099991306663
+      },
+      "localDragAndPaint": {
+        "samples": 30,
+        "medianMs": 4.412700014654547,
+        "p95Ms": 8.06880003074184
+      }
+    }
+  }
+}

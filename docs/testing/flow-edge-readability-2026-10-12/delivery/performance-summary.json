@@ -1,0 +1,43 @@
+{
+  "evidenceType": "automated-QGraphicsView-not-independent-Designer-desktop",
+  "sourceCommit": "1f76a94c8c6689aefd7600b9eb2cd3ac41869c58",
+  "baselineSceneCommit": "4bcce9a9e4c158dcd618b04239bb9d8397ba9f73",
+  "baselineSceneBlob": "a630a023f041e8ac99fbb15b45816670e62665cd",
+  "supportingRouterAndLayout": "current-source-for-both",
+  "overall": "PERFORMANCE_PRECHECK_PARTIAL_FAILURE",
+  "rows": [
+    {
+      "fixture": "dense",
+      "samples": 30,
+      "focusBeforeP95Ms": 4.543399962130934,
+      "focusAfterP95Ms": 7.206300040706992,
+      "focusAfterUnder100Ms": true,
+      "dragBeforeP95Ms": 11.178400018252432,
+      "dragAfterP95Ms": 19.108599983155727,
+      "dragGrowthPercent": 70.94217376328118,
+      "dragGrowthUnder20Percent": false
+    },
+    {
+      "fixture": "stress",
+      "samples": 30,
+      "focusBeforeP95Ms": 11.262699961662292,
+      "focusAfterP95Ms": 56.955199979711324,
+      "focusAfterUnder100Ms": true,
+      "dragBeforeP95Ms": 125.01979997614399,
+      "dragAfterP95Ms": 179.22509997151792,
+      "dragGrowthPercent": 43.357372196817835,
+      "dragGrowthUnder20Percent": false
+    },
+    {
+      "fixture": "project",
+      "samples": 30,
+      "focusBeforeP95Ms": 8.698099991306663,
+      "focusAfterP95Ms": 10.127099987585098,
+      "focusAfterUnder100Ms": true,
+      "dragBeforeP95Ms": 8.06880003074184,
+      "dragAfterP95Ms": 9.653799992520362,
+      "dragGrowthPercent": 19.64356478955642,
+      "dragGrowthUnder20Percent": true
+    }
+  ]
+}

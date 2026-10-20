@@ -1,0 +1,21 @@
+{
+  "codeCommit": "d960b84905d33e49d4d49d47fafe8d3350395f27",
+  "comparedPythonFiles": 616,
+  "comparison": "committed tree vs frozen tested source, CRLF normalized; unrelated live edits excluded",
+  "mismatches": [],
+  "candidateChangedDuringRuns": [],
+  "evidenceSha256": {
+    "round2-ci-first-failure.log": "ce8e9e1e67e882476b8c42467d677c0e8ab0090573d2eb2d7ef7331cdaaa2c52",
+    "round2-ci-first-provenance.json": "dd79f43c787667fd4a35e6ad84e4085e9251b92759da3193589b6155f0e33833",
+    "round2-ci.log": "f7df38e3a97a91c83507740e41719b4a22fbbc7533c896a441293fea139fd034",
+    "round2-ci-provenance.json": "3193dec1e68e64d99a7c9fb9f9a29502964b52531ef84d5cf55a78c4ed822008",
+    "round2-native-final.log": "50ecd8f54219ac1388bdea9a8c3dbce578436b37329fb4831b0871e3b21211ed",
+    "round2-native-final-provenance.json": "5c74d7e0f7dcae28e849dc42881e370bd262bd74d7ee05e1cd131c6beba460c4",
+    "round2-screens-final.log": "0ae9243ce12244d6122c319fa061ce61b2fe764cc7d8e6bbc0cf6a6daa5ec37f",
+    "round2-measurements.json": "baffc2ef7c5b43e09531a464c996de378778abc90459ce7d5fe9228d3a384819",
+    "round2-pending-preview.png": "ce5b1caed1a4f2231748a021eea2d3d1b031157401473307e8195725b140ba4f",
+    "round2-pending-committed.png": "709ca0e87868e2f1ca24c777181a85aa06a0090d8db6f17239a1894d1a7eb0bf",
+    "round2-container-preview.png": "6f5bba74f04c67471bbc6731845931691eb31a8d1df002bed0f03c2ad8919dbd",
+    "round2-container-committed.png": "a51e9833a23f9d8184491045e70bb41de7c6686d31b4d1aaf4dd91461a9a7c4b"
+  }
+}

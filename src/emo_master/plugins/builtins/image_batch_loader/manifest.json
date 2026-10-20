@@ -1,0 +1,37 @@
+{
+  "operatorId": "vision.io.image_batch_loader",
+  "displayName": "\u56fe\u7247\u6279\u91cf\u5bfc\u5165",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.image_batch_loader.operator:ImageBatchLoaderOperator",
+  "category": "\u9884\u5904\u7406",
+  "iconKey": "source",
+  "summary": "\u6bcf\u6b21\u6267\u884c\u8bfb\u53d6\u6587\u4ef6\u5939\u4e2d\u7684\u4e0b\u4e00\u5f20\u56fe\u7247\uff0c\u8f93\u51fa hasNext \u7528\u4e8e While \u5faa\u73af\u9000\u51fa\u3002",
+  "inputPorts": {
+    "reset": {"type": "boolean", "required": false, "nullable": false}
+  },
+  "outputPorts": {
+    "image": {"type": "image", "required": true, "nullable": false},
+    "frame": {"type": "bbox2d", "required": true, "nullable": false, "schemaVersion": "1.1"},
+    "imagePath": {"type": "string", "required": true, "nullable": false},
+    "index": {"type": "integer", "required": true, "nullable": false},
+    "total": {"type": "integer", "required": true, "nullable": false},
+    "hasNext": {"type": "boolean", "required": true, "nullable": false}
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "folderPath": {
+        "title": "\u56fe\u7247\u6587\u4ef6\u5939", "type": "string", "default": "",
+        "xWidget": "file", "xFileMode": "directory"
+      },
+      "colorMode": {
+        "title": "\u989c\u8272\u6a21\u5f0f", "type": "string",
+        "enum": ["color", "grayscale"], "default": "color"
+      },
+      "recursive": {"title": "\u5305\u542b\u5b50\u6587\u4ef6\u5939", "type": "boolean", "default": false}
+    },
+    "required": ["folderPath"]
+  },
+  "minCoreVersion": "0.1.0",
+  "maxCoreVersion": "1.x"
+}

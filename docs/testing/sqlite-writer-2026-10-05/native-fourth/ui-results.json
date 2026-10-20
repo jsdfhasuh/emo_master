@@ -1,0 +1,113 @@
+{
+  "platform": "windows",
+  "jobs": [
+    {
+      "writeId": "a4b15abe-7e34-408a-845b-f42bcce78908",
+      "status": "COMMITTED",
+      "rowsAffected": 1,
+      "primaryKey": 1,
+      "execution": {
+        "jobId": "2da1aa5c-d75d-439f-9f11-5085eb716fda",
+        "projectId": "sqlite-test",
+        "workflowId": "main",
+        "workflowRunId": "a0f37964-4933-4112-8938-f14dfef6ddf2",
+        "nodeId": "node-8817f8f2",
+        "nodeRunId": "dc7e814d-eee7-490e-9e0c-888b0c924fdf",
+        "iterationPath": []
+      },
+      "elapsedMs": 15.00000013038516,
+      "error": null
+    },
+    {
+      "writeId": "c93f8736-cf8c-4320-a21b-ddf0fc35c175",
+      "status": "COMMITTED",
+      "rowsAffected": 1,
+      "primaryKey": 2,
+      "execution": {
+        "jobId": "8279da04-9bc6-4e82-9a1f-711c5c19d788",
+        "projectId": "sqlite-test",
+        "workflowId": "main",
+        "workflowRunId": "43de00af-635e-44f6-b48b-421d50b495c2",
+        "nodeId": "node-8817f8f2",
+        "nodeRunId": "313696e1-acbc-47a1-93da-4469aba23d0f",
+        "iterationPath": []
+      },
+      "elapsedMs": 0.0,
+      "error": null
+    }
+  ],
+  "rows": [
+    [
+      1,
+      "a4b15abe-7e34-408a-845b-f42bcce78908",
+      7
+    ],
+    [
+      2,
+      "c93f8736-cf8c-4320-a21b-ddf0fc35c175",
+      13
+    ]
+  ],
+  "screenSizes": [
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "actualDesigner": [
+        1280,
+        720
+      ],
+      "actualEditor": [
+        1100,
+        620
+      ],
+      "applyVisible": true,
+      "tableWidth": 1004
+    },
+    {
+      "requested": [
+        1600,
+        900
+      ],
+      "actualDesigner": [
+        1600,
+        900
+      ],
+      "actualEditor": [
+        1100,
+        780
+      ],
+      "applyVisible": true,
+      "tableWidth": 1004
+    },
+    {
+      "requested": [
+        1920,
+        1080
+      ],
+      "actualDesigner": [
+        1920,
+        1061
+      ],
+      "actualEditor": [
+        1100,
+        780
+      ],
+      "applyVisible": true,
+      "tableWidth": 1004
+    }
+  ],
+  "devicePixelRatio": 1.0,
+  "artifacts": {
+    "00-drop-before-double.png": "162df877b924fb76a21438c384edb08ad1353b6e126f58d13dfd6ec0707649ba",
+    "02-create-plan.png": "5cd74925bba2a38d8ddf991be19327728f89ce9b1f2bf0fb18bad9aec9720a4d",
+    "01-field-mapping.png": "e5d3f3ca0a1537890929869bce19d1ddc7770cb64bca240758ed56d6f70d3a77",
+    "03-run-7.png": "4a3ced70b99a218115827d9f775096f6d0d7c9b69bc3df5ca0a73d4ff37032e7",
+    "03-run-13.png": "5ec4e9b2a23a8f13666df6820d171557415a9199c5d1587bd4705fa64d3c751c",
+    "04-reopened.png": "e8cb6039e8baa9eff68482ef86eee48755af8b1f51a3756b1f09d3b7cf42cb68",
+    "05-editor-1280x720.png": "9e52da2431272eb34479d835de9886c0233574fee678dba6feacedfd8e840239",
+    "05-editor-1600x900.png": "cf2c2d47360cdd532334e6d7eca8cc063e9a983f093913a525974058c2d5b940",
+    "05-editor-1920x1080.png": "cf2c2d47360cdd532334e6d7eca8cc063e9a983f093913a525974058c2d5b940"
+  }
+}

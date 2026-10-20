@@ -1,0 +1,64 @@
+.F.F.................................................................... [ 71%]
+.............................                                            [100%]
+================================== FAILURES ===================================
+_____________ testNativeDragComponentVariablePropertiesAndOverlap _____________
+
+designer = <emo_master.apps.designer.ui.main_window.MainWindow(0x1cde5e3a2c0) at 0x000001CDE57A57C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001CDE8BF11E0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-401/testNativeDragComponentVariabl0')
+
+    def testNativeDragComponentVariablePropertiesAndOverlap(designer, monkeypatch, tmp_path):  # noqa: F811
+        c = designer.pageCoordinator
+        designer.workflowController.loadPayload(blank(tmp_path).model_dump())
+        c.session.acceptLoaded()
+        catalog = []
+        from dataclasses import asdict
+        for manifest in metadata().values():
+            catalog.append(asdict(manifest))
+        designer.operatorCatalog = catalog
+        c.showPages()
+        e = c.editor
+        monkeypatch.setattr(QInputDialog, 'getText', lambda *a, **k: ('Ê×Ò³', True))
+        e.run(e.newPage)
+        QApplication.processEvents()
+        body = next(w for w in e.renderer.findChildren(QWidget) if w.property('pageGrid') == e.pageId)
+        assert sendDrop(body, {'kind': 'number'})
+        item = e.store.snapshot().pages[e.pageId].components[0]
+        original = c.session.payload()
+        widget = e.renderer.widgets[e.pageId][item.componentId][1]
+        assert not sendDrop(widget, {'kind': 'text'})  # occupied cell, atomic rollback
+        assert c.session.payload() == original
+        widget = e.renderer.widgets[e.pageId][item.componentId][1]
+        index = next(i for i, choice in enumerate(e.tools.choices) if choice.source.nodeId == 'count')
+        monkeypatch.setattr(QInputDialog, 'getItem', lambda *a, **k: ('bind', True))
+>       assert sendDrop(widget, {'choice': index})
+E       assert False
+E        +  where False = sendDrop(<PySide2.QtWidgets.QLabel(0x1cde679fce0, name="number") at 0x000001CDE8CF8D00>, {'choice': 9})
+
+tests\ui\page_designer\test_editing.py:104: AssertionError
+_______________ testDraftOnSameRuntimeReloadObserveAndAsyncExit _______________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x1cde6275570) at 0x000001CDE7223CC0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-401/testDraftOnSameRuntimeReloadOb0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001CDE8C3B400>
+
+    def testDraftOnSameRuntimeReloadObserveAndAsyncExit(qtApp, tmp_path, monkeypatch):
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
+        root = tmp_path/'project'
+        root.mkdir()
+        document = sampleProject(root)
+        saveProject(root, document.model_dump())
+        runtime = RuntimeService(dbPath=tmp_path/'runtime.sqlite3', workspaceRoot=tmp_path/'jobs')
+        client = RuntimeClient(runtime)
+        window = MainWindow(client)
+        preview = window.pageCoordinator.preview
+        try:
+>           assert window.loadProjectDirectory(str(root))
+E           AssertionError: assert False
+E            +  where False = loadProjectDirectory('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-401\\testDraftOnSameRuntimeReloadOb0\\project')
+E            +    where loadProjectDirectory = <emo_master.apps.designer.ui.main_window.MainWindow(0x1cde67a0840) at 0x000001CDE8F80600>.loadProjectDirectory
+E            +    and   'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-401\\testDraftOnSameRuntimeReloadOb0\\project' = str(WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-401/testDraftOnSameRuntimeReloadOb0/project'))
+
+tests\ui\page_designer\test_preview.py:37: AssertionError
+2 failed, 99 passed in 61.11s (0:01:01)

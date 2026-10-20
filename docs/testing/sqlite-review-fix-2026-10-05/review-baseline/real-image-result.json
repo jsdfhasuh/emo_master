@@ -1,0 +1,29 @@
+{
+  "realRunner": true,
+  "realImageSaver": true,
+  "imageDimensions": [
+    8,
+    8,
+    3
+  ],
+  "receipt": {
+    "writeId": "48ddae16-26cc-4e34-8c1a-2e3a23d84d03",
+    "status": "COMMITTED",
+    "rowsAffected": 1,
+    "primaryKey": 1,
+    "execution": {
+      "jobId": "review-real-image",
+      "projectId": "",
+      "workflowId": "main",
+      "workflowRunId": "36d8ac2c-77f7-402f-a26e-ba457c61a6c7",
+      "nodeId": "writer",
+      "nodeRunId": "4940b9fa-7bc4-46c4-82fc-0369d4d8b67c",
+      "iterationPath": []
+    },
+    "elapsedMs": 108.99999993853271,
+    "error": null
+  },
+  "storedPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-20261005-120743-2607061\\PREVIEW-CACHE\\real-saved-image.png",
+  "referenceValidAfterCacheDeletion": false,
+  "confirmed": true
+}

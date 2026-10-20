@@ -1,0 +1,245 @@
+{
+  "schemaVersion": 1,
+  "date": "2026-10-14",
+  "timezone": "Asia/Shanghai",
+  "generatedAt": "2026-10-14T14:55:33+08:00",
+  "repository": "https://github.com/jsdfhasuh/emo_master",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "upstreamBase": "aea31218e1f489e793259b7f27dcd766b7985874",
+  "sourceRevision": "d238cf048835bf9df77fa8a02dd20678235f6b8d",
+  "sourceCommits": [
+    {
+      "name": "operators",
+      "commit": "6e8704abedbc10a046a5883114916438c02eeecd",
+      "message": "feat(operators): add stateless point and numeric bridges",
+      "files": 12
+    },
+    {
+      "name": "navigation",
+      "commit": "1222a74bca1d31d36d2261f6f41f0a5589176b44",
+      "message": "feat(designer): open workflow references with Ctrl-click",
+      "files": 2
+    },
+    {
+      "name": "resource-debug",
+      "commit": "b75cd1b6eeab74c4714ff8eb3d08e4292af29a60",
+      "message": "feat(debug): isolate resource steps and require per-execution confirmation",
+      "files": 18
+    },
+    {
+      "name": "core-gate-regression",
+      "commit": "d238cf048835bf9df77fa8a02dd20678235f6b8d",
+      "message": "test(plugins): preserve numeric bridge core compatibility gates",
+      "files": 1
+    }
+  ],
+  "validatedSubtrees": {
+    "src": "7bea30c028bb7e7822bc991b5aceef5b6d58b149",
+    "tests": "28b33e4c4b20933058614e31080aed1df7f255c4",
+    "scripts": "e05d1ccee9dee300417a77268d9fd2fc34b7afb6"
+  },
+  "checks": {
+    "protoDrift": {
+      "status": "PASS"
+    },
+    "ruff": {
+      "status": "PASS",
+      "scope": "src tests"
+    },
+    "mypy": {
+      "status": "PASS",
+      "sourceFiles": 419,
+      "config": "mypy.ini"
+    },
+    "designerStartup": {
+      "status": "PASS",
+      "mode": "--local --check",
+      "windowOrJobStarted": false
+    },
+    "focused": {
+      "status": "PASS",
+      "summary": "362 passed, 2 skipped, 2 warnings in 329.28s (0:05:29)",
+      "passed": 362,
+      "skipped": 2,
+      "failed": 0,
+      "errors": 0,
+      "warnings": 2,
+      "subtestsPassed": 0,
+      "seconds": 329.28,
+      "testFiles": 26,
+      "skipDetails": [
+        {
+          "test": "tests.runtime.test_operator_debug_acceptance.testThousandExecutionsAndFiftyRetirements",
+          "reason": "explicit 1000 execution / 50 session acceptance run"
+        },
+        {
+          "test": "tests.runtime.test_workflow_debug_acceptance.testDesignerConnectionRenewsWhilePausedBeyondLease",
+          "reason": "65-second live lease acceptance; set EMO_DEBUG_STRESS=1"
+        }
+      ]
+    },
+    "fullPublicCi": {
+      "status": "FAILED",
+      "summary": "1 failed, 5408 passed, 11 skipped, 41 subtests passed in 1758.83s (0:29:18)",
+      "passed": 5408,
+      "skipped": 11,
+      "failed": 1,
+      "errors": 0,
+      "warnings": 0,
+      "subtestsPassed": 41,
+      "seconds": 1758.83,
+      "sourceRevision": "b75cd1b6eeab74c4714ff8eb3d08e4292af29a60",
+      "cleanPublicClone": true,
+      "privateProjectsOrTestsCopied": false,
+      "skipDetails": [
+        {
+          "test": "tests.core.plugin.test_icon_resources.testSymlinkCannotEscapeRoot",
+          "reason": "symlinks unavailable in this environment"
+        },
+        {
+          "test": "tests.designer.test_dot_editing_repairs.testNativeSaveWarningCanBeAcknowledgedWithoutLosingPendingInput",
+          "reason": "Windows offscreen QPA cannot open QMessageBox; tested separately with native windows QPA"
+        },
+        {
+          "test": "tests.plugins.test_huaray_camera_smoke.testRealHuarayCameraSmoke",
+          "reason": "set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera"
+        },
+        {
+          "test": "tests.runtime.test_operator_debug_acceptance.testThousandExecutionsAndFiftyRetirements",
+          "reason": "explicit 1000 execution / 50 session acceptance run"
+        },
+        {
+          "test": "tests.runtime.test_workflow_debug_acceptance.testDesignerConnectionRenewsWhilePausedBeyondLease",
+          "reason": "65-second live lease acceptance; set EMO_DEBUG_STRESS=1"
+        },
+        {
+          "test": "tests.test_r3_export_credit_report.ReportTests.test_path_traversal_and_symlink_escape_rejected",
+          "reason": "symlink creation is unavailable"
+        },
+        {
+          "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[database]",
+          "reason": "Windows symlink privilege unavailable"
+        },
+        {
+          "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[wal]",
+          "reason": "Windows symlink privilege unavailable"
+        },
+        {
+          "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[directory]",
+          "reason": "Windows symlink privilege unavailable"
+        },
+        {
+          "test": "tests.test_r3_sqlite_wal_metadata.testSymlinkComponentsRejectedWithoutReading[root]",
+          "reason": "Windows symlink privilege unavailable"
+        },
+        {
+          "test": "tests.test_r3_sqlite_wal_metadata.testUnsupportedPlatformNeverInspectsOrOpensDatabaseOrWal",
+          "reason": "Non-Windows platform rejection"
+        }
+      ],
+      "failedTests": [
+        "tests.sqlite_writer.test_dependencies.testBuiltinSqlitePreservesActualCoreCapabilityGate"
+      ],
+      "failureResolution": {
+        "commit": "d238cf048835bf9df77fa8a02dd20678235f6b8d",
+        "reason": "The explicit legacy-core rejection-set fixture omitted four new minCoreVersion=0.6.1 numeric bridges.",
+        "change": "Added all four IDs and strengthened old-core rejection codes and current-core admission assertions. No version gate was relaxed.",
+        "productSourceChanged": false
+      },
+      "fullSuiteRerunAfterFix": false
+    },
+    "coreGateFixRetest": {
+      "status": "PASS",
+      "summary": "165 passed, 1 skipped in 2.23s",
+      "passed": 165,
+      "skipped": 1,
+      "failed": 0,
+      "errors": 0,
+      "warnings": 0,
+      "subtestsPassed": 0,
+      "seconds": 2.23
+    },
+    "postFixPublicRegression": {
+      "status": "PASS",
+      "summary": "839 passed, 2 skipped in 51.91s",
+      "passed": 839,
+      "skipped": 2,
+      "failed": 0,
+      "errors": 0,
+      "warnings": 0,
+      "subtestsPassed": 0,
+      "seconds": 51.91,
+      "sourceRevision": "d238cf048835bf9df77fa8a02dd20678235f6b8d",
+      "cleanPublicClone": true,
+      "scope": "tests/sqlite_writer tests/plugins tests/core/plugin tests/runtime/test_operator_registration.py",
+      "skipDetails": [
+        {
+          "test": "tests.plugins.test_huaray_camera_smoke.testRealHuarayCameraSmoke",
+          "reason": "set HUARAY_CAMERA_SMOKE=1 to run against a real IMV camera"
+        },
+        {
+          "test": "tests.core.plugin.test_icon_resources.testSymlinkCannotEscapeRoot",
+          "reason": "symlinks unavailable in this environment"
+        }
+      ]
+    },
+    "fullSuiteRerunAfterFix": false,
+    "countsNote": "Focused, full-suite and post-fix results overlap; do not add their pass counts. The initial full CI exited 1; its sole stale-expectation failure was fixed and covered by the post-fix regression, not by a second full-suite run."
+  },
+  "resourceDebugBoundary": {
+    "reviewedBuiltins": 65,
+    "singleNodeOnlyBuiltins": 12,
+    "workflowEligibleBuiltins": 53,
+    "sideEffects": "Explicit per-execution confirmation bound to prepared inputs and parameter digest.",
+    "plcWrites": "One-shot confirmation, no automatic retries, loopback peers only in these tests.",
+    "databaseWrites": "Isolated temporary debug databases; production and template databases unchanged in tests.",
+    "camera": "Simulated SDK lifecycle test only; no real camera connected for this delivery."
+  },
+  "protectedWorkspace": {
+    "filesHashed": 191,
+    "changedFiles": 0,
+    "privateProjectAndTestsPublished": false,
+    "historicalLocalEvidencePublished": false,
+    "localOnlyExcludeRulesAdded": 130,
+    "sharedGitignoreModified": false
+  },
+  "evidence": {
+    "file": "test-evidence.zip",
+    "bytes": 163034,
+    "sha256": "706648042316caf4783acaa32c2fa0b3f80df9d78be96b80f4fb54662ed25df5",
+    "memberSha256": {
+      "proto.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "mypy.txt": "3f622cfb9a81a839b1cfcded29f5028900c280625ea59fe0cfc445e3be12f51f",
+      "startup.txt": "e18f446eb838d652c5fc524b745c6de49dad847b3cdd624c96be2c430311f3fa",
+      "focused.txt": "1051bcf995b59e366f2509ba350f948ddb1246d793f20f75b031e064c1e8b192",
+      "focused.xml": "58ed0ad78b448a0a4a93de6fbaf5edf4ffe93ba7432e8b4c6d32c926219865c4",
+      "focused-tests.txt": "c4a4eb45f2d9f109e625732d08326356ad3e8e42f5992fd14f277ffcfdc1a3da",
+      "full-ci.txt": "454376b8c39004bc446aa6c64815596afad41a4badc80c2ab7c84538a96095e5",
+      "full-ci.xml": "7bbb2d2995d7e9e5ced2ef1df17d6477fff4501070f91a4ec445e5d092bc5b6b",
+      "core-gate-fix.txt": "7ba5ded338172b1ebeaea50947cc10805e25973f861e2706d757fd2c5f3be6b9",
+      "core-gate-fix.xml": "1e058639b72633a983ff6b02ee6187876110f1b6889cef36d2aab63e44deb65f",
+      "post-fix-proto.txt": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "post-fix-public-ruff.txt": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18",
+      "post-fix-mypy.txt": "3f622cfb9a81a839b1cfcded29f5028900c280625ea59fe0cfc445e3be12f51f",
+      "post-fix-regression.txt": "bb89dd10bbf1c4a7d2f20ea7ba95c51cfb62d55e400293b91bf97c50c9e93b8c",
+      "post-fix-regression.xml": "eac04cf81db7e8d511627fa9b6a8ab5e16e851a79b8a64b2f79fff8b0208c8c0",
+      "source-revision.txt": "a0bcf17a2addc3b0f6bde893ea9144bad88b8d7139de2b26db5f8a3a2f1904df"
+    },
+    "allMembersReadBackAndVerified": true,
+    "redacted": "Machine-specific workspace, environment, user-home and temporary paths replaced; raw logs retained locally."
+  },
+  "notRun": [
+    "real Windows or Debian desktop acceptance",
+    "system DPI matrix",
+    "real camera, PLC, robot or field linkage",
+    "new frozen package acceptance",
+    "release/tag publication",
+    "production deployment"
+  ],
+  "acceptanceNote": "This records source validation, not hardware, desktop, package, release or production approval. Historical acceptance archives apply only to their named revisions.",
+  "cloudCi": {
+    "status": "NOT_QUERIED_BEFORE_PUSH",
+    "note": "Query workflow status for the final pushed revision separately."
+  }
+}

@@ -1,0 +1,14 @@
+{
+  "status": "PASS",
+  "phase": "complete",
+  "executable": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-runtime-check-c887cc34079a4e1bab516fea0e5bcb82\\package\\EmoMasterRuntime\\EmoMasterRuntime.exe",
+  "archive": "manual_test_workspace/runtime-cloud-20261007/run-37559011805/emo-master-runtime-windows-v0.6.1.zip",
+  "workDirectory": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-runtime-check-c887cc34079a4e1bab516fea0e5bcb82",
+  "exitCode": 0,
+  "durationSeconds": 60.0,
+  "restarts": 10,
+  "qtPlatform": "windows",
+  "fieldAcceptance": "NOT_RUN",
+  "executableSha256": "90fce6dc51b06c8e70a299cb887fddee9e0717c65b5615963147e8c377b78a36",
+  "pid": 28344
+}

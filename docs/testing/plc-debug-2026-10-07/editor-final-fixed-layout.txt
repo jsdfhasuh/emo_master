@@ -1,0 +1,639 @@
+.......................FFFFFF........................................... [ 54%]
+.............................FFFFFFFFFFFF....................            [100%]
+================================== FAILURES ===================================
+_ testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_read] __
+
+editor = <function editor.<locals>.make at 0x0000017E46F880D0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_read', device = 'D', dataType = 'uint32'
+lastAddress = 'D8'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E48262700>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E48262700> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c63780, name="plcReplyMetadata") at 0x0000017E48262700>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c63780, name="plcReplyMetadata") at 0x0000017E48262700> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47095E10>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E48261E40>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E48261E40> = <PySide2.QtWidgets.QLineEdit(0x17e45c62600, name="debugHost") at 0x0000017E48261E40>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c62600, name="debugHost") at 0x0000017E48261E40> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47095E10>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+_ testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_write] _
+
+editor = <function editor.<locals>.make at 0x0000017E48268CA0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_write', device = 'D', dataType = 'uint32'
+lastAddress = 'D8'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E47021740>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E47021740> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62670, name="plcReplyMetadata") at 0x0000017E47021740>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62670, name="plcReplyMetadata") at 0x0000017E47021740> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E46FC7D60>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47020F80>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47020F80> = <PySide2.QtWidgets.QLineEdit(0x17e45c637f0, name="debugHost") at 0x0000017E47020F80>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c637f0, name="debugHost") at 0x0000017E47020F80> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E46FC7D60>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+_ testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_read] _
+
+editor = <function editor.<locals>.make at 0x0000017E48268D30>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_read', device = 'M', dataType = 'uint16'
+lastAddress = 'M36'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E4708EF80>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E4708EF80> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62fa0, name="plcReplyMetadata") at 0x0000017E4708EF80>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62fa0, name="plcReplyMetadata") at 0x0000017E4708EF80> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47094490>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E4708FD40>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E4708FD40> = <PySide2.QtWidgets.QLineEdit(0x17e45c63400, name="debugHost") at 0x0000017E4708FD40>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c63400, name="debugHost") at 0x0000017E4708FD40> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47094490>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+_ testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_write] _
+
+editor = <function editor.<locals>.make at 0x0000017E482B69E0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_write', device = 'M', dataType = 'uint16'
+lastAddress = 'M36'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E47045980>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E47045980> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c63a20, name="plcReplyMetadata") at 0x0000017E47045980>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c63a20, name="plcReplyMetadata") at 0x0000017E47045980> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E4824FBE0>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47047000>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47047000> = <PySide2.QtWidgets.QLineEdit(0x17e45c63d30, name="debugHost") at 0x0000017E47047000>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c63d30, name="debugHost") at 0x0000017E47047000> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E4824FBE0>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+___ testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_read] ___
+
+editor = <function editor.<locals>.make at 0x0000017E46F8BEB0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_read', device = 'M', dataType = 'bit', lastAddress = 'M6'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E1E8F1280>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E1E8F1280> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62750, name="plcReplyMetadata") at 0x0000017E1E8F1280>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c62750, name="plcReplyMetadata") at 0x0000017E1E8F1280> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47096170>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E1E8F0400>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E1E8F0400> = <PySide2.QtWidgets.QLineEdit(0x17e45c627c0, name="debugHost") at 0x0000017E1E8F0400>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c627c0, name="debugHost") at 0x0000017E1E8F0400> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E47096170>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+__ testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_write] ___
+
+editor = <function editor.<locals>.make at 0x0000017E46F89120>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+directory = 'plc_slmp_write', device = 'M', dataType = 'bit', lastAddress = 'M6'
+
+    @pytest.mark.parametrize("directory", _DIRECTORIES)
+    @pytest.mark.parametrize(("device", "dataType", "lastAddress"), [
+        ("D", "uint32", "D8"), ("M", "uint16", "M36"), ("M", "bit", "M6"),
+    ])
+    def testBothOperatorsReadAndDisplayRuntimeAddresses(editor, designerApplication, directory, device, dataType, lastAddress):
+        controller, context, _root = editor(directory)
+        _connect(controller, context, designerApplication)
+        controller.deviceCombo.setCurrentText(device)
+        controller.dataTypeCombo.setCurrentText(dataType)
+        controller.addressSpin.setValue(4)
+        controller.countSpin.setValue(3)
+        controller.read()
+        _pump(designerApplication, lambda: controller._operation is None)
+        assert controller.resultTable.rowCount() == 3
+        assert controller.resultTable.item(2, 0).text() == lastAddress
+        assert controller.resultTable.columnCount() == 5
+        assert controller.resultTable.horizontalHeaderItem(4).text() == "更新时间"
+        stamp = QDateTime.fromMSecsSinceEpoch(_reply().timestamp_ms).toString("yyyy-MM-dd HH:mm:ss.zzz")
+        assert [controller.resultTable.item(row, 4).text() for row in range(3)] == [stamp] * 3
+        if dataType == "bit":
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始位"
+            assert [controller.resultTable.item(row, 3).text() for row in range(3)] == ["0", "1", "0"]
+        else:
+            assert controller.resultTable.horizontalHeaderItem(3).text() == "原始字"
+        assert controller._state == "verified"
+        assert controller.metadataLabel.text() == f"最近 PLC 读写：{stamp} | 耗时：4.0 毫秒"
+>       assert controller.metadataLabel.y() < controller.hostEdit.y()
+E       assert 60 < 4
+E        +  where 60 = <built-in method y of WrapLabel object at 0x0000017E470016C0>()
+E        +    where <built-in method y of WrapLabel object at 0x0000017E470016C0> = <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c630f0, name="plcReplyMetadata") at 0x0000017E470016C0>.y
+E        +      where <emo_master.apps.designer.ui.widgets.WrapLabel(0x17e45c630f0, name="plcReplyMetadata") at 0x0000017E470016C0> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E470140D0>.metadataLabel
+E        +  and   4 = <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47003780>()
+E        +    where <built-in method y of PySide2.QtWidgets.QLineEdit object at 0x0000017E47003780> = <PySide2.QtWidgets.QLineEdit(0x17e45c632b0, name="debugHost") at 0x0000017E47003780>.y
+E        +      where <PySide2.QtWidgets.QLineEdit(0x17e45c632b0, name="debugHost") at 0x0000017E47003780> = <emo_master.plugins.builtins._plc_editor.PlcEditorController object at 0x0000017E470140D0>.hostEdit
+
+tests\designer\test_plc_editor.py:543: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-640-430] ___
+
+editor = <function editor.<locals>.make at 0x0000017E48BB2E60>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = False, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 474 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48B7C9C0>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48B7C9C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69a60) at 0x0000017E48B7C9C0>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48B7C9C0>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48B7C9C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69a60) at 0x0000017E48B7C9C0>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-800-430] ___
+
+editor = <function editor.<locals>.make at 0x0000017E48BB2290>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = False, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 474 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470611C0>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470611C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6ad30) at 0x0000017E470611C0>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470611C0>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470611C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6ad30) at 0x0000017E470611C0>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E48BB3E20>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = True, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 478 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A9A400>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A9A400> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6aef0) at 0x0000017E48A9A400>.width
+E        +  and   478 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A9A400>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A9A400> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6aef0) at 0x0000017E48A9A400>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E48BB1FC0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = True, phase = 'closed'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 478 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E489E8040>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E489E8040> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6ab70) at 0x0000017E489E8040>.width
+E        +  and   478 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E489E8040>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E489E8040> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6ab70) at 0x0000017E489E8040>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+_ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-640-430] __
+
+editor = <function editor.<locals>.make at 0x0000017E482B7B50>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = False, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 474 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E483938C0>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E483938C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6a0f0) at 0x0000017E483938C0>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E483938C0>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E483938C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c6a0f0) at 0x0000017E483938C0>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+_ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-800-430] __
+
+editor = <function editor.<locals>.make at 0x0000017E482B64D0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = False, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 474 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A5FB40>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A5FB40> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69e50) at 0x0000017E48A5FB40>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A5FB40>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A5FB40> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69e50) at 0x0000017E48A5FB40>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+__ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430] __
+
+editor = <function editor.<locals>.make at 0x0000017E482B6B00>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = True, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 474 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E4708E400>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E4708E400> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69980) at 0x0000017E4708E400>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E4708E400>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E4708E400> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c69980) at 0x0000017E4708E400>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+__ testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430] __
+
+editor = <function editor.<locals>.make at 0x0000017E48269A20>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = True, phase = 'connected'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 474 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470B1440>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470B1440> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e47205bf0) at 0x0000017E470B1440>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470B1440>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470B1440> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e47205bf0) at 0x0000017E470B1440>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-640-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E1E8C7760>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = False, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 474 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470AB180>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E470AB180> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c630f0) at 0x0000017E470AB180>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470AB180>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E470AB180> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c630f0) at 0x0000017E470AB180>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+___ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-800-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E1E8C6DD0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = False, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 474 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A2DE00>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48A2DE00> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c632b0) at 0x0000017E48A2DE00>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A2DE00>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48A2DE00> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c632b0) at 0x0000017E48A2DE00>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+____ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E1E8C6EF0>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 640, height = 430, advanced = True, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (640 == 640 and 478 == 430)
+E        +  where 640 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E1E8F0800>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E1E8F0800> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c63c50) at 0x0000017E1E8F0800>.width
+E        +  and   478 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E1E8F0800>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E1E8F0800> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c63c50) at 0x0000017E1E8F0800>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+____ testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430] ____
+
+editor = <function editor.<locals>.make at 0x0000017E1E8C5B40>
+designerApplication = <PySide2.QtWidgets.QApplication(0x17e45769cb0) at 0x0000017E46F5D230>
+width = 800, height = 430, advanced = True, phase = 'write'
+
+    @pytest.mark.parametrize(("width", "height"), [(640, 430), (800, 430)])
+    @pytest.mark.parametrize("advanced", [False, True])
+    @pytest.mark.parametrize("phase", ["closed", "connected", "write"])
+    def testRuntimePageLayoutKeepsControlsAndTablesUsable(editor, designerApplication, width, height, advanced, phase):
+        controller, context, root = editor(window=True)
+        designerApplication.processEvents()
+        controller.tabs.setCurrentWidget(controller.runtimePage)
+        if phase != "closed":
+            _connect(controller, context, designerApplication)
+        if phase == "write":
+            _unlock(controller, context, designerApplication)
+            controller.write()
+            _pump(designerApplication, lambda: controller._operation is None)
+        controller.advancedButton.setChecked(advanced)
+        root.resize(width, height)
+        designerApplication.processEvents()
+>       assert root.width() == width and root.height() == height
+E       assert (800 == 800 and 474 == 430)
+E        +  where 800 = <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48AD47C0>()
+E        +    where <built-in method width of OperatorWorkspaceWindow object at 0x0000017E48AD47C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c626e0) at 0x0000017E48AD47C0>.width
+E        +  and   474 = <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48AD47C0>()
+E        +    where <built-in method height of OperatorWorkspaceWindow object at 0x0000017E48AD47C0> = <emo_master.apps.designer.operator_editors.workspace_window.OperatorWorkspaceWindow(0x17e45c626e0) at 0x0000017E48AD47C0>.height
+
+tests\designer\test_plc_editor.py:1325: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_read]
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[D-uint32-D8-plc_slmp_write]
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_read]
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-uint16-M36-plc_slmp_write]
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_read]
+FAILED tests/designer/test_plc_editor.py::testBothOperatorsReadAndDisplayRuntimeAddresses[M-bit-M6-plc_slmp_write]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-False-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[closed-True-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-False-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[connected-True-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-False-800-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-640-430]
+FAILED tests/designer/test_plc_editor.py::testRuntimePageLayoutKeepsControlsAndTablesUsable[write-True-800-430]
+18 failed, 115 passed in 24.33s

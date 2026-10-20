@@ -1,0 +1,34 @@
+"""Push normally and independently record the full remote branch identity."""
+from pathlib import Path
+import json
+import re
+import subprocess
+import sys
+import time
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+output = root / 'docs/testing/designer-shortcuts-2026-10-06' / sys.argv[1]
+output.mkdir(exist_ok=False)
+branch = 'agent/runtime-workflow-architecture-v1'
+head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=root).decode().strip()
+assert subprocess.check_output(['git', 'branch', '--show-current'], cwd=root).decode().strip() == branch
+records = []
+for command in [['git', 'ls-remote', '--heads', 'origin', 'refs/heads/' + branch],
+                ['git', 'push', 'origin', 'HEAD:refs/heads/' + branch],
+                ['git', 'ls-remote', '--heads', 'origin', 'refs/heads/' + branch]]:
+    begin = time.monotonic()
+    try:
+        value = subprocess.run(command, cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=90)
+        message, code = value.stdout, value.returncode
+    except subprocess.TimeoutExpired as error:
+        message, code = error.stdout or b'', 'TIMEOUT'
+    text = message.decode('utf-8', errors='replace')
+    text = re.sub(r'(https?://)[^\s/@]+(?::[^\s/@]*)?@', r'\1[redacted]@', text)
+    record = {'command': command, 'exitCode': code, 'seconds': time.monotonic() - begin, 'output': text}
+    records.append(record)
+    print(json.dumps(record, ensure_ascii=False), flush=True)
+remote = records[-1]['output'].split()[0] if records[-1]['exitCode'] == 0 and records[-1]['output'].split() else None
+report = {'localHead': head, 'remoteHead': remote, 'verifiedSynchronized': remote == head,
+          'commands': records}
+(output / 'result.json').write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding='utf-8')
+raise SystemExit(0 if remote == head else 1)

@@ -1,0 +1,42 @@
+{
+  "deviceTypeId": "device.simulated.camera",
+  "version": "1.0.0",
+  "displayName": "模拟相机",
+  "category": "模拟设备",
+  "iconKey": "camera",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "0.x",
+  "platforms": ["windows", "linux"],
+  "driverEntry": "emo_master.apps.runtime.devices.simulated:SimulatedCamera",
+  "executionLocation": "io_thread",
+  "connectionSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {"serial": {"title": "模拟序列号", "type": "string", "default": "SIM-001", "minLength": 1, "xResourcePurpose": "camera_serial", "xDeviceIdentity": true}},
+    "required": ["serial"]
+  },
+  "defaultsSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "width": {"title": "宽度", "type": "integer", "minimum": 1, "maximum": 4096, "default": 640},
+      "height": {"title": "高度", "type": "integer", "minimum": 1, "maximum": 4096, "default": 480},
+      "exposureUs": {"title": "曝光", "type": "number", "minimum": 1, "maximum": 1000000, "default": 8000, "xUnit": "us"},
+      "gain": {"title": "增益", "type": "number", "minimum": 0, "maximum": 24, "default": 0}
+    },
+    "required": ["width", "height", "exposureUs", "gain"]
+  },
+  "policiesSchema": {
+    "type": "object", "additionalProperties": false,
+    "properties": {
+      "connect": {"title": "连接策略", "type": "string", "enum": ["on_first_use", "on_project_open", "on_project_run", "manual"], "default": "on_first_use"},
+      "release": {"title": "释放策略", "type": "string", "enum": ["on_project_close", "when_unused", "idle_timeout", "manual"], "default": "on_project_close"},
+      "idleTimeoutMs": {"title": "空闲释放时长", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 30000, "xUnit": "ms"},
+      "deviceWaitTimeoutMs": {"title": "排队超时", "type": "integer", "minimum": 1, "maximum": 600000, "default": 5000, "xUnit": "ms"},
+      "operationTimeoutMs": {"title": "操作超时", "type": "integer", "minimum": 1, "maximum": 600000, "default": 5000, "xUnit": "ms"}
+    },
+    "required": ["connect", "release", "deviceWaitTimeoutMs", "operationTimeoutMs"]
+  },
+  "overridePaths": ["width", "height", "exposureUs", "gain"],
+  "dynamicPaths": ["exposureUs", "gain"],
+  "nextCyclePaths": ["width", "height", "exposureUs", "gain"],
+  "capabilities": ["capture"]
+}

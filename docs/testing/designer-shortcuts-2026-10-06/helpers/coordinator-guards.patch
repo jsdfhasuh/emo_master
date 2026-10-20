@@ -1,0 +1,7 @@
+--- a/src/emo_master/apps/designer/page_designer/coordinator.py
++++ b/src/emo_master/apps/designer/page_designer/coordinator.py
+@@ -95,2 +95,4 @@
+     def history(self, redo=False):
++        if self.window.isJobRunning:
++            return
+         if not self._canSync():

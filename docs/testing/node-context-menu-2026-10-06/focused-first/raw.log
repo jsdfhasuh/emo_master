@@ -1,0 +1,343 @@
+Windows fatal exception: access violation
+
+Current thread 0x000131bc (most recent call first):
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 1176 in create_module
+  File "<frozen importlib._bootstrap>", line 571 in module_from_spec
+  File "<frozen importlib._bootstrap>", line 674 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\onnxruntime\capi\_pybind_state.py", line 32 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\onnxruntime\__init__.py", line 24 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\__init__.py", line 7 in _preloadOnnxRuntimeBeforeQt
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\__init__.py", line 14 in <module>
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap_external>", line 883 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 992 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 992 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 992 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 241 in _call_with_frames_removed
+  File "<frozen importlib._bootstrap>", line 992 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_run_inspector_ui.py", line 4 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\assertion\rewrite.py", line 188 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\Lib\site-packages\shiboken2\files.dir\shibokensupport\__feature__.py", line 142 in _import
+  File "D:\jsdfhasuh\documents\my_project\emo_master\tests\designer\test_node_context_menu.py", line 11 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\assertion\rewrite.py", line 188 in exec_module
+  File "<frozen importlib._bootstrap>", line 688 in _load_unlocked
+  File "<frozen importlib._bootstrap>", line 1006 in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 1027 in _find_and_load
+  File "<frozen importlib._bootstrap>", line 1050 in _gcd_import
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\importlib\__init__.py", line 126 in import_module
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\pathlib.py", line 596 in import_path
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 508 in importtestmodule
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 561 in _getobj
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 290 in obj
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 577 in _register_setup_module_fixture
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\python.py", line 564 in collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 406 in collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 361 in from_call
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 408 in pytest_make_collect_report
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\runner.py", line 589 in collect_one_node
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 895 in _collect_one_node
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 1032 in genitems
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 869 in perform_collect
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 394 in pytest_collection
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 383 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 330 in wrap_session
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\main.py", line 377 in pytest_cmdline_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_callers.py", line 121 in _multicall
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_manager.py", line 120 in _hookexec
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pluggy\_hooks.py", line 512 in __call__
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 229 in _main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\config\__init__.py", line 253 in _console_main
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\pytest\__main__.py", line 9 in <module>
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 86 in _run_code
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\runpy.py", line 196 in _run_module_as_main
+FFFFFFFFFFFFFFFFFFFFF                                                    [100%]
+================================== FAILURES ===================================
+____ testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5] _____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x2168b6bfb00) at 0x00000216B42E1BC0>, ['node-3296ae4f', 'node-7a129243', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4291C30>)
+scale = 0.5
+
+    @pytest.mark.parametrize('scale', [.5, 1., 1.75])
+    def testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode(canvas, scale):
+>       window, (first, second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:65: ValueError
+____ testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0] _____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b32a8f80) at 0x00000216B3E85780>, ['node-1d7e80a8', 'node-16b0be9c', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B433ACE0>)
+scale = 1.0
+
+    @pytest.mark.parametrize('scale', [.5, 1., 1.75])
+    def testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode(canvas, scale):
+>       window, (first, second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:65: ValueError
+____ testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75] ____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28ffeb0) at 0x00000216B4329A00>, ['node-d69b2963', 'node-da413e0b', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B441E320>)
+scale = 1.75
+
+    @pytest.mark.parametrize('scale', [.5, 1., 1.75])
+    def testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode(canvas, scale):
+>       window, (first, second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:65: ValueError
+____ testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu _____
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2ef2860) at 0x00000216B4413F00>, ['node-e8886e43', 'node-bfb6c225', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44E37F0>)
+
+    def testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu(canvas):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:92: ValueError
+_________ testConfigurationUsesRealExistingEditorWithoutEditingDraft __________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28fc2c0) at 0x00000216B453A300>, ['node-f6ec5352', 'node-6e324430', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44E0790>)
+
+    def testConfigurationUsesRealExistingEditorWithoutEditingDraft(canvas):
+>       window, (first, _second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:109: ValueError
+__________ testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout __________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2eedfc0) at 0x00000216B442C380>, ['node-ffaa5637', 'node-ff993072', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4338790>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000216B44B15D0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1038/testCopyAddsExactlyOneUndoAndS0')
+
+    def testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout(canvas, ownedDesignerWindow, tmp_path):
+>       window, (first, second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:121: ValueError
+___________ testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth ____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28f9150) at 0x00000216B45591C0>, ['node-37746d27', 'node-aacf5087', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44B34C0>)
+
+    def testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth(canvas):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:144: ValueError
+________ testRunningDisablesMutationAndTriggerRechecksState[configure] ________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2eecf90) at 0x00000216B4563B00>, ['node-3bb140e3', 'node-86848649', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44D5BD0>)
+key = 'configure'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B44D7C40>
+
+    @pytest.mark.parametrize('key', ['configure', 'copy', 'delete'])
+    def testRunningDisablesMutationAndTriggerRechecksState(canvas, key, monkeypatch):
+>       window, (first, _second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:162: ValueError
+__________ testRunningDisablesMutationAndTriggerRechecksState[copy] ___________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28fee10) at 0x00000216B44A50C0>, ['node-aaeefe72', 'node-649bafd7', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44B3B50>)
+key = 'copy'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4571330>
+
+    @pytest.mark.parametrize('key', ['configure', 'copy', 'delete'])
+    def testRunningDisablesMutationAndTriggerRechecksState(canvas, key, monkeypatch):
+>       window, (first, _second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:162: ValueError
+_________ testRunningDisablesMutationAndTriggerRechecksState[delete] __________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2ef1600) at 0x00000216B45C3C40>, ['node-87619005', 'node-5b4243c6', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4572C80>)
+key = 'delete'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4571ED0>
+
+    @pytest.mark.parametrize('key', ['configure', 'copy', 'delete'])
+    def testRunningDisablesMutationAndTriggerRechecksState(canvas, key, monkeypatch):
+>       window, (first, _second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:162: ValueError
+___ testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input] ___
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28fae30) at 0x00000216B45D20C0>, ['node-b5f82a6e', 'node-e77ad0c7', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B44B04C0>)
+kind = 'workflow_input'
+
+    @pytest.mark.parametrize('kind', ['workflow_input', 'workflow_output', 'subflow', 'loop'])
+    def testBoundaryAndControlNodesKeepExistingCopyRestrictions(canvas, kind):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:179: ValueError
+__ testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output] ___
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2ef0f70) at 0x00000216B4502F40>, ['node-2a50179f', 'node-f85adceb', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B45851E0>)
+kind = 'workflow_output'
+
+    @pytest.mark.parametrize('kind', ['workflow_input', 'workflow_output', 'subflow', 'loop'])
+    def testBoundaryAndControlNodesKeepExistingCopyRestrictions(canvas, kind):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:179: ValueError
+______ testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow] _______
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28f8200) at 0x00000216B4578880>, ['node-161882b2', 'node-718a6e4d', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B45701F0>)
+kind = 'subflow'
+
+    @pytest.mark.parametrize('kind', ['workflow_input', 'workflow_output', 'subflow', 'loop'])
+    def testBoundaryAndControlNodesKeepExistingCopyRestrictions(canvas, kind):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:179: ValueError
+________ testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop] ________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b32aacd0) at 0x00000216B4610D80>, ['node-278a7d69', 'node-a8065903', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4584790>)
+kind = 'loop'
+
+    @pytest.mark.parametrize('kind', ['workflow_input', 'workflow_output', 'subflow', 'loop'])
+    def testBoundaryAndControlNodesKeepExistingCopyRestrictions(canvas, kind):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:179: ValueError
+_ testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage _
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b31fee80) at 0x00000216B46132C0>, ['node-b2fb15bd', 'node-6e738758', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4510FD0>)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B45127D0>
+
+    def testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage(canvas, monkeypatch):
+>       window, (first, _second), client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:190: ValueError
+____________ testOldActionCannotOperateAfterContextChanges[clear] _____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28fb990) at 0x00000216B463AE00>, ['node-0e1703d5', 'node-d03afe2a', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4511930>)
+change = 'clear'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4511D20>
+
+    @pytest.mark.parametrize('change', ['clear', 'reload', 'project', 'workspace', 'close'])
+    def testOldActionCannotOperateAfterContextChanges(canvas, change, monkeypatch):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:211: ValueError
+____________ testOldActionCannotOperateAfterContextChanges[reload] ____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2ef11a0) at 0x00000216B4562A40>, ['node-d0fecd1b', 'node-70eee31d', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B433ABC0>)
+change = 'reload'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4338520>
+
+    @pytest.mark.parametrize('change', ['clear', 'reload', 'project', 'workspace', 'close'])
+    def testOldActionCannotOperateAfterContextChanges(canvas, change, monkeypatch):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:211: ValueError
+___________ testOldActionCannotOperateAfterContextChanges[project] ____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28f8970) at 0x00000216B45610C0>, ['node-922061c7', 'node-bb156bcf', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B43380D0>)
+change = 'project'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4338460>
+
+    @pytest.mark.parametrize('change', ['clear', 'reload', 'project', 'workspace', 'close'])
+    def testOldActionCannotOperateAfterContextChanges(canvas, change, monkeypatch):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:211: ValueError
+__________ testOldActionCannotOperateAfterContextChanges[workspace] ___________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2eec510) at 0x00000216B43F2D80>, ['node-02eff29a', 'node-1ba51901', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4607160>)
+change = 'workspace'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B4607580>
+
+    @pytest.mark.parametrize('change', ['clear', 'reload', 'project', 'workspace', 'close'])
+    def testOldActionCannotOperateAfterContextChanges(canvas, change, monkeypatch):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:211: ValueError
+____________ testOldActionCannotOperateAfterContextChanges[close] _____________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b28fe160) at 0x00000216B4611240>, ['node-2780d97d', 'node-25251b2f', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4607970>)
+change = 'close'
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000216B43398A0>
+
+    @pytest.mark.parametrize('change', ['clear', 'reload', 'project', 'workspace', 'close'])
+    def testOldActionCannotOperateAfterContextChanges(canvas, change, monkeypatch):
+>       window, (first, second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:211: ValueError
+__________ testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions ___________
+
+canvas = (<emo_master.apps.designer.ui.main_window.MainWindow(0x216b2ef1d00) at 0x00000216B4337A80>, ['node-7a0b7d8b', 'node-ced996d5', '__workflow_input__', '__workflow_output__'], <test_node_context_menu.Client object at 0x00000216B4596E60>)
+
+    def testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions(canvas):
+>       window, (first, _second), _client = canvas
+E       ValueError: too many values to unpack (expected 2)
+
+tests\designer\test_node_context_menu.py:233: ValueError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[0.5]
+FAILED tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.0]
+FAILED tests/designer/test_node_context_menu.py::testRealContextEventHitsTitleAfterZoomAndSelectsOnlyClickedNode[1.75]
+FAILED tests/designer/test_node_context_menu.py::testKeyboardContextUsesSelectedNodeAndEmptyCanvasDoesNotOpenNodeMenu
+FAILED tests/designer/test_node_context_menu.py::testConfigurationUsesRealExistingEditorWithoutEditingDraft
+FAILED tests/designer/test_node_context_menu.py::testCopyAddsExactlyOneUndoAndSaveReopenKeepsNodeAndLayout
+FAILED tests/designer/test_node_context_menu.py::testDeleteOnlyTargetAndIncidentEdgeAndUndoRestoresBoth
+FAILED tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[configure]
+FAILED tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[copy]
+FAILED tests/designer/test_node_context_menu.py::testRunningDisablesMutationAndTriggerRechecksState[delete]
+FAILED tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_input]
+FAILED tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[workflow_output]
+FAILED tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[subflow]
+FAILED tests/designer/test_node_context_menu.py::testBoundaryAndControlNodesKeepExistingCopyRestrictions[loop]
+FAILED tests/designer/test_node_context_menu.py::testResultsReuseActualHistoryWithoutJobAndRepeatedSelectionDoesNotClearImage
+FAILED tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[clear]
+FAILED tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[reload]
+FAILED tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[project]
+FAILED tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[workspace]
+FAILED tests/designer/test_node_context_menu.py::testOldActionCannotOperateAfterContextChanges[close]
+FAILED tests/designer/test_node_context_menu.py::testOneOwnedPopupIsReusedAndWindowHideInvalidatesActions
+21 failed in 10.62s

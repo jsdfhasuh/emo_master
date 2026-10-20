@@ -1,0 +1,827 @@
+Build emo-master-runtime for Windows	Set up job	﻿2026-10-07T01:41:54.4509797Z Current runner version: '2.337.0'
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4555613Z ##[group]Runner Image Provisioner
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4556529Z Hosted Compute Agent
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4557083Z Version: 20260901.588
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4557698Z Commit: f88ec8081b781fac6c440065ac7ff9e710ce3d0b
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4558452Z Build Date: 2026-09-01T19:56:44Z
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4559476Z Worker ID: {8bcab821-e1ae-4a4d-9a6c-e040efa6ae37}
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4560227Z Azure Region: southcentralus
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4560809Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4562282Z ##[group]Operating System
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4562893Z Microsoft Windows Server 2025
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4563460Z 10.0.26100
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4564108Z Datacenter
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4564619Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4565142Z ##[group]Runner Image
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4565716Z Image: windows-2025-vs2026
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4566256Z Version: 20260925.250.1
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4567372Z Included Software: https://github.com/actions/runner-images/blob/win25-vs2026/20260925.250/images/windows/Windows2025-VS2026-Readme.md
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4569482Z Image Release: https://github.com/actions/runner-images/releases/tag/win25-vs2026%2F20260925.250
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4570451Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4571527Z ##[group]GITHUB_TOKEN Permissions
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4573762Z Contents: write
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4574406Z Metadata: read
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4575104Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4577295Z Secret source: Actions
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4578234Z Cache mode: write
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4579220Z Prepare workflow directory
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4936105Z Prepare all required actions
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.4986101Z Getting action download info
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.7668270Z Download action repository 'actions/checkout@v7' (SHA:3d3c42e5aac5ba805825da76410c181273ba90b1)
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:54.8786569Z Download action repository 'actions/setup-python@v6' (SHA:ece7cb06caefa5fff74198d8649806c4678c61a1)
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:55.0157409Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Build emo-master-runtime for Windows	Set up job	2026-10-07T01:41:55.3477625Z Complete job name: Build emo-master-runtime for Windows
+Build emo-master-runtime for Windows	Set artifact name	﻿2026-10-07T01:41:55.4904817Z ##[group]Run Add-Content -Path $env:GITHUB_OUTPUT -Value "name=windows-release-$env:TARGET_INPUT-$env:RELEASE_TAG_INPUT"
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.4906949Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "name=windows-release-$env:TARGET_INPUT-$env:RELEASE_TAG_INPUT"^[[0m
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.5466105Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.5467216Z env:
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.5467714Z   TARGET_INPUT: emo-master-runtime
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.5468725Z   RELEASE_TAG_INPUT: v0.6.1
+Build emo-master-runtime for Windows	Set artifact name	2026-10-07T01:41:55.5469247Z ##[endgroup]
+Build emo-master-runtime for Windows	Select the packager revision	﻿2026-10-07T01:41:56.0073325Z ##[group]Run $ref = $env:REQUESTED_REF
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0074322Z ^[[36;1m$ref = $env:REQUESTED_REF^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0075037Z ^[[36;1mif (-not $ref) {^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0075838Z ^[[36;1m  if ($env:CALLER_REPOSITORY -ne 'jsdfhasuh/python_build_scripts') {^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0076952Z ^[[36;1m    throw 'Cross-repository callers must supply packager_ref explicitly'^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0078170Z ^[[36;1m  }^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0078768Z ^[[36;1m  $ref = $env:CALLER_SHA^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0079430Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0080450Z ^[[36;1mif ($ref -match '[\r\n]' -or $ref.StartsWith('-')) { throw 'Invalid packager_ref' }^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0081418Z ^[[36;1mAdd-Content $env:GITHUB_OUTPUT "ref=$ref"^[[0m
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0146627Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0147529Z env:
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0148181Z   REQUESTED_REF: 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0149142Z   CALLER_REPOSITORY: jsdfhasuh/python_build_scripts
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0150097Z   CALLER_SHA: 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Select the packager revision	2026-10-07T01:41:56.0150840Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	﻿2026-10-07T01:41:56.4242478Z ##[group]Run actions/checkout@v7
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4246054Z with:
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4247117Z   repository: jsdfhasuh/python_build_scripts
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4248593Z   ref: 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4249972Z   path: packager
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4251025Z   persist-credentials: false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4259615Z   token: ***
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4260527Z   ssh-strict: true
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4261518Z   ssh-user: git
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4262442Z   clean: true
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4263906Z   sparse-checkout-cone-mode: true
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4265062Z   fetch-depth: 1
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4265997Z   fetch-tags: false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4266941Z   show-progress: true
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4267982Z   lfs: false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4268882Z   submodules: false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4269861Z   set-safe-directory: true
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4270938Z   allow-unsafe-pr-checkout: false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.4272033Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.5813376Z Syncing repository: jsdfhasuh/python_build_scripts
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.5816466Z ##[group]Getting Git version info
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.5818046Z Working directory is 'D:\a\python_build_scripts\python_build_scripts\packager'
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:56.6580891Z [command]"C:\Program Files\Git\bin\git.exe" version
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.0222802Z git version 2.55.0.windows.5
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.0285750Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.0312290Z Temporarily overriding HOME='D:\a\_temp\e2558f36-99de-43e5-b527-f67f3dc7b1bb' before making global git config changes
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.0314147Z Adding repository directory to the temporary git global config as a safe directory
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.0324034Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\python_build_scripts\python_build_scripts\packager
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1013011Z ##[group]Determining repository object format
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1015099Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1025673Z ##[group]Initializing the repository
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1026806Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\python_build_scripts\python_build_scripts\packager
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1855142Z Initialized empty Git repository in D:/a/python_build_scripts/python_build_scripts/packager/.git/
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.1900467Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/jsdfhasuh/python_build_scripts
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2539504Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2540478Z ##[group]Disabling automatic garbage collection
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2549387Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2853650Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2854380Z ##[group]Setting up auth
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2854999Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.2866797Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:57.3181352Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:58.8086728Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:58.8096903Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:58.8394681Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.3645118Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.3646013Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.3934406Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.9085527Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.9382035Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git.path D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:41:59.9665102Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git/worktrees/*.path D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:00.0018937Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/packager/.git.path /github/runner_temp/git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:00.0319238Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/packager/.git/worktrees/*.path /github/runner_temp/git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:00.0616669Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:00.0617523Z ##[group]Fetching the repository
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:00.0630228Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.1657639Z From https://github.com/jsdfhasuh/python_build_scripts
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.1658731Z  * branch            29b375fcd368b1f88be14b3356fe182b8e4e02e0 -> FETCH_HEAD
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.1715159Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse --verify --quiet 29b375fcd368b1f88be14b3356fe182b8e4e02e0^{object}
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2078842Z 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2121365Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2122040Z ##[group]Determining the checkout info
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2122794Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2131149Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2562165Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2885820Z ##[group]Checking out the ref
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.2897878Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3690487Z Note: switching to '29b375fcd368b1f88be14b3356fe182b8e4e02e0'.
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3691547Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3692230Z You are in 'detached HEAD' state. You can look around, make experimental
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3693838Z changes and commit them, and you can discard any commits you make in this
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3695022Z state without impacting any branches by switching back to a branch.
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3695510Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3695948Z If you want to create a new branch to retain commits you create, you may
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3696970Z do so (now or later) by using -c with the switch command. Example:
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3697540Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3697794Z   git switch -c <new-branch-name>
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3698203Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3698403Z Or undo this operation with:
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3698814Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3699054Z   git switch -
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3699289Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3699783Z Turn off this advice by setting config variable advice.detachedHead to false
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3700283Z 
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3701169Z HEAD is now at 29b375f feat(runtime): enable nonpublishing Windows builds and frozen acceptance
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.3761680Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4093226Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4391840Z 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4439481Z ##[group]Removing auth
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4440122Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4453415Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:01.4798181Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.0099926Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.0110592Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.0422112Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.5924351Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.5933379Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6191507Z includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6192652Z includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6193495Z includeif.gitdir:/github/workspace/packager/.git.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6194142Z includeif.gitdir:/github/workspace/packager/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6235388Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6486382Z D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6530049Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git.path D\:\\a\\_temp\\git\-credentials\-05b58c0b\-4119\-47db\-b165\-b6f4b66c9b6b\.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.6826352Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.7083287Z D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.7125576Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/packager/.git/worktrees/*.path D\:\\a\\_temp\\git\-credentials\-05b58c0b\-4119\-47db\-b165\-b6f4b66c9b6b\.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.7417834Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/packager/.git.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.7670761Z /github/runner_temp/git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.7710745Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/packager/.git.path \/github\/runner_temp\/git\-credentials\-05b58c0b\-4119\-47db\-b165\-b6f4b66c9b6b\.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.8011232Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/packager/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.8268336Z /github/runner_temp/git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.8309863Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/packager/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-05b58c0b\-4119\-47db\-b165\-b6f4b66c9b6b\.config
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:02.8598527Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:03.3988165Z Removing credentials config 'D:\a\_temp\git-credentials-05b58c0b-4119-47db-b165-b6f4b66c9b6b.config'
+Build emo-master-runtime for Windows	Checkout packager	2026-10-07T01:42:03.4000376Z ##[endgroup]
+Build emo-master-runtime for Windows	Load target config	﻿2026-10-07T01:42:03.4300991Z ##[group]Run if ([string]::IsNullOrWhiteSpace($env:SOURCE_REF) -or $env:SOURCE_REF -match '[\r\n]' -or $env:SOURCE_REF.StartsWith('-')) {
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4302515Z ^[[36;1mif ([string]::IsNullOrWhiteSpace($env:SOURCE_REF) -or $env:SOURCE_REF -match '[\r\n]' -or $env:SOURCE_REF.StartsWith('-')) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4303402Z ^[[36;1m  throw 'source_ref must be an explicit branch, tag, or commit'^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4303936Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4304348Z ^[[36;1mif ($env:TARGET -notmatch '^[A-Za-z0-9_.-]+$') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4304823Z ^[[36;1m  throw "Invalid target name: $env:TARGET"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4305204Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4305606Z ^[[36;1mif ($env:RELEASE_TAG -notmatch '^v[0-9]+(\.[0-9]+){1,3}([-.][A-Za-z0-9._-]+)?$') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4306146Z ^[[36;1m  throw "release_tag must look like v1.2.3, got: $env:RELEASE_TAG"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4306607Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4306904Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4307299Z ^[[36;1m$configPath = Join-Path 'configs' "$env:TARGET.json"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4307863Z ^[[36;1mif (-not (Test-Path -LiteralPath $configPath)) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4308328Z ^[[36;1m  throw "Target config not found: $configPath"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4308694Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4308953Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4309361Z ^[[36;1m$config = Get-Content -LiteralPath $configPath -Raw | ConvertFrom-Json^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4309982Z ^[[36;1mforeach ($field in @('source_repo', 'python_version', 'release_asset_name', 'name')) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4310510Z ^[[36;1m  if (-not $config.$field) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4310893Z ^[[36;1m    throw "Missing required config field: $field"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4311255Z ^[[36;1m  }^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4311549Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4311841Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4312241Z ^[[36;1mif ($config.source_repo -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4312761Z ^[[36;1m  throw 'Invalid source repository in target configuration'^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4313155Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4313519Z ^[[36;1mif ($config.python_version -notmatch '^\d+\.\d+(\.\d+)?$') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4314052Z ^[[36;1m  throw 'Invalid Python version in target configuration'^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4314490Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4314757Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4315074Z ^[[36;1m$releaseRepo = $env:RELEASE_REPO_INPUT.Trim()^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4315728Z ^[[36;1mif (-not $releaseRepo -and $config.PSObject.Properties.Name -contains 'release_repo') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4316337Z ^[[36;1m  $releaseRepo = [string]$config.release_repo^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4316754Z ^[[36;1m  $releaseRepo = $releaseRepo.Trim()^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4317102Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4317370Z ^[[36;1mif (-not $releaseRepo) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4317748Z ^[[36;1m  $releaseRepo = $env:GITHUB_REPOSITORY^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4318124Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4318499Z ^[[36;1mif ($releaseRepo -notmatch '^[A-Za-z0-9_.-]+/[A-Za-z0-9_.-]+$') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4320875Z ^[[36;1m  throw "release_repo must look like owner/repo, got: $releaseRepo"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4321491Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4321812Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4322149Z ^[[36;1m$ciExtraPackages = @()^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4322765Z ^[[36;1mif ($config.PSObject.Properties.Name -contains 'ci_extra_packages') {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4323475Z ^[[36;1m  if ($null -ne $config.ci_extra_packages -and $config.ci_extra_packages -isnot [array]) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4324078Z ^[[36;1m    throw 'ci_extra_packages must be a list'^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4324526Z ^[[36;1m  }^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4324930Z ^[[36;1m  $ciExtraPackages = @($config.ci_extra_packages)^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4325398Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4325662Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4325943Z ^[[36;1m$installerEnabled = $false^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4326303Z ^[[36;1m$innoVersion = ''^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4328464Z ^[[36;1mif ($config.PSObject.Properties.Name -contains 'installer' -and $config.installer) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4329091Z ^[[36;1m  $installerEnabled = [bool]$config.installer.enabled^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4329914Z ^[[36;1m  if ($installerEnabled) {^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4330318Z ^[[36;1m    $innoVersion = [string]$config.installer.compiler_version^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4330740Z ^[[36;1m  }^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4331004Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4331267Z ^[[36;1m^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4331718Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "source_repo=$($config.source_repo)"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4332333Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "python_version=$($config.python_version)"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4332945Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "release_repo=$releaseRepo"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4333548Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "ci_extra_packages=$($ciExtraPackages -join ' ')"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4334326Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "installer_enabled=$($installerEnabled.ToString().ToLowerInvariant())"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4335000Z ^[[36;1mAdd-Content -Path $env:GITHUB_OUTPUT -Value "inno_version=$innoVersion"^[[0m
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4400600Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4401515Z env:
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4401845Z   TARGET: emo-master-runtime
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4402233Z   SOURCE_REF: f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4402611Z   RELEASE_TAG: v0.6.1
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4403018Z   RELEASE_REPO_INPUT: jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Load target config	2026-10-07T01:42:03.4403370Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	﻿2026-10-07T01:42:03.9083364Z ##[group]Run actions/checkout@v7
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9083795Z with:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9084113Z   repository: jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9084539Z   ref: f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9084901Z   path: source
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9085653Z   token: ***
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9085945Z   submodules: recursive
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9086258Z   fetch-depth: 0
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9086571Z   persist-credentials: false
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9086946Z   ssh-strict: true
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9087240Z   ssh-user: git
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9087518Z   clean: true
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9087818Z   sparse-checkout-cone-mode: true
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9088149Z   fetch-tags: false
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9088418Z   show-progress: true
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9088773Z   lfs: false
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9089060Z   set-safe-directory: true
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9089395Z   allow-unsafe-pr-checkout: false
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:03.9089719Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.0228484Z Syncing repository: jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.0235000Z ##[group]Getting Git version info
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.0235578Z Working directory is 'D:\a\python_build_scripts\python_build_scripts\source'
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.0887728Z [command]"C:\Program Files\Git\bin\git.exe" version
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1157728Z git version 2.55.0.windows.5
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1198825Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1212316Z Temporarily overriding HOME='D:\a\_temp\43f0d5d4-4315-4e79-988d-75873be55572' before making global git config changes
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1213108Z Adding repository directory to the temporary git global config as a safe directory
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1221950Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\python_build_scripts\python_build_scripts\source
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1497452Z ##[group]Determining repository object format
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1499921Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1500689Z ##[group]Initializing the repository
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1508726Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\python_build_scripts\python_build_scripts\source
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1805287Z Initialized empty Git repository in D:/a/python_build_scripts/python_build_scripts/source/.git/
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.1856564Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2287027Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2303545Z ##[group]Disabling automatic garbage collection
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2315329Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2644242Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2645137Z ##[group]Setting up auth
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2645984Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2658760Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.2948871Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.8513028Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.8523052Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:04.8865496Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:05.4137715Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:05.4149625Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:05.4433898Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:05.9728849Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.0026063Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git.path D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.0310995Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git/worktrees/*.path D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.0595535Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/source/.git.path /github/runner_temp/git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.0922766Z [command]"C:\Program Files\Git\bin\git.exe" config --local includeIf.gitdir:/github/workspace/source/.git/worktrees/*.path /github/runner_temp/git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.1221132Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.1222094Z ##[group]Fetching the repository
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:06.1233435Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules origin +refs/heads/*:refs/remotes/origin/* +refs/tags/*:refs/tags/*
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7306618Z From https://github.com/jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7307839Z  * [new branch]      agent/runtime-workflow-architecture-v1 -> origin/agent/runtime-workflow-architecture-v1
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7309170Z  * [new branch]      fix/windows-package-validation-20261004 -> origin/fix/windows-package-validation-20261004
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7310045Z  * [new branch]      main       -> origin/main
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7310593Z  * [new tag]         v0.6.0     -> v0.6.0
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7311097Z  * [new tag]         v0.6.1     -> v0.6.1
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7360843Z [command]"C:\Program Files\Git\bin\git.exe" rev-parse --verify --quiet f1c85c22cbbebe654bee1b701f6da2a1e7574cf4^{object}
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7615964Z f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7649288Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7650251Z ##[group]Determining the checkout info
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7651011Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7659511Z [command]"C:\Program Files\Git\bin\git.exe" sparse-checkout disable
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.7980951Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset-all extensions.worktreeConfig
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.8262458Z ##[group]Checking out the ref
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:08.8272285Z [command]"C:\Program Files\Git\bin\git.exe" checkout --progress --force f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.3098183Z Updating files:  54% (2004/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.3382432Z Updating files:  55% (2007/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.3660434Z Updating files:  56% (2044/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.3866549Z Updating files:  57% (2080/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.3983682Z Updating files:  58% (2117/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4116934Z Updating files:  59% (2153/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4204228Z Updating files:  60% (2190/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4347583Z Updating files:  61% (2226/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4419500Z Updating files:  62% (2263/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4503762Z Updating files:  63% (2299/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4596124Z Updating files:  64% (2336/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4699785Z Updating files:  65% (2372/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.4891751Z Updating files:  66% (2409/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5164802Z Updating files:  67% (2445/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5336919Z Updating files:  68% (2482/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5444306Z Updating files:  69% (2518/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5576305Z Updating files:  70% (2555/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5660917Z Updating files:  71% (2591/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5749512Z Updating files:  72% (2628/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5828773Z Updating files:  73% (2664/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.5907554Z Updating files:  74% (2701/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6091322Z Updating files:  75% (2737/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6293894Z Updating files:  76% (2774/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6472288Z Updating files:  77% (2810/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6546799Z Updating files:  78% (2847/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6631057Z Updating files:  79% (2883/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6711479Z Updating files:  80% (2920/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6788558Z Updating files:  81% (2956/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6882214Z Updating files:  82% (2993/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.6949847Z Updating files:  83% (3029/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7026765Z Updating files:  84% (3066/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7099639Z Updating files:  85% (3102/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7171168Z Updating files:  86% (3139/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7244234Z Updating files:  87% (3175/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7298889Z Updating files:  88% (3212/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7359159Z Updating files:  89% (3248/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7420357Z Updating files:  90% (3285/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7485951Z Updating files:  91% (3321/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7552809Z Updating files:  92% (3358/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7619910Z Updating files:  93% (3394/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7683490Z Updating files:  94% (3431/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7762712Z Updating files:  95% (3467/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7852213Z Updating files:  96% (3504/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.7926938Z Updating files:  97% (3540/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8005114Z Updating files:  98% (3577/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8071342Z Updating files:  99% (3613/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8072026Z Updating files: 100% (3649/3649)
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8072577Z Updating files: 100% (3649/3649), done.
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8229510Z Note: switching to 'f1c85c22cbbebe654bee1b701f6da2a1e7574cf4'.
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8230098Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8230513Z You are in 'detached HEAD' state. You can look around, make experimental
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8231495Z changes and commit them, and you can discard any commits you make in this
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8232384Z state without impacting any branches by switching back to a branch.
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8232862Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8233232Z If you want to create a new branch to retain commits you create, you may
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8234096Z do so (now or later) by using -c with the switch command. Example:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8234925Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8235224Z   git switch -c <new-branch-name>
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8235850Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8236151Z Or undo this operation with:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8236446Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8236581Z   git switch -
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8236875Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8237260Z Turn off this advice by setting config variable advice.detachedHead to false
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8237755Z 
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8238169Z HEAD is now at f1c85c2 ci(runtime): pin Windows build revisions and retain acceptance evidence
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8400603Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8401124Z ##[group]Setting up auth for fetching submodules
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8410472Z [command]"C:\Program Files\Git\bin\git.exe" config --file D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config http.https://github.com/.extraheader "AUTHORIZATION: basic ***"
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.8721309Z [command]"C:\Program Files\Git\bin\git.exe" config --global include.path D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9006548Z [command]"C:\Program Files\Git\bin\git.exe" config --global --unset-all url.https://github.com/.insteadOf
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9307315Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add url.https://github.com/.insteadOf git@github.com:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9605897Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add url.https://github.com/.insteadOf org-49879362@github.com:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9884809Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9892575Z ##[group]Fetching submodules
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:10.9893071Z [command]"C:\Program Files\Git\bin\git.exe" submodule sync --recursive
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:11.5624105Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 submodule update --init --force --recursive
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.0857881Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local gc.auto 0"
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6198386Z ##[endgroup]
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6514635Z [command]"C:\Program Files\Git\bin\git.exe" log -1 --format=%H
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6773114Z f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6818462Z ##[group]Removing auth
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6818993Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.6829333Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:12.7121409Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.2727605Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.2736990Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.3028106Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8406672Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8414394Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8680975Z includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8681741Z includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8682314Z includeif.gitdir:/github/workspace/source/.git.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8682834Z includeif.gitdir:/github/workspace/source/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8724034Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.8966495Z D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.9008491Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git.path D\:\\a\\_temp\\git\-credentials\-ac4c8190\-e305\-4968\-8699\-a8d96ff1e6e9\.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.9306399Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.9546216Z D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.9587256Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:D:/a/python_build_scripts/python_build_scripts/source/.git/worktrees/*.path D\:\\a\\_temp\\git\-credentials\-ac4c8190\-e305\-4968\-8699\-a8d96ff1e6e9\.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:13.9873175Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/source/.git.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.0112070Z /github/runner_temp/git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.0151114Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/source/.git.path \/github\/runner_temp\/git\-credentials\-ac4c8190\-e305\-4968\-8699\-a8d96ff1e6e9\.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.0430292Z [command]"C:\Program Files\Git\bin\git.exe" config --local --get-all includeif.gitdir:/github/workspace/source/.git/worktrees/*.path
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.0666773Z /github/runner_temp/git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.0704296Z [command]"C:\Program Files\Git\bin\git.exe" config --local --unset includeif.gitdir:/github/workspace/source/.git/worktrees/*.path \/github\/runner_temp\/git\-credentials\-ac4c8190\-e305\-4968\-8699\-a8d96ff1e6e9\.config
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.1039709Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.6049693Z Removing credentials config 'D:\a\_temp\git-credentials-ac4c8190-e305-4968-8699-a8d96ff1e6e9.config'
+Build emo-master-runtime for Windows	Checkout source	2026-10-07T01:42:14.6061643Z ##[endgroup]
+Build emo-master-runtime for Windows	Record Runtime build identity	﻿2026-10-07T01:42:14.6367105Z ##[group]Run $sourceSha = git -C source rev-parse HEAD
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6367928Z ^[[36;1m$sourceSha = git -C source rev-parse HEAD^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6368678Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'Cannot resolve source SHA' }^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6369376Z ^[[36;1m$packagerSha = git -C packager rev-parse HEAD^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6370079Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'Cannot resolve packager SHA' }^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6371195Z ^[[36;1m$output = Join-Path $env:GITHUB_WORKSPACE 'packager/release-output'^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6372035Z ^[[36;1mNew-Item -ItemType Directory -Path $output -Force | Out-Null^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6372654Z ^[[36;1m[ordered]@{^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6373145Z ^[[36;1m  source_repo = $env:SOURCE_REPO^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6373662Z ^[[36;1m  source_commit = $sourceSha.Trim()^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6374231Z ^[[36;1m  packager_repo = 'jsdfhasuh/python_build_scripts'^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6374886Z ^[[36;1m  packager_commit = $packagerSha.Trim()^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6375593Z ^[[36;1m  requested_source_ref = $env:REQUESTED_SOURCE_REF^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6376337Z ^[[36;1m  requested_packager_ref = $env:REQUESTED_PACKAGER_REF^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6376959Z ^[[36;1m  workflow_sha = $env:GITHUB_WORKFLOW_SHA^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6377534Z ^[[36;1m  workflow_ref = $env:GITHUB_WORKFLOW_REF^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6378295Z ^[[36;1m  run_url = "https://github.com/$env:GITHUB_REPOSITORY/actions/runs/$env:GITHUB_RUN_ID"^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6379188Z ^[[36;1m  publish_requested = ($env:PUBLISH_RELEASE_INPUT -eq 'true')^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6379854Z ^[[36;1m  fieldAcceptance = 'NOT_RUN'^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6380665Z ^[[36;1m} | ConvertTo-Json | Set-Content -LiteralPath (Join-Path $output 'runtime-build.json') -Encoding utf8^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6381683Z ^[[36;1mAdd-Content $env:GITHUB_OUTPUT "source_sha=$($sourceSha.Trim())"^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6382489Z ^[[36;1mAdd-Content $env:GITHUB_OUTPUT "packager_sha=$($packagerSha.Trim())"^[[0m
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6464055Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6464702Z env:
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6465126Z   SOURCE_REPO: jsdfhasuh/emo_master
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6465746Z   REQUESTED_SOURCE_REF: f1c85c22cbbebe654bee1b701f6da2a1e7574cf4
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6466536Z   REQUESTED_PACKAGER_REF: 29b375fcd368b1f88be14b3356fe182b8e4e02e0
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6467191Z   PUBLISH_RELEASE_INPUT: false
+Build emo-master-runtime for Windows	Record Runtime build identity	2026-10-07T01:42:14.6467637Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up Python	﻿2026-10-07T01:42:15.1293618Z ##[group]Run actions/setup-python@v6
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1294229Z with:
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1294544Z   python-version: 3.10
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1294875Z   cache: pip
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1295219Z   cache-dependency-path: source/requirements.txt
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1295595Z   check-latest: false
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1298267Z   token: ***
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1298560Z   update-environment: true
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1298893Z   allow-prereleases: false
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1299216Z   freethreaded: false
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.1299549Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.3114322Z ##[group]Installed versions
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.3340402Z Successfully set up CPython (3.10.11)
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:15.3341280Z ##[endgroup]
+Build emo-master-runtime for Windows	Set up Python	2026-10-07T01:42:17.6790362Z pip cache is not found
+Build emo-master-runtime for Windows	Install source dependencies	﻿2026-10-07T01:42:17.7078420Z ##[group]Run python -m pip install --upgrade pip
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7078989Z ^[[36;1mpython -m pip install --upgrade pip^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7079500Z ^[[36;1mpython -m pip install -r requirements.txt^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7079915Z ^[[36;1mif ($env:CI_EXTRA_PACKAGES.Trim()) {^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7080377Z ^[[36;1m  $packages = $env:CI_EXTRA_PACKAGES -split ' '^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7080781Z ^[[36;1m  python -m pip install @packages^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7081165Z ^[[36;1m}^[[0m
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7149571Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7150097Z env:
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7150564Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7151187Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7151770Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7152293Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7152927Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7153360Z   CI_EXTRA_PACKAGES: pyinstaller==6.22.2
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:17.7153787Z ##[endgroup]
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:19.7069077Z Requirement already satisfied: pip in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (26.2.1)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:21.0648408Z Collecting PySide2>=5.15 (from -r requirements.txt (line 1))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:21.1293120Z   Downloading PySide2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl.metadata (5.1 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:21.7439312Z Collecting grpcio==1.78.0 (from -r requirements.txt (line 2))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:21.7619132Z   Downloading grpcio-1.78.0-cp310-cp310-win_amd64.whl.metadata (3.9 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.3796318Z Collecting grpcio-tools==1.78.0 (from -r requirements.txt (line 3))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.3981188Z   Downloading grpcio_tools-1.78.0-cp310-cp310-win_amd64.whl.metadata (5.5 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.6238570Z Collecting protobuf==6.33.6 (from -r requirements.txt (line 4))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.6444531Z   Downloading protobuf-6.33.6-cp310-abi3-win_amd64.whl.metadata (593 bytes)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.8135819Z Collecting pydantic>=2.6 (from -r requirements.txt (line 5))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.8300744Z   Downloading pydantic-2.13.5-py3-none-any.whl.metadata (110 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.9651299Z Collecting opencv-python<4.11,>=4.9 (from -r requirements.txt (line 6))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:22.9882443Z   Downloading opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl.metadata (20 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.0677060Z Collecting PyYAML>=6.0 (from -r requirements.txt (line 7))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.0859810Z   Downloading pyyaml-6.0.3-cp310-cp310-win_amd64.whl.metadata (2.4 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.1667532Z Collecting fastapi>=0.110 (from -r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.1852149Z   Downloading fastapi-0.142.2-py3-none-any.whl.metadata (27 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.2571553Z Collecting uvicorn>=0.29 (from -r requirements.txt (line 9))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.2750347Z   Downloading uvicorn-0.54.0-py3-none-any.whl.metadata (6.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.3800386Z Collecting onnxruntime==1.23.2 (from -r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.3975660Z   Downloading onnxruntime-1.23.2-cp310-cp310-win_amd64.whl.metadata (5.3 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.6616715Z Collecting numpy<2 (from -r requirements.txt (line 11))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.6793048Z   Downloading numpy-1.26.4-cp310-cp310-win_amd64.whl.metadata (61 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.7284766Z Collecting defusedxml==0.7.1 (from -r requirements.txt (line 12))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.7442894Z   Downloading defusedxml-0.7.1-py2.py3-none-any.whl.metadata (32 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.8477558Z Collecting typing-extensions~=4.12 (from grpcio==1.78.0->-r requirements.txt (line 2))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.8681242Z   Downloading typing_extensions-4.16.0-py3-none-any.whl.metadata (3.3 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:23.9897654Z Collecting setuptools>=77.0.1 (from grpcio-tools==1.78.0->-r requirements.txt (line 3))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.0067773Z   Downloading setuptools-84.0.0-py3-none-any.whl.metadata (6.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.0788191Z Collecting coloredlogs (from onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.0955020Z   Downloading coloredlogs-15.0.1-py2.py3-none-any.whl.metadata (12 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.1427459Z Collecting flatbuffers (from onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.1601727Z   Downloading flatbuffers-25.12.19-py2.py3-none-any.whl.metadata (1.0 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.2170195Z Collecting packaging (from onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.2339568Z   Downloading packaging-26.3-py3-none-any.whl.metadata (3.5 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.3013006Z Collecting sympy (from onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.3190428Z   Downloading sympy-1.14.0-py3-none-any.whl.metadata (12 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.3860638Z Collecting shiboken2==5.15.2.1 (from PySide2>=5.15->-r requirements.txt (line 1))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.4040270Z   Downloading shiboken2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl.metadata (2.7 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.4514440Z Collecting annotated-types>=0.6.0 (from pydantic>=2.6->-r requirements.txt (line 5))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:24.4683491Z   Downloading annotated_types-0.8.0-py3-none-any.whl.metadata (15 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.2841462Z Collecting pydantic-core==2.46.5 (from pydantic>=2.6->-r requirements.txt (line 5))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.3020203Z   Downloading pydantic_core-2.46.5-cp310-cp310-win_amd64.whl.metadata (6.7 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.3512008Z Collecting typing-inspection>=0.4.2 (from pydantic>=2.6->-r requirements.txt (line 5))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.3718407Z   Downloading typing_inspection-0.4.4-py3-none-any.whl.metadata (2.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.4373563Z Collecting starlette>=0.46.0 (from fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.4529067Z   Downloading starlette-1.7.0-py3-none-any.whl.metadata (6.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.5050626Z Collecting annotated-doc>=0.0.2 (from fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.5223688Z   Downloading annotated_doc-0.0.5-py3-none-any.whl.metadata (6.5 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.5818395Z Collecting opentelemetry-api>=1.44.0 (from fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.5979561Z   Downloading opentelemetry_api-1.45.1-py3-none-any.whl.metadata (1.4 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.6490945Z Collecting click>=7.0 (from uvicorn>=0.29->-r requirements.txt (line 9))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.6656567Z   Downloading click-8.5.0-py3-none-any.whl.metadata (2.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.7146824Z Collecting h11>=0.8 (from uvicorn>=0.29->-r requirements.txt (line 9))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.7310079Z   Downloading h11-0.16.0-py3-none-any.whl.metadata (8.3 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.7937967Z Collecting anyio<5,>=4.0.0 (from starlette>=0.46.0->fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.8103185Z   Downloading anyio-4.15.1-py3-none-any.whl.metadata (4.7 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.8603846Z Collecting exceptiongroup>=1.0.2 (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.8770482Z   Downloading exceptiongroup-1.3.1-py3-none-any.whl.metadata (6.7 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.9224212Z Collecting idna>=2.8 (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi>=0.110->-r requirements.txt (line 8))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.9379761Z   Downloading idna-3.20-py3-none-any.whl.metadata (7.2 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:25.9968492Z Collecting humanfriendly>=9.1 (from coloredlogs->onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.0145756Z   Downloading humanfriendly-10.0-py2.py3-none-any.whl.metadata (9.2 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.0682281Z Collecting pyreadline3 (from humanfriendly>=9.1->coloredlogs->onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.0900489Z   Downloading pyreadline3-3.5.6-py3-none-any.whl.metadata (4.7 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.1422953Z Collecting mpmath<1.4,>=1.1.0 (from sympy->onnxruntime==1.23.2->-r requirements.txt (line 10))
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.1589871Z   Downloading mpmath-1.3.0-py3-none-any.whl.metadata (8.6 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.1929379Z Downloading grpcio-1.78.0-cp310-cp310-win_amd64.whl (4.8 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.3214098Z    ---------------------------------------- 4.8/4.8 MB 41.6 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.3405898Z Downloading grpcio_tools-1.78.0-cp310-cp310-win_amd64.whl (1.2 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.3785541Z    ---------------------------------------- 1.2/1.2 MB 28.9 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.3944781Z Downloading protobuf-6.33.6-cp310-abi3-win_amd64.whl (437 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:26.4385827Z Downloading onnxruntime-1.23.2-cp310-cp310-win_amd64.whl (13.5 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:27.0861370Z    ---------------------------------------- 13.5/13.5 MB 20.6 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:27.1026877Z Downloading defusedxml-0.7.1-py2.py3-none-any.whl (25 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:27.1770820Z Downloading opencv_python-4.10.0.84-cp37-abi3-win_amd64.whl (38.8 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:29.0149433Z    ---------------------------------------- 38.8/38.8 MB 20.9 MB/s  0:00:01
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:29.0343413Z Downloading numpy-1.26.4-cp310-cp310-win_amd64.whl (15.8 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:29.5220415Z    ---------------------------------------- 15.8/15.8 MB 32.1 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:29.6121410Z Downloading typing_extensions-4.16.0-py3-none-any.whl (45 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:29.6616313Z Downloading PySide2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl (137.4 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:32.9460135Z    ---------------------------------------- 137.4/137.4 MB 42.0 MB/s  0:00:03
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:32.9648588Z Downloading shiboken2-5.15.2.1-5.15.2-cp35.cp36.cp37.cp38.cp39.cp310-none-win_amd64.whl (2.3 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.0195576Z    ---------------------------------------- 2.3/2.3 MB 43.8 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.0364730Z Downloading pydantic-2.13.5-py3-none-any.whl (472 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.0788848Z Downloading pydantic_core-2.46.5-cp310-cp310-win_amd64.whl (2.0 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.1255375Z    ---------------------------------------- 2.0/2.0 MB 37.9 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.1438742Z Downloading pyyaml-6.0.3-cp310-cp310-win_amd64.whl (158 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.1850678Z Downloading fastapi-0.142.2-py3-none-any.whl (144 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.2194556Z Downloading uvicorn-0.54.0-py3-none-any.whl (87 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.2572065Z Downloading annotated_doc-0.0.5-py3-none-any.whl (5.3 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.2879580Z Downloading annotated_types-0.8.0-py3-none-any.whl (13 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.3179294Z Downloading click-8.5.0-py3-none-any.whl (125 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.3512178Z Downloading h11-0.16.0-py3-none-any.whl (37 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.3844621Z Downloading opentelemetry_api-1.45.1-py3-none-any.whl (60 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.4189241Z Downloading setuptools-84.0.0-py3-none-any.whl (818 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.4450799Z    ---------------------------------------- 818.2/818.2 kB 37.1 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.4719885Z Downloading starlette-1.7.0-py3-none-any.whl (78 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.5421456Z Downloading anyio-4.15.1-py3-none-any.whl (132 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.5768675Z Downloading exceptiongroup-1.3.1-py3-none-any.whl (16 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.6165842Z Downloading idna-3.20-py3-none-any.whl (69 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.6466066Z Downloading typing_inspection-0.4.4-py3-none-any.whl (14 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.6927728Z Downloading coloredlogs-15.0.1-py2.py3-none-any.whl (46 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.7266888Z Downloading humanfriendly-10.0-py2.py3-none-any.whl (86 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.7589333Z Downloading flatbuffers-25.12.19-py2.py3-none-any.whl (26 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.7894119Z Downloading packaging-26.3-py3-none-any.whl (129 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.8246103Z Downloading pyreadline3-3.5.6-py3-none-any.whl (85 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.8545394Z Downloading sympy-1.14.0-py3-none-any.whl (6.3 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.9501966Z    ---------------------------------------- 6.3/6.3 MB 64.2 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.9673223Z Downloading mpmath-1.3.0-py3-none-any.whl (536 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:33.9918460Z    ---------------------------------------- 536.2/536.2 kB 18.3 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:34.5501199Z Installing collected packages: mpmath, flatbuffers, typing-extensions, sympy, shiboken2, setuptools, PyYAML, pyreadline3, protobuf, packaging, numpy, idna, h11, defusedxml, click, annotated-types, annotated-doc, uvicorn, typing-inspection, PySide2, pydantic-core, opentelemetry-api, opencv-python, humanfriendly, grpcio, exceptiongroup, pydantic, grpcio-tools, coloredlogs, anyio, starlette, onnxruntime, fastapi
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:46.6569589Z   Attempting uninstall: setuptools
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:46.6579377Z     Found existing installation: setuptools 65.5.0
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:47.5455661Z     Uninstalling setuptools-65.5.0:
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:42:47.6478593Z       Successfully uninstalled setuptools-65.5.0
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:19.0919848Z 
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:19.1011645Z Successfully installed PySide2-5.15.2.1 PyYAML-6.0.3 annotated-doc-0.0.5 annotated-types-0.8.0 anyio-4.15.1 click-8.5.0 coloredlogs-15.0.1 defusedxml-0.7.1 exceptiongroup-1.3.1 fastapi-0.142.2 flatbuffers-25.12.19 grpcio-1.78.0 grpcio-tools-1.78.0 h11-0.16.0 humanfriendly-10.0 idna-3.20 mpmath-1.3.0 numpy-1.26.4 onnxruntime-1.23.2 opencv-python-4.10.0.84 opentelemetry-api-1.45.1 packaging-26.3 protobuf-6.33.6 pydantic-2.13.5 pydantic-core-2.46.5 pyreadline3-3.5.6 setuptools-84.0.0 shiboken2-5.15.2.1 starlette-1.7.0 sympy-1.14.0 typing-extensions-4.16.0 typing-inspection-0.4.4 uvicorn-0.54.0
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:20.6236027Z Collecting pyinstaller==6.22.2
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:20.6889760Z   Downloading pyinstaller-6.22.2-py3-none-win_amd64.whl.metadata (8.5 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.2541945Z Collecting altgraph (from pyinstaller==6.22.2)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.2678392Z   Downloading altgraph-0.17.5-py2.py3-none-any.whl.metadata (7.5 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.2829524Z Requirement already satisfied: packaging>=22.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pyinstaller==6.22.2) (26.3)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.3162135Z Collecting pefile>=2022.5.30 (from pyinstaller==6.22.2)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.3337892Z   Downloading pefile-2024.8.26-py3-none-any.whl.metadata (1.4 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.3974598Z Collecting pyinstaller-hooks-contrib>=2026.6 (from pyinstaller==6.22.2)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:21.4136046Z   Downloading pyinstaller_hooks_contrib-2026.8-py3-none-any.whl.metadata (16 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.1049959Z Collecting pywin32-ctypes>=0.2.1 (from pyinstaller==6.22.2)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.1220610Z   Downloading pywin32_ctypes-0.2.3-py3-none-any.whl.metadata (3.9 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.1388409Z Requirement already satisfied: setuptools>=42.0.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pyinstaller==6.22.2) (84.0.0)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.1657336Z Downloading pyinstaller-6.22.2-py3-none-win_amd64.whl (1.4 MB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.2490857Z    ---------------------------------------- 1.4/1.4 MB 24.3 MB/s  0:00:00
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.2673304Z Downloading pefile-2024.8.26-py3-none-any.whl (74 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.2993129Z Downloading pyinstaller_hooks_contrib-2026.8-py3-none-any.whl (462 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.3347931Z Downloading pywin32_ctypes-0.2.3-py3-none-any.whl (30 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.3655879Z Downloading altgraph-0.17.5-py2.py3-none-any.whl (21 kB)
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:22.4775861Z Installing collected packages: altgraph, pywin32-ctypes, pyinstaller-hooks-contrib, pefile, pyinstaller
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:30.4953249Z 
+Build emo-master-runtime for Windows	Install source dependencies	2026-10-07T01:43:30.5052311Z Successfully installed altgraph-0.17.5 pefile-2024.8.26 pyinstaller-6.22.2 pyinstaller-hooks-contrib-2026.8 pywin32-ctypes-0.2.3
+Build emo-master-runtime for Windows	Runtime source regression	﻿2026-10-07T01:43:30.6681217Z ##[group]Run python -m pip install -r requirements-dev.txt
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6682058Z ^[[36;1mpython -m pip install -r requirements-dev.txt^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6682579Z ^[[36;1mif ($LASTEXITCODE -ne 0) { throw 'Cannot install Runtime test dependencies' }^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6683354Z ^[[36;1m./scripts/validate_runtime_source.ps1 -ReportDirectory ../packager/release-output/source-check^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6759692Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6760129Z env:
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6760487Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6761015Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6761549Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6762032Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6762487Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6763310Z   QT_QPA_PLATFORM: offscreen
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6763643Z   PYTHONUTF8: 1
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:30.6763988Z ##[endgroup]
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8620774Z Requirement already satisfied: PySide2>=5.15 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 1)) (5.15.2.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8625971Z Requirement already satisfied: grpcio==1.78.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 2)) (1.78.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8630022Z Requirement already satisfied: grpcio-tools==1.78.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 3)) (1.78.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8633633Z Requirement already satisfied: protobuf==6.33.6 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 4)) (6.33.6)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8637430Z Requirement already satisfied: pydantic>=2.6 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 5)) (2.13.5)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8642666Z Requirement already satisfied: opencv-python<4.11,>=4.9 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 6)) (4.10.0.84)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8646086Z Requirement already satisfied: PyYAML>=6.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 7)) (6.0.3)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8649540Z Requirement already satisfied: fastapi>=0.110 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (0.142.2)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8653134Z Requirement already satisfied: uvicorn>=0.29 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 9)) (0.54.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8656423Z Requirement already satisfied: onnxruntime==1.23.2 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (1.23.2)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8660464Z Requirement already satisfied: numpy<2 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 11)) (1.26.4)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:31.8663783Z Requirement already satisfied: defusedxml==0.7.1 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from -r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 12)) (0.7.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.0003583Z Collecting pytest>=8.0 (from -r requirements-dev.txt (line 2))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.0651584Z   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.1150880Z Collecting pytest-cov>=5.0 (from -r requirements-dev.txt (line 3))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.1279457Z   Downloading pytest_cov-7.1.0-py3-none-any.whl.metadata (32 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.3073359Z Collecting mypy==2.3.1 (from -r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.3267013Z   Downloading mypy-2.3.1-cp310-cp310-win_amd64.whl.metadata (2.4 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7360932Z Collecting ruff==0.15.6 (from -r requirements-dev.txt (line 5))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7582470Z   Downloading ruff-0.15.6-py3-none-win_amd64.whl.metadata (27 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7772943Z Requirement already satisfied: typing-extensions~=4.12 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from grpcio==1.78.0->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 2)) (4.16.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7788486Z Requirement already satisfied: setuptools>=77.0.1 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from grpcio-tools==1.78.0->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 3)) (84.0.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7811661Z Requirement already satisfied: coloredlogs in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (15.0.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7816475Z Requirement already satisfied: flatbuffers in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (25.12.19)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7822110Z Requirement already satisfied: packaging in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (26.3)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.7826955Z Requirement already satisfied: sympy in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (1.14.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.8131723Z Collecting mypy_extensions>=1.0.0 (from mypy==2.3.1->-r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.8291905Z   Downloading mypy_extensions-1.1.0-py3-none-any.whl.metadata (1.1 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.8743024Z Collecting pathspec>=1.0.0 (from mypy==2.3.1->-r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.8870921Z   Downloading pathspec-1.1.1-py3-none-any.whl.metadata (14 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.9429882Z Collecting tomli>=1.1.0 (from mypy==2.3.1->-r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:32.9581104Z   Downloading tomli-2.4.1-py3-none-any.whl.metadata (10 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.1405905Z Collecting librt>=0.13.0 (from mypy==2.3.1->-r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.1601047Z   Downloading librt-0.16.0-cp310-cp310-win_amd64.whl.metadata (1.3 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2484203Z Collecting ast-serialize<1.0.0,>=0.6.0 (from mypy==2.3.1->-r requirements-dev.txt (line 4))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2655130Z   Downloading ast_serialize-0.12.1-cp39-abi3-win_amd64.whl.metadata (1.4 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2884939Z Requirement already satisfied: shiboken2==5.15.2.1 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from PySide2>=5.15->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 1)) (5.15.2.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2918889Z Requirement already satisfied: annotated-types>=0.6.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pydantic>=2.6->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 5)) (0.8.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2924260Z Requirement already satisfied: pydantic-core==2.46.5 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pydantic>=2.6->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 5)) (2.46.5)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.2930308Z Requirement already satisfied: typing-inspection>=0.4.2 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pydantic>=2.6->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 5)) (0.4.4)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3000909Z Requirement already satisfied: starlette>=0.46.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from fastapi>=0.110->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (1.7.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3010032Z Requirement already satisfied: annotated-doc>=0.0.2 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from fastapi>=0.110->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (0.0.5)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3015033Z Requirement already satisfied: opentelemetry-api>=1.44.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from fastapi>=0.110->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (1.45.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3036063Z Requirement already satisfied: click>=7.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from uvicorn>=0.29->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 9)) (8.5.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3041039Z Requirement already satisfied: h11>=0.8 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from uvicorn>=0.29->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 9)) (0.16.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3350261Z Collecting colorama>=0.4 (from pytest>=8.0->-r requirements-dev.txt (line 2))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3487168Z   Downloading colorama-0.4.6-py2.py3-none-any.whl.metadata (17 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3642754Z Requirement already satisfied: exceptiongroup>=1 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from pytest>=8.0->-r requirements-dev.txt (line 2)) (1.3.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.3921793Z Collecting iniconfig>=1.0.1 (from pytest>=8.0->-r requirements-dev.txt (line 2))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.4054932Z   Downloading iniconfig-2.3.1-py3-none-any.whl.metadata (2.8 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.4504565Z Collecting pluggy<2,>=1.5 (from pytest>=8.0->-r requirements-dev.txt (line 2))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.4635830Z   Downloading pluggy-1.6.0-py3-none-any.whl.metadata (4.8 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.5170070Z Collecting pygments>=2.7.2 (from pytest>=8.0->-r requirements-dev.txt (line 2))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:33.5299611Z   Downloading pygments-2.21.0-py3-none-any.whl.metadata (2.5 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.0114665Z Collecting coverage>=7.10.6 (from coverage[toml]>=7.10.6->pytest-cov>=5.0->-r requirements-dev.txt (line 3))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.0429061Z   Downloading coverage-7.16.2-cp310-cp310-win_amd64.whl.metadata (8.4 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1194130Z Requirement already satisfied: anyio<5,>=4.0.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from starlette>=0.46.0->fastapi>=0.110->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (4.15.1)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1215924Z Requirement already satisfied: idna>=2.8 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from anyio<5,>=4.0.0->starlette>=0.46.0->fastapi>=0.110->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 8)) (3.20)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1265100Z Requirement already satisfied: humanfriendly>=9.1 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from coloredlogs->onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (10.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1284070Z Requirement already satisfied: pyreadline3 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from humanfriendly>=9.1->coloredlogs->onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (3.5.6)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1320103Z Requirement already satisfied: mpmath<1.4,>=1.1.0 in c:\hostedtoolcache\windows\python\3.10.11\x64\lib\site-packages (from sympy->onnxruntime==1.23.2->-r D:\a\python_build_scripts\python_build_scripts\source\requirements.txt (line 10)) (1.3.0)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.1497866Z Downloading mypy-2.3.1-cp310-cp310-win_amd64.whl (11.2 MB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.3832951Z    ---------------------------------------- 11.2/11.2 MB 53.7 MB/s  0:00:00
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.4012958Z Downloading ruff-0.15.6-py3-none-win_amd64.whl (11.8 MB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.6990186Z    ---------------------------------------- 11.8/11.8 MB 38.8 MB/s  0:00:00
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.7134675Z Downloading ast_serialize-0.12.1-cp39-abi3-win_amd64.whl (1.2 MB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.7455209Z    ---------------------------------------- 1.2/1.2 MB 29.2 MB/s  0:00:00
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.7591725Z Downloading pytest-9.1.1-py3-none-any.whl (386 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.7913948Z Downloading pluggy-1.6.0-py3-none-any.whl (20 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.8180223Z Downloading pytest_cov-7.1.0-py3-none-any.whl (22 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.8477821Z Downloading colorama-0.4.6-py2.py3-none-any.whl (25 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.8749762Z Downloading coverage-7.16.2-cp310-cp310-win_amd64.whl (226 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.9072997Z Downloading iniconfig-2.3.1-py3-none-any.whl (7.6 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.9407328Z Downloading librt-0.16.0-cp310-cp310-win_amd64.whl (124 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:34.9696477Z Downloading mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:35.0034458Z Downloading pathspec-1.1.1-py3-none-any.whl (57 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:35.0324082Z Downloading pygments-2.21.0-py3-none-any.whl (1.3 MB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:35.0628957Z    ---------------------------------------- 1.3/1.3 MB 31.9 MB/s  0:00:00
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:35.0788777Z Downloading tomli-2.4.1-py3-none-any.whl (14 kB)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:35.2346111Z Installing collected packages: tomli, ruff, pygments, pluggy, pathspec, mypy_extensions, librt, iniconfig, coverage, colorama, ast-serialize, pytest, mypy, pytest-cov
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:44.4232534Z 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:43:44.4361511Z Successfully installed ast-serialize-0.12.1 colorama-0.4.6 coverage-7.16.2 iniconfig-2.3.1 librt-0.16.0 mypy-2.3.1 mypy_extensions-1.1.0 pathspec-1.1.1 pluggy-1.6.0 pygments-2.21.0 pytest-9.1.1 pytest-cov-7.1.0 ruff-0.15.6 tomli-2.4.1
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:36.4391005Z ...........................................F............................ [ 66%]
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8339785Z .....................................                                    [100%]
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8341494Z ================================== FAILURES ===================================
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8343682Z ____ testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings _____
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8345377Z 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8348854Z tmp_path = WindowsPath('C:/Users/runneradmin/AppData/Local/Temp/pytest-of-runneradmin/pytest-0/testSourceLauncherAndConfigura0')
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8349880Z 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8352229Z     def testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings(tmp_path):
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8354236Z         root = tmp_path / "project"
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8356226Z         document = productionProject(root)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8362264Z         # Device fields remain opaque project values, not strings interpreted as paths.
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8363559Z         document.devices.bindings["camera"] = {"serial": "12345", "address": "192.168.1.10"}
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8365297Z         saveDocument(root, document)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8367351Z         script = Path(__file__).resolve().parents[2] / "scripts/configure_runtime_project.py"
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8369057Z         command = [sys.executable, str(script), str(root), "--auto-start", "--mode", "continuous",
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8370489Z                    "--cycle-interval-ms", "250"]
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8372248Z         result = subprocess.run(command, cwd=tmp_path, capture_output=True, text=True, timeout=30)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8374308Z         assert result.returncode == 0, result.stderr
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8376595Z         payload = json.loads((root / "project.json").read_text(encoding="utf-8"))
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8379020Z         assert payload["production"] == dict(autoStart=True, mode="continuous", cycleIntervalMs=250, inputs={})
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8381205Z         assert payload["devices"] == document.devices.model_dump()
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8383347Z         assert payload["workflows"] == document.model_dump()["workflows"]
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8385384Z         assert (root / "project.json.bak").exists()
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8387696Z         launcher = script.parent.parent / "start_runtime.cmd"
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8390290Z         result = subprocess.run(["cmd", "/c", str(launcher), str(root), "--check", "--data-root", str(tmp_path / "check")],
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8392288Z                                 cwd=tmp_path, capture_output=True, text=True, timeout=30)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8394414Z >       assert result.returncode == 0, result.stderr
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8396436Z E       AssertionError: 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8397872Z E       assert 1 == 0
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8400559Z E        +  where 1 = CompletedProcess(args=['cmd', '/c', 'D:\\a\\python_build_scripts\\python_build_scripts\\source\\start_runtime.cmd', 'C...s\\emo_master\\python.exe"\nSet EMO_MASTER_PYTHON to the existing Python 3.10 environment\'s python.exe.\n', stderr='').returncode
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8402120Z 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8402463Z tests\runtime\test_production_boundaries.py:199: AssertionError
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8404805Z =========================== short test summary info ===========================
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8409862Z FAILED tests/runtime/test_production_boundaries.py::testSourceLauncherAndConfigurationScriptPreserveProjectOwnedSettings - AssertionError: 
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8411103Z assert 1 == 0
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8412716Z  +  where 1 = CompletedProcess(args=['cmd', '/c', 'D:\\a\\python_build_scripts\\python_build_scripts\\source\\start_runtime.cmd', 'C...s\\emo_master\\python.exe"\nSet EMO_MASTER_PYTHON to the existing Python 3.10 environment\'s python.exe.\n', stderr='').returncode
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:54.8414233Z 1 failed, 108 passed in 68.98s (0:01:08)
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1146736Z ^[[31;1mException: ^[[0mD:\a\python_build_scripts\python_build_scripts\source\scripts\validate_runtime_source.ps1:22^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1148034Z ^[[31;1m^[[0m^[[36;1mLine |^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1148729Z ^[[31;1m^[[0m^[[36;1m^[[36;1m  22 | ^[[0m … DE -ne 0) { ^[[36;1mthrow "Runtime source regression failed: $LASTEXITCODE"^[[0m } …^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1149607Z ^[[31;1m^[[0m^[[36;1m^[[36;1m^[[0m^[[36;1m^[[0m^[[36;1m     | ^[[31;1m               ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1150569Z ^[[31;1m^[[0m^[[36;1m^[[36;1m^[[0m^[[36;1m^[[0m^[[36;1m^[[31;1m^[[31;1m^[[36;1m     | ^[[31;1mRuntime source regression failed: 1^[[0m
+Build emo-master-runtime for Windows	Runtime source regression	2026-10-07T01:44:55.1397018Z ##[error]Process completed with exit code 1.
+Build emo-master-runtime for Windows	Upload Windows artifacts	﻿2026-10-07T01:44:55.1787327Z ##[group]Run actions/upload-artifact@v4
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1787984Z with:
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1788243Z   name: windows-release-emo-master-runtime-v0.6.1
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1788576Z   path: packager/release-output/*
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1788827Z   if-no-files-found: warn
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1789047Z   compression-level: 6
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1789256Z   overwrite: false
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1789474Z   include-hidden-files: false
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1789697Z env:
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1789958Z   pythonLocation: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1790502Z   PKG_CONFIG_PATH: C:\hostedtoolcache\windows\Python\3.10.11\x64/lib/pkgconfig
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1791116Z   Python_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1791497Z   Python2_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1791875Z   Python3_ROOT_DIR: C:\hostedtoolcache\windows\Python\3.10.11\x64
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.1792178Z ##[endgroup]
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.3770324Z (node:996) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.3771378Z (Use `node --trace-deprecation ...` to show where the warning was created)
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.3857186Z With the provided path, there will be 3 files uploaded
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.3862797Z Artifact name is valid!
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.3864125Z Root directory input is valid!
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.7002527Z Beginning upload of artifact content to blob storage
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.7237906Z (node:996) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.8650312Z Uploaded bytes 5842
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.9046298Z Finished uploading artifact content to blob storage!
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.9047191Z SHA256 digest of uploaded artifact zip is 0de332d576bed90fca6322a222c476a0b52eb0fdf6e00776ac514296007ca91e
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:55.9049599Z Finalizing artifact upload
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:56.1433380Z Artifact windows-release-emo-master-runtime-v0.6.1.zip successfully finalized. Artifact ID 11455549666
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:56.1434510Z Artifact windows-release-emo-master-runtime-v0.6.1 has been successfully uploaded! Final size is 5842 bytes. Artifact ID is 11455549666
+Build emo-master-runtime for Windows	Upload Windows artifacts	2026-10-07T01:44:56.1444414Z Artifact download URL: https://github.com/jsdfhasuh/python_build_scripts/actions/runs/37558377392/artifacts/11455549666
+Build emo-master-runtime for Windows	Post Checkout source	﻿2026-10-07T01:44:56.1805243Z Post job cleanup.
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.3598205Z [command]"C:\Program Files\Git\bin\git.exe" version
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.3872282Z git version 2.55.0.windows.5
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.3949689Z Temporarily overriding HOME='D:\a\_temp\f37d8270-1dca-49d5-97bf-5f5083789598' before making global git config changes
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.3950924Z Adding repository directory to the temporary git global config as a safe directory
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.3962315Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\python_build_scripts\python_build_scripts\source
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.4281504Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.4292867Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.4606299Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.9851270Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:56.9861903Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:57.0163136Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:57.5841357Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:57.5855047Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Post Checkout source	2026-10-07T01:44:57.6172506Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Post Checkout packager	﻿2026-10-07T01:44:58.1586462Z Post job cleanup.
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.3479066Z [command]"C:\Program Files\Git\bin\git.exe" version
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.3753663Z git version 2.55.0.windows.5
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.3817285Z Temporarily overriding HOME='D:\a\_temp\70d7550f-eb0c-4cb9-9cda-44886bc0884a' before making global git config changes
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.3818205Z Adding repository directory to the temporary git global config as a safe directory
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.3829770Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\python_build_scripts\python_build_scripts\packager
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.4121544Z Removing SSH command configuration
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.4132443Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.4432529Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.9513968Z Removing HTTP extra header
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.9525159Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:58.9824527Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :\""
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:59.5186109Z Removing includeIf entries pointing to credentials config files
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:59.5197937Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp ^includeIf\.gitdir:
+Build emo-master-runtime for Windows	Post Checkout packager	2026-10-07T01:44:59.5493773Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "git config --local --show-origin --name-only --get-regexp remote.origin.url"
+Build emo-master-runtime for Windows	Complete job	﻿2026-10-07T01:45:00.1159697Z Evaluate and set job outputs
+Build emo-master-runtime for Windows	Complete job	2026-10-07T01:45:00.1165773Z Set output 'artifact_name'
+Build emo-master-runtime for Windows	Complete job	2026-10-07T01:45:00.1167581Z Set output 'source_sha'
+Build emo-master-runtime for Windows	Complete job	2026-10-07T01:45:00.1168007Z Set output 'packager_sha'
+Build emo-master-runtime for Windows	Complete job	2026-10-07T01:45:00.1168609Z Cleaning up orphan processes
+Build emo-master-runtime for Windows	Complete job	2026-10-07T01:45:00.1201060Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

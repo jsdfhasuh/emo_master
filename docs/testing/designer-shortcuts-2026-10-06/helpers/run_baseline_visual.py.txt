@@ -1,0 +1,49 @@
+"""Reconstruct the original dirty workspace outside the repository for attribution."""
+from pathlib import Path
+import hashlib
+import json
+import os
+import subprocess
+import sys
+import time
+import zipfile
+
+root = Path('D:/jsdfhasuh/documents/my_project/emo_master')
+backup = Path(__file__).parent
+original = json.loads((backup / 'candidate-start.json').read_text(encoding='utf-8'))
+source = backup / 'baseline-start-dirty'
+source.mkdir(exist_ok=False)
+archive = backup / 'baseline-original.zip'
+assert not archive.exists()
+subprocess.run(['git', 'archive', '--format=zip', '--output=' + str(archive), original['head']],
+               cwd=root, check=True)
+with zipfile.ZipFile(archive) as zipped:
+    zipped.extractall(source)
+for relative, expected in original['dirtyHashes'].items():
+    changed = backup / 'before' / relative
+    current = changed if changed.exists() else root / relative
+    value = current.read_bytes()
+    assert hashlib.sha256(value).hexdigest() == expected, relative
+    target = source / relative
+    assert target.resolve().is_relative_to(source.resolve())
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(value)
+output = root / 'docs/testing/designer-shortcuts-2026-10-06/baseline-visual'
+output.mkdir(exist_ok=False)
+record = {'baseHead': original['head'], 'originalDirtyOverlay': True,
+          'originalFileHashes': original['dirtyHashes'], 'taskChangesIncluded': False}
+(output / 'candidate.json').write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding='utf-8')
+command = [sys.executable, '-m', 'pytest', '-q',
+           'tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow']
+env = {**os.environ, 'PYTHONUTF8': '1', 'PYTHONPATH': str(source / 'src'),
+       'QT_QPA_PLATFORM': 'offscreen', 'HUARAY_CAMERA_SMOKE': '0',
+       'PYTEST_ADDOPTS': '--ignore=manual_test_workspace'}
+begin = time.monotonic()
+with (output / 'raw.log').open('wb') as log:
+    result = subprocess.run(command, cwd=source, env=env, stdout=log, stderr=subprocess.STDOUT)
+record = {'command': command, 'cwd': str(source), 'exitCode': result.returncode,
+          'seconds': time.monotonic() - begin}
+(output / 'result.json').write_text(json.dumps(record, indent=2), encoding='utf-8')
+print(json.dumps(record))
+print((output / 'raw.log').read_text(encoding='utf-8')[-7000:])
+raise SystemExit(result.returncode)

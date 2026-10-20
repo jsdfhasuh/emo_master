@@ -1,0 +1,332 @@
+.....................................FFFFFFF....FF                       [100%]
+================================== FAILURES ===================================
+___ testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-repeat] ___
+
+mode = 'repeat', inactive = 'missing'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\workflow\compiler.py:45: in compile
+    else ProjectDocument.model_validate(migrateProjectPayload(project))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+enablePresentation = False, enableProduction = False
+
+    def migrateProjectPayload(
+        payload: dict[str, object], *, enablePresentation: bool = False,
+        enableProduction: bool = False,
+    ) -> dict[str, object]:
+        """Validate before migration; preserve 2.1 unless page editing is explicit."""
+        if enableProduction and payload.get("schemaVersion") != "2.3":
+            from emo_master.core.project.models import ProjectDocument, ProductionSettings
+
+            upgraded = migrateProjectPayload(payload, enablePresentation=True)
+            upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
+            from emo_master.core.project.models import ProjectDocument
+            from emo_master.core.presentation.models import Presentation
+            from emo_master.core.project.resources import ResourcePlan
+
+            upgraded = migrateProjectPayload(payload)
+            # Legacy migration must also pass the original strict project contract.
+            upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+            upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+                            resources=ResourcePlan().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        source = deepcopy(payload)
+        if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+            # Merely relabelling a legacy-shaped document is not the explicit 2.2
+            # migration. Preserve the public unsupported-schema diagnostic prefix.
+            raise ValueError(
+                "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+                "presentation and resources are required"
+            )
+        if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3"}:
+            # v2.1 is already the canonical source. Validate it before returning so
+            # unknown fields and invalid kinds cannot disappear in normalization.
+            from emo_master.core.project.models import ProjectDocument
+
+>           return ProjectDocument.model_validate(source).model_dump(mode="python")
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E             Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ..., 'toPort': 'value'}]}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\core\project\migration.py:95: ValidationError
+__ testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-foreach] ___
+
+mode = 'foreach', inactive = 'missing'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    @pytest.mark.parametrize("inactive", ["main", "missing"])
+    def testDormantConditionDoesNotAffectCallGraphOrCompilation(mode, inactive):
+        payload = loopProgram(mode, conditionWorkflowId=inactive)
+        before = deepcopy(payload)
+>       compiled = WorkflowCompiler().compile(payload)
+
+tests\core\contracts\test_loop_mapping_safety.py:52:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\workflow\compiler.py:45: in compile
+    else ProjectDocument.model_validate(migrateProjectPayload(project))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+payload = {'schemaVersion': '2.1', 'project': {'projectId': 'loop-safety', 'name': 'Loop Safety', 'createdAt': '2026-10-09T00:00:00Z', 'updatedAt': '2026-10-09T00:00:00Z'}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'body'], ...}
+enablePresentation = False, enableProduction = False
+
+    def migrateProjectPayload(
+        payload: dict[str, object], *, enablePresentation: bool = False,
+        enableProduction: bool = False,
+    ) -> dict[str, object]:
+        """Validate before migration; preserve 2.1 unless page editing is explicit."""
+        if enableProduction and payload.get("schemaVersion") != "2.3":
+            from emo_master.core.project.models import ProjectDocument, ProductionSettings
+
+            upgraded = migrateProjectPayload(payload, enablePresentation=True)
+            upgraded.update(schemaVersion="2.3", production=ProductionSettings().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        if enablePresentation and payload.get("schemaVersion") not in {"2.2", "2.3"}:
+            from emo_master.core.project.models import ProjectDocument
+            from emo_master.core.presentation.models import Presentation
+            from emo_master.core.project.resources import ResourcePlan
+
+            upgraded = migrateProjectPayload(payload)
+            # Legacy migration must also pass the original strict project contract.
+            upgraded = ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+            upgraded.update(schemaVersion="2.2", presentation=Presentation().model_dump(),
+                            resources=ResourcePlan().model_dump())
+            return ProjectDocument.model_validate(upgraded).model_dump(mode="python")
+        source = deepcopy(payload)
+        if source.get("schemaVersion") == "2.2" and not {"presentation", "resources"} <= source.keys():
+            # Merely relabelling a legacy-shaped document is not the explicit 2.2
+            # migration. Preserve the public unsupported-schema diagnostic prefix.
+            raise ValueError(
+                "unsupported project schemaVersion: legacy-shaped '2.2' document; "
+                "presentation and resources are required"
+            )
+        if source.get("schemaVersion") in {SCHEMA_VERSION, "2.2", "2.3"}:
+            # v2.1 is already the canonical source. Validate it before returning so
+            # unknown fields and invalid kinds cannot disappear in normalization.
+            from emo_master.core.project.models import ProjectDocument
+
+>           return ProjectDocument.model_validate(source).model_dump(mode="python")
+E           pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E             Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ..., 'toPort': 'value'}]}}}, input_type=dict]
+E               For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\core\project\migration.py:95: ValidationError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params0] ___
+
+params = {}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params1] ___
+
+params = {'case0Value': ''}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params2] ___
+
+params = {'case1Value': 'OK'}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+___ testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params3] ___
+
+params = {'case0Value': '', 'case2Value': 'OK', 'case3Value': 'OK'}
+
+    @pytest.mark.parametrize("params", [{}, {"case0Value": ""}, {"case1Value": "OK"},
+                                        {"case0Value": "", "case2Value": "OK", "case3Value": "OK"}])
+    def testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics(params):
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, deepcopy(params), 0, 0)
+        node = window.flowModel.nodes[nodeId]
+        # Saved schemas from old projects do not contain the new display annotation.
+        for field in node.paramSchema["properties"].values():
+            field.pop("xOptionalPresence", None)
+        before = deepcopy(window.flowModel.toProjectGraph())
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       assert not editor.isDirty()
+E       AttributeError: 'NoneType' object has no attribute 'isDirty'
+
+tests\designer\test_control_flow_config_safety.py:27: AttributeError
+______ testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText ______
+
+    def testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText():
+        window = _window()
+        nodeId = _addBranch(window, FlowSwitchOperator, {}, 0, 0)
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+>       control = editor._schemaForm._controls["case0Value"]
+E       AttributeError: 'NoneType' object has no attribute '_schemaForm'
+
+tests\designer\test_control_flow_config_safety.py:42: AttributeError
+____ testWorkflowPackagePreservesButDoesNotRequireDormantCondition[repeat] ____
+
+mode = 'repeat'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testWorkflowPackagePreservesButDoesNotRequireDormantCondition(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": {
+            "mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "not-packaged"}})
+>       package = buildWorkflowPackage(store, "main")
+
+tests\designer\test_control_flow_config_safety.py:101:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\workflow_package.py:152: in buildWorkflowPackage
+    _validateWorkflowPackage(document)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+document = WorkflowPackageDocument(schemaVersion='1.0', packageType='emo-master.workflow', rootWorkflowId='main', workflowOrder=[...w_input__:body': {'x': 20.0, 'y': 20.0}, '__workflow_output__:body': {'x': 360.0, 'y': 20.0}}))}, requiredOperators=[])
+
+    def _validateWorkflowPackage(document: WorkflowPackageDocument) -> None:
+        expectedOperators = _requiredOperatorIds(document.workflows)
+        if document.requiredOperators != expectedOperators:
+            raise ValueError(
+                "requiredOperators must exactly match operator nodes: "
+                + ", ".join(expectedOperators)
+            )
+>       projectDocument = ProjectDocument.model_validate(
+            {
+                "schemaVersion": "2.1",
+                "project": {
+                    "projectId": "workflow-package-validation",
+                    "name": "Workflow Package",
+                    "revision": 1,
+                    "createdAt": "1970-01-01T00:00:00Z",
+                    "updatedAt": "1970-01-01T00:00:00Z",
+                },
+                "entryWorkflowId": document.rootWorkflowId,
+                "workflowOrder": list(document.workflowOrder),
+                "workflows": {
+                    workflowId: workflow.model_dump(mode="python")
+                    for workflowId, workflow in document.workflows.items()
+                },
+                "runtime": {},
+                "dependencies": {"operators": list(document.requiredOperators)},
+                "devices": {},
+            }
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E         Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ...rs': []}, 'devices': {}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\apps\designer\state\workflow_package.py:460: ValidationError
+___ testWorkflowPackagePreservesButDoesNotRequireDormantCondition[foreach] ____
+
+mode = 'foreach'
+
+    @pytest.mark.parametrize("mode", ["repeat", "foreach"])
+    def testWorkflowPackagePreservesButDoesNotRequireDormantCondition(mode):
+        store = WorkflowStore()
+        store.addWorkflow("Body", workflowId="body")
+        store.get("main").nodes.append({"nodeId": "loop", "kind": "loop", "loop": {
+            "mode": mode, "bodyWorkflowId": "body", "conditionWorkflowId": "not-packaged"}})
+>       package = buildWorkflowPackage(store, "main")
+
+tests\designer\test_control_flow_config_safety.py:101:
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\state\workflow_package.py:152: in buildWorkflowPackage
+    _validateWorkflowPackage(document)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+document = WorkflowPackageDocument(schemaVersion='1.0', packageType='emo-master.workflow', rootWorkflowId='main', workflowOrder=[...w_input__:body': {'x': 20.0, 'y': 20.0}, '__workflow_output__:body': {'x': 360.0, 'y': 20.0}}))}, requiredOperators=[])
+
+    def _validateWorkflowPackage(document: WorkflowPackageDocument) -> None:
+        expectedOperators = _requiredOperatorIds(document.workflows)
+        if document.requiredOperators != expectedOperators:
+            raise ValueError(
+                "requiredOperators must exactly match operator nodes: "
+                + ", ".join(expectedOperators)
+            )
+>       projectDocument = ProjectDocument.model_validate(
+            {
+                "schemaVersion": "2.1",
+                "project": {
+                    "projectId": "workflow-package-validation",
+                    "name": "Workflow Package",
+                    "revision": 1,
+                    "createdAt": "1970-01-01T00:00:00Z",
+                    "updatedAt": "1970-01-01T00:00:00Z",
+                },
+                "entryWorkflowId": document.rootWorkflowId,
+                "workflowOrder": list(document.workflowOrder),
+                "workflows": {
+                    workflowId: workflow.model_dump(mode="python")
+                    for workflowId, workflow in document.workflows.items()
+                },
+                "runtime": {},
+                "dependencies": {"operators": list(document.requiredOperators)},
+                "devices": {},
+            }
+        )
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E         Value error, main.loop.conditionWorkflowId must reference an existing workflow [type=value_error, input_value={'schemaVersion': '2.1', ...rs': []}, 'devices': {}}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\apps\designer\state\workflow_package.py:460: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-repeat]
+FAILED tests/core/contracts/test_loop_mapping_safety.py::testDormantConditionDoesNotAffectCallGraphOrCompilation[missing-foreach]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params0]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params1]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params2]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchApplyWithoutEditsPreservesPresenceAndBranchSemantics[params3]
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchPresenceToggleSupportsEmptyValueAndRetainsUnappliedText
+FAILED tests/designer/test_control_flow_config_safety.py::testWorkflowPackagePreservesButDoesNotRequireDormantCondition[repeat]
+FAILED tests/designer/test_control_flow_config_safety.py::testWorkflowPackagePreservesButDoesNotRequireDormantCondition[foreach]
+9 failed, 41 passed in 2.89s

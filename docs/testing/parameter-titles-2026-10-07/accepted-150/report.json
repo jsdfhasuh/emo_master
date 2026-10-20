@@ -1,0 +1,148 @@
+{
+  "platform": "windows",
+  "scale": "1.5",
+  "hardwareCalls": 0,
+  "cases": [
+    {
+      "case": "blur",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 7,
+      "clippedLabels": [],
+      "screenshot": "blur-640.png"
+    },
+    {
+      "case": "blur",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 7,
+      "clippedLabels": [],
+      "screenshot": "blur-1100.png"
+    },
+    {
+      "case": "roi",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 11,
+      "clippedLabels": [],
+      "screenshot": "roi-640.png"
+    },
+    {
+      "case": "roi",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 11,
+      "clippedLabels": [],
+      "screenshot": "roi-1100.png"
+    },
+    {
+      "case": "histogram",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 2,
+      "clippedLabels": [],
+      "screenshot": "histogram-640.png"
+    },
+    {
+      "case": "histogram",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 2,
+      "clippedLabels": [],
+      "screenshot": "histogram-1100.png"
+    },
+    {
+      "case": "huaray_camera",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 25,
+      "clippedLabels": [],
+      "screenshot": "huaray_camera-640.png"
+    },
+    {
+      "case": "huaray_camera",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 25,
+      "clippedLabels": [],
+      "screenshot": "huaray_camera-1100.png"
+    },
+    {
+      "case": "plc_slmp_read",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 16,
+      "clippedLabels": [],
+      "screenshot": "plc_slmp_read-640.png"
+    },
+    {
+      "case": "plc_slmp_read",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 16,
+      "clippedLabels": [],
+      "screenshot": "plc_slmp_read-1100.png"
+    },
+    {
+      "case": "sqlite_writer",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 4,
+      "clippedLabels": [],
+      "screenshot": "sqlite_writer-640.png"
+    },
+    {
+      "case": "sqlite_writer",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 4,
+      "clippedLabels": [],
+      "screenshot": "sqlite_writer-1100.png"
+    },
+    {
+      "case": "nested",
+      "requestedWidth": 640,
+      "width": 640,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 3,
+      "clippedLabels": [],
+      "screenshot": "nested-640.png"
+    },
+    {
+      "case": "nested",
+      "requestedWidth": 1100,
+      "width": 1100,
+      "height": 608,
+      "devicePixelRatio": 1.5,
+      "labels": 3,
+      "clippedLabels": [],
+      "screenshot": "nested-1100.png"
+    }
+  ],
+  "status": "PASS"
+}

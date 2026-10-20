@@ -1,0 +1,1741 @@
+{
+  "schemaVersion": "1.0",
+  "baseline": "d75292d00b070e8d264bc0a333335f626175629c",
+  "implementationCommits": [
+    "ebcf439",
+    "33d019a",
+    "bedc904"
+  ],
+  "buildSourceCommit": "ceb033a98e7962ccdc697480e9efa24bf0e96ef3",
+  "testedCommit": "747fd025db6b9379c5580ff3a8ee149e3364022d",
+  "checkedAt": "2026-10-19T00:09:53.4606889+08:00",
+  "environment": {
+    "os": "Windows",
+    "qt": "PySide2/windows",
+    "pyinstaller": "6.22.2",
+    "python": "3.10.21"
+  },
+  "isolatedTree": {
+    "sourceTree": "0024b7887d833a142b1c9b522c01ee430b98c9ef",
+    "protoTree": "c52d1979150c1577dc37819c8299d0a510cb0b59",
+    "normalization": "Git clean filters, core.autocrlf=true",
+    "mismatches": [],
+    "commit": "747fd025db6b9379c5580ff3a8ee149e3364022d",
+    "verifiedFiles": 1192
+  },
+  "runs": [
+    {
+      "failures": 4,
+      "skipped": 0,
+      "sha256": "1a87427e39e5393da53afda7e0f5287f4f7a7e22031eb7cf823cad8b15098748",
+      "name": "n01-before",
+      "tests": 4,
+      "errors": 0,
+      "seconds": 7.488
+    },
+    {
+      "failures": 3,
+      "skipped": 0,
+      "sha256": "638b2577474cebfaf6a019c875002bbef15c693703d14391a69fb0b35fe06830",
+      "name": "n02-before",
+      "tests": 3,
+      "errors": 0,
+      "seconds": 1.046
+    },
+    {
+      "failures": 3,
+      "skipped": 0,
+      "sha256": "067d308d025e5ace72175cca759e1110c65a8f7a8035d948f31732fac2d63202",
+      "name": "n03-before",
+      "tests": 3,
+      "errors": 0,
+      "seconds": 3.19
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "7a98fe5f73663b866502e2b189e58e1c628351c6061d885799215aac6c1f38eb",
+      "name": "source-final",
+      "tests": 201,
+      "errors": 0,
+      "seconds": 122.99
+    },
+    {
+      "failures": 1,
+      "skipped": 0,
+      "sha256": "2f0dbe3ec4c496a05c0478bfbe0ede0f7a4a2f15f6fa313ec7c736d136b072f0",
+      "name": "n01-depth",
+      "tests": 6,
+      "errors": 0,
+      "seconds": 9.883
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "f77a43d97c09f67a317037fe893f11d24dbe82e20441042a198f4be3ad6ccd80",
+      "name": "n01-depth-final",
+      "tests": 7,
+      "errors": 0,
+      "seconds": 12.462
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "729f74e642b289fa7fe9dbea0e72bdd0127e1950c03d0c6db6725741a62b682b",
+      "name": "n03-edge",
+      "tests": 15,
+      "errors": 0,
+      "seconds": 8.906
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "3f2e2bc88a555053aecc42d9e1a87addfe2466b1384595417af5ada0d6e14feb",
+      "name": "supplement-final",
+      "tests": 19,
+      "errors": 0,
+      "seconds": 16.526
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "f0ec93bfab0cfbe97ebccea006013e176772e8f3cbeb3f1480cc55f595c7e29f",
+      "name": "n01-coordinate-final",
+      "tests": 6,
+      "errors": 0,
+      "seconds": 9.412
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "54219ccfcc0aab10bf3fc389684e3f15e02b8a051dbbce58c17f93f9a124fc0a",
+      "name": "cross-final",
+      "tests": 82,
+      "errors": 0,
+      "seconds": 21.208
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "60957ec7d86f842a66f11074cdc9d45fe75f0f0e20c115b0ff29a6f4e3b5d824",
+      "name": "isolated-final",
+      "tests": 284,
+      "errors": 0,
+      "seconds": 145.317
+    },
+    {
+      "failures": 0,
+      "skipped": 0,
+      "sha256": "d72b83206533901cf2c9dee190824ead0d5281247427591e71d3a8772ee657dc",
+      "name": "isolated-delivery",
+      "tests": 285,
+      "errors": 0,
+      "seconds": 148.575
+    }
+  ],
+  "finalCases": [
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame[True-False-2]",
+      "seconds": 2.336
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame[False-False-2]",
+      "seconds": 2.212
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame[True-True-2]",
+      "seconds": 2.253
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testQueuedInputWhileAndRedispatchKeepActualPlanAndFrame[True-False-3]",
+      "seconds": 2.364
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testRetainedRootAndNestedScopesBorrowButNewDetectionRefreshes",
+      "seconds": 0.047
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_cycle_inheritance::testPersistentRunnerCanInstallNewOldNewAndBorrowedExceptionDoesNotEndOwner",
+      "seconds": 0.174
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_persistent_roundtrip::testOneSpawnedConsumerInstallsNewOldNewWithoutStaleOperators",
+      "seconds": 2.223
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testNestedLeasesRetainOuterPlanAndRejectForeignOrStaleParent",
+      "seconds": 0.038
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testCancelledCycleAdmissionDoesNotAllocateLease",
+      "seconds": 0.026
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel",
+      "seconds": 0.055
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testIterationRestoresOuterCompiledPlanAndReleasesOnException",
+      "seconds": 0.166
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testBoundaryIsExplicitAndRequiresManagedSchema[boundary0]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testBoundaryIsExplicitAndRequiresManagedSchema[boundary1]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testBoundaryIsExplicitAndRequiresManagedSchema[1]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testBoundaryIsExplicitAndRequiresManagedSchema[node]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testBoundaryIsExplicitAndRequiresManagedSchema[iteration]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_loop_cycle_configuration::testRealSpawnWhileSwitchesOnlyBeforeConditionAndRetiresFalseIteration",
+      "seconds": 1.652
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_dispatch_lifecycle::testThreeHundredSequentialJoinsWithTwoRealPersistentConsumers",
+      "seconds": 23.968
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_dispatch_lifecycle::testDrainWaitsForQueuedNoJoinConsumersAndAllowsTheirNestedIterations[False]",
+      "seconds": 2.021
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_dispatch_lifecycle::testDrainWaitsForQueuedNoJoinConsumersAndAllowsTheirNestedIterations[True]",
+      "seconds": 1.685
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[True]",
+      "seconds": 1.92
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[False]",
+      "seconds": 2.095
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testGroupCapacityRejectedBeforeCapture",
+      "seconds": 0.275
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays",
+      "seconds": 2.343
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testPartialConsumerStartupFailureRetiresWithoutProducerAction",
+      "seconds": 1.295
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testContinuousInvocationsReuseProcessesWithoutGrowingLeases",
+      "seconds": 2.229
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testDuplicateNoReplayAndPartialQueueReceipts",
+      "seconds": 0.031
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testSourceEndDoesNotRetireLiveConsumersAndOldPlan",
+      "seconds": 0.03
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testJoinIdentityAndNgIsNormalCompletion",
+      "seconds": 0.029
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testThreeHundredJoinsRetireDeliveriesAndBoundReplayReceipts",
+      "seconds": 0.32
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCachedJoinNeverKeepsReleasedOutputAlive",
+      "seconds": 0.027
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCrashDoesNotReplayAndOtherConsumerRetainsFrame",
+      "seconds": 0.029
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testQueuedConsumersKeepOldPlanAcrossNewSourceCycle",
+      "seconds": 0.037
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testTimeoutAndStopDoNotUnlinkAnActiveConsumer",
+      "seconds": 0.025
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testMutatedCopiesUseNewRuntimeOwnedFrames",
+      "seconds": 0.027
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testDerivedImageOutputsAndIndependentRunGroups",
+      "seconds": 2.358
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCompilerRejectsInvalidDispatch[mapping]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCompilerRejectsInvalidDispatch[type]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCompilerRejectsInvalidDispatch[recursive]",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_frame_dispatch::testCompilerRejectsInvalidDispatch[join]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_cycle_sources::testLiveNodeSourcesSwitchOnlyNextIterationAndMetadataKeepsJobAndConnection",
+      "seconds": 1.811
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testNormalLookupUploadAndSameRevisionRecovery[False]",
+      "seconds": 0.711
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testNormalLookupUploadAndSameRevisionRecovery[True]",
+      "seconds": 0.666
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testPinnedCorruptObjectSurvivesRepairAndPublicCancelUntilReaderExits",
+      "seconds": 0.415
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testCompetingRepairsReuseOneAuthorityAndLostCommitIsOnlyQueried",
+      "seconds": 0.655
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testFailedRepairNeverPromotesOrRemovesOldAuthority[digest]",
+      "seconds": 0.596
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testFailedRepairNeverPromotesOrRemovesOldAuthority[revision]",
+      "seconds": 0.636
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testFailedRepairNeverPromotesOrRemovesOldAuthority[transaction]",
+      "seconds": 0.654
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testRecoveryRejectsOtherFailureAndConcurrentWriter",
+      "seconds": 0.677
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testCorruptNormalHelperRequiresExplicitConfirmation",
+      "seconds": 0.604
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testUnknownCommitKeepsOriginalIdentityUntilReadOnlyReconciliation",
+      "seconds": 0.641
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testLegacyDuplicateMigrationVerifiesBytesAndSelectsDeterministically[validIds0]",
+      "seconds": 0.052
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testLegacyDuplicateMigrationVerifiesBytesAndSelectsDeterministically[validIds1]",
+      "seconds": 0.05
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testLegacyDuplicateMigrationVerifiesBytesAndSelectsDeterministically[validIds2]",
+      "seconds": 0.049
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testLookupDoesNotMisreportPermissionFailureAsMissing",
+      "seconds": 0.587
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_targeted_resource_repair::testRecoveryCancellationAndFencesPreserveVariablesAndDeviceFaults",
+      "seconds": 0.703
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testOrderedIdempotentChunksAndUnreferencedReadyIsRemovable",
+      "seconds": 0.14
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testInvalidDigestIncompleteAndCapacityFailWithoutReady",
+      "seconds": 0.072
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testRestartRemovesOnlyPendingOwnedTransfers",
+      "seconds": 0.068
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testIdentityAndManifestConflictsCannotOverwriteTransfer",
+      "seconds": 0.031
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testClosingAnotherInProcessServiceCannotCancelPendingTransfer",
+      "seconds": 0.064
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testCancelledTransferTombstonesCannotExhaustAdmission",
+      "seconds": 0.081
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testSharedUploadOwnersSerializeCapacityAndChunkState",
+      "seconds": 0.038
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testRemoteUploadIsExplicitBeforeCommitAndSurvivesRestart[False]",
+      "seconds": 0.792
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_resource_transfer::testRemoteUploadIsExplicitBeforeCommitAndSurvivesRestart[True]",
+      "seconds": 0.773
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testInitialLocalResourceSurvivesDirectoryRemovalOrAllowsExplicitRepair[False]",
+      "seconds": 2.159
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testInitialLocalResourceSurvivesDirectoryRemovalOrAllowsExplicitRepair[True]",
+      "seconds": 3.835
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testPreparedUploadCannotBeCancelledUntilCancelledWriteRetires",
+      "seconds": 0.422
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testFailedResourceIngestionReleasesQuotaWithoutCommitting",
+      "seconds": 0.35
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testUpgradeIngestsExistingOnlineSnapshotBeforeSourceIsRemoved",
+      "seconds": 0.624
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testResourceCommitFailureReleasesCandidateButKeepsOnlineCopy",
+      "seconds": 0.427
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testFailedLocalPreparationReclaimsOnlyItsAutomaticallyIngestedCopy",
+      "seconds": 0.485
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_resource_lifecycle::testRestartReclaimsOrphanedAutoIngestionButKeepsExplicitReadyUpload",
+      "seconds": 0.173
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_prepared_resources::testResourceReplacementPinsOldBytesAndInstallsNewBytes",
+      "seconds": 0.444
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_prepared_resources::testResourceValidationFailureDoesNotCommitOrReplace",
+      "seconds": 0.387
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_prepared_resources::testChangedSourceCannotAlterCommittedBytesOrBlockUnrelatedWrite",
+      "seconds": 0.386
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_prepared_resources::testCancelledCopyDoesNotLeavePartialFile",
+      "seconds": 0.329
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_prepared_resources::testCorruptedRetainedCopyIsNotSilentlyReused",
+      "seconds": 0.373
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testIdleReplacementResetsAdaptersAndSeparatesHistory",
+      "seconds": 0.342
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testProjectReplacementRejectsPartialSelectionAndImplicitPolicy",
+      "seconds": 0.289
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testReplacementRetiresLiveJobsWithoutCarryingConnectionIntent[stopAffected]",
+      "seconds": 1.646
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testReplacementRetiresLiveJobsWithoutCarryingConnectionIntent[drainAffected]",
+      "seconds": 1.737
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testCandidateResourcesAndPersistentVariablesSurviveReplacementAndRestart",
+      "seconds": 0.758
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testReplacementRollbackPreservesAuthorityAndReleasesPins[False]",
+      "seconds": 0.475
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_project_replacement::testReplacementRollbackPreservesAuthorityAndReleasesPins[True]",
+      "seconds": 0.398
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_receipt_rotation::testSuccessfulRequestsRotateWithoutReplayingEvictedWrites",
+      "seconds": 0.267
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_receipt_rotation::testFenceRotationRollbackDoesNotForgetCancelledAttempts",
+      "seconds": 0.065
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_review_receipt_rotation::testFailedSameRevisionAttemptsRotateFenceWithoutReplayingEffects",
+      "seconds": 0.064
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_transition::testExplicitIterationDrainStopsAtBoundaryWithoutWaitingForInfiniteRoot",
+      "seconds": 1.802
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_transition::testExplicitTransitionOnlyStopsAffectedSyntheticJob[stopAffected]",
+      "seconds": 1.984
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_transition::testExplicitTransitionOnlyStopsAffectedSyntheticJob[drainAffected]",
+      "seconds": 2.151
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_transition::testQueuedReconnectIsSupersededBeforeFifoExecution",
+      "seconds": 0.334
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_leases::testParentDeathCannotReclaimLiveChildButChildExitAllowsRecovery",
+      "seconds": 2.37
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_leases::testRetirementFencesLateConsumerAndCannotBypassExistingLease",
+      "seconds": 0.062
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_leases::testCrashBetweenRetirementCommitAndFenceStillRequiresExclusiveOwnership",
+      "seconds": 0.126
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_journal::testActualPreparationProcessDeathRecoversOnlyJournaledFiles",
+      "seconds": 1.372
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_journal::testExposedFilesRequireActualRetirementNotJustRestart",
+      "seconds": 0.197
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_journal::testFailedUnlinkKeepsOwnershipForRetry",
+      "seconds": 0.149
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_journal::testUntrustedJournalPathsCannotEscapeCache",
+      "seconds": 0.037
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_resource_journal::testCleanRuntimeRestartReclaimsOldGenerationAndRebuildsCurrent",
+      "seconds": 1.566
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testVariableDefinitionsCommitWithoutResettingPersistentValues",
+      "seconds": 0.644
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testVariableValidationDoesNotCreateDefinitionsOrValues",
+      "seconds": 0.522
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testReceiptFailureRollsBackVariableDefinitionsAndValues",
+      "seconds": 0.416
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testVariableTypeChangeRequiresNewIdentityBeforeAnyTransition",
+      "seconds": 0.288
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testRuntimeAndProductionPoliciesPublishAndRecover",
+      "seconds": 0.634
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testInvalidDependencyLocksDoNotCommit[invalid0]",
+      "seconds": 0.296
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testInvalidDependencyLocksDoNotCommit[invalid1]",
+      "seconds": 0.4
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testInvalidDependencyLocksDoNotCommit[invalid2]",
+      "seconds": 0.512
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testInstalledDependencyLocksCommit",
+      "seconds": 0.528
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testCommunicationReplacementIsHardwareFreeUntilExplicitStart",
+      "seconds": 0.297
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testListeningCommunicationReplacementRestartsOnlyAfterCommit[stopAffected]",
+      "seconds": 0.332
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testListeningCommunicationReplacementRestartsOnlyAfterCommit[drainAffected]",
+      "seconds": 0.353
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testListeningCommunicationRejectPolicyLeavesListenerRunning",
+      "seconds": 0.322
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testCommunicationBindFailureIsSeparateFromCommittedConfiguration",
+      "seconds": 0.329
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testCommunicationTransitionDoesNotStopUnrelatedContinuousCamera",
+      "seconds": 1.916
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_configuration_owners::testExplicitStopDuringConfigurationWriteSupersedesListenerRestart",
+      "seconds": 0.377
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testAtomicCommitReceiptAndRestartRecovery",
+      "seconds": 0.058
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testOneWriterCancellationAndNoPublicationBeforeCommit",
+      "seconds": 0.041
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testSqliteFailureRollsBackConfigurationAndReceipt",
+      "seconds": 0.047
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testLateCancelReturnsCommitted",
+      "seconds": 0.038
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testPublishFailureCannotEraseDurableCommit",
+      "seconds": 0.053
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testCleanupFailurePreservesCommittedReceiptAndFencesNewWrites",
+      "seconds": 0.055
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testIndependentSqliteWritersCompareAtCommitPoint",
+      "seconds": 0.04
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testOldCycleKeepsPlanWhileNewCycleUsesCommittedRevision",
+      "seconds": 0.036
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testCycleIdentityIsInheritedByNestedCalls",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testRetirementAndCancelledAdmissionDoNotWaitForProjectLock",
+      "seconds": 0.029
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver",
+      "seconds": 1.722
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testRuntimeSelectedWriteAndRecoveryDoesNotReadChangedSourceFile",
+      "seconds": 0.528
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testOrdinaryParameterUpdateStartsAtNextCycleWithoutRestartingJob",
+      "seconds": 1.886
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_project_configuration::testRemoteWriteAndLegacyMutationFence",
+      "seconds": 0.502
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_online_graph::testHistorySurvivesCommitAndFailedCommitDoesNotLeaveSnapshot",
+      "seconds": 0.068
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_online_graph::testOnlineGraphResultsUseHistoricalSnapshotNotLatest",
+      "seconds": 1.722
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_online_graph::testDesignerTransportDisconnectDoesNotStopProductionOrReplaceHistory",
+      "seconds": 1.601
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_targeted_dispatch_package::testDispatchCopyImportJoinPortsAndCombinedRun[False-False]",
+      "seconds": 2.514
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_targeted_dispatch_package::testDispatchCopyImportJoinPortsAndCombinedRun[True-False]",
+      "seconds": 2.459
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_targeted_dispatch_package::testDispatchCopyImportJoinPortsAndCombinedRun[True-True]",
+      "seconds": 2.415
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_targeted_dispatch_package::testTypedJoinSourceRebindsPortWithoutEditingSource",
+      "seconds": 0.006
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testBuildWorkflowPackageIncludesRecursiveDependenciesOnly",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testBuildWorkflowPackageDoesNotNormalizeUnrelatedSourceWorkflow",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageImportPreviewReportsConflictsDependenciesAndWarnings",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageImportCanInsertMappedRootIntoParent",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageInsertFailureDoesNotMutateTarget",
+      "seconds": 0.006
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageRoundTripRemapsConflictingWorkflowReferences",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageImportRewritesBoundaryNodeIdsAndLayout",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageImportRemapsWhileBodyAndConditionReferences",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageFileRoundTripAddsDedicatedExtension",
+      "seconds": 0.028
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageRejectsDanglingReferenceWithoutMutatingTarget",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package::testWorkflowPackageRejectsOperatorManifestMismatch",
+      "seconds": 0.024
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testPortableClosureRemapsBytesDevicesNodesAndSiteFields",
+      "seconds": 0.04
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testInProjectCopyRetainsBytesAndDeviceBindingsWithoutFilesystemWrites",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testMalformedDependenciesFailBeforeDestinationMutation[digest]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testMalformedDependenciesFailBeforeDestinationMutation[missing-bytes]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testMalformedDependenciesFailBeforeDestinationMutation[site-value]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testMalformedDependenciesFailBeforeDestinationMutation[target]",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testMalformedDependenciesFailBeforeDestinationMutation[resource-path]",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testFailedInstallationRemovesOnlyNewFilesAndNeverUpdatesDraft",
+      "seconds": 0.017
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testRootAndDigestRequiredAndResourceBudgetIsBounded",
+      "seconds": 0.015
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testDependentDevicesCannotOverwriteExistingSiteBindings",
+      "seconds": 0.011
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes[False]",
+      "seconds": 1.045
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_resources::testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes[True]",
+      "seconds": 0.45
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testDeviceDependencyClosureAndUnknownDriverRoundtrip",
+      "seconds": 0.032
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testUnresolvedOrStaleMappingIsAtomic[None]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testUnresolvedOrStaleMappingIsAtomic[mapping1]",
+      "seconds": 0.008
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testUnresolvedOrStaleMappingIsAtomic[mapping2]",
+      "seconds": 0.01
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testUnresolvedOrStaleMappingIsAtomic[mapping3]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testIncompatibleReuseRejectedWithoutMutation[deviceTypeId-other]",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testIncompatibleReuseRejectedWithoutMutation[driverVersion-2.0]",
+      "seconds": 0.013
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testIncompatibleReuseRejectedWithoutMutation[defaults-value2]",
+      "seconds": 0.013
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testReuseDoesNotReplaceConnectionPoliciesOrEnabledState",
+      "seconds": 0.013
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testSameConnectionNeverAutomaticallyMerged",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testInProjectCopyReusesDeviceAndVariableIds",
+      "seconds": 0.012
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testFailureAfterDeviceAllocationRollsBackEntireImport",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testChangedPackageRequiresNewPreview",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testChangedTargetConnectionRequiresNewPreview",
+      "seconds": 0.011
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testMalformedDeviceDependenciesRejected[missing]",
+      "seconds": 0.029
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testMalformedDeviceDependenciesRejected[extra]",
+      "seconds": 0.027
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testMalformedDeviceDependenciesRejected[old-version]",
+      "seconds": 0.028
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testLegacySerializationDoesNotAddDevices",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testMissingCatalogDefinitionHasActionableExportFailure",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testInputParameterSourceSurvivesImport",
+      "seconds": 0.008
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testDeviceMappingDialogRequiresEverySelection",
+      "seconds": 0.028
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_devices::testNormalWindowImportAndCopyAreSingleUndoableEdits",
+      "seconds": 0.305
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_preview_dialog::testWorkflowPackagePreviewDialogExposesImportImpact",
+      "seconds": 0.017
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_preview_dialog::testWorkflowPackagePreviewDialogReturnsSelectedImportMode",
+      "seconds": 0.015
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_workflow_package_preview_dialog::testWorkflowPackagePreviewDialogCancelRejectsImport",
+      "seconds": 0.016
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_targeted_resource_repair_ui::testNativeRepairConfirmationAndRecoveryKeepDraftAndDisk",
+      "seconds": 1.342
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testRecoveryErrorAllowsExplicitRepairButNeverRun",
+      "seconds": 0.475
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testCompareDoesNotSaveOrMutateAndSelectionIsExplicit",
+      "seconds": 0.482
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testReadBackIsUndoableDraftNotDiskWrite",
+      "seconds": 0.306
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testRuntimeSwitchFencesOldDialog",
+      "seconds": 0.296
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testDifferentOnlineProjectSelectsCompleteReplacementAndReadBackRequiresConsent",
+      "seconds": 0.309
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testDeviceDependenciesRequireConfirmationAndLeaveUnselectedDraftOut",
+      "seconds": 0.358
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_project_configuration_ui::testResourceUploadRequiresConfirmationAndDoesNotPublishDraft",
+      "seconds": 0.424
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_online_run::testRunButtonStartsOnlineSnapshotWithoutChangingDifferentDraft",
+      "seconds": 0.895
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_online_run::testSnapshotFenceRejectsStaleStartBeforeCreatingJob[revision]",
+      "seconds": 0.297
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_online_run::testSnapshotFenceRejectsStaleStartBeforeCreatingJob[instance]",
+      "seconds": 0.269
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_online_run::testLostStartResponseReconcilesOriginalRequestWithoutRestart",
+      "seconds": 0.681
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_online_run::testIndependentOnlineSelectionPrecedesDraftTargetValidation",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.proto.test_proto_generation::testRuntimeProtoExists",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.proto.test_proto_generation::testOperatorInfoIncludesPortAndSchemaFields",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.proto.test_proto_generation::testOperatorEditorPreviewRpcsAreDeclared",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.proto.test_proto_generation::testGlobalCounterRpcsAreDeclared",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_page_publication::testPageAssetReplacementChangesPublicationAndRetainsPortablePaths[False]",
+      "seconds": 1.798
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_page_publication::testPageAssetReplacementChangesPublicationAndRetainsPortablePaths[True]",
+      "seconds": 1.746
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_page_publication::testPublishedPageUsesOnlineDocumentWithoutSavingLocalFile",
+      "seconds": 0.383
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_page_publication::testInvalidPageTransitionDoesNotStopProduction",
+      "seconds": 1.586
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testExportFrozenAllowlistAndLegacyGuard",
+      "seconds": 0.145
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[../x]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[/a]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[C:/x]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a\\\\b]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a//b]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[NUL.png]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[con.foo]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a./b]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a /b]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a:stream]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[COM\\xb9.jpg]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a~1.png]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[a/../b]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[NUL .png]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testPortablePathRejectsAliases[CONOUT$.png]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testUnsupportedCapabilitiesAndMissingResourcesRefuseExport",
+      "seconds": 0.018
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testStaticLabelsAndPlatformStatusAreNotUnboundBusinessData",
+      "seconds": 0.028
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testDeviceMetadataAndUnknownDependenciesAreExplicitlyRejected",
+      "seconds": 0.007
+    },
+    {
+      "result": "PASS",
+      "id": "tests.core.project.test_page_delivery::testSourceReplacementDuringExportNeverPublishesPartialPackage",
+      "seconds": 0.02
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[drop-ReadVariableOperator]",
+      "seconds": 0.501
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[drop-WriteVariableOperator]",
+      "seconds": 0.499
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[bubble-ReadVariableOperator]",
+      "seconds": 0.51
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[bubble-WriteVariableOperator]",
+      "seconds": 0.516
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[library-ReadVariableOperator]",
+      "seconds": 0.499
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testFirstVariableNodeMigratesBeforeInsertionAndSavesWithHistory[library-WriteVariableOperator]",
+      "seconds": 0.622
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testUnconfiguredVariableNodeCopyRemainsUndoable[ReadVariableOperator]",
+      "seconds": 0.218
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testUnconfiguredVariableNodeCopyRemainsUndoable[WriteVariableOperator]",
+      "seconds": 0.23
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testExistingDefinitionsAndVariableCopiesRemainValid[ReadVariableOperator]",
+      "seconds": 0.279
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testExistingDefinitionsAndVariableCopiesRemainValid[WriteVariableOperator]",
+      "seconds": 0.296
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionPreservesConstantProtection[ReadVariableOperator]",
+      "seconds": 0.235
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionPreservesConstantProtection[WriteVariableOperator]",
+      "seconds": 0.251
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-drop-ReadVariableOperator]",
+      "seconds": 0.217
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-drop-WriteVariableOperator]",
+      "seconds": 0.214
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-bubble-ReadVariableOperator]",
+      "seconds": 0.204
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-bubble-WriteVariableOperator]",
+      "seconds": 0.206
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-library-ReadVariableOperator]",
+      "seconds": 0.21
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[running-library-WriteVariableOperator]",
+      "seconds": 0.218
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-drop-ReadVariableOperator]",
+      "seconds": 0.231
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-drop-WriteVariableOperator]",
+      "seconds": 0.202
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-bubble-ReadVariableOperator]",
+      "seconds": 0.201
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-bubble-WriteVariableOperator]",
+      "seconds": 0.219
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-library-ReadVariableOperator]",
+      "seconds": 0.204
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[pages-library-WriteVariableOperator]",
+      "seconds": 0.213
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-drop-ReadVariableOperator]",
+      "seconds": 0.204
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-drop-WriteVariableOperator]",
+      "seconds": 0.202
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-bubble-ReadVariableOperator]",
+      "seconds": 0.203
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-bubble-WriteVariableOperator]",
+      "seconds": 0.219
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-library-ReadVariableOperator]",
+      "seconds": 0.215
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testVariableInsertionCannotBypassEditingGuard[closed-library-WriteVariableOperator]",
+      "seconds": 0.217
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testRejectedMigrationDoesNotInsertOrDirtyDraft[ReadVariableOperator]",
+      "seconds": 0.218
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testRejectedMigrationDoesNotInsertOrDirtyDraft[WriteVariableOperator]",
+      "seconds": 0.215
+    },
+    {
+      "result": "PASS",
+      "id": "tests.designer.test_variable_node_migration::testOrdinaryInsertionAndLoadDoNotUpgradeLegacyProject",
+      "seconds": 0.504
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testStrictVariableTypes[boolean-1]",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testStrictVariableTypes[integer-True]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testStrictVariableTypes[integer-9223372036854775808]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testStrictVariableTypes[number-nan]",
+      "seconds": 0.003
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testStrictVariableTypes[string-False]",
+      "seconds": 0.004
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testConstantsAndPreviewAreReadOnly",
+      "seconds": 0.043
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testPersistenceInitialValueAndCompareSet",
+      "seconds": 0.062
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testJobValuesAreIsolatedAndInitializedOnce",
+      "seconds": 0.068
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testConcurrentIncrementsShareStateAndLegacyAdapter",
+      "seconds": 0.164
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testBindingReadsBeforeEveryExecutionAndPreservesLiterals",
+      "seconds": 0.05
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testBindingUnknownAndTypeMismatchFailCompilation",
+      "seconds": 0.005
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testGlobalWhileReadsTheLiveFlagEachIteration",
+      "seconds": 0.06
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testOldProjectDoesNotUpgradeOnRead",
+      "seconds": 0.006
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables::testMigrationPreservesOldCounterTimestamp",
+      "seconds": 0.042
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testSharedDatabaseAcrossSpawnProcesses",
+      "seconds": 1.423
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testGlobalVariableRpcJobIsolationCasAndLegacyState",
+      "seconds": 0.365
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testPreviewSnapshotDoesNotInitializeOrWrite",
+      "seconds": 0.063
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testTypedVariableReadAndRequiredWrite[True-boolean]",
+      "seconds": 0.053
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testTypedVariableReadAndRequiredWrite[23-integer]",
+      "seconds": 0.052
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testTypedVariableReadAndRequiredWrite[0.25-number]",
+      "seconds": 0.052
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testTypedVariableReadAndRequiredWrite[hello-string]",
+      "seconds": 0.057
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testSingleInvocationSnapshotAndNextInvocationRefresh",
+      "seconds": 0.063
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testBindingResourceOverlapAndFullParameterValidation",
+      "seconds": 0.006
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testBooleanConstantWhileZeroIterationsOrSafetyLimit[False-False]",
+      "seconds": 0.009
+    },
+    {
+      "result": "PASS",
+      "id": "tests.runtime.test_global_variables_integration::testBooleanConstantWhileZeroIterationsOrSafetyLimit[True-True]",
+      "seconds": 0.01
+    }
+  ],
+  "frozen": {
+    "remainingProcesses": [],
+    "designer": {
+      "targetedRepairs": {
+        "status": "ok",
+        "oldInputValue": 1,
+        "publishedValue": 99,
+        "originalFramesRetired": true,
+        "sameManifestRepaired": true,
+        "sameRevisionRecovered": true,
+        "hardwareAccessed": false,
+        "runtimeClosed": true,
+        "designerPackageChecked": true
+      },
+      "status": "ok",
+      "frozen": true
+    },
+    "localInventoryHashes": [
+      {
+        "sha256": "9175860b42507e9cc0411de9a491450c1e61572d182a62f147ee0c0ef50132ed",
+        "path": "source-manifest.json"
+      },
+      {
+        "sha256": "cd7e29efc127a33ff82d3650a23201f0e29dcd56f7f7b051797735b151a8f8d1",
+        "path": "frozen-designer/distribution-manifest.json"
+      },
+      {
+        "sha256": "aadcc10e14dcb5e46a140cd9f7213cf8d772da2ad451d0aad7193f5451da323d",
+        "path": "frozen-runtime/distribution-manifest.json"
+      }
+    ],
+    "packages": [
+      {
+        "bytes": 327469537.0,
+        "executable": {
+          "path": "EmoMaster\\EmoMaster.exe",
+          "sha256": "7a1f1f076cc4580e6beb07d4f6ea46cd9bc49315236a7189ea26ef116da557ec",
+          "size": 6272631
+        },
+        "files": 687,
+        "kind": "designer"
+      },
+      {
+        "bytes": 326618661.0,
+        "executable": {
+          "path": "EmoMasterRuntime\\EmoMasterRuntime.exe",
+          "sha256": "aa86f0dfa5fd44aa974fb661b96d050a0b65329deca61210d9931bc3192864ec",
+          "size": 5572134
+        },
+        "files": 685,
+        "kind": "runtime"
+      }
+    ],
+    "runtime": {
+      "sessions": [
+        {
+          "cycles": 1122,
+          "jobId": "cf12485f-3a08-4c63-b8fd-d95020fdd792",
+          "pid": 55196,
+          "retainedEvents": 500,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "6ffaf81b-3793-4939-9c7d-7ed907854950",
+          "pid": 51832,
+          "retainedEvents": 112,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "cf9a0730-bcbf-48b1-87cc-32d922c4eed6",
+          "pid": 64168,
+          "retainedEvents": 92,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 5,
+          "jobId": "89dd14f4-1583-4f51-b7a8-444940453dfa",
+          "pid": 46560,
+          "retainedEvents": 112,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "06ba0e5a-e3a5-4527-bbd0-44c4394699db",
+          "pid": 9068,
+          "retainedEvents": 82,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "8c302123-ff9e-4371-9196-1439c2740232",
+          "pid": 65520,
+          "retainedEvents": 97,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "0970ac5a-0f3d-4f7a-8877-eaa6f827d20f",
+          "pid": 60908,
+          "retainedEvents": 82,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "fbd9b4fa-109d-43e0-9fb2-d70502952496",
+          "pid": 24248,
+          "retainedEvents": 97,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "662dce3e-8ede-4f12-9406-5c48e8718793",
+          "pid": 39504,
+          "retainedEvents": 97,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "72e7c943-a764-438e-8487-76179be8ddc5",
+          "pid": 64852,
+          "retainedEvents": 81,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        },
+        {
+          "cycles": 4,
+          "jobId": "c5083e39-a319-4246-a8e2-244f398255cd",
+          "pid": 29180,
+          "retainedEvents": 97,
+          "stopCode": "E_CANCELLED",
+          "workerRetired": true
+        }
+      ],
+      "designerModules": [],
+      "closed": true,
+      "frozen": true,
+      "status": "ok",
+      "targetedRepairs": {
+        "designerPackageChecked": false,
+        "hardwareAccessed": false,
+        "oldInputValue": 1,
+        "originalFramesRetired": true,
+        "publishedValue": 99,
+        "runtimeClosed": true,
+        "sameManifestRepaired": true,
+        "sameRevisionRecovered": true,
+        "status": "ok"
+      }
+    }
+  },
+  "protectedFiles": {
+    "count": 45,
+    "changed": [],
+    "unrelatedDirtyFile": "field_tests/plc_dual_mc/build_project.py"
+  },
+  "notRun": [
+    "full repository test suite",
+    "manual owner UI acceptance",
+    "clean-machine acceptance",
+    "real hardware/PLC/production acceptance",
+    "installer/release publication"
+  ],
+  "limits": [
+    "Finite instance-bound recovery results, not perpetual idempotency",
+    "Automated layered matrix coverage is not exhaustive timing coverage",
+    "Complete local distributions are not GitHub binary releases"
+  ]
+}

@@ -1,0 +1,166 @@
+........................................................................ [ 11%]
+........................................................................ [ 23%]
+........................................................................ [ 35%]
+........................................................................ [ 46%]
+........................................................................ [ 58%]
+......F................................................................. [ 70%]
+..............................................................F......... [ 82%]
+........................................................................ [ 93%]
+.....................................                                    [100%]
+================================== FAILURES ===================================
+___________________________ testSidebarToggleState ____________________________
+
+    def testSidebarToggleState() -> None:
+        ensureQApp()
+    
+        class RuntimeClientStub:
+            def listOperators(self):
+                return []
+    
+        window = MainWindow(RuntimeClientStub())
+        assert window.isSidebarCollapsed is True
+    
+        window.expandSidebar()
+        assert window.isSidebarCollapsed is False
+        nodeListContainer = getattr(window, "nodeListContainer", None)
+        assert nodeListContainer is not None
+        isHidden = getattr(nodeListContainer, "isHidden", None)
+        if callable(isHidden):
+>           assert isHidden() is False
+E           assert True is False
+E            +  where True = <built-in method isHidden of PySide2.QtWidgets.QWidget object at 0x0000017788C2F800>()
+
+tests\designer\test_sidebar_collapse.py:31: AssertionError
+__________________ testDesignerExportRelocatedStandalonePath __________________
+
+qtApp = <PySide2.QtWidgets.QApplication(0x177fe9a8aa0) at 0x000001778023B3C0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-828/testDesignerExportRelocatedSta0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000017786736A40>
+
+    def testDesignerExportRelocatedStandalonePath(qtApp, tmp_path, monkeypatch):
+        repo = Path(__file__).resolve().parents[3]
+        out = Path(os.environ.get('P5_SCREEN_DIR', str(tmp_path/'evidence')))
+        out.mkdir(parents=True, exist_ok=True)
+        packageDir = out/'packages'
+        monkeypatch.setenv('EMO_PAGE_DESIGNER', '1')
+        monkeypatch.setattr(QMessageBox, 'question', lambda *a, **k: QMessageBox.Discard)
+        monkeypatch.setattr(QMessageBox, 'information', lambda *a, **k: QMessageBox.Ok)
+        errors = []
+        monkeypatch.setattr(QMessageBox, 'warning', lambda *args: errors.append(args[-1]))
+        draft = tmp_path/'designer-project'
+        draft.mkdir()
+        payload = sampleProject(draft).model_dump()
+        payload['presentation'] = json.loads((repo/'docs/evidence/p4/c-accepted-visible/screens/two-pages.json').read_text(encoding='utf-8'))
+        saveProject(draft, ProjectDocument.model_validate(payload).model_dump())
+        runtime = RuntimeService(dbPath=tmp_path/'designer.sqlite3', workspaceRoot=tmp_path/'designer-jobs')
+        window = MainWindow(RuntimeClient(runtime))
+        process = None
+        record = {}
+        try:
+            assert window.loadProjectDirectory(str(draft))
+            window.resize(1480, 920)
+            window.show()
+            waitFor(lambda: window.operatorCatalogController.state == 'ready')
+            window.pageCoordinator.showPages()
+            editor = window.pageCoordinator.editor
+            for index in range(2):
+                editor.pageList.setCurrentRow(index)
+                label = next(c for c in editor.store.snapshot().pages[editor.pageId].components if c.type == 'text')
+                editor.tools.select(label.componentId)
+                editor.tools.fields['text'].setText('测试项目交付 · 本地图像 · 真实 Blob / Count')
+                QTest.mouseClick(next(w for w in editor.findChildren(QPushButton) if w.text() == '应用修改'), Qt.LeftButton)
+            editor.pageList.setCurrentRow(0)
+            assert window.saveProjectToDirectory(str(draft))
+            presentation = window.pageCoordinator.session.document().presentation.model_dump()
+            assert window.loadProjectDirectory(str(draft))
+            window.pageCoordinator.showPages()
+            assert window.pageCoordinator.session.document().presentation.model_dump() == presentation
+            assert window.grab().save(str(out/'01-designer-saved.png'))
+            monkeypatch.setattr(QFileDialog, 'getExistingDirectory', lambda *a, **k: str(packageDir))
+            next(a for a in window.pageCoordinator.chrome.menus['文件'].actions() if a.text() == '导出测试项目包…').trigger()
+            assert not errors, errors
+            package = next(packageDir.glob('*.vxpkg'))
+            packageHash = hashlib.sha256(package.read_bytes()).hexdigest()
+            window.pageCoordinator.session.presentation.renamePage(presentation['pageOrder'][0], '后续草稿修改不进入旧包')
+            assert window.saveProjectToDirectory(str(draft))
+            assert hashlib.sha256(package.read_bytes()).hexdigest() == packageHash
+            window.close()
+            waitFor(lambda: not window.isVisible())
+            runtime.close()
+            # An empty directory with Chinese/spaces. The original path no longer exists.
+            store = DeliveryStore(tmp_path/'独立 空目录')
+            revision = store.importPackage(package)
+            assert store.state()['active'] is None
+            store.activate(revision)
+            draft.rename(tmp_path/'原开发项目 已移走')
+            assert not draft.exists()
+            doc, manifest = store.verify(revision)
+            assert doc.presentation.model_dump() == presentation
+            assert str(draft) not in (store.revisionPath(revision)/'project.json').read_text(encoding='utf-8')
+            (out/'two-pages.json').write_text(doc.presentation.model_dump_json(indent=2), encoding='utf-8')
+            data = tmp_path/'独立 Runtime 数据'
+            ready = data/'ready.json'
+            env = dict(os.environ, PYTHONPATH=str(repo/'src'))
+            with (out/'runtime.log').open('wb') as log:
+                process = subprocess.Popen([sys.executable, str(repo/'scripts/p5_runtime.py'), '--store', str(store.root),
+                    '--data', str(data), '--ready-file', str(ready)], cwd=tmp_path, env=env,
+                    stdout=log, stderr=log)
+                waitFor(lambda: ready.exists() or process.poll() is not None)
+                assert process.poll() is None, (out/'runtime.log').read_text(encoding='utf-8', errors='replace')
+                info = json.loads(ready.read_text())
+                with grpc.insecure_channel(info['address']) as channel:
+                    stub = rpc.DisplayServiceStub(channel)
+                    assert not stub.ListJobs(pb.DisplayEmpty(), timeout=3).jobs
+                    command = [sys.executable, str(repo/'scripts/p5_view_probe.py'), '--ready-file', str(ready)]
+                    for index in [1, 2]:
+                        destination = out/f'viewer-{index}'
+                        jobArgs = [] if index == 1 else ['--job', record['job']]
+>                       result = subprocess.run([*command, '--output', str(destination), *jobArgs], cwd=tmp_path,
+                            env=env, capture_output=True, timeout=60)
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\ui\page_designer\test_delivery_path.py:115: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py:505: in run
+    stdout, stderr = process.communicate(input, timeout=timeout)
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py:1154: in communicate
+    stdout, stderr = self._communicate(input, endtime, timeout)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <Popen: returncode: 1 args: ['C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master...>
+input = None, endtime = 1252109.156, orig_timeout = 60
+
+    def _communicate(self, input, endtime, orig_timeout):
+        # Start reader threads feeding into a list hanging off of this
+        # object, unless they've already been started.
+        if self.stdout and not hasattr(self, "_stdout_buff"):
+            self._stdout_buff = []
+            self.stdout_thread = \
+                    threading.Thread(target=self._readerthread,
+                                     args=(self.stdout, self._stdout_buff))
+            self.stdout_thread.daemon = True
+            self.stdout_thread.start()
+        if self.stderr and not hasattr(self, "_stderr_buff"):
+            self._stderr_buff = []
+            self.stderr_thread = \
+                    threading.Thread(target=self._readerthread,
+                                     args=(self.stderr, self._stderr_buff))
+            self.stderr_thread.daemon = True
+            self.stderr_thread.start()
+    
+        if self.stdin:
+            self._stdin_write(input)
+    
+        # Wait for the reader threads, or time out.  If we time out, the
+        # threads remain reading and the fds left open in case the user
+        # calls communicate again.
+        if self.stdout is not None:
+            self.stdout_thread.join(self._remaining_time(endtime))
+            if self.stdout_thread.is_alive():
+>               raise TimeoutExpired(self.args, orig_timeout)
+E               subprocess.TimeoutExpired: Command '['C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe', 'D:\\jsdfhasuh\\documents\\my_project\\emo_master\\scripts\\p5_view_probe.py', '--ready-file', 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-828\\testDesignerExportRelocatedSta0\\独立 Runtime 数据\\ready.json', '--output', 'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-828\\testDesignerExportRelocatedSta0\\evidence\\viewer-1']' timed out after 60 seconds
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\subprocess.py:1546: TimeoutExpired
+=========================== short test summary info ===========================
+FAILED tests/designer/test_sidebar_collapse.py::testSidebarToggleState - asse...
+FAILED tests/ui/page_designer/test_delivery_path.py::testDesignerExportRelocatedStandalonePath
+2 failed, 611 passed in 210.09s (0:03:30)

@@ -1,0 +1,16 @@
+F401 [*] `PySide2.QtCore.QPoint` imported but unused
+  --> tests\designer\test_visual_layout.py:11:28
+   |
+10 | pytest.importorskip("PySide2")
+11 | from PySide2.QtCore import QPoint, QRectF, QResource, QTimer, Qt
+   |                            ^^^^^^
+12 | from PySide2.QtGui import QImage, QPainter, QPixmap, QTextCursor
+13 | from PySide2.QtWidgets import QGraphicsSimpleTextItem, QStackedWidget, QToolButton, QVBoxLayout, QWidget
+   |
+help: Remove unused import: `PySide2.QtCore.QPoint`
+
+Found 1 error.
+[*] 1 fixable with the `--fix` option.
+[ci-check] running proto-drift: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe scripts/gen_proto.py --check
+[ci-check] running ruff: C:\Users\jsdfhasuh\.conda\envs\emo_master\python.exe -m ruff check src tests
+[ci-check] failed ruff with code 1

@@ -1,0 +1,23 @@
+.............................................F.......................... [ 67%]
+..................................                                       [100%]
+================================== FAILURES ===================================
+__________ testSwitchPresenceRoundTripsThroughUndoRedoAndProjectSave __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-1381/testSwitchPresenceRoundTripsTh0')
+
+    def testSwitchPresenceRoundTripsThroughUndoRedoAndProjectSave(tmp_path):
+        window = switchWindow()
+        nodeId = _addBranch(window, FlowSwitchOperator, {}, 0, 0)
+        window.openNodeParamDialog(nodeId)
+        editor = window.nodeParamDialog
+        editor._schemaForm._controls["case1Value"].enabledCheckBox.setChecked(True)
+        assert editor.applyChanges()
+        assert window.flowModel.nodes[nodeId].params == {"case1Value": ""}
+        window.pageCoordinator.history()
+>       assert window.flowModel.nodes[nodeId].params == {}
+E       KeyError: 'node-d736e5c0'
+
+tests\designer\test_control_flow_config_safety.py:82: KeyError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_control_flow_config_safety.py::testSwitchPresenceRoundTripsThroughUndoRedoAndProjectSave
+1 failed, 105 passed in 9.12s

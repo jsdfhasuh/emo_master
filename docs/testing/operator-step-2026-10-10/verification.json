@@ -1,0 +1,81 @@
+{
+  "date": "2026-10-10",
+  "scope": "A2 restricted backend sessions and process supervision",
+  "status": "COMPLETE",
+  "head": "61a42bf3ab181c3b2339f0425edfb40a60d0ec7b",
+  "branch": "agent/runtime-workflow-architecture-v1",
+  "python": "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+  "environment": {"PYTHONPATH": "src", "QT_QPA_PLATFORM": "offscreen"},
+  "finalSourceBefore": "../operator-step-2026-10-09/a2-postreview-before/source-before.json",
+  "finalSourceAfter": "../operator-step-2026-10-09/a2-postreview-static/source-after.json",
+  "finalSourceHashesIdentical": true,
+  "fullSuiteBeforeCorrections": {
+    "result": "FAIL",
+    "passed": 4195,
+    "failed": 1,
+    "skipped": 8,
+    "subtestsPassed": 28,
+    "seconds": 1119.32,
+    "failure": "tests/runtime/test_operator_debug_sessions.py::testSpawnLifecycleDedupResetAndGenerationFence",
+    "failureVerifiedAfterCorrection": true,
+    "sourceChangedDuringRun": [],
+    "evidence": "../operator-step-2026-10-09/a2-full/result.json"
+  },
+  "finalFocused": {
+    "result": "PASS",
+    "passed": 58,
+    "seconds": 51.55,
+    "commandArguments": [
+      "-m", "pytest", "-q", "--tb=short",
+      "--junitxml=docs/testing/operator-step-2026-10-10/a2-postreview-focused/pytest.xml",
+      "tests/runtime/test_operator_debug_sessions.py",
+      "tests/runtime/test_operator_debug_rpc.py"
+    ],
+    "evidence": "a2-postreview-focused/pytest.xml"
+  },
+  "finalRegression": {
+    "result": "PASS",
+    "passed": 980,
+    "seconds": 390.06,
+    "commandArguments": [
+      "-m", "pytest", "-q", "--tb=short",
+      "--junitxml=docs/testing/operator-step-2026-10-10/a2-postreview-regression/pytest.xml",
+      "tests/runtime/test_runtime_resource_lifecycle.py",
+      "tests/runtime/test_runtime_job_lifecycle_integration.py",
+      "tests/runtime/test_draft_live_preview.py",
+      "tests/runtime/test_live_operator_preview.py",
+      "tests/runtime/test_plc_debug.py",
+      "tests/runtime/test_pure_preview_cancellation.py",
+      "tests/runtime/test_operator_editor_preview.py",
+      "tests/runtime/test_legacy_snapshot_policy.py",
+      "tests/runtime/test_parallel_workflows.py",
+      "tests/runtime/test_production_continuous.py",
+      "tests/runtime/presentation",
+      "tests/sqlite_writer"
+    ],
+    "evidence": "a2-postreview-regression/pytest.xml"
+  },
+  "resetCycles": {
+    "result": "PASS",
+    "cycles": 10,
+    "graceSeconds": 3,
+    "evidence": "a2-postreview-reset-cycles.log"
+  },
+  "static": {
+    "proto": "PASS",
+    "ruff": "PASS",
+    "mypy": "BASELINE_FAIL",
+    "mypyErrors": 10,
+    "mypyErrorFiles": 5,
+    "mypyCheckedSourceFiles": 378,
+    "mypyErrorLinesIdenticalToA1": true,
+    "mypyBaseline": "../operator-step-2026-10-09/static-final/mypy.log",
+    "commandArguments": ["scripts/operator_step_validate.py", "a2-postreview-static", "--static-only"],
+    "evidence": "../operator-step-2026-10-09/a2-postreview-static/result.json"
+  },
+  "finalSourceFullSuite": "NOT_RUN",
+  "parentRuntimeForcedExit": "NOT_RUN",
+  "hardwarePackagingDeployment": "NOT_RUN",
+  "designerDebugUi": "NOT_STARTED",
+  "supportedOperators": ["vision.value.number", "vision.compare.number"]
+}

@@ -1,0 +1,10 @@
+Public evidence audit: approved subset
+
+Retained 16,484 of 16,529 original evidence members without modifying any retained bytes.
+Excluded exactly 45 members: 3 external helper scripts, 1 upload receipt, 37 rebuildable runtime-cache files, 4 redundant stage checkpoint archives. Eight cache-behavior test indexes remain.
+All acceptance logs, JUnit/exit results, UI images, project artifacts, database/WAL sidecars, intermediate failures and reports remain.
+All 3,555 valid named SQLite databases read successfully with matching WAL from read-only temporary copies; 409 non-SQLite named fixtures remain.
+Image/PDF audit covers 370 unique objects; 12 DOCX image occurrences match already-reviewed images. No confirmed private credentials, personal data, production endpoints or transfer identifiers remain.
+18 independent ZIPs, each strictly under 5,000,000 bytes; combined size 85,337,884 bytes. Every ZIP CRC and every member SHA256 passed.
+Original evidence archives match their original SHA256 manifest and were not changed.
+Exact retained/excluded paths and archive checksums are in the publication directory manifests.

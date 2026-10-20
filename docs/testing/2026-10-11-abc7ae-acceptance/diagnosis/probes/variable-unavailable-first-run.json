@@ -1,0 +1,309 @@
+{
+  "kind": "isolated model and ownership simulation; not UI; not historical NG reproduction",
+  "python": "3.10.22 (main, Oct  3 2026, 01:32:06) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.41",
+  "source_commit": "abc7ae0541e997be0bbe3a4794ad604c239de79a",
+  "cases": {
+    "closed_source_validation": {
+      "input": {
+        "sourceId": "variable",
+        "state": "UNAVAILABLE",
+        "reason": "VARIABLE_UNAVAILABLE",
+        "reasonCode": "VARIABLE_UNAVAILABLE"
+      },
+      "exception": {
+        "class": "ValidationError",
+        "message": "1 validation error for ClosedSource\nreasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+        "validation_errors": [
+          {
+            "type": "literal_error",
+            "loc": [
+              "reasonCode"
+            ],
+            "msg": "Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'",
+            "input": "VARIABLE_UNAVAILABLE",
+            "ctx": {
+              "expected": "'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'"
+            }
+          }
+        ],
+        "traceback": "Traceback (most recent call last):\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/evidence/diagnosis-deep/probes/variable_unavailable_probe.py\", line 90, in <module>\n    case[\"unexpected_model\"] = ClosedSource.model_validate(bad).model_dump()\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/lib/python3.10/site-packages/pydantic/main.py\", line 790, in model_validate\n    return cls.__pydantic_validator__.validate_python(\npydantic_core._pydantic_core.ValidationError: 1 validation error for ClosedSource\nreasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error\n"
+      }
+    },
+    "real_store_close": {
+      "begin_return": true,
+      "before_close": {
+        "open_keys": [
+          "direct-store-key"
+        ],
+        "history_count": 0,
+        "latest_keys": [],
+        "closed_high": [],
+        "cursor": 1,
+        "events": [
+          {
+            "cursor": 1,
+            "has_result": false
+          }
+        ]
+      },
+      "exception": {
+        "class": "ValidationError",
+        "message": "1 validation error for ClosedResult\nsources.0.reasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+        "validation_errors": [
+          {
+            "type": "literal_error",
+            "loc": [
+              "sources",
+              0,
+              "reasonCode"
+            ],
+            "msg": "Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'",
+            "input": "VARIABLE_UNAVAILABLE",
+            "ctx": {
+              "expected": "'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'"
+            }
+          }
+        ],
+        "traceback": "Traceback (most recent call last):\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/evidence/diagnosis-deep/probes/variable_unavailable_probe.py\", line 100, in <module>\n    case[\"close_return\"] = store.close(\"direct-store-key\", [bad], \"COMPLETED\")\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/source/src/emo_master/apps/runtime/presentation/store.py\", line 101, in close\n    result = ClosedResult.model_validate_json(__import__(\"json\").dumps(dict(\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/lib/python3.10/site-packages/pydantic/main.py\", line 845, in model_validate_json\n    return cls.__pydantic_validator__.validate_json(\npydantic_core._pydantic_core.ValidationError: 1 validation error for ClosedResult\nsources.0.reasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error\n"
+      },
+      "after_close_exception": {
+        "open_keys": [],
+        "history_count": 0,
+        "latest_keys": [],
+        "closed_high": [],
+        "cursor": 1,
+        "events": [
+          {
+            "cursor": 1,
+            "has_result": false
+          }
+        ]
+      }
+    },
+    "real_collector_injected_key_error": {
+      "emitted": [
+        {
+          "eventType": "display.open",
+          "item": {
+            "identity": {
+              "runtimeInstanceId": "probe-runtime",
+              "jobId": "probe-job",
+              "executionRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+              "capturePlanRevision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+              "mode": "runtime",
+              "resultScopeId": "root",
+              "invocationId": "probe-invocation",
+              "resultKey": "cd9b832b-047f-4463-bbe0-1093208d6e2e",
+              "resultOrdinal": 1
+            },
+            "expected": [
+              "variable"
+            ],
+            "captureStartedNs": 80561190393283,
+            "scopeEndedNs": 80561190396828
+          }
+        },
+        {
+          "eventType": "display.seal",
+          "key": "cd9b832b-047f-4463-bbe0-1093208d6e2e",
+          "sources": [
+            {
+              "sourceId": "variable",
+              "state": "UNAVAILABLE",
+              "reason": "VARIABLE_UNAVAILABLE",
+              "reasonCode": "VARIABLE_UNAVAILABLE"
+            }
+          ],
+          "terminal": "COMPLETED",
+          "sealedAt": 80561.190396578,
+          "scopeEndedNs": 80561190396828
+        }
+      ],
+      "collector_open": 0,
+      "collector_pending_seals": 0,
+      "credits_after_capture": {
+        "available": 0,
+        "acquire_count": 1,
+        "release_count": 0
+      }
+    },
+    "isolated_real_service_finish": {
+      "before_seal": {
+        "store": {
+          "open_keys": [
+            "cd9b832b-047f-4463-bbe0-1093208d6e2e"
+          ],
+          "history_count": 0,
+          "latest_keys": [],
+          "closed_high": [],
+          "cursor": 1,
+          "events": [
+            {
+              "cursor": 1,
+              "has_result": false
+            }
+          ]
+        },
+        "pending_keys": [
+          "cd9b832b-047f-4463-bbe0-1093208d6e2e"
+        ],
+        "credits": {
+          "available": 0,
+          "acquire_count": 1,
+          "release_count": 0
+        }
+      },
+      "first_exception": {
+        "class": "ValidationError",
+        "message": "1 validation error for ClosedResult\nsources.0.reasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error",
+        "validation_errors": [
+          {
+            "type": "literal_error",
+            "loc": [
+              "sources",
+              0,
+              "reasonCode"
+            ],
+            "msg": "Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'",
+            "input": "VARIABLE_UNAVAILABLE",
+            "ctx": {
+              "expected": "'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR'"
+            }
+          }
+        ],
+        "traceback": "Traceback (most recent call last):\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/evidence/diagnosis-deep/probes/variable_unavailable_probe.py\", line 133, in <module>\n    service._consume(\"probe-job\", emitted[1])\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/source/src/emo_master/apps/runtime/presentation/service.py\", line 279, in _consume\n    self._finish(event[\"key\"])\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/source/src/emo_master/apps/runtime/presentation/service.py\", line 312, in _finish\n    if self.store.close(key, sources, seal[\"terminal\"]):\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/source/src/emo_master/apps/runtime/presentation/store.py\", line 101, in close\n    result = ClosedResult.model_validate_json(__import__(\"json\").dumps(dict(\n  File \"/workspace/shared/emo-master-abc7ae-acceptance-20261011/venv/lib/python3.10/site-packages/pydantic/main.py\", line 845, in model_validate_json\n    return cls.__pydantic_validator__.validate_json(\npydantic_core._pydantic_core.ValidationError: 1 validation error for ClosedResult\nsources.0.reasonCode\n  Input should be 'OPTIONAL_ABSENT', 'BRANCH_SKIPPED', 'NODE_FAILED', 'EXECUTION_CANCELLED', 'EXPORT_TIMEOUT', 'EXPORT_FAILED', 'RESOURCE_EXPIRED', 'BUDGET_EXCEEDED', 'INVALID_VALUE', 'SOURCE_MISSING' or 'IPC_ERROR' [type=literal_error, input_value='VARIABLE_UNAVAILABLE', input_type=str]\n    For further information visit https://errors.pydantic.dev/2.14/v/literal_error\n"
+      },
+      "after_first_exception": {
+        "store": {
+          "open_keys": [],
+          "history_count": 0,
+          "latest_keys": [],
+          "closed_high": [],
+          "cursor": 1,
+          "events": [
+            {
+              "cursor": 1,
+              "has_result": false
+            }
+          ]
+        },
+        "pending_keys": [
+          "cd9b832b-047f-4463-bbe0-1093208d6e2e"
+        ],
+        "has_seal": true,
+        "credits": {
+          "available": 0,
+          "acquire_count": 1,
+          "release_count": 0
+        },
+        "retain_calls": []
+      },
+      "next_finish_return": null,
+      "after_one_next_finish": {
+        "store": {
+          "open_keys": [],
+          "history_count": 0,
+          "latest_keys": [],
+          "closed_high": [],
+          "cursor": 1,
+          "events": [
+            {
+              "cursor": 1,
+              "has_result": false
+            }
+          ]
+        },
+        "pending_keys": [],
+        "credits": {
+          "available": 0,
+          "acquire_count": 1,
+          "release_count": 0
+        },
+        "retain_calls": [
+          []
+        ]
+      }
+    },
+    "valid_reason_control": {
+      "store": {
+        "open_keys": [],
+        "history_count": 1,
+        "latest_keys": [
+          "control-key"
+        ],
+        "closed_high": [
+          [
+            [
+              "probe-job",
+              "root"
+            ],
+            1
+          ]
+        ],
+        "cursor": 2,
+        "events": [
+          {
+            "cursor": 1,
+            "has_result": false
+          },
+          {
+            "cursor": 2,
+            "has_result": true
+          }
+        ]
+      },
+      "credits": {
+        "available": 1,
+        "acquire_count": 1,
+        "release_count": 1
+      },
+      "pending_keys": [],
+      "result": {
+        "identity": {
+          "runtimeInstanceId": "probe-runtime",
+          "jobId": "probe-job",
+          "resultScopeId": "root",
+          "invocationId": "probe-invocation",
+          "resultKey": "control-key",
+          "resultOrdinal": 1,
+          "executionRevision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+          "capturePlanRevision": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+          "mode": "runtime"
+        },
+        "expectedSourceIds": [
+          "variable"
+        ],
+        "sources": [
+          {
+            "sourceId": "variable",
+            "state": "UNAVAILABLE",
+            "valueJson": null,
+            "image": null,
+            "reason": "INVALID_VALUE",
+            "reasonCode": "INVALID_VALUE"
+          }
+        ],
+        "status": "INCOMPLETE",
+        "executionTerminal": "COMPLETED",
+        "timing": null
+      }
+    }
+  },
+  "threads_before": [
+    "MainThread"
+  ],
+  "threads_after": [
+    "MainThread"
+  ],
+  "script_sha256": "fb2c38366feb564cd2f9b2857bfee9c4ae6d834c84c44b3a2544ab3d587a8080",
+  "observation_checks": {
+    "invalid_reason_is_validation_error": true,
+    "invalid_store_close_popped_open": true,
+    "invalid_store_close_published_no_result": true,
+    "pending_remains_after_exception": true,
+    "next_finish_drops_pending_without_credit_release": true,
+    "control_closes_incomplete_and_releases_credit": true,
+    "no_background_threads_started": true
+  }
+}

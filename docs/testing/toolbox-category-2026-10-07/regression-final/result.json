@@ -1,0 +1,24 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "tests/designer/test_category_selection.py",
+    "tests/designer/test_floating_toolbox.py",
+    "tests/designer/test_operator_bubble.py",
+    "tests/designer/test_operator_bubble_mouse_events.py",
+    "tests/designer/test_main_window_layout.py",
+    "tests/designer/test_operator_catalog_controller.py",
+    "tests/designer/test_toolbar_width.py",
+    "-q"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "seconds": 12.890000000130385,
+  "outerWatchdogSeconds": 180,
+  "timedOut": false,
+  "qtPlatform": "offscreen",
+  "qtScaleFactor": null,
+  "pytestAddopts": "--ignore=manual_test_workspace",
+  "runtimeDataDirectory": "D:\\jsdfhasuh\\documents\\emo-master-backups\\category-highlight-20261007-092430-369788\\category-test-runtime"
+}

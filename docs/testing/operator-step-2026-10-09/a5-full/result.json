@@ -1,0 +1,29 @@
+{
+  "steps": [
+    {
+      "name": "pytest",
+      "command": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "--tb=short",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\testing\\operator-step-2026-10-09\\a5-full\\pytest.xml",
+        "tests"
+      ],
+      "returnCode": 1
+    }
+  ],
+  "returnCode": 1,
+  "sourceChangedDuringRun": [
+    "src/emo_master/apps/designer/ui/debug_values.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/operator_debug_window.py",
+    "src/emo_master/apps/runtime/operator_debug/data.py",
+    "src/emo_master/apps/runtime/operator_debug/rpc.py",
+    "src/emo_master/apps/runtime/operator_debug/worker.py",
+    "tests/runtime/operator_debug_fixture.py",
+    "tests/runtime/test_operator_debug_acceptance.py",
+    "tests/runtime/test_operator_debug_data.py"
+  ]
+}

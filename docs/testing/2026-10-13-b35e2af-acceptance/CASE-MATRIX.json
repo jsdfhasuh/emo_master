@@ -1,0 +1,555 @@
+{
+  "source_sha": "b35e2af8641683f366393e02388a0ce5bcb7680d",
+  "date_utc": "2026-10-13",
+  "overall": "PASS_WITH_SCOPE_LIMITS",
+  "cases": [
+    {
+      "id": "SW-55",
+      "status": "PASS",
+      "layer": "software_controlled_and_real_spawn",
+      "count": 55,
+      "seconds": 15.89,
+      "exit_code": 0,
+      "evidence": [
+        "evidence/automated/focused.log",
+        "evidence/automated/focused-junit.xml"
+      ],
+      "limitation": "Single focused run; not full regression or manual GUI"
+    },
+    {
+      "id": "UI-DESIGNER",
+      "status": "PASS",
+      "layer": "visible_native_desktop",
+      "pid": 20945,
+      "job_id": "9565405c-7dfa-4de1-b3dd-ceb83d5395ee",
+      "evidence": [
+        "evidence/screenshots/002-designer-ng-result.png",
+        "evidence/screenshots/003-designer-count-result.png",
+        "evidence/environment/designer-jobs-readonly.json",
+        "evidence/environment/project-semantic-check.json",
+        "evidence/designer.exit"
+      ],
+      "result": "COMPLETED; decision false, count 2; titlebar close exit 0",
+      "limitation": "Independent copied fixture; formal Run saved revision 1 to 2 and hydrated schemas/ports/default names. Raw core comparison false retained; behavior equal after explicit path and null normalization. No bytewise unchanged claim."
+    },
+    {
+      "id": "UI-NG-CONTINUOUS",
+      "status": "PASS",
+      "layer": "visible_native_desktop",
+      "pid": 21035,
+      "job_ids": [
+        "b831d409-9254-4524-8dbd-2eb127823c2d",
+        "5a813de0-29b0-4495-805b-d42fe3238386"
+      ],
+      "evidence": [
+        "evidence/native-ng/observer.jsonl",
+        "evidence/screenshots/005-runtime-ng-running.png",
+        "evidence/screenshots/010-second-job-ng.png"
+      ],
+      "result": "First Job 135 completed workflows then manual Stop; second distinct Job still RUNNING at titlebar close"
+    },
+    {
+      "id": "NG-IDENTITY-PIXELS",
+      "status": "PASS",
+      "layer": "independent_offline_audit",
+      "count": 40,
+      "jobs": {
+        "b831d409-9254-4524-8dbd-2eb127823c2d": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ],
+        "5a813de0-29b0-4495-805b-d42fe3238386": [
+          1,
+          2,
+          3,
+          4,
+          5,
+          6,
+          7,
+          8,
+          9,
+          10,
+          11,
+          12,
+          13,
+          14,
+          15,
+          16,
+          17,
+          18,
+          19,
+          20
+        ]
+      },
+      "evidence": [
+        "evidence/ng-independent-audit.json",
+        "evidence/expected-pixels-audit.json"
+      ],
+      "result": "Identity, ImageRef encoded size/SHA, full pixels, known static expected overlay all match",
+      "limitation": "100ms sampled displayed images; no all-ordinal or cross-ordinal freshness claim"
+    },
+    {
+      "id": "RAW-OBSERVED-RETIREMENT",
+      "status": "PASS",
+      "layer": "independent_offline_audit",
+      "unique_tasks": 340,
+      "evidence": [
+        "evidence/ng-independent-audit.json"
+      ],
+      "result": "One observed release time, verified_private_snapshot 57600 bytes, same identity, ordered owner retirement",
+      "limitation": "Deduplicated repeated diagnostic records do not prove every unobserved semaphore operation"
+    },
+    {
+      "id": "STOP-ACTUAL-OWNERS",
+      "status": "PASS",
+      "layer": "visible_native_desktop_and_passive_observer",
+      "evidence": [
+        "evidence/native-ng/observer.jsonl",
+        "evidence/ng-independent-audit.json"
+      ],
+      "result": "Owns false; original worker closed, bridge and reader stopped; pending raw empty",
+      "reader_sample_delay_after_ready_ms": 357.291437,
+      "limitation": "Do not assert all retired at READY instant; application exporter pool stays live"
+    },
+    {
+      "id": "STOP-UX-STATUS",
+      "status": "OBSERVATION",
+      "evidence": [
+        "evidence/screenshots/007-runtime-stopped-retired.png",
+        "evidence/screenshots/008-stop-status-later.png",
+        "source/src/emo_master/apps/runtime/presentation/rpc.py"
+      ],
+      "result": "GetJob resources_released also requires no presentation config; Stop retains 32 display assets, 20928 bytes, zero leases/readers",
+      "limitation": "Not evidence of raw resource leak or stale status; no product UX change"
+    },
+    {
+      "id": "CLOSE-ORIGINAL-OWNERS",
+      "status": "PASS",
+      "layer": "retained_actual_objects",
+      "evidence": [
+        "evidence/native-ng/observer.jsonl",
+        "evidence/ng-independent-audit.json",
+        "evidence/native-ng.exit"
+      ],
+      "checks": {
+        "all_jobs_unowned": true,
+        "original_workers_closed": true,
+        "original_readers_dead": true,
+        "original_exporter_owners_closed": true,
+        "original_shm_closed_unlinked": true,
+        "zero_assets": true,
+        "original_leases_absent": true,
+        "presentation_closed": true,
+        "runtime_closed": true,
+        "exit_zero": true
+      },
+      "result": "Both Jobs unowned; original workers, bridges, readers, exporter processes/threads and SHM closed; zero assets/cache/leases/readers",
+      "limitation": "Empty current slots alone are not proof; tracker still present at Qt loop return; short-lived lease handles were not exhaustively traced, final counters are zero"
+    },
+    {
+      "id": "OS-POSTEXIT",
+      "status": "PASS",
+      "layer": "actual_desktop_proc",
+      "evidence": [
+        "evidence/environment/final-process-check.json"
+      ],
+      "utc": "2026-10-13T11:09:46.833670+00:00",
+      "tracked_pids": [
+        21035,
+        21184,
+        21162,
+        21163,
+        21173,
+        21564,
+        20944,
+        20528,
+        20945,
+        21012
+      ],
+      "result": "All ten tracked PIDs absent and matching scoped product processes empty; includes tracker 21162"
+    },
+    {
+      "id": "HISTORY-BUSY",
+      "status": "OPEN",
+      "result": "Historical exact source lane owner causality unchanged"
+    },
+    {
+      "id": "HISTORY-EXPORT",
+      "status": "NOT_PROVEN",
+      "result": "Historical intermittent successor export failures unchanged"
+    },
+    {
+      "id": "OUT-OF-SCOPE",
+      "status": "NOT_RUN",
+      "items": [
+        "ABBA",
+        "D01-D08",
+        "SQLite",
+        "performance",
+        "Windows",
+        "production hardware",
+        "long-term stability"
+      ],
+      "result": "No historical outcome relabelled"
+    }
+  ],
+  "automated_testcases": [
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[callback-expired_queue]",
+      "seconds": 0.003,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[callback-invalid_snapshot]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[callback-snapshot_timeout]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[restart-expired_queue]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[restart-invalid_snapshot]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testFailedRawOwnerRetiresBeforeCallbackOrRestart[restart-snapshot_timeout]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testRealFailedEncoderReturnsRawBeforeSlowCallback",
+      "seconds": 0.722,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testUnprovedRetirementIsQuarantinedAndNeverReturnsAnExtraCredit[reap_unproved]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testUnprovedRetirementIsQuarantinedAndNeverReturnsAnExtraCredit[release_unknown]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testBusyCaptureKeepsLastAcquisitionIdentityWithoutReusingItsPixels",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testOwnershipSnapshotIsReadOnlyBoundedAndDoesNotWaitForOwnerLock",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testBusyFailureClosureKeepsBothAcquisitionAndParentEvidenceWithoutChangingWire[False]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testBusyFailureClosureKeepsBothAcquisitionAndParentEvidenceWithoutChangingWire[True]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_failed_capture_retirement",
+      "name": "testNextRealCollectorImageSurvivesFailedPreSnapshotOwnerWithoutBorrowingOldPixels",
+      "seconds": 0.022,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels[1]",
+      "seconds": 0.649,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureWhilePreviousIsStillEncodingPreservesBothPixels[2]",
+      "seconds": 0.679,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testTimeoutAfterSnapshotReapsEncoderWithoutReleasingSuccessorReservation",
+      "seconds": 1.166,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testWorkerKeepsOnlyOneIndependentSnapshotAndDropsItAfterEachTask[False]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testWorkerKeepsOnlyOneIndependentSnapshotAndDropsItAfterEachTask[True]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit[1-False]",
+      "seconds": 0.359,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit[1-True]",
+      "seconds": 0.345,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit[2-False]",
+      "seconds": 0.356,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_capture_lane_lifetime",
+      "name": "testNextCaptureDuringAdoptionKeepsBothImagesAndOneCredit[2-True]",
+      "seconds": 0.345,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-queued-queue_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-waiting-snapshot_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-late_snapshot-snapshot_after_deadline-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-snapshot_identity-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-snapshot_bytes-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-no_snapshot-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-copy_error-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-duplicate_snapshot-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-completion_wait-completion_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-late_ok-completion_after_deadline-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-encoder_error-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-reap_failure-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-identity-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[False-normal-encoder_reply-AVAILABLE]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-queued-queue_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-waiting-snapshot_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-late_snapshot-snapshot_after_deadline-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-snapshot_identity-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-snapshot_bytes-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-no_snapshot-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-copy_error-snapshot_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-duplicate_snapshot-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-completion_wait-completion_wait-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-late_ok-completion_after_deadline-EXPORT_TIMEOUT]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-encoder_error-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-reap_failure-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-identity-encoder_reply-EXPORT_FAILED]",
+      "seconds": 0.002,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testExportPredicatesHaveBoundedTimelineAndExactlyOnceLaneRetirement[True-normal-encoder_reply-AVAILABLE]",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_export_diagnostics",
+      "name": "testAssetAdoptionFailureRetainsItsPhaseAndCorrelatedError",
+      "seconds": 0.001,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.test_production_boundaries",
+      "name": "testBusinessNgDoesNotStopAndSharesInvocationWithImageAndCount",
+      "seconds": 1.605,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_normal_capture",
+      "name": "testExplicitStopReleaseAndRestartNormalJob[graceful]",
+      "seconds": 4.767,
+      "status": "PASS"
+    },
+    {
+      "classname": "tests.runtime.presentation.test_normal_capture",
+      "name": "testExplicitStopReleaseAndRestartNormalJob[force]",
+      "seconds": 4.422,
+      "status": "PASS"
+    }
+  ],
+  "evidence_sha256": {
+    "evidence/native-ng/observer.jsonl": "667a74b89318239fe79c3e2cb522da312d0df4f2b4e5931b76e986421530a9b9",
+    "evidence/ng-independent-audit.json": "8a2277dd37c4004bc5df8ea53aa1e23540cddc8de80f36adb74c922bbc97084a",
+    "evidence/expected-pixels-audit.json": "3d06277aba5fb5fa3b8c48ec2408f703935d50bb2af9b1141e422e5ecf72a5fa",
+    "evidence/environment/final-process-check.json": "4a35f05400c70e5285428c09cf321582f0785bff5f39ceecd52affa84b5ba722",
+    "evidence/environment/project-semantic-check.json": "d8262b35783d5d11df769ffee39e7ddd36e97be488543f5fbbac11950be479d3",
+    "evidence/automated/focused.log": "136c74f35c435af5a9bbce9f19d319dfd0b599dcc0c8e61eab5d8d35ca67ee58",
+    "evidence/automated/focused-junit.xml": "61703025717872e74b1f4b15375ce9e388d7a3a0ca2f777c7d84ec7204c8bde7"
+  }
+}

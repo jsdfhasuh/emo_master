@@ -1,0 +1,1 @@
+Stopped owned CI process tree before editing sources: review found legacy simulation mode could survive a real snapshot without capture coverage. This attempt is ABORTED, not PASS.

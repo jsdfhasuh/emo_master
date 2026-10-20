@@ -1,0 +1,323 @@
+{
+  "schemaVersion": "1.0",
+  "defaultPageId": "9e9650af-35bd-4ef4-a92c-bce69c904be5",
+  "pageOrder": [
+    "9e9650af-35bd-4ef4-a92c-bce69c904be5",
+    "e0e69b74-0d7d-42a0-b05e-e10e66cb5159"
+  ],
+  "navigation": {
+    "mode": "tabs"
+  },
+  "resultScopes": {
+    "d7d57755-a38d-4b97-9ee8-99c4cbef988e": {
+      "entryWorkflowId": "main",
+      "scopeWorkflowId": "main",
+      "callPath": [],
+      "commitPolicy": "workflow_terminal"
+    }
+  },
+  "dataSources": {
+    "0e9db039-bd04-4144-a770-698e2198fc22": {
+      "kind": "node_output",
+      "resultScopeId": "d7d57755-a38d-4b97-9ee8-99c4cbef988e",
+      "workflowId": "main",
+      "callPath": [],
+      "nodeId": "blob",
+      "port": "overlay",
+      "fieldPath": [],
+      "expectedType": "image",
+      "name": null,
+      "ruleVersion": "1.0"
+    },
+    "2f50406d-3a88-4763-b6fc-d526e8797595": {
+      "kind": "node_output",
+      "resultScopeId": "d7d57755-a38d-4b97-9ee8-99c4cbef988e",
+      "workflowId": "main",
+      "callPath": [],
+      "nodeId": "count",
+      "port": "count",
+      "fieldPath": [],
+      "expectedType": "integer",
+      "name": null,
+      "ruleVersion": "1.0"
+    }
+  },
+  "pages": {
+    "9e9650af-35bd-4ef4-a92c-bce69c904be5": {
+      "name": "运行总览",
+      "layout": {
+        "type": "grid",
+        "columns": 1,
+        "spacing": 8
+      },
+      "components": [
+        {
+          "componentId": "2054429d-02c2-468b-ac4d-7b726f4d2bb9",
+          "type": "image",
+          "version": "1.0",
+          "layout": {
+            "row": 0,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "image": "0e9db039-bd04-4144-a770-698e2198fc22"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "49219b2b-b3d8-4fd7-a68e-4f49336c50a7",
+          "type": "number",
+          "version": "1.0",
+          "layout": {
+            "row": 1,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "value": "2f50406d-3a88-4763-b6fc-d526e8797595"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "cd4b1a9a-1dec-436d-943b-edd80602772e",
+          "type": "text",
+          "version": "1.0",
+          "layout": {
+            "row": 2,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "本地图像 · 当前草稿 · 正式 Blob / Count 输出",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "de132daf-fcb0-4f2a-8b97-277a304845d7",
+          "type": "navigation_button",
+          "version": "1.0",
+          "layout": {
+            "row": 4,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "检测详情",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "e0e69b74-0d7d-42a0-b05e-e10e66cb5159",
+              "context": "live",
+              "resultScopeId": null
+            }
+          },
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        }
+      ],
+      "resultScopeIds": []
+    },
+    "e0e69b74-0d7d-42a0-b05e-e10e66cb5159": {
+      "name": "检测详情",
+      "layout": {
+        "type": "grid",
+        "columns": 1,
+        "spacing": 8
+      },
+      "components": [
+        {
+          "componentId": "95c22b4a-1068-4acb-8094-d32758cd129c",
+          "type": "image",
+          "version": "1.0",
+          "layout": {
+            "row": 0,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "image": "0e9db039-bd04-4144-a770-698e2198fc22"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "59bc37ff-f017-4734-aeb9-92a9e5a51520",
+          "type": "number",
+          "version": "1.0",
+          "layout": {
+            "row": 1,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {
+            "value": "2f50406d-3a88-4763-b6fc-d526e8797595"
+          },
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "865ddbf6-9a3f-41be-96bc-b3536847d745",
+          "type": "text",
+          "version": "1.0",
+          "layout": {
+            "row": 2,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "本地图像 · 当前草稿 · 正式 Blob / Count 输出",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {},
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        },
+        {
+          "componentId": "75fc5808-a1c6-4336-aebd-019233d80696",
+          "type": "navigation_button",
+          "version": "1.0",
+          "layout": {
+            "row": 4,
+            "column": 0,
+            "rowSpan": 1,
+            "columnSpan": 1
+          },
+          "props": {
+            "title": "",
+            "text": "返回总览",
+            "emptyText": "—",
+            "unit": "",
+            "decimals": 2,
+            "indicatorStates": {},
+            "columns": [],
+            "pageSize": 20
+          },
+          "bindings": {},
+          "actions": {
+            "clicked": {
+              "type": "navigate",
+              "pageId": "9e9650af-35bd-4ef4-a92c-bce69c904be5",
+              "context": "live",
+              "resultScopeId": null
+            }
+          },
+          "children": [],
+          "grid": {
+            "type": "grid",
+            "columns": 1,
+            "spacing": 8
+          }
+        }
+      ],
+      "resultScopeIds": []
+    }
+  }
+}

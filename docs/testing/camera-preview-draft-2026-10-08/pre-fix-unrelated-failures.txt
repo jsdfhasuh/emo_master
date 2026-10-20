@@ -1,0 +1,50 @@
+Pre-fix module overlay count: 10
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_____________ testEditorUsesLateCatalogWithoutMutatingSavedGraph ______________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F32C994850>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F32C996590>
+
+    def testEditorUsesLateCatalogWithoutMutatingSavedGraph(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        assert window.loadProjectDirectory(str(EXAMPLE))
+        assert not window.pageCoordinator.session.dirty
+        window.activateWorkflow("body")
+        node = window.flowModel.nodes["load"]
+>       assert node.paramSchema == {}
+E       AssertionError: assert {'type': 'obj...'folderPath']} == {}
+E
+E         Left contains 3 more items:
+E         {'properties': {'colorMode': {'default': 'color',
+E                                       'enum': ['color', 'grayscale'],
+E                                       'title': '颜色模式',
+E                                       'type': 'string'},
+E                         'folderPath': {'default': '',...
+E
+E         ...Full output truncated (10 lines hidden), use '-vv' to show
+
+tests\designer\test_minimal_project_metadata.py:94: AssertionError
+________ testNormalizationPreservesSavedContractsAndOwnsFallbackSchema ________
+
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001F32CD20070>
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001F32CCA2410>
+
+    def testNormalizationPreservesSavedContractsAndOwnsFallbackSchema(monkeypatch, ownedDesignerWindow):
+        window = _window(ownedDesignerWindow, monkeypatch, RuntimeClientStub())
+        manifest = json.loads((EXAMPLE.parents[2] / (
+            "src/emo_master/plugins/builtins/image_batch_loader/manifest.json"
+        )).read_text(encoding="utf-8"))
+        _catalog(window, [SimpleNamespace(**manifest)])
+        payload = json.loads(EXAMPLE.read_text(encoding="utf-8"))
+        original = deepcopy(payload)
+        resolved = window.pageCoordinator.normalizeDraft(payload)
+        hydrated = resolved["workflows"]["body"]["nodes"][1]
+>       hydrated["paramSchema"]["properties"]["folderPath"]["default"] = "local-only"
+E       KeyError: 'folderPath'
+
+tests\designer\test_minimal_project_metadata.py:125: KeyError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_minimal_project_metadata.py::testEditorUsesLateCatalogWithoutMutatingSavedGraph
+FAILED tests/designer/test_minimal_project_metadata.py::testNormalizationPreservesSavedContractsAndOwnsFallbackSchema
+2 failed in 3.06s

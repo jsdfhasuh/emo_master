@@ -1,0 +1,372 @@
+FFFFFFFFFFFFFFF                                                          [100%]
+================================== FAILURES ===================================
+________________ testNarrowToolbarKeepsRunActionAndHasOverflow ________________
+
+styledApp = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+
+    def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            for _ in range(4):
+                styledApp.processEvents()
+            extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
+            assert extension is not None and extension.isVisible()
+>           assert window.startButton.isVisible()
+E           assert False
+E            +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4868F00>()
+E            +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4868F00> = <PySide2.QtWidgets.QToolButton(0x1ece3d3cf80, name="primaryButton") at 0x000001ECE4868F00>.isVisible
+E            +      where <PySide2.QtWidgets.QToolButton(0x1ece3d3cf80, name="primaryButton") at 0x000001ECE4868F00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece1cb2700) at 0x000001ECE3745B80>.startButton
+
+tests\designer\test_visual_layout.py:314: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-480] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 480, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+>               assert button.isVisible()
+E               assert False
+E                +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE379CF80>()
+E                +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE379CF80> = <PySide2.QtWidgets.QToolButton(0x1ece231ea70, name="primaryButton") at 0x000001ECE379CF80>.isVisible
+
+tests\designer\test_toolbar_width.py:28: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-640] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 640, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+>               assert button.isVisible()
+E               assert False
+E                +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4AC3A00>()
+E                +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4AC3A00> = <PySide2.QtWidgets.QToolButton(0x1ece3d44ec0, name="primaryButton") at 0x000001ECE4AC3A00>.isVisible
+
+tests\designer\test_toolbar_width.py:28: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-800] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 800, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 800
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE3746CC0>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE3746CC0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3a69ef0) at 0x000001ECE3746CC0>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-900] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 900, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 900
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE484A040>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE484A040> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3b84260) at 0x000001ECE484A040>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[False-960] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 960, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 960
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE486A900>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE486A900> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3a72a10) at 0x000001ECE486A900>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+__________ testRunAndStopRemainVisibleAtSupportedWidths[False-1280] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 1280, running = False
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 1280
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE47B2900>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE47B2900> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3b8c1b0) at 0x000001ECE47B2900>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-480] ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 480, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+>               assert button.isVisible()
+E               assert False
+E                +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE487E940>()
+E                +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE487E940> = <PySide2.QtWidgets.QToolButton(0x1ece3b0b0c0, name="primaryButton") at 0x000001ECE487E940>.isVisible
+
+tests\designer\test_toolbar_width.py:28: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-640] ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 640, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+            assert window.width() == width
+            for button, key in [(window.startButton, '开始运行'), (window.stopButton, '停止运行')]:
+>               assert button.isVisible()
+E               assert False
+E                +  where False = <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4AE3900>()
+E                +    where <built-in method isVisible of PySide2.QtWidgets.QToolButton object at 0x000001ECE4AE3900> = <PySide2.QtWidgets.QToolButton(0x1ece3b24940, name="primaryButton") at 0x000001ECE4AE3900>.isVisible
+
+tests\designer\test_toolbar_width.py:28: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-800] ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 800, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 800
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE4AB94C0>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE4AB94C0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3a67a30) at 0x000001ECE4AB94C0>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-900] ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 900, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 900
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE48038C0>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE48038C0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3b8af50) at 0x000001ECE48038C0>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-960] ____________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 960, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 960
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE4AFC8C0>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE4AFC8C0> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3a70630) at 0x000001ECE4AFC8C0>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+___________ testRunAndStopRemainVisibleAtSupportedWidths[True-1280] ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+width = 1280, running = True
+
+    @pytest.mark.parametrize('width', [480, 640, 800, 900, 960, 1280])
+    @pytest.mark.parametrize('running', [False, True])
+    def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, running):
+        window = makeWindow()
+        try:
+            window.loadedProjectPath = 'toolbar-test-only'
+            window.isJobRunning = running
+            window.currentJobId = 'toolbar-test-only' if running else None
+            window.updateToolbarState()
+            window.resize(width, 500)
+            window.show()
+            settle(designerApplication)
+>           assert window.width() == width
+E           assert 776 == 1280
+E            +  where 776 = <built-in method width of MainWindow object at 0x000001ECE4AEED00>()
+E            +    where <built-in method width of MainWindow object at 0x000001ECE4AEED00> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3b90ac0) at 0x000001ECE4AEED00>.width
+
+tests\designer\test_toolbar_width.py:26: AssertionError
+______ testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject _______
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+
+    def testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject(designerApplication):
+        window = makeWindow()
+        try:
+            window.show()
+            before = window.pageCoordinator.session.payload()
+            actions = tuple(window.mainToolbar.actions())
+            buttons = window.startButton, window.stopButton
+            for _ in range(3):
+                for width in (480, 640, 960, 1280):
+                    window.resize(width, 500)
+                    settle(designerApplication)
+                    assert tuple(window.mainToolbar.actions()) == actions
+                    assert (window.startButton, window.stopButton) == buttons
+>                   assert all(button.isVisible() for button in buttons)
+E                   assert False
+E                    +  where False = all(<generator object testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject.<locals>.<genexpr> at 0x000001ECE4AF0C10>)
+
+tests\designer\test_toolbar_width.py:55: AssertionError
+___________ testToolbarFontChangeRecalculatesSpaceAtSameWindowWidth ___________
+
+designerApplication = <PySide2.QtWidgets.QApplication(0x1ece1ec6460) at 0x000001ECE3233E40>
+
+    def testToolbarFontChangeRecalculatesSpaceAtSameWindowWidth(designerApplication):
+        window = makeWindow()
+        try:
+            window.resize(640, 500)
+            window.show()
+            settle(designerApplication)
+            previous = window.pageCoordinator.chrome.selector.sizeHint().width()
+            font = QFont(window.mainToolbar.font())
+            font.setPointSizeF(18)
+            window.mainToolbar.setFont(font)
+            settle(designerApplication)
+            assert window.width() == 640
+>           assert window.pageCoordinator.chrome.selector.sizeHint().width() > previous
+E           assert 192 > 192
+E            +  where 192 = <built-in method width of PySide2.QtCore.QSize object at 0x000001ECE4A96D40>()
+E            +    where <built-in method width of PySide2.QtCore.QSize object at 0x000001ECE4A96D40> = PySide2.QtCore.QSize(192, 36).width
+E            +      where PySide2.QtCore.QSize(192, 36) = sizeHint()
+E            +        where sizeHint = <emo_master.apps.designer.page_designer.workspace_switch.WorkspaceSwitch(0x1ece3a6bc40, name="workspaceSelector") at 0x000001ECE4A964C0>.sizeHint
+E            +          where <emo_master.apps.designer.page_designer.workspace_switch.WorkspaceSwitch(0x1ece3a6bc40, name="workspaceSelector") at 0x000001ECE4A964C0> = <emo_master.apps.designer.page_designer.chrome.WorkspaceChrome(0x1ece3dee2d0) at 0x000001ECE4AC3FC0>.selector
+E            +            where <emo_master.apps.designer.page_designer.chrome.WorkspaceChrome(0x1ece3dee2d0) at 0x000001ECE4AC3FC0> = <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x000001ECE4ACB400>.chrome
+E            +              where <emo_master.apps.designer.page_designer.coordinator.PageCoordinator object at 0x000001ECE4ACB400> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1ece3b8d790) at 0x000001ECE484A080>.pageCoordinator
+
+tests\designer\test_toolbar_width.py:78: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_visual_layout.py::testNarrowToolbarKeepsRunActionAndHasOverflow
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-480]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-640]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-800]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-900]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-960]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[False-1280]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-480]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-640]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-800]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-900]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-960]
+FAILED tests/designer/test_toolbar_width.py::testRunAndStopRemainVisibleAtSupportedWidths[True-1280]
+FAILED tests/designer/test_toolbar_width.py::testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject
+FAILED tests/designer/test_toolbar_width.py::testToolbarFontChangeRecalculatesSpaceAtSameWindowWidth
+15 failed in 3.66s

@@ -1,0 +1,64 @@
+{
+  "operatorId": "vision.preprocess.crop",
+  "displayName": "Crop / Pad",
+  "version": "1.0.0",
+  "entry": "emo_master.plugins.builtins.crop.operator:CropOperator",
+  "category": "预处理",
+  "iconKey": "crop",
+  "summary": "按参数或 BBox ROI 裁剪图像、添加常量边框，并保留回源坐标。",
+  "inputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "roi": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": false,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "outputPorts": {
+    "image": {
+      "type": "image",
+      "required": true,
+      "nullable": false
+    },
+    "frame": {
+      "type": "bbox2d",
+      "required": true,
+      "nullable": false,
+      "schemaVersion": "1.x"
+    }
+  },
+  "paramSchema": {
+    "type": "object",
+    "properties": {
+      "x": {"title": "X 坐标", "type": "number", "default": 0.0},
+      "y": {"title": "Y 坐标", "type": "number", "default": 0.0},
+      "width": {"title": "宽度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
+      "height": {"title": "高度（像素）", "type": "number", "minimum": 0.0, "default": 0.0},
+      "clip": {"title": "裁剪到图像边界", "type": "boolean", "default": true},
+      "paddingLeft": {"title": "左侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "paddingTop": {"title": "顶部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "paddingRight": {"title": "右侧填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "paddingBottom": {"title": "底部填充（像素）", "type": "integer", "minimum": 0, "default": 0},
+      "padValue": {
+        "title": "填充值",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 255,
+        "default": 0
+      }
+    }
+  },
+  "minCoreVersion": "0.2.0",
+  "maxCoreVersion": "1.x"
+}

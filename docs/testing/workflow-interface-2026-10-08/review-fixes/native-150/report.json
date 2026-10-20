@@ -1,0 +1,137 @@
+{
+  "platform": "windows",
+  "scale": "1.5",
+  "runtimeCalls": 0,
+  "font": "Microsoft YaHei UI",
+  "cases": [
+    {
+      "case": "inputs",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "inputs-700.png"
+    },
+    {
+      "case": "inputs",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "inputs-640.png"
+    },
+    {
+      "case": "outputs",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "outputs-700.png"
+    },
+    {
+      "case": "outputs",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "outputs-640.png"
+    },
+    {
+      "case": "empty",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "empty-700.png"
+    },
+    {
+      "case": "empty",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "empty-640.png"
+    },
+    {
+      "case": "many",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "many-700.png"
+    },
+    {
+      "case": "many",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "many-640.png"
+    },
+    {
+      "case": "validation",
+      "width": 700,
+      "height": 480,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "validation-700.png"
+    },
+    {
+      "case": "validation",
+      "width": 640,
+      "height": 430,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "validation-640.png"
+    },
+    {
+      "case": "properties-inputs",
+      "width": 520,
+      "height": 360,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-inputs-520.png"
+    },
+    {
+      "case": "properties-inputs",
+      "width": 440,
+      "height": 330,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-inputs-440.png"
+    },
+    {
+      "case": "properties-outputs",
+      "width": 520,
+      "height": 360,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-outputs-520.png"
+    },
+    {
+      "case": "properties-outputs",
+      "width": 440,
+      "height": 330,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-outputs-440.png"
+    },
+    {
+      "case": "properties-validation",
+      "width": 520,
+      "height": 360,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-validation-520.png"
+    },
+    {
+      "case": "properties-validation",
+      "width": 440,
+      "height": 330,
+      "devicePixelRatio": 1.5,
+      "clippedLabels": [],
+      "screenshot": "properties-validation-440.png"
+    }
+  ],
+  "status": "PASS"
+}

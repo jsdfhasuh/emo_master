@@ -1,0 +1,253 @@
+FFFFFFFFF........................                                        [100%]
+================================== FAILURES ===================================
+___ testKeywordDefaultsInitializeAndRealRunnerWritesNormally[WITHOUT ROWID] ___
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testKeywordDefaultsInitializeA0')
+literal = 'WITHOUT ROWID'
+
+    @pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE', "quoted ' WITHOUT ROWID"])
+    def testKeywordDefaultsInitializeAndRealRunnerWritesNormally(tmp_path, literal):
+        path = tmp_path / 'business.sqlite3'
+        plan = [{'name': 'value', 'storageType': 'TEXT', 'default': literal}]
+        answer = initialize(path, 'records', plan)
+>       assert answer['structure']['columns'][0]['autoPrimaryKey']
+E       assert False
+
+tests\sqlite_writer\test_review_schema.py:16: AssertionError
+_ testKeywordDefaultsInitializeAndRealRunnerWritesNormally[CREATE VIRTUAL TABLE] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testKeywordDefaultsInitializeA1')
+literal = 'CREATE VIRTUAL TABLE'
+
+    @pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE', "quoted ' WITHOUT ROWID"])
+    def testKeywordDefaultsInitializeAndRealRunnerWritesNormally(tmp_path, literal):
+        path = tmp_path / 'business.sqlite3'
+        plan = [{'name': 'value', 'storageType': 'TEXT', 'default': literal}]
+>       answer = initialize(path, 'records', plan)
+
+tests\sqlite_writer\test_review_schema.py:15: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\runtime\business_sqlite\backend.py:253: in initialize
+    return inspect(path, table, cancelled)
+src\emo_master\apps\runtime\business_sqlite\backend.py:161: in inspect
+    answer["structure"] = tableStructure(connection, table)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <sqlite3.Connection object at 0x00000231DCE98440>
+table = 'records'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+_ testKeywordDefaultsInitializeAndRealRunnerWritesNormally[quoted ' WITHOUT ROWID] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testKeywordDefaultsInitializeA2')
+literal = "quoted ' WITHOUT ROWID"
+
+    @pytest.mark.parametrize('literal', ['WITHOUT ROWID', 'CREATE VIRTUAL TABLE', "quoted ' WITHOUT ROWID"])
+    def testKeywordDefaultsInitializeAndRealRunnerWritesNormally(tmp_path, literal):
+        path = tmp_path / 'business.sqlite3'
+        plan = [{'name': 'value', 'storageType': 'TEXT', 'default': literal}]
+        answer = initialize(path, 'records', plan)
+>       assert answer['structure']['columns'][0]['autoPrimaryKey']
+E       assert False
+
+tests\sqlite_writer\test_review_schema.py:16: AssertionError
+____ testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[-False] ____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testQuotedKeywordsCommentsAndT0')
+legacy = False, flags = ''
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    @pytest.mark.parametrize('flags', ['', 'WITHOUT ROWID'])
+    def testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished(tmp_path, legacy, flags):
+        path = tmp_path / 'quoted.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        table = 'CREATE VIRTUAL TABLE'
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute(f'CREATE TABLE {quoteIdentifier(table)} (id INTEGER PRIMARY KEY, '
+                               '"WITHOUT ROWID" TEXT DEFAULT \'CREATE VIRTUAL TABLE\', '
+                               'value TEXT CHECK(value != \'WITHOUT ROWID\')) /* WITHOUT ROWID */ ' + flags)
+>           result = tableStructure(connection, table)
+
+tests\sqlite_writer\test_review_schema.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <sqlite3.Connection object at 0x00000231DCE99240>
+table = 'CREATE VIRTUAL TABLE'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+____ testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[-True] _____
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testQuotedKeywordsCommentsAndT1')
+legacy = True, flags = ''
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    @pytest.mark.parametrize('flags', ['', 'WITHOUT ROWID'])
+    def testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished(tmp_path, legacy, flags):
+        path = tmp_path / 'quoted.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        table = 'CREATE VIRTUAL TABLE'
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute(f'CREATE TABLE {quoteIdentifier(table)} (id INTEGER PRIMARY KEY, '
+                               '"WITHOUT ROWID" TEXT DEFAULT \'CREATE VIRTUAL TABLE\', '
+                               'value TEXT CHECK(value != \'WITHOUT ROWID\')) /* WITHOUT ROWID */ ' + flags)
+>           result = tableStructure(connection, table)
+
+tests\sqlite_writer\test_review_schema.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <tests.sqlite_writer.test_review_schema.OldMetadataConnection object at 0x00000231DCE5BEF0>
+table = 'CREATE VIRTUAL TABLE'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+_ testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[WITHOUT ROWID-False] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testQuotedKeywordsCommentsAndT2')
+legacy = False, flags = 'WITHOUT ROWID'
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    @pytest.mark.parametrize('flags', ['', 'WITHOUT ROWID'])
+    def testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished(tmp_path, legacy, flags):
+        path = tmp_path / 'quoted.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        table = 'CREATE VIRTUAL TABLE'
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute(f'CREATE TABLE {quoteIdentifier(table)} (id INTEGER PRIMARY KEY, '
+                               '"WITHOUT ROWID" TEXT DEFAULT \'CREATE VIRTUAL TABLE\', '
+                               'value TEXT CHECK(value != \'WITHOUT ROWID\')) /* WITHOUT ROWID */ ' + flags)
+>           result = tableStructure(connection, table)
+
+tests\sqlite_writer\test_review_schema.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <sqlite3.Connection object at 0x00000231DCE9A040>
+table = 'CREATE VIRTUAL TABLE'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+_ testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[WITHOUT ROWID-True] _
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testQuotedKeywordsCommentsAndT3')
+legacy = True, flags = 'WITHOUT ROWID'
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    @pytest.mark.parametrize('flags', ['', 'WITHOUT ROWID'])
+    def testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished(tmp_path, legacy, flags):
+        path = tmp_path / 'quoted.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        table = 'CREATE VIRTUAL TABLE'
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute(f'CREATE TABLE {quoteIdentifier(table)} (id INTEGER PRIMARY KEY, '
+                               '"WITHOUT ROWID" TEXT DEFAULT \'CREATE VIRTUAL TABLE\', '
+                               'value TEXT CHECK(value != \'WITHOUT ROWID\')) /* WITHOUT ROWID */ ' + flags)
+>           result = tableStructure(connection, table)
+
+tests\sqlite_writer\test_review_schema.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <tests.sqlite_writer.test_review_schema.OldMetadataConnection object at 0x00000231DCE5BDE0>
+table = 'CREATE VIRTUAL TABLE'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+__ testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable[False] __
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testVirtualAndViewRemainReject0')
+legacy = False
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    def testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable(tmp_path, legacy):
+        path = tmp_path / 'types.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute('CREATE TABLE other(value TEXT)')
+            connection.execute('CREATE TRIGGER records AFTER INSERT ON other BEGIN SELECT 1; END')
+            connection.execute('CREATE TABLE records(value TEXT)')
+>           assert tableStructure(connection, 'records')['table'] == 'records'
+
+tests\sqlite_writer\test_review_schema.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <sqlite3.Connection object at 0x00000231DCE9A340>
+table = 'records'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+__ testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable[True] ___
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-982/testVirtualAndViewRemainReject1')
+legacy = True
+
+    @pytest.mark.parametrize('legacy', [False, True])
+    def testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable(tmp_path, legacy):
+        path = tmp_path / 'types.sqlite3'
+        factory = OldMetadataConnection if legacy else sqlite3.Connection
+        with sqlite3.connect(path, factory=factory) as connection:
+            connection.execute('CREATE TABLE other(value TEXT)')
+            connection.execute('CREATE TRIGGER records AFTER INSERT ON other BEGIN SELECT 1; END')
+            connection.execute('CREATE TABLE records(value TEXT)')
+>           assert tableStructure(connection, 'records')['table'] == 'records'
+
+tests\sqlite_writer\test_review_schema.py:56: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+connection = <tests.sqlite_writer.test_review_schema.OldMetadataConnection object at 0x00000231DCF7C040>
+table = 'records'
+
+    def tableStructure(connection, table: str) -> dict[str, Any]:
+        identifier(table)
+        found = connection.execute("SELECT name,type,sql FROM sqlite_schema WHERE name=? COLLATE NOCASE", (table,)).fetchone()
+        if not found or found[1] != "table" or "CREATE VIRTUAL TABLE" in str(found[2]).upper():
+>           raise SqliteWriterError("E_SQLITE_SCHEMA", "目标必须为普通表，不能为视图或虚拟表")
+E           emo_master.core.contracts.sqlite_writer.SqliteWriterError: 目标必须为普通表，不能为视图或虚拟表
+
+src\emo_master\apps\runtime\business_sqlite\backend.py:120: SqliteWriterError
+=========================== short test summary info ===========================
+FAILED tests/sqlite_writer/test_review_schema.py::testKeywordDefaultsInitializeAndRealRunnerWritesNormally[WITHOUT ROWID]
+FAILED tests/sqlite_writer/test_review_schema.py::testKeywordDefaultsInitializeAndRealRunnerWritesNormally[CREATE VIRTUAL TABLE]
+FAILED tests/sqlite_writer/test_review_schema.py::testKeywordDefaultsInitializeAndRealRunnerWritesNormally[quoted ' WITHOUT ROWID]
+FAILED tests/sqlite_writer/test_review_schema.py::testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[-False]
+FAILED tests/sqlite_writer/test_review_schema.py::testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[-True]
+FAILED tests/sqlite_writer/test_review_schema.py::testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[WITHOUT ROWID-False]
+FAILED tests/sqlite_writer/test_review_schema.py::testQuotedKeywordsCommentsAndTrueWithoutRowidAreDistinguished[WITHOUT ROWID-True]
+FAILED tests/sqlite_writer/test_review_schema.py::testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable[False]
+FAILED tests/sqlite_writer/test_review_schema.py::testVirtualAndViewRemainRejectedAndSameNamedTriggerCannotHideTable[True]
+9 failed, 24 passed in 3.61s

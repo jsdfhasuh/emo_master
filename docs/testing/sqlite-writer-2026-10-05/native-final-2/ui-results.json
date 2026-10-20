@@ -1,0 +1,113 @@
+{
+  "platform": "windows",
+  "jobs": [
+    {
+      "writeId": "99094b81-a90c-45dd-bb9d-6ec07c16c23c",
+      "status": "COMMITTED",
+      "rowsAffected": 1,
+      "primaryKey": 1,
+      "execution": {
+        "jobId": "dcbebe85-a55e-443b-a1be-ea66f42a55e0",
+        "projectId": "sqlite-test",
+        "workflowId": "main",
+        "workflowRunId": "36df39fb-db17-4f73-a2bc-58303c8bf1bf",
+        "nodeId": "node-2dbaa932",
+        "nodeRunId": "ed915bbd-a3a0-44c9-ab7f-6bbaa391942b",
+        "iterationPath": []
+      },
+      "elapsedMs": 0.0,
+      "error": null
+    },
+    {
+      "writeId": "8ee9e36e-b483-46da-9f4a-8b670c0d72f8",
+      "status": "COMMITTED",
+      "rowsAffected": 1,
+      "primaryKey": 2,
+      "execution": {
+        "jobId": "007178f7-ec86-41a2-9cd0-a7aa074575ba",
+        "projectId": "sqlite-test",
+        "workflowId": "main",
+        "workflowRunId": "415e2c27-ed8e-42ab-9327-ce410c58bb3d",
+        "nodeId": "node-2dbaa932",
+        "nodeRunId": "104bdfca-bce2-4515-b19c-7cd6d6013c0f",
+        "iterationPath": []
+      },
+      "elapsedMs": 0.0,
+      "error": null
+    }
+  ],
+  "rows": [
+    [
+      1,
+      "99094b81-a90c-45dd-bb9d-6ec07c16c23c",
+      7
+    ],
+    [
+      2,
+      "8ee9e36e-b483-46da-9f4a-8b670c0d72f8",
+      13
+    ]
+  ],
+  "screenSizes": [
+    {
+      "requested": [
+        1280,
+        720
+      ],
+      "actualDesigner": [
+        962,
+        531
+      ],
+      "actualEditor": [
+        962,
+        531
+      ],
+      "applyVisible": true,
+      "tableWidth": 866
+    },
+    {
+      "requested": [
+        1600,
+        900
+      ],
+      "actualDesigner": [
+        1600,
+        900
+      ],
+      "actualEditor": [
+        1100,
+        780
+      ],
+      "applyVisible": true,
+      "tableWidth": 1018
+    },
+    {
+      "requested": [
+        1920,
+        1080
+      ],
+      "actualDesigner": [
+        1920,
+        1080
+      ],
+      "actualEditor": [
+        1100,
+        780
+      ],
+      "applyVisible": true,
+      "tableWidth": 1018
+    }
+  ],
+  "devicePixelRatio": 2.0,
+  "artifacts": {
+    "00-drop-before-double.png": "1669903ad896c785c0d0d60514bb0038e18fc1aa04ed6456a384b1b81918d25d",
+    "02-create-plan.png": "bf2a5ef15869070df61738093f797fc878c18125e9ebf04f5eaa722ffa55b4e1",
+    "01-field-mapping.png": "3335387a5609af91e989b7a1459ef239cece80477cb06c4957a690c7856236a2",
+    "03-run-7.png": "bb837dc2e60db78899f8a7af7fc405947b887e64fe6ae0078d1d145fa55b2659",
+    "03-run-13.png": "88a1033e2e3b074ca33e86226bd5911d4646659965b007f9a8acfad166b0610f",
+    "04-reopened.png": "65e8590cf17acea65fc9cf8bd089c3cc6bfe5dd629986e25738970aac519efaa",
+    "05-editor-1280x720.png": "7c5b256167b08aaca48dbbebad1610530bc8381d894ac1b75e3d05252e8ac7eb",
+    "05-editor-1600x900.png": "3095babe5a7fad921267054e7065aeaa7eb958ca90fc22feaa84897f7d42078c",
+    "05-editor-1920x1080.png": "3095babe5a7fad921267054e7065aeaa7eb958ca90fc22feaa84897f7d42078c"
+  }
+}

@@ -1,0 +1,463 @@
+{
+  "metadata": {
+    "head": "3fe04720f3702f9ffb923e3c7f9abb181ac145c6",
+    "branch": "agent/runtime-workflow-architecture-v1",
+    "dirty": [
+      " M docs/development-guide.md",
+      " M docs/evidence/p4/a-first/evidence.json",
+      " M scripts/validate_page_editor.py",
+      " M src/emo_master/apps/designer/page_designer/canvas_tools.py",
+      " M src/emo_master/apps/designer/page_designer/coordinator.py",
+      " M src/emo_master/apps/designer/page_designer/grid_geometry.py",
+      " M src/emo_master/apps/designer/page_designer/palette.py",
+      " M src/emo_master/apps/designer/page_designer/preview.py",
+      " M src/emo_master/apps/designer/page_designer/property_panel.py",
+      " M src/emo_master/apps/designer/page_designer/tools.py",
+      " M src/emo_master/apps/designer/page_designer/workspace.py",
+      " M src/emo_master/apps/designer/ui/main_window.py",
+      " M src/emo_master/apps/designer/ui/styles/app.qss",
+      " M src/emo_master/ui/presentation/design_examples.py",
+      " M src/emo_master/ui/presentation/renderer.py",
+      " M tests/designer/test_visual_layout.py",
+      " M tests/ui/page_designer/test_current_job_viewing.py",
+      " M tests/ui/page_designer/test_delivery_path.py",
+      " M tests/ui/page_designer/test_normal_run_path.py",
+      " M tests/ui/page_designer/test_normal_run_viewing.py",
+      " M tests/ui/page_designer/test_page_navigation.py",
+      " M tests/ui/page_designer/test_preview.py",
+      " M tests/ui/page_designer/test_retained_acceptance_multiscope.py",
+      " M tests/ui/page_designer/test_two_job_observation.py",
+      " M tests/ui/page_designer/test_usable_properties.py",
+      " M tests/ui/page_designer/test_user_path.py",
+      " M tests/ui/page_designer/test_visual_editor.py",
+      "?? docs/testing/workspace-switch-2026-10-03.md",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-00.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-01.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-02.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-03.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-04.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-05.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-06.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-07.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-08.png",
+      "?? docs/testing/workspace-switch-2026-10-03/buttons-09.png",
+      "?? docs/testing/workspace-switch-2026-10-03/check-0.txt",
+      "?? docs/testing/workspace-switch-2026-10-03/check-1.txt",
+      "?? docs/testing/workspace-switch-2026-10-03/check-2.txt",
+      "?? docs/testing/workspace-switch-2026-10-03/checks.json",
+      "?? docs/testing/workspace-switch-2026-10-03/flow-buttons.png",
+      "?? docs/testing/workspace-switch-2026-10-03/flow.png",
+      "?? docs/testing/workspace-switch-2026-10-03/geometry-1280-200.json",
+      "?? docs/testing/workspace-switch-2026-10-03/geometry-1600-100.json",
+      "?? docs/testing/workspace-switch-2026-10-03/manifest.json",
+      "?? docs/testing/workspace-switch-2026-10-03/measurements.json",
+      "?? docs/testing/workspace-switch-2026-10-03/pages-buttons.png",
+      "?? docs/testing/workspace-switch-2026-10-03/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03.md",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.25/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1.5/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-1/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/compact-library.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1280x720-2/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.25/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1.5/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-1/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/compact-library.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1600x900-2/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.25/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1.5/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-1/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/empty.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/flow.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/geometry.json",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/invalid-property.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview-many-pages.png",
+      "?? docs/testing/workspace-ui-2026-10-03/1920x1080-2/preview.png",
+      "?? docs/testing/workspace-ui-2026-10-03/candidate.json",
+      "?? docs/testing/workspace-ui-2026-10-03/ci-check.txt",
+      "?? docs/testing/workspace-ui-2026-10-03/lifecycle-isolated.txt",
+      "?? docs/testing/workspace-ui-2026-10-03/manifest.json",
+      "?? scripts/validate_designer_workspaces.py",
+      "?? src/emo_master/apps/designer/page_designer/chrome.py",
+      "?? src/emo_master/apps/designer/page_designer/preview_window.py",
+      "?? src/emo_master/apps/designer/page_designer/workspace_switch.py",
+      "?? tests/ui/page_designer/test_palette.py",
+      "?? tests/ui/page_designer/test_workspace_modes.py",
+      "?? tests/ui/page_designer/test_workspace_switch.py"
+    ],
+    "sqlite": "3.53.4",
+    "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+    "probePath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-20261005-120743-2607061\\review_probe.py"
+  },
+  "cases": [
+    {
+      "case": "trigger_ignore",
+      "receipt": {
+        "writeId": "6524f126-8e49-42d6-b44d-2344e465d1f1",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": 0,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "797ff829-de22-44d3-a120-05f59d4ac840",
+          "nodeId": "writer",
+          "nodeRunId": "1a647abb-1c0e-43bd-964b-0ea01fca2356",
+          "iterationPath": []
+        },
+        "elapsedMs": 110.00000010244548,
+        "error": null
+      },
+      "actualRowCount": 0,
+      "violationConfirmed": true
+    },
+    {
+      "case": "unique_ignore",
+      "firstReceipt": {
+        "writeId": "5053c853-04ff-4f2a-8923-1c951cb11a21",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": 1,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "4a33867a-6c2c-4fcf-9487-ca4b212340c0",
+          "nodeId": "writer",
+          "nodeRunId": "15410dcc-4e1c-4385-8ea0-5543778f6165",
+          "iterationPath": []
+        },
+        "elapsedMs": 139.99999989755452,
+        "error": null
+      },
+      "secondReceipt": {
+        "writeId": "2aa5c662-2148-44ab-b617-ed12f1264db8",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": 0,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "b5b3fd9f-2971-4a3c-b6b5-0c441f998f90",
+          "nodeId": "writer",
+          "nodeRunId": "09570d75-8dc9-4e90-ab8b-2b8db7bf5d39",
+          "iterationPath": []
+        },
+        "elapsedMs": 0.0,
+        "error": null
+      },
+      "actualRows": [
+        [
+          "5053c853-04ff-4f2a-8923-1c951cb11a21",
+          "\"same\""
+        ]
+      ],
+      "violationConfirmed": true
+    },
+    {
+      "case": "cancel_after_commit",
+      "jobResult": {
+        "status": "FAILED",
+        "code": "E_CANCELLED",
+        "message": "execution cancelled",
+        "diagnostics": {}
+      },
+      "sqliteReceipts": [
+        {
+          "writeId": "482a5dc1-6a5a-48d4-abb5-fde588a59eb8",
+          "status": "COMMITTED",
+          "rowsAffected": 1,
+          "primaryKey": 1,
+          "execution": {
+            "jobId": "review-cancel",
+            "projectId": "",
+            "workflowId": "main",
+            "workflowRunId": "c54bb8e2-1041-4d61-86b9-3bd8710666c0",
+            "nodeId": "writer",
+            "nodeRunId": "c3261574-ef37-4094-9e50-10487b085a69",
+            "iterationPath": []
+          },
+          "elapsedMs": 93.00000010989606,
+          "error": null
+        }
+      ],
+      "inspectorRecord": {
+        "jobId": "review-cancel",
+        "workflowId": "main",
+        "nodeId": "writer",
+        "nodeRunId": "c3261574-ef37-4094-9e50-10487b085a69",
+        "workflowRunId": "c54bb8e2-1041-4d61-86b9-3bd8710666c0",
+        "iterationPath": [],
+        "status": "FAILED",
+        "sequence": 10,
+        "timestampMs": 0,
+        "io": {
+          "version": 1,
+          "inputs": {
+            "items": [],
+            "portCount": 0,
+            "omitted": 0
+          },
+          "outputs": null,
+          "legacy": false
+        },
+        "metrics": {
+          "items": [],
+          "portCount": 0,
+          "omitted": 0
+        },
+        "message": "execution cancelled",
+        "diagnostic": "",
+        "code": "E_CANCELLED"
+      },
+      "actualRowCount": 1,
+      "violationConfirmed": true
+    },
+    {
+      "case": "debug_two_tables",
+      "releaseResult": {
+        "status": "COMPLETED"
+      },
+      "releaseReceipts": [
+        {
+          "writeId": "db2d0a04-1b04-4c52-a8a4-e12da4d8f986",
+          "status": "COMMITTED",
+          "rowsAffected": 1,
+          "primaryKey": 1,
+          "execution": {
+            "jobId": "review-release",
+            "projectId": "",
+            "workflowId": "main",
+            "workflowRunId": "e6a0ae4a-c024-4ae9-9414-867aa4895bdb",
+            "nodeId": "parent-writer",
+            "nodeRunId": "32865b51-a654-4f56-8889-ec066402bf3d",
+            "iterationPath": []
+          },
+          "elapsedMs": 125.0,
+          "error": null
+        },
+        {
+          "writeId": "2a1d7ae3-a40c-41c9-9051-eb10691bba91",
+          "status": "COMMITTED",
+          "rowsAffected": 1,
+          "primaryKey": 1,
+          "execution": {
+            "jobId": "review-release",
+            "projectId": "",
+            "workflowId": "main",
+            "workflowRunId": "e6a0ae4a-c024-4ae9-9414-867aa4895bdb",
+            "nodeId": "child-writer",
+            "nodeRunId": "f88cc1e1-75d8-4979-87da-558a9529f393",
+            "iterationPath": []
+          },
+          "elapsedMs": 108.99999993853271,
+          "error": null
+        }
+      ],
+      "debugResult": {
+        "status": "FAILED",
+        "code": "E_SQLITE_CONSTRAINT",
+        "message": "FOREIGN KEY constraint failed",
+        "diagnostics": {
+          "sqliteReceipt": {
+            "writeId": "9f8a48dc-18ae-4539-8cb3-ae4a559b120e",
+            "status": "FAILED",
+            "rowsAffected": 0,
+            "primaryKey": null,
+            "execution": {
+              "jobId": "review-debug",
+              "projectId": "",
+              "workflowId": "main",
+              "workflowRunId": "e8f07f98-921a-4302-ad03-457e8402570c",
+              "nodeId": "child-writer",
+              "nodeRunId": "c3a2ac6c-ca06-4bd6-812d-fe4bee7d12d1",
+              "iterationPath": []
+            },
+            "elapsedMs": 15.999999828636646,
+            "error": {
+              "code": "E_SQLITE_CONSTRAINT",
+              "message": "FOREIGN KEY constraint failed",
+              "mappingRow": null
+            }
+          }
+        }
+      },
+      "debugReceipts": [
+        {
+          "writeId": "84586f98-d85a-471b-98a4-7e7d90136f39",
+          "status": "COMMITTED",
+          "rowsAffected": 1,
+          "primaryKey": 1,
+          "execution": {
+            "jobId": "review-debug",
+            "projectId": "",
+            "workflowId": "main",
+            "workflowRunId": "e8f07f98-921a-4302-ad03-457e8402570c",
+            "nodeId": "parent-writer",
+            "nodeRunId": "9b994e5c-07bb-44d9-b822-d19cc491e875",
+            "iterationPath": []
+          },
+          "elapsedMs": 78.00000021234155,
+          "error": null
+        },
+        {
+          "writeId": "9f8a48dc-18ae-4539-8cb3-ae4a559b120e",
+          "status": "FAILED",
+          "rowsAffected": 0,
+          "primaryKey": null,
+          "execution": {
+            "jobId": "review-debug",
+            "projectId": "",
+            "workflowId": "main",
+            "workflowRunId": "e8f07f98-921a-4302-ad03-457e8402570c",
+            "nodeId": "child-writer",
+            "nodeRunId": "c3a2ac6c-ca06-4bd6-812d-fe4bee7d12d1",
+            "iterationPath": []
+          },
+          "elapsedMs": 15.999999828636646,
+          "error": {
+            "code": "E_SQLITE_CONSTRAINT",
+            "message": "FOREIGN KEY constraint failed",
+            "mappingRow": null
+          }
+        }
+      ],
+      "debugTargets": {
+        "parent-writer": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-20261005-120743-2607061\\debug\\business-sqlite\\0d8d213492237670e99c5876.sqlite3",
+        "child-writer": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-20261005-120743-2607061\\debug\\business-sqlite\\7da297d850861660e7353655.sqlite3"
+      },
+      "businessBytesUnchangedByDebug": true,
+      "violationConfirmed": true
+    },
+    {
+      "case": "transient_cache_reference",
+      "receipt": {
+        "writeId": "0b3b37c8-76d1-497b-a529-4a48ae1678d1",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": 1,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "d750bc1d-5c73-4a3c-8605-885bc513f4a2",
+          "nodeId": "writer",
+          "nodeRunId": "0ce4ebbc-113f-41a1-815a-cfec8cdb5709",
+          "iterationPath": []
+        },
+        "elapsedMs": 78.00000021234155,
+        "error": null
+      },
+      "storedPath": "D:\\jsdfhasuh\\documents\\emo-master-backups\\sqlite-review-20261005-120743-2607061\\PREVIEW-CACHE\\cached.png",
+      "existsAfterCacheCleanup": false,
+      "violationConfirmed": true
+    },
+    {
+      "case": "unicode_metadata_collision",
+      "receipt": {
+        "writeId": "546fba96-f428-4aaa-a7c6-5f6f2df85c31",
+        "status": "COMMITTED",
+        "rowsAffected": 1,
+        "primaryKey": null,
+        "execution": {
+          "jobId": "job",
+          "projectId": "",
+          "workflowId": "main",
+          "workflowRunId": "d0cdf718-e5d6-4366-8e38-66353d7e406e",
+          "nodeId": "writer",
+          "nodeRunId": "92784132-93a0-4df3-92d3-763959f96b63",
+          "iterationPath": []
+        },
+        "elapsedMs": 93.99999980814755,
+        "error": null
+      },
+      "actualValues": [
+        "7",
+        "text",
+        null
+      ],
+      "violationConfirmed": true
+    }
+  ]
+}

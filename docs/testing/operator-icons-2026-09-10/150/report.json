@@ -1,0 +1,82 @@
+{
+  "scale": 1.5,
+  "platform": "windows",
+  "consumers": [
+    {
+      "type": "_NodeItem",
+      "renderSource": "custom",
+      "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37"
+    },
+    {
+      "type": "_NodeItem",
+      "renderSource": "custom",
+      "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70"
+    },
+    {
+      "type": "_NodeItem",
+      "renderSource": "custom",
+      "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf"
+    },
+    {
+      "type": "QListWidgetItem",
+      "renderSource": "custom",
+      "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37"
+    },
+    {
+      "type": "QListWidgetItem",
+      "renderSource": "custom",
+      "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70"
+    },
+    {
+      "type": "QListWidgetItem",
+      "renderSource": "custom",
+      "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf"
+    },
+    {
+      "type": "QLabel",
+      "renderSource": "custom",
+      "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf"
+    },
+    {
+      "type": "_OperatorCardButton",
+      "renderSource": "custom",
+      "sha256": "1ecbff9850c560ade9f1526e3439dfb6979d1a619f769e41eafadaa0c0537a37"
+    },
+    {
+      "type": "_OperatorCardButton",
+      "renderSource": "custom",
+      "sha256": "989138d077ff17257b7cb96f4db0d5f8e0cac694b04c62f04a2cf0b76a1cdcaf"
+    },
+    {
+      "type": "_OperatorCardButton",
+      "renderSource": "custom",
+      "sha256": "23dd34d1889baed1531108e3c48174d1fed081ec96c80446c51b3ddad5f62e70"
+    }
+  ],
+  "windowSize": [
+    1400,
+    850
+  ],
+  "devicePixelRatio": 1.5,
+  "nodeGeometry": [
+    {
+      "width": 260.0,
+      "height": 130.0,
+      "title": "Canny Edge",
+      "state": "COMPLETED"
+    },
+    {
+      "width": 260.0,
+      "height": 182.0,
+      "title": "Huaray IMV Camera",
+      "state": "RUNNING"
+    },
+    {
+      "width": 260.0,
+      "height": 130.0,
+      "title": "YOLO Inference",
+      "state": "FAILED"
+    }
+  ],
+  "workersStopped": true
+}

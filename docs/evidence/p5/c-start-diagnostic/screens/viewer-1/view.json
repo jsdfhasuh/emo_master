@@ -1,0 +1,8 @@
+{
+  "platform": "windows",
+  "job": null,
+  "steps": [],
+  "designer_imported": false,
+  "error": "AssertionError('<_InactiveRpcError of RPC that terminated with:\\n\\tstatus = StatusCode.DEADLINE_EXCEEDED\\n\\tdetails = \"Deadline Exceeded\"\\n\\tdebug_error_string = \"UNKNOWN:Error received from peer  {grpc_message:\"Deadline Exceeded\", grpc_status:4}\"\\n>')",
+  "closed": false
+}

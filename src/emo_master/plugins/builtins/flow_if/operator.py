@@ -23,11 +23,13 @@ class FlowIfOperator:
             "type": "object",
             "properties": {
                 "mode": {
+                    "title": "条件模式",
                     "type": "string",
                     "enum": ["bool", "equals", "not_equals"],
                     "default": "bool",
                 },
                 "compareValue": {
+                    "title": "比较值",
                     "type": "string",
                     "default": "",
                 },

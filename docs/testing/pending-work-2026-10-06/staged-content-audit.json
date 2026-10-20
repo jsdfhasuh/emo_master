@@ -1,0 +1,13 @@
+{
+  "createdAt": "2026-10-06T22:16:06.630193+08:00",
+  "head": "79c5166089e0f6e4ab6b69ab156f8384d16f9ce5",
+  "originalPathsChecked": 233,
+  "originalWorkingContentsUnchanged": 232,
+  "reviewedDocumentUpdates": 1,
+  "mismatches": [],
+  "gitBlobsMatchExpected": true,
+  "historicalArtifactGitBlobsHashChecked": 122,
+  "rawArtifactMismatches": [],
+  "newEvidenceLogExplicitlyStaged": "docs/testing/pending-work-2026-10-06/focused/raw.log",
+  "originalPlanWorkingCopyIncluded": true
+}

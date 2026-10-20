@@ -1,0 +1,14 @@
+{
+  "baseHead": "3a97f22a6faee442997acc4c0f263acd42d3240c",
+  "candidateTree": "44fe15ec99577fdf1cbede9d36ec2bf7a87e9e93",
+  "paths": {
+    "src/emo_master/apps/designer/controllers/layout_controller.py": "01c524530187e907bf947bc5becfa4dfbbaedd11a6e3bbc768c36631857a851b",
+    "src/emo_master/apps/designer/ui/floating_toolbox.py": "0929d8b2a42dcda55cc8d5447376c61761bfd80ffc70c66d38e24bcebbc9d3ca",
+    "src/emo_master/apps/designer/ui/main_window.py": "5b261b684ca5859dd79047db1c18c092aeccde2fe597203f4b781b70af6d4d8a",
+    "src/emo_master/apps/designer/ui/operator_bubble.py": "26feddc71e5705618d04a76d3206515115665c02357f8a20dc1f767ab1ce3416",
+    "tests/designer/test_floating_toolbox.py": "f0aaaa21a8f5956301089716a1a53b552ae3d49864cf4fbfeebb4e78162e9922",
+    "tests/designer/test_main_window_layout.py": "136133d05d37e18a11ba9a28fb6c6872c0358d74de4924fb23f4c854d1dfb824",
+    "tests/designer/test_sidebar_collapse.py": "c496407680da89d9bf403a8f647f3bd363215342120b998c0fbd7078b911123e",
+    "tests/designer/test_visual_layout.py": "80d91b38b4e9d4585ced6fa2bb084f41da26a75fb4da5124390b098f725d4707"
+  }
+}

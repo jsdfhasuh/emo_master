@@ -1,0 +1,26 @@
+[
+  {
+    "path": "src/emo_master/apps/designer/ui/workflow_interface_dialog.py",
+    "unchangedSincePreviousCapture": false
+  },
+  {
+    "path": "src/emo_master/apps/designer/ui/main_window.py",
+    "unchangedSincePreviousCapture": true
+  },
+  {
+    "path": "src/emo_master/apps/designer/ui/flow_scene.py",
+    "unchangedSincePreviousCapture": true
+  },
+  {
+    "path": "tests/designer/test_workflow_interface_dialog.py",
+    "unchangedSincePreviousCapture": true
+  },
+  {
+    "path": "tests/designer/test_main_window_workflow_tabs.py",
+    "unchangedSincePreviousCapture": true
+  },
+  {
+    "path": "scripts/validate_workflow_interface.py",
+    "unchangedSincePreviousCapture": true
+  }
+]

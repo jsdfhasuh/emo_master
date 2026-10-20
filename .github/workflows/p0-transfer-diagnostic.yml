@@ -1,0 +1,61 @@
+name: P0 transfer diagnostic
+on:
+  push:
+    branches: [agent/diagnostic-p0-transfer-20261020]
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  observe:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      QT_QPA_PLATFORM: offscreen
+      P0_TRANSFER_DIAG_DIR: p0-transfer-evidence
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Verify diagnostic revision and original budgets
+        shell: python
+        run: |
+          import os
+          import sys
+          sys.path.insert(0, os.getcwd())
+          from prototypes.runtime_pages_p0.contracts import BUDGET
+          print('P0_DIAGNOSTIC_GITHUB_SHA=' + os.environ['GITHUB_SHA'], flush=True)
+          assert BUDGET.read_seconds == .5
+          assert BUDGET.client_result_seconds == .55
+          print('P0_DIAGNOSTIC_ORIGINAL_BUDGETS read_seconds=0.5 client_result_seconds=0.55', flush=True)
+      - name: Original P0 test, original deadlines
+        run: python -m pytest -p scripts.p0_transfer_diagnostics.plugin tests/p0/test_continuous.py -q
+      - name: Print bounded diagnostic JSON
+        if: always()
+        shell: python
+        run: |
+          import json
+          import os
+          from pathlib import Path
+          print('P0_DIAGNOSTIC_LOG_SHA=' + os.environ['GITHUB_SHA'], flush=True)
+          files = sorted(Path('p0-transfer-evidence').glob('transfer-*.json'))
+          assert files, 'P0_DIAGNOSTIC_MISSING_JSON'
+          assert len(files) <= 4, 'P0_DIAGNOSTIC_TOO_MANY_FILES'
+          for index, path in enumerate(files):
+              with path.open('rb') as handle:
+                  content = handle.read(1024 * 1024 + 1)
+              assert len(content) <= 1024 * 1024, 'P0_DIAGNOSTIC_JSON_EXCEEDS_1_MIB'
+              document = json.loads(content)
+              assert len(document['rows']) <= 256
+              print('P0_DIAGNOSTIC_JSON_BEGIN ' + str(index), flush=True)
+              print(content.decode('utf-8'), flush=True)
+              print('P0_DIAGNOSTIC_JSON_END ' + str(index), flush=True)
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: p0-transfer-timings
+          path: p0-transfer-evidence/*.json
+          if-no-files-found: error

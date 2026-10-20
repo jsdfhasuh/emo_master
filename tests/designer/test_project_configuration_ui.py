@@ -8,6 +8,7 @@ from emo_master.apps.designer.state.project_store import saveProject
 from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
 from tests.runtime.test_device_runtime import simulatedProject
 from tests.designer.test_device_workspace import waitUntil
+from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 
 
 def setupDialog(ownedDesignerWindow, tmp_path, *, allowRun=False):
@@ -55,7 +56,7 @@ def testRecoveryErrorAllowsExplicitRepairButNeverRun(ownedDesignerWindow, tmp_pa
         dialog.reject()
 
 
-def testCompareDoesNotSaveOrMutateAndSelectionIsExplicit(ownedDesignerWindow, tmp_path, monkeypatch):
+def testCompareDoesNotSaveOrMutateAndSelectionIsExplicit(ownedDesignerWindow, tmp_path, monkeypatch, messages):  # noqa: F811
     window, dialog, calls, path = setupDialog(ownedDesignerWindow, tmp_path)
     try:
         before = window.pageCoordinator.session.payload()
@@ -63,7 +64,7 @@ def testCompareDoesNotSaveOrMutateAndSelectionIsExplicit(ownedDesignerWindow, tm
         assert not calls
         assert dialog.table.rowCount() > 0
         dialog.write()
-        assert not calls
+        assert not calls and len(messages) == 1 and '请选择' in messages[0]['text']
         pathToSelect = "/devices/definitions/camera/defaults/exposureUs"
         for row in range(dialog.table.rowCount()):
             item = dialog.table.item(row, 0)

@@ -42,6 +42,10 @@ class ConfigurationCoordinator:
             raise ConfigurationError("E_CONFIG_NOT_READY", "previous configuration publication or cleanup requires recovery")
         if request["expectedRuntimeInstanceId"] != self.runtimeInstanceId:
             raise ConfigurationError("E_CONFIG_INSTANCE", "Runtime restarted; compare again")
+        if request.get('operation') == 'initialize':
+            if self.current is not None:
+                raise ConfigurationError('E_CONFIG_ACTIVE', 'Runtime already has an online project; compare before writing')
+            return
         if self.current is None or request["expectedRevision"] != self.current["documentRevision"]:
             raise ConfigurationError("E_CONFIG_CONFLICT", "online revision changed; compare again")
 
@@ -89,12 +93,14 @@ class ConfigurationCoordinator:
                 raise ConfigurationError("E_CONFIG_WRITER_BUSY", "another configuration write is pending")
             self._retireRequests()
             if len(self.requests) >= REQUEST_WINDOW:
+                if self.current is None:
+                    raise ConfigurationError('E_CONFIG_CAPACITY', 'initial request window is full; no requests were forgotten')
                 # Failures at the current revision cannot be forgotten until
                 # their original requests have a durable stale-revision fence.
                 self.current = self.store.advanceRequestFence(self.current["documentRevision"])
                 self._retireRequests()
                 raise ConfigurationError("E_CONFIG_CONFLICT", "request window rotated; compare the new document revision before writing")
-            candidate = self._candidate(request)
+            candidate = request['localPayload'] if request.get('operation') == 'initialize' else self._candidate(request)
             entry = dict(fingerprint=fingerprint, expectedRevision=request["expectedRevision"], cancelled=Event(), status=dict(
                 state="VALIDATING", requestId=requestId, runtimeInstanceId=self.runtimeInstanceId))
             self.requests[requestId] = entry
@@ -105,6 +111,8 @@ class ConfigurationCoordinator:
             return deepcopy(entry["status"])
 
     def _retireRequests(self):
+        if self.current is None:
+            return
         for key, entry in list(self.requests.items()):
             if len(self.requests) < REQUEST_WINDOW:
                 break
@@ -174,11 +182,13 @@ class ConfigurationCoordinator:
     def _write(self, request, candidate, entry):
         prepared = None
         transition = None
+        initial = request.get('operation') == 'initialize'
         try:
             if self.transition is not None and request.get("replacementPolicy", "reject") != "reject":
                 entry["status"]["state"] = "WAITING"
                 transition = self.transition(candidate, entry["cancelled"], request["replacementPolicy"])
-            prepared = self.prepare(candidate, entry["cancelled"])
+            prepared = (self.prepare(candidate, entry['cancelled'], sourcePath=request['sourcePath'])
+                        if initial else self.prepare(candidate, entry["cancelled"]))
             with self.lock:
                 if entry["cancelled"].is_set():
                     entry["status"].update(state="CANCELLED", code="E_CONFIG_CANCELLED")
@@ -191,10 +201,16 @@ class ConfigurationCoordinator:
                 if self.beforeCommit is not None:
                     self.beforeCommit(candidate)
                 sourcePath = getattr(prepared, "sourcePath", "") or self.current["sourcePath"]
-                receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
-                                            entry["fingerprint"], self.runtimeInstanceId, sourcePath=sourcePath)
-                self.current = dict(payload=candidate, sourcePath=sourcePath,
-                    documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
+                if initial:
+                    receipt = dict(state='COMMITTED', requestId=request['requestId'], runtimeInstanceId=self.runtimeInstanceId,
+                                   documentRevision=1, executionRevision=1, message='首次写入成功；未启动任务')
+                    self.current = self.store.initialize(candidate, sourcePath,
+                        receipt=receipt, fingerprint=entry['fingerprint'])
+                else:
+                    receipt = self.store.commit(request["expectedRevision"], candidate, request["requestId"],
+                                                entry["fingerprint"], self.runtimeInstanceId, sourcePath=sourcePath)
+                    self.current = dict(payload=candidate, sourcePath=sourcePath,
+                        documentRevision=receipt["documentRevision"], executionRevision=receipt["executionRevision"])
                 entry["status"] = receipt
                 # Publication must only install prepared software state. An unexpected
                 # publication failure cannot erase the SQLite commit or invite a retry.
@@ -203,10 +219,15 @@ class ConfigurationCoordinator:
                 except Exception as error:
                     self.publicationError = str(error)
                     entry["status"] = dict(receipt, publicationError=str(error))
+                    self.store.recordTransition(entry['status'])
         except Exception as error:
             with self.lock:
                 entry["status"].update(state="CANCELLED" if entry["cancelled"].is_set() else "FAILED",
                     code=getattr(error, "code", "E_CONFIG_VALIDATION"), message=str(error))
+                from dataclasses import asdict
+                from emo_master.core.workflow.errors import WorkflowCompileError
+                if isinstance(error, WorkflowCompileError):
+                    entry['status']['issues'] = [asdict(issue) for issue in error.issues]
         finally:
             if prepared is not None and self.discard is not None:
                 try:

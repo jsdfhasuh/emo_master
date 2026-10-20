@@ -47,7 +47,7 @@ def testMainWindowUsesExpectedToolbarGroups() -> None:
 
     getMenuBarGroups = getattr(window, "getMenuBarGroups", None)
     assert callable(getMenuBarGroups)
-    assert getMenuBarGroups() == ["文件", "运行", "编辑", "视图"]
+    assert getMenuBarGroups() == ["文件", "运行", "编辑", "视图", "Runtime", "设备管理"]
 
 
 def testMainWindowUsesBalancedPanelWidths() -> None:

@@ -2032,17 +2032,14 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 self.mainToolbar.addWidget(button)
                 button.clicked.connect(callback)
                 continue
-            action = QAction(icon(iconName, "#ffffff" if label == "开始运行" else "#475569"), label, self)
+            action = QAction(icon(iconName, "#475569"), label, self)
             action.setToolTip(label)
             action.triggered.connect(lambda checked=False, command=callback, action=action:
                                      command() if action.isEnabled() else None)
-            self.mainToolbar.addAction(action)
-            tool = self.mainToolbar.widgetForAction(action)
-            tool.setToolButtonStyle(Qt.ToolButtonTextBesideIcon if label in {
-                "加载项目", "保存项目", "开始运行", "停止运行"} else Qt.ToolButtonIconOnly)
-            tool.setObjectName("primaryButton" if label == "开始运行" else "dangerButton" if label == "停止运行" else "")
             self._toolbarActions[label] = action
-            setattr(self, attribute, tool)
+            # Native command handles are menu-owned QActions, not hidden copies
+            # of removed toolbar widgets. The no-Qt adapter keeps its buttons.
+            setattr(self, attribute, action)
             button.deleteLater()
 
     def _buildMainMenuBar(self) -> None:
@@ -2068,10 +2065,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         runMenu = addMenu("运行")
         self._addMenuAction(runMenu, "开始运行", self.startJob)
         self._addMenuAction(runMenu, "停止运行", self.stopJob)
-        self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
-        self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
-        self._addMenuAction(runMenu, "通信服务…", self.openCommunicationPanel)
         self._addMenuAction(runMenu, "停止全部", self.stopAllJobs)
+        if _nativeQt:
+            runMenu.addSeparator()
+        self._addMenuAction(runMenu, "运行目标与并发…", self.openRunTargetsDialog)
+        self._addMenuAction(runMenu, "全局变量…", self.openGlobalCountersDialog)
+        self._addMenuAction(runMenu, "通信服务…", self.openCommunicationPanel)
         self._addMenuAction(runMenu, "打开日志", self.openLogDialog)
 
         editMenu = addMenu("编辑")
@@ -3601,19 +3600,23 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.currentProjectDir is None:
             return True
         if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion == "2.6":
+            # First publication uses the same explicit draft/resource path as
+            # Runtime > Write, never Save-to-disk followed by legacy LoadProject.
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+            from emo_master.core.project.configuration import projectChanges
+            if not self.pageCoordinator._canSync():
+                return False
             try:
-                self.runtimeClient.getOnlineProjectSnapshot("")
+                online = self.runtimeClient.getOnlineProjectSnapshot('')
             except RuntimeClientError as error:
-                if error.code != "E_CONFIG_NOT_LOADED":
-                    self.appendRuntimeLog("ERROR", str(error))
+                if error.code != 'E_CONFIG_NOT_LOADED':
+                    self.appendRuntimeLog('ERROR', str(error))
                     return False
             else:
-                if not self.pageCoordinator._canSync():
-                    return False
-                from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
-                dialog = ProjectConfigurationDialog(self.pageCoordinator, self, allowRun=True)
-                return dialog.exec_() == dialog.Accepted
+                if not online.get('recoveryError') and not projectChanges(online['payload'], self.pageCoordinator.session.payload()):
+                    return True
+            from PySide2.QtWidgets import QDialog
+            return self.pageCoordinator.configureRuntime(allowRun=True) == QDialog.Accepted
         target = self.projectController.currentProjectFile or self.currentProjectDir
         if not self.saveProjectToDirectory(str(target)):
             return False

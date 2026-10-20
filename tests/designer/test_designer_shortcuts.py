@@ -288,8 +288,9 @@ def testPageFlowOnlyKeysAndPreviewKeepTaskOwnership(canvas, monkeypatch):  # noq
     editor, _key = makePage(window, monkeypatch)
     window.loadedProjectPath = 'test-project'
     before = window.pageCoordinator.session.payload()
-    for key, modifiers in [(Qt.Key_F5, Qt.NoModifier), (Qt.Key_F6, Qt.NoModifier),
-                           (Qt.Key_F2, Qt.NoModifier), (Qt.Key_Return, Qt.ControlModifier),
+    # Run/stop are now deliberately available in both workspaces. Their page
+    # shortcut ownership is exercised separately, not treated as flow-only.
+    for key, modifiers in [(Qt.Key_F2, Qt.NoModifier), (Qt.Key_Return, Qt.ControlModifier),
                            (Qt.Key_L, Qt.ControlModifier)]:
         press(window, key, modifiers)
     assert window.pageCoordinator.session.payload() == before

@@ -12,6 +12,18 @@ message LoadProjectReply {
   string message = 3;
 }
 
+// Explicit first publication of an in-memory draft. resource_root is a
+// Runtime-visible directory, not an uploaded Designer filesystem path.
+message InitialProjectConfigurationRequest {
+  string request_id = 1;
+  string local_payload_json = 2;
+  string resource_root = 3;
+  bool validate_only = 4;
+  string expected_runtime_instance_id = 5;
+  // Source identity only: the in-memory payload is authoritative; never save this file.
+  string project_path = 6;
+}
+
 message ValidateProjectRequest {
   string project_id = 1;
 }
@@ -204,6 +216,7 @@ message GetDeviceStatesReply {
   string project_id = 3;
   string states_json = 4;
   string message = 5;
+  string code = 6;
 }
 
 message OperatorInfo {
@@ -556,6 +569,7 @@ message GlobalVariablesReply {
 
 service RuntimeService {
   rpc GetOnlineProjectSnapshot(OnlineProjectRequest) returns (ProjectConfigurationReply);
+  rpc InitializeProjectConfiguration(InitialProjectConfigurationRequest) returns (ProjectConfigurationReply);
   rpc GetOnlineGraphSnapshot(OnlineGraphRequest) returns (ProjectConfigurationReply);
   rpc ValidateProjectWrite(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);
   rpc WriteProjectConfiguration(ProjectConfigurationWriteRequest) returns (ProjectConfigurationReply);

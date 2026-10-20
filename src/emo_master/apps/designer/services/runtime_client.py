@@ -21,6 +21,20 @@ from emo_master.core.contracts.port_types import (
 
 runtime_pb2: Any = _runtime_pb2
 
+
+def runtimeConnectionDescription(client):
+    """Describe the existing transport without provisioning any display endpoint."""
+    from emo_master.apps.runtime.grpc_server.generated.runtime_pb2_grpc import RuntimeServiceServicer, RuntimeServiceStub
+    service = getattr(client, 'runtimeService', None)
+    if getattr(client, '_closed', False) or service is None:
+        return dict(kind='unknown', label='未连接 / 连接类型未知', target='')
+    if getattr(client, '_ownedRuntimeService', None) is not None or isinstance(service, RuntimeServiceServicer):
+        return dict(kind='embedded', label='本机内嵌 Runtime（随程序启动）', target='')
+    if getattr(client, '_ownedChannel', None) is not None or isinstance(service, RuntimeServiceStub):
+        target = getattr(client, '_runtimeTarget', '')
+        return dict(kind='grpc', label='独立 Runtime（gRPC）' + (' · ' + target if target else ' · 地址不可用'), target=target)
+    return dict(kind='unknown', label='连接类型未知', target='')
+
 try:
     import grpc
 except Exception:  # pragma: no cover
@@ -99,6 +113,7 @@ class RuntimeClientError(RuntimeError):
         self.code = code
         self.sqliteReply: Any = None
         self.resourceResult: dict[str, Any] | None = None
+        self.diagnostics: dict[str, Any] = {}
         super().__init__(message)
 
 
@@ -433,12 +448,30 @@ class RuntimeClient:
     def _projectConfigurationCall(self, method, request):
         reply = self._call(method, request)
         if not reply.ok:
-            raise RuntimeClientError(reply.code, reply.message)
+            error = RuntimeClientError(reply.code, reply.message)
+            if reply.result_json:
+                error.diagnostics = json.loads(reply.result_json)
+            raise error
         return json.loads(reply.result_json)
 
     def getOnlineProjectSnapshot(self, projectId=""):
         return self._projectConfigurationCall("GetOnlineProjectSnapshot",
             runtime_pb2.OnlineProjectRequest(project_id=projectId))
+
+    def initializeProjectConfiguration(self, payload, resourceRoot, requestId, *, validate=False, runtimeInstanceId='',
+                                       projectPath=''):
+        # This entry passes a local filesystem root, not an upload protocol.
+        # Remote installation needs its own import path; never pretend that a
+        # Designer path is available on another machine.
+        from urllib.parse import urlsplit
+        target = self._runtimeTarget
+        if target and urlsplit('//' + target).hostname not in {'localhost', '127.0.0.1', '::1'}:
+            raise RuntimeClientError('E_CONFIG_INITIAL_REMOTE',
+                '远程 Runtime 尚无在线工程；请先在执行端导入工程，再比较、上传及写入。不会发送 Designer 本地路径。')
+        return self._projectConfigurationCall('InitializeProjectConfiguration',
+            runtime_pb2.InitialProjectConfigurationRequest(request_id=requestId,
+                local_payload_json=json.dumps(payload, ensure_ascii=True), resource_root=str(resourceRoot or ''),
+                validate_only=validate, expected_runtime_instance_id=runtimeInstanceId, project_path=str(projectPath or '')))
 
     def getOnlineGraphSnapshot(self, projectId="", documentRevision=0, jobId=""):
         return self._projectConfigurationCall("GetOnlineGraphSnapshot", runtime_pb2.OnlineGraphRequest(
@@ -632,7 +665,7 @@ class RuntimeClient:
     def getDeviceStates(self, projectId):
         reply = self._call("GetDeviceStates", runtime_pb2.GetDeviceStatesRequest(project_id=projectId))
         if not reply.ok:
-            raise ValueError(reply.message)
+            raise RuntimeClientError(getattr(reply, 'code', '') or 'E_DEVICE_STATE', reply.message)
         return reply.runtime_instance_id, json.loads(reply.states_json)
 
     def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):

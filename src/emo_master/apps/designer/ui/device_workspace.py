@@ -9,7 +9,7 @@ from PySide2.QtWidgets import (
     QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QLabel,
     QLineEdit, QCheckBox, QFormLayout, QTabWidget, QScrollArea, QToolButton,
     QInputDialog, QMessageBox, QDialog, QDialogButtonBox, QTextBrowser, QFileDialog,
-    QApplication, QFrame, QGridLayout,
+    QApplication, QFrame, QHBoxLayout, QMenu, QAction,
 )
 
 from emo_master.apps.designer.state.device_catalog import DeviceCatalogEditor
@@ -36,6 +36,7 @@ class DeviceWorkspace(QDialog):
         self.loading = False
         self.reader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="device-metadata")
         self.pending = None
+        self._networkOpenRequest = None
         self.pendingKind = "metadata"
         self.pendingScope = None
         self.states = {}
@@ -43,6 +44,7 @@ class DeviceWorkspace(QDialog):
         self.stateScope = None
         self.stateReadAt = 0.0
         self.stateError = ''
+        self.stateNotice = ''
         self.discoveredInfo = {}
         self.stateTimer = QTimer(self)
         self.stateTimer.setInterval(2000)
@@ -61,31 +63,28 @@ class DeviceWorkspace(QDialog):
         layout.setContentsMargins(0, 0, 0, 0)
         self.contentScroll.setWidget(content)
         outerLayout.addWidget(self.contentScroll, 1)
-        commands = QGridLayout()
-        commands.setSpacing(2)
-        deviceCommands = QGridLayout()
-        deviceCommands.setSpacing(2)
+        commands = QHBoxLayout()
+        deviceCommands = QHBoxLayout()
+        propertyCommands = QHBoxLayout()
+        self.listMore = QMenu(self)
+        self.diagnosticMenu = QMenu(self)
+        self.deviceMore = QMenu(self)
         self.buttons = {}
         shortLabels = dict(new='新建设备', delete='删除设备', apply='应用到草稿', revert='放弃当前修改',
-            save='保存工程', import_='导入设备', export='导出设备', refresh='刷新列表', state='读取状态',
-            network='设备发现', compare='在线对比', bindings='资源与绑定', migration='旧节点迁移',
+            import_='导入设备', export='导出设备', refresh='刷新',
+            network='设备发现', migration='旧节点迁移',
             diagnostics='设备诊断', test='测试连接', connect='连接设备', disconnect='断开连接',
             maintenance='暂停设备', recover='恢复会话')
         shortLabels['import'] = shortLabels.pop('import_')
-        commandCount = deviceCommandCount = 0
         for key, title, glyph, callback in (
             ("new", "新建设备", "plus", self.createDevice),
             ("delete", "删除设备", "trash-2", self.deleteDevice),
             ("apply", "应用到工程草稿", "save", self.apply),
             ("revert", "放弃属性修改", "x", self.revert),
-            ("save", "保存工程", "save", self.saveProject),
             ("import", "导入设备配置包", "upload", self.importDevices),
             ("export", "导出所选设备配置包", "download", self.exportDevices),
             ("refresh", "刷新设备与在线状态", "refresh-cw", self.loadMetadata),
-            ("state", "读取在线设备状态", "logs", self.readState),
             ("network", "Runtime 设备发现 / 实物 IP", "search", self.deviceNetwork),
-            ("compare", "与 Runtime 比较", "git-compare", self.compareOnline),
-            ("bindings", "工程资源 / 现场绑定", "link", self.resourceBindings),
             ("migration", "旧设备节点迁移预览", "list", self.migrationPreview),
             ("diagnostics", "设备诊断", "sliders-horizontal", self.diagnostics),
             ("test", "测试当前连接草稿", "shield-check", self.testConnection),
@@ -94,21 +93,48 @@ class DeviceWorkspace(QDialog):
             ("maintenance", "暂停所选设备并取消其请求", "pause", lambda: self.control("maintenance")),
             ("recover", "恢复设备会话", "refresh-cw", self.recover),
         ):
-            button = QToolButton()
-            button.setMinimumHeight(32)
-            button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
-            button.setText(shortLabels[key])
-            button.setIcon(icon(glyph))
-            button.setToolTip(title)
-            button.setAccessibleName(title)
-            button.clicked.connect(callback)
-            self.buttons[key] = button
-            if key in {'network', 'diagnostics', 'test', 'connect', 'disconnect', 'maintenance', 'recover'}:
-                deviceCommands.addWidget(button, deviceCommandCount // 2, deviceCommandCount % 2)
-                deviceCommandCount += 1
+            menu = (self.listMore if key in {'delete', 'migration'} else
+                    self.diagnosticMenu if key == 'diagnostics' else
+                    self.deviceMore if key in {'network', 'maintenance', 'recover'} else None)
+            if menu is not None:
+                button = QAction(icon(glyph), shortLabels[key], self)
+                button.triggered.connect(lambda _checked=False, command=callback, action=button:
+                                         command() if action.isEnabled() else None)
+                menu.addAction(button)
             else:
-                commands.addWidget(button, commandCount // 4, commandCount % 4)
-                commandCount += 1
+                button = QToolButton()
+                button.setMinimumHeight(32)
+                button.setToolButtonStyle(Qt.ToolButtonTextBesideIcon)
+                button.setText(shortLabels[key])
+                button.setIcon(icon(glyph))
+                button.setAccessibleName(title)
+                button.clicked.connect(callback)
+                if key in {'apply', 'revert'}:
+                    propertyCommands.addWidget(button)
+                elif key in {'test', 'connect', 'disconnect'}:
+                    deviceCommands.addWidget(button)
+                elif key != 'refresh':
+                    commands.addWidget(button)
+            button.setToolTip(title)
+            self.buttons[key] = button
+        self.commandTitles = {key: command.toolTip() for key, command in self.buttons.items()}
+        self.readParametersButton = self.diagnosticMenu.addAction('读取实际参数')
+        self.readParametersButton.triggered.connect(lambda _checked=False:
+            self.diagnostics(readParameters=True) if self.readParametersButton.isEnabled() else None)
+        for row, menu, title in ((commands, self.listMore, '更多'),
+                                  (deviceCommands, self.diagnosticMenu, '诊断'),
+                                  (deviceCommands, self.deviceMore, '更多')):
+            tool = QToolButton()
+            tool.setText(title)
+            tool.setAccessibleName(title)
+            tool.setMinimumHeight(32)
+            tool.setMenu(menu)
+            tool.setPopupMode(QToolButton.InstantPopup)
+            row.addWidget(tool)
+        commands.addStretch(1)
+        commands.addWidget(self.buttons['refresh'])
+        deviceCommands.addStretch(1)
+        propertyCommands.addStretch(1)
         self.status = QLabel("未读取 Runtime 设备类型")
         self.status.setWordWrap(True)
         layout.addLayout(commands)
@@ -119,7 +145,6 @@ class DeviceWorkspace(QDialog):
         layout.addWidget(self.search)
         self.difference = QLabel()
         self.difference.setWordWrap(True)
-        self.difference.linkActivated.connect(lambda _link: self.compareOnline())
         layout.addWidget(self.difference)
         self.splitter = QSplitter()
         layout.addWidget(self.splitter, 1)
@@ -204,23 +229,23 @@ class DeviceWorkspace(QDialog):
         self.infoTabs.addTab(self.logs, "诊断日志")
         self.infoTabs.currentChanged.connect(lambda _index: self.showDiagnostics())
         self.detailSplitter = QSplitter(Qt.Vertical)
-        self.detailSplitter.addWidget(self.tabs)
+        propertyArea = QWidget()
+        propertyLayout = QVBoxLayout(propertyArea)
+        propertyLayout.setContentsMargins(0, 0, 0, 0)
+        propertyLayout.addWidget(self.tabs)
+        propertyLayout.addLayout(propertyCommands)
+        self.detailSplitter.addWidget(propertyArea)
         self.detailSplitter.addWidget(self.infoTabs)
         self.detailSplitter.setSizes([260, 180])
         detailLayout.addWidget(self.detailSplitter)
         self.splitter.addWidget(self.details)
         self.splitter.setSizes([180, 430, 400])
         buttons = QDialogButtonBox(QDialogButtonBox.Close)
-        for title, callback in [('读取实际参数', lambda: self.diagnostics(readParameters=True)),
-                                ('保存工程', self.saveProject), ('写入 Runtime', self.compareOnline)]:
-            button = buttons.addButton(title, QDialogButtonBox.ActionRole)
-            button.clicked.connect(callback)
-            if title == '读取实际参数':
-                self.readParametersButton = button
         self.closeButton = buttons.button(QDialogButtonBox.Close)
         self.closeButton.setText("保留草稿并关闭")
-        self.draftHelp = QLabel("修改先进入工程草稿；保存写入本地文件，在线配置需单独写入 Runtime。"
-            "切换设备或关闭会保留有效修改；放弃当前修改仅撤回尚未应用的属性。")
+        self.draftHelp = QLabel('设备属性保留在工程草稿中')
+        self.draftHelp.setToolTip('切换设备或关闭会保留有效修改；放弃当前修改仅撤回尚未应用的属性。'
+                                 '请回主界面保存工程，或从 Runtime 菜单显式写入。')
         self.draftHelp.setWordWrap(True)
         outerLayout.addWidget(self.draftHelp)
         buttons.rejected.connect(self.reject)
@@ -248,15 +273,14 @@ class DeviceWorkspace(QDialog):
         except ValueError as error:
             self.status.setText(str(error))
             return
+        # Keep the reusable metadata reader, but abandon this opening intent.
+        # Reopening the workspace must not revive a response from before close.
+        self._networkOpenRequest = None
         super().done(result)
         self.c.chrome.update()
 
     def catalog(self):
         return DeviceCatalogEditor(self.c.session, self.deviceTypes, self.requirements)
-
-    def saveProject(self):
-        if self.c._canSync():
-            self.c.window.saveProjectAction()
 
     def exportDevices(self):
         if not self.selectedId or not self.c._canSync():
@@ -308,7 +332,7 @@ class DeviceWorkspace(QDialog):
             self.states, self.stateRuntimeId, self.discoveredInfo = {}, '', {}
             self.stateError = 'Runtime 连接已变化，等待刷新'
         state = self.states.get(self.selectedId) or {}
-        freshness = ('读取失败：' + self.stateError if self.stateError else
+        freshness = (self.stateNotice or '读取失败：' + self.stateError if self.stateError or self.stateNotice else
                      f'更新于 {max(0, int(monotonic() - self.stateReadAt))} 秒前' if self.stateReadAt else '未获取在线状态')
         values = [('连接', {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(state.get('connectionState'), '未知')),
                   ('执行状态', {'IDLE': '空闲', 'BUSY': '执行中', 'QUARANTINED': '已隔离', 'CLOSED': '已关闭'}.get(state.get('state'), '未知')),
@@ -341,8 +365,8 @@ class DeviceWorkspace(QDialog):
         self.c.window._storeRuntimeLogEntry(entry, entry.displayLine())
 
     def deviceNetwork(self):
-        if not self.selectedId or not self.stateRuntimeId or self.pending is not None:
-            self.status.setText('请选择设备并先读取在线状态')
+        if not self.selectedId or self.pending is not None:
+            self.status.setText('请选择设备并等待当前请求完成')
             return
         try:
             self.commitPending()
@@ -353,10 +377,25 @@ class DeviceWorkspace(QDialog):
         if definition.deviceTypeId != 'device.camera.huaray_imv':
             self.status.setText('当前网络发现入口仅支持华睿 IMV')
             return
+        if not self.stateRuntimeId:
+            # Discovery/adoption is also a legitimate offline draft operation.
+            # Obtain the Runtime identity without loading this project; the
+            # discovery-only dialog never exposes a ForceIP control.
+            self.pendingKind, self.pendingScope, self.pendingDevice = 'networkInfo', self._scope(), self.selectedId
+            self.pending = self.reader.submit(self.c.window.runtimeClient.deviceNetworkCommand, '', '', 'info')
+            self._networkOpenRequest = self.pending
+            self.timer.start(40)
+            self._updateOnlineActions()
+            self.status.setText('正在读取 Runtime 发现能力；尚未发现或修改设备')
+            return
+        self._openDeviceNetwork(self._scope()[-1], self.stateRuntimeId)
+
+    def _openDeviceNetwork(self, projectId, runtimeId, *, discoveryOnly=False):
         from .device_network import DeviceNetworkDialog
+        definition = self.c.session.document().devices.definitions[self.selectedId]
         before, scope = definition.model_dump(), self._scope()
-        dialog = DeviceNetworkDialog(self.c.window.runtimeClient, scope[-1], self.stateRuntimeId,
-            self.selectedId, self.states.get(self.selectedId, {}), self)
+        dialog = DeviceNetworkDialog(self.c.window.runtimeClient, projectId, runtimeId,
+            self.selectedId, self.states.get(self.selectedId, {}), self, discoveryOnly=discoveryOnly)
         dialog.exec_()
         if dialog.discovery and scope == self._scope():
             self.discoveredInfo = {row['cameraKey']: row for row in dialog.discovery['devices']}
@@ -473,22 +512,6 @@ class DeviceWorkspace(QDialog):
             self.stateRuntimeId, self.selectedId, deepcopy(state), action, confirmed=True)
         self.timer.start(40)
 
-    def compareOnline(self):
-        if not self.c._canSync():
-            return
-        from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
-        dialog = ProjectConfigurationDialog(self.c, self)
-        dialog.exec_()
-
-    def resourceBindings(self):
-        if not self.c._canSync():
-            return
-        from emo_master.apps.designer.ui.resource_bindings import ResourceBindingsDialog
-        operators = {item["operatorId"]: item for item in self.c.window.operatorCatalogController.getCatalog()}
-        dialog = ResourceBindingsDialog(self.c, self.deviceTypes, operators, self)
-        dialog.exec_()
-        self.refresh()
-
     def migrationPreview(self):
         if not self.c._canSync():
             return
@@ -524,6 +547,7 @@ class DeviceWorkspace(QDialog):
             self.status.setText("Runtime 不支持设备状态读取")
             return
         self.pendingKind = "state"
+        self.buttons['refresh'].setEnabled(False)
         self.backgroundState = background
         self.pendingScope = self._scope()
         self.pending = self.reader.submit(reader, self.c.session.document().project.projectId)
@@ -535,6 +559,7 @@ class DeviceWorkspace(QDialog):
         self.timer.stop()
         future, self.pending = self.pending, None
         self.buttons["refresh"].setEnabled(True)
+        self._updateOnlineActions()
         try:
             if self.pendingScope != self._scope():
                 raise ValueError("Runtime 连接已变化，请重新读取")
@@ -542,12 +567,25 @@ class DeviceWorkspace(QDialog):
                 future.result()
                 self.status.setText('连接测试通过；工程草稿和在线配置未改变，原有连接保持不变')
                 return
+            if self.pendingKind == 'networkInfo':
+                if self._networkOpenRequest is not future:
+                    return
+                self._networkOpenRequest = None
+                info = future.result()
+                if self.pendingDevice != self.selectedId:
+                    self.status.setText('已切换设备；请重新打开设备发现')
+                    return
+                if info.get('deviceSetupVersion', 0) < 1:
+                    raise ValueError('Runtime 不支持离线设备发现，请升级 Runtime')
+                self._openDeviceNetwork(info.get('projectId', ''), info['runtimeInstanceId'], discoveryOnly=True)
+                return
             if self.pendingKind in {"state", "recover", "control"}:
                 runtimeId, self.states = future.result()
                 recoveredStateError = bool(self.stateError and
                     self.status.text() == "设备信息读取失败：" + self.stateError)
                 self.stateRuntimeId = runtimeId
                 self.stateScope, self.stateReadAt, self.stateError = self._scope(), monotonic(), ''
+                self.stateNotice = ''
                 self._showStates()
                 if self.pendingKind != 'state' or not getattr(self, 'backgroundState', False) or recoveredStateError:
                     self.status.setText("会话已恢复；未连接设备、未重发读写" if self.pendingKind == "recover"
@@ -567,12 +605,18 @@ class DeviceWorkspace(QDialog):
             if callable(getattr(self.c.window.runtimeClient, 'getDeviceStates', None)):
                 self.readState()
         except Exception as error:
+            notice = ''
             if self.pendingKind in {"state", "recover", "control"}:
                 self.states = {}
                 self.stateRuntimeId = ""
-                self.stateError = str(error)
+                self.stateNotice = ('当前工程未下发；请从主界面 Runtime 菜单写入'
+                    if getattr(error, 'code', '') == 'E_CONFIG_NOT_LOADED' else
+                    'Runtime 当前加载的是其他工程；本地草稿仍可编辑'
+                    if getattr(error, 'code', '') in {'E_CONFIG_PROJECT', 'E_PROJECT_NOT_LOADED'} else '')
+                self.stateError = '' if self.stateNotice else str(error)
                 self._showStates()
-            self.status.setText("设备信息读取失败：" + str(error))
+                notice = self.stateNotice
+            self.status.setText(notice or "设备信息读取失败：" + str(error))
 
     def _showStates(self):
         from emo_master.core.project.snapshots import revisionOf
@@ -585,7 +629,7 @@ class DeviceWorkspace(QDialog):
             state = self.states.get(key)
             item = self.table.item(row, 3)
             if state is None:
-                item.setText("未读取在线状态")
+                item.setText(self.stateNotice.split('；', 1)[0] if self.stateNotice else '未读取在线状态')
                 item.setToolTip("")
                 for column in (5, 6):
                     self.table.item(row, column).setText("未获取")
@@ -618,9 +662,27 @@ class DeviceWorkspace(QDialog):
             row = next((r for r in range(self.table.rowCount()) if self.table.item(r, 0).data(Qt.UserRole) == key), None)
             if row is not None:
                 item.setText(0, definitions[key]['name'] + ' · ' + self.table.item(row, 3).text())
-        self.difference.setText('设备工程与在线配置有差异 · <a href="compare">查看对比</a>' if different
-            else ('设备状态已读取 · <a href="compare">比较完整工程</a>' if self.stateRuntimeId else '未获取在线状态'))
+        self.difference.setText('设备草稿与在线配置有差异' if different
+            else ('设备状态已读取' if self.stateRuntimeId else self.stateNotice or '未获取在线状态'))
+        self._updateOnlineActions()
         self.showDiagnostics()
+
+    def _updateOnlineActions(self):
+        definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})
+        declaration = self.deviceTypes.get(definition.get('deviceTypeId'))
+        capabilities = set(declaration.capabilities) if declaration else set()
+        state = self.states.get(self.selectedId)
+        online = bool(state and self.stateRuntimeId and self.pending is None)
+        connected = bool(state and state.get('connectionState') == 'CONNECTED')
+        self.buttons['connect'].setVisible(not connected)
+        self.buttons['disconnect'].setVisible(connected)
+        for key, capability in [('connect', 'connect'), ('disconnect', 'disconnect'),
+                                 ('maintenance', None), ('recover', None)]:
+            self.buttons[key].setEnabled(online and bool(capabilities)
+                and (capability is None or capability in capabilities))
+        self.buttons['network'].setEnabled(self.pending is None and 'discover' in capabilities
+            and definition.get('deviceTypeId') == 'device.camera.huaray_imv'
+            and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)))
 
     def refresh(self):
         self.loading = True
@@ -767,9 +829,11 @@ class DeviceWorkspace(QDialog):
             network=bool(declaration and declaration.deviceTypeId == 'device.camera.huaray_imv' and 'discover' in capabilities))
         for key, available in supported.items():
             self.buttons[key].setEnabled(available)
-            self.buttons[key].setToolTip(self.buttons[key].accessibleName() + ('' if available else '（所选类型不支持或 Runtime 不提供）'))
+            self.buttons[key].setToolTip(self.commandTitles[key] + ('' if available else '（所选类型不支持或 Runtime 不提供）'))
         self.readParametersButton.setEnabled(bool(declaration and declaration.deviceTypeId == 'device.camera.huaray_imv' and 'capture' in capabilities))
         self.detailTitle.setText(self.original['name'] if self.original else '未选择设备')
+        self.detailSplitter.setVisible(self.original is not None)
+        self._updateOnlineActions()
         self.typeInfo.setText(f'{declaration.displayName} · {declaration.deviceTypeId} · 驱动 {declaration.version}' if declaration else '')
         for key in ("apply", "revert"):
             self.buttons[key].setEnabled(bool(declaration))

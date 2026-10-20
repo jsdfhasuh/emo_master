@@ -4,7 +4,7 @@ from copy import deepcopy
 from pathlib import Path
 
 from PySide2.QtCore import QSize, Qt
-from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame, QWidget, QVBoxLayout, QTabBar
+from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame
 
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
 
@@ -24,6 +24,7 @@ class PageCoordinator:
         self.editor = None
         self.devices = None
         self.monitor = None
+        self.onlineSummary = '未读取在线状态'
         self.closeApproved = None
         from .preview import PreviewController
         self.preview = PreviewController(self)
@@ -39,19 +40,7 @@ class PageCoordinator:
         flowScroll.setFrameShape(QFrame.NoFrame)
         flowScroll.setWidgetResizable(True)
         flowScroll.setWidget(flowWidget)
-        flowArea = QWidget()
-        flowLayout = QVBoxLayout(flowArea)
-        flowLayout.setContentsMargins(0, 0, 0, 0)
-        flowLayout.setSpacing(0)
-        self.flowModes = QTabBar()
-        self.flowModes.addTab('编辑工程')
-        self.flowModes.addTab('在线监视')
-        flowLayout.addWidget(self.flowModes)
-        self.flowStack = QStackedWidget()
-        self.flowStack.addWidget(flowScroll)
-        flowLayout.addWidget(self.flowStack, 1)
-        self.flowModes.currentChanged.connect(self.changeFlowMode)
-        self.stack.addWidget(flowArea)
+        self.stack.addWidget(flowScroll)
         window.setCentralWidget(self.stack)
         window.projectController.editCoordinator = self
         window.flowScene.editCompleted = self.sync
@@ -111,39 +100,52 @@ class PageCoordinator:
         return self.devices is not None and self.devices.isVisible()
 
     def flowActive(self):
-        return not self.pageActive() and self.flowStack.currentIndex() == 0
-
-    def changeFlowMode(self, index):
-        if index == 1:
-            if not self._canSync():
-                self.flowModes.setCurrentIndex(0)
-                return
-            if self.monitor is None:
-                from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
-                self.monitor = OnlineGraphDialog(self.window.runtimeClient, '', self.flowStack)
-                self.monitor.setWindowFlags(Qt.Widget)
-                self.flowStack.addWidget(self.monitor)
-            self.flowStack.setCurrentWidget(self.monitor)
-        else:
-            self.flowStack.setCurrentIndex(0)
-        self.chrome.update()
+        return not self.pageActive()
 
     def showOnline(self, projectId=None):
+        # Observation never checkpoints or navigates the local draft and does
+        # not require pending editor inputs to pass configuration validation.
+        if self.monitor and projectId and self.monitor.projectId != projectId:
+            self.closeMonitor()
+        if self.monitor is None:
+            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
+            dialog = OnlineGraphDialog(self.window.runtimeClient, projectId or '', self.window)
+            self.monitor = dialog
+            dialog.setAttribute(Qt.WA_DeleteOnClose)
+            dialog.finished.connect(lambda _result: self._monitorClosed(dialog))
+        self.monitor.show()
+        self.monitor.raise_()
+        self.monitor.activateWindow()
+        return self.monitor
+
+    def _monitorClosed(self, dialog):
+        if self.monitor is dialog:
+            self.monitor = None
+
+    def closeMonitor(self):
+        if self.monitor:
+            dialog, self.monitor = self.monitor, None
+            dialog.done(0)
+
+    def configureRuntime(self, *, allowRun=False, selectCategories=()):
+        if not self._canSync():
+            return None
+        from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
+        dialog = ProjectConfigurationDialog(self, self.window, allowRun=allowRun, selectCategories=selectCategories)
+        return dialog.exec_()
+
+    def resourceBindings(self):
         if not self._canSync():
             return
-        self.stack.setCurrentIndex(0)
-        if self.monitor and projectId and self.monitor.projectId != projectId:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        if projectId and self.monitor is None:
-            from emo_master.apps.designer.ui.online_graph import OnlineGraphDialog
-            self.monitor = OnlineGraphDialog(self.window.runtimeClient, projectId, self.flowStack)
-            self.monitor.setWindowFlags(Qt.Widget)
-            self.flowStack.addWidget(self.monitor)
-        self.flowModes.setCurrentIndex(1)
-        self.changeFlowMode(1)
+        from emo_master.apps.designer.ui.resource_bindings import ResourceBindingsDialog
+        try:
+            types, _requirements, _rejected = self.window.runtimeClient.listDeviceTypes()
+        except Exception as error:
+            self.preview.message('设备类型读取失败：' + str(error))
+            return
+        operators = {item['operatorId']: item for item in self.window.operatorCatalogController.getCatalog()}
+        ResourceBindingsDialog(self, types, operators, self.window).exec_()
+        self.chrome.update()
 
     def showDevices(self):
         if self.deviceActive():
@@ -189,12 +191,8 @@ class PageCoordinator:
             self.devices.shutdown()
             self.devices.deleteLater()
             self.devices = None
-        if self.monitor:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        self.flowModes.setCurrentIndex(0)
+        self.closeMonitor()
+        self.onlineSummary = '未读取在线状态'
         self.window._resetRuntimeVisualState(clearHistory=True)
         if communication:
             communication.contextKey = None
@@ -209,7 +207,6 @@ class PageCoordinator:
         if not self._canSync():
             return
         self.stack.setCurrentIndex(0)
-        self.flowModes.setCurrentIndex(0)
         if self.preview.observer is not None:
             self.preview.observer.hide()
         self.chrome.update()
@@ -412,12 +409,7 @@ class PageCoordinator:
                     temporary.unlink(missing_ok=True)
 
     def shutdown(self):
-        if self.monitor:
-            self.monitor.done(0)
-            self.flowStack.removeWidget(self.monitor)
-            self.monitor.deleteLater()
-            self.monitor = None
-        self.flowModes.setCurrentIndex(0)
+        self.closeMonitor()
         if self.devices:
             self.devices.shutdown()
             self.devices.deleteLater()

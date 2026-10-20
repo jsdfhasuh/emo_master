@@ -17,7 +17,7 @@ def testSharedActionsAndShortcutsCannotEditHiddenFlow(designer, monkeypatch):  #
     c, e, _ = setupPage(designer)
     chrome = c.chrome
     assert chrome.selector.text() == '当前：页面设计'
-    assert not chrome.menus['运行'].menuAction().isVisible()
+    assert chrome.menus['运行'].menuAction().isVisible()
     calls = []
     monkeypatch.setattr(designer.flowScene, 'layoutNodesFlow', lambda: calls.append('layout'))
     for action in chrome.flowActions:
@@ -28,7 +28,7 @@ def testSharedActionsAndShortcutsCannotEditHiddenFlow(designer, monkeypatch):  #
     assert not designer.deleteShortcut.isEnabled()
     designer.loadedProjectPath = 'test-project'
     designer.updateToolbarState()
-    assert not designer._toolbarActions['开始运行'].isEnabled()
+    assert designer._toolbarActions['开始运行'].isEnabled()
     assert chrome.previewAction.isVisible()
     before = c.session.payload()
     for _ in range(5):
@@ -37,8 +37,8 @@ def testSharedActionsAndShortcutsCannotEditHiddenFlow(designer, monkeypatch):  #
         assert not e.isVisible() and not chrome.previewAction.isVisible()
         c.showPages()
     assert c.session.payload() == before
-    assert [a.text() for a in designer.mainToolbar.actions() if a.isVisible() and a.text()] == [
-        '打开项目', '保存项目', '撤销', '重做', '预览页面']
+    assert len(designer.mainToolbar.actions()) == 1
+    assert designer.mainToolbar.widgetForAction(designer.mainToolbar.actions()[0]) is chrome.selector
 
 
 def testInvalidInputKeepsWorkspaceSelectionAndText(designer):  # noqa: F811
@@ -72,7 +72,8 @@ def testPreviewCloseAndSamplesNeverStopOwnedTest(designer):  # noqa: F811
     assert view.designExamples and p.backend is backend and calls == []
     c.showFlow()
     assert not view.isVisible()
-    c.chrome.testActions['停止测试'].trigger()
+    assert not hasattr(c.chrome, 'testActions')
+    p.stopTest()
     waitFor(lambda: not p.active())
     assert calls == ['stop']
 
@@ -185,17 +186,17 @@ def testClosingPreviewCancelsPendingSampleCallback(designer):  # noqa: F811
     assert callbacks == [] and p.observer is None
 
 
-def testImageTestStatusBelongsToFlowWithoutOpeningPageEditor(designer):  # noqa: F811
+def testRemovedImageTestStatusDoesNotBreakPreviewLifecycle(designer):  # noqa: F811
     c = designer.pageCoordinator
     job = SimpleNamespace(status='COMPLETED', message='')
     c.preview.backend = SimpleNamespace(jobId='owned-test', close=lambda: None,
         runtime=SimpleNamespace(jobRepository=SimpleNamespace(getCurrentSnapshot=lambda _key: job)))
     c.preview.refreshJobStatus()
-    assert c.editor is None and c.chrome.testStatus.isVisible()
-    assert c.chrome.testStatus.text() == '图片测试：已完成'
+    assert c.editor is None and not hasattr(c.chrome, 'testStatus')
+    assert 'Runtime' in c.chrome.runtimeStatus.text()
     job.status, job.message = 'FAILED', '测试图片无法读取'
     c.preview.refreshJobStatus()
-    assert c.chrome.testStatus.text() == '图片测试：失败 · 测试图片无法读取'
+    assert not hasattr(c.chrome, 'testStatus')
     c.preview.closeAsync()
     waitFor(lambda: not c.preview.active())
 

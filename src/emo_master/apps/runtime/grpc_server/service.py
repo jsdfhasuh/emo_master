@@ -245,12 +245,42 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     @_withProjectStateLock
     def LoadProject(self, request, context):  # type: ignore[override]
+        if self.projectConfiguration.active:
+            return runtime_pb2.LoadProjectReply(ok=False, status='FAILED',
+                message='E_CONFIG_WRITER_BUSY: another configuration write is pending')
         pins = []
         try:
             return self._loadInitialProject(request, context, pins)
         finally:
             for token in pins:
                 self.projectResourceTransfers.unpin(token)
+
+    def InitializeProjectConfiguration(self, request, context):
+        """First publication shares the queryable, cancellable configuration writer."""
+        from emo_master.apps.runtime.project_config.store import ConfigurationError
+
+        def initialize():
+            self.jobSupervisor.assertMutationAllowed()
+            payload = json.loads(request.local_payload_json)
+            if not isinstance(payload, dict) or payload.get('schemaVersion') != '2.6':
+                raise ConfigurationError('E_CONFIG_INVALID', '显式在线配置写入需要 2.6 格式工程')
+            root = Path(request.resource_root).resolve(strict=True) if request.resource_root else (
+                self.workspaceRoot.parent / 'online-projects' / hashlib.sha256(
+                    payload['project']['projectId'].encode('utf-8')).hexdigest())
+            if request.resource_root and not root.is_dir():
+                raise ConfigurationError('E_CONFIG_INVALID', '资源根目录不是文件夹')
+            source = Path(request.project_path).resolve() if request.project_path else root / 'project.emoproj'
+            if source.parent != root:
+                raise ConfigurationError('E_CONFIG_INVALID', '工程来源文件必须与声明的资源目录一致')
+            payload = ProjectDocument.model_validate(payload).model_dump(mode='json')
+            if request.validate_only:
+                self._validateInitialProjectConfiguration(payload, str(source))
+                return dict(state='VALIDATED', runtimeInstanceId=self.runtimeInstanceId,
+                            message='完整首次候选校验通过；未写入、未连接设备、未启动任务')
+            return self.projectConfiguration.start(dict(operation='initialize', requestId=request.request_id,
+                expectedRuntimeInstanceId=request.expected_runtime_instance_id, expectedRevision=0,
+                localPayload=payload, sourcePath=str(source)))
+        return self._configurationReply(initialize)
 
     def _loadInitialProject(self, request, context, pins):
         _ = context
@@ -804,7 +834,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
     def GetDeviceStates(self, request, context):
         if request.project_id != self.loadedProjectId or self.loadedDocument is None:
             return runtime_pb2.GetDeviceStatesReply(ok=False, runtime_instance_id=self.runtimeInstanceId,
-                project_id=self.loadedProjectId, states_json="{}", message="Runtime 未加载此工程")
+                project_id=self.loadedProjectId, states_json="{}", message="Runtime 未加载此工程",
+                code='E_CONFIG_NOT_LOADED' if self.projectConfiguration.current is None else 'E_CONFIG_PROJECT')
         with self.deviceManager.lock:
             from emo_master.core.project.snapshots import revisionOf
             states = {key: dict(executor.snapshot(),

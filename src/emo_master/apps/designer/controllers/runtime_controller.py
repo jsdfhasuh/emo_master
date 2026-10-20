@@ -290,8 +290,9 @@ class RuntimeController:
                 self.appendLog("INFO", "已请求将停止作业升级为强制停止")
             return
 
-        if self._worker is not None:
-            self._worker.requestStop()
+        # Keep the existing observer through the terminal event. Cancelling it
+        # before Stop returns can strand a normal asynchronous STOPPING reply
+        # after both threads exit, even though Runtime has already aborted.
         self._beginStop(currentJobId, stopMode)
 
     def _beginStop(self, jobId: str, mode: str, updateUi: bool = True) -> None:
@@ -336,6 +337,15 @@ class RuntimeController:
         if not ok or stopStatus == "FAILED":
             self._onStopFailed(worker, stopMessage or "runtime rejected stop request")
             return
+        if (str(getattr(self.runtimePanelState, 'jobStatus', '')) in {'COMPLETED', 'FAILED', 'ABORTED'}
+                and stopStatus not in {'COMPLETED', 'FAILED', 'ABORTED'}):
+            # A terminal observation can arrive ahead of an earlier RPC reply.
+            worker.resultHandled = True
+            self._startUncertain = False
+            self._jobActive = False
+            self.setIsJobRunning(False)
+            self.updateToolbarState()
+            return
         worker.resultHandled = True
         self.runtimePanelState.updateJob(stopStatus, stopMessage)
         self.appendLog("INFO", f"停止作业：{stopStatus} | {stopMessage}")
@@ -356,9 +366,15 @@ class RuntimeController:
             return
         worker.resultHandled = True
         self.appendLog("ERROR", f"停止作业失败：{message}")
-        self.runtimePanelState.updateJob("RUNNING", f"停止失败：{message}")
-        self._jobActive = True
-        self.setIsJobRunning(True)
+        if str(getattr(self.runtimePanelState, 'jobStatus', '')) in {'COMPLETED', 'FAILED', 'ABORTED'}:
+            # A failed stop RPC cannot undo a terminal status from the observer.
+            self._startUncertain = False
+            self._jobActive = False
+            self.setIsJobRunning(False)
+        else:
+            self.runtimePanelState.updateJob("RUNNING", f"停止失败：{message}")
+            self._jobActive = True
+            self.setIsJobRunning(True)
         self.refreshRuntimePanelView()
         self.updateToolbarState()
 

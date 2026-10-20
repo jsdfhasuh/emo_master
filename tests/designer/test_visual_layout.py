@@ -229,7 +229,8 @@ def testToolbarAndMenuShareEnabledActions(styledApp):
     window = makeWindow()
     try:
         action = window._menuActions["开始运行"]
-        assert action is window.startButton.defaultAction()
+        assert action is window.startButton
+        assert window.mainToolbar.widgetForAction(action) is None
         assert not action.isEnabled()
         window.loadedProjectPath = "fixture/project.json"
         window.updateToolbarState()
@@ -300,7 +301,7 @@ def testFirstFitWaitsForFinalViewportSize(styledApp):
         window.close()
 
 
-def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
+def testNarrowToolbarOnlySwitchesWorkspaceAndMenusOwnCommands(styledApp):
     window = makeWindow()
     try:
         window.resize(640, 500)
@@ -308,11 +309,12 @@ def testNarrowToolbarKeepsRunActionAndHasOverflow(styledApp):
         for _ in range(4):
             styledApp.processEvents()
         extension = window.mainToolbar.findChild(QToolButton, "qt_toolbar_ext_button")
-        assert extension is not None and extension.isVisible()
-        assert window.startButton.isVisible()
+        assert extension is None or not extension.isVisible()
+        assert window.startButton in window.pageCoordinator.chrome.menus['运行'].actions()
         assert window._toolbarActions["打开日志"] not in window.mainToolbar.actions()
         assert window._toolbarActions["打开日志"] in window.pageCoordinator.chrome.menus['运行'].actions()
-        assert window.loadButton.toolButtonStyle() == Qt.ToolButtonIconOnly
+        assert len(window.mainToolbar.actions()) == 1
+        assert window.loadButton in window.pageCoordinator.chrome.menus['文件'].actions()
     finally:
         window.close()
 

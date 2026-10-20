@@ -139,13 +139,22 @@ def testAutoLayoutOneUndoRedoSaveReopenAndOtherWorkflowUnchanged(ownedDesignerWi
     graph = deepcopy(model.toProjectGraph())
     untouched = deepcopy(window.workflowStore.workflows[other])
     history = len(c.session._undo)
-    window.autoLayoutNodes()
+    window._toolbarActions['自动布局'].trigger()
     after = scene.getNodePositions()
     assert all(after[b][0] > after[a][0] for a, b in zip(nodes, nodes[1:]))
     assert len(c.session._undo) == history + 1
-    c.history()
+    c.chrome.undo.trigger()
     assert scene.getNodePositions() == before
-    c.history(True)
+    c.chrome.redo.trigger()
+    assert scene.getNodePositions() == after
+    from tests.designer.test_designer_shortcuts import press
+    press(window, Qt.Key_Z, Qt.ControlModifier)
+    assert scene.getNodePositions() == before
+    press(window, Qt.Key_L, Qt.ControlModifier)
+    assert scene.getNodePositions() == after
+    press(window, Qt.Key_Z, Qt.ControlModifier)
+    assert scene.getNodePositions() == before
+    press(window, Qt.Key_Z, Qt.ControlModifier | Qt.ShiftModifier)
     assert scene.getNodePositions() == after
     window.autoLayoutNodes()
     assert len(c.session._undo) == history + 1  # second application is a no-op

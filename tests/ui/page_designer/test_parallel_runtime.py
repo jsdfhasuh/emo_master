@@ -1,8 +1,6 @@
 """Native UI + actual spawned While Jobs; synthetic offline inputs only."""
 import pytest
-from PySide2.QtCore import Qt
 from PySide2.QtGui import QFontDatabase
-from PySide2.QtTest import QTest
 from PySide2.QtWidgets import QMessageBox
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
@@ -39,7 +37,7 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
             calls.append(True)
             return sync()
         window.runtimeController.syncRuntimeProjectBeforeRun = synchronize
-        QTest.mouseClick(window.startButton, Qt.LeftButton)
+        window._menuActions['开始运行'].trigger()
         runs = window.runtimeController.runs
         waitFor(lambda: all(key in runs and runs[key].jobId for key in roots))
         first, second = (runs[key].jobId for key in roots)
@@ -69,7 +67,8 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
             assert window.runTargetsButton.isVisible()
             assert window.runningWorkflowCombo.isVisible()
             assert window.stopAllJobsButton.isVisible() and window.stopAllJobsButton.isEnabled()
-            assert window.stopButton.isVisible() and window.stopButton.isEnabled()
+            assert window.pageCoordinator.chrome.menus['运行'].menuAction().isVisible()
+            assert window._menuActions['停止运行'].isEnabled()
             assert window.flowModel.selectedNodeId == 'count'
             window.grab().save(str(tmp_path / f'designer-parallel-{width}.png'))
         window.resize(1600, 800)
@@ -78,20 +77,30 @@ def testOneClickParallelStartSelectionStopRestartAndClose(qtApp, tmp_path, monke
         qtApp.processEvents()
         assert window.grab().save(str(tmp_path / 'designer-live-position.png'))
         assert window.workflowTabs.grab().save(str(tmp_path / 'designer-running-tabs.png'))
-        window.stopJob()
+        window.pageCoordinator.showPages()
+        assert window.pageCoordinator.pageActive()
+        window._menuActions['停止运行'].trigger()
         waitFor(lambda: not window.runtimeController.busy(runs[roots[1]]))
         assert runtime.jobRepository.get(first).status == 'RUNNING'
         assert all(status not in {'RUNNING', 'WAITING_CHILD'} for status in
                    runs[roots[1]].state.workflowExecution.statuses(runs[roots[1]].state.jobStatus).values())
         assert window.isJobRunning
         assert window.startButton.isEnabled()
-        window.startJob()
+        window._menuActions['开始运行'].trigger()
         waitFor(lambda: runs[roots[1]].jobId not in (None, second))
         assert runs[roots[0]].jobId == first and len(calls) == 1
         assert len(runtime.jobRepository.all()) == 3
         assert window.nodeResultCoordinator.workflowContexts[roots[0]]['history'].current.jobId == first
-        window.stopAllJobs()
-        waitFor(lambda: not window.isJobRunning)
+        assert window._menuActions['停止全部'].isEnabled()
+        window._menuActions['停止全部'].trigger()
+        try:
+            waitFor(lambda: not window.isJobRunning)
+        except AssertionError:
+            pytest.fail(str({key: dict(job=run.jobId, status=run.state.jobStatus,
+                busy=window.runtimeController.busy(run),
+                runtime=runtime.jobRepository.get(run.jobId).status,
+                worker=run.controller._worker is not None, stopWorker=run.controller._stopWorker is not None)
+                for key, run in runs.items()}))
     finally:
         window.close()
         waitFor(lambda: window.runtimeController._closed)

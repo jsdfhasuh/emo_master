@@ -39,6 +39,11 @@ class RuntimeServiceStub(object):
                 request_serializer=runtime__pb2.OnlineProjectRequest.SerializeToString,
                 response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
                 _registered_method=True)
+        self.InitializeProjectConfiguration = channel.unary_unary(
+                '/emo_master.runtime.RuntimeService/InitializeProjectConfiguration',
+                request_serializer=runtime__pb2.InitialProjectConfigurationRequest.SerializeToString,
+                response_deserializer=runtime__pb2.ProjectConfigurationReply.FromString,
+                _registered_method=True)
         self.GetOnlineGraphSnapshot = channel.unary_unary(
                 '/emo_master.runtime.RuntimeService/GetOnlineGraphSnapshot',
                 request_serializer=runtime__pb2.OnlineGraphRequest.SerializeToString,
@@ -470,6 +475,12 @@ class RuntimeServiceServicer(object):
     """Missing associated documentation comment in .proto file."""
 
     def GetOnlineProjectSnapshot(self, request, context):
+        """Missing associated documentation comment in .proto file."""
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def InitializeProjectConfiguration(self, request, context):
         """Missing associated documentation comment in .proto file."""
         context.set_code(grpc.StatusCode.UNIMPLEMENTED)
         context.set_details('Method not implemented!')
@@ -993,6 +1004,11 @@ def add_RuntimeServiceServicer_to_server(servicer, server):
                     request_deserializer=runtime__pb2.OnlineProjectRequest.FromString,
                     response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
             ),
+            'InitializeProjectConfiguration': grpc.unary_unary_rpc_method_handler(
+                    servicer.InitializeProjectConfiguration,
+                    request_deserializer=runtime__pb2.InitialProjectConfigurationRequest.FromString,
+                    response_serializer=runtime__pb2.ProjectConfigurationReply.SerializeToString,
+            ),
             'GetOnlineGraphSnapshot': grpc.unary_unary_rpc_method_handler(
                     servicer.GetOnlineGraphSnapshot,
                     request_deserializer=runtime__pb2.OnlineGraphRequest.FromString,
@@ -1445,6 +1461,33 @@ class RuntimeService(object):
             target,
             '/emo_master.runtime.RuntimeService/GetOnlineProjectSnapshot',
             runtime__pb2.OnlineProjectRequest.SerializeToString,
+            runtime__pb2.ProjectConfigurationReply.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def InitializeProjectConfiguration(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/emo_master.runtime.RuntimeService/InitializeProjectConfiguration',
+            runtime__pb2.InitialProjectConfigurationRequest.SerializeToString,
             runtime__pb2.ProjectConfigurationReply.FromString,
             options,
             channel_credentials,

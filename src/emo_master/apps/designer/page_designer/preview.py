@@ -410,15 +410,6 @@ class PreviewController(QObject):
 
     def refreshJobStatus(self):
         from emo_master.ui.presentation.job_status import jobStatusText
-        backend = self.backend
-        runtime = getattr(backend, 'runtime', None)
-        job = runtime.jobRepository.getCurrentSnapshot(backend.jobId) if runtime and backend.jobId else None
-        if hasattr(self.coordinator, 'chrome'):
-            status = self.coordinator.chrome.testStatus
-            if backend is not None:
-                label = STATUS_LABELS.get(job.status, job.status) if job else '正在准备'
-                status.setText('图片测试：' + label + (' · ' + job.message if job and job.message else ''))
-            status.setVisible(backend is not None and not self.coordinator.pageActive())
         observer = self.observer
         if observer is None or not isValid(observer):
             return

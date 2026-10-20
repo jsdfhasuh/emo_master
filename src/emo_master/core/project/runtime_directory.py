@@ -12,6 +12,7 @@ from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
 from emo_master.core.project.resources import DeviceParameterTarget
 from emo_master.core.project.device_resources import deviceDeclaration, deviceTarget
+from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
 
 
 def prepareRuntimeProject(
@@ -50,7 +51,8 @@ def prepareRuntimeProject(
                 raise ValueError("resource reference/parameter target missing")
             descriptor = registry.get(node.operatorId or "")
             if descriptor is None:
-                raise ValueError(f"operator missing: {node.operatorId}")
+                raise WorkflowCompileError([ValidationIssue('E_OPERATOR_UNKNOWN', f'operator missing: {node.operatorId}',
+                    projectId=document.project.projectId, workflowId=target.workflowId, nodeId=target.nodeId, fieldPath='operatorId')])
             schema: Any = descriptor.manifest.paramSchema
             for part in target.parameterPath:
                 schema = schema.get("properties", {}).get(part, {})
@@ -97,7 +99,8 @@ def prepareRuntimeProject(
             continue
         descriptor = registry.get(node.operatorId or "")
         if descriptor is None:
-            raise ValueError(f"operator missing: {node.operatorId}")
+            raise WorkflowCompileError([ValidationIssue('E_OPERATOR_UNKNOWN', f'operator missing: {node.operatorId}',
+                projectId=document.project.projectId, workflowId=wid, nodeId=nid, fieldPath='operatorId')])
         # Reject unsupported file substitution before inspecting dormant literal
         # paths, including at export/install time (before any package is written).
         validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)

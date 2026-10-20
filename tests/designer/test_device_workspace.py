@@ -82,7 +82,9 @@ def testDeviceMenuOpensDialogWithoutChangingWorkspace(ownedDesignerWindow, tmp_p
     print('DEVICE_DIALOG_SCREENSHOT=' + str(tmp_path / 'device-dialog.png'))
     QTest.keyClick(devices, Qt.Key_Escape)
     assert not devices.isVisible() and c.flowActive() and not c.deviceActive()
-    assert window.deleteShortcut.isEnabled()
+    # The canonical QAction owns Delete; the legacy QShortcut stays disabled.
+    assert not window.deleteShortcut.isEnabled()
+    assert not window.designerActions.blockedReason('layout')
     action.trigger()
     assert c.devices is devices and devices.isVisible()
     assert devices.close() and not devices.isVisible()
@@ -170,7 +172,8 @@ def testDeviceControlNeedsConfirmationAndNeverEditsDraft(ownedDesignerWindow, tm
     waitUntil(lambda: devices.pending is None)
     devices.table.setCurrentCell(0, 0)
     before = c.session.payload()
-    state = dict(state="IDLE", generation="g1", definitionRevision="r1", queued=0, activeOwner=None)
+    state = dict(state="IDLE", generation="g1", definitionRevision="r1", queued=0, activeOwner=None,
+                 connectionState='CONNECTED')
     devices.states = {"camera": state}
     devices.stateRuntimeId = "runtime"
     calls = []
@@ -178,6 +181,7 @@ def testDeviceControlNeedsConfirmationAndNeverEditsDraft(ownedDesignerWindow, tm
         calls.append((args, kwargs))
         return "runtime", {"camera": dict(state, admissionState="PAUSED", connectionState="DISCONNECTED")}
     window.runtimeClient.controlDevice = control
+    devices._showStates()
     monkeypatch.setattr(QMessageBox, "question", lambda *_: QMessageBox.No)
     devices.control("disconnect")
     assert not calls

@@ -242,7 +242,8 @@ class OnlineGraphDialog(QDialog):
             self.graphIdentity = None
             self.scene.clearGraph()
             self.details.clear()
-            self.status.setText(str(error))
+            self.status.setText('Runtime 尚未加载工程；可从主界面“Runtime > 写入 Runtime…”首次下发'
+                                if getattr(error, 'code', '') == 'E_CONFIG_NOT_LOADED' else str(error))
 
     def render(self):
         if self.data is None:

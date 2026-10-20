@@ -4,7 +4,7 @@ from concurrent.futures import Future
 
 import pytest
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QMessageBox
+from PySide2.QtWidgets import QMessageBox, QToolButton, QDialogButtonBox
 
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
 from tests.designer.test_device_workspace import windowFor, waitUntil
@@ -23,12 +23,21 @@ def testVisibleActionLabelsExplainDraftBoundary(ownedDesignerWindow, tmp_path, d
     d = workspace(ownedDesignerWindow, tmp_path, definition, declaration)
     for key, button in d.buttons.items():
         assert button.text(), key
-        assert button.toolButtonStyle() == Qt.ToolButtonTextBesideIcon
-        assert button.minimumHeight() >= 32
-        assert button.toolTip() and button.accessibleName()
+        assert button.toolTip()
+        if isinstance(button, QToolButton):
+            assert button.toolButtonStyle() == Qt.ToolButtonTextBesideIcon
+            assert button.minimumHeight() >= 32
+            assert button.accessibleName()
+    assert {'save', 'compare', 'bindings', 'state'}.isdisjoint(d.buttons)
+    assert d.buttons['delete'] in d.listMore.actions()
+    assert d.buttons['migration'] in d.listMore.actions()
+    assert d.buttons['diagnostics'] in d.diagnosticMenu.actions()
+    assert d.readParametersButton in d.diagnosticMenu.actions()
+    assert d.buttons['network'] in d.deviceMore.actions()
+    assert [b.text() for b in d.findChild(QDialogButtonBox).buttons()] == ['保留草稿并关闭']
     assert '保留草稿' in d.closeButton.text()
-    assert '切换设备或关闭' in d.draftHelp.text()
-    assert 'Runtime' in d.draftHelp.text()
+    assert '切换设备或关闭' in d.draftHelp.toolTip()
+    assert 'Runtime' in d.draftHelp.toolTip()
 
 
 @pytest.mark.parametrize('confirm', [False, True])

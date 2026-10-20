@@ -76,7 +76,7 @@ def testProductionPlcFieldsRemainReachable(editor, designerApplication, width, h
 
 
 @pytest.mark.parametrize('width', [480, 589, 658, 800])
-def testOverflowButtonHasPaintedArrowAndSharedTailActions(designerApplication, width):
+def testCompactToolbarNeedsNoOverflowAndEditMenuOwnsLayout(designerApplication, width):
     window = makeWindow()
     try:
         window.show()
@@ -84,37 +84,20 @@ def testOverflowButtonHasPaintedArrowAndSharedTailActions(designerApplication, w
         settle(designerApplication)
         toolbar = window.mainToolbar
         extension = toolbar.findChild(QToolButton, 'qt_toolbar_ext_button')
-        assert extension.isVisible()
-        assert toolbar.rect().contains(extension.geometry())
-        # isVisible() alone missed a zero-sized arrow paint rect under global QSS.
-        shot = extension.grab().toImage()
-        dark = 0
-        for y in range(shot.height()):
-            for x in range(shot.width()):
-                color = shot.pixelColor(x, y)
-                if max(color.red(), color.green(), color.blue()) < 180:
-                    dark += 1
-        assert dark >= 4, 'overflow exists but has no visible arrow'
-        QTest.mouseClick(extension, Qt.LeftButton)
+        assert extension is None or not extension.isVisible()
         chrome = window.pageCoordinator.chrome
-        tail = (window._toolbarActions['自动布局'], chrome.testAction, chrome.redo)
-        # At some font widths 图片测试 already fits before expansion. Waiting
-        # for it alone returns before Qt finishes revealing the overflow row.
-        _pump(designerApplication, lambda: all(
-            toolbar.widgetForAction(action).isVisible()
-            and toolbar.rect().contains(toolbar.widgetForAction(action).geometry())
-            for action in tail))
-        for action in tail:
-            button = toolbar.widgetForAction(action)
-            assert button.isVisible()
-            assert toolbar.rect().contains(button.geometry())
+        assert toolbar.contentsRect().contains(chrome.selector.geometry())
+        menu = chrome.menus['编辑']
         layoutAction = window._toolbarActions['自动布局']
+        assert layoutAction in menu.actions() and layoutAction not in toolbar.actions()
+        assert chrome.undo in menu.actions() and chrome.redo in menu.actions()
         activated = []
         layoutAction.triggered.connect(lambda: activated.append(True))
-        QTest.mouseClick(toolbar.widgetForAction(layoutAction), Qt.LeftButton)
-        assert len(activated) == 1
-        QTest.mouseClick(extension, Qt.LeftButton)
+        menu.popup(window.menuBar().mapToGlobal(QPoint(0, window.menuBar().height())))
         settle(designerApplication)
+        assert menu.rect().contains(menu.actionGeometry(layoutAction))
+        QTest.mouseClick(menu, Qt.LeftButton, pos=menu.actionGeometry(layoutAction).center())
+        assert len(activated) == 1
     finally:
         window.close()
 

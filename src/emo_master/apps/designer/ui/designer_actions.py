@@ -164,6 +164,12 @@ class DesignerActions(QObject):
             if not editor.renderer.editing:
                 return '请返回编辑模式后修改组件'
             return '' if editor.tools.selected else '请先选择页面组件'
+        if key == 'run':
+            if w.hasActiveDebugSession():
+                return '请先结束当前调试'
+            return '' if w.loadedProjectPath is not None and w.runtimeController.canStart() else '尚未加载项目或所选任务正在运行'
+        if key == 'stop':
+            return '' if w.runtimeController.canStop() else '没有可停止的当前任务'
         if pages:
             return '仅流程设计可用'
         if key in NAVIGATION_KEYS:
@@ -175,12 +181,6 @@ class DesignerActions(QObject):
             if key == 'definition':
                 return '' if navigation.targets() else '请选择引用子工作流的调用或循环节点'
             return ''
-        if key == 'run':
-            if w.hasActiveDebugSession():
-                return '请先结束当前调试'
-            return '' if w.loadedProjectPath is not None and w.runtimeController.canStart() else '尚未加载项目或所选任务正在运行'
-        if key == 'stop':
-            return '' if w.runtimeController.canStop() else '没有可停止的当前任务'
         if key == 'logs':
             return ''
         if key == 'results':

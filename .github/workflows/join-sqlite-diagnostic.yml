@@ -1,0 +1,51 @@
+name: 300 join SQLite call costs (diagnostic only)
+
+on:
+  push:
+    branches: [agent/diagnostic-join-sqlite-20261020]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  observe:
+    runs-on: windows-latest
+    timeout-minutes: 10
+    env:
+      QT_QPA_PLATFORM: offscreen
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+      - run: python -m pip install -r requirements-dev.txt
+      - name: Execute the original 300 joins, 90 seconds, three processes once
+        shell: pwsh
+        run: |
+          python -m pytest -q -p scripts.join_sqlite_diagnostic --join-sqlite-report "$env:RUNNER_TEMP/join-sqlite.json" tests/runtime/test_review_dispatch_lifecycle.py::testThreeHundredSequentialJoinsWithTwoRealPersistentConsumers
+          exit $LASTEXITCODE
+      - name: Print and validate observation, without reclassifying the original test
+        if: always()
+        shell: python
+        run: |
+          import json, os
+          from pathlib import Path
+          path = Path(os.environ['RUNNER_TEMP']) / 'join-sqlite.json'
+          assert path.is_file() and 0 < path.stat().st_size <= 1024 * 1024
+          text = path.read_text(encoding='utf-8')
+          print('JOIN_SQLITE_DIAGNOSTIC_BEGIN')
+          print(text)
+          print('JOIN_SQLITE_DIAGNOSTIC_END')
+          row = json.loads(text)
+          assert row['valid'] and row['github_sha'] == os.environ['GITHUB_SHA']
+          assert row['original_pytest_exit'] in (0, 1)
+          print('Diagnostic only. A passing isolated test does not resolve prior full-suite failures.')
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: join-sqlite-call-costs
+          path: ${{ runner.temp }}/join-sqlite.json
+          if-no-files-found: error

@@ -115,15 +115,36 @@
     "type": "object",
     "additionalProperties": false,
     "properties": {
-      "connectionRetryCount": {"title": "建连失败重试次数（不重放读写）", "type": "integer", "minimum": 0, "maximum": 5, "default": 0},
-      "recoveryTimeoutMs": {"title": "建连恢复总时限 (ms)", "type": "integer", "minimum": 1, "maximum": 60000, "default": 5000},
-      "recoveryBackoffMs": {"title": "建连恢复退避 (ms)", "type": "integer", "minimum": 1, "maximum": 10000, "default": 100},
+      "connectionRetryCount": {
+        "title": "建连失败重试次数（不重放读写）",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 5,
+        "default": 0
+      },
+      "recoveryTimeoutMs": {
+        "title": "建连恢复总时限 (ms)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 5000
+      },
+      "recoveryBackoffMs": {
+        "title": "建连恢复退避 (ms)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 10000,
+        "default": 100
+      },
       "connect": {
         "title": "连接策略",
         "type": "string",
         "default": "on_first_use",
         "enum": [
-          "on_first_use", "on_project_open", "on_project_run", "manual"
+          "on_first_use",
+          "on_project_open",
+          "on_project_run",
+          "manual"
         ]
       },
       "release": {
@@ -131,10 +152,19 @@
         "type": "string",
         "default": "on_project_close",
         "enum": [
-          "on_project_close", "when_unused", "idle_timeout", "manual"
+          "on_project_close",
+          "when_unused",
+          "idle_timeout",
+          "manual"
         ]
       },
-      "idleTimeoutMs": {"title": "空闲释放时长 (ms)", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 30000},
+      "idleTimeoutMs": {
+        "title": "空闲释放时长 (ms)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 86400000,
+        "default": 30000
+      },
       "deviceWaitTimeoutMs": {
         "title": "排队超时 (ms)",
         "type": "integer",
@@ -158,17 +188,22 @@
     ]
   },
   "capabilities": [
-    "connect",
     "read",
     "write"
   ],
   "actionSchemas": {
-    "connect": {"type": "object", "additionalProperties": false, "properties": {}},
     "read": {
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "unit": {"type": "string", "enum": ["word", "bit"], "default": "word"},
+        "unit": {
+          "type": "string",
+          "enum": [
+            "word",
+            "bit"
+          ],
+          "default": "word"
+        },
         "device": {
           "title": "软元件",
           "type": "string",
@@ -203,7 +238,14 @@
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "unit": {"type": "string", "enum": ["word", "bit"], "default": "word"},
+        "unit": {
+          "type": "string",
+          "enum": [
+            "word",
+            "bit"
+          ],
+          "default": "word"
+        },
         "device": {
           "title": "软元件",
           "type": "string",
@@ -237,5 +279,17 @@
         "words"
       ]
     }
-  }
+  },
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "operationScheduling": "serial",
+  "connectionLifetime": "persistent",
+  "controlCapabilities": [
+    "connect",
+    "disconnect",
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ]
 }

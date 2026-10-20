@@ -101,6 +101,7 @@ def testQueuedReconnectIsSupersededBeforeFifoExecution(tmp_path):
         transition = DeviceTransition.__new__(DeviceTransition)
         transition.runtime, transition.configuration = service, service.projectConfiguration
         transition.owners, transition.previous = set(), {"camera": (True, False)}
+        transition.projectChanged = False
         transition.communicationChanged = transition.communicationListening = False
         status = dict(state="COMMITTED", executionRevision=1, requestId="prior-intent")
         transition.finish(status)

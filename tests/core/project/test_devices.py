@@ -35,9 +35,23 @@ def project(definition):
     return payload
 
 
+def legacyPayload():
+    """An intentional old-format fixture, independent of current New Project."""
+    payload = WorkflowStore().toPayload()
+    payload['schemaVersion'] = '2.1'
+    for field in ('presentation', 'resources', 'production', 'globalVariables', 'communication'):
+        payload.pop(field, None)
+    payload['devices'] = dict(bindings={})
+    for workflow in payload['workflows'].values():
+        for node in workflow['nodes']:
+            for field in ('deviceBindings', 'deviceOverrides', 'deviceValueBindings', 'globalVariableBindings'):
+                node.pop(field, None)
+    return payload
+
+
 @pytest.mark.parametrize("version", ["2.0", "2.1", "2.2", "2.3", "2.4", "2.5"])
 def testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings(version):
-    payload = WorkflowStore().toPayload()
+    payload = legacyPayload()
     flags = {"2.2": "enablePresentation", "2.3": "enableProduction",
              "2.4": "enableGlobalVariables", "2.5": "enableCommunication"}
     if version in flags:
@@ -59,7 +73,7 @@ def testExplicitUpgradePreservesPreviousFeaturesAndLegacyBindings(version):
 
 
 def testLegacySerializationDoesNotAddNewFields():
-    payload = WorkflowStore().toPayload()
+    payload = legacyPayload()
     normalized = ProjectDocument.model_validate(payload).model_dump()
     assert normalized["devices"] == {"bindings": {}}
     assert all(not any(key.startswith("device") for key in node)
@@ -68,7 +82,7 @@ def testLegacySerializationDoesNotAddNewFields():
 
 @pytest.mark.parametrize("change", ["catalog", "emptySources", "binding"])
 def testNewFieldsCannotHideInOldVersion(definition, change):
-    payload = migrateProjectPayload(WorkflowStore().toPayload(), enableCommunication=True)
+    payload = migrateProjectPayload(legacyPayload(), enableCommunication=True)
     if change == "catalog":
         payload["devices"]["definitions"] = {}
     elif change == "emptySources":
@@ -76,6 +90,8 @@ def testNewFieldsCannotHideInOldVersion(definition, change):
     else:
         payload = project(definition)
         payload["schemaVersion"] = "2.5"
+        from emo_master.core.project.communication import CommunicationSettings
+        payload['communication'] = CommunicationSettings().model_dump()
     with pytest.raises(ValueError, match="2.6"):
         ProjectDocument.model_validate(payload)
 
@@ -191,7 +207,7 @@ def testFileRoundtripAndExplicitBackup(tmp_path, definition):
     from emo_master.apps.designer.state.project_store import saveProject, loadProject
 
     path = tmp_path / "device.emoproj"
-    old = WorkflowStore().toPayload()
+    old = legacyPayload()
     saveProject(path, old)
     oldBytes = path.read_bytes()
     loadProject(path)

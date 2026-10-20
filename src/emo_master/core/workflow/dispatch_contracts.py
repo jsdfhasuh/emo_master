@@ -24,7 +24,7 @@ def dispatchTargets(node):
 
 
 def dispatchPorts(document, workflowId, node):
-    if document.schemaVersion != "2.6":
+    if document.schemaVersion not in {"2.6", "2.7"}:
         raise ValueError("Dispatch/Join requires project schema 2.6")
     if node.kind == "join":
         source = next((n for n in document.workflows[workflowId].nodes

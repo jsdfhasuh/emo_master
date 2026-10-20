@@ -140,6 +140,12 @@ class WorkspaceChrome(QObject):
             action.setChecked(self.window.nextRunLegacySnapshotPolicy == value)
 
     def update(self):
+        status = getattr(self.window, 'communicationStatus', None)
+        if status is not None:
+            from emo_master.ui.communication_panel import tcpDeviceSummary
+            devices = self.c.devices
+            states = devices.states if devices and devices.stateScope == devices._scope() else {}
+            status.setText(tcpDeviceSummary(self.c.session.workflows.devices.get('definitions', {}), states))
         pages = self.c.pageActive()
         flow = self.c.flowActive()
         index = 1 if pages else 0

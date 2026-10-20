@@ -65,8 +65,35 @@ class CommunicationSettings(CommunicationModel):
         return self
 
     def transportPayload(self):
-        return self.tcpServer.model_dump(mode="json")
+        payload = self.tcpServer.model_dump(mode="json")
+        payload.pop('name')
+        for channel in payload['channels']:
+            channel.pop('name')
+        return payload
 
 
 def projectCommunication(document) -> CommunicationSettings:
     return document.communication or CommunicationSettings()
+
+
+def tcpServerConfiguration(definition):
+    """Pure adapter; lifecycle policy belongs exclusively to DeviceManager."""
+    return CommunicationSettings(enabled=definition.enabled, startupPolicy="manual", tcpServer=TcpServerSettings(
+        serviceId="tcp-server", name=definition.name[:80], **definition.connection,
+        sendTimeoutMs=definition.policies.get("sendTimeoutMs", 2000),
+        maxMessageBytes=definition.policies.get("maxMessageBytes", 1048576)))
+
+
+def validateTcpDefinition(definition):
+    payload = definition.model_dump()
+    if definition.deviceTypeId == "device.tcp.server":
+        config = tcpServerConfiguration(definition)
+        payload["connection"] = {key: getattr(config.tcpServer, key) for key in ("bindAddress", "port")}
+        payload["connection"]["channels"] = [item.model_dump() for item in config.tcpServer.channels]
+    elif definition.deviceTypeId == "device.tcp.receive_once":
+        host = IPv4Address(definition.connection["bindHost"])
+        if host.is_multicast:
+            raise ValueError("connection.bindHost cannot be multicast")
+        payload["connection"]["bindHost"] = str(host)
+    from emo_master.core.project.devices import DeviceDefinition
+    return DeviceDefinition.model_validate(payload)

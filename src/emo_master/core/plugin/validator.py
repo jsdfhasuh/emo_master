@@ -223,10 +223,6 @@ def validateManifestFields(
         issues.append(ValidationIssue("D01", "E_DEVICE_REQUIREMENT", str(error)))
         requirements = {}
 
-    bindingSince = manifestData.get("deviceBindingSince", "")
-    if bindingSince not in ("", "2.6") or (bindingSince and not requirements):
-        issues.append(ValidationIssue("D01", "E_DEVICE_REQUIREMENT", "invalid deviceBindingSince"))
-
     nextCycle = manifestData.get("nextCycleParameterPaths", [])
     if (not isinstance(nextCycle, list) or any(not isinstance(path, str) for path in nextCycle)
             or len(nextCycle) != len(set(nextCycle))):
@@ -273,7 +269,6 @@ def validateManifestFields(
         editor=editor,
         iconResource=parseIconResource(manifestData)[0],
         deviceRequirements=requirements,
-        deviceBindingSince=str(bindingSince),
         nextCycleParameterPaths=tuple(nextCycle),
     )
     return manifest, []

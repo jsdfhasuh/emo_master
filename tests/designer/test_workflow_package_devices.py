@@ -48,7 +48,7 @@ def testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog(definition):  # 
     target.devices["bindings"] = {"old": {"opaque": False}}
     result = importWorkflowPackage(target, package, deviceMapping={"camera": None})
     document = ProjectDocument.model_validate(target.toPayload())
-    assert document.schemaVersion == "2.6"
+    assert document.schemaVersion == "2.7"
     assert document.devices.bindings == {"old": {"opaque": False}}
     targetId = result.deviceIdMap["camera"]
     assert targetId != "camera"
@@ -97,20 +97,57 @@ def testIncompatibleReuseRejectedWithoutMutation(definition, field, value, monke
     assert vars(target) == before
 
 
-def testReuseDoesNotReplaceConnectionPoliciesOrEnabledState(definition):  # noqa: F811
+def testReuseDoesNotReplaceConnectionPoliciesOrEnabledState(definition, declaration):  # noqa: F811
     package = buildWorkflowPackage(sourceStore(definition), "main")
     payload = project(definition)
     payload["devices"]["definitions"]["camera"].update(
         connection={"source": "other-site"}, policies={"vendor": 1}, enabled=False)
     target = WorkflowStore(payload)
     before = deepcopy(target.devices)
-    preview = previewWorkflowPackageImport(target, package)
+    from emo_master.core.plugin.devices import DeviceRequirement
+    metadata = dict(deviceTypes={declaration.deviceTypeId: declaration}, operatorRequirements={
+        node.operatorId: {slot: DeviceRequirement(deviceTypeId=declaration.deviceTypeId) for slot in node.deviceBindings}
+        for workflow in package.workflows.values() for node in workflow.nodes if node.deviceBindings})
+    preview = previewWorkflowPackageImport(target, package, **metadata)
     assert preview.devices[0].compatibleTargets == (("camera", definition.name),)
     result = importWorkflowPackage(target, package, deviceMapping={"camera": "camera"},
+                                   **metadata,
                                    expectedFingerprint=preview.packageFingerprint,
                                    expectedTargetFingerprint=preview.targetFingerprint)
     assert target.devices == before
     assert result.deviceIdMap == {"camera": "camera"}
+
+
+def testReuseUsesRegisteredGenericSelectorAndCapabilityRules(definition, declaration):  # noqa: F811
+    from emo_master.core.plugin.devices import DeviceRequirement
+    declaration.capabilities = ['capture']
+    declaration.bindingSelectors = {'laneId': dict(itemsPath='connection.lanes', valueField='id', labelField='name')}
+    definition.connection['lanes'] = [dict(id='one', name='Lane A')]
+    package = buildWorkflowPackage(sourceStore(definition), 'main')
+    node = next(node for workflow in package.workflows.values() for node in workflow.nodes if node.deviceBindings)
+    node.deviceBindings['camera'].selectors = dict(laneId='one')
+    requirement = DeviceRequirement(deviceTypeId=declaration.deviceTypeId, requiredCapabilities=['capture'],
+        selectorSchema=dict(type='object', properties=dict(laneId=dict(type='string')), required=['laneId'],
+                            additionalProperties=False))
+    metadata = dict(deviceTypes={declaration.deviceTypeId: declaration},
+                    operatorRequirements={node.operatorId: dict(camera=requirement)})
+    target = WorkflowStore(project(definition))
+    assert previewWorkflowPackageImport(target, package, **metadata).devices[0].compatibleTargets
+    target.devices['definitions']['camera']['connection']['lanes'][0]['id'] = 'other'
+    before = deepcopy(vars(target))
+    assert not previewWorkflowPackageImport(target, package, **metadata).devices[0].compatibleTargets
+    with pytest.raises(ValueError, match='selectors'):
+        importWorkflowPackage(target, package, deviceMapping={'camera': 'camera'}, **metadata)
+    assert vars(target) == before
+    target.devices['definitions']['camera']['connection']['lanes'][0]['id'] = 'one'
+    requirement.requiredCapabilities = ['missing-business-capability']
+    assert not previewWorkflowPackageImport(target, package, **metadata).devices[0].compatibleTargets
+    with pytest.raises(ValueError, match='映射不兼容'):
+        importWorkflowPackage(target, package, deviceMapping={'camera': 'camera'}, **metadata)
+    # An unavailable registry still permits an editable disabled copy.
+    assert not previewWorkflowPackageImport(target, package).devices[0].compatibleTargets
+    result = importWorkflowPackage(target, package, deviceMapping={'camera': None})
+    assert not target.devices['definitions'][result.deviceIdMap['camera']]['enabled']
 
 
 def testSameConnectionNeverAutomaticallyMerged(definition):  # noqa: F811
@@ -182,10 +219,10 @@ def testMalformedDeviceDependenciesRejected(definition, tmp_path, case):  # noqa
         loadWorkflowPackage(path)
 
 
-def testLegacySerializationDoesNotAddDevices():
+def testNewWorkflowPackageUsesCurrentCompleteSchema():
     package = buildWorkflowPackage(WorkflowStore(), "main")
-    assert package.schemaVersion == "1.0"
-    assert "devices" not in package.toPayload()
+    assert package.schemaVersion == "1.4"
+    assert package.toPayload()['devices'] == {}
     assert WorkflowPackageDocument.model_validate(package.toPayload()) == package
 
 
@@ -211,10 +248,15 @@ def testInputParameterSourceSurvivesImport(definition):  # noqa: F811
             == WorkflowNode.model_validate(node).deviceValueBindings)
 
 
-def testDeviceMappingDialogRequiresEverySelection(definition):  # noqa: F811
+def testDeviceMappingDialogRequiresEverySelection(definition, declaration):  # noqa: F811
     from emo_master.apps.designer.ui.workflow_package_preview_dialog import WorkflowPackagePreviewDialog
     package = buildWorkflowPackage(sourceStore(definition), "main")
-    preview = previewWorkflowPackageImport(WorkflowStore(project(definition)), package)
+    from emo_master.core.plugin.devices import DeviceRequirement
+    requirements = {node.operatorId: {slot: DeviceRequirement(deviceTypeId=declaration.deviceTypeId)
+                    for slot in node.deviceBindings}
+                    for workflow in package.workflows.values() for node in workflow.nodes if node.deviceBindings}
+    preview = previewWorkflowPackageImport(WorkflowStore(project(definition)), package,
+        deviceTypes={declaration.deviceTypeId: declaration}, operatorRequirements=requirements)
     extra = replace(preview.devices[0], sourceDeviceId="second")
     dialog = WorkflowPackagePreviewDialog(replace(preview, devices=(*preview.devices, extra)))
     try:
@@ -232,8 +274,9 @@ def testDeviceMappingDialogRequiresEverySelection(definition):  # noqa: F811
         dialog.close()
 
 
+@pytest.mark.parametrize('offline', [False, True])
 def testNormalWindowImportAndCopyAreSingleUndoableEdits(
-        definition, ownedDesignerWindow, monkeypatch, tmp_path):  # noqa: F811
+        definition, ownedDesignerWindow, monkeypatch, tmp_path, offline):  # noqa: F811
     from emo_master.apps.designer.ui import main_window as module
     from tests.designer.qt_wait import waitForCatalog
     from tests.designer.test_main_window_workflow_tabs import _RuntimeClientStub
@@ -241,6 +284,11 @@ def testNormalWindowImportAndCopyAreSingleUndoableEdits(
     package = buildWorkflowPackage(sourceStore(definition), "main")
     path = writeWorkflowPackage(tmp_path / "source", package)
     window = ownedDesignerWindow(_RuntimeClientStub())
+    if offline:
+        from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+        def unavailable():
+            raise RuntimeClientError('UNAVAILABLE', 'offline metadata')
+        monkeypatch.setattr(window.runtimeClient, 'listDeviceTypes', unavailable, raising=False)
     waitForCatalog(window)
     session = window.pageCoordinator.session
     window.pageCoordinator.sync()

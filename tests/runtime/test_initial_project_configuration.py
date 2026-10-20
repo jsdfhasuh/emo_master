@@ -11,7 +11,6 @@ import numpy as np
 import pytest
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
-from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.main import createRuntimeServer
@@ -184,8 +183,9 @@ def testFirstWriteActivationErrorKeepsCommittedOutcome(initialRuntime, tmp_path,
 
 def testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted(initialRuntime, tmp_path):
     service, client = initialRuntime
-    with pytest.raises(RuntimeClientError, match='2.6'):
-        client.initializeProjectConfiguration(WorkflowStore().toPayload(), tmp_path, 'legacy', validate=True)
+    legacy = dict(schemaVersion='2.1')
+    with pytest.raises(RuntimeClientError, match='2.7'):
+        client.initializeProjectConfiguration(legacy, tmp_path, 'legacy', validate=True)
     assert service.projectConfiguration.current is None and service.loadedDocument is None
 
 

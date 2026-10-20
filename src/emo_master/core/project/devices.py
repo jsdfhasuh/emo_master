@@ -34,6 +34,7 @@ class DeviceDefinition(DeviceModel):
 
 class DeviceBinding(DeviceModel):
     deviceId: DeviceId
+    selectors: dict[str, JsonValue] = Field(default_factory=dict)
 
 
 def workflowDeviceIds(document, workflowId):

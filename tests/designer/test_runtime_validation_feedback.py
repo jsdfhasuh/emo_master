@@ -24,7 +24,10 @@ def legacyDialog(ownedDesignerWindow, client, tmp_path, *, badOperator=False, ve
     payload['schemaVersion'] = version
     if version == '2.1':
         for key in ('presentation', 'resources', 'production', 'globalVariables', 'communication'):
-            payload.pop(key)
+            payload.pop(key, None)
+    else:
+        from emo_master.core.project.communication import CommunicationSettings
+        payload['communication'] = CommunicationSettings().model_dump()
     payload['devices'] = dict(bindings={})
     if badOperator:
         payload['workflows']['main']['nodes'][2]['operatorId'] = 'missing.operator'
@@ -110,7 +113,7 @@ def testLegacyValidationOffersUpgradeWithoutMutatingDraft(ownedDesignerWindow, i
         assert '2.1' in dialog.formatStatus.text() and not dialog.upgradeButton.isHidden()
         assert not messages
         dialog.validateButton.click()
-        assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.6' in messages[0]['text']
+        assert len(messages) == 1 and '2.1' in messages[0]['text'] and '2.7' in messages[0]['text']
         assert '升级草稿并重新校验' in messages[0]['buttons']
         assert session.payload() == before and session._undo == history and path.read_bytes() == disk
         assert not service.loadedDocument and not service.jobRepository.all()
@@ -358,6 +361,32 @@ def testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending(ownedDes
         assert len(messages) == 2
         assert json.loads(messages[-1]['detail'])['connections'] == receipt['connections']
         assert not calls and not dialog.writePending and dialog.requestId == 'pending-connection'
+    finally:
+        dialog.reject()
+
+
+def testCommittedPendingIsObservedReadOnlyAndLateFailureWarnsOnce(ownedDesignerWindow, tmp_path, messages):
+    _window, dialog, writes, _path = setupDialog(ownedDesignerWindow, tmp_path)
+    receipt = dict(state='COMMITTED', connections=dict(server='PENDING'))
+    queries = []
+    def query(request):
+        queries.append(request)
+        return deepcopy(receipt)
+    dialog.client.getProjectWriteStatus = query
+    dialog.requestId = 'automatic-connection-observation'
+    dialog._controls()
+    try:
+        dialog.queryButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert dialog.connectionObserve and not dialog.writePending and not messages
+        receipt['connections']['server'] = 'FAILED: loopback port occupied'
+        waitUntil(lambda: len(messages) == 1 and dialog.connectionObserve is None)
+        assert set(queries) == {'automatic-connection-observation'} and len(queries) >= 2
+        assert not writes and not dialog.writePending
+        assert 'loopback port occupied' in messages[0]['text']
+        dialog.queryButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert len(messages) == 1 and not writes
     finally:
         dialog.reject()
 
@@ -712,7 +741,7 @@ def testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner(ownedDesi
         waitUntil(lambda: dialog.pending is None)
         assert client.runtimeService is old and not old._closing
         assert new.runtimeInstanceId in dialog.status.text() and '本机内嵌' in dialog.currentType.text()
-        waitUntil(lambda: window.communicationController.thread is None)
+        assert window.communicationController is None  # device observation owns the current path
         dialog.buttons.button(QDialogButtonBox.Ok).click()
         assert dialog.closed and window.runtimeClient is client and not old._closing and not messages
         assert client.deviceNetworkCommand('', '', 'info')['runtimeInstanceId'] == new.runtimeInstanceId

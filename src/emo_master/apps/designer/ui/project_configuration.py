@@ -4,6 +4,7 @@ from copy import deepcopy
 import json
 from uuid import uuid4
 from threading import Event
+from time import monotonic
 
 from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
@@ -26,6 +27,7 @@ class ProjectConfigurationDialog(QDialog):
         self.revalidateAfterSnapshot = False
         self.notifiedWrites = set()
         self.receiptSummary = ''
+        self.connectionObserve = None
         self.projectId = self.session.document().project.projectId
         self.scope = self._scope()
         self.local = deepcopy(self.session.payload())
@@ -189,18 +191,18 @@ class ProjectConfigurationDialog(QDialog):
 
     def _formatFeedback(self):
         version = self.local.get('schemaVersion')
-        old = version != '2.6'
-        self.formatStatus.setText(f'当前草稿格式 {version}，在线配置需要 2.6。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
+        old = version not in {'2.6', '2.7'}
+        self.formatStatus.setText(f'当前草稿格式 {version}，当前新工程使用 2.7。升级只修改草稿，可撤销；不会保存或写入。' if old else '')
         self.formatStatus.setVisible(old)
         self.upgradeButton.setVisible(old and version in {'2.0', '2.1', '2.2', '2.3', '2.4', '2.5'})
 
     def _requireFormat(self):
-        if self.local.get('schemaVersion') == '2.6':
+        if self.local.get('schemaVersion') in {'2.6', '2.7'}:
             return True
         self._notify('工程校验未通过',
-            f"当前工程格式为 {self.local.get('schemaVersion')}，在线配置写入需要 2.6。\n"
+            f"当前工程格式为 {self.local.get('schemaVersion')}，请新建当前 2.7 工程；本轮不提供旧工程转换。\n"
             '本次没有写入 Runtime，也没有保存本地工程。\n可升级当前草稿后重新校验；升级可撤销。',
-            'E_CONFIG_INVALID: online writes require schema 2.6', upgrade=not self.upgradeButton.isHidden())
+            'E_CONFIG_INVALID: online writes require current schema 2.7', upgrade=not self.upgradeButton.isHidden())
         return False
 
     def _draftChanged(self):
@@ -245,7 +247,7 @@ class ProjectConfigurationDialog(QDialog):
             from emo_master.core.project.migration import migrateProjectPayload
             from emo_master.core.project.models import ProjectDocument
             payload = self.session.payload()
-            if payload.get('schemaVersion') == '2.6':
+            if payload.get('schemaVersion') in {'2.6', '2.7'}:
                 self._draftChanged()
                 return
             candidate = migrateProjectPayload(deepcopy(payload), enableDevices=True)
@@ -436,8 +438,8 @@ class ProjectConfigurationDialog(QDialog):
             consequence.append('需退出的任务：' + '、'.join(result['affectedJobs']))
         if result.get('disconnectDevices'):
             consequence.append('需断开的设备：' + '、'.join(result['disconnectDevices']))
-        if result.get('communicationRestart'):
-            consequence.append('需切换 TCP 监听')
+        if result.get('restartDevices'):
+            consequence.append('需重新激活设备：' + '、'.join(result['restartDevices']))
         if not effects:
             consequence.append('此 Runtime 未提供逐项生效说明，请升级 Runtime')
         self.impact.setText('选中变更已校验 · ' + ('；'.join(consequence) or '无正在运行的受影响对象'))
@@ -625,6 +627,16 @@ class ProjectConfigurationDialog(QDialog):
             self._controls()
             return
         self._draftChanged()
+        observation = self.connectionObserve
+        if observation and self.pending is None:
+            if monotonic() >= observation['deadline']:
+                self.connectionObserve = None
+                self._feedback('已提交，设备连接结果待查看；可查询原请求或查看设备在线状态。')
+            elif observation['requestId'] != self.requestId:
+                self.connectionObserve = None
+            elif monotonic() >= observation['nextRead']:
+                observation['nextRead'] = monotonic() + .3
+                self._submit('connectionObserve', self.client.getProjectWriteStatus, self.requestId)
         if self.pending is None or not self.pending.done():
             return
         future, kind = self.pending, self.kind
@@ -669,8 +681,8 @@ class ProjectConfigurationDialog(QDialog):
                     details.append("受影响任务：" + ", ".join(result["affectedJobs"]))
                 if result.get("disconnectDevices"):
                     details.append("需断开设备：" + ", ".join(result["disconnectDevices"]))
-                if result.get("communicationRestart"):
-                    details.append("需切换 TCP 监听")
+                if result.get("restartDevices"):
+                    details.append("需重新激活设备：" + ", ".join(result['restartDevices']))
                 self._feedback("选中变更校验通过，尚未写入 Runtime" + ("；" + "；".join(details) if details else ""), 'success')
                 if kind == 'prewrite':
                     self.write()
@@ -697,10 +709,19 @@ class ProjectConfigurationDialog(QDialog):
                         self._notify('配置已提交，但后续操作异常', self.receiptSummary + '\n已提交事实保留，请先处理后续问题，不要重复写入。',
                             json.dumps(errors, ensure_ascii=False, indent=2), warning=True,
                             key=(self.requestId, state, json.dumps(errors, sort_keys=True)))
-                    self.refresh()
+                    if kind != 'connectionObserve':
+                        self.connectionObserve = (dict(requestId=self.requestId, deadline=monotonic()+30, nextRead=monotonic()+.3)
+                            if 'PENDING' in result.get('connections', {}).values() else None)
+                        self.refresh()
+                    elif 'PENDING' not in result.get('connections', {}).values():
+                        self.connectionObserve = None
                 elif self.writePending:
                     QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)
         except Exception as error:
+            if kind == 'connectionObserve':
+                self._feedback('已提交；设备连接结果读取暂未完成，可继续查询原请求或查看设备状态。')
+                self._controls()
+                return
             if kind == 'snapshot' and getattr(error, 'code', '') == 'E_CONFIG_NOT_LOADED':
                 self._showInitial()
                 self._revalidateUpgraded()
@@ -783,6 +804,7 @@ class ProjectConfigurationDialog(QDialog):
 
     def done(self, result):
         self.closed = True
+        self.connectionObserve = None
         self.uploadCancelled.set()
         self.timer.stop()
         self.pool.shutdown(wait=False, cancel_futures=True)

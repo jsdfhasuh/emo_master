@@ -57,8 +57,8 @@ class ManagedOperator:
                         diagnostics=getattr(error, "diagnostics", {}))
 
     @staticmethod
-    def proxy(context):
-        proxy = context.get("communication")
+    def device(context):
+        proxy = context.get("executeDevice")
         if proxy is None:
             raise TcpServiceError("E_TCP_UNSUPPORTED", "此执行环境未提供托管 TCP 服务，不支持生产连接的孤立调试")
         return proxy
@@ -66,32 +66,26 @@ class ManagedOperator:
 
 class TcpSessionOperator(ManagedOperator):
     meta = OperatorMeta("communication.tcp.session", "TCP 通道会话", "1.0.0", {}, ports(session="tcpSessionRef"),
-        dict(type="object", additionalProperties=False, properties={
-            "serviceId": dict(title="项目通信服务", type="string", default="tcp-server", minLength=1),
-            "channelId": dict(title="逻辑通道", type="string", default="", minLength=1),
-            "timeoutMs": dict(title="等待连接超时（毫秒）", type="integer", minimum=1, maximum=60000, default=5000)}))
+        dict(type="object", additionalProperties=False, properties={}, required=[], xDeviceActionFields=[]))
 
     def execute(self, inputs, params, context):
-        return dict(session=self.proxy(context).acquire(params.get("serviceId", "tcp-server"),
-                    params.get("channelId", ""), params.get("timeoutMs", 5000)))
+        return dict(session=self.device(context)("tcp", "acquire_session", {}))
 
 
 class TcpSessionSendOperator(ManagedOperator):
     meta = OperatorMeta("communication.tcp.session_send", "TCP 会话发送", "1.0.0",
         ports(session="tcpSessionRef", data="string"), ports(receipt="tcpSendReceipt"),
-        dict(type="object", additionalProperties=False, properties={
-            "encoding": dict(title="发送编码", type="string", enum=["utf-8", "ascii", "latin-1", "hex", "base64"], default="utf-8"),
-            "appendNewline": dict(title="追加换行", type="boolean", default=False)}))
+        dict(type="object", additionalProperties=False, properties={}, required=[], xDeviceActionFields=[]))
 
     def execute(self, inputs, params, context):
         session = TcpSessionRef.fromPayload(inputs["session"]).toPayload()
-        data = _encodeTcpData(inputs["data"], params.get("encoding", "utf-8"))
-        if params.get("appendNewline", False):
+        data = _encodeTcpData(inputs["data"], context["deviceParameters"]["tcp"]["encoding"])
+        if context["deviceParameters"]["tcp"]["appendNewline"]:
             data += b"\n"
         if len(data) > 16777216:
             raise TcpServiceError("E_TCP_MESSAGE_TOO_LARGE", "报文超过 16777216 字节传输上限")
-        source = {key: context.get(key) for key in ("workflowId", "workflowRunId", "nodeId", "nodeRunId", "iterationPath")}
-        receipt = self.proxy(context).send(session, data, source)
+        import base64
+        receipt = self.device(context)("tcp", "send", dict(session=session, dataBase64=base64.b64encode(data).decode("ascii")))
         if receipt["outcome"] != "SENT_TO_TRANSPORT":
             raise TcpServiceError(receipt["code"] or "E_TCP_SEND_FAILED", receipt["message"], receipt)
         return dict(receipt=receipt)

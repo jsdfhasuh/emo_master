@@ -17,29 +17,32 @@
   },
   "paramSchema": {
     "type": "object",
+    "properties": {},
     "additionalProperties": false,
-    "properties": {
-      "serviceId": {
-        "title": "项目通信服务",
-        "type": "string",
-        "default": "tcp-server",
-        "minLength": 1
-      },
-      "channelId": {
-        "title": "逻辑通道",
-        "type": "string",
-        "default": "",
-        "minLength": 1
-      },
-      "timeoutMs": {
-        "title": "等待连接超时（毫秒）",
-        "type": "integer",
-        "minimum": 1,
-        "maximum": 60000,
-        "default": 5000
-      }
-    }
+    "required": [],
+    "xDeviceActionFields": []
   },
   "minCoreVersion": "0.6.1",
-  "maxCoreVersion": "1.x"
+  "maxCoreVersion": "1.x",
+  "deviceRequirements": {
+    "tcp": {
+      "deviceTypeId": "device.tcp.server",
+      "requiredCapabilities": [
+        "acquire_session"
+      ],
+      "selectorSchema": {
+        "type": "object",
+        "properties": {
+          "channelId": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "channelId"
+        ],
+        "additionalProperties": false
+      }
+    }
+  }
 }

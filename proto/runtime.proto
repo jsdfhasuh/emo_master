@@ -164,6 +164,19 @@ message ListDeviceTypesReply {
 }
 
 message GetDeviceStatesRequest { string project_id = 1; }
+message GetDeviceDiagnosticsRequest {
+  string runtime_instance_id = 1;
+  string project_id = 2;
+  string project_load_generation = 3;
+  string device_id = 4;
+  int64 cursor = 5;
+}
+message GetDeviceDiagnosticsReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string diagnostics_json = 4;
+}
 message ControlDeviceRequest {
   string project_id = 1;
   string runtime_instance_id = 2;
@@ -173,6 +186,24 @@ message ControlDeviceRequest {
   string action = 6;
   bool confirmed = 7;
   string expected_control_revision = 8;
+}
+message ExecuteDeviceActionRequest {
+  string project_id = 1;
+  string runtime_instance_id = 2;
+  string device_id = 3;
+  string expected_generation = 4;
+  string expected_definition_revision = 5;
+  string expected_control_revision = 6;
+  string action = 7;
+  string arguments_json = 8;
+  bool confirmed = 9;
+  string request_id = 10;
+}
+message ExecuteDeviceActionReply {
+  bool ok = 1;
+  string code = 2;
+  string message = 3;
+  string result_json = 4;
 }
 message CameraDiagnosticRequest {
   string project_id = 1;
@@ -217,6 +248,7 @@ message GetDeviceStatesReply {
   string states_json = 4;
   string message = 5;
   string code = 6;
+  string project_load_generation = 7;
 }
 
 message OperatorInfo {
@@ -236,7 +268,8 @@ message OperatorInfo {
   OperatorIconInfo icon = 14;
   repeated OperatorIconIssue icon_issues = 15;
   string device_requirements_json = 16;
-  string device_binding_since = 17;
+  reserved 17;
+  reserved "device_binding_since";
 }
 
 message OperatorIconInfo {
@@ -630,9 +663,11 @@ service RuntimeService {
   rpc ListOperators(ListOperatorsRequest) returns (ListOperatorsReply);
   rpc ListDeviceTypes(ListDeviceTypesRequest) returns (ListDeviceTypesReply);
   rpc GetDeviceStates(GetDeviceStatesRequest) returns (GetDeviceStatesReply);
+  rpc GetDeviceDiagnostics(GetDeviceDiagnosticsRequest) returns (GetDeviceDiagnosticsReply);
   rpc RecoverDevice(RecoverDeviceRequest) returns (GetDeviceStatesReply);
   rpc DeviceNetworkCommand(DeviceNetworkRequest) returns (ProjectConfigurationReply);
   rpc ControlDevice(ControlDeviceRequest) returns (GetDeviceStatesReply);
+  rpc ExecuteDeviceAction(ExecuteDeviceActionRequest) returns (ExecuteDeviceActionReply);
   rpc CameraDiagnostic(CameraDiagnosticRequest) returns (CameraDiagnosticReply);
   rpc GetOperatorIconAsset(GetOperatorIconAssetRequest) returns (GetOperatorIconAssetReply);
   rpc GetOperatorEditorAsset(GetOperatorEditorAssetRequest) returns (GetOperatorEditorAssetReply);

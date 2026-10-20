@@ -18,6 +18,17 @@ from emo_master.core.project.devices import (
 
 class DeviceRequirement(DeviceModel):
     deviceTypeId: DeviceId
+    requiredCapabilities: list[str] = Field(default_factory=list)
+    selectorSchema: dict = Field(default_factory=lambda: dict(
+        type="object", properties={}, additionalProperties=False))
+
+    @model_validator(mode="after")
+    def validateSelectors(self):
+        if (self.selectorSchema.get("type") != "object"
+                or not isinstance(self.selectorSchema.get("properties"), dict)
+                or self.selectorSchema.get("additionalProperties") is not False):
+            raise ValueError("slot selectorSchema must be a closed object")
+        return self
 
 
 class ParameterRule(DeviceModel):
@@ -56,7 +67,8 @@ def _validateResourceValues(value, schema):
 
 
 class DeviceType(DeviceModel):
-    schemaVersion: Literal["1.0"] = "1.0"
+    schemaVersion: Literal["1.1"] = "1.1"
+    driverApiVersion: Literal["1.1"] = "1.1"
     deviceTypeId: DeviceId
     version: str
     displayName: str = Field(min_length=1)
@@ -72,7 +84,12 @@ class DeviceType(DeviceModel):
     dynamicPaths: list[str] = Field(default_factory=list)
     nextCyclePaths: list[str] = Field(default_factory=list)
     parameterRules: list[ParameterRule] = Field(default_factory=list)
-    capabilities: list[Literal["discover", "connect", "disconnect", "capture", "read", "write"]] = Field(default_factory=list)
+    capabilities: list[str] = Field(default_factory=list)
+    controlCapabilities: list[Literal["connect", "disconnect", "maintenance", "resume", "recover", "test_connection"]] = Field(default_factory=list)
+    operationScheduling: Literal["serial", "managed_service"] = "serial"
+    connectionLifetime: Literal["persistent", "per_operation"] = "persistent"
+    bindingSelectors: dict[str, dict] = Field(default_factory=dict)
+    managementActions: list[str] = Field(default_factory=list)
     actionSchemas: dict[str, dict[str, object]] = Field(default_factory=dict)
     driverEntry: str | None = Field(default=None, pattern=r"^[A-Za-z_]\w*(?:\.[A-Za-z_]\w*)*:[A-Za-z_]\w*$")
     executionLocation: Literal["io_thread", "camera_host"] = "io_thread"
@@ -91,6 +108,28 @@ class DeviceType(DeviceModel):
                 raise ValueError("device schemas must declare object properties")
             if schema.get("additionalProperties") is not False:
                 raise ValueError("device schemas must reject undeclared properties")
+        if self.operationScheduling == "managed_service" and self.connectionLifetime != "persistent":
+            raise ValueError("managed_service requires persistent lifetime")
+        if self.connectionLifetime == "per_operation" and set(self.controlCapabilities) & {"connect", "disconnect"}:
+            raise ValueError("per_operation devices cannot declare persistent controls")
+        if len(set(self.capabilities)) != len(self.capabilities) or any(
+                not re.fullmatch(r"[a-z][a-z0-9_]{0,79}", action) for action in self.capabilities):
+            raise ValueError("invalid or duplicate device action")
+        if set(self.capabilities) != set(self.actionSchemas):
+            raise ValueError("every business action requires an action schema")
+        if not set(self.managementActions) <= set(self.capabilities):
+            raise ValueError("managementActions must name business actions")
+        for name, selector in self.bindingSelectors.items():
+            spec = {"connection": self.connectionSchema, "defaults": self.defaultsSchema,
+                    "policies": self.policiesSchema}
+            parts = selector.get("itemsPath", "").split(".")
+            child = spec.get(parts[0], {})
+            for part in parts[1:]:
+                child = child.get("properties", {}).get(part, {})
+            props = child.get("items", {}).get("properties", {})
+            if (child.get("type") != "array" or selector.get("valueField") not in props
+                    or selector.get("labelField") not in props):
+                raise ValueError("invalid binding selector: " + name)
         for action, schema in self.actionSchemas.items():
             if action not in self.capabilities:
                 raise ValueError("action schema must name a declared capability")
@@ -160,7 +199,11 @@ class DeviceType(DeviceModel):
             raise ValueError("idle_timeout requires a bounded positive idleTimeoutMs")
         if policies.get("release") == "when_unused" and policies.get("connect", "on_first_use") != "on_first_use":
             raise ValueError("when_unused requires on_first_use to avoid an immediate connect/disconnect cycle")
-        return DeviceDefinition.model_validate(payload)
+        checked = DeviceDefinition.model_validate(payload)
+        if self.deviceTypeId.startswith("device.tcp."):
+            from emo_master.core.project.communication import validateTcpDefinition
+            checked = validateTcpDefinition(checked)
+        return checked
 
     def validateRules(self, values: Mapping, dynamicPaths=(), *, sourcePaths=()) -> None:
         _validateResourceValues(values, self.defaultsSchema)
@@ -228,6 +271,35 @@ class DeviceType(DeviceModel):
         resolved = _parameters(resolved, self.defaultsSchema, "resolved device parameters")
         self.validateRules(resolved, sourcePaths={".".join(path) for path in leafPaths(overrides)} | set(bindings))
         return resolved
+
+
+def selectorCandidates(declaration, definition, name):
+    spec = declaration.bindingSelectors[name]
+    value = definition.model_dump() if hasattr(definition, "model_dump") else definition
+    for part in spec["itemsPath"].split("."):
+        value = value[part]
+    return [(item[spec["valueField"]], item[spec["labelField"]]) for item in value]
+
+
+def validateDeviceBinding(requirement, binding, definition, declaration):
+    """One offline binding rule for compiler, editors and package reuse."""
+    from emo_master.core.project.devices import DeviceBinding
+    from emo_master.core.project.snapshots import _parameters
+    if not isinstance(requirement, DeviceRequirement):
+        requirement = DeviceRequirement.model_validate(dict(requirement))
+    if not isinstance(binding, DeviceBinding):
+        binding = DeviceBinding.model_validate(dict(binding))
+    if definition.deviceTypeId != requirement.deviceTypeId:
+        raise ValueError("device type does not match operator slot")
+    if not set(requirement.requiredCapabilities) <= set(declaration.capabilities):
+        raise ValueError("device lacks required capabilities")
+    if not set(requirement.selectorSchema["properties"]) <= set(declaration.bindingSelectors):
+        raise ValueError("slot names an undeclared device selector")
+    selectors = _parameters(binding.selectors, requirement.selectorSchema, "device selectors")
+    for name, value in selectors.items():
+        if value not in {key for key, _ in selectorCandidates(declaration, definition, name)}:
+            raise ValueError(f"device {binding.deviceId}: selectors.{name}={value!r} does not exist")
+    return selectors
 
 
 def scanDeviceTypes(pluginRoots, coreVersion):

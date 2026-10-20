@@ -1461,68 +1461,19 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         self.communicationController = None
         self.communicationDock = None
         if _nativeQt:
-            from PySide2.QtWidgets import QDockWidget
-            from emo_master.ui.communication_panel import CommunicationPanel
-            from emo_master.ui.communication_controller import CommunicationController
-            self.communicationDock = QDockWidget("通信服务", self)
-            self.communicationDock.setObjectName("projectCommunicationDock")
-            panel = CommunicationPanel(self.communicationDock)
-            self.communicationDock.setWidget(panel)
-            self.addDockWidget(Qt.BottomDockWidgetArea, self.communicationDock)
-            if self.logDock is not None:
-                self.tabifyDockWidget(self.logDock, self.communicationDock)
-            self.communicationDock.hide()
-            self.communicationStatus = QPushButton("TCP · 请先打开项目")
+            self.communicationStatus = QPushButton('TCP · 设备管理')
             self.communicationStatus.setFlat(True)
-            self.communicationStatus.setToolTip("打开项目通信面板；关闭面板不停止服务")
+            self.communicationStatus.setToolTip('查看工程中的 TCP 设备')
             self.communicationStatus.clicked.connect(self.openCommunicationPanel)
             self.statusBar().addPermanentWidget(self.communicationStatus)
-            self.communicationController = CommunicationController(self.runtimeClient, panel,
-                self._communicationProject, self._saveCommunicationConfig, self._navigateCommunicationSource, self)
-            cast(Any, self.communicationController.changed).connect(self.communicationStatus.setText)
-
-    def _communicationProject(self):
-        from emo_master.core.project.communication import CommunicationSettings
-        return dict(projectId=self._currentProjectId(), name=str(self.workflowStore.project.get("name", "未命名项目")),
-            path=str(self.projectController.currentProjectFile or self.loadedProjectPath or ""),
-            token=self._projectInstanceToken,
-            config=self.workflowStore.projectExtensions.get("communication", CommunicationSettings().model_dump()))
 
     def openCommunicationPanel(self):
-        dock = getattr(self, "communicationDock", None)
-        if dock is not None:
-            dock.show()
-            dock.raise_()
-            self.communicationController.nextPoll = 0
-
-    def _saveCommunicationConfig(self, config):
-        from copy import deepcopy
-        from emo_master.core.project.migration import migrateProjectPayload
-        from emo_master.core.project.models import ProjectDocument
-        from emo_master.core.project.tcp_dependencies import validateCommunicationNode
-        if self.hasActiveDebugSession():
-            return "请先结束当前调试再保存项目通信配置。"
-        self.workflowController.captureActiveWorkflow()
-        payload = migrateProjectPayload(self.workflowStore.toPayload(), enableCommunication=True)
-        payload["communication"] = config
-        candidate = ProjectDocument.model_validate(payload)
-        for workflow in candidate.workflows.values():
-            for node in workflow.nodes:
-                validateCommunicationNode(candidate, node)
-        target = self.projectController.currentProjectFile
-        if target is None:
-            path, _filter = QFileDialog.getSaveFileName(self, "保存通信配置前先保存项目", "项目.emoproj", "EmoMaster project (*.emoproj)")
-            if not path:
-                return "已取消项目保存；通信草稿保留，Runtime 未改变。"
-            target = Path(path)
-        previousExtensions = deepcopy(self.workflowStore.projectExtensions)
-        self.workflowStore.projectExtensions.update({key: deepcopy(payload[key]) for key in
-            ("presentation", "resources", "production", "globalVariables", "communication")})
-        if not self.saveProjectToDirectory(str(target)):
-            self.workflowStore.projectExtensions.clear()
-            self.workflowStore.projectExtensions.update(previousExtensions)
-            return "项目保存失败。草稿仍保留，Runtime 配置未改变；请检查日志中的路径、权限或配置错误。"
-        return ""
+        coordinator = self.pageCoordinator
+        if coordinator is not None:
+            coordinator.showDevices()
+            workspace = coordinator.devices
+            if workspace is not None:
+                workspace.selectTcpCategory()
 
     def _navigateCommunicationSource(self, source):
         workflowId, nodeId = source.get("workflowId"), source.get("nodeId")
@@ -2550,9 +2501,18 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             and str(item.get("operatorId")) != ""
         ]
         try:
+            metadata = getattr(self.runtimeClient, 'listDeviceTypes', None)
+            from emo_master.apps.designer.services.runtime_client import RuntimeClientError
+            try:
+                deviceTypes, operatorRequirements, _rejected = metadata() if callable(metadata) else (None, None, {})
+            except RuntimeClientError:
+                # Offline import can create disabled copies; existing-device
+                # reuse needs the target's registered binding declarations.
+                deviceTypes, operatorRequirements = None, None
             preview = self.workflowController.previewWorkflowPackageImport(
                 selectedPath,
                 availableOperatorIds=availableOperatorIds,
+                deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
             )
         except (OSError, TypeError, ValueError) as err:
             message = f"导入工作流失败：{err}"
@@ -2571,6 +2531,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 expectedFingerprint=preview.packageFingerprint,
                 expectedTargetFingerprint=preview.targetFingerprint,
                 targetRoot=self.currentProjectDir,
+                deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
                 insertIntoWorkflowId=(
                     selectedParentWorkflowId if insertSubflow else None
                 ),
@@ -3599,7 +3560,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return False
         if self.currentProjectDir is None:
             return True
-        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion == "2.6":
+        if self.pageCoordinator is not None and self.pageCoordinator.session.document().schemaVersion in {"2.6", "2.7"}:
             # First publication uses the same explicit draft/resource path as
             # Runtime > Write, never Save-to-disk followed by legacy LoadProject.
             from emo_master.apps.designer.services.runtime_client import RuntimeClientError
@@ -3699,8 +3660,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
     def addNodeFromOperatorPayload(self, payload, sceneX=None, sceneY=None):
         if not flowEditAllowed(self):
             return
-        if (not isinstance(payload, dict) or not payload.get("deviceRequirements")
-                or payload.get("deviceBindingSince") == "2.6" and self.workflowStore.devices.get("schemaVersion") != "1.0"):
+        if (not isinstance(payload, dict) or not payload.get("deviceRequirements")):
             return self._addLegacyNodeFromOperatorPayload(payload, sceneX, sceneY)
         from uuid import uuid4
         from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
@@ -4562,8 +4522,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             return
 
         definition = self._operatorDefinition(node.operatorId)
-        if node.deviceBindings or (definition.get("deviceRequirements") and
-                (definition.get("deviceBindingSince") != "2.6" or self.workflowStore.devices.get("schemaVersion") == "1.0")):
+        if node.deviceBindings or definition.get("deviceRequirements"):
             from dataclasses import asdict
             from emo_master.apps.designer.ui.device_wizard import DeviceNodeDialog
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():

@@ -158,8 +158,22 @@ def requiredProjectChanges(online, local, selected):
                 if node.get("kind") == "dispatch":
                     for target in node.get("params", {}).get("targets", []):
                         workflow(target.get("workflowId"), owner)
-                for binding in node.get("deviceBindings", {}).values():
+                for slot, binding in node.get("deviceBindings", {}).items():
                     require(("devices", "definitions", binding["deviceId"]), owner)
+                    channelId = binding.get('selectors', {}).get('channelId')
+                    if channelId is not None:
+                        parts = ('devices', 'definitions', binding['deviceId'], 'connection', 'channels')
+                        definition = candidate.get('devices', {}).get('definitions', {}).get(binding['deviceId'], {})
+                        channels = definition.get('connection', {}).get('channels', [])
+                        if channelId not in {channel.get('channelId') for channel in channels}:
+                            path = _pointer(parts)
+                            localChannels = local.get('devices', {}).get('definitions', {}).get(
+                                binding['deviceId'], {}).get('connection', {}).get('channels', [])
+                            if (path in changes and path not in selected
+                                    and channelId in {channel.get('channelId') for channel in localChannels}):
+                                found.setdefault(path, []).append(f'{owner}/{slot}: channelId={channelId}')
+                            else:
+                                raise ValueError(f'{owner}/{slot}: missing channelId={channelId} in {binding["deviceId"]}')
         resources = candidate.get("resources") or {}
         for binding in [*resources.get("parameterBindings", []), *resources.get("siteBindings", [])]:
             target = binding["target"]

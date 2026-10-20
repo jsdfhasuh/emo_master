@@ -31,6 +31,7 @@ class CyclePlanSession:
         return self.scope(context, parentCycleId=context.cycleId)
 
     def install(self, cycle):
+        self.runner.operatorExecutor.deviceScope = cycle.get('deviceScope', {})
         if "payload" in cycle:
             # Preserve materialized paths and retained operator instances.
             updated = self.document.model_dump(mode="json")

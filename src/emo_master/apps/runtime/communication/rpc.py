@@ -20,6 +20,9 @@ MAX_CONTROL_REQUESTS = 2048
 class CommunicationRpcMixin:
     def GetCommunicationState(self, request, context):
         runtime: Any = self
+        if runtime.loadedDocument is not None and runtime.loadedDocument.schemaVersion == '2.7':
+            return pb.CommunicationReply(ok=False, code='E_DEVICE_MANAGEMENT_REQUIRED',
+                message='TCP 已纳入设备管理，请选择 deviceId 查看状态和控制')
         try:
             if request.protocol_version != "1.1":
                 raise TcpServiceError("E_TCP_UNSUPPORTED", "不支持的项目 TCP 通信协议版本")
@@ -34,6 +37,9 @@ class CommunicationRpcMixin:
 
     def ControlCommunication(self, request, context):
         runtime: Any = self
+        if runtime.loadedDocument is not None and runtime.loadedDocument.schemaVersion == '2.7':
+            return pb.CommunicationReply(ok=False, code='E_DEVICE_MANAGEMENT_REQUIRED',
+                message='请使用统一设备控制；配置变更从 Runtime 菜单写入')
         manager = runtime.communicationManager
         try:
             runtime.jobSupervisor.assertMutationAllowed()

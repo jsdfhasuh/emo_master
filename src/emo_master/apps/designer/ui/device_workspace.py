@@ -1,6 +1,7 @@
 """Project-owned device editor. Metadata reads never discover or open hardware."""
 from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
+import json
 from time import monotonic
 
 from PySide2.QtCore import Qt, QTimer
@@ -46,6 +47,7 @@ class DeviceWorkspace(QDialog):
         self.stateError = ''
         self.stateNotice = ''
         self.discoveredInfo = {}
+        self.diagnosticPages = {}
         self.stateTimer = QTimer(self)
         self.stateTimer.setInterval(2000)
         self.stateTimer.timeout.connect(self._refreshKnownState)
@@ -74,8 +76,9 @@ class DeviceWorkspace(QDialog):
             import_='导入设备', export='导出设备', refresh='刷新',
             network='设备发现', migration='旧节点迁移',
             diagnostics='设备诊断', test='测试连接', connect='连接设备', disconnect='断开连接',
-            maintenance='暂停设备', recover='恢复会话')
+            maintenance='暂停设备', resume='恢复准入', recover='恢复会话')
         shortLabels['import'] = shortLabels.pop('import_')
+        shortLabels['business'] = '业务动作'
         for key, title, glyph, callback in (
             ("new", "新建设备", "plus", self.createDevice),
             ("delete", "删除设备", "trash-2", self.deleteDevice),
@@ -91,11 +94,13 @@ class DeviceWorkspace(QDialog):
             ("connect", "连接并恢复使用", "plug", lambda: self.control("connect")),
             ("disconnect", "断开并暂停连接", "unplug", lambda: self.control("disconnect")),
             ("maintenance", "暂停所选设备并取消其请求", "pause", lambda: self.control("maintenance")),
+            ("resume", "恢复所选设备的业务准入", "play", lambda: self.control("resume")),
             ("recover", "恢复设备会话", "refresh-cw", self.recover),
+            ("business", "执行业务动作", "play", self.managementAction),
         ):
             menu = (self.listMore if key in {'delete', 'migration'} else
                     self.diagnosticMenu if key == 'diagnostics' else
-                    self.deviceMore if key in {'network', 'maintenance', 'recover'} else None)
+                    self.deviceMore if key in {'network', 'maintenance', 'resume', 'recover', 'business'} else None)
             if menu is not None:
                 button = QAction(icon(glyph), shortLabels[key], self)
                 button.triggered.connect(lambda _checked=False, command=callback, action=button:
@@ -182,6 +187,7 @@ class DeviceWorkspace(QDialog):
         basic = QWidget()
         basicLayout = QVBoxLayout(basic)
         form = QFormLayout()
+        self.basicForm = form
         self.name = QLineEdit()
         self.description = QLineEdit()
         self.enabled = QCheckBox("启用")
@@ -211,6 +217,7 @@ class DeviceWorkspace(QDialog):
         basicScroll.setWidget(basic)
         self.tabs.addTab(basicScroll, '基本信息')
         self.forms = {}
+        self.formScrolls = {}
         for key, title in (("connection", "连接"), ("defaults", "工作参数"), ("policies", "策略")):
             editor = SchemaParamForm()
             scroll = QScrollArea()
@@ -218,14 +225,20 @@ class DeviceWorkspace(QDialog):
             scroll.setWidget(editor)
             self.tabs.addTab(scroll, title)
             self.forms[key] = editor
+            self.formScrolls[key] = scroll
         self.infoTabs = QTabWidget()
         self.references = QTextBrowser()
         self.references.setOpenLinks(False)
         self.references.anchorClicked.connect(self.navigateReference)
         self.infoTabs.addTab(self.references, "节点引用")
+        from emo_master.ui.communication_panel import TcpChannelStatusTable, DeviceDiagnosticsView
         self.onlineState = QTextBrowser()
-        self.infoTabs.addTab(self.onlineState, "在线状态")
-        self.logs = QTextBrowser()
+        self.channelStatus = TcpChannelStatusTable()
+        online = QSplitter(Qt.Vertical)
+        online.addWidget(self.onlineState)
+        online.addWidget(self.channelStatus)
+        self.infoTabs.addTab(online, "在线状态")
+        self.logs = DeviceDiagnosticsView()
         self.infoTabs.addTab(self.logs, "诊断日志")
         self.infoTabs.currentChanged.connect(lambda _index: self.showDiagnostics())
         self.detailSplitter = QSplitter(Qt.Vertical)
@@ -282,6 +295,19 @@ class DeviceWorkspace(QDialog):
     def catalog(self):
         return DeviceCatalogEditor(self.c.session, self.deviceTypes, self.requirements)
 
+    def selectTcpCategory(self):
+        definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})
+        if definition.get('deviceTypeId', '').startswith('device.tcp.'):
+            return
+        categories = {value.category for key, value in self.deviceTypes.items() if key.startswith('device.tcp.')}
+        for index in range(self.tree.topLevelItemCount()):
+            item = self.tree.topLevelItem(index)
+            if item.text(0) in categories:
+                self.tree.setCurrentItem(item)
+                self.table.clearSelection()
+                self.table.setCurrentCell(-1, -1)
+                return
+
     def exportDevices(self):
         if not self.selectedId or not self.c._canSync():
             return
@@ -314,7 +340,10 @@ class DeviceWorkspace(QDialog):
             self.selectedId = next(iter(ids.values()))
             self.refresh()
             self.c.chrome.update()
-            self.status.setText('已导入工程草稿；请填写现场字段后显式启用设备')
+            fields = [ids[b.target.deviceId] + '.' + b.target.section + '.' + '.'.join(b.target.parameterPath)
+                      for b in package.resources.siteBindings]
+            self.status.setText('已导入工程草稿；请填写现场字段后显式启用设备'
+                + ('；待填写：' + '、'.join(fields) if fields else ''))
         except (ValueError, OSError) as error:
             self.status.setText(str(error))
 
@@ -334,7 +363,7 @@ class DeviceWorkspace(QDialog):
         state = self.states.get(self.selectedId) or {}
         freshness = (self.stateNotice or '读取失败：' + self.stateError if self.stateError or self.stateNotice else
                      f'更新于 {max(0, int(monotonic() - self.stateReadAt))} 秒前' if self.stateReadAt else '未获取在线状态')
-        values = [('连接', {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(state.get('connectionState'), '未知')),
+        values = [('连接', {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(state.get('driverState', {}).get('connectionState', 'CONNECTED' if state.get('lifecycleConnected') else 'DISCONNECTED'), '未知')),
                   ('执行状态', {'IDLE': '空闲', 'BUSY': '执行中', 'QUARANTINED': '已隔离', 'CLOSED': '已关闭'}.get(state.get('state'), '未知')),
                   ('当前任务', state.get('activeOwner') or '-'), ('排队请求', state.get('queued', '-')),
                   ('连接准入', {'PAUSED': '手动暂停', 'CONTROL_PENDING': '维护处理中', 'REPLACING': '配置替换中'}.get(state.get('admissionState'), '正常' if state else '未知')),
@@ -348,21 +377,29 @@ class DeviceWorkspace(QDialog):
         for key, label in self.hardwareFields.items():
             label.setText(str(hardware.get(key) or '未获取'))
         self.hardwareSource.setText('Runtime 最近一次显式发现（非实时回读）' if hardware else '未发现 / 类型未提供；不会自动访问设备')
-        refs = {(w, n) for w, n, _s in self.catalog().references(self.selectedId)}
-        entries = getattr(self.c.window, "logEntries", [])
-        projectId = self.c.session.document().project.projectId
-        token = getattr(self.c.window, '_runtimeLogProjectToken', '')
-        self.logs.setPlainText("\n".join(entry.displayLine() for entry in entries
-            if entry.projectId == projectId and entry.projectInstanceToken == token
-            and ((entry.workflowId, entry.nodeId) in refs or entry.payload.get('deviceId') == self.selectedId)) or "无可用诊断日志")
+        driver = state.get('driverState', {})
+        self.channelStatus.setVisible(definition.get('deviceTypeId') == 'device.tcp.server')
+        self.channelStatus.setChannels(driver.get('channels', []))
+        if driver:
+            self.onlineState.append('<pre>' + escape(json.dumps(driver, ensure_ascii=False, indent=2)) + '</pre>')
+        camera = definition.get('deviceTypeId', '').startswith('device.camera.')
+        for field in (*self.hardwareFields.values(), self.hardwareSource):
+            field.setVisible(camera)
+            self.basicForm.labelForField(field).setVisible(camera)
+        scope = tuple(state.get(key, '') for key in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration'))
+        page = self.diagnosticPages.get((*scope, self.selectedId), {})
+        self.logs.setPage(page, driver.get('channels', []))
 
-    def recordDiagnostic(self, message, deviceId):
-        from time import time
-        from .log_dialog import StructuredLogEntry
-        entry = StructuredLogEntry(timestampMs=int(time() * 1000), level='INFO', message=message, source='device',
-            projectId=self.c.session.document().project.projectId,
-            projectInstanceToken=self.c.window._runtimeLogProjectToken, payload=dict(deviceId=deviceId))
-        self.c.window._storeRuntimeLogEntry(entry, entry.displayLine())
+    def readDiagnostics(self):
+        state = self.states.get(self.selectedId)
+        reader = getattr(self.c.window.runtimeClient, 'getDeviceDiagnostics', None)
+        if self.pending is not None or not state or not callable(reader) or not self.isVisible():
+            return
+        scope = {key: state[key] for key in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration')}
+        key = (*scope.values(), self.selectedId)
+        self.pendingKind, self.pendingScope, self.pendingDevice = 'deviceDiagnostics', self._scope(), self.selectedId
+        self.pending = self.reader.submit(reader, scope, self.selectedId, self.diagnosticPages.get(key, {}).get('cursor', 0))
+        self.timer.start(40)
 
     def deviceNetwork(self):
         if not self.selectedId or self.pending is not None:
@@ -498,6 +535,7 @@ class DeviceWorkspace(QDialog):
         messages = {
             "connect": "连接所选在线设备并恢复使用？不拍照、不写 PLC、不改变工程草稿。",
             "disconnect": "断开所选设备并暂停自动连接？使用中的设备将拒绝此操作。",
+            "resume": "恢复所选设备的业务准入？之后按原连接策略使用，不立即连接或执行业务。",
             "maintenance": "暂停所选设备，取消它的排队及活动请求，等待实际退出后断开？\n"
                            "无关设备继续运行；已发生的触发或 PLC 写入不会撤销。",
         }
@@ -510,6 +548,21 @@ class DeviceWorkspace(QDialog):
         self.pendingScope = self._scope()
         self.pending = self.reader.submit(control, self.c.session.document().project.projectId,
             self.stateRuntimeId, self.selectedId, deepcopy(state), action, confirmed=True)
+        self.timer.start(40)
+
+    def managementAction(self):
+        state = self.states.get(self.selectedId, {})
+        declaration = self.deviceTypes.get(state.get('deviceTypeId'))
+        if self.pending is not None or declaration is None or not state.get('availableManagementActions'):
+            return
+        from emo_master.ui.device_actions import DeviceActionDialog
+        dialog = DeviceActionDialog(declaration, state['availableManagementActions'], self)
+        if dialog.exec_() != QDialog.Accepted:
+            return
+        self.pendingKind, self.pendingScope = 'managementAction', self._scope()
+        self.pending = self.reader.submit(self.c.window.runtimeClient.executeDeviceAction,
+            self.c.session.document().project.projectId, self.stateRuntimeId, self.selectedId, deepcopy(state),
+            dialog.action.currentData(), dialog.arguments)
         self.timer.start(40)
 
     def migrationPreview(self):
@@ -563,9 +616,20 @@ class DeviceWorkspace(QDialog):
         try:
             if self.pendingScope != self._scope():
                 raise ValueError("Runtime 连接已变化，请重新读取")
+            if self.pendingKind == 'deviceDiagnostics':
+                page = future.result()
+                key = tuple(page[field] for field in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration', 'deviceId'))
+                previous = self.diagnosticPages.get(key, {}).get('records', [])
+                self.diagnosticPages[key] = dict(page, records=(previous + page['records'])[-512:])
+                self.showDiagnostics()
+                return
             if self.pendingKind == 'test':
-                future.result()
-                self.status.setText('连接测试通过；工程草稿和在线配置未改变，原有连接保持不变')
+                result = future.result()
+                self.status.setText(result.get('message', '端点测试通过') + '；工程草稿和在线配置未改变')
+                return
+            if self.pendingKind == 'managementAction':
+                self.status.setText('业务动作完成：' + json.dumps(future.result(), ensure_ascii=False))
+                self.readState()
                 return
             if self.pendingKind == 'networkInfo':
                 if self._networkOpenRequest is not future:
@@ -592,9 +656,7 @@ class DeviceWorkspace(QDialog):
                                     else "设备控制完成；工程草稿未改变" if self.pendingKind == "control"
                                     else "在线状态已读取；工程草稿未改变")
                 self.status.setToolTip("Runtime: " + runtimeId)
-                if self.pendingKind == 'control':
-                    self.recordDiagnostic(self.status.text(), self.pendingDevice)
-                    self.showDiagnostics()
+                self.readDiagnostics()
                 return
             types, requirements, rejected = future.result()
             self.commitPending()
@@ -645,9 +707,13 @@ class DeviceWorkspace(QDialog):
                 label += " · 手动暂停连接"
             elif state.get("admissionState") == "CONTROL_PENDING":
                 label += " · 维护处理中"
-            if state.get("connectionState"):
-                label += " · " + {"CONNECTED": "已连接", "DISCONNECTED": "未连接", "FAULTED": "连接故障"}.get(
-                    state["connectionState"], state["connectionState"])
+            driver = state.get('driverState', {})
+            if declaration and declaration.connectionLifetime == 'per_operation':
+                label += ' · ' + ('事务执行中' if driver.get('active') else '事务就绪')
+            elif definition['deviceTypeId'] == 'device.tcp.server':
+                label += ' · ' + ('监听中，等待客户端' if driver.get('ready') else '未监听')
+            else:
+                label += ' · ' + ('已连接' if state.get('lifecycleConnected') else '未连接')
             item.setText(label if revision == state["definitionRevision"] else label + " · 配置不同")
             different |= revision != state["definitionRevision"]
             self.table.item(row, 5).setText(f"{state['activeOwner'] or '-'} / {state['queued']}")
@@ -667,20 +733,27 @@ class DeviceWorkspace(QDialog):
         self._updateOnlineActions()
         self.showDiagnostics()
 
+        status = getattr(self.c.window, 'communicationStatus', None)
+        if status is not None:
+            from emo_master.ui.communication_panel import tcpDeviceSummary
+            status.setText(tcpDeviceSummary(definitions, self.states))
+
     def _updateOnlineActions(self):
         definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})
         declaration = self.deviceTypes.get(definition.get('deviceTypeId'))
-        capabilities = set(declaration.capabilities) if declaration else set()
+        capabilities = set(declaration.controlCapabilities) if declaration else set()
         state = self.states.get(self.selectedId)
         online = bool(state and self.stateRuntimeId and self.pending is None)
-        connected = bool(state and state.get('connectionState') == 'CONNECTED')
-        self.buttons['connect'].setVisible(not connected)
-        self.buttons['disconnect'].setVisible(connected)
-        for key, capability in [('connect', 'connect'), ('disconnect', 'disconnect'),
-                                 ('maintenance', None), ('recover', None)]:
-            self.buttons[key].setEnabled(online and bool(capabilities)
-                and (capability is None or capability in capabilities))
-        self.buttons['network'].setEnabled(self.pending is None and 'discover' in capabilities
+        self.buttons['business'].setVisible(bool(declaration and declaration.managementActions))
+        self.buttons['business'].setEnabled(online and bool(state.get('availableManagementActions')))
+        connected = bool(state and state.get('lifecycleConnected'))
+        for key in ('connect', 'disconnect', 'maintenance', 'resume', 'recover'):
+            self.buttons[key].setVisible(key in capabilities and (key not in {'connect', 'disconnect'} or (key == 'disconnect') == connected))
+            self.buttons[key].setEnabled(online and key in state.get('availableControls', []))
+        server = definition.get('deviceTypeId') == 'device.tcp.server'
+        self.buttons['connect'].setText('启动服务' if server else '连接设备')
+        self.buttons['disconnect'].setText('停止服务' if server else '断开连接')
+        self.buttons['network'].setEnabled(self.pending is None and 'discover' in (declaration.capabilities if declaration else [])
             and definition.get('deviceTypeId') == 'device.camera.huaray_imv'
             and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)))
 
@@ -821,9 +894,10 @@ class DeviceWorkspace(QDialog):
         self.buttons["delete"].setEnabled(self.original is not None)
         self.buttons['export'].setEnabled(self.original is not None)
         capabilities = set(declaration.capabilities) if declaration else set()
-        supported = dict(connect='connect' in capabilities, disconnect='disconnect' in capabilities,
-            maintenance=bool(capabilities & {'connect', 'disconnect', 'capture', 'read', 'write'}),
-            recover=bool(capabilities), test='connect' in capabilities and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)),
+        controls = set(declaration.controlCapabilities) if declaration else set()
+        supported = dict(connect='connect' in controls, disconnect='disconnect' in controls,
+            maintenance='maintenance' in controls, resume='resume' in controls,
+            recover='recover' in controls, test='test_connection' in controls and callable(getattr(self.c.window.runtimeClient, 'deviceNetworkCommand', None)),
             diagnostics=bool(declaration and (declaration.deviceTypeId == 'device.camera.huaray_imv' and 'capture' in capabilities
                 or declaration.deviceTypeId == 'device.plc.mitsubishi_slmp' and 'read' in capabilities)),
             network=bool(declaration and declaration.deviceTypeId == 'device.camera.huaray_imv' and 'discover' in capabilities))
@@ -845,10 +919,19 @@ class DeviceWorkspace(QDialog):
             for key, editor in self.forms.items():
                 from .device_wizard import configurationSchema
                 schema = configurationSchema(getattr(declaration, key + "Schema"))
-                editor.setSchema(schema, self.original.get(key, {}))
+                from .device_wizard import configurationForm
+                from .tcp_device_form import TcpConnectionForm
+                if isinstance(editor, TcpConnectionForm) != ('channels' in schema.get('properties', {})):
+                    newEditor = configurationForm(schema, self.original.get(key, {}))
+                    self.formScrolls[key].takeWidget()
+                    editor.deleteLater()
+                    self.formScrolls[key].setWidget(newEditor)
+                    self.forms[key] = editor = newEditor
+                else:
+                    editor.setSchema(schema, self.original.get(key, {}))
                 for name, spec in schema["properties"].items():
                     if len(spec.get("enum", [])) == 1:
-                        editor._controls[name].setEnabled(False)
+                        editor.setFieldEnabled(name, False)
         else:
             for editor in self.forms.values():
                 editor.setSchema({"type": "object", "properties": {}}, {})
@@ -859,7 +942,7 @@ class DeviceWorkspace(QDialog):
         for workflow, nodeId, slot in references:
             workflowValue = self.c.session.workflows.get(workflow)
             node = next(n for n in workflowValue.nodes if n['nodeId'] == nodeId)
-            sources = []
+            sources = [escape('channelId · ' + str(node.get('deviceBindings', {}).get(slot, {}).get('selectors', {}).get('channelId')))] if node.get('deviceBindings', {}).get(slot, {}).get('selectors') else []
             if declaration:
                 for path in declaration.overridePaths:
                     dynamic = node.get('deviceValueBindings', {}).get(slot, {}).get(path)

@@ -146,6 +146,7 @@ class OperatorExecutor:
             context,
             str(node.operatorId or ""),
             "execute",
+            self.bindingSnapshot(node),
         )
         runtimeContext = {
             "jobId": context.jobId,
@@ -169,11 +170,29 @@ class OperatorExecutor:
             "communication": self.communication,
         }
         if node.devicePlans:
-            runtimeContext["executeDevice"] = lambda slot, action, arguments: self.devices.call(
-                action, deviceId=node.devicePlans[slot]["deviceId"], params=deviceParameters[slot],
-                arguments=arguments, cycleId=context.cycleId or context.workflowRunId)
-            runtimeContext["captureDevice"] = lambda slot: self.devices.capture(
-                node.devicePlans[slot]["deviceId"], deviceParameters[slot], context.cycleId or context.workflowRunId)
+            runtimeContext['deviceParameters'] = deviceParameters
+            def executeDevice(slot, action, arguments):
+                plan = node.devicePlans[slot]
+                source = {key: runtimeContext[key] for key in ('workflowId', 'nodeId', 'nodeRunId', 'workflowRunId', 'iterationPath')}
+                source['slot'] = slot
+                fields = dict(deviceId=plan['deviceId'], params=deviceParameters[slot], arguments=arguments,
+                              cycleId=context.cycleId or context.workflowRunId, source=source,
+                              selectors=dict(plan.get('selectors', {})))
+                try:
+                    if plan['definition']['deviceTypeId'].startswith('device.tcp.'):
+                        if self.communication is None:
+                            raise WorkflowExecutionError('E_DEVICE_RUNTIME_UNAVAILABLE', 'TCP data bridge missing', node.nodeId)
+                        return self.communication.call(action, deviceTypeId=plan['definition']['deviceTypeId'],
+                            policies=dict(plan['definition']['policies']), **fields)
+                    return self.devices.call(action, **fields)
+                except Exception as error:
+                    error.diagnostics = dict(getattr(error, 'diagnostics', {}), deviceSlot=slot)
+                    raise
+            runtimeContext['executeDevice'] = executeDevice
+            runtimeContext['captureDevice'] = lambda slot: self.devices.capture(
+                node.devicePlans[slot]['deviceId'], deviceParameters[slot], context.cycleId or context.workflowRunId,
+                source=dict(workflowId=context.workflowId, nodeId=node.nodeId, slot=slot),
+                selectors=dict(node.devicePlans[slot].get('selectors', {})))
         if node.operatorId == "vision.io.sqlite_writer":
             from emo_master.apps.runtime.business_sqlite.backend import insert
             runtimeContext["sqliteInsert"] = insert
@@ -239,6 +258,7 @@ class OperatorExecutor:
             context,
             str(node.operatorId or ""),
             "lifecycle",
+            self.bindingSnapshot(node),
         )
         init = getattr(operator, "initOperator", None)
         if callable(init):
@@ -279,6 +299,11 @@ class OperatorExecutor:
         self._lifecycleOrder.append(key)
         self._lifecycleLoggers[key] = lifecycleLogger
         return operator
+
+    def bindingSnapshot(self, node):
+        return {slot: dict(deviceId=plan['deviceId'], selectors=dict(plan.get('selectors', {})),
+                           scope=dict(getattr(self, 'deviceScope', {})))
+                for slot, plan in node.devicePlans.items()}
 
     def disposeOperators(self) -> WorkflowExecutionError | None:
         self.coordinateSnapshots.clear()

@@ -9,6 +9,7 @@ import pytest
 from emo_master.apps.runtime.communication.manager import CommunicationManager
 from emo_master.apps.runtime.communication.ipc import CommunicationProxy, WorkerBridge
 from emo_master.core.contracts.tcp_service import TcpServiceError
+from emo_master.core.contracts.device_driver import DeviceError
 from tests.core.project.test_project_communication import settings
 
 
@@ -126,48 +127,81 @@ def testBindConflictCancellationAndStopRelease(manager):
     assert manager.serviceGeneration == 3
 
 
-def testIpcDedupMismatchAndExpiredRequestNeverResend(manager, monkeypatch):
-    from emo_master.apps.runtime.communication import ipc
-    monkeypatch.setattr(ipc, "MAX_REPLIES", 1)
-    manager.start()
-    parent, child = multiprocessing.get_context("spawn").Pipe()
-    bridge = WorkerBridge(manager, "job", parent, threading.Event())
+
+@pytest.fixture
+def devices():
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from emo_master.apps.runtime.devices.manager import DeviceManager
+    from emo_master.core.project.models import ProjectDocument
+    from emo_master.core.project.runtime_package import trustedDeviceTypes
+    from tests.runtime.test_tcp_device_integration import definition
+    owner = DeviceManager(trustedDeviceTypes())
+    payload = WorkflowStore().toPayload()
+    server = definition(owner.types['device.tcp.server'], port=freePort(),
+        channels=[dict(channelId='front', name='Front', allowedIps=['127.0.0.1'])])
+    server['policies']['connect'] = 'manual'
+    payload['devices']['definitions']['server'] = server
+    owner.load(ProjectDocument.model_validate(payload))
+    executor, operation = owner.beginControl('server', owner.executors['server'].generation, 'connect')
+    executor.wait(operation)
+    owner.authorize('job', ['server'])
+    yield owner
+    owner.retire('job')
+    owner.close()
+
+
+def deviceCall(proxy, devices, action, arguments):
+    definition = devices.definitions['server']
+    return proxy.call(action, deviceTypeId=definition.deviceTypeId, policies=definition.policies,
+        deviceId='server', cycleId='cycle', params=definition.defaults, source={},
+        selectors=dict(channelId='front'), arguments=arguments)
+
+def testIpcDuplicateMismatchAndExpiredRequestNeverResend(devices):
+    backend = devices.drivers['server'].backend
+    parent, child = multiprocessing.get_context('spawn').Pipe()
+    bridge = WorkerBridge(devices, 'job', parent, threading.Event())
     try:
-        with connect(manager) as client:
-            session = acquire(manager)
-            request = dict(protocolVersion="1.0", sequence=1, action="send", session=session, dataBase64="QQ==", source={},
-                           deadlineNs=time.monotonic_ns() + 10_000_000_000)
+        with connect(backend) as client:
+            session = backend.acquire('job', 'tcp-server', 'front', 1000, lambda: False)
+            request = dict(sequence=1, kind='device_action', requestId='first', deviceId='server',
+                action='send', params=devices.definitions['server'].defaults, cycleId='cycle',
+                arguments=dict(session=session, dataBase64='QQ=='), source={}, selectors=dict(channelId='front'),
+                deadlineNs=time.monotonic_ns()+10_000_000_000)
             raw = json.dumps(request).encode()
-            assert bridge.dispatch(raw) == bridge.dispatch(raw)
-            assert client.recv(3) == b"A"
-            with pytest.raises(TcpServiceError) as error:
-                bridge.dispatch(json.dumps(dict(request, dataBase64="Qg==")).encode())
-            assert error.value.code == "E_TCP_REQUEST_MISMATCH"
-            bridge.dispatch(json.dumps(dict(request, sequence=2)).encode())
-            assert client.recv(3) == b"A"
-            with pytest.raises(TcpServiceError) as error:
-                bridge.dispatch(raw)
-            assert error.value.code == "E_TCP_REQUEST_EXPIRED"
+            assert bridge.dispatch(raw)['outcome'] == 'SENT_TO_TRANSPORT'
+            assert client.recv(3) == b'A'
+            for duplicate in (raw, json.dumps(dict(request, arguments=dict(session=session, dataBase64='Qg=='))).encode()):
+                with pytest.raises(DeviceError, match='never replayed'):
+                    bridge.dispatch(duplicate)
+            assert bridge.dispatch(json.dumps(dict(request, sequence=2, requestId='second')).encode())['outcome'] == 'SENT_TO_TRANSPORT'
+            assert client.recv(3) == b'A'
+            with pytest.raises(DeviceError) as error:
+                bridge.dispatch(json.dumps(dict(request, sequence=3, deadlineNs=0)).encode())
+            assert error.value.code == 'E_TCP_REQUEST_EXPIRED'
+            client.settimeout(.1)
+            with pytest.raises(socket.timeout):
+                client.recv(1)
     finally:
         parent.close()
         child.close()
 
 
-def testRealPipeProxyAndRevokeDoesNotStopListener(manager):
-    manager.start()
-    event = multiprocessing.get_context("spawn").Event()
-    child = manager.openWorker("job", event, multiprocessing.get_context("spawn"))
-    proxy = CommunicationProxy(child, event)
+
+def testRealPipeProxyAndRevokeDoesNotStopListener(devices):
+    event = threading.Event()
+    backend = devices.drivers['server'].backend
+    proxy = CommunicationProxy(devices.openTcpWorker('job', event, multiprocessing.get_context('spawn')), event)
     try:
-        with connect(manager) as client:
-            session = proxy.acquire("tcp-server", "front", 1000)
-            assert proxy.send(session, b"'0,0EN'", {})["outcome"] == "SENT_TO_TRANSPORT"
+        with connect(backend) as client:
+            session = deviceCall(proxy, devices, 'acquire_session', {})
+            assert deviceCall(proxy, devices, 'send', dict(session=session, dataBase64='JzAsMEVOJw=='))['outcome'] == 'SENT_TO_TRANSPORT'
             assert client.recv(30) == b"'0,0EN'"
         event.set()
-        manager.revokeJob("job")
-        assert manager.state == "LISTENING" and not manager._workers
+        devices.retire('job')
+        assert backend.state == 'LISTENING' and not devices.tcpWorkers
     finally:
         proxy.close()
+
 
 
 def testQueueBoundAndPartialWriteUnknownAreDeterministic(manager, monkeypatch):
@@ -225,33 +259,31 @@ def testConcurrentMessagesNeverInterleave(manager):
         assert len(receipts) == 2 and all(r["outcome"] == "SENT_TO_TRANSPORT" for r in receipts)
 
 
-def testLostIpcReceiptIsUnknownAndNeverAutomaticallyResent(manager, monkeypatch):
+def testLostIpcReceiptIsUnknownAndNeverAutomaticallyResent(devices, monkeypatch):
     from emo_master.apps.runtime.communication import ipc
-    context = multiprocessing.get_context("spawn")
-    manager.start()
-    event = context.Event()
-    child = manager.openWorker("job", event, context)
-    proxy = CommunicationProxy(child, event)
+    event = threading.Event()
+    backend = devices.drivers['server'].backend
+    proxy = CommunicationProxy(devices.openTcpWorker('job', event, multiprocessing.get_context('spawn')), event)
     try:
-        with connect(manager) as client:
-            session = proxy.acquire("tcp-server", "front", 1000)
-            bridge = manager._workers["job"]
-            connection = bridge.connection
+        with connect(backend) as client:
+            session = deviceCall(proxy, devices, 'acquire_session', {})
+            connection = devices.tcpWorkers['job'].connection
             originalSend = ipc.sendBytes
             def loseReply(target, raw, cancelled, deadline):
                 if target is connection:
                     connection.close()
-                    raise OSError("injected loss after completed dispatch")
+                    raise OSError('injected loss after completed dispatch')
                 return originalSend(target, raw, cancelled, deadline)
-            monkeypatch.setattr(ipc, "sendBytes", loseReply)
-            with pytest.raises(TcpServiceError) as error:
-                proxy.send(session, b"ONCE", {})
-            assert error.value.receipt["outcome"] == "OUTCOME_UNKNOWN"
-            assert client.recv(20) == b"ONCE"
-            assert len([r for r, _ in manager._records if r["kind"] == "tx"]) == 1
+            monkeypatch.setattr(ipc, 'sendBytes', loseReply)
+            with pytest.raises(DeviceError) as error:
+                deviceCall(proxy, devices, 'send', dict(session=session, dataBase64='T05DRQ=='))
+            assert error.value.diagnostics['tcpReceipt']['outcome'] == 'OUTCOME_UNKNOWN'
+            assert client.recv(20) == b'ONCE'
+            assert len([r for r, _ in backend._records if r['kind'] == 'tx']) == 1
             assert proxy.closed
     finally:
         proxy.close()
+
 
 
 def testLeasesAndObservationHistoryAreBounded(manager, monkeypatch):
@@ -270,20 +302,21 @@ def testLeasesAndObservationHistoryAreBounded(manager, monkeypatch):
         assert len(state["records"]) == 3 and state["gap"] and state["droppedRecords"] > 0
 
 
-def testOldWorkerCannotAcquireFromRestartedService(manager):
-    context = multiprocessing.get_context("spawn")
-    manager.start()
-    event = context.Event()
-    proxy = CommunicationProxy(manager.openWorker("job", event, context), event)
+def testOldWorkerCannotAcquireFromReplacedProjectScope(devices):
+    event = threading.Event()
+    parent, child = multiprocessing.get_context('spawn').Pipe()
+    bridge = WorkerBridge(devices, 'job', parent, event)
     try:
-        manager.stop()
-        manager.start()
-        with connect(manager):
-            with pytest.raises(TcpServiceError) as error:
-                proxy.acquire("tcp-server", "front", 1000)
-            assert error.value.code == "E_CANCELLED"
+        devices.scope = dict(devices.scope, projectLoadGeneration='replacement-load')
+        request = dict(sequence=1, kind='device_action')
+        with pytest.raises(DeviceError) as error:
+            bridge.dispatch(json.dumps(request).encode())
+        assert error.value.code == 'E_DEVICE_CANCELLED'
+        assert not devices.services['server'].busy()
     finally:
-        proxy.close()
+        parent.close()
+        child.close()
+
 
 
 def testListenerThreadAdmissionFailureReleasesPort(manager, monkeypatch):
@@ -300,18 +333,20 @@ def testListenerThreadAdmissionFailureReleasesPort(manager, monkeypatch):
 
 
 @pytest.mark.parametrize("message", ["'0,0EN'", "0,0EX", "'0,0EX'"])
-def testOriginalEnExSamplesAreTransferredWithoutNormalization(manager, message):
+def testOriginalEnExSamplesAreTransferredWithoutNormalization(devices, message):
     from emo_master.plugins.builtins._managed_tcp import TcpSessionSendOperator
-    context = multiprocessing.get_context("spawn")
-    manager.start()
-    event = context.Event()
-    proxy = CommunicationProxy(manager.openWorker("job", event, context), event)
+    event = threading.Event()
+    backend = devices.drivers['server'].backend
+    proxy = CommunicationProxy(devices.openTcpWorker('job', event, multiprocessing.get_context('spawn')), event)
     try:
-        with connect(manager) as client:
-            session = proxy.acquire("tcp-server", "front", 1000)
-            result = TcpSessionSendOperator().executeNode(dict(session=session, data=message), {}, dict(communication=proxy))
-            assert result["status"] == "ok", result
-            assert client.recv(30) == message.encode("utf-8")
-            assert result["diagnostics"]["tcpReceipt"]["bytesRequested"] == len(message.encode())
+        with connect(backend) as client:
+            session = deviceCall(proxy, devices, 'acquire_session', {})
+            result = TcpSessionSendOperator().executeNode(dict(session=session, data=message), {},
+                dict(executeDevice=lambda _slot, action, arguments: deviceCall(proxy, devices, action, arguments),
+                     deviceParameters=dict(tcp=devices.definitions['server'].defaults)))
+            assert result['status'] == 'ok', result
+            assert client.recv(30) == message.encode('utf-8')
+            assert result['diagnostics']['tcpReceipt']['bytesRequested'] == len(message.encode())
+            assert result['diagnostics']['tcpReceipt']['deviceId'] == 'server'
     finally:
         proxy.close()

@@ -165,7 +165,7 @@ class ProjectController:
             self.lastLoadError = f"加载项目失败：{projectDirPath}\n{err}"
             self.appendLog("ERROR", self.lastLoadError)
             return False, None, None
-        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5', '2.6'}:
+        if self.editCoordinator is not None and payload.get('schemaVersion') in {'2.2', '2.3', '2.4', '2.5', '2.6', '2.7'}:
             # Opening an editable draft must not compile unresolved resource paths
             # through the legacy execution API. P2 preparation happens on explicit start.
             loaded, runtimePath = True, str(projectFile)

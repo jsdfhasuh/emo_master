@@ -59,7 +59,6 @@ class OperatorDefinition:
     icon: dict[str, object] = field(default_factory=dict)
     iconIssues: tuple[dict[str, object], ...] = ()
     deviceRequirements: dict[str, object] = field(default_factory=dict)
-    deviceBindingSince: str = ""
 
 
 @dataclass(frozen=True)
@@ -404,7 +403,6 @@ class RuntimeClient:
                 OperatorDefinition(
                     operatorId=str(getattr(operatorInfo, "operator_id", "")),
                     deviceRequirements=self._parseSchema(getattr(operatorInfo, "device_requirements_json", "{}")),
-                    deviceBindingSince=getattr(operatorInfo, "device_binding_since", ""),
                     displayName=str(getattr(operatorInfo, "display_name", "")),
                     version=str(getattr(operatorInfo, "version", "")),
                     category=rawCategory or "Other",
@@ -653,37 +651,36 @@ class RuntimeClient:
             raise wrapped from error
         return results
 
-    def listDeviceTypes(self):
-        from emo_master.core.plugin.devices import DeviceType, DeviceRequirement
+    def _deviceManagement(self):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        return DeviceManagementClient(self.runtimeService, call=self._call)
 
-        reply = self._call("ListDeviceTypes", runtime_pb2.ListDeviceTypesRequest())
-        types = {key: DeviceType.model_validate(value) for key, value in json.loads(reply.types_json).items()}
-        requirements = {key: {slot: DeviceRequirement.model_validate(value) for slot, value in slots.items()}
-                        for key, slots in json.loads(reply.requirements_json).items()}
-        return types, requirements, json.loads(reply.rejected_json)
+    def _deviceCall(self, method, *args, **kwargs):
+        from emo_master.clients.runtime.devices import DeviceClientError
+        try:
+            return getattr(self._deviceManagement(), method)(*args, **kwargs)
+        except DeviceClientError as error:
+            raise RuntimeClientError(error.code, str(error)) from error
+
+    def listDeviceTypes(self):
+        return self._deviceCall('listDeviceTypes')
 
     def getDeviceStates(self, projectId):
-        reply = self._call("GetDeviceStates", runtime_pb2.GetDeviceStatesRequest(project_id=projectId))
-        if not reply.ok:
-            raise RuntimeClientError(getattr(reply, 'code', '') or 'E_DEVICE_STATE', reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('getDeviceStates', projectId)
+
+    def getDeviceDiagnostics(self, scope, deviceId, cursor=0):
+        return self._deviceCall('getDeviceDiagnostics', scope, deviceId, cursor)
 
     def controlDevice(self, projectId, runtimeInstanceId, deviceId, state, action, *, confirmed=False):
-        reply = self._call("ControlDevice", runtime_pb2.ControlDeviceRequest(project_id=projectId,
-            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
-            expected_definition_revision=state["definitionRevision"], action=action, confirmed=confirmed,
-            expected_control_revision=state.get("controlRevision", "")))
-        if not reply.ok:
-            raise ValueError(reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('controlDevice', projectId, runtimeInstanceId, deviceId, state, action,
+                                                       confirmed=confirmed)
+
+    def executeDeviceAction(self, projectId, runtimeInstanceId, deviceId, state, action, arguments):
+        return self._deviceCall('executeDeviceAction', projectId, runtimeInstanceId, deviceId, state, action, arguments)
 
     def recoverDevice(self, projectId, runtimeInstanceId, deviceId, state, *, hardwareSynchronized=False):
-        reply = self._call("RecoverDevice", runtime_pb2.RecoverDeviceRequest(project_id=projectId,
-            runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state["generation"],
-            expected_definition_revision=state["definitionRevision"], hardware_synchronized=hardwareSynchronized))
-        if not reply.ok:
-            raise ValueError(reply.message)
-        return reply.runtime_instance_id, json.loads(reply.states_json)
+        return self._deviceCall('recoverDevice', projectId, runtimeInstanceId, deviceId, state,
+                                                       hardwareSynchronized=hardwareSynchronized)
 
     def cameraDiagnostic(self, projectId, runtimeInstanceId, deviceId, state, action, *, sessionId="", sequence=0,
                          confirmed=False, changes=None):

@@ -333,6 +333,11 @@ class ConfigurationCoordinator:
                 raise ConfigurationError("E_CYCLE_STALE", "device request has no matching root cycle lease")
             return cycle["snapshot"]["executionRevision"]
 
+    def cyclePayload(self, owner, cycleId):
+        with self.cycleLock:
+            self.requireCycle(owner, cycleId)
+            return deepcopy(self._cycleLease(owner, cycleId)['snapshot']['payload'])
+
     def retainCycle(self, sourceOwner, cycleId, owner):
         """Queued consumers pin the source plan without holding the project lock."""
         with self.cycleLock:

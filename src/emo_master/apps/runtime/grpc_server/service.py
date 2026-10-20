@@ -203,6 +203,10 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         self.communicationManager = CommunicationManager(self.runtimeInstanceId)
         from emo_master.apps.runtime.devices.manager import DeviceManager
         self.deviceManager = DeviceManager(self.pluginScanResult.deviceTypes)
+        self.deviceManager.runtimeInstanceId = self.runtimeInstanceId
+        self.deviceManager.scope['runtimeInstanceId'] = self.runtimeInstanceId
+        self.deviceManager.diagnostics.writer = self.operationalLogWriter
+        self.eventStore.addSink(self.deviceManager.diagnostics.projectEvent)
         from emo_master.apps.runtime.devices.imv_debug import CameraDiagnostics
         self.cameraDiagnostics = CameraDiagnostics(self.deviceManager)
         self._communicationRequests: dict = {}
@@ -262,8 +266,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         def initialize():
             self.jobSupervisor.assertMutationAllowed()
             payload = json.loads(request.local_payload_json)
-            if not isinstance(payload, dict) or payload.get('schemaVersion') != '2.6':
-                raise ConfigurationError('E_CONFIG_INVALID', '显式在线配置写入需要 2.6 格式工程')
+            if not isinstance(payload, dict) or payload.get('schemaVersion') not in {'2.6', '2.7'}:
+                raise ConfigurationError('E_CONFIG_INVALID', '显式在线配置写入需要当前 2.7 格式工程')
             root = Path(request.resource_root).resolve(strict=True) if request.resource_root else (
                 self.workspaceRoot.parent / 'online-projects' / hashlib.sha256(
                     payload['project']['projectId'].encode('utf-8')).hexdigest())
@@ -322,16 +326,16 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             canonical = migrateProjectPayload(rawPayload)
             document = ProjectDocument.model_validate(canonical)
             authoritativePayload = document.model_dump(mode="json")
-            if self.productionMode or document.schemaVersion == "2.6":
+            if self.productionMode or document.schemaVersion in {"2.6", "2.7"}:
                 from emo_master.core.project.runtime_directory import prepareRuntimeProject
-                if document.schemaVersion == "2.6":
+                if document.schemaVersion in {"2.6", "2.7"}:
                     pins.append(self.projectResourceTransfers.pin(document, projectFile.parent))
                 document = prepareRuntimeProject(document, projectFile.parent,
                     self.pluginScanResult.activeOperators,
                     deviceTypes=self.pluginScanResult.deviceTypes,
                     resourcePaths=self.projectResourceTransfers.resolve(document),
                     protectedPaths=(*self.sqliteProtectedPaths(), self.operationalLogWriter.directory))
-                if document.schemaVersion == "2.6":
+                if document.schemaVersion in {"2.6", "2.7"}:
                     from threading import Event
                     from emo_master.apps.runtime.project_config.resources import prepareResources
                     document, _resources = prepareResources(document, self.pluginScanResult.activeOperators,
@@ -369,12 +373,13 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
         try:
             self.deviceManager.load(document)
-            self.communicationManager.load(document, os.path.normcase(str(projectFile.resolve())))
+            if document.schemaVersion != '2.7':
+                self.communicationManager.load(document, os.path.normcase(str(projectFile.resolve())))
         except Exception as error:
             return runtime_pb2.LoadProjectReply(ok=False, status="FAILED", message=str(error))
         self.loadedProjectPath = str(projectFile.parent)
         self.loadedProjectFile = str(projectFile)
-        self.loadedPayload = authoritativePayload if document.schemaVersion == "2.6" else document.model_dump(mode="json")
+        self.loadedPayload = authoritativePayload if document.schemaVersion in {"2.6", "2.7"} else document.model_dump(mode="json")
         self.loadedDocument = document
         self.loadedProjectId = document.project.projectId
         self._loadedProjectPreviewKey = self.previewAssetStore.projectKey(
@@ -391,7 +396,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             else max(2, len(document.workflows), document.runtime.maxConcurrentJobs))
         self.jobSupervisor.gracefulStopTimeoutMs = document.runtime.gracefulStopTimeoutMs
         self.jobSupervisor.heartbeatTimeoutMs = document.runtime.heartbeatTimeoutMs
-        if document.schemaVersion == "2.6":
+        if document.schemaVersion in {"2.6", "2.7"}:
             try:
                 self.projectConfiguration.current = self.projectConfiguration.store.initialize(
                     authoritativePayload, str(projectFile.resolve()))
@@ -598,7 +603,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     message="E_RESOURCE_BUSY: operator debug still holds Runtime resources")
             previewCleanupErrors = self.livePreviewManager.closeAll(timeoutSeconds=3.0)
             previewCleanupErrors.extend(self.plcDebugManager.closeSessions(legacyOnly=True)
-                if document.schemaVersion == "2.6" else self.plcDebugManager.closeSessions())
+                if document.schemaVersion in {"2.6", "2.7"} else self.plcDebugManager.closeSessions())
             if previewCleanupErrors:
                 return runtime_pb2.StartJobReply(
                     ok=False,
@@ -611,21 +616,13 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 )
 
             try:
-                from emo_master.core.project.communication import projectCommunication
-                config = projectCommunication(document)
-                with self.jobSupervisor._lock:
-                    limit = self.jobSupervisor.maxConcurrentJobs
-                    if (config.enabled and config.startupPolicy == "on_project_run" and self.communicationManager.state != "LISTENING"
-                            and limit is not None and len(self.jobSupervisor._ownedJobs()) >= limit):
-                        raise ValueError("E_MAX_CONCURRENT_JOBS: maximum concurrent jobs reached")
-                self.communicationManager.preflight(document, workflowId)
                 from emo_master.core.workflow.dispatch_contracts import groupSlots
                 dispatchSlots = groupSlots(document, workflowId)
                 with self.jobSupervisor._lock:
-                    if dispatchSlots and limit is not None and len(self.jobSupervisor._ownedJobs()) + 1 + len(dispatchSlots) > limit:
-                        raise ValueError("E_MAX_CONCURRENT_JOBS: entire Dispatch run group exceeds capacity")
-                for target, _capacity in dispatchSlots.values():
-                    self.communicationManager.preflight(document, target)
+                    limit = self.jobSupervisor.maxConcurrentJobs
+                    if limit is not None and len(self.jobSupervisor._ownedJobs()) + 1 + len(dispatchSlots) > limit:
+                        raise ValueError('E_MAX_CONCURRENT_JOBS: entire run group exceeds capacity')
+                self.deviceManager.preflight(document, workflowId)
             except Exception as error:
                 return runtime_pb2.StartJobReply(ok=False, status="REJECTED",
                     message=f"{getattr(error, 'code', 'E_TCP_PREFLIGHT')}: {error}")
@@ -842,9 +839,12 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                                definitionRevision=revisionOf(self.deviceManager.definitions[key].model_dump()))
                       for key, executor in self.deviceManager.executors.items()}
             for key, driver in self.deviceManager.drivers.items():
+                definition = self.deviceManager.definitions[key]
+                states[key].update(deviceTypeId=definition.deviceTypeId, name=definition.name,
+                                   enabled=definition.enabled)
                 snapshot = getattr(driver, "snapshot", None)
                 if callable(snapshot):
-                    states[key].update(snapshot())
+                    states[key]['driverState'] = snapshot()
                 states[key].update(self.deviceManager.lifecycles[key].snapshot())
                 states[key]['productionOwners'] = self.deviceManager.productionOwners(key)
                 discovery = self.deviceNetwork.discovery
@@ -856,15 +856,31 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 replacement = self.deviceManager.replacement
                 if replacement is not None and key in replacement.changed:
                     states[key]["admissionState"] = "REPLACING"
+                states[key].update(self.deviceManager.scope)
+                states[key]['availableControls'] = self.deviceManager.availableControls(key)
+                states[key]['availableManagementActions'] = self.deviceManager.availableManagementActions(key)
         return runtime_pb2.GetDeviceStatesReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
-            project_id=self.loadedProjectId, states_json=json.dumps(states))
+            project_id=self.loadedProjectId, states_json=json.dumps(states),
+            project_load_generation=self.deviceManager.scope['projectLoadGeneration'])
+
+    @_withProjectStateLock
+    def GetDeviceDiagnostics(self, request, context):
+        scope = self.deviceManager.scope
+        if (request.runtime_instance_id != scope['runtimeInstanceId'] or request.project_id != scope['projectId']
+                or request.project_load_generation != scope['projectLoadGeneration']
+                or request.device_id not in self.deviceManager.definitions):
+            return runtime_pb2.GetDeviceDiagnosticsReply(ok=False, code='E_DEVICE_SCOPE',
+                message='Runtime、工程或设备已变化，请刷新设备状态')
+        return runtime_pb2.GetDeviceDiagnosticsReply(ok=True, diagnostics_json=json.dumps(
+            self.deviceManager.diagnostics.query(scope, request.device_id, max(0, request.cursor)), ensure_ascii=True))
 
     def ControlDevice(self, request, context):
         from emo_master.core.project.snapshots import revisionOf
         try:
             with self._projectStateLock:
                 if (not request.confirmed or self._closing or request.runtime_instance_id != self.runtimeInstanceId
-                        or request.project_id != self.loadedProjectId or self.projectConfiguration.active
+                        or request.project_id != self.loadedProjectId
+                        or self.projectConfiguration.active and request.action not in {'disconnect', 'maintenance'}
                         or self.onlineRecoveryError or self.projectConfiguration.publicationError):
                     raise ValueError("control is unconfirmed or Runtime/project configuration is not ready")
                 definition = self.deviceManager.definitions.get(request.device_id)
@@ -880,6 +896,57 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         except (ValueError, RuntimeError) as error:
             return runtime_pb2.GetDeviceStatesReply(ok=False, runtime_instance_id=self.runtimeInstanceId,
                 project_id=self.loadedProjectId, states_json="{}", message=getattr(error, "code", "E_DEVICE_CONTROL") + ": " + str(error))
+
+    def ExecuteDeviceAction(self, request, context):
+        """A declared device-page action uses the same admission and cycle as Jobs."""
+        from uuid import uuid4
+        from emo_master.core.project.snapshots import revisionOf
+        from emo_master.apps.runtime.devices.diagnostics import compactResult
+        manager = self.deviceManager
+        owner = 'device-page-' + uuid4().hex
+        admitted = False
+        try:
+            if len(request.arguments_json.encode()) > 64 * 1024 or not 1 <= len(request.request_id) <= 160:
+                raise ValueError('device action arguments or request ID exceed limits')
+            arguments = json.loads(request.arguments_json or '{}')
+            with self._projectStateLock, manager.lock:
+                if (not request.confirmed or self._closing or not self._runtimeDataLockIsPrimary
+                        or request.runtime_instance_id != self.runtimeInstanceId
+                        or request.project_id != self.loadedProjectId or self.projectConfiguration.active
+                        or self.onlineRecoveryError or self.projectConfiguration.publicationError):
+                    raise ValueError('device action is unconfirmed or Runtime/project is not ready')
+                self.jobSupervisor.assertMutationAllowed()
+                definition = manager.definitions.get(request.device_id)
+                executor = manager.executors.get(request.device_id)
+                if (definition is None or executor is None or executor.generation != request.expected_generation
+                        or revisionOf(definition.model_dump()) != request.expected_definition_revision
+                        or manager.lifecycles[request.device_id].snapshot()['controlRevision'] != request.expected_control_revision):
+                    raise ValueError('device identity or control state changed; read online state again')
+                if request.action not in manager.availableManagementActions(request.device_id):
+                    raise ValueError('device action is not declared or device admission is unavailable')
+                manager.authorizeMaintenance(owner, request.device_id)
+                admitted = True
+                cycle = self.projectConfiguration.beginCycle(owner, -1,
+                    lambda: context is not None and not context.is_active())
+            result = manager.execute(owner, request.device_id, request.action, definition.defaults,
+                cycleId=cycle['cycleId'], arguments=arguments, requestId=request.request_id,
+                cancelled=lambda: context is not None and not context.is_active(),
+                source=dict(kind='management', client='device-page'))
+            return runtime_pb2.ExecuteDeviceActionReply(ok=True, result_json=json.dumps(compactResult(result)))
+        except (ValueError, RuntimeError) as error:
+            return runtime_pb2.ExecuteDeviceActionReply(ok=False,
+                code=getattr(error, 'code', 'E_DEVICE_ACTION'), message=str(error),
+                result_json=json.dumps(dict(outcome=getattr(error, 'outcome', 'UNKNOWN'),
+                    diagnostics=getattr(error, 'diagnostics', {}))))
+        finally:
+            if admitted:
+                manager.revoke(owner)
+                # An abandoned RPC is not proof that its native call exited.
+                # Keep the diagnostic owner and configuration lease until it does.
+                with executor.condition:
+                    executor.condition.wait_for(lambda: (executor.active is None or executor.active.owner != owner)
+                        and not any(operation.owner == owner for operation in executor.queue))
+                manager.retire(owner)
 
     @_withProjectStateLock
     def RecoverDevice(self, request, context):
@@ -965,7 +1032,6 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     operator_id=operatorId,
                     device_requirements_json=json.dumps({key: value.model_dump() for key, value in
                                                          descriptor.manifest.deviceRequirements.items()}),
-                    device_binding_since=descriptor.manifest.deviceBindingSince,
                     display_name=descriptor.manifest.displayName,
                     version=descriptor.manifest.version,
                     input_ports=canonicalPortTypes(descriptor.manifest.inputPorts),
@@ -1424,7 +1490,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                     return runtime_pb2.PlcDebugReply(**asdict(self.plcDebugManager.failure(
                         "E_PLC_CONTEXT_INVALID", "PLC debug requires the current loaded project, a registered PLC operator and bounded draft node identity")))
                 clientFactory = None
-                managed = self.loadedDocument.schemaVersion == "2.6"
+                managed = self.loadedDocument.schemaVersion in {"2.6", "2.7"}
                 if managed:
                     from emo_master.core.project.snapshots import revisionOf
                     from emo_master.apps.runtime.devices.slmp_debug import ManagedSlmpDebug
@@ -1484,7 +1550,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     @_withProjectStateLock
     def OpenOperatorPreviewSession(self, request, context):  # type: ignore[override]
-        if self.loadedDocument is not None and self.loadedDocument.schemaVersion == "2.6":
+        if self.loadedDocument is not None and self.loadedDocument.schemaVersion in {"2.6", "2.7"}:
             return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code="E_DEVICE_DEBUG_REQUIRED",
                 message="managed camera projects must use the device diagnostic entry point")
         isActive = getattr(context, "is_active", lambda: True)
@@ -1545,12 +1611,12 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     @_withProjectStateLock
     def OpenDraftOperatorPreviewSession(self, request, context):  # type: ignore[override]
-        if self.loadedDocument is not None and self.loadedDocument.schemaVersion == "2.6":
+        if self.loadedDocument is not None and self.loadedDocument.schemaVersion in {"2.6", "2.7"}:
             return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code="E_DEVICE_DEBUG_REQUIRED",
                 message="private camera previews cannot bypass the managed device authority")
         try:
             draft = json.loads(request.project_json or "{}")
-            if isinstance(draft, dict) and draft.get("schemaVersion") == "2.6":
+            if isinstance(draft, dict) and draft.get("schemaVersion") in {"2.6", "2.7"}:
                 return runtime_pb2.OpenOperatorPreviewSessionReply(ok=False, code="E_DEVICE_DEBUG_REQUIRED",
                     message="managed camera drafts must use the device diagnostic entry point")
         except (ValueError, TypeError):
@@ -2087,7 +2153,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         return snapshot, workspace
 
     def _onJobTerminal(self, jobId: str, status: str) -> None:
-        self.communicationManager.revokeJob(jobId)
+        if self.loadedDocument is not None and self.loadedDocument.schemaVersion != '2.7':
+            self.communicationManager.revokeJob(jobId)
         self.deviceManager.revoke(jobId)
         self.jobMessages.pop(jobId, None)
         previewKey = self._jobPreviewKeys.pop(jobId, "")
@@ -2132,7 +2199,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             return
 
     def _onJobRetired(self, jobId: str) -> None:
-        self.communicationManager.revokeJob(jobId)
+        if self.loadedDocument is not None and self.loadedDocument.schemaVersion != '2.7':
+            self.communicationManager.revokeJob(jobId)
         self.deviceManager.retire(jobId)
         record = self.jobRepository.get(jobId)
         if record is not None and record.status in {JobStatus.FAILED.value, JobStatus.ABORTED.value}:
@@ -2171,7 +2239,8 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             Path(root) for root in roots
         )
 
-    def _builtinsRoot(self) -> Path:
+    @staticmethod
+    def _builtinsRoot() -> Path:
         return Path(__file__).resolve().parents[3] / "plugins"
 
     def _resolveProjectFile(self, projectPath: Path) -> Path | None:
@@ -2235,7 +2304,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
 
     def _failedProjectCandidate(self, message):
         # Do not tear down a live project's listener for an invalid candidate.
-        if self.communicationManager.desired.enabled:
+        if self.loadedDocument is not None:
             self.jobMessages["__load__"] = message
         else:
             self._clearLoadedProject(message)

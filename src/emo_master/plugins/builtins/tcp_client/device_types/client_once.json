@@ -1,0 +1,251 @@
+{
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "deviceTypeId": "device.tcp.client_once",
+  "version": "1.0.0",
+  "displayName": "TCP 单次客户端",
+  "category": "TCP 通信",
+  "iconKey": "tcp-client",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "driverEntry": "emo_master.apps.runtime.devices.tcp:ManagedTcpClientOnce",
+  "connectionSchema": {
+    "type": "object",
+    "properties": {
+      "host": {
+        "title": "主机地址",
+        "type": "string",
+        "default": "127.0.0.1"
+      },
+      "port": {
+        "title": "端口",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535,
+        "default": 10001
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "host",
+      "port"
+    ]
+  },
+  "defaultsSchema": {
+    "type": "object",
+    "properties": {
+      "textEncoding": {
+        "title": "发送文本编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8"
+      },
+      "appendNewline": {
+        "title": "追加换行",
+        "type": "boolean",
+        "default": false
+      },
+      "rejectTrailingResponse": {
+        "title": "拒绝响应帧后的残留数据",
+        "type": "boolean",
+        "default": false,
+        "description": "单次换行事务中，拒绝同一接收块内多余报文；连接仍按事务关闭。"
+      },
+      "shutdownWrite": {
+        "title": "发送后关闭写入方向",
+        "type": "boolean",
+        "default": false
+      },
+      "connectTimeoutMs": {
+        "title": "连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "responseTimeoutMs": {
+        "title": "响应超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 2000
+      },
+      "responseFraming": {
+        "title": "响应分帧方式",
+        "type": "string",
+        "enum": [
+          "newline",
+          "quoted",
+          "idle",
+          "fixedLength"
+        ],
+        "default": "newline"
+      },
+      "expectedBytes": {
+        "title": "预期字节数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 16777216,
+        "default": 0
+      },
+      "maxResponseBytes": {
+        "title": "最大响应大小（字节）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16777216,
+        "default": 1048576
+      },
+      "maxRequestBytes": {
+        "title": "最大发送大小（字节）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16777216,
+        "default": 1048576
+      },
+      "responseEncoding": {
+        "title": "响应内容编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8"
+      },
+      "responseTextEncoding": {
+        "title": "响应文本编码",
+        "type": "string",
+        "enum": [
+          "none",
+          "utf-8",
+          "ascii",
+          "latin-1"
+        ],
+        "default": "none"
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "textEncoding",
+      "appendNewline",
+      "rejectTrailingResponse",
+      "shutdownWrite",
+      "connectTimeoutMs",
+      "responseTimeoutMs",
+      "responseFraming",
+      "expectedBytes",
+      "maxResponseBytes",
+      "maxRequestBytes",
+      "responseEncoding",
+      "responseTextEncoding"
+    ]
+  },
+  "policiesSchema": {
+    "type": "object",
+    "properties": {
+      "deviceWaitTimeoutMs": {
+        "title": "排队超时 (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 1,
+        "maximum": 600000
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "deviceWaitTimeoutMs"
+    ]
+  },
+  "overridePaths": [
+    "textEncoding",
+    "appendNewline",
+    "rejectTrailingResponse",
+    "shutdownWrite",
+    "connectTimeoutMs",
+    "responseTimeoutMs",
+    "responseFraming",
+    "expectedBytes",
+    "maxResponseBytes",
+    "maxRequestBytes",
+    "responseEncoding",
+    "responseTextEncoding"
+  ],
+  "dynamicPaths": [
+    "textEncoding",
+    "appendNewline",
+    "rejectTrailingResponse",
+    "shutdownWrite",
+    "connectTimeoutMs",
+    "responseTimeoutMs",
+    "responseFraming",
+    "expectedBytes",
+    "maxResponseBytes",
+    "maxRequestBytes",
+    "responseEncoding",
+    "responseTextEncoding"
+  ],
+  "nextCyclePaths": [
+    "textEncoding",
+    "appendNewline",
+    "rejectTrailingResponse",
+    "shutdownWrite",
+    "connectTimeoutMs",
+    "responseTimeoutMs",
+    "responseFraming",
+    "expectedBytes",
+    "maxResponseBytes",
+    "maxRequestBytes",
+    "responseEncoding",
+    "responseTextEncoding"
+  ],
+  "capabilities": [
+    "send",
+    "exchange"
+  ],
+  "actionSchemas": {
+    "send": {
+      "type": "object",
+      "properties": {
+        "dataBase64": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "dataBase64"
+      ]
+    },
+    "exchange": {
+      "type": "object",
+      "properties": {
+        "dataBase64": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "dataBase64"
+      ]
+    }
+  },
+  "operationScheduling": "serial",
+  "connectionLifetime": "per_operation",
+  "controlCapabilities": [
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ]
+}

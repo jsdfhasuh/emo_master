@@ -1,0 +1,225 @@
+{
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "deviceTypeId": "device.tcp.receive_once",
+  "version": "1.0.0",
+  "displayName": "TCP 单次接收",
+  "category": "TCP 通信",
+  "iconKey": "tcp-client",
+  "minCoreVersion": "0.6.1",
+  "maxCoreVersion": "1.x",
+  "platforms": [
+    "windows",
+    "linux"
+  ],
+  "driverEntry": "emo_master.apps.runtime.devices.tcp:ManagedTcpReceiveOnce",
+  "connectionSchema": {
+    "type": "object",
+    "properties": {
+      "bindHost": {
+        "title": "监听地址",
+        "type": "string",
+        "default": "127.0.0.1",
+        "xAddressLiteral": true,
+        "xDeviceIdentity": true
+      },
+      "port": {
+        "title": "端口",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 65535,
+        "default": 10001,
+        "xDeviceIdentity": true
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "bindHost",
+      "port"
+    ]
+  },
+  "defaultsSchema": {
+    "type": "object",
+    "properties": {
+      "acceptTimeoutMs": {
+        "title": "等待连接超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 5000
+      },
+      "readTimeoutMs": {
+        "title": "读取超时（毫秒）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 60000,
+        "default": 1000
+      },
+      "framing": {
+        "title": "消息分帧方式",
+        "type": "string",
+        "enum": [
+          "newline",
+          "quoted",
+          "idle",
+          "fixedLength"
+        ],
+        "default": "newline"
+      },
+      "expectedBytes": {
+        "title": "预期字节数",
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 16777216,
+        "default": 0
+      },
+      "maxMessageBytes": {
+        "title": "最大消息大小（字节）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16777216,
+        "default": 1048576
+      },
+      "messageEncoding": {
+        "title": "消息内容编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8"
+      },
+      "messageTextEncoding": {
+        "title": "消息文本编码",
+        "type": "string",
+        "enum": [
+          "none",
+          "utf-8",
+          "ascii",
+          "latin-1"
+        ],
+        "default": "none"
+      },
+      "ackText": {
+        "title": "应答文本",
+        "type": "string",
+        "default": ""
+      },
+      "ackEncoding": {
+        "title": "应答文本编码",
+        "type": "string",
+        "enum": [
+          "utf-8",
+          "ascii",
+          "latin-1",
+          "hex",
+          "base64"
+        ],
+        "default": "utf-8"
+      },
+      "ackAppendNewline": {
+        "title": "应答追加换行",
+        "type": "boolean",
+        "default": true
+      },
+      "maxAckBytes": {
+        "title": "最大应答大小（字节）",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 16777216,
+        "default": 1048576
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "acceptTimeoutMs",
+      "readTimeoutMs",
+      "framing",
+      "expectedBytes",
+      "maxMessageBytes",
+      "messageEncoding",
+      "messageTextEncoding",
+      "ackText",
+      "ackEncoding",
+      "ackAppendNewline",
+      "maxAckBytes"
+    ]
+  },
+  "policiesSchema": {
+    "type": "object",
+    "properties": {
+      "deviceWaitTimeoutMs": {
+        "title": "排队超时 (ms)",
+        "type": "integer",
+        "default": 5000,
+        "minimum": 1,
+        "maximum": 600000
+      }
+    },
+    "additionalProperties": false,
+    "required": [
+      "deviceWaitTimeoutMs"
+    ]
+  },
+  "overridePaths": [
+    "acceptTimeoutMs",
+    "readTimeoutMs",
+    "framing",
+    "expectedBytes",
+    "maxMessageBytes",
+    "messageEncoding",
+    "messageTextEncoding",
+    "ackText",
+    "ackEncoding",
+    "ackAppendNewline",
+    "maxAckBytes"
+  ],
+  "dynamicPaths": [
+    "acceptTimeoutMs",
+    "readTimeoutMs",
+    "framing",
+    "expectedBytes",
+    "maxMessageBytes",
+    "messageEncoding",
+    "messageTextEncoding",
+    "ackText",
+    "ackEncoding",
+    "ackAppendNewline",
+    "maxAckBytes"
+  ],
+  "nextCyclePaths": [
+    "acceptTimeoutMs",
+    "readTimeoutMs",
+    "framing",
+    "expectedBytes",
+    "maxMessageBytes",
+    "messageEncoding",
+    "messageTextEncoding",
+    "ackText",
+    "ackEncoding",
+    "ackAppendNewline",
+    "maxAckBytes"
+  ],
+  "capabilities": [
+    "receive"
+  ],
+  "actionSchemas": {
+    "receive": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false,
+      "required": []
+    }
+  },
+  "operationScheduling": "serial",
+  "connectionLifetime": "per_operation",
+  "controlCapabilities": [
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ]
+}

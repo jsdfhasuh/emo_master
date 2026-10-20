@@ -120,128 +120,145 @@ def testInstalledDependencyLocksCommit(runtime):
     assert result["state"] == "COMMITTED", result
 
 
-def communication(service):
-    config = service.loadedDocument.communication.model_dump()
-    config["enabled"] = True
-    # An ephemeral loopback allocation is test-only; no physical endpoint is used.
+def tcpDevices(service):
+    from tests.runtime.test_tcp_device_integration import definition
+    catalog = service.loadedDocument.devices.model_dump()
+    server = definition(service.pluginScanResult.deviceTypes['device.tcp.server'])
     with socket.socket() as sock:
-        sock.bind(("127.0.0.1", 0))
-        port = sock.getsockname()[1]
-    config["tcpServer"].update(bindAddress="127.0.0.1", port=port,
-        channels=[dict(channelId="loopback", name="Loopback", allowedIps=["127.0.0.1"])])
-    return config
+        sock.bind(('127.0.0.1', 0))
+        server['connection'].update(bindAddress='127.0.0.1', port=sock.getsockname()[1],
+            channels=[dict(channelId='loopback', name='Loopback', allowedIps=['127.0.0.1'])])
+    server['policies']['connect'] = 'manual'
+    from emo_master.core.project.devices import DeviceDefinition
+    catalog['definitions']['tcp'] = DeviceDefinition.model_validate(server).model_dump()
+    return catalog
 
 
-def testCommunicationReplacementIsHardwareFreeUntilExplicitStart(runtime):
-    config = communication(runtime)
-    result = write(runtime, "communication", config)
-    assert result["state"] == "COMMITTED", result
-    state = runtime.communicationManager.snapshot()
-    assert state["desired"] == state["effective"] == runtime.loadedDocument.communication.model_dump()
-    assert state["state"] == "STOPPED" and not state["ownsResources"] and not state["savePending"]
+def tcpBackend(service):
+    return service.deviceManager.drivers['tcp'].backend
 
 
-@pytest.mark.parametrize("policy", ["stopAffected", "drainAffected"])
-def testListeningCommunicationReplacementRestartsOnlyAfterCommit(runtime, policy):
-    config = communication(runtime)
-    assert write(runtime, "communication", config)["state"] == "COMMITTED"
-    runtime.communicationManager.start()
-    oldGeneration = runtime.communicationManager.serviceGeneration
-    replacement = communication(runtime)
-    result = write(runtime, "communication", replacement, requestId="listening", policy=policy)
-    assert result["state"] == "COMMITTED", result
-    assert result["connections"]["communication"] == "LISTENING"
-    state = runtime.communicationManager.snapshot()
-    assert state["state"] == "LISTENING" and state["serviceGeneration"] > oldGeneration
-    assert state["desired"]["tcpServer"]["port"] == replacement["tcpServer"]["port"]
+def tcpControl(service, action):
+    from emo_master.clients.runtime.devices import DeviceManagementClient
+    client = DeviceManagementClient(service)
+    runtimeId, states = client.getDeviceStates(service.loadedProjectId)
+    return client.controlDevice(service.loadedProjectId, runtimeId, 'tcp', states['tcp'], action, confirmed=True)
 
 
-def testListeningCommunicationRejectPolicyLeavesListenerRunning(runtime):
-    assert write(runtime, "communication", communication(runtime))["state"] == "COMMITTED"
-    runtime.communicationManager.start()
-    generation = runtime.communicationManager.serviceGeneration
-    result = write(runtime, "communication", communication(runtime), requestId="rejected")
-    assert result["state"] == "FAILED" and result["code"] == "E_CONFIG_REQUIRES_STOP", result
-    assert runtime.communicationManager.state == "LISTENING"
-    assert runtime.communicationManager.serviceGeneration == generation
-    assert not runtime.communicationManager.snapshot()["savePending"]
+def settledReceipt(service, requestId):
+    from tests.runtime.test_device_production_outcomes import waitFor
+    waitFor(lambda: all(value != 'PENDING' for value in
+        service.projectConfiguration.status(requestId).get('connections', {}).values()))
+    return service.projectConfiguration.status(requestId)
 
 
-def testCommunicationBindFailureIsSeparateFromCommittedConfiguration(runtime, monkeypatch):
-    assert write(runtime, "communication", communication(runtime))["state"] == "COMMITTED"
-    runtime.communicationManager.start()
-    def fail():
-        raise OSError("injected bind failure")
-    monkeypatch.setattr(runtime.communicationManager, "start", fail)
-    result = write(runtime, "communication", communication(runtime), requestId="failed-bind", policy="stopAffected")
-    assert result["state"] == "COMMITTED", result
-    assert result["connections"]["communication"] == "FAILED: injected bind failure"
-    assert runtime.projectConfiguration.store.receipt("failed-bind")[1]["connections"] == result["connections"]
+def testTcpDeviceReplacementIsHardwareFreeUntilExplicitStart(runtime):
+    config = tcpDevices(runtime)
+    result = write(runtime, 'devices', config)
+    assert result['state'] == 'COMMITTED', result
+    state = tcpBackend(runtime).snapshot()
+    assert state['state'] == 'STOPPED' and not state['ownsResources'] and not state['savePending']
+    assert runtime.loadedDocument.devices.model_dump() == config
 
 
-def testCommunicationTransitionDoesNotStopUnrelatedContinuousCamera(runtime):
+@pytest.mark.parametrize('policy', ['stopAffected', 'drainAffected'])
+def testListeningTcpDeviceReplacementRestartsOnlyAfterCommit(runtime, policy):
+    assert write(runtime, 'devices', tcpDevices(runtime))['state'] == 'COMMITTED'
+    tcpControl(runtime, 'connect')
+    oldBackend = tcpBackend(runtime)
+    replacement = tcpDevices(runtime)
+    result = write(runtime, 'devices', replacement, requestId='listening', policy=policy)
+    assert result['state'] == 'COMMITTED', result
+    result = settledReceipt(runtime, 'listening')
+    assert result['connections']['tcp'] == 'LISTENING', result
+    state = tcpBackend(runtime).snapshot()
+    assert state['state'] == 'LISTENING' and tcpBackend(runtime) is not oldBackend
+    assert not oldBackend.snapshot()['ownsResources']
+    assert state['desired']['tcpServer']['port'] == replacement['definitions']['tcp']['connection']['port']
+
+
+def testListeningTcpRejectPolicyLeavesListenerRunning(runtime):
+    assert write(runtime, 'devices', tcpDevices(runtime))['state'] == 'COMMITTED'
+    tcpControl(runtime, 'connect')
+    backend = tcpBackend(runtime)
+    result = write(runtime, 'devices', tcpDevices(runtime), requestId='rejected')
+    assert result['state'] == 'FAILED' and result['code'] == 'E_CONFIG_REQUIRES_STOP', result
+    assert tcpBackend(runtime) is backend and backend.state == 'LISTENING'
+    assert not backend.snapshot()['savePending']
+
+
+def testTcpBindFailureIsSeparateFromCommittedConfiguration(runtime):
+    assert write(runtime, 'devices', tcpDevices(runtime))['state'] == 'COMMITTED'
+    tcpControl(runtime, 'connect')
+    with socket.socket() as occupied:
+        occupied.bind(('127.0.0.1', 0))
+        occupied.listen()
+        replacement = tcpDevices(runtime)
+        replacement['definitions']['tcp']['connection']['port'] = occupied.getsockname()[1]
+        result = write(runtime, 'devices', replacement, requestId='failed-bind', policy='stopAffected')
+        assert result['state'] == 'COMMITTED', result
+        result = settledReceipt(runtime, 'failed-bind')
+        assert result['connections']['tcp'].startswith('FAILED:'), result
+        assert runtime.projectConfiguration.store.receipt('failed-bind')[1]['connections'] == result['connections']
+
+
+def testTcpDeviceTransitionDoesNotStopUnrelatedContinuousCamera(runtime):
     from tests.runtime.test_device_production_outcomes import waitFor
     production = runtime.loadedDocument.production.model_dump()
-    production.update(mode="continuous", cycleIntervalMs=20)
-    assert write(runtime, "production", production)["state"] == "COMMITTED"
-    config = communication(runtime)
-    config["startupPolicy"] = "manual"
-    assert write(runtime, "communication", config, requestId="tcp-enable")["state"] == "COMMITTED"
-    runtime.communicationManager.start()
+    production.update(mode='continuous', cycleIntervalMs=20)
+    assert write(runtime, 'production', production)['state'] == 'COMMITTED'
+    assert write(runtime, 'devices', tcpDevices(runtime), requestId='tcp-enable')['state'] == 'COMMITTED'
+    tcpControl(runtime, 'connect')
     runtime.productionMode = True
-    started = runtime.StartJob(pb.StartJobRequest(workflow_id="main"), None)
+    started = runtime.StartJob(pb.StartJobRequest(workflow_id='main'), None)
     assert started.ok, started.message
-    driver = runtime.deviceManager.drivers["camera"]
+    driver = runtime.deviceManager.drivers['camera']
     waitFor(lambda: driver.sequence >= 2)
-    config["tcpServer"]["name"] = "Replacement listener"
-    status = write(runtime, "communication", config, policy="drainAffected", requestId="scoped-tcp")
-    assert status["state"] == "COMMITTED", status
-    assert not status["affectedJobs"]
+    status = write(runtime, 'devices', tcpDevices(runtime), policy='drainAffected', requestId='scoped-tcp')
+    assert status['state'] == 'COMMITTED', status
+    status = settledReceipt(runtime, 'scoped-tcp')
+    assert status['connections']['tcp'] == 'LISTENING' and not status['affectedJobs'], status
     count = driver.sequence
     waitFor(lambda: driver.sequence > count)
-    assert runtime.jobRepository.get(started.job_id).status == "RUNNING"
-    assert runtime.deviceManager.drivers["camera"] is driver
+    assert runtime.jobRepository.get(started.job_id).status == 'RUNNING'
+    assert runtime.deviceManager.drivers['camera'] is driver
     candidate = deepcopy(runtime.loadedPayload)
-    candidate["runtime"]["maxConcurrentJobs"] = 4
+    candidate['runtime']['maxConcurrentJobs'] = 4
     validation = runtime.ValidateProjectWrite(pb.ProjectConfigurationWriteRequest(
-        request_id="validate-only", expected_revision=runtime.projectConfiguration.current["documentRevision"],
+        request_id='validate-only', expected_revision=runtime.projectConfiguration.current['documentRevision'],
         expected_runtime_instance_id=runtime.runtimeInstanceId, local_payload_json=json.dumps(candidate),
-        selected_paths=["/runtime/maxConcurrentJobs"], replacement_policy="stopAffected"), None)
+        selected_paths=['/runtime/maxConcurrentJobs'], replacement_policy='stopAffected'), None)
     assert validation.ok, validation.message
     impact = json.loads(validation.result_json)
-    assert impact["affectedJobs"] == [started.job_id] and not impact["cycleSafe"]
-    assert runtime.jobRepository.get(started.job_id).status == "RUNNING"
+    assert impact['affectedJobs'] == [started.job_id] and not impact['cycleSafe']
+    assert runtime.jobRepository.get(started.job_id).status == 'RUNNING'
     assert runtime.jobSupervisor.maxConcurrentJobs != 4
 
 
-def testExplicitStopDuringConfigurationWriteSupersedesListenerRestart(runtime, monkeypatch):
-    assert write(runtime, "communication", communication(runtime))["state"] == "COMMITTED"
-    runtime.communicationManager.start()
+def testExplicitStopDuringConfigurationWriteSupersedesTcpRestart(runtime, monkeypatch):
+    assert write(runtime, 'devices', tcpDevices(runtime))['state'] == 'COMMITTED'
+    tcpControl(runtime, 'connect')
     entered, release = Event(), Event()
     prepare = runtime.projectConfiguration.prepare
     def paused(payload, cancelled):
         entered.set()
         assert release.wait(10)
         return prepare(payload, cancelled)
-    monkeypatch.setattr(runtime.projectConfiguration, "prepare", paused)
+    monkeypatch.setattr(runtime.projectConfiguration, 'prepare', paused)
     snapshot = runtime.projectConfiguration.snapshot()
-    candidate = deepcopy(snapshot["payload"])
-    candidate["communication"]["tcpServer"]["name"] = "Updated listener"
-    runtime.projectConfiguration.start(dict(requestId="explicit-stop", expectedRuntimeInstanceId=runtime.runtimeInstanceId,
-        expectedRevision=snapshot["documentRevision"], localPayload=candidate,
-        selectedPaths=["/communication/tcpServer/name"], replacementPolicy="stopAffected"))
+    candidate = deepcopy(snapshot['payload'])
+    candidate['devices'] = tcpDevices(runtime)
+    runtime.projectConfiguration.start(dict(requestId='explicit-stop', expectedRuntimeInstanceId=runtime.runtimeInstanceId,
+        expectedRevision=snapshot['documentRevision'], localPayload=candidate,
+        selectedPaths=['/devices/definitions/tcp/connection/port'], replacementPolicy='stopAffected'))
     try:
         assert entered.wait(5)
-        state = runtime.communicationManager.snapshot()
-        reply = runtime.ControlCommunication(pb.CommunicationRequest(protocol_version="1.1", action="STOP",
-            runtime_instance_id=runtime.runtimeInstanceId, project_id=runtime.loadedProjectId,
-            project_path=state["projectPath"], project_load_generation=state["projectLoadGeneration"],
-            expected_config_revision=state["desiredRevision"], request_id="manual-stop"), None)
-        assert reply.ok, reply.message
+        tcpControl(runtime, 'disconnect')
         release.set()
-        status = finish(runtime.projectConfiguration, "explicit-stop")
-        assert status["state"] == "COMMITTED", status
-        assert status["connections"]["communication"] == "SUPERSEDED"
-        assert runtime.communicationManager.state == "STOPPED"
+        status = finish(runtime.projectConfiguration, 'explicit-stop')
+        assert status['state'] == 'COMMITTED', status
+        assert status['connections']['tcp'] == 'SUPERSEDED', status
+        assert tcpBackend(runtime).state == 'STOPPED'
+        assert runtime.deviceManager.lifecycles['tcp'].paused
     finally:
         release.set()

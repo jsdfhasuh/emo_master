@@ -102,8 +102,8 @@ class JobSupervisor:
             try:
                 cell = HeartbeatCell(self._context)
                 spec = replace(spec, heartbeatCell=cell)
-                if self.communication is not None and spec.usesCommunication:
-                    communicationPipe = self.communication.openWorker(spec.jobId, cancelEvent, self._context)
+                if self.devices is not None and spec.usesCommunication:
+                    communicationPipe = self.devices.openTcpWorker(spec.jobId, cancelEvent, self._context)
                 if spec.deviceIds or spec.managedConfiguration or spec.runGroupId:
                     if self.devices is None:
                         raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE")
@@ -158,8 +158,8 @@ class JobSupervisor:
                     self.devices.retire(spec.jobId)
                 if communicationPipe is not None:
                     communicationPipe.close()
-                if spec.jobId not in self._handles and self.communication is not None:
-                    self.communication.revokeJob(spec.jobId)
+                if spec.jobId not in self._handles and self.devices is not None:
+                    self.devices.revokeTcpWorker(spec.jobId)
 
     def _startRunGroup(self, spec):
         import json

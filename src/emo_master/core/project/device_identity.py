@@ -28,9 +28,11 @@ def declaredIdentity(definition, declaration):
 
 
 def matchingDevices(value, definitions, declaration, *, excluding=None):
+    if not value.get("enabled", True):
+        return []
     identity = declaredIdentity(value, declaration)
     if identity is None:
         return []
-    return [key for key, candidate in definitions.items() if key != excluding
+    return [key for key, candidate in definitions.items() if key != excluding and candidate.get('enabled', True)
             and candidate.get('deviceTypeId') == value['deviceTypeId']
             and declaredIdentity(candidate, declaration) == identity]

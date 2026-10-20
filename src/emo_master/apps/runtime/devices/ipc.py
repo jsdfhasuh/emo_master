@@ -46,12 +46,9 @@ class DeviceBridge:
                     elif request["action"] == "beginCycle":
                         result = self.manager.configuration.beginCycle(self.owner, request["knownRevision"], self.cancelled,
                             parentCycleId=request.get("parentCycleId"))
+                        result['deviceScope'] = dict(self.manager.scope)
                     elif request["action"] == "endCycle":
-                        for executor in self.manager.executors.values():
-                            with executor.condition:
-                                if not executor.condition.wait_for(lambda: executor.active is None
-                                        or executor.active.owner != self.owner, timeout=2):
-                                    raise DeviceError("E_DEVICE_RELEASE_PENDING", "cycle device operation has not exited")
+                        self.manager.waitOwner(self.owner, request['cycleId'])
                         self.manager.configuration.endCycle(self.owner, request["cycleId"])
                         group = self.manager.dispatchGroups.get(self.owner)
                         if group is not None:
@@ -67,11 +64,11 @@ class DeviceBridge:
                     else:
                         result = self.manager.execute(self.owner, request["deviceId"], request["action"],
                             request["params"], cycleId=request["cycleId"], arguments=request.get("arguments"),
-                            cancelled=self.cancelled)
+                            cancelled=self.cancelled, source=request.get("source"), selectors=request.get("selectors"))
                     reply = dict(ok=True, result=result)
                 except Exception as error:
                     reply = dict(ok=False, code=getattr(error, "code", "E_DEVICE_IPC"), message=str(error),
-                                 outcome=getattr(error, "outcome", "UNKNOWN"))
+                                 outcome=getattr(error, "outcome", "UNKNOWN"), diagnostics=getattr(error, "diagnostics", {}))
                 sendBytes(self.connection, json.dumps(reply).encode(), self.cancelled, time.monotonic() + 2)
         except (OSError, EOFError, ValueError):
             pass
@@ -121,7 +118,7 @@ class DeviceProxy:
                 raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
                                   outcome="UNKNOWN") from error
             if not reply["ok"]:
-                raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"])
+                raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
             if action == "endCycle":
                 self.frameCopies = {key: item for key, item in self.frameCopies.items()
                                     if item[0]() is not None and item[1]["cycleId"] != fields["cycleId"]}
@@ -129,8 +126,8 @@ class DeviceProxy:
         finally:
             self.lock.release()
 
-    def capture(self, deviceId, params, cycleId):
-        descriptor = self.call("capture", deviceId=deviceId, params=params, cycleId=cycleId)
+    def capture(self, deviceId, params, cycleId, *, source=None, selectors=None):
+        descriptor = self.call("capture", deviceId=deviceId, params=params, cycleId=cycleId, source=source, selectors=selectors)
         image = copyFrame(descriptor)
         if self.retainFrames:
             self.rememberFrame(image, descriptor)

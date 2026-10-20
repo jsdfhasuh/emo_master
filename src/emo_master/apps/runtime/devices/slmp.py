@@ -10,7 +10,10 @@ from emo_master.plugins.builtins._slmp import Slmp3ESession, SlmpResponseError
 from .executor import DeviceError
 
 
-class ManagedSlmp:
+from emo_master.core.contracts.device_driver import DeviceDriver
+
+
+class ManagedSlmp(DeviceDriver):
     connectionRetryCodes = frozenset({"E_DEVICE_SLMP_IO"})
 
     def resetConnection(self):
@@ -48,7 +51,7 @@ class ManagedSlmp:
         if arguments["startAddress"] + span - 1 > maximum:
             raise DeviceError("E_DEVICE_ACTION", "SLMP action exceeds device address range")
 
-    def execute(self, action, params, cancel, deadline, *, arguments):
+    def execute(self, action, params, cancel, deadline, *, arguments, operationContext=None):
         if self.faulted:
             raise DeviceError("E_DEVICE_UNAVAILABLE", "SLMP session requires explicit recovery", unhealthy=True)
         self.validateAction(action, arguments)
@@ -111,10 +114,10 @@ class ManagedSlmp:
         if time.monotonic() >= deadline:
             raise DeviceError("E_DEVICE_OPERATION_TIMEOUT", "SLMP deadline expired before exchange")
 
-    def close(self):
+    def close(self, deadline=None):
         self.session.close()
         self.connected = False
 
     def snapshot(self):
-        return dict(connectionState="FAULTED" if self.faulted else "CONNECTED" if self.connected else "DISCONNECTED",
+        return dict(ready=self.connected, ownsResources=self.connected, connectionState="FAULTED" if self.faulted else "CONNECTED" if self.connected else "DISCONNECTED",
                     connectionGeneration=self.generation)

@@ -11,7 +11,13 @@
   ],
   "driverEntry": "emo_master.apps.runtime.devices.imv_host:ManagedImv",
   "executionLocation": "camera_host",
-  "cancellableWait": {"action": "capture", "timeoutPath": "captureTimeoutMs", "requires": {"triggerMode": "hardware"}},
+  "cancellableWait": {
+    "action": "capture",
+    "timeoutPath": "captureTimeoutMs",
+    "requires": {
+      "triggerMode": "hardware"
+    }
+  },
   "connectionSchema": {
     "type": "object",
     "additionalProperties": false,
@@ -240,7 +246,10 @@
         "title": "连接策略",
         "type": "string",
         "enum": [
-          "on_first_use", "on_project_open", "on_project_run", "manual"
+          "on_first_use",
+          "on_project_open",
+          "on_project_run",
+          "manual"
         ],
         "default": "on_first_use"
       },
@@ -248,11 +257,20 @@
         "title": "释放策略",
         "type": "string",
         "enum": [
-          "on_project_close", "when_unused", "idle_timeout", "manual"
+          "on_project_close",
+          "when_unused",
+          "idle_timeout",
+          "manual"
         ],
         "default": "on_project_close"
       },
-      "idleTimeoutMs": {"title": "空闲释放时长 (ms)", "type": "integer", "minimum": 1, "maximum": 86400000, "default": 30000},
+      "idleTimeoutMs": {
+        "title": "空闲释放时长 (ms)",
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 86400000,
+        "default": 30000
+      },
       "deviceWaitTimeoutMs": {
         "title": "排队超时 (ms)",
         "type": "integer",
@@ -302,15 +320,76 @@
   ],
   "nextCyclePaths": [],
   "parameterRules": [
-    {"present": "exposureUs", "requires": {"exposureMode": "manual"}, "whenOverridden": true},
-    {"present": "gainRaw", "requires": {"gainMode": "manual"}, "whenOverridden": true},
-    {"present": "frameRate", "requires": {"frameRateMode": "manual"}, "whenOverridden": true},
-    {"present": "width", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "height", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "offsetX", "requires": {"roiMode": "custom"}, "whenOverridden": true},
-    {"present": "offsetY", "requires": {"roiMode": "custom"}, "whenOverridden": true}
+    {
+      "present": "exposureUs",
+      "requires": {
+        "exposureMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "gainRaw",
+      "requires": {
+        "gainMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "frameRate",
+      "requires": {
+        "frameRateMode": "manual"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "width",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "height",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "offsetX",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    },
+    {
+      "present": "offsetY",
+      "requires": {
+        "roiMode": "custom"
+      },
+      "whenOverridden": true
+    }
   ],
   "capabilities": [
-    "capture", "discover"
-  ]
+    "capture"
+  ],
+  "schemaVersion": "1.1",
+  "driverApiVersion": "1.1",
+  "operationScheduling": "serial",
+  "connectionLifetime": "persistent",
+  "controlCapabilities": [
+    "connect",
+    "disconnect",
+    "maintenance",
+    "resume",
+    "recover",
+    "test_connection"
+  ],
+  "actionSchemas": {
+    "capture": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": false
+    }
+  }
 }

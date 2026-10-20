@@ -38,11 +38,15 @@ def configurationSchema(schema):
 
 def configurationForm(schema, values):
     schema = configurationSchema(schema)
-    form = SchemaParamForm()
+    if "channels" in schema.get("properties", {}):
+        from .tcp_device_form import TcpConnectionForm
+        form = TcpConnectionForm()
+    else:
+        form = SchemaParamForm()
     form.setSchema(schema, values)
     for key, spec in schema.get("properties", {}).items():
         if len(spec.get("enum", [])) == 1:
-            form._controls[key].setEnabled(False)
+            form.setFieldEnabled(key, False)
     return form
 
 
@@ -129,7 +133,7 @@ class DeviceDefinitionDialog(QDialog):
         self.discoverButton.setEnabled(client is not None and declaration.deviceTypeId == 'device.camera.huaray_imv')
         self.testButton = QPushButton('测试连接')
         self.testButton.clicked.connect(self.testConnection)
-        self.testButton.setEnabled(client is not None)
+        self.testButton.setEnabled(client is not None and "test_connection" in declaration.controlCapabilities)
         actions.addWidget(self.discoverButton)
         actions.addWidget(self.testButton)
         layout.addLayout(actions)
@@ -240,7 +244,8 @@ class SourceEditor(QWidget):
                     variable.addItem(f"{getattr(value, 'name', key)} ({key})", key)
             inputs = QComboBox()
             for key, kind in node.get("inputPorts", {}).items():
-                if kind == spec["type"]:
+                from emo_master.core.contracts.port_types import normalizePortType
+                if compatible(normalizePortType(kind), spec["type"]):
                     inputs.addItem(key, key)
             value = definition.get("defaults", {})
             override = node.get("deviceOverrides", {}).get(slot, {})
@@ -365,6 +370,7 @@ class DeviceNodeDialog(QDialog):
         self.newDefinitions = {}
         self.slots = {}
         self.sources = {}
+        self.selectors = {}
         self.onlineSnapshot = None
         self.onlineMessage = '在线配置未读取'
         self.onlinePending = None
@@ -582,6 +588,22 @@ class DeviceNodeDialog(QDialog):
                 self.error.setText(str(error))
         editor = SourceEditor(declaration, definitions[key], editorNode, slot,
                               self.c.session.document().globalVariables)
+        from emo_master.core.plugin.devices import DeviceRequirement, selectorCandidates
+        requirement = DeviceRequirement.model_validate(self.requirements[slot]) if isinstance(self.requirements[slot], dict) else self.requirements[slot]
+        oldSelectors = self.selectors.pop(slot, {})
+        for oldControl in oldSelectors.values():
+            oldControl.deleteLater()
+        self.selectors[slot] = {}
+        for name in requirement.selectorSchema['properties']:
+            select = QComboBox(editor)
+            select.setObjectName('selector-' + slot + '-' + name)
+            for value, label in selectorCandidates(declaration, definitions[key], name):
+                select.addItem(f'{label} ({value})', value)
+            prior = self.node.get('deviceBindings', {}).get(slot, {}).get('selectors', {}).get(name)
+            if prior is not None:
+                select.setCurrentIndex(select.findData(prior))
+            editor.layout().addRow('通道' if name == 'channelId' else name, select)
+            self.selectors[slot][name] = select
         self.sources[slot] = editor
         self._compareSource(slot, editor)
         layout.addWidget(editor)
@@ -601,7 +623,7 @@ class DeviceNodeDialog(QDialog):
                 key = combo.currentData()
                 if key is None:
                     raise ValueError("请选择设备：" + slot)
-                draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key}
+                draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key, "selectors": {name: control.currentData() for name, control in self.selectors.get(slot, {}).items()}}
                 declaration = self.types[definitions[key]["deviceTypeId"]]
                 if self.actionFields is not None and self.migrateLegacy:
                     draft = migrateLegacySources(draft, slot, key, declaration, self.actionFields)

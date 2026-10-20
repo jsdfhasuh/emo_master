@@ -8,10 +8,7 @@ from typing import Callable
 from uuid import uuid4
 
 
-class DeviceError(RuntimeError):
-    def __init__(self, code, message, *, outcome="NOT_EXECUTED", unhealthy=False):
-        super().__init__(message)
-        self.code, self.outcome, self.unhealthy = code, outcome, unhealthy
+from emo_master.core.contracts.device_driver import DeviceError
 
 
 @dataclass
@@ -26,6 +23,7 @@ class Operation:
     cancellation: Event = field(default_factory=Event)
     state: str = "QUEUED"
     operationDeadline: float = 0.0
+    cleanup: bool = False
 
 
 class DeviceExecutor:
@@ -44,17 +42,17 @@ class DeviceExecutor:
         self.thread = Thread(target=self._run, name="device-io-" + identity, daemon=True)
         self.thread.start()
 
-    def submit(self, owner, action, *, waitTimeout=5.0, operationTimeout=5.0, requestId=None, cancellableWait=False):
+    def submit(self, owner, action, *, waitTimeout=5.0, operationTimeout=5.0, requestId=None, cancellableWait=False, cleanup=False):
         if not 0 < waitTimeout <= 600 or (not 0 < operationTimeout <= 600 and not
                 (cancellableWait and operationTimeout == float("inf"))):
             raise DeviceError("E_DEVICE_BUDGET", "device budgets must be within (0, 600] seconds")
         with self.condition:
-            if self.closed or self.quarantined:
+            if self.closed or self.quarantined and not cleanup:
                 raise DeviceError("E_DEVICE_UNAVAILABLE", "device is closed or quarantined")
             if len(self.queue) >= self.capacity:
                 raise DeviceError("E_DEVICE_QUEUE_FULL", "device operation queue is full")
             operation = Operation(requestId or uuid4().hex, owner, action, time.monotonic() + waitTimeout,
-                                  operationTimeout, self.generation)
+                                  operationTimeout, self.generation, cleanup=cleanup)
             self.queue.append(operation)
             self.condition.notify_all()
             return operation
@@ -94,7 +92,7 @@ class DeviceExecutor:
                         continue
                     operation = Operation(uuid4().hex, "__device_idle__", action,
                                           time.monotonic() + 5, 5, self.generation)
-                if self.quarantined:
+                if self.quarantined and not operation.cleanup:
                     self._fail(operation, DeviceError("E_DEVICE_UNAVAILABLE", "device requires explicit recovery"))
                     continue
                 if time.monotonic() >= operation.waitDeadline:

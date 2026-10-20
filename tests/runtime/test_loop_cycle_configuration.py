@@ -161,11 +161,11 @@ def testRealSpawnWhileSwitchesOnlyBeforeConditionAndRetiresFalseIteration(tmp_pa
         assert loaded.ok, loaded.message
         driver = service.deviceManager.drivers["camera"]
         execute = driver.execute
-        def blockFirst(*args):
+        def blockFirst(*args, **kwargs):
             if driver.sequence == 0:
                 entered.set()
                 assert release.wait(10)
-            return execute(*args)
+            return execute(*args, **kwargs)
         driver.execute = blockFirst
         started = service.StartJob(pb.StartJobRequest(project_id=service.loadedProjectId, workflow_id="main",
             inputs_json='{"count":0}'), None)

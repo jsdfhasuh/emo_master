@@ -1,6 +1,5 @@
 """Online authority; hardware transitions require an explicit replacement policy."""
 import json
-import os
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
@@ -22,7 +21,6 @@ class PreparedConfiguration:
     resources: list = field(default_factory=list)
     resourceRoot: Any = None
     installed: bool = False
-    communicationToken: str = ""
     resourcePin: str = ""
     sourcePath: str = ""
     projectChanged: bool = False
@@ -81,7 +79,6 @@ class ProjectConfigurationRpcMixin:
                 WorkflowCompiler(runtime.pluginScanResult.activeOperators,
                     deviceTypes=runtime.pluginScanResult.deviceTypes).compile(document, pluginRootPaths=runtime.pluginRootPaths)
                 runtime.deviceManager.load(document)
-                runtime.communicationManager.load(document, os.path.normcase(str(Path(current["sourcePath"]).resolve())))
                 runtime.loadedProjectFile = current["sourcePath"]
                 runtime.loadedProjectPath = str(Path(current["sourcePath"]).parent)
                 self._publishProjectConfiguration(document, current)
@@ -126,8 +123,8 @@ class ProjectConfigurationRpcMixin:
                                for r in runtime.jobRepository.all())):
                     raise ConfigurationError("E_CONFIG_REQUIRES_STOP", "retire execution before repairing online recovery")
             projectChanged = document.project.projectId != current.project.projectId
-            if document.schemaVersion != "2.6":
-                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require schema 2.6")
+            if document.schemaVersion not in {"2.6", "2.7"}:
+                raise ConfigurationError("E_CONFIG_PROJECT", "online writes require current schema 2.7")
             from emo_master.apps.runtime.context.global_variables import ProjectGlobalVariables
             with runtime.sqliteStore.connection() as connection:
                 ProjectGlobalVariables(runtime.sqliteStore, document.project.projectId,
@@ -202,7 +199,7 @@ class ProjectConfigurationRpcMixin:
         runtime: Any = self
         document = ProjectDocument.model_validate(payload)
         pin = runtime.projectResourceTransfers.pin(document, Path(sourcePath).parent, cancelled=cancelled)
-        resources, token = [], ''
+        resources = []
         root = runtime.workspaceRoot.parent / 'configuration-resources'
         from .resources import prepareResources, discardResources
         try:
@@ -211,16 +208,9 @@ class ProjectConfigurationRpcMixin:
                 runtime.pluginScanResult.deviceTypes, root, cancelled, journal=runtime.configurationResourceJournal)
             if cancelled.is_set():
                 raise ConfigurationError('E_CONFIG_CANCELLED', 'initial configuration preparation cancelled')
-            from uuid import uuid4
-            reserved = uuid4().hex
-            runtime.communicationManager.prepareReplacement(reserved)
-            token = reserved
             adapters = runtime.deviceManager.prepareReplacement(prepared, force=True)
-            return PreparedConfiguration(prepared, adapters, resources, root, communicationToken=token,
-                resourcePin=pin, sourcePath=sourcePath, projectChanged=True, initial=True)
+            return PreparedConfiguration(prepared, adapters, resources, root, resourcePin=pin, sourcePath=sourcePath, projectChanged=True, initial=True)
         except BaseException:
-            if token:
-                runtime.communicationManager.abortDisableSave(token)
             discardResources(resources, root, journal=runtime.configurationResourceJournal)
             runtime.projectResourceTransfers.unpin(pin)
             raise
@@ -257,20 +247,12 @@ class ProjectConfigurationRpcMixin:
             runtime.pluginScanResult.deviceTypes, root, cancelled, previous=None if projectChanged else runtime.loadedDocument,
             raw=document, previousRaw=ProjectDocument.model_validate(runtime.projectConfiguration.current["payload"]),
             journal=runtime.configurationResourceJournal)
-        token = ""
         try:
-            if projectChanged or runtime.onlineRecoveryError or runtime.loadedDocument is None or document.communication != runtime.loadedDocument.communication:
-                from uuid import uuid4
-                reserved = uuid4().hex
-                runtime.communicationManager.prepareReplacement(reserved)
-                token = reserved
             adapters = runtime.deviceManager.prepareReplacement(prepared, force=True) if projectChanged else runtime.deviceManager.prepareReplacement(prepared)
         except BaseException:
-            if token:
-                runtime.communicationManager.abortDisableSave(token)
             discardResources(resources, root, journal=runtime.configurationResourceJournal)
             raise
-        return PreparedConfiguration(prepared, adapters, resources, root, communicationToken=token, projectChanged=projectChanged)
+        return PreparedConfiguration(prepared, adapters, resources, root, projectChanged=projectChanged)
 
     def _discardProjectConfiguration(self, prepared):
         runtime: Any = self
@@ -281,8 +263,6 @@ class ProjectConfigurationRpcMixin:
 
     def _discardPreparedProjectConfiguration(self, prepared):
         runtime: Any = self
-        if prepared.communicationToken:
-            runtime.communicationManager.abortDisableSave(prepared.communicationToken)
         prepared.devices.close()
         if not prepared.installed:
             from .resources import discardResources
@@ -385,19 +365,10 @@ class ProjectConfigurationRpcMixin:
         runtime: Any = self
         initial = isinstance(document, PreparedConfiguration) and document.initial
         if isinstance(document, PreparedConfiguration):
-            if document.communicationToken:
-                runtime.communicationManager.configure(document.document.project.projectId,
-                    ("" if document.projectChanged else runtime.communicationManager.projectKey) or os.path.normcase(str(Path(
-                        runtime.projectConfiguration.current["sourcePath"]).resolve())), document.document.communication,
-                    saveToken=document.communicationToken)
-                document.communicationToken = ""
             document.devices.install()
             document.installed = True
             runtime._ownedConfigurationResources.update(document.resources)
-            if initial:
-                # Retire the preparation reservation before the existing
-                # on-project-open policy admits its connect-only event.
-                document.devices.close()
+            document.devices.close()
             document = document.document
         runtime.loadedDocument = document
         from copy import deepcopy
@@ -423,7 +394,9 @@ class ProjectConfigurationRpcMixin:
         if initial:
             runtime.runInspectionStore.maxSessions = (None if document.runtime.maxConcurrentJobs is None
                 else max(2, len(document.workflows), document.runtime.maxConcurrentJobs))
-            runtime.deviceManager.activate()
+        if receipt.get('requestId'):
+            from .transition import observeConnections
+            observeConnections(runtime.projectConfiguration, receipt, runtime.deviceManager.activate())
 
     @staticmethod
     def _configurationReply(action):
@@ -525,8 +498,8 @@ class ProjectConfigurationRpcMixin:
                     changeEffects=changeEffects(runtime, candidate),
                     affectedJobs=sorted(active), disconnectDevices=sorted(disconnect),
                     projectChanged=projectChanged,
-                    communicationRestart=(projectChanged or runtime.loadedDocument is None or prepared.communication != runtime.loadedDocument.communication)
-                        and runtime.communicationManager.state == "LISTENING")
+                    restartDevices=sorted(key for key in disconnect if key in after and after[key].enabled
+                        and runtime.pluginScanResult.deviceTypes[after[key].deviceTypeId].connectionLifetime == 'persistent'))
         return self._configurationReply(validate)
 
     def WriteProjectConfiguration(self, request, context):

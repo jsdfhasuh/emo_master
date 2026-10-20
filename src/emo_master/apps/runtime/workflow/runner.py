@@ -242,6 +242,7 @@ class WorkflowRunner:
                         node, nodeContext, nodeDiagnostics, err
                     )
                     failedPayload = {
+                        "deviceBindings": self.operatorExecutor.bindingSnapshot(node),
                         "status": "FAILED",
                         "code": str(code),
                         "message": str(err),

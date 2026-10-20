@@ -90,6 +90,7 @@ class WorkflowController:
         self,
         filePath: str | Path,
         availableOperatorIds: Collection[str] | None = None,
+        *, deviceTypes=None, operatorRequirements=None,
     ) -> WorkflowPackageImportPreview:
         document = loadWorkflowPackage(filePath)
         workingStore = self._capturedWorkflowStoreCopy()
@@ -97,6 +98,7 @@ class WorkflowController:
             workingStore,
             document,
             availableOperatorIds=availableOperatorIds,
+            deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
         )
 
     def importWorkflowPackage(
@@ -107,6 +109,7 @@ class WorkflowController:
         expectedFingerprint: str | None = None,
         expectedTargetFingerprint: str | None = None,
         targetRoot: Path | None = None,
+        deviceTypes=None, operatorRequirements=None,
     ) -> WorkflowPackageImportResult:
         document = loadWorkflowPackage(filePath)
         workingStore = self._capturedWorkflowStoreCopy()
@@ -118,6 +121,7 @@ class WorkflowController:
             expectedFingerprint=expectedFingerprint,
             expectedTargetFingerprint=expectedTargetFingerprint,
             targetRoot=targetRoot,
+            deviceTypes=deviceTypes, operatorRequirements=operatorRequirements,
         )
         replaceWorkflowStoreState(self.workflowStore, workingStore)
         self.lastInterfaceRefreshReport = self._refreshWorkflowReferences()

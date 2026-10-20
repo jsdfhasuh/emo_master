@@ -146,6 +146,8 @@ def trustedEntries(registry):
         descriptor = registry.get(operatorId)
         manifest = getattr(descriptor, "manifest", None)
         resource = getattr(descriptor, "resourceRoot", None)
+        if manifest is not None and manifest.deviceRequirements:
+            continue
         if (getattr(descriptor, "operatorClass", None) is operator
                 and manifest is not None and manifest.entry == entry
                 and manifest.version == operator.meta.version
@@ -169,7 +171,7 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
         identifier(value)
     payload = parse(raw, MAX_REQUEST_BYTES)
     try:
-        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6"}:
+        if payload["schemaVersion"] not in {"2.0", "2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7"}:
             raise ValueError("unsupported project version")
         if payload["project"]["projectId"] != projectId:
             raise ValueError("project identity changed")
@@ -185,9 +187,6 @@ def draft(raw, projectId, workflowId, nodeId, operatorId, admitted):
             raise ValueError("target is not the requested operator")
         if node.deviceBindings:
             raise ValueError("device-bound debug requires the managed device Runtime")
-        if payload["schemaVersion"] == "2.6" and node.operatorId in {
-                "communication.plc.slmp_read", "communication.plc.slmp_write", "vision.io.huaray_camera"}:
-            raise ValueError("managed PLC diagnostics must use the device entry point")
     except (KeyError, TypeError, ValueError) as error:
         raise DebugError("E_DEBUG_CONTEXT_INVALID", "invalid target draft: " + str(error)[:256]) from error
     if operatorId not in admitted:

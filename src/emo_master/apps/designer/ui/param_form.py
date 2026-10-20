@@ -618,6 +618,16 @@ try:
                 return "元素输入端口和索引输入端口不能相同，请选择不同端口或不传入索引"
             return ""
 
+        def focusField(self, name):
+            control = self._controls.get(name)
+            if control is not None:
+                control.setFocus()
+
+        def setFieldEnabled(self, name, enabled):
+            control = self._controls.get(name)
+            if control is not None:
+                control.setEnabled(enabled)
+
         def getValues(self) -> dict[str, object]:
             values: dict[str, object] = {}
             for fieldName, control in self._controls.items():

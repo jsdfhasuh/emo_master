@@ -12,6 +12,7 @@ from emo_master.core.contracts.tcp_service import TcpSessionRef, TcpSendReceipt
 
 COMMUNICATION_PAYLOAD_SCHEMA_VERSION = "1.0"
 SUPPORTED_COMMUNICATION_PAYLOAD_SCHEMA_VERSIONS = frozenset({"1.0"})
+TCP_CAPABILITY_SCHEMA_VERSIONS = frozenset({"1.1"})
 COMMUNICATION_PAYLOAD_PORT_TYPES = frozenset(
     {"plcValueCollection", "plcWriteReceipt", "tcpMessage", "tcpSessionRef", "tcpSendReceipt"}
 )
@@ -102,7 +103,7 @@ def isCommunicationPayloadSchemaVersionCompatible(
     expectedVersion: object | None = None,
 ) -> bool:
     try:
-        actual = validateCommunicationPayloadSchemaVersion(actualVersion)
+        actual = actualVersion if actualVersion == "1.1" else validateCommunicationPayloadSchemaVersion(actualVersion)
     except CommunicationPayloadValidationError:
         return False
     if expectedVersion is None:
@@ -542,6 +543,8 @@ def matchesCommunicationPortType(
         if not isCommunicationPayloadSchemaVersionCompatible(
             value.get("schemaVersion"), expectedSchemaVersion
         ):
+            return False
+        if value.get("schemaVersion") != ("1.1" if expectedType in {"tcpSessionRef", "tcpSendReceipt"} else "1.0"):
             return False
         payload = parseCommunicationPayload(value)
         return value.get("type") == expectedType and payload is not None

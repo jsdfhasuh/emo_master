@@ -6,8 +6,10 @@ from .executor import DeviceError
 
 
 class DeviceLifecycle:
-    def __init__(self, definition, driver):
+    def __init__(self, definition, driver, declaration=None):
         self.definition, self.driver = definition, driver
+        self.declaration = declaration
+        self.perOperation = declaration is not None and declaration.connectionLifetime == "per_operation"
         self.connected = False
         self.paused = False
         self.controlPending = False
@@ -20,11 +22,11 @@ class DeviceLifecycle:
     def admit(self):
         if self.paused or self.controlPending:
             raise DeviceError("E_DEVICE_PAUSED", "device admission is paused; explicitly resume the session")
-        if self.definition.policies.get("connect") == "manual" and not self.connected:
+        if not self.perOperation and self.definition.policies.get("connect") == "manual" and not self.connected:
             raise DeviceError("E_DEVICE_MANUAL_CONNECT", "device requires an explicit connection")
 
     def connect(self, cancel, deadline):
-        if self.connected:
+        if self.perOperation or self.connected:
             return
         from .recovery import connectWithRecovery
         try:
@@ -40,9 +42,9 @@ class DeviceLifecycle:
     def touched(self):
         self.lastUsed = monotonic()
 
-    def disconnect(self):
+    def disconnect(self, deadline=None):
         try:
-            self.driver.close()
+            self.driver.close(deadline)
         except BaseException as error:
             self.lastError = str(error)
             raise DeviceError("E_DEVICE_RELEASE_PENDING", str(error), outcome="UNKNOWN", unhealthy=True) from error
@@ -50,6 +52,8 @@ class DeviceLifecycle:
 
     def idleAction(self):
         # Called under the executor condition, only when its FIFO is empty.
+        if self.perOperation or self.declaration is not None and self.declaration.operationScheduling == "managed_service":
+            return None
         if not self.connected or self.paused or self.controlPending or self.keepAlive:
             return None
         held = getattr(self.driver, "holdsConnection", None)

@@ -70,8 +70,9 @@ class OperatorLogManager:
         context: RunContext,
         operatorId: str,
         phase: str,
+        deviceBindings=None,
     ) -> "OperatorLogger":
-        return OperatorLogger(self, context, str(operatorId), str(phase))
+        return OperatorLogger(self, context, str(operatorId), str(phase), deviceBindings)
 
     def isEnabledFor(self, level: str) -> bool:
         try:
@@ -92,6 +93,7 @@ class OperatorLogManager:
         message: str,
         code: str,
         payload: Mapping[str, object] | None,
+        deviceBindings=None,
     ) -> str:
         normalized = _normalizeLevel(level)
         if not self.isEnabledFor(normalized):
@@ -135,6 +137,8 @@ class OperatorLogManager:
             "phase": phase,
             "data": safePayload,
         }
+        if deviceBindings:
+            eventPayload['deviceBindings'] = deviceBindings
         if messageTruncated or payloadTruncated:
             eventPayload["truncated"] = True
         try:
@@ -225,11 +229,14 @@ class OperatorLogger(OperatorLoggerProtocol):
         context: RunContext,
         operatorId: str,
         phase: str,
+        deviceBindings=None,
     ) -> None:
         self.manager = manager
         self.context = context
         self.operatorId = operatorId
         self.phase = phase
+        self.deviceBindings = dict(deviceBindings or {})
+        self.children: dict = {}
         self._lock = threading.Lock()
         self._closed = False
         self._publishFailures = 0
@@ -265,6 +272,7 @@ class OperatorLogger(OperatorLoggerProtocol):
                     message,
                     code,
                     payload,
+                    self.deviceBindings if len(self.deviceBindings) == 1 else {},
                 )
                 if outcome == "failed":
                     self._publishFailures += 1
@@ -300,8 +308,23 @@ class OperatorLogger(OperatorLoggerProtocol):
                     values["suppressed"] = self._suppressed
                 return values
             self._closed = True
+        for child in self.children.values():
+            child.close()
         self.manager.flushSuppressed(self.context, self.operatorId, self.phase)
         return self.diagnostics()
+
+    def forDevice(self, slot):
+        with self._lock:
+            if slot not in self.deviceBindings:
+                from emo_master.core.contracts.operator_logging import NullOperatorLogger
+                return NullOperatorLogger()
+            if slot not in self.children:
+                self.children[slot] = OperatorLogger(self.manager, self.context, self.operatorId, self.phase,
+                                                    {slot: self.deviceBindings[slot]})
+            child = self.children[slot]
+            if self._closed:
+                child.close()
+            return child
 
     def diagnostics(self) -> dict[str, object]:
         with self._lock:

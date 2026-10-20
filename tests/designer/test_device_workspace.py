@@ -173,13 +173,15 @@ def testDeviceControlNeedsConfirmationAndNeverEditsDraft(ownedDesignerWindow, tm
     devices.table.setCurrentCell(0, 0)
     before = c.session.payload()
     state = dict(state="IDLE", generation="g1", definitionRevision="r1", queued=0, activeOwner=None,
-                 connectionState='CONNECTED')
+                 lifecycleConnected=True, driverState={'connectionState': 'CONNECTED'},
+                 availableControls=['disconnect', 'maintenance', 'recover'])
     devices.states = {"camera": state}
     devices.stateRuntimeId = "runtime"
     calls = []
     def control(*args, **kwargs):
         calls.append((args, kwargs))
-        return "runtime", {"camera": dict(state, admissionState="PAUSED", connectionState="DISCONNECTED")}
+        return "runtime", {"camera": dict(state, admissionState="PAUSED", lifecycleConnected=False,
+            driverState={'connectionState': 'DISCONNECTED'}, availableControls=['connect', 'resume', 'recover'])}
     window.runtimeClient.controlDevice = control
     devices._showStates()
     monkeypatch.setattr(QMessageBox, "question", lambda *_: QMessageBox.No)
@@ -259,7 +261,7 @@ def testNormalDropWizardAtomicFinishAndCancel(ownedDesignerWindow, tmp_path, def
     window.addNodeFromOperatorDrop(payload, 160, 240)
     assert len(c.session._undo) == depth + 1
     newId = next(key for key in window.flowModel.nodes if key not in {n["nodeId"] for n in before["workflows"]["main"]["nodes"]})
-    assert window.flowModel.nodes[newId].deviceBindings == {"camera": {"deviceId": "camera"}}
+    assert window.flowModel.nodes[newId].deviceBindings == {"camera": {"deviceId": "camera", "selectors": {}}}
     assert c.session.workflows.get("main").layout["nodePositions"][newId] == dict(x=160., y=240.)
     c.history()
     assert newId not in window.flowModel.nodes

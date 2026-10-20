@@ -177,11 +177,6 @@ class PageCoordinator:
             raise ValueError('设备操作尚未返回，请等待完成后切换')
         if self.window._activeDebugWindows():
             raise ValueError('当前窗口的流程或算子调试尚未结束，请先关闭调试会话')
-        communication = getattr(self.window, 'communicationController', None)
-        if communication:
-            communication.poll()
-        if communication and (communication.thread is not None or communication.disableSave is not None):
-            raise ValueError('通信请求尚未返回，请等待完成后切换')
         if not self.window.operatorEditorManager.closeCameraConfigurations():
             raise ValueError('相机配置会话尚未退出')
         if not self._canSync():
@@ -194,12 +189,6 @@ class PageCoordinator:
         self.closeMonitor()
         self.onlineSummary = '未读取在线状态'
         self.window._resetRuntimeVisualState(clearHistory=True)
-        if communication:
-            communication.contextKey = None
-            communication.nextPoll = 0
-            communication.state = communication.identity = None
-            communication.history.clear()
-            communication._render()
         self.window.refreshOperators()
         self.chrome.update()
 

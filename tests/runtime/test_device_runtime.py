@@ -92,7 +92,9 @@ def testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects(tmp_path):
         assert not rejected
         operators = client.listOperators()
         simulated = next(op for op in operators if op.operatorId == "vision.io.simulated_camera")
-        assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera"}}
+        assert simulated.deviceRequirements == {"camera": {"deviceTypeId": "device.simulated.camera",
+            "requiredCapabilities": ["capture"],
+            "selectorSchema": {"type": "object", "properties": {}, "additionalProperties": False}}}
         assert not service.deviceManager.drivers and not service.deviceManager.executors
     finally:
         service.close()

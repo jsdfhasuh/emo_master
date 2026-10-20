@@ -4,6 +4,7 @@ from __future__ import annotations
 from copy import deepcopy
 from uuid import uuid4
 
+from emo_master.core.contracts.port_types import normalizePortType
 from emo_master.core.project.devices import DeviceDefinition
 from emo_master.core.project.global_variables import compatible
 from emo_master.core.project.migration import migrateProjectPayload
@@ -47,10 +48,13 @@ class DeviceCatalogEditor:
                 raise ValueError("已有设备不能通过属性编辑替换类型或驱动版本")
             self._checkIdentity(checked.model_dump(), catalog, deviceId)
             catalog[deviceId] = checked.model_dump()
-            for workflow in self.session.workflows.workflows.values():
+            for workflowId, workflow in self.session.workflows.workflows.items():
                 for node in workflow.nodes:
                     if any(b["deviceId"] == deviceId for b in node.get("deviceBindings", {}).values()):
-                        self._validateNode(WorkflowNode.model_validate(node))
+                        try:
+                            self._validateNode(WorkflowNode.model_validate(node))
+                        except ValueError as error:
+                            raise ValueError(f"{workflowId}/{node['nodeId']}: {error}") from error
         return deviceId
 
     def _checkIdentity(self, value, catalog, deviceId):
@@ -118,12 +122,15 @@ class DeviceCatalogEditor:
                 raise ValueError("设备引用不存在")
             definition = DeviceDefinition.model_validate(catalog[binding.deviceId])
             requirement = requirements[slot]
-            typeId = requirement.deviceTypeId if hasattr(requirement, "deviceTypeId") else requirement["deviceTypeId"]
-            if definition.deviceTypeId != typeId:
-                raise ValueError("所选设备类型与算子不兼容")
+
             declaration = self.deviceTypes.get(definition.deviceTypeId)
             if declaration is None:
                 raise ValueError("绑定设备的插件不可用")
+            from emo_master.core.plugin.devices import validateDeviceBinding
+            try:
+                validateDeviceBinding(requirement, binding, definition, declaration)
+            except ValueError as error:
+                raise ValueError(f"槽位 {slot}: {error}") from error
             values = node.deviceValueBindings.get(slot, {})
             declaration.validateNodeSources(definition, node.deviceOverrides.get(slot, {}), values)
             for path, source in values.items():
@@ -132,7 +139,7 @@ class DeviceCatalogEditor:
                     variable = variables.get(source.variableId)
                     if variable is None or not compatible(variable.type, expected):
                         raise ValueError("设备动态变量不存在或类型不兼容")
-                elif node.inputPorts.get(source.inputName) != expected:
+                elif not compatible(normalizePortType(node.inputPorts.get(source.inputName)), expected):
                     raise ValueError("设备动态输入不存在或类型不兼容")
 
 

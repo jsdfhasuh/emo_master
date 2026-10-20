@@ -92,6 +92,8 @@ def testDeviceTargetVersionAndReferenceGates(bundle):
         ProjectDocument.model_validate(payload)
     payload = document.model_dump()
     payload["schemaVersion"] = "2.5"
+    from emo_master.core.project.communication import CommunicationSettings
+    payload['communication'] = CommunicationSettings().model_dump()
     payload["devices"] = {}
     payload["workflows"]["main"]["nodes"][1].pop("deviceBindings")
     with pytest.raises(ValueError, match="device resource targets.*2.6"):
@@ -248,7 +250,7 @@ def testWorkflowPackageCannotSilentlyDropDeviceResourceDeclarations(bundle):
     with pytest.raises(ValueError, match="save the source project"):
         buildWorkflowPackage(store, "main")
     portable = buildWorkflowPackage(store, "main", sourceRoot=bundle[0])
-    assert portable.schemaVersion == "1.3"
+    assert portable.schemaVersion == "1.4"
     assert set(portable.resourceData) == {"calibration"}
     assert portable.resources.parameterBindings == bundle[1].resources.parameterBindings
     assert portable.resources.siteBindings == bundle[1].resources.siteBindings

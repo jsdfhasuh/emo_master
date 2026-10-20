@@ -7,7 +7,10 @@ import numpy as np
 from .executor import DeviceError
 
 
-class SimulatedCamera:
+from emo_master.core.contracts.device_driver import DeviceDriver
+
+
+class SimulatedCamera(DeviceDriver):
     def __init__(self, definition):
         self.definition = definition
         self.sequence = 0
@@ -29,7 +32,7 @@ class SimulatedCamera:
     def frameBytes(params):
         return params["width"] * params["height"] * 3
 
-    def execute(self, action, params, cancelled, deadline):
+    def execute(self, action, params, cancelled, deadline, *, arguments=None, operationContext=None):
         if action != "capture":
             raise DeviceError("E_DEVICE_ACTION", "unsupported simulated action")
         until = time.monotonic() + params["exposureUs"] / 1_000_000
@@ -46,9 +49,9 @@ class SimulatedCamera:
         image[:, :, 2] = min(255, round(params["exposureUs"] / 1000 + params["gain"]))
         return image
 
-    def close(self):
+    def close(self, deadline=None):
         self.connected = False
 
     def snapshot(self):
-        return dict(connectionState="CONNECTED" if self.connected else "DISCONNECTED",
+        return dict(ready=self.connected, ownsResources=self.connected, connectionState="CONNECTED" if self.connected else "DISCONNECTED",
                     connectionGeneration=self.generation)

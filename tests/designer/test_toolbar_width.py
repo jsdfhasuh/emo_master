@@ -44,9 +44,17 @@ def testRunAndStopRemainVisibleAtSupportedWidths(designerApplication, width, run
         window.close()
 
 
-def testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject(designerApplication):
+@pytest.mark.parametrize('toolbarFontPixels', [None, 28])
+def testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject(designerApplication, toolbarFontPixels):
     window = makeWindow()
     try:
+        if toolbarFontPixels is not None:
+            # Exercise real font-dependent overflow at a supported window width.
+            # Two workspace choices can leave room for run labels at 480 px in
+            # the default font; fitting labels should not be hidden needlessly.
+            window.mainToolbar.setStyleSheet(
+                'QToolBar, QToolBar QToolButton, QWidget#workspaceSelector '
+                '{ font-size: %dpx; }' % toolbarFontPixels)
         window.show()
         before = window.pageCoordinator.session.payload()
         actions = tuple(window.mainToolbar.actions())
@@ -55,11 +63,18 @@ def testResizeRestoresLabelsWithoutRecreatingActionsOrEditingProject(designerApp
             for width in (480, 640, 960, 1280):
                 window.resize(width, 500)
                 settle(designerApplication)
+                assert window.width() == width
                 assert tuple(window.mainToolbar.actions()) == actions
                 assert (window.startButton, window.stopButton) == buttons
                 assert all(button.isVisible() for button in buttons)
+                assert all(window.mainToolbar.contentsRect().contains(button.geometry()) for button in buttons)
                 if width == 480:
-                    assert all(button.toolButtonStyle() == Qt.ToolButtonIconOnly for button in buttons)
+                    assert window.loadButton.toolButtonStyle() == Qt.ToolButtonIconOnly
+                    assert window.saveProjectButton.toolButtonStyle() == Qt.ToolButtonIconOnly
+                    if toolbarFontPixels is not None:
+                        assert all(button.toolButtonStyle() == Qt.ToolButtonIconOnly for button in buttons)
+                if width == 640 and toolbarFontPixels is None:
+                    assert all(button.toolButtonStyle() == Qt.ToolButtonTextBesideIcon for button in buttons)
                 if width == 1280:
                     assert all(button.toolButtonStyle() == Qt.ToolButtonTextBesideIcon for button in buttons)
                     assert window.loadButton.toolButtonStyle() == Qt.ToolButtonTextBesideIcon

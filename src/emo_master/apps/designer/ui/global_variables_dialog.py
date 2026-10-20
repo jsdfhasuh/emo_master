@@ -16,7 +16,7 @@ from PySide2.QtWidgets import (
 
 from emo_master.core.project.global_variables import VariableDefinition, validateValue
 from emo_master.apps.designer.services.global_counter_worker import GlobalCounterWorker
-from emo_master.apps.designer.ui.global_counters_dialog import _counterWorkerOwner
+from emo_master.apps.designer.ui.global_counters_dialog import _connectCounterSlot, _counterWorkerOwner
 from emo_master.apps.designer.ui.icon_map import icon
 from emo_master.apps.designer.ui.widgets import WrapLabel
 
@@ -255,17 +255,22 @@ class GlobalVariablesDialog(QDialog):
         if operation:
             self._operationStatus = "正在提交设值…"
             self.status.setText(self._operationStatus)
-        worker.finished.connect(self._finished)
-        worker.finished.connect(worker.deleteLater)
+        # Native receiver context cancels queued delivery when the dialog's
+        # QObject parent deletes it, including while a request is still active.
+        _connectCounterSlot(worker, "finished()", self, "_finished()")
+        _connectCounterSlot(worker, "finished()", worker, "deleteLater()")
         self._buttons()
         worker.start()
 
     @Slot()  # type: ignore[operator]
     def _finished(self):
-        worker, self._worker = self._worker, None
+        worker = self.sender()
+        if worker is None or worker is not self._worker:
+            return
+        self._worker = None
         outcome, self._requestOutcome = self._requestOutcome or {}, None
-        if worker is None or self._closing or worker.generation != self._generation:
-            if worker is not None and not self._closing:
+        if self._closing or worker.generation != self._generation:
+            if not self._closing:
                 self.refreshVariables()
             return
         if worker.error:

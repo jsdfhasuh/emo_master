@@ -267,6 +267,10 @@ def testRealCanvasDoubleClickAndModalConfirmAreSafe(designerApplication, kind, e
     safety.timeout.connect(timeout)
     safety.start(3000)
     QTest.mouseDClick(window.flowView.viewport(), Qt.LeftButton, pos=point)
+    # A pending viewport/layout change can synthesize a held-button move
+    # before the deferred modal opens. Double-click must end the drag now.
+    assert window.flowScene.mouseGrabberItem() is None
+    assert window.flowScene.getNodePositions() == positions
     loop.exec_()
     safety.stop()
     poll.stop()

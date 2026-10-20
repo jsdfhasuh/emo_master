@@ -187,11 +187,10 @@ def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, 
     from PySide2.QtCore import QSettings, QTimer
     from emo_master.apps.designer.services.runtime_client import RuntimeClient
     from emo_master.apps.designer.ui.managed_camera_debug import ManagedCameraDebugDialog
-    from emo_master.apps.runtime.grpc_server.service import RuntimeService
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
-    from tests.plugins.test_camera_configuration import ConfigurationApi
+    from tests.runtime.imv_test_support import SimulatedImvRuntimeService
     from tests.runtime.test_managed_imv import cameraProject
-    service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     client = RuntimeClient(service)
     path = tmp_path / 'camera.emoproj'
     path.write_text(json.dumps(cameraProject()), encoding='utf-8')
@@ -199,7 +198,6 @@ def testNativeDeviceDialogProductionViewingWithRealRuntime(ownedDesignerWindow, 
     try:
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
         manager = service.deviceManager
-        manager.drivers['camera'].apiFactory = ConfigurationApi
         service.deviceNetwork.discovery = (monotonic(), dict(devices=[dict(cameraKey='FAKE-KEY',
             modelName='Simulated IMV', serialNumber='SIM-001', macAddress='00:00:00:00:00:01')]))
         window = ownedDesignerWindow(client, settingsStore=QSettings(str(tmp_path / 'ui.ini'), QSettings.IniFormat))

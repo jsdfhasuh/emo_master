@@ -11,6 +11,7 @@ from emo_master.core.project.models import ProjectDocument
 from tests.runtime.test_managed_imv import ROOT, definition
 from tests.plugins.test_camera_configuration import ConfigurationApi
 from tests.runtime.test_device_runtime import simulatedProject
+from tests.runtime.imv_test_support import SimulatedImvRuntimeService
 
 
 def testActualReadDoesNotAcquireAndTrialRestoresNativeValues():
@@ -114,12 +115,11 @@ def testConnectionTestDoesNotPublishAndReusesExistingOwner():
 
 def testRemoteSetupAndCameraReadTrialUseProductionRpc(tmp_path):
     import grpc
-    from emo_master.apps.runtime.grpc_server.service import RuntimeService
     from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc
     from emo_master.apps.runtime.main import createRuntimeServer
     from emo_master.apps.designer.services.runtime_client import RuntimeClient
     from tests.runtime.test_managed_imv import cameraProject
-    service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     server, port, _ = createRuntimeServer(port=0, runtimeService=service)
     server.start()
     channel = grpc.insecure_channel(f'127.0.0.1:{port}')
@@ -135,7 +135,6 @@ def testRemoteSetupAndCameraReadTrialUseProductionRpc(tmp_path):
         path = tmp_path / 'camera.emoproj'
         path.write_text(json.dumps(cameraProject()), encoding='utf-8')
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
-        service.deviceManager.drivers['camera'].apiFactory = ConfigurationApi
         runtimeId, states = client.getDeviceStates(service.loadedProjectId)
         args = (service.loadedProjectId, runtimeId, 'camera', states['camera'])
         opened = client.cameraDiagnostic(*args, 'open')

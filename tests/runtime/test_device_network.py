@@ -7,12 +7,12 @@ import pytest
 
 from emo_master.apps.runtime.devices.executor import DeviceError
 from emo_master.apps.runtime.devices.network import executeNetwork, networkAddress
-from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc
 from emo_master.apps.runtime.main import createRuntimeServer
 from emo_master.apps.designer.services.runtime_client import RuntimeClient, RuntimeClientError
 from emo_master.plugins.builtins._huaray_device_info import DeviceInfo, GigEDeviceInfo, UsbDeviceInfo
 from emo_master.plugins.builtins._huaray_imv import ImvApi, IMV_DeviceList, HuarayCameraError
+from tests.runtime.imv_test_support import SimulatedImvRuntimeService
 from tests.runtime.test_managed_imv import cameraProject
 
 
@@ -136,7 +136,7 @@ def testInvalidNetworkAddressRejected(fields):
 def testNetworkMutationRequiresPausedIdentityAndDurableAtMostOnceReceipt(tmp_path, unknown):
     path = tmp_path / 'project.json'
     path.write_text(json.dumps(cameraProject()), encoding='utf-8')
-    runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    runtime = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     server, port, _ = createRuntimeServer(port=0, runtimeService=runtime)
     server.start()
     channel = grpc.insecure_channel(f'127.0.0.1:{port}')
@@ -183,8 +183,9 @@ def testNetworkMutationRequiresPausedIdentityAndDurableAtMostOnceReceipt(tmp_pat
         channel.close()
         server.stop(0).wait(5)
         runtime.close()
-    restored = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    restored = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     try:
+        assert not restored.onlineRecoveryError and restored.loadedProjectId == project
         client = RuntimeClient(restored)
         assert client.deviceNetworkCommand(restored.loadedProjectId, restored.runtimeInstanceId, 'status', requestId='change') == result
     finally:
@@ -195,7 +196,7 @@ def testNetworkMutationRequiresPausedIdentityAndDurableAtMostOnceReceipt(tmp_pat
 def networkRuntime(tmp_path):
     path = tmp_path / 'project.json'
     path.write_text(json.dumps(cameraProject()), encoding='utf-8')
-    runtime = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    runtime = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     try:
         assert runtime.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
         runtime.deviceNetwork.runner = lambda *_: dict(devices=[deepcopy(ROW)], sdkVersion='synthetic')

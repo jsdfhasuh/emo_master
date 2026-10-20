@@ -201,12 +201,17 @@ class JobSupervisor:
                     if handle is not None:
                         handle[1].set()
                     else:
+                        # The producer snapshot is shared by consumers that
+                        # may still be starting. Keep every member mapped until
+                        # the entire group has retired, including unstarted ones.
                         group.workerRetired(member)
-                        self.devices.dispatchGroups.pop(member, None)
                         record = self.jobRepository.get(member)
                         if member != group.source and record is not None and not record.isTerminal:
                             self._markTerminalWithoutEvent(member, JobStatus.FAILED.value,
                                 "E_DISPATCH_START_FAILED", "run-group admission failed before this consumer started; no invocation replay")
+                if not self._ownedJobs().intersection(group.members):
+                    for member in group.members:
+                        self.devices.dispatchGroups.pop(member, None)
                 raise
         self.eventStore.append(spec.jobId, "dispatch.group.started", "persistent consumer group admitted",
             projectId=spec.projectId, workflowId=spec.workflowId,
@@ -662,15 +667,48 @@ class JobSupervisor:
             self._safeRetirement.add(jobId)
             self._reap(jobId)
 
-    def waitForRetirement(self, timeoutSeconds: float = 2.0, *, deadline: float | None = None) -> None:
-        """Join outside the lock so bridge finalizers can finish their reap."""
-        with self._lock:
-            bridges = list(self._bridges.values())
-        if deadline is None:
+    def waitForRetirement(self, timeoutSeconds: float | None = 2.0, *, deadline: float | None = None,
+                          jobId: str | None = None, cancellation: Any = None) -> None:
+        """Observe bridge retirement outside the lock; cancellation never stops a Job."""
+        if cancellation is not None:
+            # The bridge can own this lock while its retirement callback runs.
+            # An observer's cancellation/deadline also applies to snapshotting,
+            # not only to the later outside-lock join.
+            if deadline is None and timeoutSeconds is not None:
+                deadline = time.monotonic() + timeoutSeconds
+            while True:
+                if not getattr(cancellation, "is_active", lambda: True)():
+                    return
+                remaining = None if deadline is None else max(0, deadline - time.monotonic())
+                if remaining is not None and remaining <= 0:
+                    return
+                if self._lock.acquire(timeout=.1 if remaining is None else min(.1, remaining)):
+                    break
+                if deadline is not None and time.monotonic() >= deadline:
+                    return
+        else:
+            self._lock.acquire()
+        try:
+            if cancellation is not None and not getattr(cancellation, "is_active", lambda: True)():
+                return
+            bridges = (list(self._bridges.values()) if jobId is None
+                       else [self._bridges[jobId]] if jobId in self._bridges else [])
+        finally:
+            self._lock.release()
+        if deadline is None and timeoutSeconds is not None:
             deadline = time.monotonic() + timeoutSeconds
         for bridge in bridges:
             if bridge is not threading.current_thread() and getattr(bridge, "ident", None) is not None:
-                bridge.join(timeout=max(0, deadline - time.monotonic()))
+                while True:
+                    if cancellation is not None and not getattr(cancellation, "is_active", lambda: True)():
+                        return
+                    remaining = None if deadline is None else max(0, deadline - time.monotonic())
+                    interval = remaining
+                    if cancellation is not None:
+                        interval = .1 if remaining is None else min(.1, remaining)
+                    bridge.join(timeout=interval)
+                    if not bridge.is_alive() or (deadline is not None and time.monotonic() >= deadline):
+                        break
 
     def bridgeError(self, jobId: str, error: BaseException) -> None:
         self.assertMutationAllowed()
@@ -1147,17 +1185,27 @@ class JobSupervisor:
             try:
                 if self.retiredCallback is not None:
                     self.retiredCallback(jobId)
-                self._retireDispatch(jobId)
                 receipt.callbackDone = True
+                self._retireDispatch(jobId)
             except BaseException as error:
-                receipt.fault("callback", error)
+                receipt.fault("dispatch" if receipt.callbackDone else "callback", error)
                 raise
             finally:
                 self._attemptThreads.discard(threading.current_thread())
+        self._completeRetirement(jobId, receipt)
+
+    def _completeRetirement(self, jobId, receipt):
         receipt.repair = None
         self._retirements.pop(jobId, None)
         self._safeRetirement.discard(jobId)
         self._failedStartRetirement.discard(jobId)
+        group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
+        if (group is not None and group.retired >= group.members
+                and not self._ownedJobs().intersection(group.members)):
+            # Group absence is the public retirement boundary: no persistence,
+            # callback or process owner may still be live when it becomes visible.
+            for member in group.members:
+                self.devices.dispatchGroups.pop(member, None)
 
     def _retireDispatch(self, jobId):
         group = self.devices.dispatchGroups.get(jobId) if self.devices is not None else None
@@ -1171,8 +1219,6 @@ class JobSupervisor:
         if group.retired >= group.members:
             if self.retiredCallback is not None and group.source != jobId:
                 self.retiredCallback(group.source)
-            for member in group.members:
-                self.devices.dispatchGroups.pop(member, None)
             self.eventStore.append(group.source, "dispatch.group.retired", "all run-group processes retired",
                 payload=dict(runGroupId=group.groupId))
 
@@ -1188,11 +1234,14 @@ class JobSupervisor:
                         try:
                             receipt.repair()
                             receipt.repair = None
-                            self._retirements.pop(jobId, None)
-                            self._safeRetirement.discard(jobId)
-                            self._failedStartRetirement.discard(jobId)
+                            receipt.callbackDone = True
+                            # The failed callback prevented dispatch retirement
+                            # from starting. Make its first attempt only after
+                            # repair; an uncertain dispatch is never replayed.
+                            self._retireDispatch(jobId)
+                            self._completeRetirement(jobId, receipt)
                         except BaseException as error:
-                            receipt.fault("callback", error)
+                            receipt.fault("dispatch" if receipt.callbackDone else "callback", error)
                         finally:
                             self._attemptThreads.discard(threading.current_thread())
                     if jobId in self._retirements:

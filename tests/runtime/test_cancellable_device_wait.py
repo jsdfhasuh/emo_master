@@ -8,9 +8,9 @@ import pytest
 from emo_master.apps.runtime.devices.executor import DeviceError, DeviceExecutor
 from emo_master.apps.runtime.devices.manager import DeviceManager
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
-from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.core.plugin.registry import PluginRegistry
 from emo_master.core.project.models import ProjectDocument
+from tests.runtime.imv_test_support import SimulatedImvRuntimeService, useSimulatedImv
 from tests.runtime.test_device_production_outcomes import waitFor
 from tests.runtime.test_managed_imv import ROOT, TimeoutImv, cameraProject
 
@@ -59,6 +59,7 @@ def testRealHostUnlimitedWaitKeepsQueueBoundedAndCancelsWithoutReplay():
     payload = cameraProject("hardware")
     payload["devices"]["definitions"]["camera"]["defaults"]["captureTimeoutMs"] = 0
     manager = DeviceManager(scan.deviceTypes)
+    useSimulatedImv(manager)
     manager.load(ProjectDocument.model_validate(payload))
     driver = manager.drivers["camera"]
     driver.apiFactory = TimeoutImv
@@ -107,7 +108,7 @@ def testSpawnedJobStopCancelsUnlimitedHardwareWaitAndRetiresHost(tmp_path):
     payload["devices"]["definitions"]["camera"]["defaults"]["captureTimeoutMs"] = 0
     path = tmp_path / "project.json"
     path.write_text(json.dumps(payload), encoding="utf-8")
-    service = RuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
+    service = SimulatedImvRuntimeService(dbPath=tmp_path / "runtime.db", workspaceRoot=tmp_path / "jobs")
     try:
         loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
         assert loaded.ok, loaded.message

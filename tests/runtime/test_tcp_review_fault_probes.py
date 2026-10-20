@@ -1,6 +1,7 @@
 """Regression assertions for the second TCP review and its repairs."""
 from copy import deepcopy
 from contextlib import contextmanager
+import errno
 import json
 import socket
 import threading
@@ -13,9 +14,33 @@ from emo_master.core.contracts.tcp_service import TcpServiceError
 from emo_master.ui.communication_controller import CommunicationController
 from emo_master.ui.communication_panel import CommunicationPanel
 from tests.designer.test_project_communication_ui import retire, spin
+from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_managed_tcp import freePort, waitUntil, manager as manager, connect, acquire
 from tests.runtime.test_tcp_external_client import rig as rig
 from tests.runtime.test_tcp_service_integration import payload
+
+
+def testPortProbeRejectsLiveListenerAndAcceptsClosedDescriptors(manager):
+    manager.start()
+    listener = manager._listener
+    port = manager.effective.tcpServer.port
+    with connect(manager) as client:
+        acquire(manager)
+        accepted = manager._peers["front"].sock
+        threads = tuple(manager._threads)
+        with pytest.raises(OSError) as busy:
+            assertTcpPortReleased(port)
+        assert busy.value.errno in {
+            errno.EADDRINUSE, errno.EACCES, getattr(errno, "WSAEADDRINUSE", errno.EADDRINUSE)}
+        manager.stop()
+        assert listener.fileno() == accepted.fileno() == -1
+        assert not manager._threads and not manager._workers and not manager._peers
+        assert manager._listener is None and not manager.snapshot()["ownsResources"]
+        assert not any(thread.is_alive() for thread in threads)
+        assert client.recv(1) == b""
+    # The server actively closed this connection. POSIX TIME_WAIT is expected;
+    # a replacement must use the same bind contract as the production server.
+    assertTcpPortReleased(port)
 
 
 def testListenerFailureCanRestartWithoutBindingOverOwnedSocket(rig, monkeypatch):

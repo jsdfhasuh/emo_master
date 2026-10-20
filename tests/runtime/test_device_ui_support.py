@@ -7,19 +7,18 @@ import pytest
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
-from tests.plugins.test_camera_configuration import ConfigurationApi
+from tests.runtime.imv_test_support import SimulatedImvRuntimeService
 from tests.runtime.test_managed_imv import cameraProject
 
 
 def testPassiveWatchUsesProductionCopyAndDoesNotOwnOriginalOrBlockWrites(tmp_path):
     path = tmp_path / 'camera.emoproj'
     path.write_text(json.dumps(cameraProject()), encoding='utf-8')
-    service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     client = RuntimeClient(service)
     manager = service.deviceManager
     try:
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
-        manager.drivers['camera'].apiFactory = ConfigurationApi
         runtimeId, states = client.getDeviceStates(service.loadedProjectId)
         args = (service.loadedProjectId, runtimeId, 'camera', states['camera'])
         opened = client.cameraDiagnostic(*args, 'open')
@@ -65,11 +64,10 @@ def testPassiveWatchUsesProductionCopyAndDoesNotOwnOriginalOrBlockWrites(tmp_pat
 def testHardwareRealtimePreviewRefusesBeforeAnyAcquisition(tmp_path):
     path = tmp_path / 'hardware.emoproj'
     path.write_text(json.dumps(cameraProject('hardware')), encoding='utf-8')
-    service = RuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
+    service = SimulatedImvRuntimeService(dbPath=tmp_path / 'runtime.db', workspaceRoot=tmp_path / 'jobs')
     client = RuntimeClient(service)
     try:
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
-        service.deviceManager.drivers['camera'].apiFactory = ConfigurationApi
         runtimeId, states = client.getDeviceStates(service.loadedProjectId)
         args = (service.loadedProjectId, runtimeId, 'camera', states['camera'])
         opened = client.cameraDiagnostic(*args, 'open')

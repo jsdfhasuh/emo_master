@@ -370,15 +370,20 @@ try:
             if handleNodeDoubleClick is not None:
                 if self.model.kind in {"workflow_input", "workflow_output"}:
                     # Leave the native item event before a modal can replace it.
-                    # Its release may go to the modal, so end the canvas grab.
+                    # End the grab now: a queued viewport resize can synthesize
+                    # a held-button move before the deferred modal is opened.
+                    # The default double-click handler would start a new press.
+                    scene = self.scene()
+                    if scene is not None and scene.mouseGrabberItem() is self:
+                        self.ungrabMouse()
                     nodeId = self.model.nodeId
                     def openInterface() -> None:
                         if not isValid(self) or self.scene() is not self._sceneRef:
                             return
-                        if self._sceneRef.mouseGrabberItem() is self:
-                            self.ungrabMouse()
                         handleNodeDoubleClick(nodeId)
                     QTimer.singleShot(0, openInterface)
+                    event.accept()
+                    return
                 else:
                     handleNodeDoubleClick(self.model.nodeId)
             super().mouseDoubleClickEvent(event)

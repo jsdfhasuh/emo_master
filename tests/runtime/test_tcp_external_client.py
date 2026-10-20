@@ -24,6 +24,7 @@ import pytest
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
 from emo_master.clients.runtime.communication import CommunicationClient, CommunicationClientError
+from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_managed_tcp import waitUntil
 from tests.runtime.test_tcp_service_integration import payload
 
@@ -154,6 +155,11 @@ class Rig:
 
     def finish(self):
         before = self.manager.snapshot()
+        with self.manager._lock:
+            sockets = [peer.sock for peer in self.manager._peers.values()]
+            if self.manager._listener is not None:
+                sockets.append(self.manager._listener)
+            threads = tuple(self.manager._threads)
         jobs = [asdict(record) for record in self.runtime.jobRepository.all()]
         try:
             for client in self.clients:
@@ -170,12 +176,12 @@ class Rig:
         (self.directory / "server-evidence.json").write_text(json.dumps(self.notes, indent=2), encoding="utf-8")
         assert not self.manager._threads and not self.manager._workers
         assert not after["ownsResources"]
+        assert all(sock.fileno() == -1 for sock in sockets)
+        assert not any(thread.is_alive() for thread in threads)
         assert all(client.process.poll() == 0 for client in self.clients)
         # A new real listener can own the released address (not merely an empty state field).
         if hasattr(self, "port"):
-            with socket.socket() as replacement:
-                replacement.bind(("127.0.0.1", self.port))
-                replacement.listen()
+            assertTcpPortReleased(self.port)
 
 
 @pytest.fixture

@@ -51,7 +51,16 @@ class ResourceRepair:
             if row is None:
                 return dict(state='MISSING')
             state = 'READY' if self._healthy(row[1], item) else 'CORRUPT'
-            connection.execute('UPDATE projectResourceTransfers SET state=? WHERE transferId=?', (state, row[0]))
+            if state != row[2]:
+                # Unchanged lookups remain WAL readers during event writes.
+                # A health transition uses the same bounded writer admission,
+                # then rechecks authority and bytes after the wait.
+                beginImmediate(connection)
+                row = self._authority(connection, project, item.model_dump_json())
+                if row is None:
+                    return dict(state='MISSING')
+                state = 'READY' if self._healthy(row[1], item) else 'CORRUPT'
+                connection.execute('UPDATE projectResourceTransfers SET state=? WHERE transferId=?', (state, row[0]))
             return dict(transferId=row[0], state=state, offset=item.size if state == 'READY' else 0,
                         size=item.size, sha256=item.sha256)
 

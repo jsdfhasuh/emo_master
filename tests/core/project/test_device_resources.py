@@ -362,7 +362,8 @@ def testInstalledDeviceResourcesReachSpawnedJobAndRestartRechecksIntegrity(bundl
     owned.write_bytes(b"tampered persistent copy")
     recovered = RuntimeService(**kwargs)
     try:
-        assert "resource" in recovered.onlineRecoveryError
+        assert recovered.onlineRecoveryKind == "resource"
+        assert recovered.onlineRecoveryError
         assert not recovered.deviceManager.drivers
         reply = recovered.StartJob(pb.StartJobRequest(project_id=document.project.projectId, workflow_id="main"), None)
         assert not reply.ok and "E_CONFIG_NOT_READY" in reply.message

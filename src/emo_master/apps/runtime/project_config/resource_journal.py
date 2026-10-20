@@ -45,12 +45,16 @@ class ResourceJournal:
         if target.exists():
             raise ConfigurationError("E_CONFIG_RESOURCE_PATH", "cannot claim an existing unowned resource file")
         with self.sqlite.connection() as connection:
+            beginImmediate(connection)
             connection.execute("INSERT INTO configurationResourceFiles(path, instanceId) VALUES (?,?)",
                                (str(target), self.instanceId))
 
     def expose(self, paths):
         # Durable before handing a path to adapters, workers, or UI consumers.
+        if not paths:
+            return
         with self.sqlite.connection() as connection:
+            beginImmediate(connection)
             for path in paths:
                 connection.execute("UPDATE configurationResourceFiles SET exposed=1 WHERE path=? AND instanceId=?",
                                    (str(self._path(path)), self.instanceId))
@@ -60,6 +64,7 @@ class ResourceJournal:
         if target.exists():
             raise ConfigurationError("E_CONFIG_RESOURCE_BUSY", "cannot forget a file before actual removal")
         with self.sqlite.connection() as connection:
+            beginImmediate(connection)
             connection.execute("DELETE FROM configurationResourceFiles WHERE path=? AND instanceId=?",
                                (str(target), self.instanceId))
 

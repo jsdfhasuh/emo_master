@@ -165,6 +165,7 @@ class ResourceTransfers(ResourceRepair):
                         import os
                         os.fsync(stream.fileno())
                         with self.sqlite.connection() as connection:
+                            beginImmediate(connection)
                             connection.execute("UPDATE projectResourceTransfers SET offset=? WHERE transferId=?",
                                                (row[4] + len(request.data), transferId))
             elif request.action == "COMMIT":
@@ -216,6 +217,7 @@ class ResourceTransfers(ResourceRepair):
                 request = SimpleNamespace(action="BEGIN", transfer_id=uuid4().hex,
                     project_id=document.project.projectId, resource_json=item.model_dump_json(), data=b"", offset=0)
                 with self.sqlite.connection() as connection:
+                    beginImmediate(connection)
                     connection.execute("INSERT INTO projectResourceIngestions VALUES (?)", (request.transfer_id,))
                 try:
                     self.execute(request)
@@ -235,6 +237,7 @@ class ResourceTransfers(ResourceRepair):
                         self._cancel(request.transfer_id, self._read(request.transfer_id))
                     raise
             with self.sqlite.connection() as connection:
+                beginImmediate(connection)
                 connection.executemany("INSERT INTO projectResourcePins VALUES (?,?,?,?,?)",
                     [(token, self.instanceId, document.project.projectId, item.model_dump_json(),
                       self._authority(connection, document.project.projectId, item.model_dump_json())[0])
@@ -243,6 +246,7 @@ class ResourceTransfers(ResourceRepair):
     def unpin(self, token):
         with self.lock:
             with self.sqlite.connection() as connection:
+                beginImmediate(connection)
                 connection.execute("DELETE FROM projectResourcePins WHERE token=? AND instanceId=?", (token, self.instanceId))
             self._reclaimIngestions()
             self._reclaimSuperseded()
@@ -261,6 +265,7 @@ class ResourceTransfers(ResourceRepair):
                 if error.code != "E_RESOURCE_TRANSFER_UNKNOWN":
                     raise
             with self.sqlite.connection() as connection:
+                beginImmediate(connection)
                 connection.execute("DELETE FROM projectResourceIngestions WHERE transferId=?", (transferId,))
 
     def resolve(self, document):

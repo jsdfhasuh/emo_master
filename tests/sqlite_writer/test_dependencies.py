@@ -92,7 +92,7 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     from emo_master.core.plugin.registry import PluginRegistry
     root = Path('src/emo_master/plugins')
     legacy = PluginRegistry(coreVersion='0.4.0').scan(root)
-    # Migration and numeric bridges intentionally require the current core too;
+    # Migration, numeric bridges and managed devices require the current core;
     # do not lower their gates just to retain an old rejection-set fixture.
     migrationOperators = {
         "vision.analysis.minimum_enclosing_circle", "vision.geometry.detection_bbox",
@@ -104,6 +104,7 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
         "vision.geometry.point_components", "vision.math.absolute",
         "vision.math.exact_integer", "vision.math.truncate", "vision.collection.number_pair",
         "communication.coordinate_message_format", "communication.tcp.session", "communication.tcp.session_send",
+        "vision.io.simulated_camera",
     }
     assert set(legacy.rejectedOperators) == currentCoreOperators
     assert all(legacy.rejectedOperators[operator][0].code == 'E_CORE_VERSION_INCOMPATIBLE'
@@ -112,6 +113,10 @@ def testBuiltinSqlitePreservesActualCoreCapabilityGate():
     assert 'vision.value.number' in legacy.activeOperators
     current = PluginRegistry(coreVersion=__version__).scan(root)
     assert current.rejectedOperators == {} and currentCoreOperators <= set(current.activeOperators)
+    camera = current.activeOperators["vision.io.simulated_camera"].manifest
+    assert camera.minCoreVersion == "0.6.1"
+    assert camera.deviceRequirements["camera"].deviceTypeId == "device.simulated.camera"
+    assert "device.simulated.camera" in current.deviceTypes
 
 
 def testIndependentJobsNeverReuseDelivery():

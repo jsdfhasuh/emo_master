@@ -772,6 +772,13 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
             return
         if context is not None and hasattr(context, "is_active") and not context.is_active():
             return
+        # Terminal events describe execution, not resource release. Keep the
+        # follow observer alive until its bridge finishes so Designer cannot
+        # offer a new draft-backed Run while LoadProject still rejects the old
+        # owner. This never waits for unrelated Jobs or performs cleanup.
+        self.jobSupervisor.waitForRetirement(timeoutSeconds=None, jobId=jobId, cancellation=context)
+        if context is not None and hasattr(context, "is_active") and not context.is_active():
+            return
         self.operationalLogWriter.waitUntilProcessed(
             jobId,
             terminalSequence,

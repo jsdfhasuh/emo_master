@@ -28,19 +28,18 @@ def sourceStore(definition):  # noqa: F811
     return WorkflowStore(payload)
 
 
-def testDeviceDependencyClosureAndUnknownDriverRoundtrip(definition, tmp_path, monkeypatch):  # noqa: F811
-    monkeypatch.setattr("emo_master.apps.designer.state.workflow_store.utc_now_iso", lambda: "2026-10-18T00:00:00Z")
+def testDeviceDependencyClosureAndUnknownDriverRoundtrip(definition, tmp_path):  # noqa: F811
     definition.deviceTypeId = "vendor.missing"
     definition.connection = {"opaque": [None, False, 0]}
     source = sourceStore(definition)
-    before = source.toPayload()
+    before = deepcopy(vars(source))
     package = buildWorkflowPackage(source, "main")
     assert set(package.devices) == {"camera"}
     assert set(package.workflows) == {"main", "body", "condition"}
     assert set(package.globalVariables) == {"exposure"}
     path = writeWorkflowPackage(tmp_path / "devices", package)
     assert loadWorkflowPackage(path) == package
-    assert source.toPayload() == before
+    assert vars(source) == before
 
 
 def testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog(definition):  # noqa: F811
@@ -65,26 +64,37 @@ def testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog(definition):  # 
 def testUnresolvedOrStaleMappingIsAtomic(definition, mapping):  # noqa: F811
     package = buildWorkflowPackage(sourceStore(definition), "main")
     target = WorkflowStore()
-    before = target.toPayload()
+    before = deepcopy(vars(target))
     with pytest.raises(ValueError):
         importWorkflowPackage(target, package, deviceMapping=mapping)
-    assert target.toPayload() == before
+    assert vars(target) == before
 
 
 @pytest.mark.parametrize("field,value", [
     ("deviceTypeId", "other"), ("driverVersion", "2.0"), ("defaults", {"gain": 3}),
 ])
-def testIncompatibleReuseRejectedWithoutMutation(definition, field, value):  # noqa: F811
+def testIncompatibleReuseRejectedWithoutMutation(definition, field, value, monkeypatch):  # noqa: F811
+    now = "2026-10-20T02:40:48Z"
+    monkeypatch.setattr("emo_master.apps.designer.state.workflow_store.utc_now_iso", lambda: now)
     package = buildWorkflowPackage(sourceStore(definition), "main")
     payload = project(definition)
     payload["devices"]["definitions"]["camera"][field] = value
     target = WorkflowStore(payload)
-    before = target.toPayload()
+    before = deepcopy(vars(target))
+    serializedBefore = target.toPayload()
+    # toPayload creates a save candidate with the current time. Cross a second
+    # deterministically, but compare every stored field for the no-mutation contract.
+    now = "2026-10-20T02:40:49Z"
     preview = previewWorkflowPackageImport(target, package)
     assert preview.devices[0].compatibleTargets == ()
+    assert vars(target) == before
     with pytest.raises(ValueError, match="映射不兼容"):
         importWorkflowPackage(target, package, deviceMapping={"camera": "camera"})
-    assert target.toPayload() == before
+    assert vars(target) == before
+    expected = deepcopy(serializedBefore)
+    expected["project"]["updatedAt"] = now
+    assert target.toPayload() == expected
+    assert vars(target) == before
 
 
 def testReuseDoesNotReplaceConnectionPoliciesOrEnabledState(definition):  # noqa: F811
@@ -126,22 +136,22 @@ def testInProjectCopyReusesDeviceAndVariableIds(definition):  # noqa: F811
 def testFailureAfterDeviceAllocationRollsBackEntireImport(definition):  # noqa: F811
     package = buildWorkflowPackage(sourceStore(definition), "main")
     target = WorkflowStore()
-    before = target.toPayload()
+    before = deepcopy(vars(target))
     with pytest.raises((ValueError, KeyError)):
         importWorkflowPackage(target, package, insertIntoWorkflowId="missing", deviceMapping={"camera": None})
-    assert target.toPayload() == before
+    assert vars(target) == before
 
 
 def testChangedPackageRequiresNewPreview(definition):  # noqa: F811
     package = buildWorkflowPackage(sourceStore(definition), "main")
     target = WorkflowStore()
     preview = previewWorkflowPackageImport(target, package)
-    before = target.toPayload()
+    before = deepcopy(vars(target))
     package.devices["camera"].connection = {"source": "changed"}
     with pytest.raises(ValueError, match="重新预览"):
         importWorkflowPackage(target, package, deviceMapping={"camera": None},
                               expectedFingerprint=preview.packageFingerprint)
-    assert target.toPayload() == before
+    assert vars(target) == before
 
 
 def testChangedTargetConnectionRequiresNewPreview(definition):  # noqa: F811
@@ -149,11 +159,11 @@ def testChangedTargetConnectionRequiresNewPreview(definition):  # noqa: F811
     target = WorkflowStore(project(definition))
     preview = previewWorkflowPackageImport(target, package)
     target.devices["definitions"]["camera"]["connection"] = {"source": "changed"}
-    before = target.toPayload()
+    before = deepcopy(vars(target))
     with pytest.raises(ValueError, match="目标工程"):
         importWorkflowPackage(target, package, deviceMapping={"camera": "camera"},
                               expectedTargetFingerprint=preview.targetFingerprint)
-    assert target.toPayload() == before
+    assert vars(target) == before
 
 
 @pytest.mark.parametrize("case", ["missing", "extra", "old-version"])

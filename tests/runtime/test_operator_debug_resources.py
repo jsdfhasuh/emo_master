@@ -20,6 +20,7 @@ from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb
 from emo_master.apps.runtime.operator_debug.contracts import SINGLE_NODE_FOLDERS, digest
 from emo_master.plugins.builtins.huaray_camera.operator import HuarayCameraOperator
 from tests.runtime.operator_debug_fixture import project
+from tests.runtime.tcp_port_probe import assertTcpPortReleased
 from tests.runtime.test_operator_debug_rpc import runtime as runtime
 from tests.runtime.test_operator_debug_sessions import waitFor
 
@@ -281,10 +282,10 @@ def testTcpReceiveAndAcknowledgeThenReleasePort(runtime):
             peer.settimeout(3)
             peer.sendall(b"HELLO\n")
             assert peer.recv(100) == b"ACK\n"
+            assert peer.recv(1) == b"", "Receive-once kept the accepted connection open"
         record = finished(debug, execution)
         assert record["status"] == "SUCCEEDED" and record["outputs"]["text"] == "HELLO", record
-    with socket.socket() as available:
-        available.bind(("127.0.0.1", port))
+    assertTcpPortReleased(port)
 
 
 def testCancelBlockedTcpReceiveNeverClaimsSuccessAndReleasesPort(runtime):
@@ -297,8 +298,7 @@ def testCancelBlockedTcpReceiveNeverClaimsSuccessAndReleasesPort(runtime):
         debug.mutation("CancelOperatorDebugExecution", execution_id=execution["executionId"])
         record = finished(debug, execution)
         assert record["status"] in {"CANCELLED", "UNKNOWN"}, record
-    with socket.socket() as available:
-        available.bind(("127.0.0.1", port))
+    assertTcpPortReleased(port)
 
 
 class SimulatedCamera(HuarayCameraOperator):

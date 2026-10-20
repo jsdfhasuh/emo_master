@@ -105,3 +105,9 @@ Windows multi_capture/300joins原等待失败仍需新精确SHA的普通CI确认
 本轮候选仍需要完整本机与精确SHA hosted结果。定向通过不是全套完成，也不把前面不同候选的通过数累加成一次验证。
 
 最终DisplaySession相邻冻结选择：96 passed（含13项新增回归），Ruff、mypy、diff-check通过，执行前后两文件指纹一致。
+
+### 剩余预算健康探针契约对齐
+
+`eb9a8f64` 首次本机全量6337 passed / 1 failed / 23 skipped / 42 subtests；精确push Linux同一失败。旧UI健康探针要求RPC参数恰等于0.5；现在产品传入原总预算扣除已耗时后的正数（例如0.499999），该测试自身断言使健康线程退出，随后latch超时。修正仅将这两处断言改为严格 `0 < timeout <= 0.5`，并明确剩余预算语义；不增加产品或测试deadline，不改latch等待、不吞线程异常。独立控制读取测试继续验证RPC耗时计入预算、重试不重置预算、耗尽仍失败。
+
+扩展回归198 passed（192.07秒），包含全部UI presentation及相关健康/资产/控制预算检查；未处理线程异常按error验证。产品源码未变，Ruff与diff-check通过，完整首失败记录保留。完整本机与新精确SHA远端结果继续单独跟踪。

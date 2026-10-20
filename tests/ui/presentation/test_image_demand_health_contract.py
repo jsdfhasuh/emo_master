@@ -76,7 +76,9 @@ def testOneHealthDeadlineClearsShownImageThenReusesSameResult(qtApp, tmp_path, m
                 matches = (request.runtime_instance_id, request.job_id) == selected['identity']
                 if threading.current_thread() is not healthThread or not matches:
                     return originalClientSnapshot(request, *args, **kwargs)
-                assert kwargs.get('timeout') == .5
+                # Read-only admission retries share the original deadline, so
+                # RPCs receive its remaining budget, never a fresh/larger one.
+                assert 0 < kwargs.get('timeout', 0) <= .5
                 rpcTimeouts.append(kwargs['timeout'])
                 if not faultInjected:
                     faultInjected = True
@@ -131,7 +133,7 @@ def testOneHealthDeadlineClearsShownImageThenReusesSameResult(qtApp, tmp_path, m
             assert (backend.calls['ReadAsset'], session.stats['decoded'], hub.conversions) == counts
             assert tuple(backend.calls[name] for name in ('StartJob', 'Start', 'StopJob', 'Subscribe')) == lifecycleCalls
             assert [code for code, _detail in session.errors] == ['DEADLINE_EXCEEDED']
-            assert len(rpcTimeouts) >= 2 and all(timeout == .5 for timeout in rpcTimeouts)
+            assert len(rpcTimeouts) >= 2 and all(0 < timeout <= .5 for timeout in rpcTimeouts)
             mark('gui_recovered')
         finally:
             # Never close a worker while it is still held by this test.

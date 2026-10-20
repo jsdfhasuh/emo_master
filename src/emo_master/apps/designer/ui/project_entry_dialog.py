@@ -19,7 +19,8 @@ try:
 
     class ProjectEntryDialog(QDialog):
         def __init__(self, parent=None) -> None:
-            super().__init__(parent)
+            # A hidden editor owner suppresses the startup dialog's taskbar entry.
+            super().__init__(parent if parent is not None and parent.isVisible() else None)
             self.setModal(True)
             self.setWindowTitle("项目入口")
             self.resize(720, 520)

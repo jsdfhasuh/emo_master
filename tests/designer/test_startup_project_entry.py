@@ -1,6 +1,8 @@
 import json
 from pathlib import Path
 
+import pytest
+
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.ui.main_window import MainWindow
 
@@ -48,6 +50,36 @@ class EntryDialogStub:
 
     def getLayoutMode(self) -> str:
         return self.layoutMode
+
+
+@pytest.mark.parametrize("mainWindowVisible", [False, True])
+def testProjectEntryOwnsStartupWindowButKeepsVisibleEditorParent(
+    ownedDesignerWindow, monkeypatch, mainWindowVisible
+) -> None:
+    from PySide2.QtCore import QTimer
+    from emo_master.apps.designer.controllers import project_controller
+    from emo_master.apps.designer.ui.project_entry_dialog import ProjectEntryDialog
+
+    window = ownedDesignerWindow(RuntimeClientStub())
+    if mainWindowVisible:
+        window.show()
+    observed = []
+
+    class ObservedEntry(ProjectEntryDialog):
+        def execSelection(self):
+            def inspectAndCancel():
+                observed.append((self.parentWidget(), self.isVisible(),
+                                 window.isVisible(), self.isModal()))
+                self._cancelButton.click()
+
+            QTimer.singleShot(0, inspectAndCancel)
+            return super().execSelection()
+
+    monkeypatch.setattr(project_controller, "ProjectEntryDialog", ObservedEntry)
+    assert window.showStartupProjectEntry() is False
+    assert observed == [(window if mainWindowVisible else None,
+                         True, mainWindowVisible, True)]
+    assert window.isVisible() is mainWindowVisible
 
 
 def testStartupCancelReturnsFalse() -> None:

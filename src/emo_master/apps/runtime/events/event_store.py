@@ -1,12 +1,13 @@
 from __future__ import annotations
 
+from dataclasses import replace
 import json
 import threading
 import time
 from collections.abc import Iterator
 from typing import Callable
 
-from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
 
 
 class EventStore:
@@ -74,7 +75,6 @@ class EventStore:
                     sequence = (self._sequences.get(jobId) or 0) + 1
             else:
                 sequence = (self._sequences.get(jobId) or 0) + 1
-            self._sequences[jobId] = sequence
             event = RuntimeEvent(
                 jobId=jobId,
                 eventType=eventType,
@@ -92,27 +92,56 @@ class EventStore:
                 nodeRunId=nodeRunId,
                 iterationPathJson=iterationPathJson,
             )
-            bucket = self._events.setdefault(jobId, [])
-            bucket.append(event)
-            if len(bucket) > self.retentionPerJob:
-                del bucket[: len(bucket) - self.retentionPerJob]
-            if eventType in {"job.completed", "job.failed", "job.aborted"}:
-                self._terminalJobs.add(jobId)
-                self._terminalSequences[jobId] = max(
-                    sequence,
-                    self._terminalSequences.get(jobId, 0),
-                )
-            self._condition.notify_all()
-            # Sinks are required to be non-blocking.  Dispatch while the append
-            # order is still serialized so concurrent producers cannot put a
-            # later SQLite sequence into JSONL before an earlier one.
-            if notifySinks:
-                for sink in tuple(self._sinks):
-                    try:
-                        sink(event)
-                    except BaseException:
-                        pass
+            self._publish(event, notifySinks)
         return event
+
+    def appendBatch(self, events: list[RuntimeEvent]) -> list[RuntimeEvent]:
+        """Commit a bounded ordinary-event cohort before exposing any member."""
+        if not events or len(events) > MAX_WORKER_EVENT_BATCH:
+            raise ValueError("invalid worker event batch size")
+        jobId = events[0].jobId
+        if any(event.jobId != jobId or not batchableWorkerEvent(event.eventType) for event in events):
+            raise ValueError("worker event batch crosses a Job or event barrier")
+        with self._condition:
+            appendMany = getattr(self.persistence, "appendJobEvents", None)
+            if self.persistence is not None and not callable(appendMany):
+                # Legacy persistence adapters retain their existing per-event contract.
+                return [self.append(event.jobId, event.eventType, event.message, level=event.level,
+                    nodeId=event.nodeId, code=event.code, payload=json.loads(event.payloadJson),
+                    projectId=event.projectId, workflowId=event.workflowId,
+                    workflowRunId=event.workflowRunId, parentWorkflowRunId=event.parentWorkflowRunId,
+                    nodeRunId=event.nodeRunId, iterationPath=tuple(json.loads(event.iterationPathJson)),
+                    timestampMs=event.timestampMs) for event in events]
+            sequences = (appendMany(events) if callable(appendMany) else
+                         range(self._sequences.get(jobId, 0) + 1, self._sequences.get(jobId, 0) + 1 + len(events)))
+            committed = [replace(event, sequence=sequence) for event, sequence in zip(events, sequences)]
+            for event in committed:
+                self._publish(event, True)
+            return committed
+
+    def _publish(self, event: RuntimeEvent, notifySinks: bool) -> None:
+        # Caller holds the append order lock and has confirmed durable commit.
+        self._sequences[event.jobId] = event.sequence
+        bucket = self._events.setdefault(event.jobId, [])
+        bucket.append(event)
+        if len(bucket) > self.retentionPerJob:
+            del bucket[: len(bucket) - self.retentionPerJob]
+        if event.eventType in {"job.completed", "job.failed", "job.aborted"}:
+            self._terminalJobs.add(event.jobId)
+            self._terminalSequences[event.jobId] = max(
+                event.sequence,
+                self._terminalSequences.get(event.jobId, 0),
+            )
+        self._condition.notify_all()
+        # Sinks are required to be non-blocking.  Dispatch while the append
+        # order is still serialized so concurrent producers cannot put a
+        # later SQLite sequence into JSONL before an earlier one.
+        if notifySinks:
+            for sink in tuple(self._sinks):
+                try:
+                    sink(event)
+                except BaseException:
+                    pass
 
     def addSink(self, sink: Callable[[RuntimeEvent], object]) -> None:
         with self._condition:

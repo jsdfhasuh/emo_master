@@ -2,7 +2,7 @@ name: 300 join SQLite call costs (diagnostic only)
 
 on:
   push:
-    branches: [agent/diagnostic-join-sqlite-20261020]
+    branches: [agent/diagnostic-batched-join-20261020]
   workflow_dispatch:
 
 permissions:

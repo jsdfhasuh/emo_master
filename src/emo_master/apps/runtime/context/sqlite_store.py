@@ -15,7 +15,7 @@ from emo_master.apps.runtime.context.global_counters import (
     GlobalCounterRecord,
     validateGlobalCounterValue,
 )
-from emo_master.apps.runtime.events.models import RuntimeEvent
+from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
 from emo_master.apps.runtime.context.sqlite_transactions import beginImmediate
 
 
@@ -288,6 +288,42 @@ class SqliteStore:
                                    (jobId, sequence - limit))
             connection.commit()
         return sequence
+
+    def appendJobEvents(self, events: list[RuntimeEvent]) -> list[int]:
+        """One bounded FULL transaction; nothing is acknowledged before commit.
+
+        Only already queued ordinary events of one Job are eligible. BEGIN may
+        retry admission; the body and uncertain commit are never replayed.
+        """
+        if not events or len(events) > MAX_WORKER_EVENT_BATCH:
+            raise ValueError("invalid worker event batch size")
+        jobId = events[0].jobId
+        if any(event.jobId != jobId or not batchableWorkerEvent(event.eventType) for event in events):
+            raise ValueError("worker event batch crosses a Job or event barrier")
+        with self.connection() as connection:
+            beginImmediate(connection)
+            row = connection.execute(
+                "SELECT COALESCE(MAX(sequence), 0) + 1 FROM jobEvents WHERE jobId = ?", (jobId,)
+            ).fetchone()
+            first = int(row[0]) if row is not None else 1
+            sequences = list(range(first, first + len(events)))
+            for event, sequence in zip(events, sequences):
+                connection.execute(
+                    """INSERT INTO jobEvents(
+                      jobId, nodeId, eventType, level, code, message, payloadJson,
+                      timestamp, sequence, projectId, workflowId, workflowRunId,
+                      parentWorkflowRunId, nodeRunId, iterationPathJson, timestampMs
+                    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                    (jobId, event.nodeId, event.eventType, event.level, event.code,
+                     event.message, event.payloadJson, _utcNow(), sequence, event.projectId,
+                     event.workflowId, event.workflowRunId, event.parentWorkflowRunId,
+                     event.nodeRunId, event.iterationPathJson, event.timestampMs))
+                limit = self.jobEventRetention
+                if limit and sequence % min(100, limit) == 0:
+                    connection.execute("DELETE FROM jobEvents WHERE jobId = ? AND sequence <= ?",
+                                       (jobId, sequence - limit))
+            connection.commit()
+        return sequences
 
     def getLastJobEventSequence(self, jobId: str) -> int:
         with self.connection() as connection:

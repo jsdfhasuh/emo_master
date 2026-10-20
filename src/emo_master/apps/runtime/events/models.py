@@ -20,3 +20,12 @@ class RuntimeEvent:
     parentWorkflowRunId: str = ""
     nodeRunId: str = ""
     iterationPathJson: str = "[]"
+
+
+MAX_WORKER_EVENT_BATCH = 32
+
+
+def batchableWorkerEvent(eventType: str) -> bool:
+    """Only diagnostics without Supervisor side effects share a commit."""
+    return (not eventType.startswith(("job.", "display.", "sqlite.write."))
+            and eventType != "process.heartbeat")

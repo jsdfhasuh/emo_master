@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import multiprocessing
 from collections import deque
 from contextlib import contextmanager
@@ -7,9 +8,10 @@ import threading
 import time
 import weakref
 from dataclasses import replace
-from typing import Any, Callable, cast
+from typing import Any, Callable
 
 from emo_master.apps.runtime.events.event_store import EventStore
+from emo_master.apps.runtime.events.models import RuntimeEvent, MAX_WORKER_EVENT_BATCH, batchableWorkerEvent
 from emo_master.apps.runtime.jobs.cancellation import JobCancellation
 from emo_master.apps.runtime.jobs.event_bridge import EventBridge
 from emo_master.apps.runtime.jobs.heartbeat import HeartbeatCell, monotonicMs
@@ -218,6 +220,42 @@ class JobSupervisor:
             payload=dict(runGroupId=group.groupId, sourceJobId=spec.jobId,
                          slots={key: slot.jobId for key, slot in slots.items()}))
 
+    @staticmethod
+    def _workerEventFields(jobId, record, event) -> dict[str, Any]:
+        contextIteration = event.get("iterationPath", [])
+        return dict(jobId=jobId, eventType=str(event.get("eventType", "process.event")),
+            message=str(event.get("message", event.get("eventType", "process.event"))),
+            level=str(event.get("level", "INFO")), nodeId=str(event.get("nodeId", "")),
+            code=str(event.get("code", "")),
+            payload=event.get("payload") if isinstance(event.get("payload"), dict) else {},
+            projectId=str(event.get("projectId", "")) or record.projectId,
+            workflowId=str(event.get("workflowId", "")) or record.workflowId,
+            workflowRunId=str(event.get("workflowRunId", "")),
+            parentWorkflowRunId=str(event.get("parentWorkflowRunId", "")),
+            nodeRunId=str(event.get("nodeRunId", "")),
+            iterationPath=tuple(item for item in contextIteration if isinstance(item, int))
+                if isinstance(contextIteration, list) else ())
+
+    def consumeWorkerEvents(self, jobId: str, events: list[dict[str, object]]) -> None:
+        """Only a bounded, already queued ordinary-event cohort enters here."""
+        if not events or len(events) > MAX_WORKER_EVENT_BATCH or any(
+                not batchableWorkerEvent(str(event.get("eventType", "process.event"))) for event in events):
+            raise ValueError("invalid ordinary worker event batch")
+        self.assertMutationAllowed()
+        with self._terminalAttempt():
+            with self._lock:
+                record = self.jobRepository.get(jobId)
+                if record is None or jobId in self._terminalEvents or record.isTerminal:
+                    return
+                prepared = []
+                for event in events:
+                    fields = self._workerEventFields(jobId, record, event)
+                    payload = json.dumps(fields.pop("payload"), ensure_ascii=True, default=str)
+                    iteration = json.dumps(list(fields.pop("iterationPath")), ensure_ascii=True)
+                    prepared.append(RuntimeEvent(**fields, payloadJson=payload,
+                        iterationPathJson=iteration, timestampMs=nowMs()))
+                self.eventStore.appendBatch(prepared)
+
     def consumeWorkerEvent(self, jobId: str, event: dict[str, object]) -> None:
         self.assertMutationAllowed()
         with self._terminalAttempt() as claim:
@@ -239,32 +277,7 @@ class JobSupervisor:
                     self._heartbeat[jobId] = nowMs()
                     self._heartbeatSeen.add(jobId)
 
-                projectId = str(event.get("projectId", "")) or record.projectId
-                workflowId = str(event.get("workflowId", "")) or record.workflowId
-                contextIteration = event.get("iterationPath", [])
-                iterationPath = (
-                    tuple(item for item in contextIteration if isinstance(item, int))
-                    if isinstance(contextIteration, list)
-                    else ()
-                )
-                stored = self.eventStore.append(
-                    jobId=jobId,
-                    eventType=eventType,
-                    message=str(event.get("message", eventType)),
-                    level=str(event.get("level", "INFO")),
-                    nodeId=str(event.get("nodeId", "")),
-                    code=str(event.get("code", "")),
-                    payload=cast(
-                        dict[str, object] | None,
-                        event.get("payload") if isinstance(event.get("payload"), dict) else {},
-                    ),
-                    projectId=projectId,
-                    workflowId=workflowId,
-                    workflowRunId=str(event.get("workflowRunId", "")),
-                    parentWorkflowRunId=str(event.get("parentWorkflowRunId", "")),
-                    nodeRunId=str(event.get("nodeRunId", "")),
-                    iterationPath=iterationPath,
-                )
+                stored = self.eventStore.append(**self._workerEventFields(jobId, record, event))
                 if eventType == "job.started":
                     self.jobRepository.update(
                         jobId,

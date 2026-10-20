@@ -1,0 +1,399 @@
+{
+  "createdAt": "2026-10-20T12:15:25.314447+00:00",
+  "head": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "sourceMatchesPrior": true,
+  "files": [
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/acceptance-regression.xml",
+      "sha256": "94247fc573be71276c057c61bfd916e450c8c0d90c610a4075aecfd0257fcfc0"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/baseline-isolated.xml",
+      "sha256": "ce14a73bda1f9ba225098eb066da2526352b03967094fd2c48d605660b62b7be"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/devices-1200.png",
+      "sha256": "836ac478d578f0f32f6f0e222a973074ab325433631fed42e455b42b58bdee7d"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/devices-642.png",
+      "sha256": "8ad8e51f4efa536736bb3ce003c5a357fc69f67197d23c87c51e6bf73be6b3b0"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/final-regression.xml",
+      "sha256": "b9a5a8fd2682113c2f671ef46a0b143cd9285dea7c2c97da1f69a0803f315789"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/first-write.png",
+      "sha256": "38a3ed2297896a8e1d6ecfffa44e2663aa94dcbffb048abbbc9c72328ead81bf"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/main-1280.png",
+      "sha256": "d7a816d3645aafd9d39ea0c3f98c12cf8e4210ceff221ccaa763fc4bab9ea7a2"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/main-642.png",
+      "sha256": "f7aab5fa77c7dcfe0d1de6fafd76521c3cf3bc9b2d522de5bf9f701653d0b419"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/manifest.json",
+      "sha256": "53b8731e56010fad942d20d04382c08ed8af7f2d38854988fd3bb291077a3617"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/monitor-empty.png",
+      "sha256": "26df02f7c6a664ec3e4a550a270435a1a2e2aa9d480d4221a4db05791264b06b"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/offline-discovery-final.xml",
+      "sha256": "05d59482a2a79df6acfd050e3c40f6f8729fe902ebd0c6ce7062be8d1ce76825"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/offline-discovery-regression.xml",
+      "sha256": "2ff9f386aa1169e0dab3323d775cde18773b33627e898066bf59bd3b6769d123"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/regression.xml",
+      "sha256": "b8700a4172a56eaf83367c8a5a9f74a39b601852e9cee0f38ee2af02dc1bd35b"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/render_offscreen.py",
+      "sha256": "417c5e8202253ce49bd6516220cbd4d204ed3376cbdd9a6c2b413c7877603cee"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/acceptance-regression.xml",
+      "sha256": "2896a9b375504584c19b55a00fc7380df523efb11b862ccc064baf7ae40227cc"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/focused-1.xml",
+      "sha256": "d00646489edf9ee7d48850fc10a3b8244cb09e59de3dd5be2725494076998bfc"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/focused-2.xml",
+      "sha256": "2b8f39f685291e20c84e7da1852c7fd135376688d8258121970539ebfee2aa8b"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/regression-1.xml",
+      "sha256": "60bf3f80a5e98e2db727ff5cc4737bd6c1d9e98a38832c20f8323dc186af633d"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/review-before.xml",
+      "sha256": "d6e8a686363edd7f4880addeddf62c0db5708bdda35861a437e39ab08eba81cc"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/review-counterexamples.xml",
+      "sha256": "7e2661b409e997494f028e9da9745fa97dc35750f6ad6004fa6448f1823a1b4b"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/source-manifest.json",
+      "sha256": "08d84635d1ff54af072c2c1be6f758cf8cef62dbc3eba4d92f4f833fe516be0a"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/review-fixes/validation-summary.json",
+      "sha256": "932e78bf4d9c2b4f8f60a43f563a9408c5d43a4a40ee54908db5ac41c9e850e1"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/runtime-menu.png",
+      "sha256": "01dc96d2b7b950fcdfb59fa6880dd29659c0665674df716c64dd6007eb9a0791"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/source-manifest.json",
+      "sha256": "32528d7985b14e2bb24286b625b219d08019b19442c17b85eb3b9dc5f7956c86"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/stop-regression.xml",
+      "sha256": "6d2612d0fb270d78d2a9828bc222e1aa0cb09375307d89a0b229471e7116d789"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/acceptance-regression.xml",
+      "sha256": "70bda7735efdf4e462083ea00b1452c8ba9ed13832bdeb527444c0a4db862dfd"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/baseline-counterexamples.xml",
+      "sha256": "90cd35a7c5d75564115c2043f513595e276c69d215c59128ff2c64f9c9d6e24c"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/baseline.json",
+      "sha256": "bf67a5a5470b737631bf2f0f984454e855514cb2a701d58554d2d610ed9e97a5"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/candidate-failed-current-retained.png",
+      "sha256": "8744b0f4ab484fcf9a8d9d7bfefb0f90554ea7f9771c26f6c7c58522a545c4ad"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/completion-audit.json",
+      "sha256": "aeb47a76ca22e6633cd387e63b7aaed3407888d9b2ffd8f74879e0a205b14b22"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/current-embedded-runtime.png",
+      "sha256": "1dd28d2208d4261377ee68200a8dafd4bb2aab189ec5236deb5515b3663cf8cc"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/environment.json",
+      "sha256": "add262ad87726f99aab55ecf9a6d8d91944264422a64d02b66b028ac47afabfe"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/feedback-expanded-2.xml",
+      "sha256": "6b867ec32893749d90b4944ecf30837df86c2db26abf9896c34b554e62391ff7"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/feedback-expanded-3.xml",
+      "sha256": "8bb681b96048cd3f8043746723797ed8a209cca0446b844bffe81ff7a3f7febd"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/feedback-first.xml",
+      "sha256": "c3d40e615e7a45e96da63a886e70137c77a7fda3281e8e72907f09ee4e36cf71"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/focused-1.xml",
+      "sha256": "2a4eb14af52a6ffc5702e9758ac7bc32fd65675ece999af0679b372a5b030f31"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/legacy-format.png",
+      "sha256": "a61e72eddb806cd944ddaba52c447db0a08170f6305bc169de2f620db0e81519"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/main-runtime-summary.png",
+      "sha256": "e761532fbbaeced557faa1295c150966c5dc63465b9555d1b7fb5616008aac6d"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/popup-1.png",
+      "sha256": "3674bb0846a12247b53b6ed370b77912e4224ef758102fbd6b5b5e58ce3ff498"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/popup-2.png",
+      "sha256": "571be30b2141d5e1316f69e3aa168bf713d1fea93e455cceabfae4024ea9cd35"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/preservation.json",
+      "sha256": "a9a66f09ad596ca917fb46a91cc7a96e99b3cc3e6601a5c83fec10899df42fac"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/regression-before-final-feedback.xml",
+      "sha256": "0b1f382c3033ff7a0496834e17d0ddb44169e3f4ca6041db56589fff8a7f8548"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/regression-before-identity-check.xml",
+      "sha256": "4e703a5f2f54785966994c43da09a4ddb82ad15323b6ceb2ed89e3dbc7ac3889"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/render-summary.json",
+      "sha256": "5eecd026f4dfd1c6c76360b3baa4243608e705dd6b3ed6e537022ae50e3821cf"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/render_offscreen.py",
+      "sha256": "a2100060b479032085d45b8bbf6b39f1fe761e00d949614a38deccb538b75687"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/software-verification-before-final-feedback.json",
+      "sha256": "7fcfb62bb1c3b30cb6fc0ac780aaf6feec40afb4e408eb5bf38dd57464d2937c"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/software-verification-before-identity-check.json",
+      "sha256": "1b75282807902efe2eee2cf04c97d4ce288987f20d3c7cd55f058f0f49e62d6c"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/software-verification.json",
+      "sha256": "163475419b2ef44e77a10ec76975efc3181d617c0f8931253f1fa435d553bcdc"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/validation-passed.png",
+      "sha256": "f74f65043b4a4857580de8b727949e3d976999d58c79845a7b923d7ce504f2c0"
+    },
+    {
+      "path": "docs/evidence/2026-10-20-runtime-validation-feedback/verify_software.py",
+      "sha256": "7d16f5f7ce82975f676d9f6fe47f82e30aefd6a5104e17a501f9b7b39caa1492"
+    },
+    {
+      "path": "docs/guides/device-dispatch-online-configuration.md",
+      "sha256": "88ff9195bb4693a3ed648ff623d689f964e02b92c56477ac8d95e4ad1f8f554c"
+    },
+    {
+      "path": "docs/plans/2026-10-20-device-manager-layout-runtime-entry-plan.md",
+      "sha256": "3ef0779808610e7bb1a75453831b903db52d5b9481cad17625a3b4efdf2d9d20"
+    },
+    {
+      "path": "docs/plans/2026-10-20-runtime-validation-feedback-connection-state-plan.md",
+      "sha256": "242139269e1f64237566aeb9afd0b9053b29a4e764206c4a230cb8031775def6"
+    },
+    {
+      "path": "docs/testing/2026-10-20-runtime-menu-device-layout.md",
+      "sha256": "c9b9f4c32d691c75a67315688c6e4aabe0a54772163951ff55c70723758c0a88"
+    },
+    {
+      "path": "docs/testing/2026-10-20-runtime-validation-feedback.md",
+      "sha256": "97438597ffbc2ef8191ac983a965a6f059727d6d8096351ce2e617bc9f2f9863"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "c70d4a773157d45d1a1685abacd0e894df747a57076131d1f4700f9c8e55c8ea"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "sha256": "118795c3a9c85be1cebb43a7dfe7a12182d2e93b07674539224816657371ed57"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "sha256": "01b3d662bfe974b90e4f1075b6ac679fbcf76b998fcc3e2e111505777c40876a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "sha256": "43bf09a173ad200245bdfef958742a6e6a330cfb03f418f4f70814cf5ab66bbb"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "sha256": "171e8b582c4addc945aa50691a0bd4b30c96a5e8e2c5f6b972c3601326d767b5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "8d996c6157f1c3902aba2fa1820870f411a9b61b4be1dea5834a6d3c2a306414"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "sha256": "b69a21d71a256c749e6afabb7f7db165da6cb4067ee58af742d09af4e8694a27"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "sha256": "8e0f6e3b5ea18c79dd78f344e81d1d0c2443b5115cf291baf7cf8ef3c0a1eba1"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "sha256": "b8e558d093cc147d7037ea0af74418dfa9ccc1b803a32b446d741ee8fef3b03f"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/online_graph.py",
+      "sha256": "5c22d0fece36c37a549edc3081ae8b1e28613bae1565b08229098f175a3902b2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "sha256": "009e2a6ce7380235c1cb7c8f8f8b0dafa22c502d8400fb284f6773112bd5805a"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_entry_dialog.py",
+      "sha256": "c55ece45f7f3474eb49d04b514c6cdb2217f2149763982821e3d99a109b2c40d"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/runtime_connection.py",
+      "sha256": "dbb7afab67337d4ccc76798f900ee659156416d26aebd79045fb8791175a748d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "0dbf7e86658f0579f04d9ffd61959e7ec622ce9fe875b2727d70dc99a91f792d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "sha256": "4c0ce193f58793161b1c89dd2683107f3808a819d1aa18931dfb936aeec2526d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "6b685c76c365bacc1bf1cea4c92431e904903a8ff6e5518f027ad62c43e68cd8"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/coordinator.py",
+      "sha256": "7fdc6c680154396f54c637b9ac094e69dc221e17aee963e57efa342510048672"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "sha256": "f50babb6c6a9677a1594f1da4b092bcff4da0d4f0260515a1cc3be0ad7f145ce"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/store.py",
+      "sha256": "8b86c523b512559432e81db58465184414414a15557a77ea0fddcae1bb1b5593"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "sha256": "1d1e4702573b759db29ada055d10a8e76fd9147da05a384c12f23fade20b7d86"
+    },
+    {
+      "path": "tests/designer/runtime_feedback_fixture.py",
+      "sha256": "9dbb2c23df6084b43c0060592f55619a85f8f374e1eccadf52393bae3004795e"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "sha256": "677b3f0a7292c6f63ede5bd90157c82abe39d9f35d1382a5fe67445455c4f27b"
+    },
+    {
+      "path": "tests/designer/test_device_plan_completion_ui.py",
+      "sha256": "033c293dad0a6db80c4cab9f1f7c5aff12d603bae3870e6ee99d8a60c84f45ca"
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "sha256": "5114f70694b09070292dd11a6b9ed91112c52634944d5d374ca125d91fdebbb8"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "sha256": "330430aeff7d6a41ce1abae978b864ffebc6e74db4f93b4dd878c80e006b4e6a"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "sha256": "3cbd21cc7f6144d4ed596ff29f78972504c6204c6a15f2d3a9c4230b0051ea68"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_qt.py",
+      "sha256": "11c64ca50f099bd9e96b32bcc617a15a291f373aacac2a82ba1bf29d49951732"
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "sha256": "1307dbfb43eb74a31891f5eeff8676d01f63f5bda520043bbfdcb7f5851484e2"
+    },
+    {
+      "path": "tests/designer/test_main_window_menubar.py",
+      "sha256": "2f1474866ba5ace6b4b77dc85ef1b437768cda6c002735683160ba008958fdcd"
+    },
+    {
+      "path": "tests/designer/test_project_configuration_ui.py",
+      "sha256": "848e0595170fcb6e0ced2f197131bc8c6041a785fcc6187163284662fbc9db1f"
+    },
+    {
+      "path": "tests/designer/test_runtime_connection_ui.py",
+      "sha256": "f8bd1d4001fc63774b2099118b414831a22df671c246ba342992e8b361bd70fa"
+    },
+    {
+      "path": "tests/designer/test_runtime_controller.py",
+      "sha256": "060f1fad849a8fe0173f9812d77bc624f1d706a694d46fca27ca6a2a245debd7"
+    },
+    {
+      "path": "tests/designer/test_runtime_menu_publication.py",
+      "sha256": "733750abe7011d759370c5bbce30adbb877c4227f4be8f6c21b02707808dcf01"
+    },
+    {
+      "path": "tests/designer/test_runtime_validation_feedback.py",
+      "sha256": "1afa090df4b051b33e3b5e1e91651b94bf83fb514a05f0c87119d2aa63ac93e5"
+    },
+    {
+      "path": "tests/designer/test_small_window_layout_repair.py",
+      "sha256": "6961e159b542ab5b720e0e5432e1a3372d7259405ec04fe89df9089452cfe557"
+    },
+    {
+      "path": "tests/designer/test_startup_project_entry.py",
+      "sha256": "d0cba92f078b17aba249d01fb8f5c6d61fd12ccd294b080a4406e8fbd9d54fde"
+    },
+    {
+      "path": "tests/designer/test_targeted_resource_repair_ui.py",
+      "sha256": "71ea388a319434d50803759d89b3c3c17f015f925cb8eb0d4c63b19a7342e9f0"
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "sha256": "4a482e74d938867b5fe988d0b0f60d152f43d2588743ffc43788db23533d707a"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "sha256": "de67225ccf11e6aaeb16b44bf5d80070f20b889411bdad6f8606313747ec104b"
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "sha256": "6017c1e7bae83d33fc772a6f942a151cc5cb82ad6f289635639ec35c2005ae95"
+    },
+    {
+      "path": "tests/runtime/test_initial_project_configuration.py",
+      "sha256": "0ce55c5bdb7fd8d28848aceed1a6fdaa188f42912e9b224c092cf79aea2616dc"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "sha256": "a1ffd6fd7f5839dabc36f5edf8c8dcc922ee3171f4c921c40e75f32b7a16c5b9"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "sha256": "9321b83541fa93162961abbb22e5298e5f36c7e782c5c9c6a7e1b9b756c4846f"
+    }
+  ]
+}

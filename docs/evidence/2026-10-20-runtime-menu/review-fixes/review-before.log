@@ -1,0 +1,39 @@
+late_discovery_after_close= [{'parentVisible': False, 'discoveryOnly': True}]
+Flate_stop_failure= {'kind': 'transport', 'status': 'RUNNING', 'active': True, 'running': True}
+Flate_stop_failure= {'kind': 'reply', 'status': 'RUNNING', 'active': True, 'running': True}
+Finitial_write_cancel_before_commit= {'write': 'StatusCode.DEADLINE_EXCEEDED', 'query': 'StatusCode.DEADLINE_EXCEEDED', 'cancel': 'StatusCode.DEADLINE_EXCEEDED', 'final': {'documentRevision': 1, 'executionRevision': 1, 'message': '首次写入成功；未启动任务', 'requestId': 'review-first-write', 'runtimeInstanceId': '8eff36eb-fdc9-485b-a1af-b8713a097cac', 'state': 'COMMITTED'}}
+F
+================================== FAILURES ===================================
+_____________ testClosingDeviceWorkspaceDoesNotOpenLateDiscovery ______________
+..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:52: in testClosingDeviceWorkspaceDoesNotOpenLateDiscovery
+    assert opened == [], 'closing the parent must abandon the pending open-dialog intent'
+E   AssertionError: closing the parent must abandon the pending open-dialog intent
+E   assert [{'parentVisi...yOnly': True}] == []
+E     
+E     Left contains one more item: {'parentVisible': False, 'discoveryOnly': True}
+E     Use -v to get more diff
+___________ testStopFailureCannotReplaceObservedTerminal[transport] ___________
+..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:79: in testStopFailureCannotReplaceObservedTerminal
+    assert panel.jobStatus == 'ABORTED' and not controller._jobActive and running[-1] is False
+E   AssertionError: assert ('RUNNING' == 'ABORTED'
+E     
+E     - ABORTED
+E     + RUNNING)
+_____________ testStopFailureCannotReplaceObservedTerminal[reply] _____________
+..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:79: in testStopFailureCannotReplaceObservedTerminal
+    assert panel.jobStatus == 'ABORTED' and not controller._jobActive and running[-1] is False
+E   AssertionError: assert ('RUNNING' == 'ABORTED'
+E     
+E     - ABORTED
+E     + RUNNING)
+_______ testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback] _______
+..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py:124: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert isinstance(outcomes['cancel'], dict) and outcomes['cancel']['state'] in {'VALIDATING', 'WAITING', 'CANCELLED'}
+E   AssertionError: assert (False)
+E    +  where False = isinstance('StatusCode.DEADLINE_EXCEEDED', dict)
+=========================== short test summary info ===========================
+FAILED ..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py::testClosingDeviceWorkspaceDoesNotOpenLateDiscovery
+FAILED ..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py::testStopFailureCannotReplaceObservedTerminal[transport]
+FAILED ..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py::testStopFailureCannotReplaceObservedTerminal[reply]
+FAILED ..\..\AppData\Local\Temp\emo-runtime-menu-plan-audit-20261020\test_plan_contract.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback]
+4 failed in 4.15s

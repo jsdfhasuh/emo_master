@@ -1,0 +1,25 @@
+.............FFFF....................................................... [ 97%]
+..                                                                       [100%]
+================================== FAILURES ===================================
+___ testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying] ___
+tests\runtime\test_initial_project_configuration.py:222: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert not [p for p in cache.rglob('*') if p.is_file()]
+E   AssertionError: assert not [WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2613/testInitialWriteIsQueryableAnd0/data/configuration-resources/.owners/c3453d1dd35c6c5ace7772d5f4c27748f2e6d86ddc9d45aca61e7552c608beb6')]
+__ testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared] ___
+tests\runtime\test_initial_project_configuration.py:222: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert not [p for p in cache.rglob('*') if p.is_file()]
+E   AssertionError: assert not [WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2613/testInitialWriteIsQueryableAnd1/data/configuration-resources/.owners/efd3dc5de446f51a92724a88514d6e7124a56434a997f3f355cbd627c360fd6c')]
+___ testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying] ___
+tests\runtime\test_initial_project_configuration.py:222: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert not [p for p in cache.rglob('*') if p.is_file()]
+E   AssertionError: assert not [WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2613/testInitialWriteIsQueryableAnd2/data/configuration-resources/.owners/91eee8fe7d447375f7bdadb27f29bfe0b5de394eafbb32c09b3d865e6bcb2f24')]
+__ testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared] ___
+tests\runtime\test_initial_project_configuration.py:222: in testInitialWriteIsQueryableAndCancellableBeforeCommit
+    assert not [p for p in cache.rglob('*') if p.is_file()]
+E   AssertionError: assert not [WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2613/testInitialWriteIsQueryableAnd3/data/configuration-resources/.owners/4d98cdc42aae030ca5038cbde9c927d26529bebf2f854356ab4eac604640842f')]
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying]
+FAILED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared]
+4 failed, 70 passed in 46.66s

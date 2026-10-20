@@ -1,0 +1,153 @@
+{
+  "baselineHead": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "scope": "Dirty working-tree source, proto and test snapshot; no new commit",
+  "createdAt": "2026-10-20T17:54:13.7275877+08:00",
+  "files": [
+    {
+      "path": "docs/evidence/2026-10-20-runtime-menu/render_offscreen.py",
+      "sha256": "417C5E8202253CE49BD6516220CBD4D204ED3376CBDD9A6C2B413C7877603CEE"
+    },
+    {
+      "path": "proto/runtime.proto",
+      "sha256": "C70D4A773157D45D1A1685ABACD0E894DF747A57076131D1F4700F9C8E55C8EA"
+    },
+    {
+      "path": "src/emo_master/apps/designer/controllers/runtime_controller.py",
+      "sha256": "6B8BDA653167AD4EBC2ABD5256B804C3E36518090BA283DBEB8BAD6061E94801"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/chrome.py",
+      "sha256": "5E1964D3730BFD98C950EDC2A163E5C54E52ACB702F2CF63D084240FC40C2A78"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "sha256": "43BF09A173AD200245BDFEF958742A6E6A330CFB03F418F4F70814CF5AB66BBB"
+    },
+    {
+      "path": "src/emo_master/apps/designer/page_designer/preview.py",
+      "sha256": "171E8B582C4ADDC945AA50691A0BD4B30C96A5E8E2C5F6B972C3601326D767B5"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "sha256": "C61ECB5652042101FF014594BC70A252A104A1A6C32E3D1412080F4EC1BB6539"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/designer_actions.py",
+      "sha256": "B69A21D71A256C749E6AFABB7F7DB165DA6CB4067EE58AF742D09AF4E8694A27"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "sha256": "97678946DE6D614DABD481B72FFCAB8911E5F80739311EAAA950AC7D877BC65E"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "sha256": "B8E558D093CC147D7037EA0AF74418DFA9CCC1B803A32B446D741EE8FEF3B03F"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/online_graph.py",
+      "sha256": "5C22D0FECE36C37A549EDC3081AE8B1E28613BAE1565B08229098F175A3902B2"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "sha256": "30460589815D491010AC13FB5FF2450AFD67892B81991D092C355422FCE8663C"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2_grpc.py",
+      "sha256": "4C0CE193F58793161B1C89DD2683107F3808A819D1AA18931DFB936AEEC2526D"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/generated/runtime_pb2.py",
+      "sha256": "0DBF7E86658F0579F04D9FFD61959E7EC622CE9FE875B2727D70DC99A91F792D"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "sha256": "25E17C8690D6F58E3AE2AB6495398953F1A136B635F91A31514A1EFB2EA26CAF"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/store.py",
+      "sha256": "071AB135389A4F6EB9DE0616E90348EEDB9B9B4FAB12931EE7E7634C556C7D0B"
+    },
+    {
+      "path": "tests/designer/test_designer_shortcuts.py",
+      "sha256": "677B3F0A7292C6F63EDE5BD90157C82ABE39D9F35D1382A5FE67445455C4F27B"
+    },
+    {
+      "path": "tests/designer/test_device_plan_completion_ui.py",
+      "sha256": "23BF4E45EE7AF154BF811AE73D785C4779F7898783B20A204F0F955DA9942A01"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "sha256": "330430AEFF7D6A41CE1ABAE978B864FFEBC6E74DB4F93B4DD878C80E006B4E6A"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "sha256": "3CBD21CC7F6144D4ED596FF29F78972504C6204C6A15F2D3A9C4230B0051EA68"
+    },
+    {
+      "path": "tests/designer/test_device_workspace.py",
+      "sha256": "5114F70694B09070292DD11A6B9ED91112C52634944D5D374CA125D91FDEBBB8"
+    },
+    {
+      "path": "tests/designer/test_flow_layout_qt.py",
+      "sha256": "11C64CA50F099BD9E96B32BCC617A15A291F373AACAC2A82BA1BF29D49951732"
+    },
+    {
+      "path": "tests/designer/test_main_window_layout.py",
+      "sha256": "1307DBFB43EB74A31891F5EEFF8676D01F63F5BDA520043BBFDCB7F5851484E2"
+    },
+    {
+      "path": "tests/designer/test_main_window_menubar.py",
+      "sha256": "2F1474866BA5ACE6B4B77DC85EF1B437768CDA6C002735683160BA008958FDCD"
+    },
+    {
+      "path": "tests/designer/test_runtime_connection_ui.py",
+      "sha256": "D7C720781954599E6493E63F59BB1454E9C71F9F7B7118BDEB328BB3354B7048"
+    },
+    {
+      "path": "tests/designer/test_runtime_controller.py",
+      "sha256": "4883F168594E58EFAFD642B01EDAC372C08DD5DCD79BB9F90D37AE748BF25998"
+    },
+    {
+      "path": "tests/designer/test_runtime_menu_publication.py",
+      "sha256": "3720728B890397A3E12561F2028B7EE14632D4A87EC73E003C2D1A7A6E022017"
+    },
+    {
+      "path": "tests/designer/test_small_window_layout_repair.py",
+      "sha256": "6961E159B542AB5B720E0E5432E1A3372D7259405EC04FE89DF9089452CFE557"
+    },
+    {
+      "path": "tests/designer/test_toolbar_width.py",
+      "sha256": "4A482E74D938867B5FE988D0B0F60D152F43D2588743FFC43788DB23533D707A"
+    },
+    {
+      "path": "tests/designer/test_visual_layout.py",
+      "sha256": "DE67225CCF11E6AAEB16B44BF5D80070F20B889411BDAD6F8606313747EC104B"
+    },
+    {
+      "path": "tests/runtime/test_device_runtime.py",
+      "sha256": "6017C1E7BAE83D33FC772A6F942A151CC5CB82AD6F289635639EC35C2005AE95"
+    },
+    {
+      "path": "tests/runtime/test_initial_project_configuration.py",
+      "sha256": "BBA04DF51C7127E4CA77376763B513DE115B40CA571C1392A9077717950A1955"
+    },
+    {
+      "path": "tests/ui/page_designer/test_parallel_runtime.py",
+      "sha256": "A1FFD6FD7F5839DABC36F5EDF8C8DCC922EE3171F4C921C40E75F32B7A16C5B9"
+    },
+    {
+      "path": "tests/ui/page_designer/test_workspace_modes.py",
+      "sha256": "9321B83541FA93162961ABBB22E5298E5F36C7E782C5C9C6A7E1B9B756C4846F"
+    }
+  ],
+  "unrelatedPreservedFiles": [
+    {
+      "path": "src/emo_master/apps/designer/ui/project_entry_dialog.py",
+      "sha256": "C55ECE45F7F3474EB49D04B514C6CDB2217F2149763982821E3D99A109B2C40D"
+    },
+    {
+      "path": "tests/designer/test_startup_project_entry.py",
+      "sha256": "D0CBA92F078B17ABA249D01FB8F5C6D61FD12CCD294B080A4406E8FBD9D54FDE"
+    }
+  ]
+}

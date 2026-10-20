@@ -1,0 +1,24 @@
+FFF                                                                      [100%]
+================================== FAILURES ===================================
+__________ testValidationHasImmediateBusyAndPassedNotWrittenFeedback __________
+tests\designer\test_runtime_validation_feedback.py:41: in testValidationHasImmediateBusyAndPassedNotWrittenFeedback
+    assert '����У��' in dialog.status.text()
+E   AssertionError: assert '����У��' in '�����ĵ� R8 / ִ�мƻ� R5��33 �����'
+E    +  where '�����ĵ� R8 / ִ�мƻ� R5��33 �����' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x0000020ECA4BE500>()
+E    +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x0000020ECA4BE500> = <PySide2.QtWidgets.QLabel(0x20ec9afd8f0) at 0x0000020ECA4BE500>.text
+E    +      where <PySide2.QtWidgets.QLabel(0x20ec9afd8f0) at 0x0000020ECA4BE500> = <emo_master.apps.designer.ui.project_configuration.ProjectConfigurationDialog(0x20ec9afd730) at 0x0000020ECA462F00>.status
+_______________ testLocalSelectionErrorIsVisibleAndRecoverable ________________
+tests\designer\test_runtime_validation_feedback.py:61: in testLocalSelectionErrorIsVisibleAndRecoverable
+    assert len(messages) == 1 and '��ѡ��' in messages[0]['text']
+E   assert (0 == 1)
+E    +  where 0 = len([])
+_____________________ testCurrentConnectionHasItsOwnArea ______________________
+tests\designer\test_runtime_validation_feedback.py:74: in testCurrentConnectionHasItsOwnArea
+    assert hasattr(dialog, 'currentStatus')
+E   AssertionError: assert False
+E    +  where False = hasattr(<emo_master.apps.designer.ui.runtime_connection.RuntimeConnectionDialog(0x20ec9a29250) at 0x0000020ECA59D340>, 'currentStatus')
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testValidationHasImmediateBusyAndPassedNotWrittenFeedback
+FAILED tests/designer/test_runtime_validation_feedback.py::testLocalSelectionErrorIsVisibleAndRecoverable
+FAILED tests/designer/test_runtime_validation_feedback.py::testCurrentConnectionHasItsOwnArea
+3 failed in 4.33s

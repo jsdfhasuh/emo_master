@@ -8,3 +8,5 @@ docs/evidence/p5/** -text -whitespace
 docs/testing/page-editor-2026-10-02/*.log -text -whitespace
 docs/testing/floating-toolbox-2026-10-04/** -text -whitespace
 docs/testing/runtime-cloud-2026-10-07/** -text -whitespace
+docs/evidence/2026-10-20-runtime-menu/** -text -whitespace
+docs/evidence/2026-10-20-runtime-validation-feedback/** -text -whitespace

@@ -1,0 +1,5 @@
+opening
+Windows fatal exception: access violation
+
+Current thread 0x000090e8 (most recent call first):
+  File "<stdin>", line 10 in <module>

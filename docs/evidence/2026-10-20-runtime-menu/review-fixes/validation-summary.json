@@ -1,0 +1,22 @@
+{
+  "baselineHead": "ef5af5066599bc57a5182067e31775f8798e8107",
+  "checkedAt": "2026-10-20T19:04:35.7968065+08:00",
+  "sourceManifest": "docs/evidence/2026-10-20-runtime-menu/review-fixes/source-manifest.json",
+  "verifiedHashes": 38,
+  "regression": {
+    "testFiles": 37,
+    "tests": 393,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "junitTimeSeconds": "211.309",
+    "pytestSummary": "393 passed in 211.79s",
+    "evidence": "docs/evidence/2026-10-20-runtime-menu/review-fixes/acceptance-regression.xml"
+  },
+  "protoExit": 0,
+  "ruffExit": 0,
+  "diffExit": 0,
+  "hardwareTested": false,
+  "packaged": false,
+  "committed": false
+}

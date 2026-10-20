@@ -1,0 +1,6 @@
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\docs\evidence\2026-10-20-runtime-validation-feedback\render_offscreen.py", line 94, in <module>
+    main()
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\docs\evidence\2026-10-20-runtime-validation-feedback\render_offscreen.py", line 86, in main
+    configuration.reject()
+RuntimeError: Internal C++ object (ProjectConfigurationDialog) already deleted.

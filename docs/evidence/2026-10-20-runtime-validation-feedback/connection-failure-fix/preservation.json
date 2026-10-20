@@ -1,0 +1,28 @@
+{
+  "baselineFileCount": 98,
+  "changedFiles": [
+    "docs/guides/device-dispatch-online-configuration.md",
+    "docs/plans/2026-10-20-runtime-validation-feedback-connection-state-plan.md",
+    "docs/testing/2026-10-20-runtime-validation-feedback.md",
+    "src/emo_master/apps/designer/ui/project_configuration.py",
+    "tests/designer/test_runtime_validation_feedback.py"
+  ],
+  "unrelatedUnchangedCount": 93,
+  "sourceMatchesTested": true,
+  "sourceChangedSincePrevious": [
+    "src/emo_master/apps/designer/ui/project_configuration.py",
+    "tests/designer/test_runtime_validation_feedback.py"
+  ],
+  "junit": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "538",
+      "time": "314.207",
+      "timestamp": "2026-10-20T20:17:43.369004+08:00",
+      "hostname": "视觉电脑"
+    }
+  ]
+}

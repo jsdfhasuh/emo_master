@@ -1,0 +1,15 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "tests/designer/test_runtime_validation_feedback.py",
+    "-k",
+    "testCommitted",
+    "-q",
+    "--tb=short",
+    "--junitxml=docs\\evidence\\2026-10-20-runtime-validation-feedback\\connection-failure-fix\\focused.xml"
+  ],
+  "exitCode": 0,
+  "seconds": 10.33
+}

@@ -1,0 +1,30 @@
+...................................................................F.... [ 21%]
+........................................................................ [ 42%]
+.....................................................................F.. [ 64%]
+........................................................................ [ 85%]
+.................................................                        [100%]
+================================== FAILURES ===================================
+______________ testDeviceMenuOpensDialogWithoutChangingWorkspace ______________
+tests\designer\test_device_workspace.py:85: in testDeviceMenuOpensDialogWithoutChangingWorkspace
+    assert window.deleteShortcut.isEnabled()
+E   assert False
+E    +  where False = <built-in method isEnabled of PySide2.QtWidgets.QShortcut object at 0x000001C4FBDBCF80>()
+E    +    where <built-in method isEnabled of PySide2.QtWidgets.QShortcut object at 0x000001C4FBDBCF80> = <PySide2.QtWidgets.QShortcut(0x1c4fbb08500) at 0x000001C4FBDBCF80>.isEnabled
+E    +      where <PySide2.QtWidgets.QShortcut(0x1c4fbb08500) at 0x000001C4FBDBCF80> = <emo_master.apps.designer.ui.main_window.MainWindow(0x1c4fb37fdd0) at 0x000001C4FBE54F00>.deleteShortcut
+---------------------------- Captured stdout call -----------------------------
+DEVICE_DIALOG_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2602\testDeviceMenuOpensDialogWitho0\device-dialog.png
+____________ testOneClickParallelStartSelectionStopRestartAndClose ____________
+tests\ui\page_designer\test_parallel_runtime.py:97: in testOneClickParallelStartSelectionStopRestartAndClose
+    waitFor(lambda: not window.isJobRunning)
+D:\jsdfhasuh\documents\my_project\emo_master\tests\ui\operator_view\test_view.py:23: in waitFor
+    raise AssertionError('bounded Qt release deadline')
+E   AssertionError: bounded Qt release deadline
+
+During handling of the above exception, another exception occurred:
+tests\ui\page_designer\test_parallel_runtime.py:99: in testOneClickParallelStartSelectionStopRestartAndClose
+    pytest.fail(str({key: dict(job=run.jobId, status=run.state.jobStatus,
+E   Failed: {'main-run': {'job': '8fc47682-82cd-4b09-9802-67f7d0f62fa9', 'status': 'STOPPING', 'busy': True, 'runtime': 'ABORTED', 'worker': False, 'stopWorker': False}, 'second-run': {'job': '19f42b57-65e3-4733-b243-fabcc8269ae9', 'status': 'ABORTED', 'busy': False, 'runtime': 'ABORTED', 'worker': False, 'stopWorker': False}}
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_workspace.py::testDeviceMenuOpensDialogWithoutChangingWorkspace
+FAILED tests/ui/page_designer/test_parallel_runtime.py::testOneClickParallelStartSelectionStopRestartAndClose
+2 failed, 335 passed in 246.43s (0:04:06)

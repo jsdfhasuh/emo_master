@@ -1,0 +1,32 @@
+FFF.....F                                                                [100%]
+================================== FAILURES ===================================
+_ testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout] _
+tests\designer\test_runtime_validation_feedback.py:316: in testCommittedConnectionFailureWarnsWithoutRewriting
+    assert len(messages) == 1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_ testCommittedConnectionFailureWarnsWithoutRewriting[communication-FAILED: address already in use] _
+tests\designer\test_runtime_validation_feedback.py:316: in testCommittedConnectionFailureWarnsWithoutRewriting
+    assert len(messages) == 1
+E   assert 0 == 1
+E    +  where 0 = len([])
+_____ testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending _____
+tests\designer\test_runtime_validation_feedback.py:353: in testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending
+    assert len(messages) == 1 and 'connection timeout' in messages[0]['detail']
+E   assert (0 == 1)
+E    +  where 0 = len([])
+___________ testCommittedConnectionAndTopLevelErrorsShareOneWarning ___________
+tests\designer\test_runtime_validation_feedback.py:394: in testCommittedConnectionAndTopLevelErrorsShareOneWarning
+    assert json.loads(messages[0]['detail']) == {key: value for key, value in receipt.items() if key != 'state'}
+E   AssertionError: assert {'exportError...stence issue'} == {'exportError...ion timeout'}}
+E     
+E     Omitting 2 identical items, use -vv to show
+E     Right contains 1 more item:
+E     {'connections': {'camera': 'FAILED: connection timeout'}}
+E     Use -v to get more diff
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[communication-FAILED: address already in use]
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending
+FAILED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionAndTopLevelErrorsShareOneWarning
+4 failed, 5 passed, 47 deselected in 9.33s

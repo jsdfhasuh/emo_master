@@ -1,0 +1,95 @@
+........E.EFF..FF....................                                    [100%]
+=================================== ERRORS ====================================
+_ ERROR at teardown of testUpgradeActionFromPopupDoesNotResumePrewrite[embedded] _
+tests\conftest.py:43: in ownedDesignerWindow
+    with OwnedDesignerWindows(retainedQtApplication) as owner:
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+tests\qt_widget_owner.py:102: in retire
+    raise AssertionError('; '.join(errors))
+E   AssertionError: window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3077, in closeEvent
+    if not self.pageCoordinator.prepareClose():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 293, in prepareClose
+    if not self.confirmDraft():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 308, in confirmDraft
+    answer = QMessageBox.question(self.window, '项目有未保存修改',
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py", line 169, in noSecondConfirmation
+    pytest.fail('explicit upgrade must not add another confirmation or continue writing')
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\outcomes.py", line 162, in __call__
+    raise Failed(msg=reason, pytrace=pytrace)
+Failed: explicit upgrade must not add another confirmation or continue writing
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3077, in closeEvent
+    if not self.pageCoordinator.prepareClose():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 293, in prepareClose
+    if not self.confirmDraft():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 308, in confirmDraft
+    answer = QMessageBox.question(self.window, '项目有未保存修改',
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py", line 169, in noSecondConfirmation
+    pytest.fail('explicit upgrade must not add another confirmation or continue writing')
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\outcomes.py", line 162, in __call__
+    raise Failed(msg=reason, pytrace=pytrace)
+Failed: explicit upgrade must not add another confirmation or continue writing
+_ ERROR at teardown of testUpgradeActionFromPopupDoesNotResumePrewrite[loopback] _
+tests\conftest.py:43: in ownedDesignerWindow
+    with OwnedDesignerWindows(retainedQtApplication) as owner:
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+tests\qt_widget_owner.py:102: in retire
+    raise AssertionError('; '.join(errors))
+E   AssertionError: window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+-------------------------- Captured stderr teardown ---------------------------
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3077, in closeEvent
+    if not self.pageCoordinator.prepareClose():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 293, in prepareClose
+    if not self.confirmDraft():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 308, in confirmDraft
+    answer = QMessageBox.question(self.window, '项目有未保存修改',
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py", line 169, in noSecondConfirmation
+    pytest.fail('explicit upgrade must not add another confirmation or continue writing')
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\outcomes.py", line 162, in __call__
+    raise Failed(msg=reason, pytrace=pytrace)
+Failed: explicit upgrade must not add another confirmation or continue writing
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\ui\main_window.py", line 3077, in closeEvent
+    if not self.pageCoordinator.prepareClose():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 293, in prepareClose
+    if not self.confirmDraft():
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\src\emo_master\apps\designer\page_designer\coordinator.py", line 308, in confirmDraft
+    answer = QMessageBox.question(self.window, '项目有未保存修改',
+  File "C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_runtime_validation_feedback.py", line 169, in noSecondConfirmation
+    pytest.fail('explicit upgrade must not add another confirmation or continue writing')
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\_pytest\outcomes.py", line 162, in __call__
+    raise Failed(msg=reason, pytrace=pytrace)
+Failed: explicit upgrade must not add another confirmation or continue writing
+================================== FAILURES ===================================
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded] ____
+tests\designer\test_runtime_validation_feedback.py:191: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    assert 'workflowId' in messages[0]['detail'] and 'main' in messages[0]['detail']
+E   AssertionError: assert ('workflowId' in 'E_CONFIG_INVALID\noperator missing: missing.operator')
+____ testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback] ____
+tests\designer\test_runtime_validation_feedback.py:191: in testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations
+    assert 'workflowId' in messages[0]['detail'] and 'main' in messages[0]['detail']
+E   AssertionError: assert ('workflowId' in 'E_CONFIG_INVALID\noperator missing: missing.operator')
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded] _____
+tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    assert not messages, messages
+E   AssertionError: [{'title': '工程与 Runtime 操作失败', 'text': 'main/load/imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Loca...s\\3ebd218bcfc9f8ca54b8fc017ad2d2d11a94a5fd085330bbaf4a5298cabe82d1\\input.png', 'buttons': ['关闭', 'Show Details...']}]
+E   assert not [{'title': '工程与 Runtime 操作失败', 'text': 'main/load/imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Loca...s\\3ebd218bcfc9f8ca54b8fc017ad2d2d11a94a5fd085330bbaf4a5298cabe82d1\\input.png', 'buttons': ['关闭', 'Show Details...']}]
+____ testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback] _____
+tests\designer\test_runtime_validation_feedback.py:231: in testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject
+    assert not messages, messages
+E   AssertionError: [{'title': '工程与 Runtime 操作失败', 'text': 'main/load/imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Loca...s\\d2291bf7a16877d15438e651b5e69de4fca28dec8cacb1d8ff39fa3aca860728\\input.png', 'buttons': ['关闭', 'Show Details...']}]
+E   assert not [{'title': '工程与 Runtime 操作失败', 'text': 'main/load/imagePath: input file not found: C:\\Users\\jsdfhasuh\\AppData\\Loca...s\\d2291bf7a16877d15438e651b5e69de4fca28dec8cacb1d8ff39fa3aca860728\\input.png', 'buttons': ['关闭', 'Show Details...']}]
+=========================== short test summary info ===========================
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded]
+FAILED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback]
+ERROR tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[embedded]
+ERROR tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[loopback]
+4 failed, 31 passed, 2 errors in 20.45s

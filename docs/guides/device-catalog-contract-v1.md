@@ -46,6 +46,9 @@ chooses the first device/channel implicitly. A supplied missing ID, wrong type,
 unknown selector or invalid parameter source remains an error. Explicitly unbinding
 a slot removes that slot's overrides/sources in the same confirmed transaction.
 Other missing slots do not prevent a valid device edit.
+In pending drafts, a missing required selector stays missing even if its schema
+has a default. Optional selector defaults still apply and must pass the normal
+declared-item validation. Strict validation keeps its existing default rules.
 
 Pending nodes keep node IDs, ports, edges, positions and supplied sources across
 save/reopen and workflow-template import. They reopen in the current binding

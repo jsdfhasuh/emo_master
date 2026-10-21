@@ -6,16 +6,20 @@ U01—U10 已落实；C1—C6 对应的软件链路、受影响回归及原生 W
 已完成自动化驱动的真实桌面关键路径走查，未把它记作人工完整 UI、冻结产品或真实设备验收。
 本轮没有访问真实相机／PLC，没有改现场工程、网卡、凭据或底层通信协议。
 
+完成复核补修了 §8.2 的可选 selector 默认值遗漏。当前最终结果为 **410 passed**，
+被测源码为 `236d600`；此前 `e2a9d86` 的 409 项及桌面走查原始记录保留。
+[完成复核补记](2026-10-21-device-usability-completion-audit.md)说明直接反例、修正及验证边界。
+
 ## 固定源码与工作区
 
 | 项目 | 实际值 |
 | --- | --- |
 | 仓库与分支 | `jsdfhasuh/emo_master`，`agent/runtime-workflow-architecture-v1` |
 | 实施基线 | `756e526c1d2c657b3ff793fed7abe904d38b8d48`，开始及交付前均核对实际远端，后续已完成的单次日志修复未重复实现 |
-| 最终被测源码 | `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf` |
-| 最终源码 tree | `38a0f6252ddb7acf3019c4766d1af59f98614e55` |
-| 最终测试导入位置 | `C:/Users/JSDFHA~1/AppData/Local/Temp/emo-f-huz7f4e2/source/src/emo_master/__init__.py` |
-| 最终证据 | [final-snapshot-delivery](../evidence/2026-10-21-device-usability-improvement/final-snapshot-delivery/validation.json)，含每条 argv、cwd、开始时间、退出码、环境和文件 blob |
+| 最终被测源码 | `236d6008651a6f1bde5daebc999f83065555940a` |
+| 最终源码 tree | `ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08` |
+| 最终测试导入位置 | `C:/Users/JSDFHA~1/AppData/Local/Temp/emo-f-a5vawtih/source/src/emo_master/__init__.py` |
+| 最终证据 | [completion-audit-snapshot](../evidence/2026-10-21-device-usability-improvement/completion-audit-snapshot/validation.json)，含每条 argv、cwd、开始时间、退出码、环境和文件 blob |
 | 文档交付标识 | 包含本报告的提交；`git log -1 --format=%H -- docs/testing/2026-10-21-device-usability-improvement.md`，实际 SHA 与推送核验另随交付回复给出 |
 
 适用指令为根 `AGENTS.md`。实际仓库为 `D:/jsdfhasuh/documents/my_project/emo_master`，
@@ -58,12 +62,12 @@ Qt 模态发布窗口与 localhost，另有定向 Qt／状态测试补齐恢复�
 | C5 待绑定补齐 | 当前向导新建禁用 Server，保留 deviceId、缺 channelId；严格完成拒绝而“保存待绑定节点”成功。保存重开／模板流转保留。补通道、启用并补 selector 后发布并正式运行；相机重开与移动保留 ID／边／端口／0 常量，失效引用及错值仍拒绝 |
 | C6 包与再次运行 | 同名设备包连续导入、新 ID、禁用和整次撤销通过；模板缺绑定继续编辑、完整运行包缺绑定准确拒绝。复用本轮 A5，设备／流程／完整运行包分别在新目录、隔离 Runtime 导入后正式运行，记录实际业务字节、状态与诊断 |
 
-可复核产物保留在 `final-snapshot-delivery/acceptance/`、`usability-chain/`。
+可复核产物保留在 `completion-audit-snapshot/acceptance/`、`usability-chain/`。
 三类包导入的正式 Job 分别为：
 
-- 设备包：`9f725a95-f9f4-448e-acb7-aba0c00317ac`。
-- 流程包：`e3b7844d-5738-4bd3-9a60-6567eadb3d3a`。
-- 运行包：`11c8d19f-25e4-4ab0-b0c0-52096e3564c8`。
+- 设备包：`7ad260c7-9609-4fc6-ae29-bee2db52163d`。
+- 流程包：`a9552fb0-4640-44d8-a834-12ef5c4ab730`。
+- 运行包：`0d6edd1f-22d1-4f59-a845-2046ddc76149`。
 
 这些是本轮最终快照的实际 Job，详见 `acceptance-results.json`，不是历史报告的 Job。
 
@@ -80,8 +84,8 @@ $env:PYTHONIOENCODING='utf-8'
 & 'C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe' `
   docs/evidence/2026-10-21-device-usability-improvement/run_validation.py `
   --repo D:/jsdfhasuh/documents/my_project/emo_master `
-  --source-sha e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf `
-  --output-dir D:/jsdfhasuh/documents/my_project/emo_master/docs/evidence/2026-10-21-device-usability-improvement/final-snapshot-delivery
+  --source-sha 236d6008651a6f1bde5daebc999f83065555940a `
+  --output-dir D:/jsdfhasuh/documents/my_project/emo_master/docs/evidence/2026-10-21-device-usability-improvement/completion-audit-snapshot
 ```
 
 输出目录要求未存在。重跑时使用新目录，保留首次失败和已有快照。
@@ -91,18 +95,19 @@ $env:PYTHONIOENCODING='utf-8'
 | 最终快照批次 | 本轮实际结果 | 证据 |
 | --- | --- | --- |
 | 导入、环境和改动文件 blob | exit 0；所有导出文件与固定提交 blob 一致 | `environment.log`、`validation.json` |
-| CHAIN | **61 passed，86.88s** | `chain.log`、`chain.xml` |
-| REGRESSION | **348 passed，2 deselected，133.30s** | `regression.log`、`regression.xml` |
-| Ruff | 21 个受改 Python 文件，exit 0 | `ruff.log` |
+| CHAIN | **61 passed，85.29s** | `chain.log`、`chain.xml` |
+| REGRESSION | **349 passed，2 deselected，137.50s** | `regression.log`、`regression.xml` |
+| Ruff | 23 个受改 Python 文件（含两个已提交证据入口），exit 0 | `ruff.log` |
 | mypy | 13 个受改源码文件，exit 0 | `mypy.log` |
 | 协议生成一致性 | `python scripts/gen_proto.py --check`，exit 0 | `proto.log` |
-| 源码差异 | `git diff --check 756e526c… e2a9d867…`，exit 0 | `diff-check.log` |
+| 源码差异 | `git diff --check 756e526c… 236d6008…`，exit 0 | `diff-check.log` |
 | 本轮证据脚本 | `python -m ruff check .../run_validation.py .../desktop_demo.py`，exit 0 | `delivery-checks.json` |
 
-最终计 **409 passed**；没有新增排除项。唯一排除仍是
+最终计 **410 passed**；没有新增排除项。唯一排除仍是
 `test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated` 的两个旧迁移参数分支。
 它们在本轮旧工程范围外，不能记为通过。原报告的历史通过数不计入这里。
-本轮较早快照 `848ad46` 的 61+345 和 `ae74080` 的 61+347 保留为过程证据，不能代替最终 61+348。
+本轮较早快照 `848ad46` 的 61+345、`ae74080` 的 61+347，以及前次交付 `e2a9d86` 的 61+348
+保留为过程／前次交付证据，不能代替最终 `236d600` 的 61+349。
 
 ### 既有行为保护
 
@@ -131,6 +136,7 @@ Server 32／512／1025 字节预览三个参数均重跑通过，原始 JSONL �
 | `viewport-first-failure`、`viewport-counterexample` | 前者 1 个失败是夹具 `maximum()>2`；修正后的仅横向两项均通过，不能称为缺陷复现 |
 | `viewport-list-counterexample` → `viewport-fixed` | 24 个正常副本列表直接复现 2 个垂直位置归零；保存树／表和表单的横纵滚动条，完整发布文件 4 项通过 |
 | `catalog-marker-first` → `catalog-marker-fixed` | 异步目录到达后画布缺项提示未更新，1 failed；复用 refreshPresentations，草稿与目录测试 15 passed，最终快照再次通过 |
+| `selector-default-first` → `selector-default-fixed` | 完成复核发现草稿模式将可选 selector 默认值一并移除，1 failed；只抑制缺失必需 selector 的默认值，25 passed；最终独立快照 61+349 通过，保留严格路径及无效默认值拒绝断言 |
 | `staged-check-first.log` | 文档暂存检查发现复制计划末尾多一个空行；只修正文档格式，重新检查通过，未改源码或测试 |
 
 ## 真实桌面关键路径
@@ -149,7 +155,7 @@ Server 32／512／1025 字节预览三个参数均重跑通过，原始 JSONL �
 5. Ctrl+S 保存本地待绑定草稿后正常关闭测试进程。
 
 走查发现的列表视口和异步画布提示经过上述直接反例后，另提交局部修正。
-最终源码 `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf` 追加桌面复查，证据在 `desktop-final/`：
+前次交付源码 `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf` 追加桌面复查，证据在 `desktop-final/`：
 
 - 通过真实设备包导入共 26 个副本，使树和列表都可滚动；滚动两列后打开统一发布窗口，28 项差异默认未选。
 - 取消返回仍是在线相机，树与列表滚动位置保留，固定动作可见。
@@ -159,6 +165,8 @@ Server 32／512／1025 字节预览三个参数均重跑通过，原始 JSONL �
 桌面 API 曾出现 set_value 不可用和控件索引点击未命中；复查截图后改用当前截图坐标，未将其记作产品失败。
 部分 Qt accessibility 名称仍沿原控件名，按钮实际文字与焦点以截图及原生 Qt 断言为准。
 `desktop-final/02-publication.json` 是索引未命中时的设备窗口，真正发布窗口为 `03-publication-ready`；不覆盖前一记录。
+此次 `236d600` 只修正共享绑定校验的可选默认值，重跑原生 Qt、Runtime 连续链及受影响回归；
+未重复真实桌面走查，以上截图继续明确绑定各自的实际源码 SHA。
 
 ## 文档、提交与用户复验
 
@@ -170,7 +178,8 @@ Server 32／512／1025 字节预览三个参数均重跑通过，原始 JSONL �
 | `674c6d3d02c4afdfc2f8d7b8953d7ce13a05437f` | 禁用 TCP 草稿与字段错误定位 |
 | `848ad465aed1d1b1c32da7969ccbcd2da10fc29f` | 编辑／恢复／显式发布、待绑定、包和反馈闭环及连续链测试 |
 | `ae74080243f871bb2086005d11b7e25d6a716144` | 发布返回的树／表及表单视口保留 |
-| `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf` | 元数据加载后待绑定提示刷新；最终被测源码 |
+| `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf` | 元数据加载后待绑定提示刷新；前次交付源码 |
+| `236d6008651a6f1bde5daebc999f83065555940a` | 完成复核修正可选 selector 默认值；最终被测源码 |
 
 文档与原始证据随后单独提交；交付时比较提交后的 `src/`、`tests/` 与上列最终源码一致。
 只暂存本轮明确文件，正常推送目标分支并用 `git ls-remote` 核对，不强推、合并或发布版本。

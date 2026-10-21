@@ -3,16 +3,20 @@
 报告：[2026-10-21-device-usability-improvement.md](../../testing/2026-10-21-device-usability-improvement.md)。
 计划：[设备易用性 v1](../../plans/2026-10-21-device-usability-improvement-plan-v1.md)。
 
-最终源码：`e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf`。
-最终 tree：`38a0f6252ddb7acf3019c4766d1af59f98614e55`。
+最终源码：`236d6008651a6f1bde5daebc999f83065555940a`。
+最终 tree：`ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08`。
+完成复核：[补记](../../testing/2026-10-21-device-usability-completion-audit.md)。
 
 | 位置 | 含义 |
 | --- | --- |
-| `final-snapshot-delivery/` | 最终 git archive 快照：61 passed CHAIN、348 passed／2 deselected REGRESSION；environment、Ruff、mypy、proto、diff 均 exit 0 |
-| `final-snapshot-delivery/validation.json` | 实际 SHA/tree、导入路径、每个文件 blob、完整命令 argv、cwd、时间和退出码 |
-| `final-snapshot-delivery/acceptance/` | A1—A6 工程、三类包、三次导入工程、实际 Job／诊断结果及原生 Qt 截图 |
-| `final-snapshot-delivery/usability-chain/` | 新 C1—C6 连续工程、待绑定模板、实际图像／字节／诊断与发布截图 |
-| `final-snapshot-delivery/dispatch/`、`byte-logs/`、`once-byte-logs/` | 周期身份、单次持久化及有界字节预览的原始事件材料 |
+| `completion-audit-snapshot/` | 最终 git archive 快照：61 passed CHAIN、349 passed／2 deselected REGRESSION；environment、23 文件 Ruff、13 源码 mypy、proto、diff 均 exit 0 |
+| `completion-audit-snapshot/validation.json` | 实际 SHA/tree、导入路径、29 个改动文件 blob、完整命令 argv、cwd、时间和退出码 |
+| `completion-audit-snapshot/acceptance/` | A1—A6 工程、三类包、三次导入工程、实际 Job／诊断结果及原生 Qt 截图 |
+| `completion-audit-snapshot/usability-chain/` | C1—C6 连续工程、待绑定模板、实际图像／字节／诊断与发布截图 |
+| `completion-audit-snapshot/dispatch/`、`byte-logs/`、`once-byte-logs/` | 周期身份、单次持久化及有界字节预览的原始事件材料 |
+| `selector-default-first.log/xml`、`selector-default-fixed.log/xml` | §8.2 可选 selector 默认值直接反例：首次 1 failed、修复后定向 25 passed |
+| `completion-audit-checks.json` | 此次完成复核的命令、清单、链接及并行工作保护结果 |
+| `final-snapshot-delivery/` | 前次交付 e2a9d86：61 passed CHAIN、348 passed／2 deselected REGRESSION；原始数据保留 |
 | `final-snapshot/` | 较早源码 848ad46，61+345；保留过程证据 |
 | `final-snapshot-verified/` | 较早源码 ae74080，61+347；保留过程证据 |
 | 根目录 `*.log`／`*.xml` | 首次反例、夹具修正和定向回归；文件名 fixed 不保证内部全部通过，按原始输出与 evidence-index 判断 |

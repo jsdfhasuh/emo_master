@@ -1,0 +1,172 @@
+{
+  "schemaVersion": "1.0",
+  "devices": {
+    "camera": {
+      "name": "模拟相机",
+      "deviceTypeId": "device.simulated.camera",
+      "driverVersion": "1.0.0",
+      "enabled": true,
+      "description": "",
+      "connection": {
+        "serial": ""
+      },
+      "defaults": {
+        "exposureUs": 8000,
+        "gain": 0,
+        "height": 6,
+        "width": 8
+      },
+      "policies": {
+        "connect": "on_first_use",
+        "deviceWaitTimeoutMs": 5000,
+        "idleTimeoutMs": 30000,
+        "operationTimeoutMs": 5000,
+        "release": "on_project_close"
+      }
+    },
+    "client": {
+      "name": "TCP 单次客户端",
+      "deviceTypeId": "device.tcp.client_once",
+      "driverVersion": "1.0.0",
+      "enabled": true,
+      "description": "",
+      "connection": {
+        "host": "127.0.0.1",
+        "port": 52113
+      },
+      "defaults": {
+        "appendNewline": false,
+        "connectTimeoutMs": 2000,
+        "expectedBytes": 0,
+        "maxRequestBytes": 1048576,
+        "maxResponseBytes": 1048576,
+        "rejectTrailingResponse": false,
+        "responseEncoding": "utf-8",
+        "responseFraming": "newline",
+        "responseTextEncoding": "none",
+        "responseTimeoutMs": 2000,
+        "shutdownWrite": false,
+        "textEncoding": "utf-8"
+      },
+      "policies": {
+        "deviceWaitTimeoutMs": 5000
+      }
+    },
+    "plc": {
+      "name": "三菱 SLMP PLC",
+      "deviceTypeId": "device.plc.mitsubishi_slmp",
+      "driverVersion": "1.0.0",
+      "enabled": true,
+      "description": "",
+      "connection": {
+        "connectTimeoutMs": 2000,
+        "frameEncoding": "binary",
+        "host": "127.0.0.1",
+        "moduleIoNo": 1023,
+        "moduleStationNo": 0,
+        "monitoringTimer": 0,
+        "networkNo": 0,
+        "pcNo": 255,
+        "port": 52115,
+        "responseTimeoutMs": 2000
+      },
+      "defaults": {},
+      "policies": {
+        "connect": "on_first_use",
+        "connectionRetryCount": 0,
+        "deviceWaitTimeoutMs": 5000,
+        "idleTimeoutMs": 30000,
+        "operationTimeoutMs": 5000,
+        "recoveryBackoffMs": 100,
+        "recoveryTimeoutMs": 5000,
+        "release": "on_project_close"
+      }
+    },
+    "receiver": {
+      "name": "TCP 单次接收",
+      "deviceTypeId": "device.tcp.receive_once",
+      "driverVersion": "1.0.0",
+      "enabled": true,
+      "description": "",
+      "connection": {
+        "bindHost": "127.0.0.1",
+        "port": 52114
+      },
+      "defaults": {
+        "acceptTimeoutMs": 5000,
+        "ackAppendNewline": true,
+        "ackEncoding": "utf-8",
+        "ackText": "ACK",
+        "expectedBytes": 0,
+        "framing": "newline",
+        "maxAckBytes": 1048576,
+        "maxMessageBytes": 1048576,
+        "messageEncoding": "utf-8",
+        "messageTextEncoding": "utf-8",
+        "readTimeoutMs": 1000
+      },
+      "policies": {
+        "deviceWaitTimeoutMs": 5000
+      }
+    },
+    "server": {
+      "name": "TCP 常驻服务",
+      "deviceTypeId": "device.tcp.server",
+      "driverVersion": "1.0.0",
+      "enabled": true,
+      "description": "",
+      "connection": {
+        "bindAddress": "127.0.0.1",
+        "channels": [
+          {
+            "allowedIps": [
+              "127.0.0.1"
+            ],
+            "channelId": "a",
+            "name": "Station A Qt"
+          },
+          {
+            "allowedIps": [
+              "127.0.0.2"
+            ],
+            "channelId": "c",
+            "name": "Station B"
+          }
+        ],
+        "port": 52138
+      },
+      "defaults": {
+        "appendNewline": false,
+        "encoding": "utf-8",
+        "timeoutMs": 5000
+      },
+      "policies": {
+        "connect": "on_project_open",
+        "deviceWaitTimeoutMs": 5000,
+        "maxMessageBytes": 16777216,
+        "release": "on_project_close",
+        "sendTimeoutMs": 10000
+      }
+    }
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {},
+    "parameterBindings": [],
+    "siteBindings": [
+      {
+        "target": {
+          "deviceId": "camera",
+          "section": "connection",
+          "parameterPath": [
+            "serial"
+          ]
+        },
+        "field": "camera-serial",
+        "purpose": "camera_serial",
+        "required": true
+      }
+    ]
+  },
+  "resourceData": {}
+}

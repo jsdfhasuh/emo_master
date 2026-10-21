@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.928" timestamp="2026-10-21T23:03:57.401913+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_drafts" name="testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector" time="0.035"><failure message="AssertionError: assert {} == {'backupChannelId': 'a'}&#10;  &#10;  Right contains 1 more item:&#10;  {'backupChannelId': 'a'}&#10;  Use -v to get more diff">def testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector():
+        typeDecl = DeviceType.model_validate_json((Path(__file__).resolve().parents[2] /
+            'src/emo_master/plugins/builtins/tcp_session/device_types/server.json').read_text(encoding='utf-8'))
+        declarationValue = typeDecl.model_dump()
+        declarationValue['bindingSelectors']['backupChannelId'] = deepcopy(declarationValue['bindingSelectors']['channelId'])
+        typeDecl = DeviceType.model_validate(declarationValue)
+        deviceDef = DeviceDefinition.model_validate(tcpDefinition(typeDecl, channels=[
+            dict(channelId='a', name='本机通道', allowedIps=['127.0.0.1'])]))
+        requirement = dict(deviceTypeId=typeDecl.deviceTypeId, selectorSchema=dict(type='object', properties={
+            'channelId': dict(type='string', default='a'),
+            'backupChannelId': dict(type='string', default='a')}, required=['channelId'], additionalProperties=False))
+        binding = dict(deviceId='tcp', selectors={})
+        original = deepcopy(requirement)
+&gt;       assert validateDeviceBinding(requirement, binding, deviceDef, typeDecl,
+                                     allowMissingSelectors=True) == {'backupChannelId': 'a'}
+E       AssertionError: assert {} == {'backupChannelId': 'a'}
+E         
+E         Right contains 1 more item:
+E         {'backupChannelId': 'a'}
+E         Use -v to get more diff
+
+tests\designer\test_device_usability_drafts.py:68: AssertionError</failure></testcase></testsuite></testsuites>

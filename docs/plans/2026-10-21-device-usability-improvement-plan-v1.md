@@ -10,10 +10,14 @@
 - 建议仓库路径：`docs/plans/2026-10-21-device-usability-improvement-plan-v1.md`。
 - 技术栈：Python 3.10、PySide2 5.15.2.1、Qt QWidget；沿用 Designer、Runtime、Worker 和现有三列设备管理窗口。
 
-当前实施状态（2026-10-21）：最终被测源码为 `e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf`，
-tree 为 `38a0f6252ddb7acf3019c4766d1af59f98614e55`。独立 `git archive` 快照实际执行
-61 项 CHAIN、348 项 REGRESSION，全部通过；只保留既有 2 项旧迁移参数化分支排除。
-受改 Python Ruff、13 个源码文件 mypy、协议一致性和差异检查通过。
+当前实施状态（2026-10-21）：最终被测源码为 `236d6008651a6f1bde5daebc999f83065555940a`，
+tree 为 `ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08`。独立 `git archive` 快照实际执行
+61 项 CHAIN、349 项 REGRESSION，全部通过；只保留既有 2 项旧迁移参数化分支排除。
+23 个受改 Python 文件 Ruff、13 个源码文件 mypy、协议一致性和差异检查通过。
+完成复核时发现 §8.2 的可选 selector 默认值被草稿模式一并移除，已保留首次失败、局部修正并重跑完整批次；
+缺失的必需 selector 继续保持缺失，可选 selector 恢复既有默认值和校验。
+[完成复核补记](../testing/2026-10-21-device-usability-completion-audit.md)记录此次修正与最终 410 项通过；
+前次 `e2a9d86` 的 409 项作为历史交付证据保留。
 [实施报告](../testing/2026-10-21-device-usability-improvement.md)提供 U01—U10、C1—C6 对照、
 源码提交、首次失败、桌面走查和未执行范围；[原始证据](../evidence/2026-10-21-device-usability-improvement/README.md)
 绑定上述固定源码。最终交付由包含本状态与报告的文档提交标识，可用

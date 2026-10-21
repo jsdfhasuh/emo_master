@@ -1,5 +1,5 @@
 {
-  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "sourceSha": "236d6008651a6f1bde5daebc999f83065555940a",
   "results": [
     {
       "path": "affected-fixed.xml",
@@ -313,6 +313,26 @@
       "failures": []
     },
     {
+      "path": "completion-audit-snapshot/chain.xml",
+      "counts": {
+        "tests": 61,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
+      "path": "completion-audit-snapshot/regression.xml",
+      "counts": {
+        "tests": 349,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
       "path": "discovery-fixed.xml",
       "counts": {
         "tests": 15,
@@ -538,6 +558,32 @@
       "failures": []
     },
     {
+      "path": "selector-default-first.xml",
+      "counts": {
+        "tests": 1,
+        "failures": 1,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": [
+        {
+          "test": "tests.designer.test_device_usability_drafts::testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector",
+          "kind": "failure",
+          "message": "AssertionError: assert {} == {'backupChannelId': 'a'}\n  \n  Right contains 1 more item:\n  {'backupChannelId': 'a'}\n  Use -v to get more diff"
+        }
+      ]
+    },
+    {
+      "path": "selector-default-fixed.xml",
+      "counts": {
+        "tests": 25,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "failures": []
+    },
+    {
       "path": "ui-feedback-final.xml",
       "counts": {
         "tests": 30,
@@ -726,6 +772,5 @@
         }
       ]
     }
-  ],
-  "note": "Intermediate failure and fixture evidence is retained; final-snapshot-delivery is authoritative."
+  ]
 }

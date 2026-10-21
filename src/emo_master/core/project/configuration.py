@@ -236,7 +236,13 @@ def requiredProjectChanges(online, local, selected, *, deviceTypes=None, operato
                                 and value in {item for item, _ in selectorCandidates(declaration, localDefinition, name)}):
                             found.setdefault(path, []).append(f'{wid}/{node["nodeId"]}/{slot}: {name}={value}')
                     if slot in requirements and not found:
-                        validateDeviceBinding(requirements[slot], binding, DeviceDefinition.model_validate(definition), declaration)
+                        from emo_master.core.workflow.errors import locatedValidationError
+                        try:
+                            validateDeviceBinding(requirements[slot], binding, DeviceDefinition.model_validate(definition), declaration)
+                        except ValueError as error:
+                            raise locatedValidationError(error, 'E_DEVICE_BINDING',
+                                projectId=candidate['project']['projectId'], workflowId=wid, nodeId=node['nodeId'],
+                                prefix=f'deviceBindings.{slot}') from error
         if not found:
             return required
         required.update(found)

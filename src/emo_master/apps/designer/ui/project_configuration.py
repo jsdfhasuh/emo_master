@@ -269,8 +269,14 @@ class ProjectConfigurationDialog(QDialog):
 
     @staticmethod
     def _errorDetails(error):
-        return str(getattr(error, 'code', '')) + '\n' + str(error) + (
-            '\n' + json.dumps(error.diagnostics, ensure_ascii=False, indent=2) if getattr(error, 'diagnostics', None) else '')
+        from dataclasses import asdict
+        details = [str(getattr(error, 'code', '')), str(error)]
+        if getattr(error, 'diagnostics', None):
+            details.append(json.dumps(error.diagnostics, ensure_ascii=False, indent=2))
+        if getattr(error, 'issues', None):
+            details.append(json.dumps({'issues': [asdict(issue) for issue in error.issues]},
+                                      ensure_ascii=False, indent=2))
+        return '\n'.join(details)
 
     def _controls(self):
         idle = self.pending is None and not self.notifying and not self.confirming and self._valid()

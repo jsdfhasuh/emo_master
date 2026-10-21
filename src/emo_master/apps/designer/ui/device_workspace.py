@@ -18,6 +18,14 @@ from emo_master.apps.designer.ui.icon_map import icon, deviceIcon
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
 
 
+def _activeOwnersText(state):
+    owners = state.get('activeOwners')
+    if owners is None:
+        owners = [state['activeOwner']] if state.get('activeOwner') else []
+    text = ', '.join(str(owner)[:80] for owner in owners[:4]) or '-'
+    return text + (f' 等 {len(owners)} 个任务' if len(owners) > 4 else '')
+
+
 class DeviceWorkspace(QDialog):
     def __init__(self, coordinator):
         super().__init__(coordinator.window)
@@ -371,7 +379,7 @@ class DeviceWorkspace(QDialog):
                      f'更新于 {max(0, int(monotonic() - self.stateReadAt))} 秒前' if self.stateReadAt else '未获取在线状态')
         values = [('连接', {'CONNECTED': '已连接', 'DISCONNECTED': '未连接', 'FAULTED': '连接故障'}.get(state.get('driverState', {}).get('connectionState', 'CONNECTED' if state.get('lifecycleConnected') else 'DISCONNECTED'), '未知')),
                   ('执行状态', {'IDLE': '空闲', 'BUSY': '执行中', 'QUARANTINED': '已隔离', 'CLOSED': '已关闭'}.get(state.get('state'), '未知')),
-                  ('当前任务', state.get('activeOwner') or '-'), ('排队请求', state.get('queued', '-')),
+                  ('当前任务', _activeOwnersText(state)), ('排队请求', state.get('queued', '-')),
                   ('连接准入', {'PAUSED': '手动暂停', 'CONTROL_PENDING': '维护处理中', 'REPLACING': '配置替换中'}.get(state.get('admissionState'), '正常' if state else '未知')),
                   ('会话代次', state.get('generation', '-')), ('设备恢复', state.get('recovery', {}).get('state', '-')),
                   ('最近错误', state.get('lifecycleError') or state.get('lastError') or '-'), ('状态更新时间', freshness)]
@@ -730,7 +738,7 @@ class DeviceWorkspace(QDialog):
                 label += ' · ' + ('已连接' if state.get('lifecycleConnected') else '未连接')
             item.setText(label if revision == state["definitionRevision"] else label + " · 配置不同")
             different |= revision != state["definitionRevision"]
-            owners = ', '.join(state.get('activeOwners', [])) or state['activeOwner'] or '-'
+            owners = _activeOwnersText(state)
             self.table.item(row, 5).setText(f"{owners} / {state['queued']}")
             self.table.item(row, 6).setText(str(state.get('lifecycleError') or state.get('lastError') or '-'))
             item.setToolTip(f"排队：{state['queued']}\n操作 owner：{owners}\n代次：{state['generation']}"

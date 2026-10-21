@@ -22,16 +22,16 @@ class DeviceManagementClient:
         self.closed = False
         self.scope = {}
 
-    def _call(self, name, request, cancellation=None):
+    def _call(self, name, request, cancellation=None, *, timeoutMs=5000):
         context = cancellation or DisplayCallContext()
         with self.lock:
             if self.closed:
                 raise DeviceClientError('E_DISPLAY_CANCELLED', '设备观察已关闭')
             self.contexts.add(context)
         try:
-            if self.call is not None and cancellation is None:
-                return self.call(name, request)
-            context.start(5000)
+            context.start(timeoutMs)
+            if self.call is not None:
+                return self.call(name, request, timeoutMs=timeoutMs, cancellation=context)
             method = getattr(self.service, name)
             if callable(getattr(method, 'future', None)):
                 task = method.future(request, timeout=context.time_remaining(), wait_for_ready=False)
@@ -43,6 +43,8 @@ class DeviceManagementClient:
             return reply
         except grpc.RpcError as error:
             raise DeviceClientError(str(error.code()), error.details() or '设备 RPC 失败') from error
+        except grpc.FutureCancelledError as error:
+            raise DeviceClientError('E_DISPLAY_CANCELLED', '设备操作已取消') from error
         except DisplayCallError as error:
             raise DeviceClientError(error.code, str(error)) from error
         finally:
@@ -70,19 +72,25 @@ class DeviceManagementClient:
         return self._states(self._call('ControlDevice', pb.ControlDeviceRequest(project_id=projectId,
             runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state['generation'],
             expected_definition_revision=state['definitionRevision'], expected_control_revision=state['controlRevision'],
-            action=action, confirmed=confirmed)))
+            action=action, confirmed=confirmed), timeoutMs=self._budget(state, 'controls', action)))
 
     def recoverDevice(self, projectId, runtimeInstanceId, deviceId, state, *, hardwareSynchronized=False):
         return self._states(self._call('RecoverDevice', pb.RecoverDeviceRequest(project_id=projectId,
             runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state['generation'],
-            expected_definition_revision=state['definitionRevision'], hardware_synchronized=hardwareSynchronized)))
+            expected_definition_revision=state['definitionRevision'], hardware_synchronized=hardwareSynchronized),
+            timeoutMs=self._budget(state, 'controls', 'recover')))
+
+    @staticmethod
+    def _budget(state, group, action):
+        return int(state.get('rpcBudgetsMs', {}).get(group, {}).get(action, 5000)) + 2000
 
     def executeDeviceAction(self, projectId, runtimeInstanceId, deviceId, state, action, arguments):
         from uuid import uuid4
         reply = self._call('ExecuteDeviceAction', pb.ExecuteDeviceActionRequest(project_id=projectId,
             runtime_instance_id=runtimeInstanceId, device_id=deviceId, expected_generation=state['generation'],
             expected_definition_revision=state['definitionRevision'], expected_control_revision=state['controlRevision'],
-            action=action, arguments_json=json.dumps(arguments), confirmed=True, request_id=uuid4().hex))
+            action=action, arguments_json=json.dumps(arguments), confirmed=True, request_id=uuid4().hex),
+            timeoutMs=self._budget(state, 'actions', action))
         if not reply.ok:
             error = DeviceClientError(reply.code, reply.message)
             error.diagnostics = json.loads(reply.result_json or '{}')

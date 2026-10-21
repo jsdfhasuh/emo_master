@@ -38,6 +38,7 @@ class DeviceWorkspace(QDialog):
         self.reader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="device-metadata")
         self.pending = None
         self._networkOpenRequest = None
+        self._tcpCategoryIntent = None
         self.pendingKind = "metadata"
         self.pendingScope = None
         self.states = {}
@@ -289,6 +290,7 @@ class DeviceWorkspace(QDialog):
         # Keep the reusable metadata reader, but abandon this opening intent.
         # Reopening the workspace must not revive a response from before close.
         self._networkOpenRequest = None
+        self._tcpCategoryIntent = None
         super().done(result)
         self.c.chrome.update()
 
@@ -296,6 +298,10 @@ class DeviceWorkspace(QDialog):
         return DeviceCatalogEditor(self.c.session, self.deviceTypes, self.requirements)
 
     def selectTcpCategory(self):
+        if not self.deviceTypes:
+            self._tcpCategoryIntent = self._scope()
+            return
+        self._tcpCategoryIntent = None
         definition = self.c.session.workflows.devices.get('definitions', {}).get(self.selectedId, {})
         if definition.get('deviceTypeId', '').startswith('device.tcp.'):
             return
@@ -615,6 +621,7 @@ class DeviceWorkspace(QDialog):
         self._updateOnlineActions()
         try:
             if self.pendingScope != self._scope():
+                self._tcpCategoryIntent = None
                 raise ValueError("Runtime 连接已变化，请重新读取")
             if self.pendingKind == 'deviceDiagnostics':
                 page = future.result()
@@ -662,6 +669,9 @@ class DeviceWorkspace(QDialog):
             self.commitPending()
             self.deviceTypes, self.requirements = types, requirements
             self.refresh()
+            intent, self._tcpCategoryIntent = self._tcpCategoryIntent, None
+            if intent == self._scope() and self.isVisible():
+                self.selectTcpCategory()
             self.status.setText(f"{len(types)} 个设备类型；{len(rejected)} 个声明被拒绝；工程草稿")
             self.status.setToolTip(str(rejected) if rejected else "")
             if callable(getattr(self.c.window.runtimeClient, 'getDeviceStates', None)):
@@ -691,7 +701,9 @@ class DeviceWorkspace(QDialog):
             state = self.states.get(key)
             item = self.table.item(row, 3)
             if state is None:
-                item.setText(self.stateNotice.split('；', 1)[0] if self.stateNotice else '未读取在线状态')
+                draft = self.stateScope == self._scope() and self.stateRuntimeId and not self.stateError
+                item.setText(self.stateNotice.split('；', 1)[0] if self.stateNotice else
+                             '尚未写入 Runtime' if draft else '未读取在线状态')
                 item.setToolTip("")
                 for column in (5, 6):
                     self.table.item(row, column).setText("未获取")
@@ -709,16 +721,19 @@ class DeviceWorkspace(QDialog):
                 label += " · 维护处理中"
             driver = state.get('driverState', {})
             if declaration and declaration.connectionLifetime == 'per_operation':
-                label += ' · ' + ('事务执行中' if driver.get('active') else '事务就绪')
+                label += ' · ' + ('事务执行中' if state['state'] == 'BUSY' else '事务就绪')
             elif definition['deviceTypeId'] == 'device.tcp.server':
-                label += ' · ' + ('监听中，等待客户端' if driver.get('ready') else '未监听')
+                peers = sum(bool(channel.get('connected')) for channel in driver.get('channels', []))
+                label += ' · ' + ((f'监听中，已连接 {peers} 个客户端' if peers else '监听中，等待客户端')
+                                  if driver.get('ready') else '未监听')
             else:
                 label += ' · ' + ('已连接' if state.get('lifecycleConnected') else '未连接')
             item.setText(label if revision == state["definitionRevision"] else label + " · 配置不同")
             different |= revision != state["definitionRevision"]
-            self.table.item(row, 5).setText(f"{state['activeOwner'] or '-'} / {state['queued']}")
+            owners = ', '.join(state.get('activeOwners', [])) or state['activeOwner'] or '-'
+            self.table.item(row, 5).setText(f"{owners} / {state['queued']}")
             self.table.item(row, 6).setText(str(state.get('lifecycleError') or state.get('lastError') or '-'))
-            item.setToolTip(f"排队：{state['queued']}\n占用 Job：{state['activeOwner'] or '-'}\n代次：{state['generation']}"
+            item.setToolTip(f"排队：{state['queued']}\n操作 owner：{owners}\n代次：{state['generation']}"
                             f"\n建连恢复：{state.get('recovery', {}).get('state', '-')}"
                             f" · 尝试 {state.get('recovery', {}).get('attempt', 0)}"
                             f"\n显式保活：{state.get('explicitKeepAlive', 0)}"
@@ -817,7 +832,7 @@ class DeviceWorkspace(QDialog):
             else:
                 self.selectedId = None
             self._showDetails()
-            if self.states:
+            if self.states or self.stateRuntimeId or self.stateError:
                 self._showStates()
         finally:
             self.loading = False

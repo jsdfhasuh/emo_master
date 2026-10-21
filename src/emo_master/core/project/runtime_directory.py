@@ -12,7 +12,7 @@ from emo_master.core.project.global_variables import validateBindings
 from emo_master.core.project.snapshots import _setPath, verifyResources
 from emo_master.core.project.resources import DeviceParameterTarget
 from emo_master.core.project.device_resources import deviceDeclaration, deviceTarget
-from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError, locatedValidationError
 
 
 def prepareRuntimeProject(
@@ -31,7 +31,8 @@ def prepareRuntimeProject(
     deviceSites = {b.field for b in prepared.resources.siteBindings
                    if isinstance(b.target, DeviceParameterTarget)} if prepared.resources else set()
     if set(sites) - deviceSites:
-        raise ValueError("undeclared device site field")
+        raise WorkflowCompileError([ValidationIssue('E_DEVICE_SITE', 'undeclared device site field: '+key,
+            projectId=document.project.projectId, fieldPath='siteValues.'+key) for key in sorted(set(sites)-deviceSites)])
     if prepared.resources is not None:
         resources = verifyResources(prepared, root, resourcePaths=resourcePaths)
         prepared._pageResourcePaths = {key: path for key, path in resources.items()
@@ -42,13 +43,13 @@ def prepareRuntimeProject(
             if isinstance(target, DeviceParameterTarget):
                 item = prepared.resources.items.get(binding.resourceId)
                 if item is None:
-                    raise ValueError("device resource reference missing")
+                    raise _targetError(document, target, 'E_DEVICE_RESOURCE', 'device resource reference missing')
                 params = deviceTarget(prepared, target, deviceTypes, item.purpose)
                 _setPath(params, target.parameterPath, resources[binding.resourceId])
                 continue
             node = nodes.get((target.workflowId, target.nodeId))
             if node is None or node.kind != "operator" or binding.resourceId not in resources:
-                raise ValueError("resource reference/parameter target missing")
+                raise _targetError(document, target, 'E_RESOURCE_TARGET', 'resource reference/parameter target missing')
             descriptor = registry.get(node.operatorId or "")
             if descriptor is None:
                 raise WorkflowCompileError([ValidationIssue('E_OPERATOR_UNKNOWN', f'operator missing: {node.operatorId}',
@@ -57,7 +58,7 @@ def prepareRuntimeProject(
             for part in target.parameterPath:
                 schema = schema.get("properties", {}).get(part, {})
             if schema.get("xWidget") != "file" or schema.get("xFileMode") != "open":
-                raise ValueError("resource binding must target an input file parameter")
+                raise _targetError(document, target, 'E_RESOURCE_TARGET', 'resource binding must target an input file parameter')
             _setPath(node.params, target.parameterPath, resources[binding.resourceId])
         for siteBinding in prepared.resources.siteBindings:
             target = siteBinding.target
@@ -65,35 +66,46 @@ def prepareRuntimeProject(
                 params = deviceTarget(prepared, target, deviceTypes, siteBinding.purpose)
                 if siteBinding.field in sites:
                     if not isinstance(sites[siteBinding.field], str) or not sites[siteBinding.field]:
-                        raise ValueError("device site field must be a nonempty string")
+                        raise _targetError(document, target, 'E_DEVICE_SITE', 'device site field must be a nonempty string')
                     _setPath(params, target.parameterPath, sites[siteBinding.field])
                 value: object = params
                 for part in target.parameterPath:
                     value = value.get(part) if isinstance(value, dict) else None
                 if siteBinding.required and (not isinstance(value, str) or not value):
-                    raise ValueError(f"required device site field missing: {siteBinding.field}")
+                    raise _targetError(document, target, 'E_DEVICE_SITE', f'required device site field missing: {siteBinding.field}')
                 if siteBinding.purpose == "secret_ref" and value:
                     import re
                     if not isinstance(value, str) or not re.fullmatch(r"secret://[A-Za-z0-9_./-]+@[A-Za-z0-9_.-]+", value):
-                        raise ValueError("device secrets must be versioned references, never plaintext")
+                        raise _targetError(document, target, 'E_DEVICE_SITE', 'device secrets must be versioned references, never plaintext')
                 continue
             node = nodes.get((target.workflowId, target.nodeId))
             if node is None or node.kind != "operator":
-                raise ValueError("site parameter target missing")
+                raise _targetError(document, target, 'E_SITE_TARGET', 'site parameter target missing')
             value = node.params if node is not None else None
             for part in target.parameterPath:
                 value = value.get(part) if isinstance(value, dict) else None
             if siteBinding.required and (not isinstance(value, str) or not value):
-                raise ValueError(f"project parameter missing: {target.workflowId}/{target.nodeId}/"
-                                 + "/".join(target.parameterPath))
+                raise _targetError(document, target, 'E_SITE_TARGET', f'project parameter missing: {target.workflowId}/{target.nodeId}/'
+                                   + '/'.join(target.parameterPath))
 
-    outputs: list[Path] = []
+    outputs: list[tuple[Path, str]] = []
     for deviceId, definition in prepared.devices.definitions.items():
-        declaration = deviceDeclaration(definition, deviceTypes)
-        definition = declaration.validateDefinition(definition)
+        try:
+            declaration = deviceDeclaration(definition, deviceTypes, deviceId=deviceId)
+        except WorkflowCompileError as error:
+            raise locatedValidationError(error, 'E_DEVICE_DEPENDENCY', projectId=document.project.projectId) from error
+        try:
+            definition = declaration.validateDefinition(definition)
+        except ValueError as error:
+            raise locatedValidationError(error, 'E_DEVICE_DEFINITION', projectId=document.project.projectId,
+                prefix=f'devices.definitions.{deviceId}') from error
         for section, schema in (("connection", declaration.connectionSchema), ("defaults", declaration.defaultsSchema)):
-            _resolveFiles(getattr(definition, section), schema, root, inputs, outputs, f"devices/{deviceId}/{section}")
-        prepared.devices.definitions[deviceId] = declaration.validateDefinition(definition)
+            try:
+                _resolveFiles(getattr(definition, section), schema, root, inputs, outputs,
+                              f'devices.definitions.{deviceId}.{section}')
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_RESOURCE', projectId=document.project.projectId) from error
+        prepared.devices.definitions[deviceId] = definition
     for (wid, nid), node in nodes.items():
         if node.kind != "operator":
             continue
@@ -104,20 +116,40 @@ def prepareRuntimeProject(
         # Reject unsupported file substitution before inspecting dormant literal
         # paths, including at export/install time (before any package is written).
         validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)
-        _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, f"{wid}/{nid}")
+        try:
+            _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, 'params')
+        except ValueError as error:
+            raise locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=document.project.projectId,
+                workflowId=wid, nodeId=nid) from error
         for slot, deviceBinding in node.deviceBindings.items():
+            if deviceBinding.deviceId not in prepared.devices.definitions:
+                raise WorkflowCompileError([ValidationIssue('E_DEVICE_REFERENCE', f'device missing: {deviceBinding.deviceId}',
+                    document.project.projectId, wid, nid, f'deviceBindings.{slot}.deviceId')])
             definition = prepared.devices.definitions[deviceBinding.deviceId]
             declaration = deviceDeclaration(definition, deviceTypes)
             overrides = node.deviceOverrides.get(slot, {})
-            _resolveFiles(overrides, declaration.defaultsSchema, root, inputs, outputs,
-                          f"{wid}/{nid}/{slot}", materializeDefaults=False)
-            declaration.validateNodeSources(definition, overrides, node.deviceValueBindings.get(slot, {}))
+            try:
+                _resolveFiles(overrides, declaration.defaultsSchema, root, inputs, outputs,
+                              f'deviceOverrides.{slot}', materializeDefaults=False)
+                declaration.validateNodeSources(definition, overrides, node.deviceValueBindings.get(slot, {}), slot=slot)
+            except ValueError as error:
+                raise locatedValidationError(error, 'E_DEVICE_PARAMETERS', projectId=document.project.projectId,
+                    workflowId=wid, nodeId=nid, fieldPath=f'deviceOverrides.{slot}') from error
     protected = [path.resolve() for path in (*inputs, *protectedPaths)]
-    for output in outputs:
+    for output, location in outputs:
         if any(output == path or output.is_relative_to(path) or path.is_relative_to(output)
                or (output.exists() and path.is_file() and output.samefile(path)) for path in protected):
-            raise ValueError(f"output overlaps project input or Runtime data: {output}")
+            raise WorkflowCompileError([ValidationIssue('E_RESOURCE_OUTPUT',
+                f'output overlaps project input or Runtime data: {output}', projectId=document.project.projectId, fieldPath=location)])
     return prepared
+
+
+def _targetError(document, target, code, message):
+    device = isinstance(target, DeviceParameterTarget)
+    return WorkflowCompileError([ValidationIssue(code, message, projectId=document.project.projectId,
+        workflowId='' if device else target.workflowId, nodeId='' if device else target.nodeId,
+        fieldPath=(f'devices.definitions.{target.deviceId}.{target.section}.' if device else 'params.')
+                  + '.'.join(target.parameterPath))])
 
 
 def _resolveFiles(value, schema, root, inputs, outputs, location, *, materializeDefaults=True):
@@ -129,16 +161,16 @@ def _resolveFiles(value, schema, root, inputs, outputs, location, *, materialize
         mode = schema.get("xFileMode")
         if mode == "open":
             if not path.is_file():
-                raise ValueError(f"{location}: input file not found: {path}")
+                raise WorkflowCompileError([ValidationIssue('E_RESOURCE_INPUT', f'{location}: input file not found: {path}', fieldPath=location)])
             inputs.add(path)
         elif mode == "directory":
             if not path.is_dir():
-                raise ValueError(f"{location}: input directory not found: {path}")
+                raise WorkflowCompileError([ValidationIssue('E_RESOURCE_INPUT', f'{location}: input directory not found: {path}', fieldPath=location)])
             inputs.add(path)
         elif mode == "save":
-            outputs.append(path)
+            outputs.append((path, location))
         else:
-            raise ValueError(f"{location}: unsupported file mode: {mode}")
+            raise WorkflowCompileError([ValidationIssue('E_RESOURCE_INPUT', f'{location}: unsupported file mode: {mode}', fieldPath=location)])
         return str(path)
     if schema.get("type") == "object" or "properties" in schema:
         if not isinstance(value, dict):
@@ -148,10 +180,10 @@ def _resolveFiles(value, schema, root, inputs, outputs, location, *, materialize
                 value[key] = child["default"]
             if key not in value:
                 continue
-            value[key] = _resolveFiles(value[key], child, root, inputs, outputs, f"{location}/{key}",
+            value[key] = _resolveFiles(value[key], child, root, inputs, outputs, f"{location}.{key}",
                                       materializeDefaults=materializeDefaults)
     elif schema.get("type") == "array" and isinstance(value, list):
         for index, item in enumerate(value):
-            value[index] = _resolveFiles(item, schema.get("items", {}), root, inputs, outputs, f"{location}/{index}",
+            value[index] = _resolveFiles(item, schema.get("items", {}), root, inputs, outputs, f"{location}.{index}",
                                         materializeDefaults=materializeDefaults)
     return value

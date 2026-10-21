@@ -15,7 +15,9 @@ class CyclePlanSession:
     @contextmanager
     def scope(self, context, *, parentCycleId=None):
         cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
-        previous = self.document, self.runner.compiledProject, self.revision
+        executor = self.runner.operatorExecutor
+        previous = (self.document, self.runner.compiledProject, self.revision,
+                    getattr(executor, 'deviceScope', {}), getattr(executor, 'deviceIdentities', {}))
         try:
             self.install(cycle)
             yield replace(context, cycleId=cycle["cycleId"], planRevision=self.revision,
@@ -23,7 +25,8 @@ class CyclePlanSession:
         finally:
             if parentCycleId is not None:
                 # Code after the Loop still belongs to the outer cycle's plan.
-                self.document, self.runner.compiledProject, self.revision = previous
+                (self.document, self.runner.compiledProject, self.revision,
+                 executor.deviceScope, executor.deviceIdentities) = previous
             if cycle["ownsCycle"] and not self.cancelled():
                 self.devices.framework("endCycle", cycleId=cycle["cycleId"])
 
@@ -32,6 +35,7 @@ class CyclePlanSession:
 
     def install(self, cycle):
         self.runner.operatorExecutor.deviceScope = cycle.get('deviceScope', {})
+        self.runner.operatorExecutor.deviceIdentities = cycle.get('deviceIdentities', {})
         if "payload" in cycle:
             # Preserve materialized paths and retained operator instances.
             updated = self.document.model_dump(mode="json")

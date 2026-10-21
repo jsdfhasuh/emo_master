@@ -404,9 +404,11 @@ class ProjectConfigurationRpcMixin:
             return pb.ProjectConfigurationReply(ok=True, result_json=json.dumps(action(), ensure_ascii=True))
         except Exception as error:
             from dataclasses import asdict
-            from emo_master.core.workflow.errors import WorkflowCompileError
-            diagnostics = dict(issues=[asdict(issue) for issue in error.issues]) if isinstance(error, WorkflowCompileError) else {}
-            return pb.ProjectConfigurationReply(ok=False, code=getattr(error, "code", "E_CONFIG_INVALID"), message=str(error),
+            from pydantic import ValidationError
+            from emo_master.core.workflow.errors import WorkflowCompileError, locatedValidationError
+            located = locatedValidationError(error, 'E_CONFIG_INVALID') if isinstance(error, ValidationError) else error
+            diagnostics = dict(issues=[asdict(issue) for issue in located.issues]) if isinstance(located, WorkflowCompileError) else {}
+            return pb.ProjectConfigurationReply(ok=False, code=getattr(error, "code", "E_CONFIG_INVALID"), message=str(located),
                 result_json=json.dumps(diagnostics, ensure_ascii=True) if diagnostics else '')
 
     def GetOnlineProjectSnapshot(self, request, context):

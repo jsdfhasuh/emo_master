@@ -653,7 +653,10 @@ class RuntimeClient:
 
     def _deviceManagement(self):
         from emo_master.clients.runtime.devices import DeviceManagementClient
-        return DeviceManagementClient(self.runtimeService, call=self._call)
+        return DeviceManagementClient(self.runtimeService, call=self._deviceManagementCall)
+
+    def _deviceManagementCall(self, name, request, *, timeoutMs, cancellation):
+        return self._displayCall(name, request, timeoutMs, cancellation, 'device-management')
 
     def _deviceCall(self, method, *args, **kwargs):
         from emo_master.clients.runtime.devices import DeviceClientError

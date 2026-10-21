@@ -835,7 +835,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 code='E_CONFIG_NOT_LOADED' if self.projectConfiguration.current is None else 'E_CONFIG_PROJECT')
         with self.deviceManager.lock:
             from emo_master.core.project.snapshots import revisionOf
-            states = {key: dict(executor.snapshot(),
+            states = {key: dict(self.deviceManager.activitySnapshot(key),
                                definitionRevision=revisionOf(self.deviceManager.definitions[key].model_dump()))
                       for key, executor in self.deviceManager.executors.items()}
             for key, driver in self.deviceManager.drivers.items():
@@ -859,6 +859,7 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
                 states[key].update(self.deviceManager.scope)
                 states[key]['availableControls'] = self.deviceManager.availableControls(key)
                 states[key]['availableManagementActions'] = self.deviceManager.availableManagementActions(key)
+                states[key]['rpcBudgetsMs'] = self.deviceManager.rpcBudgetsMs(key)
         return runtime_pb2.GetDeviceStatesReply(ok=True, runtime_instance_id=self.runtimeInstanceId,
             project_id=self.loadedProjectId, states_json=json.dumps(states),
             project_load_generation=self.deviceManager.scope['projectLoadGeneration'])

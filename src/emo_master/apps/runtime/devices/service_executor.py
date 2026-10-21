@@ -12,6 +12,7 @@ from .executor import DeviceError
 class ServiceOperation:
     owner: str
     cycleId: str
+    action: str
     requestId: str = field(default_factory=lambda: uuid4().hex)
     cancellation: Event = field(default_factory=Event)
     future: Future = field(default_factory=Future)
@@ -23,15 +24,20 @@ class ServiceExecutor:
         self.condition = executor.condition
         self.operations = {}
 
-    def admit(self, owner, cycleId):
+    def admit(self, owner, cycleId, action, requestId):
         with self.condition:
             if self.executor.closed or self.executor.quarantined:
                 raise DeviceError('E_DEVICE_UNAVAILABLE', 'device is closed or quarantined')
             if len(self.operations) >= 64:
                 raise DeviceError('E_DEVICE_QUEUE_FULL', 'managed service action limit reached')
-            operation = ServiceOperation(owner, cycleId)
+            operation = ServiceOperation(owner, cycleId, action, requestId=requestId)
             self.operations[operation.requestId] = operation
             return operation
+
+    def snapshot(self):
+        with self.condition:
+            return [dict(ownerId=op.owner, cycleId=op.cycleId, action=op.action, requestId=op.requestId,
+                         cancelled=op.cancellation.is_set()) for op in self.operations.values()]
 
     def run(self, operation, action, cancelled, deadline, generation):
         try:

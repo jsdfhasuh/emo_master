@@ -14,6 +14,11 @@ from emo_master.core.project.devices import (
     DeviceDefinition, DeviceId, DeviceModel, DeviceValueBinding,
     leafPaths, mergeDefaults, parameterPath, validateSources,
 )
+from emo_master.core.workflow.errors import ValidationIssue, WorkflowCompileError
+
+
+def _deviceInvalid(message, path):
+    return WorkflowCompileError([ValidationIssue('E_DEVICE_PARAMETERS', message, fieldPath=path)])
 
 
 class DeviceRequirement(DeviceModel):
@@ -43,27 +48,27 @@ class CancellableWait(DeviceModel):
     requires: dict[str, object] = Field(min_length=1)
 
 
-def _validateResourceValues(value, schema):
+def _validateResourceValues(value, schema, path='defaults'):
     if "xUtf8MaxBytes" in schema:
         if not isinstance(value, str) or len(value.encode("utf-8")) > schema["xUtf8MaxBytes"]:
-            raise ValueError("device string exceeds its UTF-8 byte limit")
+            raise _deviceInvalid("device string exceeds its UTF-8 byte limit", path)
     if schema.get("xAddressLiteral"):
         if not isinstance(value, str) or "%" in value:
-            raise ValueError("device address must be an unscoped IP literal")
+            raise _deviceInvalid("device address must be an unscoped IP literal", path)
         try:
             ipaddress.ip_address(value)
         except ValueError as error:
-            raise ValueError("device address must be an IP literal; DNS aliases cannot establish device identity") from error
+            raise _deviceInvalid("device address must be an IP literal; DNS aliases cannot establish device identity", path) from error
     if schema.get("xResourcePurpose") == "secret_ref" and value:
         if not isinstance(value, str) or not re.fullmatch(r"secret://[A-Za-z0-9_./-]+@[A-Za-z0-9_.-]+", value):
-            raise ValueError("device secrets must be versioned references, never plaintext")
+            raise _deviceInvalid("device secrets must be versioned references, never plaintext", path)
     if isinstance(value, dict):
         for key, child in schema.get("properties", {}).items():
             if key in value:
-                _validateResourceValues(value[key], child)
+                _validateResourceValues(value[key], child, path+'.'+key)
     elif isinstance(value, list):
-        for item in value:
-            _validateResourceValues(item, schema.get("items", {}))
+        for index, item in enumerate(value):
+            _validateResourceValues(item, schema.get("items", {}), path+'.'+str(index))
 
 
 class DeviceType(DeviceModel):
@@ -182,23 +187,23 @@ class DeviceType(DeviceModel):
         from emo_master.core.project.snapshots import _parameters
 
         if (definition.deviceTypeId, definition.driverVersion) != (self.deviceTypeId, self.version):
-            raise ValueError("device type/version does not match declaration")
+            raise _deviceInvalid("device type/version does not match declaration", 'driverVersion')
         payload = definition.model_dump()
         for name, schema in (("connection", self.connectionSchema), ("defaults", self.defaultsSchema),
                              ("policies", self.policiesSchema)):
             payload[name] = _parameters(getattr(definition, name), schema, name)
-            _validateResourceValues(payload[name], schema)
+            _validateResourceValues(payload[name], schema, name)
         self.validateRules(payload["defaults"])
         policies = payload["policies"]
         if policies.get("connect", "on_first_use") not in {"on_first_use", "on_project_open", "on_project_run", "manual"}:
-            raise ValueError("unsupported device connection policy")
+            raise _deviceInvalid("unsupported device connection policy", 'policies.connect')
         if policies.get("release", "on_project_close") not in {"on_project_close", "when_unused", "idle_timeout", "manual"}:
-            raise ValueError("unsupported device release policy")
+            raise _deviceInvalid("unsupported device release policy", 'policies.release')
         if policies.get("release") == "idle_timeout" and (type(policies.get("idleTimeoutMs")) is not int
                 or not 1 <= policies["idleTimeoutMs"] <= 86400000):
-            raise ValueError("idle_timeout requires a bounded positive idleTimeoutMs")
+            raise _deviceInvalid("idle_timeout requires a bounded positive idleTimeoutMs", 'policies.idleTimeoutMs')
         if policies.get("release") == "when_unused" and policies.get("connect", "on_first_use") != "on_first_use":
-            raise ValueError("when_unused requires on_first_use to avoid an immediate connect/disconnect cycle")
+            raise _deviceInvalid("when_unused requires on_first_use to avoid an immediate connect/disconnect cycle", 'policies.release')
         checked = DeviceDefinition.model_validate(payload)
         if self.deviceTypeId.startswith("device.tcp."):
             from emo_master.core.project.communication import validateTcpDefinition
@@ -225,13 +230,13 @@ class DeviceType(DeviceModel):
             if lookup(rule.present) is not missing:
                 for path, required in rule.requires.items():
                     if lookup(path) != required:
-                        raise ValueError(f"{rule.present} requires {path}={required!r}")
+                        raise _deviceInvalid(f"{rule.present} requires {path}={required!r}", 'defaults.'+path)
         wait = self.cancellableWait
         if (wait is not None and not set(dynamicPaths) & {wait.timeoutPath, *wait.requires}
                 and lookup(wait.timeoutPath) == 0):
             for path, required in wait.requires.items():
                 if lookup(path) != required:
-                    raise ValueError(f"unlimited wait requires {path}={required!r}")
+                    raise _deviceInvalid(f"unlimited wait requires {path}={required!r}", 'defaults.'+path)
 
     def isUnlimitedWait(self, action, values):
         wait = self.cancellableWait
@@ -242,23 +247,30 @@ class DeviceType(DeviceModel):
             value = value[part]
         return value == 0
 
-    def validateNodeSources(self, definition: DeviceDefinition, overrides: Mapping, bindings: Mapping) -> dict:
+    def validateNodeSources(self, definition: DeviceDefinition, overrides: Mapping, bindings: Mapping, *, slot='') -> dict:
         from emo_master.core.project.snapshots import _parameters
+        from dataclasses import replace
 
         definition = self.validateDefinition(definition)
+        overridePath = 'deviceOverrides' + ('.'+slot if slot else '')
+        bindingPath = 'deviceValueBindings' + ('.'+slot if slot else '')
         validateSources({"slot": object()}, {"slot": overrides}, {"slot": bindings})
         for path in leafPaths(overrides):
             if ".".join(path) not in self.overridePaths:
-                raise ValueError(f"device parameter cannot be overridden: {'.'.join(path)}")
+                raise _deviceInvalid(f"device parameter cannot be overridden: {'.'.join(path)}", overridePath+'.'+'.'.join(path))
         for path, binding in bindings.items():
             if path not in self.dynamicPaths:
-                raise ValueError(f"device parameter cannot be bound dynamically: {path}")
+                raise _deviceInvalid(f"device parameter cannot be bound dynamically: {path}", bindingPath+'.'+path)
             if not isinstance(binding, DeviceValueBinding):
                 DeviceValueBinding.model_validate(binding)
         effective = mergeDefaults(definition.defaults, overrides)
         # Dynamic values are validated again after resolution, before device admission.
-        effective = _parameters(effective, self.defaultsSchema, "effective device parameters")
-        self.validateRules(effective, bindings, sourcePaths={".".join(path) for path in leafPaths(overrides)} | set(bindings))
+        try:
+            effective = _parameters(effective, self.defaultsSchema, 'defaults')
+            self.validateRules(effective, bindings, sourcePaths={".".join(path) for path in leafPaths(overrides)} | set(bindings))
+        except WorkflowCompileError as error:
+            raise WorkflowCompileError([replace(issue, fieldPath=overridePath + issue.fieldPath.removeprefix('defaults'))
+                                        for issue in error.issues]) from error
         return effective
 
     def resolveParameters(self, definition: DeviceDefinition, overrides: Mapping, bindings: Mapping,
@@ -285,20 +297,22 @@ def validateDeviceBinding(requirement, binding, definition, declaration):
     """One offline binding rule for compiler, editors and package reuse."""
     from emo_master.core.project.devices import DeviceBinding
     from emo_master.core.project.snapshots import _parameters
+    def invalid(message, path='deviceId'):
+        return WorkflowCompileError([ValidationIssue('E_DEVICE_BINDING', message, fieldPath=path)])
     if not isinstance(requirement, DeviceRequirement):
         requirement = DeviceRequirement.model_validate(dict(requirement))
     if not isinstance(binding, DeviceBinding):
         binding = DeviceBinding.model_validate(dict(binding))
     if definition.deviceTypeId != requirement.deviceTypeId:
-        raise ValueError("device type does not match operator slot")
+        raise invalid("device type does not match operator slot")
     if not set(requirement.requiredCapabilities) <= set(declaration.capabilities):
-        raise ValueError("device lacks required capabilities")
+        raise invalid("device lacks required capabilities")
     if not set(requirement.selectorSchema["properties"]) <= set(declaration.bindingSelectors):
-        raise ValueError("slot names an undeclared device selector")
-    selectors = _parameters(binding.selectors, requirement.selectorSchema, "device selectors")
+        raise invalid("slot names an undeclared device selector", 'selectors')
+    selectors = _parameters(binding.selectors, requirement.selectorSchema, "selectors")
     for name, value in selectors.items():
         if value not in {key for key, _ in selectorCandidates(declaration, definition, name)}:
-            raise ValueError(f"device {binding.deviceId}: selectors.{name}={value!r} does not exist")
+            raise invalid(f"device {binding.deviceId}: selectors.{name}={value!r} does not exist", 'selectors.'+name)
     return selectors
 
 

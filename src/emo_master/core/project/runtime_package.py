@@ -94,6 +94,11 @@ def _validate(document, root, registry, deviceTypes=None, *, portable=False):
 
 def _operators(document, registry):
     ids = {node.operatorId for flow in document.workflows.values() for node in flow.nodes if node.kind == "operator"}
+    from emo_master.core.project.dependencies import requireInstalled
+    for key in ids:
+        descriptor = registry.get(key)
+        requireInstalled(key, None, descriptor.manifest.version if descriptor else None,
+            kind='算子', fieldPath='dependencies.operators.'+key, projectId=document.project.projectId)
     return {key: registry[key].manifest.version for key in sorted(ids)}
 
 
@@ -252,6 +257,15 @@ def _extract(package, stage, registry, deviceTypes=None):
                 if _digest(source, output) != expected:
                     raise ValueError("package file digest or size mismatch")
         document = ProjectDocument.model_validate(readJson((stage / "project.json").read_bytes()))
+        from emo_master.core.project.dependencies import requireInstalled
+        for key, version in manifest.get('requiredOperators', {}).items():
+            descriptor = registry.get(key)
+            requireInstalled(key, version, descriptor.manifest.version if descriptor else None,
+                kind='算子', fieldPath='requiredOperators.'+key, projectId=document.project.projectId)
+        for key, lock in manifest.get('requiredDeviceTypes', {}).items():
+            declaration = (deviceTypes or {}).get(key)
+            requireInstalled(key, lock['version'], declaration.version if declaration else None,
+                kind='设备类型', fieldPath='requiredDeviceTypes.'+key, projectId=document.project.projectId)
         if (document.schemaVersion != manifest["projectSchema"] or document.project.projectId != manifest.get("projectId")
                 or _operators(document, registry) != manifest.get("requiredOperators")):
             raise ValueError("incompatible operator versions or project identity")

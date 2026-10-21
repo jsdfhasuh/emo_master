@@ -30,24 +30,29 @@ class DeviceDiagnostics:
         self.dropped = 0
         self.writer = None
 
-    def append(self, scope, deviceId, eventType, message, *, write=True, **fields):
+    def append(self, scope, deviceId, eventType, message, *, write=True, timestampMs=None, **fields):
         # Keep previews bounded; receipts have compact count/outcome metadata.
         preview = json.dumps(fields, ensure_ascii=False, default=str)
         if len(preview.encode('utf-8')) > 1024:
             # Frozen attribution and send receipts must survive preview truncation.
             retained = {key: fields[key] for key in ('ownerId', 'jobId', 'cycleId', 'requestId', 'source',
-                        'slot', 'selectors', 'code', 'workflowId', 'nodeId', 'deviceGeneration') if key in fields}
+                        'slot', 'selectors', 'code', 'workflowId', 'nodeId', 'deviceGeneration', 'level', 'phase',
+                        'planRevision', 'workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'iterationPath',
+                        'operatorId') if key in fields}
             receipt = fields.get('diagnostics', {}).get('tcpReceipt')
+            transaction = fields.get('diagnostics', {}).get('tcpTransaction')
             if receipt is None and isinstance(fields.get('result'), dict) and fields['result'].get('type') == 'tcpSendReceipt':
                 receipt = fields['result']
             if receipt:
                 retained['diagnostics'] = {'tcpReceipt': receipt}
+            if transaction:
+                retained.setdefault('diagnostics', {})['tcpTransaction'] = transaction
             fields = dict(retained, preview=preview.encode('utf-8')[:1000].decode('utf-8', errors='ignore'), truncated=True)
         with self.lock:
             self.cursor += 1
             row = dict(fields)
             row.update(scope, deviceId=deviceId, cursor=self.cursor, eventType=eventType,
-                       message=str(message)[:1024], timestampMs=int(time()*1000))
+                       message=str(message)[:1024], timestampMs=int(time()*1000) if timestampMs is None else timestampMs)
             size = len(json.dumps(row, ensure_ascii=True).encode())
             key = (scope['projectLoadGeneration'], deviceId)
             bucket = self.rows.setdefault(key, deque())
@@ -98,4 +103,10 @@ class DeviceDiagnostics:
                 self.append(scope, binding['deviceId'], event.eventType, event.message, write=False,
                     slot=slot, selectors=binding.get('selectors', {}), jobId=event.jobId,
                     workflowId=event.workflowId, nodeId=event.nodeId, code=event.code,
+                    timestampMs=event.timestampMs, level=event.level, phase=payload.get('phase', ''),
+                    data=payload.get('data', {}), operatorId=payload.get('operatorId', ''),
+                    ownerId=payload.get('ownerId', event.jobId), cycleId=payload.get('cycleId', ''),
+                    planRevision=payload.get('planRevision'), deviceGeneration=binding.get('deviceGeneration', ''),
+                    workflowRunId=event.workflowRunId, parentWorkflowRunId=event.parentWorkflowRunId,
+                    nodeRunId=event.nodeRunId, iterationPath=json.loads(event.iterationPathJson),
                     diagnostics=payload.get('diagnostics', {}))

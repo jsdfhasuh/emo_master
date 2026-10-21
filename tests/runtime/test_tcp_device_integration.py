@@ -151,7 +151,7 @@ def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(cha
     from tests.designer.test_device_workspace import waitUntil
     from tests.designer.test_runtime_menu_publication import menuDialog
     c = chain
-    window = ownedDesignerWindow(c['client'])
+    window = ownedDesignerWindow(RuntimeClient(runtimeService=c['service']))
     window.resize(1400, 900)
     window.show()
     assert window.loadProjectDirectory(str(c['path']), confirmed=True)
@@ -543,10 +543,12 @@ def testA5AllThreePackagesImportAndRunFromNewDirectories(chain):
     assert document.schemaVersion == '2.7' and document.devices.definitions['server'].enabled
     runImported(c, destination, document.model_dump(mode='json'), 'main', 'RUNTIME-PACKAGE')
     import subprocess
-    sourceSha = subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
+    import os
+    import emo_master
+    sourceSha = os.environ.get('EMO_TEST_SOURCE_SHA') or subprocess.check_output(['git', 'rev-parse', 'HEAD'], text=True).strip()
     (c['root']/'acceptance-results.json').write_text(json.dumps(dict(sourceSha=sourceSha, engineering=str(c['path']),
         jobs=c['jobs'], importJobs=c['importJobs'], importEvidence=c['importEvidence'],
-        packages=[str(devicePath), str(workflowPath), str(packagePath)]), indent=2), encoding='utf-8')
+        packages=[str(devicePath), str(workflowPath), str(packagePath)], importPath=emo_master.__file__), indent=2), encoding='utf-8')
 
 
 def testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs(tmp_path, retainedQtApplication, monkeypatch):
@@ -567,7 +569,7 @@ def testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs(tmp_path, retain
         path = tmp_path/'service.emoproj'
         path.write_text(json.dumps(payload), encoding='utf-8')
         assert service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None).ok
-        run(service, client, 'main')
+        job = run(service, client, 'main')
         rejected = client.startJob(service.loadedProjectId, 'reject')
         assert waitForTerminal(service, rejected.job_id).error_code == 'E_SAMPLE_REJECTED'
         runtimeId, states = client.getDeviceStates(service.loadedProjectId)
@@ -585,6 +587,12 @@ def testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs(tmp_path, retain
         records = client.getDeviceDiagnostics(scope, 'ticker')['records']
         assert {'device.ticker.started', 'node.log', 'node.failed'} <= {row['eventType'] for row in records}
         assert any(row.get('slot') == 'service' for row in records if row['eventType'] == 'node.log')
+        projected = next(row for row in records if row['eventType'] == 'node.log' and row['jobId'] == job)
+        original = next(event for event in service.eventStore.read(job) if event.eventType == 'node.log')
+        assert projected['deviceGeneration'] == state['generation']
+        assert projected['timestampMs'] == original.timestampMs and projected['level'] == original.level
+        assert projected['workflowRunId'] == original.workflowRunId and projected['nodeRunId'] == original.nodeRunId
+        assert projected['phase'] == 'execute' and projected['cycleId'] and projected['planRevision'] >= 1
         management = [row for row in records if row.get('source', {}).get('kind') == 'management']
         assert {row['eventType'] for row in management} == {'device.action.completed', 'device.action.failed'}
         assert all(not row.get('jobId') and not row.get('nodeId') and row['ownerId'].startswith('device-page-') for row in management)

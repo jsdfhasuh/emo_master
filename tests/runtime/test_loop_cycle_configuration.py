@@ -97,19 +97,27 @@ def testIterationRestoresOuterCompiledPlanAndReleasesOnException(tmp_path):
     runner = WorkflowRunner(compiled, scan.activeOperators)
     class Proxy:
         def framework(self, action, **fields):
-            return getattr(c, action)("job", **fields)
+            result = getattr(c, action)("job", **fields)
+            if action == 'beginCycle':
+                result.update(deviceScope={'projectId': str(result['planRevision'])},
+                    deviceIdentities={'camera': {'deviceGeneration': str(result['planRevision'])}})
+            return result
     plans = CyclePlanSession(runner, Proxy(), document, compiler, scan.activeOperators, (), 1, lambda: False)
     try:
         with plans.scope(RunContext.root("job", "main")) as root:
+            assert runner.operatorExecutor.deviceIdentities['camera']['deviceGeneration'] == '1'
             c.start(request(c))
             assert finish(c)["state"] == "COMMITTED"
             with pytest.raises(RuntimeError, match="body failed"):
                 with plans.iteration(root) as child:
+                    assert runner.operatorExecutor.deviceIdentities['camera']['deviceGeneration'] == '2'
                     assert child.planRevision == 2 and child.cycleId != root.cycleId
                     assert plans.document.devices.definitions["camera"].defaults["exposureUs"] == 12000
                     raise RuntimeError("body failed")
             assert runner.compiledProject is compiled
             assert plans.document is document and plans.revision == 1
+            assert runner.operatorExecutor.deviceScope == {'projectId': '1'}
+            assert runner.operatorExecutor.deviceIdentities['camera']['deviceGeneration'] == '1'
             assert c.requireCycle("job", root.cycleId) == 1 and not c.childCycles
         assert not c.cycles
     finally:

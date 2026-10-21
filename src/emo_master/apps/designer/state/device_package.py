@@ -43,9 +43,8 @@ def importDevices(session, package, deviceTypes, root):
     resources.validateDependencies(package)
     checked = {}
     for key, definition in package.devices.items():
-        declaration = deviceTypes.get(definition.deviceTypeId)
-        if declaration is None:
-            raise ValueError('设备类型插件不可用：' + definition.deviceTypeId)
+        from emo_master.core.project.device_resources import deviceDeclaration
+        declaration = deviceDeclaration(definition, deviceTypes, deviceId=key)
         declaration = declaration.model_copy(deep=True)
         for binding in package.resources.siteBindings:
             if binding.target.deviceId != key:

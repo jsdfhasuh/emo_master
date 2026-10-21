@@ -177,6 +177,38 @@ class DeviceManager:
             return []
         return list(declaration.managementActions)
 
+    def activitySnapshot(self, deviceId):
+        executor = self.executors[deviceId]
+        with executor.condition:
+            state = executor.snapshot()
+            operations = self.services[deviceId].snapshot()
+            owners = {op['ownerId'] for op in operations}
+            if executor.active:
+                owners.add(executor.active.owner)
+            state.update(activeOwners=sorted(owners), serviceOperations=operations,
+                         activeOwner=next(iter(owners)) if len(owners) == 1 else None,
+                         controlActivity=self.lifecycles[deviceId].controlPending)
+            if operations and state['state'] == 'IDLE':
+                state['state'] = 'BUSY'
+            return state
+
+    def rpcBudgetsMs(self, deviceId):
+        definition = self.definitions[deviceId]
+        declaration = self.types[definition.deviceTypeId]
+        policies = definition.policies
+        actions = {}
+        for action in declaration.managementActions:
+            if definition.deviceTypeId.startswith('device.tcp.'):
+                from emo_master.core.contracts.tcp_service import tcpActionBudget
+                budget = tcpActionBudget(definition.deviceTypeId, action, definition.defaults, policies)
+                actions[action] = budget['queueWaitMs'] + budget['actionBudgetMs']
+            elif declaration.operationScheduling == 'managed_service':
+                actions[action] = policies.get('operationTimeoutMs', 5000)
+            else:
+                actions[action] = policies.get('deviceWaitTimeoutMs', 5000) + int(connectionBudget(policies)*1000)
+        return dict(actions=actions, controls={action: (12000 if action == 'recover' else
+            30000 + int(connectionBudget(policies)*1000)) for action in declaration.controlCapabilities})
+
     def execute(self, owner, deviceId, action, params, *, cycleId, arguments=None, cancelled=lambda: False,
                 previewOnly=False, source=None, selectors=None, requestDeadline=None, requestId=None):
         if cancelled():
@@ -284,7 +316,7 @@ class DeviceManager:
             if service:
                 with executor.condition:
                     lifecycle.admit()
-                    operation = self.services[deviceId].admit(owner, cycleId)
+                    operation = self.services[deviceId].admit(owner, cycleId, action, requestId)
             else:
                 operation = None
             try:

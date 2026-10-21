@@ -302,9 +302,14 @@ class OperatorExecutor:
         return operator
 
     def bindingSnapshot(self, node):
-        return {slot: dict(deviceId=plan['deviceId'], selectors=dict(plan.get('selectors', {})),
-                           scope=dict(getattr(self, 'deviceScope', {})))
-                for slot, plan in node.devicePlans.items()}
+        result = {}
+        for slot, plan in node.devicePlans.items():
+            identity = getattr(self, 'deviceIdentities', {}).get(plan['deviceId'], {})
+            result[slot] = dict(deviceId=plan['deviceId'], selectors=deepcopy(plan.get('selectors', {})),
+                scope={key: identity[key] for key in ('runtimeInstanceId', 'projectId', 'projectLoadGeneration')
+                       if key in identity} or dict(getattr(self, 'deviceScope', {})),
+                deviceGeneration=identity.get('deviceGeneration', ''))
+        return result
 
     def disposeOperators(self) -> WorkflowExecutionError | None:
         self.coordinateSnapshots.clear()

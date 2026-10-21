@@ -53,6 +53,17 @@ def load(service, payload, tmp_path):
     assert result.ok, result.message
 
 
+def testF02NewServerReferenceIsAddedBeforeSelectorValidation(runtime):
+    service, _ = runtime
+    online = WorkflowStore().toPayload()
+    local = deepcopy(online)
+    local['devices']['definitions']['new-server'] = definition(service.pluginScanResult.deviceTypes['device.tcp.server'],
+        channels=[dict(channelId='a', name='A', allowedIps=['127.0.0.1'])])
+    local['workflows']['main']['nodes'].append(node('acquire', 'communication.tcp.session', 'new-server', selectors=dict(channelId='a')))
+    required = requiredProjectChanges(online, local, ['/workflows/main/nodes/acquire'])
+    assert set(required) == {'/devices/definitions/new-server'}
+
+
 @pytest.mark.parametrize('newDevice', [True, False])
 def testF02SelectorDependencyUsesDeviceDeclaration(runtime, newDevice):
     service, _ = runtime
@@ -80,7 +91,8 @@ def testF02SelectorDependencyUsesDeviceDeclaration(runtime, newDevice):
     assert candidate['project'] == online['project']
 
 
-def testF03ThirdPartyTcpGetsBridgeInSpawnedJob(runtime, tmp_path):
+@pytest.mark.parametrize('nested', [False, True])
+def testF03ThirdPartyTcpGetsBridgeInSpawnedJob(runtime, tmp_path, nested):
     service, client = runtime
     with socket.socket() as listener:
         listener.bind(('127.0.0.1', 0))
@@ -91,12 +103,41 @@ def testF03ThirdPartyTcpGetsBridgeInSpawnedJob(runtime, tmp_path):
             port=listener.getsockname()[1]))
         payload['workflows']['main'] = graph([node('send', 'closure.tcp.client', 'tcp', params=dict(text='CLOSURE', operation='send'))],
             [edge('send', 'sentBytes', 'output', 'sentBytes')], outputs=dict(sentBytes='integer'))
+        if nested:
+            payload['workflows']['child'] = payload['workflows']['main']
+            payload['workflows']['main'] = graph([dict(nodeId='child', kind='subflow', targetWorkflowId='child',
+                inputPorts={}, outputPorts=dict(sentBytes='integer'))], [edge('child', 'sentBytes', 'output', 'sentBytes')],
+                outputs=dict(sentBytes='integer'))
+            payload['workflowOrder'].append('child')
         load(service, payload, tmp_path)
         started = client.startJob(service.loadedProjectId, 'main')
         assert started.ok, started
         assert waitForTerminal(service, started.job_id).status == 'COMPLETED'
         with listener.accept()[0] as peer:
             assert peer.recv(100) == b'CLOSURE'
+
+
+def testF02NewServerAndBoundNodeSelectedPublicationRuns(runtime, tmp_path):
+    from tests.runtime.test_tcp_device_integration import publish, run, freePort
+    service, client = runtime
+    load(service, WorkflowStore().toPayload(), tmp_path)
+    before = client.getOnlineProjectSnapshot()['payload']
+    local = deepcopy(before)
+    value = definition(service.pluginScanResult.deviceTypes['device.tcp.server'], port=freePort(),
+        channels=[dict(channelId='a', name='A', allowedIps=['127.0.0.1'])])
+    value['policies']['connect'] = 'on_project_open'
+    local['devices']['definitions']['new-server'] = value
+    local['workflows']['main'] = graph([node('acquire', 'communication.tcp.session', 'new-server', selectors=dict(channelId='a'))])
+    local['project']['name'] = 'unselected name'
+    paths = ['/workflows/main/nodes/acquire']
+    required = requiredProjectChanges(before, local, paths, deviceTypes=service.pluginScanResult.deviceTypes,
+                                     operatorRegistry=service.pluginScanResult.activeOperators)
+    assert set(required) == {'/devices/definitions/new-server'}
+    receipt = publish(dict(service=service, client=client), local, paths+list(required), 'new-server')
+    assert receipt['connections']['new-server'] == 'LISTENING'
+    assert client.getOnlineProjectSnapshot()['payload']['project'] == before['project']
+    with socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=5):
+        run(service, client, 'main')
 
 
 @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])

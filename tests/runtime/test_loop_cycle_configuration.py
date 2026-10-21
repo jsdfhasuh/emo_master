@@ -96,7 +96,7 @@ def testIterationRestoresOuterCompiledPlanAndReleasesOnException(tmp_path):
     compiled = compiler.compile(document)
     runner = WorkflowRunner(compiled, scan.activeOperators)
     class Proxy:
-        def call(self, action, **fields):
+        def framework(self, action, **fields):
             return getattr(c, action)("job", **fields)
     plans = CyclePlanSession(runner, Proxy(), document, compiler, scan.activeOperators, (), 1, lambda: False)
     try:

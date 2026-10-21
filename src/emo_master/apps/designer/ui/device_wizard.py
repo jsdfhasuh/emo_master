@@ -36,9 +36,9 @@ def configurationSchema(schema):
     return schema
 
 
-def configurationForm(schema, values):
+def configurationForm(schema, values, *, deviceTypeId=None, section=None):
     schema = configurationSchema(schema)
-    if "channels" in schema.get("properties", {}):
+    if deviceTypeId == 'device.tcp.server' and section == 'connection':
         from .tcp_device_form import TcpConnectionForm
         form = TcpConnectionForm()
     else:
@@ -121,7 +121,8 @@ class DeviceDefinitionDialog(QDialog):
         self.forms = {}
         for key, title in (("connection", "连接"), ("defaults", "工作参数"), ("policies", "策略")):
             schema = getattr(declaration, key + "Schema")
-            self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})))
+            self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})),
+                deviceTypeId=declaration.deviceTypeId, section=key)
             self.tabs.addTab(scrollWidget(self.forms[key]), title)
         layout.addWidget(self.tabs)
         self.error = QLabel()

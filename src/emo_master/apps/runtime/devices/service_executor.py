@@ -1,7 +1,7 @@
 """Managed service calls run on their visiting IPC thread, sharing one device gate."""
 from concurrent.futures import Future
 from dataclasses import dataclass, field
-from threading import Condition, Event
+from threading import Event
 from time import monotonic
 from uuid import uuid4
 
@@ -18,12 +18,15 @@ class ServiceOperation:
 
 
 class ServiceExecutor:
-    def __init__(self):
-        self.condition = Condition()
+    def __init__(self, executor):
+        self.executor = executor
+        self.condition = executor.condition
         self.operations = {}
 
     def admit(self, owner, cycleId):
         with self.condition:
+            if self.executor.closed or self.executor.quarantined:
+                raise DeviceError('E_DEVICE_UNAVAILABLE', 'device is closed or quarantined')
             if len(self.operations) >= 64:
                 raise DeviceError('E_DEVICE_QUEUE_FULL', 'managed service action limit reached')
             operation = ServiceOperation(owner, cycleId)
@@ -34,6 +37,10 @@ class ServiceExecutor:
         try:
             result = action(lambda: cancelled() or operation.cancellation.is_set(), deadline, generation)
         except BaseException as error:
+            with self.condition:
+                if not isinstance(error, DeviceError) or error.unhealthy:
+                    self.executor.quarantined = True
+                    self.executor.lastError = str(error)
             operation.future.set_exception(error)
             raise
         else:

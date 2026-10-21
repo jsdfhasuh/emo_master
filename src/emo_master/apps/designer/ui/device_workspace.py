@@ -921,8 +921,9 @@ class DeviceWorkspace(QDialog):
                 schema = configurationSchema(getattr(declaration, key + "Schema"))
                 from .device_wizard import configurationForm
                 from .tcp_device_form import TcpConnectionForm
-                if isinstance(editor, TcpConnectionForm) != ('channels' in schema.get('properties', {})):
-                    newEditor = configurationForm(schema, self.original.get(key, {}))
+                if isinstance(editor, TcpConnectionForm) != (declaration.deviceTypeId == 'device.tcp.server' and key == 'connection'):
+                    newEditor = configurationForm(schema, self.original.get(key, {}),
+                        deviceTypeId=declaration.deviceTypeId, section=key)
                     self.formScrolls[key].takeWidget()
                     editor.deleteLater()
                     self.formScrolls[key].setWidget(newEditor)

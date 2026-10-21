@@ -122,7 +122,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             if devices is None:
                 raise RuntimeError("E_DEVICE_RUNTIME_UNAVAILABLE: Dispatch requires managed device IPC")
             deadline = time.monotonic() + 30
-            while not devices.call("dispatchReady"):
+            while not devices.framework("dispatchReady"):
                 token.raise_if_cancelled()
                 if time.monotonic() >= deadline:
                     raise RuntimeError("E_DISPATCH_START_TIMEOUT: consumers did not become ready")
@@ -211,7 +211,7 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
     try:
         while True:
             token.raise_if_cancelled()
-            invocation = devices.call("dispatchNext")
+            invocation = devices.framework("dispatchNext")
             if invocation["status"] == "CLOSED":
                 return
             if invocation["status"] == "IDLE":
@@ -231,12 +231,12 @@ def _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publish)
             except Exception as error:
                 if cancelEvent.is_set():
                     raise
-                devices.call("dispatchComplete", **identity, status="FAILED", outputs=None,
+                devices.framework("dispatchComplete", **identity, status="FAILED", outputs=None,
                              code=getattr(error, "code", "E_DISPATCH_CONSUMER"), message=str(error))
                 publish("dispatch.invocation.failed", context, str(error), level="ERROR",
                         code=getattr(error, "code", "E_DISPATCH_CONSUMER"))
                 raise
-            devices.call("dispatchComplete", **identity, status="COMPLETED", outputs=outputs)
+            devices.framework("dispatchComplete", **identity, status="COMPLETED", outputs=outputs)
             devices.frameCopies.clear()
             publish("dispatch.invocation.completed", context, "consumer invocation completed",
                     payload=dict(frameIds=list(invocation["frames"])))

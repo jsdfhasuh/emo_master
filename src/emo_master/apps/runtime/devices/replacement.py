@@ -79,7 +79,7 @@ class PreparedDevices:
             for key in self.changed:
                 manager.services.pop(key, None)
                 if key in self.definitions:
-                    manager.services[key] = ServiceExecutor()
+                    manager.services[key] = ServiceExecutor(manager.executors[key])
             manager.definitions, manager.identities = self.definitions, self.identities
             for key, definition in self.definitions.items():
                 manager.lifecycles[key].definition = definition

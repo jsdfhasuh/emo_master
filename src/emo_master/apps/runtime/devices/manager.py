@@ -125,7 +125,7 @@ class DeviceManager:
             self.drivers = {key: item[0] for key, item in prepared.items()}
             self.executors = {key: item[1] for key, item in prepared.items()}
             self.lifecycles = {key: item[2] for key, item in prepared.items()}
-            self.services = {key: ServiceExecutor() for key in definitions}
+            self.services = {key: ServiceExecutor(self.executors[key]) for key in definitions}
 
     def busy(self, deviceId=None, owner=None, cycleId=None):
         keys = [deviceId] if deviceId else list(self.executors)
@@ -282,7 +282,9 @@ class DeviceManager:
                     if reservation:
                         self.frames.discardReservation(reservation)
             if service:
-                operation = self.services[deviceId].admit(owner, cycleId)
+                with executor.condition:
+                    lifecycle.admit()
+                    operation = self.services[deviceId].admit(owner, cycleId)
             else:
                 operation = None
             try:
@@ -344,7 +346,7 @@ class DeviceManager:
                 self.lifecycles[key] = lifecycle
                 self.executors[key] = executor
                 from .service_executor import ServiceExecutor
-                self.services[key] = ServiceExecutor()
+                self.services[key] = ServiceExecutor(executor)
                 temporary = True
             self.authorizeMaintenance(owner, key)
             executor, lifecycle = self.executors[key], self.lifecycles[key]
@@ -675,6 +677,8 @@ class DeviceManager:
             replacement.paused = lifecycle.paused
             with self.lock:
                 self.drivers[deviceId], self.executors[deviceId], self.lifecycles[deviceId] = driver, executor, replacement
+                from .service_executor import ServiceExecutor
+                self.services[deviceId] = ServiceExecutor(executor)
         except BaseException:
             lifecycle.controlPending = False
             raise

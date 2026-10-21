@@ -14,7 +14,7 @@ class CyclePlanSession:
 
     @contextmanager
     def scope(self, context, *, parentCycleId=None):
-        cycle = self.devices.call("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
+        cycle = self.devices.framework("beginCycle", knownRevision=self.revision, parentCycleId=parentCycleId)
         previous = self.document, self.runner.compiledProject, self.revision
         try:
             self.install(cycle)
@@ -25,7 +25,7 @@ class CyclePlanSession:
                 # Code after the Loop still belongs to the outer cycle's plan.
                 self.document, self.runner.compiledProject, self.revision = previous
             if cycle["ownsCycle"] and not self.cancelled():
-                self.devices.call("endCycle", cycleId=cycle["cycleId"])
+                self.devices.framework("endCycle", cycleId=cycle["cycleId"])
 
     def iteration(self, context):
         return self.scope(context, parentCycleId=context.cycleId)

@@ -16,7 +16,7 @@ class DispatchRunner:
         if node.kind == "dispatch":
             self.sequence += 1
             encoded = self.devices.encode(inputs, context)
-            token = self.devices.call("dispatchSubmit", dispatchSequence=self.sequence,
+            token = self.devices.framework("dispatchSubmit", dispatchSequence=self.sequence,
                 workflowId=context.workflowId, nodeId=node.nodeId, cycleId=context.cycleId,
                 planRevision=context.planRevision, inputs=encoded["value"])
             self.publish("dispatch.accepted", context, "dispatch admission receipts", payload=token)
@@ -31,7 +31,7 @@ class DispatchRunner:
         deadline = time.monotonic() + node.params.get("timeoutMs", 30000) / 1000
         while True:
             cancellation.raise_if_cancelled()
-            result = self.devices.call("dispatchJoin", token=token, cycleId=context.cycleId,
+            result = self.devices.framework("dispatchJoin", token=token, cycleId=context.cycleId,
                                        planRevision=context.planRevision)
             if result["status"] != "WAITING":
                 self.publish("dispatch.joined", context, "dispatch target outcomes", payload=result)

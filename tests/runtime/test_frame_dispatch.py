@@ -384,7 +384,7 @@ def testMutatedCopiesUseNewRuntimeOwnedFrames(group):
             return store.beginWrite("source", fields["shape"], fields["cycleId"], request["planRevision"])
         assert action == "frameCommitWrite"
         return store.commitWrite("source", fields["frameId"])
-    proxy.call = call
+    proxy.framework = call
     context = SimpleNamespace(cycleId=request["cycleId"], planRevision=request["planRevision"])
     original = copyFrame(frame)
     proxy.rememberFrame(original, frame)

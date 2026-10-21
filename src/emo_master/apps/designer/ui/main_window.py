@@ -3646,6 +3646,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             self.operatorCatalogController.operatorCatalog = []
             self.operatorCatalogController.hasCatalog = False
             self._refreshBubbleOperators()
+            self.flowScene.refreshPresentations()
             self.refreshOperators(explicit=False)
         for result in self.operatorCatalogWorker.poll():
             if result.key[0] != provider.scope:
@@ -3669,6 +3670,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
                 QMessageBox.warning(self, "相机配置需要核查", message)
             self._setOperatorCatalogState("ready")
             self._refreshBubbleOperators()
+            self.flowScene.refreshPresentations()
             self._refreshNodeDetailsView()
             self.updateToolbarState()
 

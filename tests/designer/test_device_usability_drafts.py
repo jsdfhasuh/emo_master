@@ -259,3 +259,42 @@ def testPendingCameraReopensThroughCurrentEditorAndKeepsGraph(ownedDesignerWindo
     assert current['inputPorts'] == pending['inputPorts'] and current['outputPorts'] == pending['outputPorts']
     assert current['deviceOverrides']['camera']['gain'] == 0.
     assert c.session.workflows.get('main').layout['nodePositions']['pending-camera'] == dict(x=80., y=90.)
+
+
+def testPendingMarkerUpdatesWhenOperatorCatalogArrives(ownedDesignerWindow, tmp_path,
+        definition, declaration):  # noqa: F811
+    from threading import Event
+
+    window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    waitUntil(lambda: window.operatorCatalogController.state == 'ready')
+    c = window.pageCoordinator
+    editor = DeviceCatalogEditor(c.session, {declaration.deviceTypeId: declaration}, requirements)
+    editor.commitNode('main', dict(nodeId='pending-camera', operatorId='vision.io.huaray_camera'),
+                      allowIncomplete=True, position=dict(x=80., y=90.))
+    window.workflowController._renderActive()
+    scene = window.flowScene
+    item = scene._nodeItems['pending-camera']
+    item.setSelected(True)
+    assert ('绑定状态待检查', None) in item.model.summaryLines
+    before = c.session.payload()
+    release, entered = Event(), Event()
+
+    def delayedCatalog(**_kwargs):
+        entered.set()
+        assert release.wait(5)
+        return [SimpleNamespace(operatorId='vision.io.huaray_camera', displayName='相机',
+                                deviceRequirements=requirements['vision.io.huaray_camera'])]
+
+    window.runtimeClient.listOperators = delayedCatalog
+    try:
+        window.refreshOperators()
+        assert entered.wait(2)
+        release.set()
+        waitUntil(lambda: window.operatorCatalogController.state == 'ready')
+        current = scene._nodeItems['pending-camera']
+        assert ('待选择设备：camera', None) in current.model.summaryLines
+        assert ('绑定状态待检查', None) not in current.model.summaryLines
+        assert current.isSelected() and (current.pos().x(), current.pos().y()) == (80., 90.)
+        assert c.session.payload() == before
+    finally:
+        release.set()

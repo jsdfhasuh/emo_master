@@ -1,7 +1,11 @@
 """Existing device controls retain opening intent and show authoritative state."""
+import base64
+from concurrent.futures import ThreadPoolExecutor
 from copy import deepcopy
 import json
+import socket
 from threading import Event
+from time import monotonic, sleep
 from types import SimpleNamespace
 
 from PySide2.QtCore import Qt
@@ -22,7 +26,119 @@ from emo_master.ui.communication_panel import DeviceDiagnosticsView
 from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 from tests.designer.test_device_workspace import waitUntil
 from tests.runtime.test_tcp_device_closure import runtime, thirdParty  # noqa: F401
-from tests.runtime.test_tcp_device_integration import definition, graph, node, waitWrite
+from tests.runtime.test_tcp_device_integration import definition, freePort, graph, node, waitWrite
+
+
+@pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+@pytest.mark.parametrize('length', [512, 1025])
+def testTcpOnceResultLogsKeepBoundedPreview(runtime, retainedQtApplication, tmp_path, monkeypatch, kind, length):  # noqa: F811
+    service, _ = runtime
+    manager = DeviceManager(service.pluginScanResult.deviceTypes)
+    writer = RuntimeJsonlLogWriter(tmp_path/'once-byte-logs')
+    manager.diagnostics.writer = writer
+    queued = []
+    enqueue = writer.enqueue
+    def capture(event):
+        queued.append(event)
+        return enqueue(event)
+    monkeypatch.setattr(writer, 'enqueue', capture)
+    data = (b'ordinary single transaction text 0123456789 ' * 30)[:length]
+    source = dict(workflowId='main', nodeId='once-node', slot='tcp')
+    value = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=freePort())
+    value['defaults'].update(expectedBytes=length)
+    value['defaults']['responseFraming' if kind == 'client_once' else 'framing'] = 'fixedLength'
+    payload = WorkflowStore().toPayload()
+    payload['devices']['definitions'] = dict(once=value)
+    view = DeviceDiagnosticsView()
+    listener = socket.socket()
+    try:
+        manager.load(ProjectDocument.model_validate(payload))
+        manager.authorize('once-job', ['once'])
+        if kind == 'client_once':
+            listener.bind(('127.0.0.1', value['connection']['port']))
+            listener.listen(1)
+            listener.settimeout(5)
+
+        def peer():
+            if kind == 'client_once':
+                connection = listener.accept()[0]
+            else:
+                deadline = monotonic()+5
+                while True:
+                    try:
+                        connection = socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=1)
+                        break
+                    except ConnectionRefusedError:
+                        if monotonic() >= deadline:
+                            raise
+                        sleep(.01)
+            with connection:
+                connection.settimeout(5)
+                if kind == 'client_once':
+                    received = b''
+                    while len(received) < 4:
+                        block = connection.recv(4-len(received))
+                        assert block
+                        received += block
+                    assert received == b'PING'
+                connection.sendall(data)
+
+        with ThreadPoolExecutor(max_workers=1) as peers:
+            remote = peers.submit(peer)
+            result = manager.execute('once-job', 'once', 'exchange' if kind == 'client_once' else 'receive',
+                manager.definitions['once'].defaults, cycleId='once-cycle', source=source, requestId='once-request',
+                arguments=dict(dataBase64=base64.b64encode(b'PING').decode('ascii')) if kind == 'client_once' else {})
+            remote.result(timeout=5)
+        assert base64.b64decode(result['dataBase64']) == data
+        manager.waitOwner('once-job')
+        state = manager.drivers['once'].snapshot()
+        assert state['state'] == 'TRANSACTION_READY' and not state['ownsResources']
+        assert not manager.drivers['once'].sockets and not manager.busy()
+        waitUntil(lambda: bool(manager.diagnostics.query(manager.scope, 'once')['records']))
+        page = manager.diagnostics.query(manager.scope, 'once')
+        row, = page['records']
+        assert row['eventType'] == 'device.action.completed'
+        assert row['ownerId'] == 'once-job' and row['cycleId'] == 'once-cycle'
+        assert row['source'] == source and row['requestId'] == 'once-request'
+        assert row['deviceGeneration'] == manager.executors['once'].generation
+        assert all(row[key] == val for key, val in manager.scope.items())
+        preview = row['result']
+        expected = data[:1024]
+        assert preview['bytes'] == length
+        assert bytes.fromhex(preview['dataHex']) == expected
+        assert preview['dataTruncated'] is (length > 1024)
+        assert len(bytes.fromhex(preview['dataHex'])) <= 1024
+        assert row['fieldsTruncated'] is True
+        assert len(row['preview'].encode('utf-8')) <= 1000
+        assert 'dataBase64' not in json.dumps(row)
+        if kind == 'client_once':
+            assert result['sentBytes'] == preview['sentBytes'] == state['lastResult']['bytesSent'] == 4
+        view.setPage(page)
+        assert view.records.topLevelItemCount() == 1
+        view.records.setCurrentItem(view.records.topLevelItem(0))
+        for index in (0, 1, 0, 1):
+            view.format.setCurrentIndex(index)
+            rendered = view.details.toPlainText()
+            assert rendered.splitlines()[0] == (repr(expected.decode('utf-8', errors='replace')) if index else expected.hex())
+            assert ('[原始数据已截断]' in rendered) is (length > 1024)
+            assert '[部分诊断字段已截断]' in rendered
+        manager.diagnostics.query(manager.scope, 'once')
+        (tmp_path/'once-preview.json').write_text(json.dumps(dict(kind=kind, responseBytes=length,
+            row=row, driverState=state, hex=expected.hex(), utf8=rendered), ensure_ascii=False, indent=2), encoding='utf-8')
+    finally:
+        listener.close()
+        view.close()
+        manager.close()
+        assert writer.close() is None
+    persisted = [json.loads(line) for path in (tmp_path/'once-byte-logs').glob('runtime-*.jsonl')
+                 for line in path.read_text(encoding='utf-8').splitlines()]
+    event, = persisted
+    queuedEvent, = queued
+    assert json.loads(queuedEvent.payloadJson) == row
+    # The operational writer summarizes *.completed payloads; viewing must not
+    # enqueue or persist the original device event a second time.
+    assert event['eventType'] == queuedEvent.eventType == 'device.action.completed'
+    assert event['timestampMs'] == row['timestampMs']
 
 
 @pytest.mark.parametrize('length', [32, 512, 1025])

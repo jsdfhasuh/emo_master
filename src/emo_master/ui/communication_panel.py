@@ -254,7 +254,8 @@ def recordDetails(record, *, utf8=False):
     data = record.get('dataHex') or (result.get('dataHex', '') if isinstance(result, dict) else '')
     if utf8 and data:
         data = repr(bytes.fromhex(data).decode('utf-8', errors='replace'))
-    return data + ('\n[原始数据已截断]' if record.get('truncated') else '') + (
+    byteTruncated = record.get('truncated') or (isinstance(result, dict) and result.get('dataTruncated'))
+    return data + ('\n[原始数据已截断]' if byteTruncated else '') + (
         '\n[部分诊断字段已截断]' if record.get('fieldsTruncated') else '') + '\n' + json.dumps(
         {key: value for key, value in record.items() if key != 'dataHex'}, ensure_ascii=False, indent=2)
 

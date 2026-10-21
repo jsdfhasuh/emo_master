@@ -17,9 +17,11 @@ def compactResult(value):
     encoded = value.get('dataBase64')
     if isinstance(encoded, str):
         import base64
-        data = base64.b64decode(encoded[:1368])[:1024]
+        byteCount = len(encoded) // 4 * 3 - encoded[-2:].count('=')
+        previewChars = 4 * ((MAX_BYTE_PREVIEW + 2) // 3)
+        data = base64.b64decode(encoded[:previewChars])[:MAX_BYTE_PREVIEW]
         result.update(dataUtf8=data.decode('utf-8', errors='replace'), dataHex=data.hex(),
-                      dataTruncated=len(encoded) > 1368)
+                      bytes=byteCount, dataTruncated=byteCount > MAX_BYTE_PREVIEW)
     return result
 
 
@@ -48,6 +50,13 @@ class DeviceDiagnostics:
                         'planRevision', 'workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'iterationPath',
                         'operatorId', 'sequence', 'kind', 'channelId', 'bytes', 'dataHex', 'truncated',
                         'serviceGeneration', 'connectionGeneration', 'outcome', 'receipt') if key in fields}
+            result = fields.get('result')
+            if isinstance(result, dict) and isinstance(result.get('dataHex'), str):
+                data = bytes.fromhex(result['dataHex'])
+                retained['result'] = dict(
+                    dataHex=data[:MAX_BYTE_PREVIEW].hex(),
+                    dataTruncated=bool(result.get('dataTruncated')) or len(data) > MAX_BYTE_PREVIEW,
+                    **{key: result[key] for key in ('bytes', 'sentBytes') if isinstance(result.get(key), int)})
             receipt = fields.get('diagnostics', {}).get('tcpReceipt')
             transaction = fields.get('diagnostics', {}).get('tcpTransaction')
             if receipt is None and isinstance(fields.get('result'), dict) and fields['result'].get('type') == 'tcpSendReceipt':

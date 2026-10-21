@@ -1,4 +1,5 @@
 """Frozen log attribution, authoritative activity, precise errors and RPC budgets."""
+import base64
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import replace
 import json
@@ -11,7 +12,7 @@ import pytest
 
 from emo_master.apps.designer.services.runtime_client import RuntimeClient
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
-from emo_master.apps.runtime.devices.diagnostics import DeviceDiagnostics
+from emo_master.apps.runtime.devices.diagnostics import DeviceDiagnostics, compactResult
 from emo_master.apps.runtime.events.models import RuntimeEvent
 from emo_master.apps.runtime.grpc_server.generated import runtime_pb2 as pb, runtime_pb2_grpc
 from emo_master.apps.runtime.grpc_server.service import RuntimeService
@@ -24,6 +25,29 @@ from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError
 from tests.runtime.test_tcp_device_closure import BUILTINS, runtime, thirdParty  # noqa: F401
 from tests.runtime.test_tcp_device_integration import definition, graph, node
+
+
+@pytest.mark.parametrize('length', [1024, 1025, 1026, 1027])
+def testCompactResultUsesExactOriginalByteLength(length):
+    data = b'x'*length
+    result = compactResult(dict(dataBase64=base64.b64encode(data).decode('ascii'), sentBytes=4))
+    assert result['dataTruncated'] is (length > 1024)
+    assert result['bytes'] == length and result['sentBytes'] == 4
+    assert bytes.fromhex(result['dataHex']) == data[:1024]
+    assert result['dataUtf8'] == data[:1024].decode('utf-8')
+    assert 'dataBase64' not in result
+
+
+def testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts():
+    diagnostics = DeviceDiagnostics()
+    scope = dict(runtimeInstanceId='runtime', projectId='project', projectLoadGeneration='load')
+    diagnostics.append(scope, 'once', 'device.action.completed', 'exchange', result=dict(
+        dataHex=(b'x'*2048).hex(), bytes=2048, sentBytes=4, dataTruncated=False,
+        opaque=dict(unbounded='y'*100000), dataUtf8='z'*100000))
+    row, = diagnostics.query(scope, 'once')['records']
+    assert row['fieldsTruncated'] is True
+    assert len(row['preview'].encode('utf-8')) <= 1000
+    assert row['result'] == dict(dataHex=(b'x'*1024).hex(), bytes=2048, sentBytes=4, dataTruncated=True)
 
 
 @pytest.mark.parametrize('large', [False, True])

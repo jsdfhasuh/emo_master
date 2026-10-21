@@ -1,0 +1,383 @@
+{
+  "baseline": "756e526c1d2c657b3ff793fed7abe904d38b8d48",
+  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "sourceTree": "38a0f6252ddb7acf3019c4766d1af59f98614e55",
+  "workingTree": false,
+  "workingTreeStatus": "M docs/guides/device-catalog-contract-v1.md\n M docs/guides/device-dispatch-online-configuration.md\n M docs/guides/project-tcp-service.md\n M docs/plans/2026-10-20-tcp-device-integration-plan-v1.md\n M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M src/emo_master/core/project/runtime_directory.py\n M src/emo_master/plugins/builtins/image_saver/manifest.json\n M src/emo_master/plugins/builtins/image_saver/operator.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/core/test_runtime_directory.py\n M tests/plugins/test_image_saver_operator.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-device-usability-improvement/\n?? docs/image-saver.md\n?? docs/plans/2026-10-21-device-usability-improvement-plan-v1.md\n?? docs/testing/2026-10-21-image-saver-filename-validation.md\n?? docs/testing/2026-10-21-video-loader-validation.md\n?? docs/video-loader.md\n?? examples/video_sample_while/\n?? examples/video_yolo_crop_operators/\n?? src/emo_master/plugins/builtins/video_loader/\n?? tests/designer/test_image_saver_form.py\n?? tests/designer/test_video_loader_form.py\n?? tests/plugins/test_video_loader_operator.py\n?? tests/runtime/test_image_saver_filename.py\n?? tests/runtime/test_video_sample_while.py",
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "exported": [
+    {
+      "path": "src/emo_master/apps/designer/page_designer/coordinator.py",
+      "blob": "ae362f0d1ae0455f99fd8b52dce2508a48cebf95",
+      "committedBlob": "ae362f0d1ae0455f99fd8b52dce2508a48cebf95",
+      "matchesSourceCommit": true,
+      "sha256": "31bb17d0ea6eb019190087b6bf266dfebcaf3ab7e8b77b8b08dc365e2155fb0d"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/device_catalog.py",
+      "blob": "8958c34769fc527b940a6828ea74f298f9c433ea",
+      "committedBlob": "8958c34769fc527b940a6828ea74f298f9c433ea",
+      "matchesSourceCommit": true,
+      "sha256": "d5419dfe355b866818a8f211819ad1ee439f1926578f47919d3ccb7a83270c32"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/device_package.py",
+      "blob": "32f8c1689b932d39623daf8c3123a37b874385d2",
+      "committedBlob": "32f8c1689b932d39623daf8c3123a37b874385d2",
+      "matchesSourceCommit": true,
+      "sha256": "230f8457f5963ccecbbc3636161535b6f2b8bdaf0d7ae8759aecfcf630a8a4b9"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/workflow_package.py",
+      "blob": "edcd91cf6f2e648cadf687ed01aff4e2b4ac1c83",
+      "committedBlob": "edcd91cf6f2e648cadf687ed01aff4e2b4ac1c83",
+      "matchesSourceCommit": true,
+      "sha256": "09661cfbdefec2646c30aac3447cfcd2ea7a0fc29026e0c90884661fd6beee12"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_wizard.py",
+      "blob": "0d79a3e61f05099f21fccb4e969d93171fadd118",
+      "committedBlob": "0d79a3e61f05099f21fccb4e969d93171fadd118",
+      "matchesSourceCommit": true,
+      "sha256": "20d1b3f97563e470a4427b12911e6cafbdf88d7580c44ece465fb9eaa38ebfdd"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "blob": "12f90f33aaeb0afb209c7c066d63e4a6c980939e",
+      "committedBlob": "12f90f33aaeb0afb209c7c066d63e4a6c980939e",
+      "matchesSourceCommit": true,
+      "sha256": "068adc7cedd5efd9a52eb74d6a8f4ba4b2b20407a37900910514f26c489e8081"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/main_window.py",
+      "blob": "6a4ebc3482f0bec71f918a48a232fe5407756fd4",
+      "committedBlob": "6a4ebc3482f0bec71f918a48a232fe5407756fd4",
+      "matchesSourceCommit": true,
+      "sha256": "6371a4bbbfeeaa0220f97f9ab25783018da549d33dd6a5695e0a25932feac6ff"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/param_form.py",
+      "blob": "70f4efe6498a3dc32bc396bb866f954e6261dcf7",
+      "committedBlob": "70f4efe6498a3dc32bc396bb866f954e6261dcf7",
+      "matchesSourceCommit": true,
+      "sha256": "f74852c1fe600e0022376f1d7248e2fcb5cf0a2413b73ed8f0d511dfb38e2fc3"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "blob": "8a133f900e76c9fc0fbaf952d086cb96b428e12d",
+      "committedBlob": "8a133f900e76c9fc0fbaf952d086cb96b428e12d",
+      "matchesSourceCommit": true,
+      "sha256": "09d15e2a363ffe105a793fef24fb703d5cd1e40fcdf5237eaa18fdfa20ff8cbd"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/tcp_device_form.py",
+      "blob": "2ffe19788b0efeda0893949c5d946caf0e886742",
+      "committedBlob": "2ffe19788b0efeda0893949c5d946caf0e886742",
+      "matchesSourceCommit": true,
+      "sha256": "1d52c9adee9d357627eec71177f29a5e7326beb779bea66f8251fa5d5a6745be"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "blob": "f1219d99adca5f05ada4a2cf2949b88d9cd69b5f",
+      "committedBlob": "f1219d99adca5f05ada4a2cf2949b88d9cd69b5f",
+      "matchesSourceCommit": true,
+      "sha256": "63addd615c92ba1803e37ac073d0828e3c91a05996ebc226741cd6417b4aa91e"
+    },
+    {
+      "path": "src/emo_master/core/plugin/devices.py",
+      "blob": "3068cd22a2e292682f721d8088f5dd80cb8f5924",
+      "committedBlob": "3068cd22a2e292682f721d8088f5dd80cb8f5924",
+      "matchesSourceCommit": true,
+      "sha256": "341d26f9765f3be8684c54ef025bad065502c060e160719f452b391f1d8da758"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_tcp_transport.py",
+      "blob": "29df091012640a6cbf7230a4136fae0f0ae870a4",
+      "committedBlob": "29df091012640a6cbf7230a4136fae0f0ae870a4",
+      "matchesSourceCommit": true,
+      "sha256": "a7221da5a7dded49873c4533ee7a9c8d5417920ce2b6cf372727833772df5035"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json",
+      "blob": "5c802e16d7be9db46672e9228bfcc97954ad8372",
+      "committedBlob": "5c802e16d7be9db46672e9228bfcc97954ad8372",
+      "matchesSourceCommit": true,
+      "sha256": "07cec0e6ee3a3df823b4616555918bd522d99f62fd0ca786da8dbd3011816bd2"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/plc_slmp_read/device_types/slmp.json",
+      "blob": "ccd27bb408465544177f8fb5435dc5a71e482ade",
+      "committedBlob": "ccd27bb408465544177f8fb5435dc5a71e482ade",
+      "matchesSourceCommit": true,
+      "sha256": "52c5f26dee89c80a67b36a9f9be6f94e9e00e942e6e09e43b450243a4a141a81"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/simulated_camera/device_types/camera.json",
+      "blob": "5a0946b42e1d8117f73970c1101c4d5042cf75cb",
+      "committedBlob": "5a0946b42e1d8117f73970c1101c4d5042cf75cb",
+      "matchesSourceCommit": true,
+      "sha256": "0c5cccb55c0a984531be7dc7b05e7e8c8e92f9cecdc6be7d33e06fde8d57ca8e"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_client/device_types/client_once.json",
+      "blob": "19e7b03eda985301bf52831cb5747e896698e8d3",
+      "committedBlob": "19e7b03eda985301bf52831cb5747e896698e8d3",
+      "matchesSourceCommit": true,
+      "sha256": "117347fd6c281a173299b039e7d97838b6b182ecfadea1be0865f17ade2dfb54"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_receive_once/device_types/receive_once.json",
+      "blob": "436d19dfdebb2a62aafd31bdf6849650d3bf29dd",
+      "committedBlob": "436d19dfdebb2a62aafd31bdf6849650d3bf29dd",
+      "matchesSourceCommit": true,
+      "sha256": "bd8bac078dacc9ff9f49aa0a677bb712700134bea0af5eb652cea16a24c97f67"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/tcp_session/device_types/server.json",
+      "blob": "e9c4181d2751df5602f405abf19c691ab0788ca7",
+      "committedBlob": "e9c4181d2751df5602f405abf19c691ab0788ca7",
+      "matchesSourceCommit": true,
+      "sha256": "b484ac2d18dbd630d177e6bbdf543c2a043d74ba3c961d8d9dda300e9dec500d"
+    },
+    {
+      "path": "tests/designer/test_device_catalog.py",
+      "blob": "faf919c5b971341dbf0e3431ec97f5059e335e9a",
+      "committedBlob": "faf919c5b971341dbf0e3431ec97f5059e335e9a",
+      "matchesSourceCommit": true,
+      "sha256": "915fd29dcc508488eabe63c5c187e799582320b747e8c10fe0966b43b0efe9ae"
+    },
+    {
+      "path": "tests/designer/test_device_definition_feedback.py",
+      "blob": "0b44ba735c148cf144ed4b61f146bfb70203d64a",
+      "committedBlob": "0b44ba735c148cf144ed4b61f146bfb70203d64a",
+      "matchesSourceCommit": true,
+      "sha256": "8d328f0adaeddbccfff3eb6d2548e9a53de09c52ce5ae5414ee6adb9efb6d81c"
+    },
+    {
+      "path": "tests/designer/test_device_project_open.py",
+      "blob": "766948108f7fc1b8def17a5a6dcfa00fbbb60950",
+      "committedBlob": "766948108f7fc1b8def17a5a6dcfa00fbbb60950",
+      "matchesSourceCommit": true,
+      "sha256": "8b41847bfe69f21aafcaa5e2262e4c69ec95e30db06c3e027a2eeeb3f0e75cf9"
+    },
+    {
+      "path": "tests/designer/test_device_usability_drafts.py",
+      "blob": "889a174d2521893e30fc33660e31564e5e2e770b",
+      "committedBlob": "889a174d2521893e30fc33660e31564e5e2e770b",
+      "matchesSourceCommit": true,
+      "sha256": "cad081d067e14ddbe23fd1ac3bdf31a99890e99bc44b3248a7c614e2bc85d386"
+    },
+    {
+      "path": "tests/designer/test_device_usability_publication.py",
+      "blob": "2d0c4605f2145589669ff7bfe9993304bec8ad2b",
+      "committedBlob": "2d0c4605f2145589669ff7bfe9993304bec8ad2b",
+      "matchesSourceCommit": true,
+      "sha256": "6c29f5878c603352766d0cc0829de8cbbc017a4bb25334944d55cecb672b1ec1"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_sizing.py",
+      "blob": "9ca694ab8641ae40707ccfcfbd416e2d2c893036",
+      "committedBlob": "9ca694ab8641ae40707ccfcfbd416e2d2c893036",
+      "matchesSourceCommit": true,
+      "sha256": "facc64e4455f561b0e5eab16f870fc0445ebd806899a14b1fdd8745363636b95"
+    },
+    {
+      "path": "tests/designer/test_device_workspace_usability.py",
+      "blob": "23807d30af9fdcecc2105a9d5d64a65f306e17cd",
+      "committedBlob": "23807d30af9fdcecc2105a9d5d64a65f306e17cd",
+      "matchesSourceCommit": true,
+      "sha256": "447e725e8c016ff5bcb7c43115c76b3ebafb0f893b10a044d7e8acdc817ef09c"
+    },
+    {
+      "path": "tests/runtime/test_device_usability_chain.py",
+      "blob": "db207e3355c432f7a045b04364d03d8f0776b460",
+      "committedBlob": "db207e3355c432f7a045b04364d03d8f0776b460",
+      "matchesSourceCommit": true,
+      "sha256": "b98037e834648094c46747a49d6a2bf27f02d2a28ddbaded860cc4d016685ed4"
+    }
+  ],
+  "runnerSha256": "0f2de3c37ad5a1b30a5027052d89b34550feb5124cbe3d379cd749267a307e3f",
+  "environment": {
+    "PYTHONPATH": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source\\src;C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf"
+  },
+  "commands": [
+    {
+      "label": "environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import emo_master,sys,json,PySide2; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); import os; assert os.path.samefile(Path(emo_master.__file__).parent.parent, Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:19:32.484688+08:00",
+      "elapsedSeconds": 0.469,
+      "exitCode": 0,
+      "log": "environment.log"
+    },
+    {
+      "label": "chain",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\final-snapshot-delivery\\chain.xml",
+        "tests/runtime/test_tcp_device_integration.py",
+        "tests/runtime/test_tcp_device_closure.py",
+        "tests/runtime/test_device_contract_closure.py",
+        "tests/runtime/test_device_feedback_closure.py",
+        "tests/designer/test_tcp_closure_ui.py",
+        "tests/runtime/test_device_usability_chain.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:19:32.958344+08:00",
+      "elapsedSeconds": 87.906,
+      "exitCode": 0,
+      "log": "chain.log"
+    },
+    {
+      "label": "regression",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\regression",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\final-snapshot-delivery\\regression.xml",
+        "--deselect=tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated",
+        "tests/runtime/test_frame_dispatch.py",
+        "tests/runtime/test_project_configuration.py",
+        "tests/runtime/test_loop_cycle_configuration.py",
+        "tests/runtime/test_operator_logging.py",
+        "tests/runtime/test_device_runtime.py",
+        "tests/runtime/test_device_ipc_retirement.py",
+        "tests/runtime/test_configuration_owners.py",
+        "tests/runtime/test_initial_project_configuration.py",
+        "tests/designer/test_runtime_validation_feedback.py",
+        "tests/designer/test_project_configuration_ui.py",
+        "tests/designer/test_device_workspace.py",
+        "tests/core/project/test_configuration.py",
+        "tests/runtime/test_device_plan_completion.py",
+        "tests/designer/test_device_definition_feedback.py",
+        "tests/designer/test_device_workspace_usability.py",
+        "tests/designer/test_device_workspace_sizing.py",
+        "tests/designer/test_device_usability_publication.py",
+        "tests/designer/test_device_usability_drafts.py",
+        "tests/designer/test_device_catalog.py",
+        "tests/designer/test_device_project_open.py",
+        "tests/designer/test_device_finish_ui.py",
+        "tests/designer/test_device_plan_completion_ui.py",
+        "tests/designer/test_device_package.py",
+        "tests/designer/test_workflow_package_devices.py",
+        "tests/designer/test_workflow_package_resources.py",
+        "tests/designer/test_device_identity_reuse.py",
+        "tests/designer/test_param_form.py",
+        "tests/core/plugin/test_device_registry.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:21:00.857332+08:00",
+      "elapsedSeconds": 134.344,
+      "exitCode": 0,
+      "log": "regression.log"
+    },
+    {
+      "label": "ruff",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "src/emo_master/apps/designer/page_designer/coordinator.py",
+        "src/emo_master/apps/designer/state/device_catalog.py",
+        "src/emo_master/apps/designer/state/device_package.py",
+        "src/emo_master/apps/designer/state/workflow_package.py",
+        "src/emo_master/apps/designer/ui/device_wizard.py",
+        "src/emo_master/apps/designer/ui/device_workspace.py",
+        "src/emo_master/apps/designer/ui/main_window.py",
+        "src/emo_master/apps/designer/ui/param_form.py",
+        "src/emo_master/apps/designer/ui/project_configuration.py",
+        "src/emo_master/apps/designer/ui/tcp_device_form.py",
+        "src/emo_master/apps/runtime/devices/tcp.py",
+        "src/emo_master/core/plugin/devices.py",
+        "src/emo_master/plugins/builtins/_tcp_transport.py",
+        "tests/designer/test_device_catalog.py",
+        "tests/designer/test_device_definition_feedback.py",
+        "tests/designer/test_device_project_open.py",
+        "tests/designer/test_device_usability_drafts.py",
+        "tests/designer/test_device_usability_publication.py",
+        "tests/designer/test_device_workspace_sizing.py",
+        "tests/designer/test_device_workspace_usability.py",
+        "tests/runtime/test_device_usability_chain.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:23:15.203509+08:00",
+      "elapsedSeconds": 0.156,
+      "exitCode": 0,
+      "log": "ruff.log"
+    },
+    {
+      "label": "mypy",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "mypy",
+        "src/emo_master/apps/designer/page_designer/coordinator.py",
+        "src/emo_master/apps/designer/state/device_catalog.py",
+        "src/emo_master/apps/designer/state/device_package.py",
+        "src/emo_master/apps/designer/state/workflow_package.py",
+        "src/emo_master/apps/designer/ui/device_wizard.py",
+        "src/emo_master/apps/designer/ui/device_workspace.py",
+        "src/emo_master/apps/designer/ui/main_window.py",
+        "src/emo_master/apps/designer/ui/param_form.py",
+        "src/emo_master/apps/designer/ui/project_configuration.py",
+        "src/emo_master/apps/designer/ui/tcp_device_form.py",
+        "src/emo_master/apps/runtime/devices/tcp.py",
+        "src/emo_master/core/plugin/devices.py",
+        "src/emo_master/plugins/builtins/_tcp_transport.py"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:23:15.359604+08:00",
+      "elapsedSeconds": 8.859,
+      "exitCode": 0,
+      "log": "mypy.log"
+    },
+    {
+      "label": "proto",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "scripts/gen_proto.py",
+        "--check"
+      ],
+      "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\source",
+      "started": "2026-10-21T22:23:24.212895+08:00",
+      "elapsedSeconds": 0.235,
+      "exitCode": 0,
+      "log": "proto.log"
+    },
+    {
+      "label": "diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "756e526c1d2c657b3ff793fed7abe904d38b8d48",
+        "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T22:23:24.463460+08:00",
+      "elapsedSeconds": 0.078,
+      "exitCode": 0,
+      "log": "diff-check.log"
+    }
+  ],
+  "entryPointSha256": "fb64fb195f6235143923be6ceb23eeca956523537adb0473c23ee733539561d1"
+}

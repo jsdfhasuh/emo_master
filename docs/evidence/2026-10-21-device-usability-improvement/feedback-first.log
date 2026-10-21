@@ -1,0 +1,63 @@
+.........FF                                                              [100%]
+================================== FAILURES ===================================
+__________ testPendingCameraReopensThroughCurrentEditorAndKeepsGraph __________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001D49D736860>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2747/testPendingCameraReopensThroug0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D49D96C700>
+
+    def testPendingCameraReopensThroughCurrentEditorAndKeepsGraph(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch):  # noqa: F811
+        window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        editor = DeviceCatalogEditor(c.session, {declaration.deviceTypeId: declaration}, requirements)
+        pending = dict(nodeId='pending-camera', operatorId='vision.io.huaray_camera', params={},
+                       inputPorts={'gain': 'number'}, outputPorts={'frame': 'image'},
+                       paramSchema=dict(type='object', properties={}, xDeviceActionFields=[]))
+        editor.commitNode('main', pending, allowIncomplete=True, position=dict(x=40., y=50.))
+        source = tmp_path / 'pending.emoproj'
+        assert window.saveProjectToDirectory(str(source))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+>       window.flowScene._applyPositions({'pending-camera': (80., 90.)})
+
+tests\designer\test_device_usability_drafts.py:165: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.ui.flow_scene.FlowScene(0x1d49eee3d20) at 0x000001D4A0554100>
+positions = {'pending-camera': (80.0, 90.0)}
+
+    def _applyPositions(self, positions: dict[str, tuple[float, float]]) -> None:
+        self._routeTimer.stop()
+        self._routeBatch = True
+        try:
+            for nodeId, (x, y) in positions.items():
+>               self._nodeItems[nodeId].setPos(x, y)
+E               KeyError: 'pending-camera'
+
+src\emo_master\apps\designer\ui\flow_scene.py:1271: KeyError
+_________ testConnectionRefusalReachesBothEditorsAsActionableFeedback _________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001D4A048A5C0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001D4A048AE60>)
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x1d4ff7b7900) at 0x000001D49D735230>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001D4A048AE30>
+
+    def testConnectionRefusalReachesBothEditorsAsActionableFeedback(runtime, retainedQtApplication, monkeypatch):  # noqa: F811
+        from emo_master.apps.designer.ui.device_wizard import deviceErrorMessage
+        service, client = runtime
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.client_once'], port=freePort())
+        with pytest.raises(RuntimeError) as refused:
+            client.deviceNetworkCommand('', service.runtimeInstanceId, 'test_connection',
+                                        payload=dict(confirmed=True, definition=value))
+>       assert refused.value.code == 'E_DEVICE_CONNECTION_REFUSED'
+E       AssertionError: assert 'E_NETWORK_REQUEST' == 'E_DEVICE_CONNECTION_REFUSED'
+E         
+E         - E_DEVICE_CONNECTION_REFUSED
+E         + E_NETWORK_REQUEST
+
+tests\runtime\test_device_usability_chain.py:209: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testPendingCameraReopensThroughCurrentEditorAndKeepsGraph
+FAILED tests/runtime/test_device_usability_chain.py::testConnectionRefusalReachesBothEditorsAsActionableFeedback
+2 failed, 9 passed in 5.47s

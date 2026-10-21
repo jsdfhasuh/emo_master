@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="2" skipped="0" tests="2" time="2.856" timestamp="2026-10-21T21:56:21.646769+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_publication" name="testPublicationReturnPreservesDeviceListViewport[0]" time="1.248"><failure message="assert 0 == 12&#10; +  where 0 = &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480&gt;()&#10; +    where &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480&gt; = &lt;PySide2.QtWidgets.QScrollBar(0x25a65937bc0) at 0x0000025A64B9F480&gt;.value">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000025A63EA20B0&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2760/testPublicationReturnPreserves0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000025A63EA1ED0&gt;
+offset = 0
+
+    @pytest.mark.parametrize('offset', [0, 1])
+    def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch, offset):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        with c.session.transaction():
+            for index in range(24):
+                c.session.workflows.devices['definitions'][f'copy-{index}'] = definition.model_copy(
+                    update={'name': f'导入副本 {index + 1}', 'enabled': False}).model_dump()
+        c.showDevices()
+        d = c.devices
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        for column in range(d.table.columnCount()):
+            d.table.setColumnWidth(column, 180)
+        QApplication.processEvents()
+        bar = d.table.horizontalScrollBar()
+        assert bar.maximum() &gt; offset
+        bar.setValue(offset)
+        vertical = d.table.verticalScrollBar()
+        assert vertical.maximum() &gt; 1
+        vertical.setValue(vertical.maximum() // 2)
+        tablePosition = vertical.value()
+        treeBar = d.tree.verticalScrollBar()
+        treeBar.setValue(treeBar.maximum())
+        treePosition = treeBar.value()
+        calls = []
+        monkeypatch.setattr(c, 'configureRuntime', lambda: calls.append(True))
+        d.buttons['publish'].click()
+        waitUntil(lambda: bool(calls) and d.isVisible())
+        QApplication.processEvents()
+        assert d.selectedId == 'camera'
+        assert bar.value() == offset
+        assert vertical.value() == tablePosition
+&gt;       assert treeBar.value() == treePosition
+E       assert 0 == 12
+E        +  where 0 = &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480&gt;()
+E        +    where &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A64B9F480&gt; = &lt;PySide2.QtWidgets.QScrollBar(0x25a65937bc0) at 0x0000025A64B9F480&gt;.value
+
+tests\designer\test_device_usability_publication.py:80: AssertionError</failure></testcase><testcase classname="tests.designer.test_device_usability_publication" name="testPublicationReturnPreservesDeviceListViewport[1]" time="0.614"><failure message="assert 0 == 5&#10; +  where 0 = &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580&gt;()&#10; +    where &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580&gt; = &lt;PySide2.QtWidgets.QScrollBar(0x25a65248bb0) at 0x0000025A66C6C580&gt;.value">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000025A64AF9F90&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2760/testPublicationReturnPreserves1')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000025A64AF97B0&gt;
+offset = 1
+
+    @pytest.mark.parametrize('offset', [0, 1])
+    def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch, offset):  # noqa: F811
+        window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        with c.session.transaction():
+            for index in range(24):
+                c.session.workflows.devices['definitions'][f'copy-{index}'] = definition.model_copy(
+                    update={'name': f'导入副本 {index + 1}', 'enabled': False}).model_dump()
+        c.showDevices()
+        d = c.devices
+        waitUntil(lambda: d.pending is None)
+        d.table.setCurrentCell(0, 0)
+        for column in range(d.table.columnCount()):
+            d.table.setColumnWidth(column, 180)
+        QApplication.processEvents()
+        bar = d.table.horizontalScrollBar()
+        assert bar.maximum() &gt; offset
+        bar.setValue(offset)
+        vertical = d.table.verticalScrollBar()
+        assert vertical.maximum() &gt; 1
+        vertical.setValue(vertical.maximum() // 2)
+        tablePosition = vertical.value()
+        treeBar = d.tree.verticalScrollBar()
+        treeBar.setValue(treeBar.maximum())
+        treePosition = treeBar.value()
+        calls = []
+        monkeypatch.setattr(c, 'configureRuntime', lambda: calls.append(True))
+        d.buttons['publish'].click()
+        waitUntil(lambda: bool(calls) and d.isVisible())
+        QApplication.processEvents()
+        assert d.selectedId == 'camera'
+        assert bar.value() == offset
+&gt;       assert vertical.value() == tablePosition
+E       assert 0 == 5
+E        +  where 0 = &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580&gt;()
+E        +    where &lt;built-in method value of PySide2.QtWidgets.QScrollBar object at 0x0000025A66C6C580&gt; = &lt;PySide2.QtWidgets.QScrollBar(0x25a65248bb0) at 0x0000025A66C6C580&gt;.value
+
+tests\designer\test_device_usability_publication.py:79: AssertionError</failure></testcase></testsuite></testsuites>

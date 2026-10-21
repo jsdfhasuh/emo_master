@@ -1,0 +1,33 @@
+.....F........................                                           [100%]
+================================== FAILURES ===================================
+_______ testImvRequiredKeyAndFieldFeedbackClearWithoutLosingOtherErrors _______
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x16555467e10) at 0x00000165571155C0>
+
+    def testImvRequiredKeyAndFieldFeedbackClearWithoutLosingOtherErrors(retainedQtApplication):
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog
+        typeDecl = DeviceType.model_validate_json((Path(__file__).resolve().parents[2] /
+            'src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json').read_text(encoding='utf-8'))
+        dialog = DeviceDefinitionDialog(typeDecl)
+        dialog.show()
+        try:
+            key = dialog.forms['connection']._controls['cameraKey']
+            dialog.accept()
+            QApplication.processEvents()
+            assert dialog.value is None and key.hasFocus()
+            assert dialog.error.text() == '请填写 SDK 设备唯一标识，或通过设备发现选择'
+            dialog.name.setText('只修改名称')
+            assert dialog.error.text() and key.accessibleDescription()
+            key.setText('SIMULATED-KEY-FOR-EDITING-ONLY')
+>           assert not key.accessibleDescription() and not dialog.error.text()
+E           AssertionError: assert (not '' and not '请填写 SDK 设备唯一标识，或通过设备发现选择')
+E            +  where '' = <built-in method accessibleDescription of PySide2.QtWidgets.QLineEdit object at 0x0000016557564B00>()
+E            +    where <built-in method accessibleDescription of PySide2.QtWidgets.QLineEdit object at 0x0000016557564B00> = <PySide2.QtWidgets.QLineEdit(0x16558619b40) at 0x0000016557564B00>.accessibleDescription
+E            +  and   '请填写 SDK 设备唯一标识，或通过设备发现选择' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x000001655718C5C0>()
+E            +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x000001655718C5C0> = <PySide2.QtWidgets.QLabel(0x16558338020) at 0x000001655718C5C0>.text
+E            +      where <PySide2.QtWidgets.QLabel(0x16558338020) at 0x000001655718C5C0> = <emo_master.apps.designer.ui.device_wizard.DeviceDefinitionDialog(0x16558617d80) at 0x00000165570DDB80>.error
+
+tests\designer\test_device_usability_drafts.py:128: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testImvRequiredKeyAndFieldFeedbackClearWithoutLosingOtherErrors
+1 failed, 29 passed in 13.12s

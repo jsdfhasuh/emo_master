@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="10" time="1.937" timestamp="2026-10-21T20:38:21.539507+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_drafts" name="testMissingSlotDraftPersistsAndStrictFinishStillRejects" time="0.049" /><testcase classname="tests.designer.test_device_usability_drafts" name="testMissingSelectorAllowedButWrongSelectorRejected" time="0.004" /><testcase classname="tests.designer.test_device_usability_drafts" name="testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt" time="0.727" /><testcase classname="tests.designer.test_device_usability_drafts" name="testDeviceCopiesAreNamedAndEachImportIsOneUndo" time="0.010" /><testcase classname="tests.designer.test_device_usability_drafts" name="testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField" time="0.037" /><testcase classname="tests.designer.test_device_usability_drafts" name="testDraftModeRetainsStrictFilledReferenceChecks[type]" time="0.014" /><testcase classname="tests.designer.test_device_usability_drafts" name="testDraftModeRetainsStrictFilledReferenceChecks[source]" time="0.011" /><testcase classname="tests.designer.test_device_usability_drafts" name="testDraftModeRetainsStrictFilledReferenceChecks[unknown-slot]" time="0.011" /><testcase classname="tests.designer.test_device_usability_drafts" name="testImportNamesReserveSuffixAtLimitAndWithinBatch" time="0.008" /><testcase classname="tests.designer.test_device_usability_drafts" name="testPendingCameraReopensThroughCurrentEditorAndKeepsGraph" time="0.193"><failure message="AttributeError: 'FlowGraphModel' object has no attribute 'moveNode'. Did you mean: 'removeNode'?">ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000020834EE2E90&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2746/testPendingCameraReopensThroug0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x0000020832D98CA0&gt;
+
+    def testPendingCameraReopensThroughCurrentEditorAndKeepsGraph(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch):  # noqa: F811
+        window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        editor = DeviceCatalogEditor(c.session, {declaration.deviceTypeId: declaration}, requirements)
+        pending = dict(nodeId='pending-camera', operatorId='vision.io.huaray_camera', params={},
+                       inputPorts={'gain': 'number'}, outputPorts={'frame': 'image'},
+                       paramSchema=dict(type='object', properties={}, xDeviceActionFields=[]))
+        editor.commitNode('main', pending, allowIncomplete=True, position=dict(x=40., y=50.))
+        source = tmp_path / 'pending.emoproj'
+        assert window.saveProjectToDirectory(str(source))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+&gt;       window.flowModel.moveNode('pending-camera', 80., 90.)
+E       AttributeError: 'FlowGraphModel' object has no attribute 'moveNode'. Did you mean: 'removeNode'?
+
+tests\designer\test_device_usability_drafts.py:165: AttributeError</failure></testcase></testsuite></testsuites>

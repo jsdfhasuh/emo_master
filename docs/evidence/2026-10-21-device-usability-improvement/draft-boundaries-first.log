@@ -1,0 +1,29 @@
+.........F                                                               [100%]
+================================== FAILURES ===================================
+__________ testPendingCameraReopensThroughCurrentEditorAndKeepsGraph __________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000020834EE2E90>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2746/testPendingCameraReopensThroug0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000020832D98CA0>
+
+    def testPendingCameraReopensThroughCurrentEditorAndKeepsGraph(ownedDesignerWindow, tmp_path,
+            definition, declaration, monkeypatch):  # noqa: F811
+        window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        c = window.pageCoordinator
+        editor = DeviceCatalogEditor(c.session, {declaration.deviceTypeId: declaration}, requirements)
+        pending = dict(nodeId='pending-camera', operatorId='vision.io.huaray_camera', params={},
+                       inputPorts={'gain': 'number'}, outputPorts={'frame': 'image'},
+                       paramSchema=dict(type='object', properties={}, xDeviceActionFields=[]))
+        editor.commitNode('main', pending, allowIncomplete=True, position=dict(x=40., y=50.))
+        source = tmp_path / 'pending.emoproj'
+        assert window.saveProjectToDirectory(str(source))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+>       window.flowModel.moveNode('pending-camera', 80., 90.)
+E       AttributeError: 'FlowGraphModel' object has no attribute 'moveNode'. Did you mean: 'removeNode'?
+
+tests\designer\test_device_usability_drafts.py:165: AttributeError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testPendingCameraReopensThroughCurrentEditorAndKeepsGraph
+1 failed, 9 passed in 1.97s

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="2.051" timestamp="2026-10-21T20:30:14.776175+08:00" hostname="视觉电脑"><testcase classname="tests.runtime.test_device_usability_chain" name="testC1ThroughC6PendingDraftPublicationAndRun" time="1.151"><failure message="AssertionError: assert (True and 'selectors.channelId' in '槽位 tcp: selectors: required parameter missing')&#10; +  where True = &lt;built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200&gt;()&#10; +    where &lt;built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200&gt; = &lt;emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200&gt;.isVisible&#10; +  and   '槽位 tcp: selectors: required parameter missing' = &lt;built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500&gt;()&#10; +    where &lt;built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500&gt; = &lt;PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500&gt;.text&#10; +      where &lt;PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500&gt; = &lt;emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200&gt;.error">runtime = (&lt;emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000217B81D6A70&gt;, &lt;emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000217B81D75B0&gt;)
+ownedDesignerWindow = &lt;tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000217B87A0C40&gt;
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2742/testC1ThroughC6PendingDraftPub0')
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000217B81D6B00&gt;
+
+    def testC1ThroughC6PendingDraftPublicationAndRun(runtime, ownedDesignerWindow, tmp_path, monkeypatch):  # noqa: F811
+        service, client = runtime
+        types, requirements, _ = client.listDeviceTypes()
+        requirements = {operator: {slot: value.model_dump() for slot, value in slots.items()}
+                        for operator, slots in requirements.items()}
+        root = tmp_path/'engineering'
+        root.mkdir()
+        source = root/'usability.emoproj'
+        source.write_text(json.dumps(WorkflowStore().toPayload()), encoding='utf-8')
+        window = ownedDesignerWindow(client)
+        window.show()
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        c = window.pageCoordinator
+        draftNode = node('acquire', 'communication.tcp.session', 'unused')
+        draftNode.pop('deviceBindings')
+        manifest = service.pluginScanResult.activeOperators[draftNode['operatorId']].manifest
+        ports = lambda values: {key: value if isinstance(value, str) else value['type'] for key, value in values.items()}
+        draftNode.update(inputPorts=ports(manifest.inputPorts), outputPorts=ports(manifest.outputPorts),
+                         paramSchema=manifest.paramSchema)
+        wizard = DeviceNodeDialog(c, draftNode, requirements[draftNode['operatorId']], window, position=dict(x=20., y=30.))
+        wizard.show()
+        waitUntil(lambda: wizard.pendingButton.isEnabled())
+        def create(dialog):
+            dialog.enabled.setChecked(False)
+            dialog.forms['connection'].fields._controls['port'].setValue(freePort())
+            dialog.accept()
+            return dialog.result()
+        with monkeypatch.context() as patch:
+            patch.setattr(DeviceDefinitionDialog, 'exec_', create)
+            wizard._create('tcp')
+        server = wizard.slots['tcp'][0].currentData()
+        assert server and wizard.selectors['tcp']['channelId'].currentData() is None
+        before = len(c.session._undo)
+        wizard.accept()
+&gt;       assert wizard.isVisible() and 'selectors.channelId' in wizard.error.text()
+E       AssertionError: assert (True and 'selectors.channelId' in '槽位 tcp: selectors: required parameter missing')
+E        +  where True = &lt;built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200&gt;()
+E        +    where &lt;built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200&gt; = &lt;emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200&gt;.isVisible
+E        +  and   '槽位 tcp: selectors: required parameter missing' = &lt;built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500&gt;()
+E        +    where &lt;built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500&gt; = &lt;PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500&gt;.text
+E        +      where &lt;PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500&gt; = &lt;emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200&gt;.error
+
+tests\runtime\test_device_usability_chain.py:58: AssertionError</failure></testcase></testsuite></testsuites>

@@ -1,0 +1,102 @@
+{
+  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "started": "2026-10-21T22:44:26.282448+08:00",
+  "commands": [
+    {
+      "label": "evidence-script-ruff",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "ruff",
+        "check",
+        "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\run_validation.py",
+        "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\desktop_demo.py"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "label": "documentation-diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".gitattributes",
+        "docs/guides/device-catalog-contract-v1.md",
+        "docs/guides/device-dispatch-online-configuration.md",
+        "docs/guides/project-tcp-service.md",
+        "docs/plans/2026-10-20-tcp-device-integration-plan-v1.md",
+        "docs/plans/2026-10-21-device-usability-improvement-plan-v1.md",
+        "docs/testing/2026-10-21-device-usability-improvement.md",
+        "docs/evidence/2026-10-21-device-usability-improvement/README.md"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/guides/device-catalog-contract-v1.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/guides/device-dispatch-online-configuration.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/guides/project-tcp-service.md', LF will be replaced by CRLF the next time Git touches it\n"
+    },
+    {
+      "label": "staged-diff-first",
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 2,
+      "stdout": "docs/plans/2026-10-21-device-usability-improvement-plan-v1.md:497: new blank line at EOF.\n",
+      "stderr": "",
+      "classification": "Copied plan has one extra blank line at EOF; formatting only."
+    },
+    {
+      "label": "staged-diff-fixed",
+      "argv": [
+        "git",
+        "diff",
+        "--cached",
+        "--check"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ],
+  "localDocumentLinks": {
+    "files": [
+      "docs/guides/device-catalog-contract-v1.md",
+      "docs/guides/device-dispatch-online-configuration.md",
+      "docs/guides/project-tcp-service.md",
+      "docs/plans/2026-10-20-tcp-device-integration-plan-v1.md",
+      "docs/plans/2026-10-21-device-usability-improvement-plan-v1.md",
+      "docs/testing/2026-10-21-device-usability-improvement.md",
+      "docs/evidence/2026-10-21-device-usability-improvement/README.md"
+    ],
+    "checked": 36,
+    "missing": []
+  },
+  "protectedWork": {
+    "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+    "checked": 10,
+    "changed": [],
+    "explanation": "test_device_definition_feedback.py belongs to this task; its initial counterexamples preceded protection capture"
+  },
+  "finalSnapshot": {
+    "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+    "sourceTree": "38a0f6252ddb7acf3019c4766d1af59f98614e55",
+    "commands": {
+      "environment": 0,
+      "chain": 0,
+      "regression": 0,
+      "ruff": 0,
+      "mypy": 0,
+      "proto": 0,
+      "diff-check": 0
+    }
+  },
+  "sourceAndTestsMatchTestedCommit": true
+}

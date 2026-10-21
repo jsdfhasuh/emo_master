@@ -1,0 +1,14 @@
+{
+  "sha": "756e526c1d2c657b3ff793fed7abe904d38b8d48",
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-u-baseline-j0wq45yn\\source",
+  "argv": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "tests/designer/test_device_catalog.py",
+    "-q",
+    "--tb=short",
+    "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-device-usability-improvement\\preexisting-catalog.xml"
+  ],
+  "exitCode": 1
+}

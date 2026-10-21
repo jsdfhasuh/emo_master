@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="1.040" timestamp="2026-10-21T20:53:03.766784+08:00" hostname="视觉电脑"><testcase classname="tests.designer.test_device_usability_drafts" name="testUnknownDefinitionValidationKeepsTechnicalDetails" time="0.191"><failure message="AssertionError: assert 'vendor valid...ined verbatim' == '设备配置校验未通过，请查看详情'&#10;  &#10;  - 设备配置校验未通过，请查看详情&#10;  + vendor validation diagnostic retained verbatim">retainedQtApplication = &lt;PySide2.QtWidgets.QApplication(0x156a2cb8570) at 0x00000156A41B0D80&gt;
+monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x00000156A41B13F0&gt;
+
+    def testUnknownDefinitionValidationKeepsTechnicalDetails(retainedQtApplication, monkeypatch):
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog
+        from tests.designer.test_device_identity_reuse import builtin
+        dialog = DeviceDefinitionDialog(builtin('simulated'))
+        try:
+            def invalid(*_args):
+                raise ValueError('vendor validation diagnostic retained verbatim')
+            monkeypatch.setattr(DeviceType, 'validateDefinition', invalid)
+            dialog.accept()
+            assert dialog.value is None
+&gt;           assert dialog.error.text() == '设备配置校验未通过，请查看详情'
+E           AssertionError: assert 'vendor valid...ined verbatim' == '设备配置校验未通过，请查看详情'
+E             
+E             - 设备配置校验未通过，请查看详情
+E             + vendor validation diagnostic retained verbatim
+
+tests\designer\test_device_usability_drafts.py:144: AssertionError</failure></testcase></testsuite></testsuites>

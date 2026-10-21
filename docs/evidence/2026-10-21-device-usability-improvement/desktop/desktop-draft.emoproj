@@ -1,0 +1,240 @@
+{
+  "schemaVersion": "2.7",
+  "project": {
+    "projectId": "bfca5032-b651-4e8d-a6a6-24eee54826b3",
+    "name": "project",
+    "revision": 4,
+    "createdAt": "2026-10-21T13:04:24Z",
+    "updatedAt": "2026-10-21T13:39:20Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Main",
+      "inputs": {},
+      "outputs": {},
+      "nodes": [
+        {
+          "nodeId": "__workflow_input__",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "__workflow_output__",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "capture",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "\u6a21\u62df\u76f8\u673a\u91c7\u96c6",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {},
+          "deviceBindings": {
+            "camera": {
+              "deviceId": "camera",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "pending-camera",
+          "kind": "operator",
+          "operatorId": "vision.io.simulated_camera",
+          "displayName": "\u7a0d\u540e\u7ed1\u5b9a\u7684\u6a21\u62df\u76f8\u673a",
+          "inputPorts": {},
+          "outputPorts": {
+            "image": "image",
+            "frame": "bbox2d"
+          },
+          "paramSchema": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": false
+          },
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [],
+      "layout": {
+        "nodePositions": {
+          "__workflow_input__": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "__workflow_output__": {
+            "x": 360.0,
+            "y": 20.0
+          },
+          "pending-camera": {
+            "x": 400.0,
+            "y": 250.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": []
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {
+      "camera": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000,
+          "gain": 0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "server": {
+        "name": "\u5f85\u914d\u7f6e TCP Server",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "port": 62165,
+          "channels": []
+        },
+        "defaults": {
+          "timeoutMs": 5000,
+          "encoding": "utf-8",
+          "appendNewline": false
+        },
+        "policies": {
+          "deviceWaitTimeoutMs": 5000,
+          "connect": "on_project_run",
+          "release": "on_project_close",
+          "sendTimeoutMs": 2000,
+          "maxMessageBytes": 1048576
+        }
+      },
+      "device-3fb846fcd9ee4ad1b3bdc49714db05a9": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      },
+      "device-602957c270ce4868af775758040f3f81": {
+        "name": "\u684c\u9762\u6a21\u62df\u76f8\u673a\uff08\u5bfc\u5165\u526f\u672c 2\uff09",
+        "deviceTypeId": "device.simulated.camera",
+        "driverVersion": "1.0.0",
+        "enabled": false,
+        "description": "",
+        "connection": {
+          "serial": "DESKTOP-SIM-ONLY"
+        },
+        "defaults": {
+          "width": 8,
+          "height": 6,
+          "exposureUs": 1000.0,
+          "gain": 0.0
+        },
+        "policies": {
+          "connect": "on_first_use",
+          "release": "on_project_close",
+          "idleTimeoutMs": 30000,
+          "deviceWaitTimeoutMs": 5000,
+          "operationTimeoutMs": 5000
+        }
+      }
+    }
+  },
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {},
+    "parameterBindings": [],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {}
+}

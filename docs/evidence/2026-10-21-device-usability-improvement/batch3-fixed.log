@@ -1,0 +1,50 @@
+F......F..........F..FF...................                               [100%]
+================================== FAILURES ===================================
+___________ testMissingSlotDraftPersistsAndStrictFinishStillRejects ___________
+tests\designer\test_device_usability_drafts.py:27: in testMissingSlotDraftPersistsAndStrictFinishStillRejects
+    editor.commitNode('main', node, allowIncomplete=True, position=[20.0, 30.0])
+src\emo_master\apps\designer\state\device_catalog.py:94: in commitNode
+    with self.session.transaction():
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\contextlib.py:142: in __exit__
+    next(self.gen)
+src\emo_master\apps\designer\state\project_edit_session.py:114: in transaction
+    self.document()  # structure, not publish validity; drafts may be unbound
+src\emo_master\apps\designer\state\project_edit_session.py:91: in document
+    return ProjectDocument.model_validate(self.payload())
+E   pydantic_core._pydantic_core.ValidationError: 1 validation error for ProjectDocument
+E   workflows.main.layout.nodePositions.pending
+E     Input should be a valid dictionary [type=dict_type, input_value=[20.0, 30.0], input_type=list]
+E       For further information visit https://errors.pydantic.dev/2.13/v/dict_type
+_________________ testWizardCommitAndUndoAreSingleTransaction _________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_catalog.py:36: in testWizardCommitAndUndoAreSingleTransaction
+    assert session.document().schemaVersion == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+_____________ testCanvasAndStoreRoundtripPreserveAllDeviceSources _____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_catalog.py:136: in testCanvasAndStoreRoundtripPreserveAllDeviceSources
+    assert result["schemaVersion"] == "2.6"
+E   AssertionError: assert '2.7' == '2.6'
+E     
+E     - 2.6
+E     + 2.7
+________________ testWorkflowExportIncludesDeviceDependencies _________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_catalog.py:166: in testWorkflowExportIncludesDeviceDependencies
+    assert package.schemaVersion == "1.2"
+E   AssertionError: assert '1.4' == '1.2'
+E     
+E     - 1.2
+E     + 1.4
+________________ testCompilerCannotFallBackToPrivateConnection ________________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_catalog.py:175: in testCompilerCannotFallBackToPrivateConnection
+    assert any(issue.code == "E_DEVICE_RUNTIME_UNAVAILABLE" for issue in caught.value.issues)
+E   assert False
+E    +  where False = any(<generator object testCompilerCannotFallBackToPrivateConnection.<locals>.<genexpr> at 0x000002192EB20C10>)
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_usability_drafts.py::testMissingSlotDraftPersistsAndStrictFinishStillRejects
+FAILED tests/designer/test_device_catalog.py::testWizardCommitAndUndoAreSingleTransaction
+FAILED tests/designer/test_device_catalog.py::testCanvasAndStoreRoundtripPreserveAllDeviceSources
+FAILED tests/designer/test_device_catalog.py::testWorkflowExportIncludesDeviceDependencies
+FAILED tests/designer/test_device_catalog.py::testCompilerCannotFallBackToPrivateConnection
+5 failed, 37 passed in 11.38s

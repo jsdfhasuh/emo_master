@@ -2,7 +2,8 @@
 
 This guide describes the current project **2.7**, workflow package **1.4** and
 DeviceType / driver API **1.1** implementation. It follows the TCP integration
-[v1.5 plan](../plans/2026-10-20-tcp-device-integration-plan-v1.md).
+[v1.5 plan](../plans/2026-10-20-tcp-device-integration-plan-v1.md) and the
+[device usability follow-up](../plans/2026-10-21-device-usability-improvement-plan-v1.md).
 Old-project compatibility is outside this delivery. Existing historical
 validation reports describe their own fixed source snapshots.
 
@@ -33,11 +34,25 @@ The device declaration maps selectors to stable item IDs with
 `bindingSelectors`, for example `connection.channels`, `channelId`, `name`.
 
 The compiler, Designer binding editor and package reuse call the common
-`validateDeviceBinding` rule. A required capability must exist and a selector
+`validateDeviceBinding` rule. A required capability must exist and a supplied selector
 must name a declared item. Channel deletion/replacement checks existing node
 references. Display-name changes preserve IDs and the live TCP connection.
 A workflow package needs target registry metadata to offer existing-device reuse;
 without it, an editable disabled copy can still be imported.
+
+Designer may save a **pending binding** with a missing slot, or with an existing
+deviceId and missing required selector, through “保存待绑定节点”. The editor never
+chooses the first device/channel implicitly. A supplied missing ID, wrong type,
+unknown selector or invalid parameter source remains an error. Explicitly unbinding
+a slot removes that slot's overrides/sources in the same confirmed transaction.
+Other missing slots do not prevent a valid device edit.
+
+Pending nodes keep node IDs, ports, edges, positions and supplied sources across
+save/reopen and workflow-template import. They reopen in the current binding
+editor. Templates remap only actual bindings. Compiler, initial/selected publication
+candidates and full Runtime packages remain strict: every required slot/selector
+must be valid before execution. An unrelated incomplete local node does not enter
+an unselected publication candidate or invalidate the existing online version.
 
 Unknown-plugin definitions retain their JSON for offline editing and round trips.
 They are not silently made executable. Execution requires the matching registered
@@ -71,6 +86,13 @@ Only declared cycle-safe fields may change for a future cycle while work is acti
 Put `device_types/*.json` beneath an explicitly configured plugin root.
 Metadata scanning does not import drivers, create devices or perform I/O.
 Conflicting declarations reject the affected type; unrelated types stay usable.
+
+Device configuration forms may mark fields with `xAdvanced: true`. This controls
+display only; collapsed controls retain values and participate in validation.
+Errors expand the containing group/tab and focus the field. Unmarked third-party
+fields remain visible. `xOptionLabels` changes labels while preserving enum data;
+the same device declaration version/digest dependency rules still apply. Node
+source/constant editors display values directly without an advanced-group wrapper.
 
 A declaration includes closed connection/default/policy schemas and:
 
@@ -175,6 +197,10 @@ shared schema dialog. An undeclared action is never offered or admitted.
 
 Designer retains the standalone device window and Runtime menu. Apply edits the
 draft; Save writes the file; explicit Runtime publication writes online state.
+The device-window shortcut “查看并写入 Runtime…” yields the observer modal and
+enters that same publication dialog. It does not preselect same-project changes,
+save the local file, or write without confirmation. Cancel/close returns to the
+same device when project/Runtime scope is still current.
 Validation is free of I/O. First publication installs the complete candidate and
 activates only the selected connection policies, without creating a Job.
 
@@ -186,6 +212,10 @@ failure and offers ordinary device control. It does not replay configuration.
 Device packages, workflow packages 1.4 and full Runtime packages preserve IDs,
 selectors, variables, shared devices and declared resources. Reuse packages create
 new disabled device IDs; site fields are cleared and listed for the user.
+New copies with colliding names receive `（导入副本）`, then `（导入副本 2）`,
+reserving suffix space within 160 characters. Allocation considers the current
+catalog and the whole import batch. Reused devices and full Runtime installation
+keep their names. Each import remains one undoable transaction.
 A full Runtime package preserves enabled/connection policies. Target dependency
 validation and explicit installation precede execution. Remote empty Runtime
 installation follows the execution-side import path; a Designer local path is

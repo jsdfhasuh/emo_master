@@ -1,0 +1,55 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+________________ testC1ThroughC6PendingDraftPublicationAndRun _________________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000217B81D6A70>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000217B81D75B0>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000217B87A0C40>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2742/testC1ThroughC6PendingDraftPub0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000217B81D6B00>
+
+    def testC1ThroughC6PendingDraftPublicationAndRun(runtime, ownedDesignerWindow, tmp_path, monkeypatch):  # noqa: F811
+        service, client = runtime
+        types, requirements, _ = client.listDeviceTypes()
+        requirements = {operator: {slot: value.model_dump() for slot, value in slots.items()}
+                        for operator, slots in requirements.items()}
+        root = tmp_path/'engineering'
+        root.mkdir()
+        source = root/'usability.emoproj'
+        source.write_text(json.dumps(WorkflowStore().toPayload()), encoding='utf-8')
+        window = ownedDesignerWindow(client)
+        window.show()
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        c = window.pageCoordinator
+        draftNode = node('acquire', 'communication.tcp.session', 'unused')
+        draftNode.pop('deviceBindings')
+        manifest = service.pluginScanResult.activeOperators[draftNode['operatorId']].manifest
+        ports = lambda values: {key: value if isinstance(value, str) else value['type'] for key, value in values.items()}
+        draftNode.update(inputPorts=ports(manifest.inputPorts), outputPorts=ports(manifest.outputPorts),
+                         paramSchema=manifest.paramSchema)
+        wizard = DeviceNodeDialog(c, draftNode, requirements[draftNode['operatorId']], window, position=dict(x=20., y=30.))
+        wizard.show()
+        waitUntil(lambda: wizard.pendingButton.isEnabled())
+        def create(dialog):
+            dialog.enabled.setChecked(False)
+            dialog.forms['connection'].fields._controls['port'].setValue(freePort())
+            dialog.accept()
+            return dialog.result()
+        with monkeypatch.context() as patch:
+            patch.setattr(DeviceDefinitionDialog, 'exec_', create)
+            wizard._create('tcp')
+        server = wizard.slots['tcp'][0].currentData()
+        assert server and wizard.selectors['tcp']['channelId'].currentData() is None
+        before = len(c.session._undo)
+        wizard.accept()
+>       assert wizard.isVisible() and 'selectors.channelId' in wizard.error.text()
+E       AssertionError: assert (True and 'selectors.channelId' in '槽位 tcp: selectors: required parameter missing')
+E        +  where True = <built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200>()
+E        +    where <built-in method isVisible of DeviceNodeDialog object at 0x00000217B99B0200> = <emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200>.isVisible
+E        +  and   '槽位 tcp: selectors: required parameter missing' = <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500>()
+E        +    where <built-in method text of PySide2.QtWidgets.QLabel object at 0x00000217B9988500> = <PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500>.text
+E        +      where <PySide2.QtWidgets.QLabel(0x217b91d5a50) at 0x00000217B9988500> = <emo_master.apps.designer.ui.device_wizard.DeviceNodeDialog(0x217b91d5740) at 0x00000217B99B0200>.error
+
+tests\runtime\test_device_usability_chain.py:58: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_usability_chain.py::testC1ThroughC6PendingDraftPublicationAndRun
+1 failed in 2.14s

@@ -1,0 +1,31 @@
+{
+  "paths": [
+    "src/emo_master/apps/designer/page_designer/coordinator.py",
+    "src/emo_master/apps/designer/state/device_catalog.py",
+    "src/emo_master/apps/designer/state/device_package.py",
+    "src/emo_master/apps/designer/state/workflow_package.py",
+    "src/emo_master/apps/designer/ui/device_wizard.py",
+    "src/emo_master/apps/designer/ui/device_workspace.py",
+    "src/emo_master/apps/designer/ui/main_window.py",
+    "src/emo_master/apps/designer/ui/param_form.py",
+    "src/emo_master/apps/designer/ui/project_configuration.py",
+    "src/emo_master/apps/designer/ui/tcp_device_form.py",
+    "src/emo_master/core/plugin/devices.py",
+    "src/emo_master/apps/runtime/devices/tcp.py",
+    "src/emo_master/plugins/builtins/_tcp_transport.py",
+    "src/emo_master/plugins/builtins/huaray_camera/device_types/imv.json",
+    "src/emo_master/plugins/builtins/plc_slmp_read/device_types/slmp.json",
+    "src/emo_master/plugins/builtins/simulated_camera/device_types/camera.json",
+    "src/emo_master/plugins/builtins/tcp_client/device_types/client_once.json",
+    "src/emo_master/plugins/builtins/tcp_receive_once/device_types/receive_once.json",
+    "src/emo_master/plugins/builtins/tcp_session/device_types/server.json",
+    "tests/designer/test_device_catalog.py",
+    "tests/designer/test_device_workspace_sizing.py",
+    "tests/designer/test_device_workspace_usability.py",
+    "tests/designer/test_device_usability_drafts.py",
+    "tests/designer/test_device_usability_publication.py",
+    "tests/designer/test_device_project_open.py",
+    "tests/runtime/test_device_usability_chain.py"
+  ],
+  "tree": "4bf872fd9734c24586fd0b8b082bdfdb78533113"
+}

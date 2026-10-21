@@ -1,0 +1,20 @@
+{
+  "sourceSha": "e2a9d867dc3a7069c7e91d2e68da5dfa23ee1fbf",
+  "window": {
+    "app": "process:C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "id": 1448386,
+    "title": "EmoMaster · 易用性验收 e2a9d86"
+  },
+  "accessibility": {
+    "document_text": "选择节点查看本次输入、输出、耗时和错误。",
+    "focused_element": "185 编辑 Value: 选择节点查看本次输入、输出、耗时和错误。",
+    "tree": "Window: \"EmoMaster · 易用性验收 e2a9d86\", App: python.exe.\n\t0 窗口 (settable, string) EmoMaster · 易用性验收 e2a9d86 Secondary Actions: Raise\n\t\t138 标题栏 (settable, string) Value: EmoMaster · 易用性验收 e2a9d86\n\t\t\t139 菜单栏 系统 ID: MenuBar\n\t\t\t\t262 菜单项 系统\n\t\t\t141 按钮 最小化\n\t\t\t142 按钮 最大化\n\t\t\t143 按钮 关闭\n\t\t144 工具栏 (settable, string) 主工具栏\n\t\t\t145 组 (settable, string) 设计工作区\n\t\t\t\t146 复选框 (settable, string) 流程设计\n\t\t\t\t147 复选框 (settable, string) 页面设计\n\t\t148 菜单栏 (settable, string)\n\t\t\t149 菜单项 (settable, string) 文件\n\t\t\t150 菜单项 (settable, string) 运行\n\t\t\t151 菜单项 (settable, string) 编辑\n\t\t\t152 菜单项 (settable, string) 视图\n\t\t\t153 菜单项 (settable, string) Runtime\n\t\t\t154 菜单项 (settable, string) 设备管理\n\t\t155 状态栏\n\t\t\t156 缩略图 (settable, string)\n\t\t\t157 文本 算子：70\n\t\t\t158 文本 Runtime：本机内嵌 Runtime（随程序启动） · 在线文档 R1 / 执行 R1\n\t\t\t159 按钮 (settable, string) TCP 1 台 · 监听 0 · 客户端 0\n\t\t160 自定义 (settable, string)\n\t\t\t161 组 (settable, string)\n\t\t\t\t162 组 (settable, string)\n\t\t\t\t\t163 组 (settable, string)\n\t\t\t\t\t\t164 自定义 (settable, string)\n\t\t\t\t\t\t\t165 组 (settable, string)\n\t\t\t\t\t\t\t\t166 组 (settable, string)\n\t\t\t\t\t\t\t\t\t167 文本 运行摘要\n\t\t\t\t\t\t\t\t\t168 按钮 (settable, string) 运行目标（工程 · 1）…\n\t\t\t\t\t\t\t\t\t169 按钮 (disabled, settable, string) 停止全部\n\t\t\t\t\t\t\t\t\t170 组合框 (settable, string)\n\t\t\t\t\t\t\t\t\t\t171 列表 (settable, string)\n\t\t\t\t\t\t\t\t\t172 文本 作业状态：空闲\n\t\t\t\t\t\t\t\t\t173 文本 消息：-\n\t\t\t\t\t\t\t\t174 组 (settable, string)\n\t\t\t\t\t\t\t\t\t175 组 (settable, string)\n\t\t\t\t\t\t\t\t\t\t176 组 (settable, string)\n\t\t\t\t\t\t\t\t\t\t\t177 文本 节点结果\n\t\t\t\t\t\t\t\t\t\t\t178 复选框 (settable, string) 本次运行\n\t\t\t\t\t\t\t\t\t\t\t179 复选框 (disabled, settable, string) 上一次运行\n\t\t\t\t\t\t\t\t\t\t\t180 文本 未选中节点\n\t\t\t\t\t\t\t\t\t\t\t181 文本 算子：未提供\n\t\t\t\t\t\t\t\t\t\t\t182 文本 尚未运行 · 明确启动后查看真实结果\n\t\t\t\t\t\t\t\t\t\t\t183 组 (settable, string)\n\t\t\t\t\t\t\t\t\t\t\t\t184 自定义 (settable, string)\n\t\t\t\t\t\t\t\t\t\t\t\t\t185 编辑 Value: 选择节点查看本次输入、输出、耗时和错误。\n\t\t\t\t\t\t\t\t\t\t\t\t\t\t186 组 (settable, string)\n\t\t\t\t\t\t\t\t\t\t\t\t187 选项卡 (settable, string) 执行信息\n\t\t\t\t\t\t\t\t\t\t\t\t\t188 选项卡项目 (settable, string) 图像输出\n\t\t\t\t\t\t\t\t\t\t\t\t\t189 选项卡项目 (settable, string) 数值输出\n\t\t\t\t\t\t\t\t\t\t\t\t\t190 选项卡项目 (settable, string) 执行信息\n\t\t\t\t\t\t\t\t\t\t\t\t\t191 选项卡项目 (settable, string) 输入数据\n\t\t\t\t\t\t\t\t\t\t\t192 按钮 (disabled, settable, string) 当前草稿配置…\n\t\t\t\t\t\t\t\t\t\t\t193 按钮 (settable, string) 运行日志\n\t\t\t\t\t\t\t194 组 (settable, string)\n\t\t\t\t\t\t\t\t195 组 (settable, string)\n\t\t\t\t\t\t\t\t\t196 选项卡 (settable, string) 默认入口 Main\n\t\t\t\t\t\t\t\t\t\t197 选项卡项目 (settable, string) 默认入口 Main\n\t\t\t\t\t\t\t\t\t198 按钮 (settable, string) 全部工作流\n\t\t\t\t\t\t\t\t\t199 按钮 (settable, string) 新增工作流\n\t\t\t\t\t\t\t\t\t200 按钮 (disabled, settable, string) 后退\n\t\t\t\t\t\t\t\t\t201 按钮 (disabled, settable, string) 前进\n\t\t\t\t\t\t\t\t202 组 (settable, string)\n\t\t\t\t\t\t\t\t\t203 文本 当前位置：Main\n\t\t\t\t\t\t\t\t\t204 按钮 (disabled, settable, string) 进入子工作流\n\t\t\t\t\t\t\t\t\t205 按钮 (settable, string) 查找调用来源\n\t\t\t\t\t\t\t\t206 组 (settable, string)\n\t\t\t\t\t\t\t\t\t207 组 (settable, string)\n\t\t\t\t\t\t\t\t208 按钮 (settable, string)\n\t\t\t\t\t\t\t\t209 按钮 (settable, string) 100%\n\t\t\t\t\t\t\t\t210 按钮 (settable, string)\n\t\t\t\t\t\t\t\t211 按钮 (settable, string)\n\t\t\t\t\t\t\t212 缩略图 (settable, string)\n\nDocument text: ```\n选择节点查看本次输入、输出、耗时和错误。\n```"
+  },
+  "screenshots": [
+    {
+      "id": "screenshot-0",
+      "width": 1282,
+      "height": 872
+    }
+  ]
+}

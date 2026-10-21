@@ -1,0 +1,13 @@
+{
+  "src/emo_master/apps/runtime/operator_debug/contracts.py": "39c756152c2233e10740712773bea232b692dd3e04c13b0560678595447d936f",
+  "src/emo_master/apps/runtime/operator_debug/resources.py": "6d51bd74d03ad2ec14b8d2ad1a2c73bdd0791fe476364c7c721ae6d533510c6f",
+  "src/emo_master/core/project/runtime_directory.py": "b3126ffa25bd4c2f7ad27076b7a49766a5e4c7bcac88793d63790c89f14a6b27",
+  "src/emo_master/plugins/builtins/image_saver/manifest.json": "de9bfec50ed5d2fb9bfc51f7112ba738b4f124bf5834486c5e16f5c8636e2902",
+  "src/emo_master/plugins/builtins/image_saver/operator.py": "8300c238aab3639419908147cfec30af618984ea99c61c2377836e0d544d0713",
+  "tests/core/plugin/test_builtin_parameter_titles.py": "d59f97c5325f271c4c15d33974286ba23434f25c3d099742c3e22f8552765f32",
+  "tests/core/test_runtime_directory.py": "8e80e22543f7595234b35ae114f31f490239042e8f93eea673ca51d47ac18b7e",
+  "tests/designer/test_device_definition_feedback.py": "8d328f0adaeddbccfff3eb6d2548e9a53de09c52ce5ae5414ee6adb9efb6d81c",
+  "tests/plugins/test_image_saver_operator.py": "2496adfdd57e00669910b8503f8fa02877243913a020495cf92a87700849402a",
+  "tests/runtime/test_operator_debug_resources.py": "992d5430295fea438f913490816134f52194f626469ebfa2db29d30563ff5442",
+  "tests/runtime/test_operator_registration.py": "267539e69e3f7f8da06abee36c7f26f6c51c1e34a2e409177bdcf2572fac9852"
+}

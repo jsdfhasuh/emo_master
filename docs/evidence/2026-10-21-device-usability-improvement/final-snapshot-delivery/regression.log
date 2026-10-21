@@ -1,0 +1,463 @@
+........................................................................ [ 20%]
+........................................................................ [ 41%]
+........................................................................ [ 62%]
+........................................................................ [ 82%]
+............................................................             [100%]
+=================================== PASSES ====================================
+_____ testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[True] _____
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-3f5282a4-7c6b-41a0-b91a-06bb19d52e87:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 120, in runJobProcess
+    _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publisher)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 229, in _runConsumer
+    result = runner.run(spec.workflowId, values, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: consumer rejected capture
+Process emo-master-job-908c0957-2dfc-4b64-aff2-1e1c2c86c096:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 120, in runJobProcess
+    _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publisher)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 229, in _runConsumer
+    result = runner.run(spec.workflowId, values, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: consumer rejected capture
+Process emo-master-job-925b120b-b75b-4238-a092-dfc35cae7478:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 133, in runJobProcess
+    runCycle(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    return self.dispatchRunner.run(node, nodeInput, context, cancellation)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\frame_dispatch\runner.py", line 41, in run
+    raise error
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: one or more consumers did not complete
+______ testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays _______
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-62968241-2511-423a-b3f3-2b293536fa6b:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 133, in runJobProcess
+    runCycle(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+    return self.dispatchRunner.run(node, nodeInput, context, cancellation)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\runtime\frame_dispatch\runner.py", line 41, in run
+    raise error
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: one or more consumers did not complete
+_ testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout] _
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\designer\ui\project_configuration.py", line 795, in <lambda>
+    QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)
+RuntimeError: Internal C++ object (ProjectConfigurationDialog) already deleted.
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-huz7f4e2\source\src\emo_master\apps\designer\ui\project_configuration.py", line 795, in <lambda>
+    QTimer.singleShot(300, lambda: self.query() if self.isVisible() and self.writePending else None)
+RuntimeError: Internal C++ object (ProjectConfigurationDialog) already deleted.
+______________ testDeviceMenuOpensDialogWithoutChangingWorkspace ______________
+---------------------------- Captured stdout call -----------------------------
+DEVICE_DIALOG_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-f-huz7f4e2\regression\testDeviceMenuOpensDialogWitho0\device-dialog.png
+__________________ testDeviceDialogLayoutEvidence[1280-800] ___________________
+---------------------------- Captured stdout call -----------------------------
+DEVICE_COMPLETION_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-f-huz7f4e2\regression\testDeviceDialogLayoutEvidence0\device-completion-1280.png
+___________________ testDeviceDialogLayoutEvidence[900-650] ___________________
+---------------------------- Captured stdout call -----------------------------
+DEVICE_COMPLETION_SCREENSHOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-f-huz7f4e2\regression\testDeviceDialogLayoutEvidence1\device-completion-900.png
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_frame_dispatch.py::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[True]
+PASSED tests/runtime/test_frame_dispatch.py::testSpawnedPersistentFanoutRetiresOriginalsAndIndependentWorkers[False]
+PASSED tests/runtime/test_frame_dispatch.py::testGroupCapacityRejectedBeforeCapture
+PASSED tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[False]
+PASSED tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[True]
+PASSED tests/runtime/test_frame_dispatch.py::testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays
+PASSED tests/runtime/test_frame_dispatch.py::testPartialConsumerStartupFailureRetiresWithoutProducerAction
+PASSED tests/runtime/test_frame_dispatch.py::testContinuousInvocationsReuseProcessesWithoutGrowingLeases
+PASSED tests/runtime/test_frame_dispatch.py::testDuplicateNoReplayAndPartialQueueReceipts
+PASSED tests/runtime/test_frame_dispatch.py::testSourceEndDoesNotRetireLiveConsumersAndOldPlan
+PASSED tests/runtime/test_frame_dispatch.py::testJoinIdentityAndNgIsNormalCompletion
+PASSED tests/runtime/test_frame_dispatch.py::testThreeHundredJoinsRetireDeliveriesAndBoundReplayReceipts
+PASSED tests/runtime/test_frame_dispatch.py::testCachedJoinNeverKeepsReleasedOutputAlive
+PASSED tests/runtime/test_frame_dispatch.py::testCrashDoesNotReplayAndOtherConsumerRetainsFrame
+PASSED tests/runtime/test_frame_dispatch.py::testQueuedConsumersKeepOldPlanAcrossNewSourceCycle
+PASSED tests/runtime/test_frame_dispatch.py::testTimeoutAndStopDoNotUnlinkAnActiveConsumer
+PASSED tests/runtime/test_frame_dispatch.py::testMutatedCopiesUseNewRuntimeOwnedFrames
+PASSED tests/runtime/test_frame_dispatch.py::testDerivedImageOutputsAndIndependentRunGroups
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[mapping]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[type]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[recursive]
+PASSED tests/runtime/test_frame_dispatch.py::testCompilerRejectsInvalidDispatch[join]
+PASSED tests/runtime/test_project_configuration.py::testAtomicCommitReceiptAndRestartRecovery
+PASSED tests/runtime/test_project_configuration.py::testOneWriterCancellationAndNoPublicationBeforeCommit
+PASSED tests/runtime/test_project_configuration.py::testSqliteFailureRollsBackConfigurationAndReceipt
+PASSED tests/runtime/test_project_configuration.py::testLateCancelReturnsCommitted
+PASSED tests/runtime/test_project_configuration.py::testPublishFailureCannotEraseDurableCommit
+PASSED tests/runtime/test_project_configuration.py::testCleanupFailurePreservesCommittedReceiptAndFencesNewWrites
+PASSED tests/runtime/test_project_configuration.py::testIndependentSqliteWritersCompareAtCommitPoint
+PASSED tests/runtime/test_project_configuration.py::testOldCycleKeepsPlanWhileNewCycleUsesCommittedRevision
+PASSED tests/runtime/test_project_configuration.py::testCycleIdentityIsInheritedByNestedCalls
+PASSED tests/runtime/test_project_configuration.py::testRetirementAndCancelledAdmissionDoNotWaitForProjectLock
+PASSED tests/runtime/test_project_configuration.py::testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver
+PASSED tests/runtime/test_project_configuration.py::testRuntimeSelectedWriteAndRecoveryDoesNotReadChangedSourceFile
+PASSED tests/runtime/test_project_configuration.py::testOrdinaryParameterUpdateStartsAtNextCycleWithoutRestartingJob
+PASSED tests/runtime/test_project_configuration.py::testRemoteWriteAndLegacyMutationFence
+PASSED tests/runtime/test_loop_cycle_configuration.py::testNestedLeasesRetainOuterPlanAndRejectForeignOrStaleParent
+PASSED tests/runtime/test_loop_cycle_configuration.py::testCancelledCycleAdmissionDoesNotAllocateLease
+PASSED tests/runtime/test_loop_cycle_configuration.py::testDrainFinishesNestedCyclesThenParksAtOuterIterationAndCanCancel
+PASSED tests/runtime/test_loop_cycle_configuration.py::testIterationRestoresOuterCompiledPlanAndReleasesOnException
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[boundary0]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[boundary1]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[1]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[node]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testBoundaryIsExplicitAndRequiresManagedSchema[iteration]
+PASSED tests/runtime/test_loop_cycle_configuration.py::testRealSpawnWhileSwitchesOnlyBeforeConditionAndRetiresFalseIteration
+PASSED tests/runtime/test_operator_logging.py::testRunnerInjectsExecuteAndLifecycleLoggersWithCorrelationAndOrdering
+PASSED tests/runtime/test_operator_logging.py::testLoggerSanitizesSecretsCyclesBinaryAndNonFiniteValues
+PASSED tests/runtime/test_operator_logging.py::testLoopAndSubflowLogsKeepIterationAndParentRunCorrelation
+PASSED tests/runtime/test_operator_logging.py::testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.failure-_FailingLoggingOperator-RuntimeError]
+PASSED tests/runtime/test_operator_logging.py::testFailureAndCancellationLogsPrecedeNodeTerminalEvent[test.logging.cancel-_CancellingLoggingOperator-CancellationRequested]
+PASSED tests/runtime/test_operator_logging.py::testLoggerRateLimitAndJobLimitProduceOneDroppedSummary
+PASSED tests/runtime/test_operator_logging.py::testJobHardLimitCannotBeBypassedByCreatingMoreNodeLoggers
+PASSED tests/runtime/test_operator_logging.py::testLoggerIsThreadSafeAndNeverRaisesOnPublisherOrBadValues
+PASSED tests/runtime/test_operator_logging.py::testGetOperatorLoggerFallsBackToNoOpLogger
+PASSED tests/runtime/test_device_runtime.py::testTwoSpawnedJobsShareRuntimeDeviceAndReleaseOriginals
+PASSED tests/runtime/test_device_runtime.py::testDeviceMetadataRemoteContractAndProjectFence
+PASSED tests/runtime/test_device_runtime.py::testDeviceMetadataThroughRuntimeClientHasNoHardwareSideEffects
+PASSED tests/runtime/test_device_ipc_retirement.py::testDeviceIpcRetiresWhileWorkerOwnsCancellationReadLock
+PASSED tests/runtime/test_device_ipc_retirement.py::testJobCancellationWaitHasFiniteTimeout
+PASSED tests/runtime/test_device_ipc_retirement.py::testSpawnedWorkerObservesCancellationWhileWaiting[None]
+PASSED tests/runtime/test_device_ipc_retirement.py::testSpawnedWorkerObservesCancellationWhileWaiting[5.0]
+PASSED tests/runtime/test_device_ipc_retirement.py::testCancelledDeviceProxyDoesNotSubmitOrReplay
+PASSED tests/runtime/test_device_ipc_retirement.py::testWorkerCancellationIsVisibleToRuntime
+PASSED tests/runtime/test_device_ipc_retirement.py::testRuntimeShutdownRetiresIpcAfterTerminatingCancellationReader
+PASSED tests/runtime/test_configuration_owners.py::testVariableDefinitionsCommitWithoutResettingPersistentValues
+PASSED tests/runtime/test_configuration_owners.py::testVariableValidationDoesNotCreateDefinitionsOrValues
+PASSED tests/runtime/test_configuration_owners.py::testReceiptFailureRollsBackVariableDefinitionsAndValues
+PASSED tests/runtime/test_configuration_owners.py::testVariableTypeChangeRequiresNewIdentityBeforeAnyTransition
+PASSED tests/runtime/test_configuration_owners.py::testRuntimeAndProductionPoliciesPublishAndRecover
+PASSED tests/runtime/test_configuration_owners.py::testInvalidDependencyLocksDoNotCommit[invalid0]
+PASSED tests/runtime/test_configuration_owners.py::testInvalidDependencyLocksDoNotCommit[invalid1]
+PASSED tests/runtime/test_configuration_owners.py::testInvalidDependencyLocksDoNotCommit[invalid2]
+PASSED tests/runtime/test_configuration_owners.py::testInstalledDependencyLocksCommit
+PASSED tests/runtime/test_configuration_owners.py::testTcpDeviceReplacementIsHardwareFreeUntilExplicitStart
+PASSED tests/runtime/test_configuration_owners.py::testListeningTcpDeviceReplacementRestartsOnlyAfterCommit[stopAffected]
+PASSED tests/runtime/test_configuration_owners.py::testListeningTcpDeviceReplacementRestartsOnlyAfterCommit[drainAffected]
+PASSED tests/runtime/test_configuration_owners.py::testListeningTcpRejectPolicyLeavesListenerRunning
+PASSED tests/runtime/test_configuration_owners.py::testTcpBindFailureIsSeparateFromCommittedConfiguration
+PASSED tests/runtime/test_configuration_owners.py::testTcpDeviceTransitionDoesNotStopUnrelatedContinuousCamera
+PASSED tests/runtime/test_configuration_owners.py::testExplicitStopDuringConfigurationWriteSupersedesTcpRestart
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-False]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[embedded-True]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-False]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialDraftKeepsDiskAndResourcesAndRunsImageGraph[loopback-True]
+PASSED tests/runtime/test_initial_project_configuration.py::testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInvalidInitialInputCanBeFixedWithoutLoadingOrStarting[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialFailedReceiptRetainsCompilerIssueLocations[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialFailedReceiptRetainsCompilerIssueLocations[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialPublicationCannotOverwriteAnInterveningOnlineProject[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialPublicationCannotOverwriteAnInterveningOnlineProject[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testRemoteFirstInstallDoesNotSendDesignerPath
+PASSED tests/runtime/test_initial_project_configuration.py::testFirstWriteActivationErrorKeepsCommittedOutcome[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testFirstWriteActivationErrorKeepsCommittedOutcome[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialOnlineWriteDoesNotPretendLegacySchemaWasPersisted[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-copying]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[embedded-prepared]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-copying]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWriteIsQueryableAndCancellableBeforeCommit[loopback-prepared]
+PASSED tests/runtime/test_initial_project_configuration.py::testFailedInitialWriteStaysQueryableWithoutReplay[embedded]
+PASSED tests/runtime/test_initial_project_configuration.py::testFailedInitialWriteStaysQueryableWithoutReplay[loopback]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_project_open]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[embedded-on_first_use]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_project_open]
+PASSED tests/runtime/test_initial_project_configuration.py::testInitialWritePreservesConnectPolicyWithoutCapturing[loopback-on_first_use]
+PASSED tests/designer/test_runtime_validation_feedback.py::testValidationHasImmediateBusyAndPassedNotWrittenFeedback
+PASSED tests/designer/test_runtime_validation_feedback.py::testLocalSelectionErrorIsVisibleAndRecoverable
+PASSED tests/designer/test_runtime_validation_feedback.py::testCurrentConnectionHasItsOwnArea
+PASSED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLegacyValidationOffersUpgradeWithoutMutatingDraft[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.1]
+PASSED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[embedded-2.5]
+PASSED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.1]
+PASSED tests/designer/test_runtime_validation_feedback.py::testExplicitUpgradeIsOneUndoableDraftChangeAndNeverWrites[loopback-2.5]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeActionFromPopupDoesNotResumePrewrite[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeKeepsDraftOnCompilerFailureAndPreservesLocations[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testMigrationStructureFailureLeavesNoHalfUpgrade[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeRechecksRuntimeThatAcquiredAnotherOnlineProject[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testValidationFailuresPopupEachNewOperationAndRestoreControls[exception]
+PASSED tests/designer/test_runtime_validation_feedback.py::testValidationFailuresPopupEachNewOperationAndRestoreControls[FAILED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[FAILED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[COMMITTED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[CANCELLED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testReceiptNotificationsRespectActualStateAndDeduplicate[WAITING]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[camera-FAILED: connection timeout]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureWarnsWithoutRewriting[communication-FAILED: address already in use]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionFailureReportedWhenLaterQueryResolvesPending
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedPendingIsObservedReadOnlyAndLateFailureWarnsOnce
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[PENDING]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[CONNECTED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[LISTENING]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[SUPERSEDED]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedNonfailedConnectionDoesNotWarn[UNKNOWN_AFTER_RESTART]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCommittedConnectionAndTopLevelErrorsShareOneWarning
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[close]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[runtime]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[project]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateValidationCannotNotifyOrContinueWritingInNewContext[draft]
+PASSED tests/designer/test_runtime_validation_feedback.py::testValidationErrorModalCannotReenterCommandOrPoll
+PASSED tests/designer/test_runtime_validation_feedback.py::testCurrentRuntimeDescriptionReadsActualTransportWithoutProvisioning[embedded]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCurrentRuntimeDescriptionReadsActualTransportWithoutProvisioning[loopback]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCurrentInfoFailureDoesNotEraseSuccessfulIdentityOrClaimConnected[identity]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCurrentInfoFailureDoesNotEraseSuccessfulIdentityOrClaimConnected[version]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateCandidateIsReleasedWithoutSwitchOrPopup[close]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateCandidateIsReleasedWithoutSwitchOrPopup[runtime]
+PASSED tests/designer/test_runtime_validation_feedback.py::testLateCandidateIsReleasedWithoutSwitchOrPopup[project]
+PASSED tests/designer/test_runtime_validation_feedback.py::testCandidateFailureDoesNotOverwriteCurrentAreaAndCanRetry
+PASSED tests/designer/test_runtime_validation_feedback.py::testUpgradeRejectsUnknownVersionsAndIllegalFields
+PASSED tests/designer/test_runtime_validation_feedback.py::testPrewriteSuccessHasOnlyExistingImpactConfirmation
+PASSED tests/designer/test_runtime_validation_feedback.py::testOpeningCurrentConnectionWithExistingPageEndpointDoesNotProvisionAgain
+PASSED tests/designer/test_runtime_validation_feedback.py::testSelectionChangeImmediatelyInvalidatesVisiblePassedVerdict
+PASSED tests/designer/test_runtime_validation_feedback.py::testReconnectedRuntimeExplainsExpiredDialogInsteadOfSilentButtons
+PASSED tests/designer/test_runtime_validation_feedback.py::testRemoteTargetMetadataUsesIndependentTypeAndShowsCurrentVersions
+PASSED tests/designer/test_runtime_validation_feedback.py::testRealConnectionDialogSwitchUpdatesChromeAndRetainsEmbeddedOwner
+PASSED tests/designer/test_runtime_validation_feedback.py::testClosingDuringCurrentInfoReadIgnoresLateReplyAndKeepsOwner
+PASSED tests/designer/test_runtime_validation_feedback.py::testIdleContextChecksUseExistingIdentityWithoutWholeDraftValidation
+PASSED tests/designer/test_project_configuration_ui.py::testRecoveryErrorAllowsExplicitRepairButNeverRun
+PASSED tests/designer/test_project_configuration_ui.py::testCompareDoesNotSaveOrMutateAndSelectionIsExplicit
+PASSED tests/designer/test_project_configuration_ui.py::testReadBackIsUndoableDraftNotDiskWrite
+PASSED tests/designer/test_project_configuration_ui.py::testRuntimeSwitchFencesOldDialog
+PASSED tests/designer/test_project_configuration_ui.py::testDifferentOnlineProjectSelectsCompleteReplacementAndReadBackRequiresConsent
+PASSED tests/designer/test_project_configuration_ui.py::testDeviceDependenciesRequireConfirmationAndLeaveUnselectedDraftOut
+PASSED tests/designer/test_project_configuration_ui.py::testResourceUploadRequiresConfirmationAndDoesNotPublishDraft
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogEditHistoryAndReopen
+PASSED tests/designer/test_device_workspace.py::testDeviceMenuOpensDialogWithoutChangingWorkspace
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogReturnsToPagesAndRetiresOnProjectSwitch
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogCloseKeepsDraftAndRejectsInvalidInput
+PASSED tests/designer/test_device_workspace.py::testDeviceDialogCloseDuringMetadataReadCanReopen
+PASSED tests/designer/test_device_workspace.py::testDeviceControlNeedsConfirmationAndNeverEditsDraft
+PASSED tests/designer/test_device_workspace.py::testDeviceStateResponseIsDiscardedAfterScopeChanges
+PASSED tests/designer/test_device_workspace.py::testWizardCancelAndSourceCommit
+PASSED tests/designer/test_device_workspace.py::testNormalDropWizardAtomicFinishAndCancel
+PASSED tests/core/project/test_configuration.py::testDispatchDependencyClosureIncludesTransitiveWorkflowAndOrderOnly
+PASSED tests/core/project/test_configuration.py::testResourceDependencyClosureAndSelectedDeletion
+PASSED tests/core/project/test_configuration.py::testPageDependencyClosureIncludesSourcesScopesAndNewWorkflow
+PASSED tests/core/project/test_configuration.py::testSelectedExposureDoesNotIncludeInvalidUnselectedDraft
+PASSED tests/core/project/test_configuration.py::testMissingDeviceDependencyIncludesOnlyExactNewDefinition
+PASSED tests/core/project/test_configuration.py::testDependencySelectionDoesNotUndoDeletionOrInventMissingDefinition
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts0-device_parameters]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts1-device_connection]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts2-layout]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts3-node_parameters]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts4-device_binding]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts5-resources]
+PASSED tests/core/project/test_configuration.py::testComparisonCategoryPreservesBindingAndParameterKinds[parts6-presentation]
+PASSED tests/core/project/test_configuration.py::testNodeIdSelectionSurvivesReorderAndEscapesPointers
+PASSED tests/core/project/test_configuration.py::testMissingNullFalseZeroAndEmptyAreNotConflated
+PASSED tests/core/project/test_configuration.py::testSelectionRejectsStaleDuplicateAndEmptyPaths
+PASSED tests/core/project/test_configuration.py::testLayoutAndLabelsDoNotChangeExecutionRevision
+PASSED tests/core/project/test_configuration.py::testStaticPageSelectionRequiresOnlyItsMissingResource
+PASSED tests/core/project/test_configuration.py::testCycleParametersKeepMaterializedPathsAndDoNotMutateOnlineSnapshot
+PASSED tests/runtime/test_device_plan_completion.py::testActualReadDoesNotAcquireAndTrialRestoresNativeValues
+PASSED tests/runtime/test_device_plan_completion.py::testSpawnReadAndTrialUseSameHostAndReleaseMemory
+PASSED tests/runtime/test_device_plan_completion.py::testCancelledTrialRestoresActualValuesAndCachedConfiguration
+PASSED tests/runtime/test_device_plan_completion.py::testFirstTrialRestoresDeviceActualValuesNotProjectDefaults
+PASSED tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner
+PASSED tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing
+PASSED tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected
+PASSED tests/runtime/test_device_plan_completion.py::testRemoteSetupAndCameraReadTrialUseProductionRpc
+PASSED tests/designer/test_device_definition_feedback.py::testPreacceptRejectionRetainsCandidateUntilCorrected
+PASSED tests/designer/test_device_definition_feedback.py::testPreacceptRefusalKeepsFormAndPendingSetupCannotCommit
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[-\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[   -\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+PASSED tests/designer/test_device_definition_feedback.py::testDeviceNameErrorUsesChineseAndKeepsInput[\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d\u540d-160]
+PASSED tests/designer/test_device_definition_feedback.py::testLocalFieldErrorShowsTabAndFocusWithoutResettingInput
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[address]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[address-multicast]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[channel]
+PASSED tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft[duplicate-route]
+PASSED tests/designer/test_device_definition_feedback.py::testPolicyLabelsArePresentationOnly
+PASSED tests/designer/test_device_definition_feedback.py::testSharedValidationPreservesMetadataAndFindsOffsetTabs
+PASSED tests/designer/test_device_definition_feedback.py::testPolicyCombinationErrorUsesChineseAndShowsPolicyTab
+PASSED tests/designer/test_device_definition_feedback.py::testSharedValidationStillUsesCoreIdentityGuard
+PASSED tests/designer/test_device_definition_feedback.py::testDisabledEmptyServerCanBeCreatedAndEnabledErrorFindsChannels
+PASSED tests/designer/test_device_definition_feedback.py::testEmptyTcpIpFindsExactCellAndGivesChineseFeedback
+PASSED tests/designer/test_device_definition_feedback.py::testNodeReuseNoRetainsDialogForCorrectionAndCancelRemainsAtomic
+PASSED tests/designer/test_device_workspace_usability.py::testVisibleActionLabelsExplainDraftBoundary
+PASSED tests/designer/test_device_workspace_usability.py::testAutoapplyRenameAndHistoryNeverReapplyOldControls
+PASSED tests/designer/test_device_workspace_usability.py::testWorkspaceDuplicateIsExplicitAndNeverOverwrites[False]
+PASSED tests/designer/test_device_workspace_usability.py::testWorkspaceDuplicateIsExplicitAndNeverOverwrites[True]
+PASSED tests/designer/test_device_workspace_usability.py::testWorkspaceValidationFocusAndRevertStayAtomic
+PASSED tests/designer/test_device_workspace_usability.py::testUnchangedDisabledPortableDefinitionCanClose
+PASSED tests/designer/test_device_workspace_usability.py::testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[]
+PASSED tests/designer/test_device_workspace_usability.py::testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit[\u8bbe\u5907\u540d\u79f0\u4e0d\u80fd\u4e3a\u7a7a]
+PASSED tests/designer/test_device_workspace_usability.py::testIncompleteNumberRevealsItsTabWithoutCommitting[apply]
+PASSED tests/designer/test_device_workspace_usability.py::testIncompleteNumberRevealsItsTabWithoutCommitting[close]
+PASSED tests/designer/test_device_workspace_sizing.py::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[642-452]
+PASSED tests/designer/test_device_workspace_sizing.py::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[826-590]
+PASSED tests/designer/test_device_workspace_sizing.py::testDeviceWorkspaceKeepsActionsReachableAtSmallLogicalSize[1200-760]
+PASSED tests/designer/test_device_usability_publication.py::testShortcutValidatesThenHidesAndRestoresSameObserver
+PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[0]
+PASSED tests/designer/test_device_usability_publication.py::testPublicationReturnPreservesDeviceListViewport[1]
+PASSED tests/designer/test_device_usability_publication.py::testReadableDeviceDiffRetainsExactPathAndBoundedRows
+PASSED tests/designer/test_device_usability_drafts.py::testMissingSlotDraftPersistsAndStrictFinishStillRejects
+PASSED tests/designer/test_device_usability_drafts.py::testMissingSelectorAllowedButWrongSelectorRejected
+PASSED tests/designer/test_device_usability_drafts.py::testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt
+PASSED tests/designer/test_device_usability_drafts.py::testDeviceCopiesAreNamedAndEachImportIsOneUndo
+PASSED tests/designer/test_device_usability_drafts.py::testAdvancedDeviceFieldsKeepValuesAndRevealInvalidField
+PASSED tests/designer/test_device_usability_drafts.py::testImvRequiredKeyAndFieldFeedbackClearWithoutLosingOtherErrors
+PASSED tests/designer/test_device_usability_drafts.py::testUnknownDefinitionValidationKeepsTechnicalDetails
+PASSED tests/designer/test_device_usability_drafts.py::testCreationIgnoresOldScopeTestResult
+PASSED tests/designer/test_device_usability_drafts.py::testDraftModeRetainsStrictFilledReferenceChecks[type]
+PASSED tests/designer/test_device_usability_drafts.py::testDraftModeRetainsStrictFilledReferenceChecks[source]
+PASSED tests/designer/test_device_usability_drafts.py::testDraftModeRetainsStrictFilledReferenceChecks[unknown-slot]
+PASSED tests/designer/test_device_usability_drafts.py::testImportNamesReserveSuffixAtLimitAndWithinBatch
+PASSED tests/designer/test_device_usability_drafts.py::testPendingCameraReopensThroughCurrentEditorAndKeepsGraph
+PASSED tests/designer/test_device_usability_drafts.py::testPendingMarkerUpdatesWhenOperatorCatalogArrives
+PASSED tests/designer/test_device_catalog.py::testWizardCommitAndUndoAreSingleTransaction
+PASSED tests/designer/test_device_catalog.py::testCancelledDraftHasNoSideEffects
+PASSED tests/designer/test_device_catalog.py::testFailedWizardRollsBackDeviceUpgradeAndNode
+PASSED tests/designer/test_device_catalog.py::testDefaultsChangeAffectsOnlyInheritedNode
+PASSED tests/designer/test_device_catalog.py::testSourceSwitchRemovesPreviousRecord
+PASSED tests/designer/test_device_catalog.py::testDeleteListsReferencesAndRenamePreservesId
+PASSED tests/designer/test_device_catalog.py::testChangingDefaultRejectsInvalidExistingOverride
+PASSED tests/designer/test_device_catalog.py::testInvalidBindingCannotPublish[type]
+PASSED tests/designer/test_device_catalog.py::testInvalidBindingCannotPublish[slot]
+PASSED tests/designer/test_device_catalog.py::testInvalidBindingCannotPublish[input]
+PASSED tests/designer/test_device_catalog.py::testInvalidBindingCannotPublish[variable]
+PASSED tests/designer/test_device_catalog.py::testCanvasAndStoreRoundtripPreserveAllDeviceSources
+PASSED tests/designer/test_device_catalog.py::testBoundVariableCannotBeDeleted
+PASSED tests/designer/test_device_catalog.py::testUnknownDeviceDataSurvivesStoreAndHistory
+PASSED tests/designer/test_device_catalog.py::testWorkflowExportIncludesDeviceDependencies
+PASSED tests/designer/test_device_catalog.py::testCompilerCannotFallBackToPrivateConnection
+PASSED tests/designer/test_device_catalog.py::testSingleNodeDebugCannotStripDeviceBindings
+PASSED tests/designer/test_device_catalog.py::testSnapshotGateAndDeploymentMetadataGatePrecedeResourceWork
+PASSED tests/designer/test_device_project_open.py::testDeviceDraftOpenCopySwitchSaveAndReopen
+PASSED tests/designer/test_device_finish_ui.py::testOnlineGraphIsIndependentReadOnlyAndRenders
+PASSED tests/designer/test_device_finish_ui.py::testDeviceSiteBindingMigrationInventoryAndUndo
+PASSED tests/designer/test_device_finish_ui.py::testDispatchEditorFitsAndMapsTwoConsumers
+PASSED tests/designer/test_device_plan_completion_ui.py::testSearchAndCategoryNeverRetainHiddenCommands
+PASSED tests/designer/test_device_plan_completion_ui.py::testReferenceNavigationAndPackageNativeUndoRedo
+PASSED tests/designer/test_device_plan_completion_ui.py::testInstanceSelectionAndSearchStayOnVisibleDevice
+PASSED tests/designer/test_device_plan_completion_ui.py::testWindowMonitorDoesNotReplaceEditModel
+PASSED tests/designer/test_device_plan_completion_ui.py::testWizardConnectionConfirmationAndCancelLeaveNoDraft
+PASSED tests/designer/test_device_plan_completion_ui.py::testManagedReadTrialSignalsAndOldRuntimeMessage
+PASSED tests/designer/test_device_plan_completion_ui.py::testWizardDiscoveryAdoptsDraftWithoutNetworkMutation
+PASSED tests/designer/test_device_plan_completion_ui.py::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[]
+PASSED tests/designer/test_device_plan_completion_ui.py::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[other-online-project]
+PASSED tests/designer/test_device_plan_completion_ui.py::testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice
+PASSED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[close]
+PASSED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[reopen]
+PASSED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[invalid-close]
+PASSED tests/designer/test_device_plan_completion_ui.py::testDeviceDialogLayoutEvidence[1280-800]
+PASSED tests/designer/test_device_plan_completion_ui.py::testDeviceDialogLayoutEvidence[900-650]
+PASSED tests/designer/test_device_package.py::testPortableDeviceResourcesSiteFieldsAndAtomicHistory
+PASSED tests/designer/test_device_package.py::testInvalidPackageDoesNotChangeDraft
+PASSED tests/designer/test_workflow_package_devices.py::testDeviceDependencyClosureAndUnknownDriverRoundtrip
+PASSED tests/designer/test_workflow_package_devices.py::testImportNewDisabledDevicePreservesSourcesAndLegacyCatalog
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[None]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping1]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping2]
+PASSED tests/designer/test_workflow_package_devices.py::testUnresolvedOrStaleMappingIsAtomic[mapping3]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[deviceTypeId-other]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[driverVersion-2.0]
+PASSED tests/designer/test_workflow_package_devices.py::testIncompatibleReuseRejectedWithoutMutation[defaults-value2]
+PASSED tests/designer/test_workflow_package_devices.py::testReuseDoesNotReplaceConnectionPoliciesOrEnabledState
+PASSED tests/designer/test_workflow_package_devices.py::testReuseUsesRegisteredGenericSelectorAndCapabilityRules
+PASSED tests/designer/test_workflow_package_devices.py::testSameConnectionNeverAutomaticallyMerged
+PASSED tests/designer/test_workflow_package_devices.py::testInProjectCopyReusesDeviceAndVariableIds
+PASSED tests/designer/test_workflow_package_devices.py::testFailureAfterDeviceAllocationRollsBackEntireImport
+PASSED tests/designer/test_workflow_package_devices.py::testChangedPackageRequiresNewPreview
+PASSED tests/designer/test_workflow_package_devices.py::testChangedTargetConnectionRequiresNewPreview
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[missing]
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[extra]
+PASSED tests/designer/test_workflow_package_devices.py::testMalformedDeviceDependenciesRejected[old-version]
+PASSED tests/designer/test_workflow_package_devices.py::testNewWorkflowPackageUsesCurrentCompleteSchema
+PASSED tests/designer/test_workflow_package_devices.py::testMissingCatalogDefinitionHasActionableExportFailure
+PASSED tests/designer/test_workflow_package_devices.py::testInputParameterSourceSurvivesImport
+PASSED tests/designer/test_workflow_package_devices.py::testDeviceMappingDialogRequiresEverySelection
+PASSED tests/designer/test_workflow_package_devices.py::testNormalWindowImportAndCopyAreSingleUndoableEdits[False]
+PASSED tests/designer/test_workflow_package_devices.py::testNormalWindowImportAndCopyAreSingleUndoableEdits[True]
+PASSED tests/designer/test_workflow_package_resources.py::testPortableClosureRemapsBytesDevicesNodesAndSiteFields
+PASSED tests/designer/test_workflow_package_resources.py::testInProjectCopyRetainsBytesAndDeviceBindingsWithoutFilesystemWrites
+PASSED tests/designer/test_workflow_package_resources.py::testMalformedDependenciesFailBeforeDestinationMutation[digest]
+PASSED tests/designer/test_workflow_package_resources.py::testMalformedDependenciesFailBeforeDestinationMutation[missing-bytes]
+PASSED tests/designer/test_workflow_package_resources.py::testMalformedDependenciesFailBeforeDestinationMutation[site-value]
+PASSED tests/designer/test_workflow_package_resources.py::testMalformedDependenciesFailBeforeDestinationMutation[target]
+PASSED tests/designer/test_workflow_package_resources.py::testMalformedDependenciesFailBeforeDestinationMutation[resource-path]
+PASSED tests/designer/test_workflow_package_resources.py::testFailedInstallationRemovesOnlyNewFilesAndNeverUpdatesDraft
+PASSED tests/designer/test_workflow_package_resources.py::testRootAndDigestRequiredAndResourceBudgetIsBounded
+PASSED tests/designer/test_workflow_package_resources.py::testDependentDevicesCannotOverwriteExistingSiteBindings
+PASSED tests/designer/test_workflow_package_resources.py::testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes[False]
+PASSED tests/designer/test_workflow_package_resources.py::testNativeImportPreviewConfirmationAndUndoRedoPreserveResourceBytes[True]
+PASSED tests/designer/test_device_identity_reuse.py::testDeclaredIdentityIgnoresDefaultsAndNeverMerges[simulated-connection0-other0]
+PASSED tests/designer/test_device_identity_reuse.py::testDeclaredIdentityIgnoresDefaultsAndNeverMerges[plc-connection1-other1]
+PASSED tests/designer/test_device_identity_reuse.py::testDeclaredIdentityIgnoresDefaultsAndNeverMerges[camera-connection2-other2]
+PASSED tests/designer/test_device_identity_reuse.py::testUnmarkedOrIncompleteIdentityNeverGuessesAliases
+PASSED tests/designer/test_device_identity_reuse.py::testDuplicateCatalogEditIsAtomicAndOffersExistingId
+PASSED tests/designer/test_device_identity_reuse.py::testNodeWizardExplicitlyReusesWithoutOverwritingDefaults[False]
+PASSED tests/designer/test_device_identity_reuse.py::testNodeWizardExplicitlyReusesWithoutOverwritingDefaults[True]
+PASSED tests/designer/test_param_form.py::testGetFieldDefinitionsParsesSchema
+PASSED tests/designer/test_param_form.py::testSchemaParamFormReturnsSchemaDefaults
+PASSED tests/designer/test_param_form.py::testSchemaParamFormSupportsNestedObjectAndArrayDefaults
+PASSED tests/core/plugin/test_device_registry.py::testIndependentDeviceDiscoveryDoesNotImportOperators
+PASSED tests/core/plugin/test_device_registry.py::testIdenticalTypesDeduplicateButConflictsPoisonOnlyOneType
+PASSED tests/core/plugin/test_device_registry.py::testInvalidDeclarationIsIsolated[version]
+PASSED tests/core/plugin/test_device_registry.py::testInvalidDeclarationIsIsolated[path]
+PASSED tests/core/plugin/test_device_registry.py::testInvalidDeclarationIsIsolated[dynamic]
+PASSED tests/core/plugin/test_device_registry.py::testInvalidDeclarationIsIsolated[unknown]
+PASSED tests/core/plugin/test_device_registry.py::testInvalidDeclarationIsIsolated[schema]
+PASSED tests/core/plugin/test_device_registry.py::testMalformedJsonDoesNotBlockOtherTypes
+PASSED tests/core/plugin/test_device_registry.py::testOperatorRequirementsAreOptionalAndStrict
+PASSED tests/core/plugin/test_device_registry.py::testRootReadFailureDoesNotAbortOtherDeviceRoots
+348 passed, 2 deselected in 133.30s (0:02:13)

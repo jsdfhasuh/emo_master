@@ -1,0 +1,32 @@
+....................................................F................... [ 46%]
+........................................................................ [ 93%]
+..........                                                               [100%]
+================================== FAILURES ===================================
+_________________ testDeviceDraftOpenCopySwitchSaveAndReopen __________________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000002E4E23D7A00>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2749/testDeviceDraftOpenCopySwitchS0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+
+    def testDeviceDraftOpenCopySwitchSaveAndReopen(ownedDesignerWindow, tmp_path, definition):  # noqa: F811
+        def forbidden(*args, **kwargs):
+            raise AssertionError("device draft must not execute or load a Runtime project")
+    
+        payload = project(definition)
+        source = tmp_path / "device.emoproj"
+        saveProject(source, payload)
+        runtime = SimpleNamespace(listOperators=lambda: [], loadProject=forbidden, startJob=forbidden,
+                                  releaseCommunicationForReplacement=forbidden)
+        window = ownedDesignerWindow(runtime, settingsStore=QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat))
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+>       assert window.flowModel.nodes["capture"].deviceBindings == {"camera": {"deviceId": "camera"}}
+E       AssertionError: assert {'camera': {'...lectors': {}}} == {'camera': {'...d': 'camera'}}
+E         
+E         Differing items:
+E         {'camera': {'deviceId': 'camera', 'selectors': {}}} != {'camera': {'deviceId': 'camera'}}
+E         Use -v to get more diff
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_project_open.py:21: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_project_open.py::testDeviceDraftOpenCopySwitchSaveAndReopen
+1 failed, 153 passed in 32.22s

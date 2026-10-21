@@ -1,0 +1,49 @@
+..............................................FFFFFF..                   [100%]
+================================== FAILURES ===================================
+____________ testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[] _____________
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:256: in testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft
+    assert not d.stateRuntimeId and d.buttons['network'].isEnabled()
+E   assert (not '' and False)
+E    +  where '' = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x173840b94c0) at 0x0000017380945800>.stateRuntimeId
+E    +  and   False = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380CF9D40>()
+E    +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380CF9D40> = <PySide2.QtWidgets.QAction(0x17384433ad0 text="�豸����" toolTip="Runtime �豸���� / ʵ�� IP����ѡ���Ͳ�֧�ֻ� Runtime ���ṩ��" menuRole=TextHeuristicRole visible=true) at 0x0000017380CF9D40>.isEnabled
+__ testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[other-online-project] ___
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:256: in testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft
+    assert not d.stateRuntimeId and d.buttons['network'].isEnabled()
+E   assert (not '' and False)
+E    +  where '' = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x17384543cc0) at 0x0000017384FF2F40>.stateRuntimeId
+E    +  and   False = <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380D7DA40>()
+E    +    where <built-in method isEnabled of PySide2.QtWidgets.QAction object at 0x0000017380D7DA40> = <PySide2.QtWidgets.QAction(0x173824b9e50 text="�豸����" toolTip="Runtime �豸���� / ʵ�� IP����ѡ���Ͳ�֧�ֻ� Runtime ���ṩ��" menuRole=TextHeuristicRole visible=true) at 0x0000017380D7DA40>.isEnabled
+____ testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:298: in testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice
+    assert calls == ['info'] and '升级 Runtime' in d.status.text()
+E   AssertionError: assert ([] == ['info']
+E     
+E     Right contains one more item: 'info'
+E     Use -v to get more diff)
+_____ testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[close] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:336: in testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent
+    assert entered.wait(2)
+E   assert False
+E    +  where False = wait(2)
+E    +    where wait = <threading.Event object at 0x0000017384FFA380>.wait
+____ testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[reopen] _____
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:336: in testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent
+    assert entered.wait(2)
+E   assert False
+E    +  where False = wait(2)
+E    +    where wait = <threading.Event object at 0x00000173853BE0E0>.wait
+_ testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[invalid-close] _
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\designer\test_device_plan_completion_ui.py:336: in testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent
+    assert entered.wait(2)
+E   assert False
+E    +  where False = wait(2)
+E    +    where wait = <threading.Event object at 0x00000173854294E0>.wait
+=========================== short test summary info ===========================
+FAILED tests/designer/test_device_plan_completion_ui.py::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[]
+FAILED tests/designer/test_device_plan_completion_ui.py::testDeviceWorkspaceOfflineDiscoveryOnlyAdoptsDraft[other-online-project]
+FAILED tests/designer/test_device_plan_completion_ui.py::testOfflineDiscoveryReportsOldRuntimeInsteadOfStaleUnpublishedNotice
+FAILED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[close]
+FAILED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[reopen]
+FAILED tests/designer/test_device_plan_completion_ui.py::testClosingDeviceWorkspaceAbandonsOnlyPendingDiscoveryIntent[invalid-close]
+6 failed, 48 passed in 26.19s

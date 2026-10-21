@@ -1,0 +1,165 @@
+.............................................................            [100%]
+=================================== PASSES ====================================
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+---------------------------- Captured stdout setup ----------------------------
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-f-mnuulx4x\chain\tcp-device-chain0
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+______ testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure ______
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-078a48b9-6792-4102-934e-eb7c66442b72:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 等待连接已取消
+_________ testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs _________
+---------------------------- Captured stdout call -----------------------------
+THIRD_PARTY_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\emo-f-mnuulx4x\chain\testA6ThirdPartyServiceUsesSam0
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-72db3684-cd69-4088-b71d-d68f8dde4d9a:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "C:\Users\JSDFHA~1\AppData\Local\Temp\emo-f-mnuulx4x\source\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 示例采样被拒绝；服务可继续使用
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+PASSED tests/runtime/test_tcp_device_integration.py::testA2CameraProcessingThenPlcWriteInTheSameSavedProject
+PASSED tests/runtime/test_tcp_device_integration.py::testA3ServerAndBothSingleTransactionsUseRealJobEntry
+PASSED tests/runtime/test_tcp_device_integration.py::testNormal16MiBMessageCrossesTheBoundedTcpBridge
+PASSED tests/runtime/test_tcp_device_integration.py::testBindingRejectsMissingChannelAndClientIdentityIsNotExclusive
+PASSED tests/runtime/test_tcp_device_integration.py::testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure
+PASSED tests/runtime/test_tcp_device_integration.py::testUnavailableReplyPreservesUnknownReceiptAndNeverReplays
+PASSED tests/runtime/test_tcp_device_integration.py::testA5AllThreePackagesImportAndRunFromNewDirectories
+PASSED tests/runtime/test_tcp_device_integration.py::testA6ThirdPartyServiceUsesSameFactoryJobStateAndDeviceLogs
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerReferenceIsAddedBeforeSelectorValidation
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[False]
+PASSED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob[True]
+PASSED tests/runtime/test_tcp_device_closure.py::testF02NewServerAndBoundNodeSelectedPublicationRuns
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[client_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[receive_once]
+PASSED tests/runtime/test_tcp_device_closure.py::testF05ReceiveTwiceAndListenerRemainsExclusive
+PASSED tests/runtime/test_device_contract_closure.py::testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+PASSED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+PASSED tests/runtime/test_device_contract_closure.py::testF07BusinessRejectionLeavesServiceUsable
+PASSED tests/runtime/test_device_contract_closure.py::testF08OrdinaryChannelsUseGenericCreateEditAndSave
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1024]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1025]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1026]
+PASSED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1027]
+PASSED tests/runtime/test_device_feedback_closure.py::testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[False]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[True]
+PASSED tests/runtime/test_device_feedback_closure.py::testF09LifecycleLoggerKeepsCreationIdentityWhileExecutionUsesNewSnapshot
+PASSED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+PASSED tests/runtime/test_device_feedback_closure.py::testF11SelectorIssueHasWorkflowNodeSlotAndSelector
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO
+PASSED tests/runtime/test_device_feedback_closure.py::testF11InitialRpcAndUiReceiveStructuredDeviceLocation
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[override]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[dynamic]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DeviceParameterSourcesKeepExactPositions[address]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11DevicePackageShowsTypeAndRequiredVersion
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_missing]
+PASSED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_version]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[embedded]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc]
+PASSED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[designer]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-client_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-receive_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-client_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-receive_once]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[32]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[512]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview[1025]
+PASSED tests/designer/test_tcp_closure_ui.py::testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer
+PASSED tests/designer/test_tcp_closure_ui.py::testDraftAndConnectedServerSummaryUseSameSnapshot
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners0]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners1]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners2]
+PASSED tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection
+PASSED tests/runtime/test_device_usability_chain.py::testC1ThroughC6PendingDraftPublicationAndRun
+PASSED tests/runtime/test_device_usability_chain.py::testConnectionRefusalReachesBothEditorsAsActionableFeedback
+61 passed in 82.40s (0:01:22)

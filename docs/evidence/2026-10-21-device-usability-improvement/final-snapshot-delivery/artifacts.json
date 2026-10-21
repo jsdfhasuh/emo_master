@@ -1,0 +1,207 @@
+[
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\acceptance-results.json",
+    "retained": "acceptance\\acceptance-results.json",
+    "sha256": "1d12ae9222e808578a40547452bf1b05800bea411924c879f2fabaf616edabe0"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\device-diagnostics-before-export.json",
+    "retained": "acceptance\\device-diagnostics-before-export.json",
+    "sha256": "aef3626a045e3e98eedb8ce6206ddd33bf23040b8b0def6d89e045db116fbc0d"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\devices.emodev.json",
+    "retained": "acceptance\\devices.emodev.json",
+    "sha256": "d92a213d02b590d69b7f566df23d36b2e8752b825e4584455e5cf3a881e6dd1d"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\qt-device-connection.png",
+    "retained": "acceptance\\qt-device-connection.png",
+    "sha256": "9b5b95a55e31fb7a77ac3b6c35efa3b5bea4d6da37b09c7655b84536ef8bbeea"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\qt-first-write.png",
+    "retained": "acceptance\\qt-first-write.png",
+    "sha256": "93685b1ff6c5f66777aec45f7f18b8fb619074ba8b61a2874ee1ed79f5fc55dc"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\workflow.emowf.json",
+    "retained": "acceptance\\workflow.emowf.json",
+    "sha256": "54feb4c04842be8423e085591fc63a5492c2f0534381e14ab1902e66f4795fb5"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\device-import\\device-diagnostics.json",
+    "retained": "acceptance\\device-import\\device-diagnostics.json",
+    "sha256": "4338597ce9a7748af62e0106b214fdb328d8e042324a5ea3a1695bab4fdcdb80"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\device-import\\imported.emoproj",
+    "retained": "acceptance\\device-import\\imported.emoproj",
+    "sha256": "0d27a98d6dae53da007c65bd8ab25c29b109013a2edc0d30a9c88734e02eab8b"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\device-import\\sample.png",
+    "retained": "acceptance\\device-import\\sample.png",
+    "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\engineering\\acceptance.emoproj",
+    "retained": "acceptance\\engineering\\acceptance.emoproj",
+    "sha256": "8442ca12f96721415a315282b664ba417884c2dccd62c41a466002238d43a448"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\engineering\\sample.png",
+    "retained": "acceptance\\engineering\\sample.png",
+    "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\runtime-import\\device-diagnostics.json",
+    "retained": "acceptance\\runtime-import\\device-diagnostics.json",
+    "sha256": "35cead30d9c5989fea6e1132461cfbe2e58fcf43b9c6e3a35728b71c8953dcdc"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\runtime-import\\imported.emoproj",
+    "retained": "acceptance\\runtime-import\\imported.emoproj",
+    "sha256": "ec5ffede6690a2111f359e5e61e33c74a3e474702d56b1147230bed3d0649425"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\runtime-import\\project.json",
+    "retained": "acceptance\\runtime-import\\project.json",
+    "sha256": "e315c68e6faa41283ada230b90c25deb2fab5e3e46073190d1a1f25a0a576841"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\runtime-import\\sample.png",
+    "retained": "acceptance\\runtime-import\\sample.png",
+    "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\runtime-package\\runtime-e4a473f0cc41408d81dff26932e205ca.vxpkg",
+    "retained": "acceptance\\runtime-package\\runtime-e4a473f0cc41408d81dff26932e205ca.vxpkg",
+    "sha256": "24bda405fe030ba451dc889d8f5fbdf8175341354d45540cac4d0358ec352876"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\saved-copy\\project.json",
+    "retained": "acceptance\\saved-copy\\project.json",
+    "sha256": "cbcb64d9571f38963070fd0ea84f1e61ad275d03342f3a5e7a7b13d380524ccb"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\saved-copy\\sample.png",
+    "retained": "acceptance\\saved-copy\\sample.png",
+    "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\workflow-import\\device-diagnostics.json",
+    "retained": "acceptance\\workflow-import\\device-diagnostics.json",
+    "sha256": "85f6d261f0e5322c42f2630fc8c2fb30e1f251d4c548afa654770dbfbd9cfdf8"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\workflow-import\\imported.emoproj",
+    "retained": "acceptance\\workflow-import\\imported.emoproj",
+    "sha256": "848916d467f812dd5d02cd87435535efbf269e4d3fdc40cfa427a4e607699d85"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\tcp-device-chain0\\workflow-import\\workflow-resources-o_2jiibz\\resource-77724734f3b042c8bcfda502d91f426c.png",
+    "retained": "acceptance\\workflow-import\\workflow-resources-o_2jiibz\\resource-77724734f3b042c8bcfda502d91f426c.png",
+    "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpByteLogsKeepChannelAndE0\\byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE0\\byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "sha256": "70decaa98372bd0975538a4680cc8dcdc6c77cf09b94be1e5d8d736b1e0fce71"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpByteLogsKeepChannelAndE1\\byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE1\\byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "sha256": "f04e5695425f8af4d4fbdd3ddfd272b8cd09a07c35f13d590297dd0ff13697d1"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpByteLogsKeepChannelAndE2\\byte-logs\\runtime-20261021-142046-51336-0001.jsonl",
+    "retained": "byte-logs\\testTcpByteLogsKeepChannelAndE2\\byte-logs\\runtime-20261021-142046-51336-0001.jsonl",
+    "sha256": "db2735440c3928e5fc281432aa04eb1a0e55cc09ca7c4f66cd991a4768f072ea"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\regression\\testConsumerDeviceLogsKeepReta0\\logs\\runtime-20261021-142112-47092-0001.jsonl",
+    "retained": "dispatch\\testConsumerDeviceLogsKeepReta0\\logs\\runtime-20261021-142112-47092-0001.jsonl",
+    "sha256": "948867ebd55d214e687263a2fa351ee76acc3935e40172fa549455bb991b4ee4"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\regression\\testConsumerDeviceLogsKeepReta0\\project.json",
+    "retained": "dispatch\\testConsumerDeviceLogsKeepReta0\\project.json",
+    "sha256": "04f13f61627c386fa2ffeffbf39020fa2544d0a1029dd22a15e486857132c06a"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\regression\\testConsumerDeviceLogsKeepReta1\\logs\\runtime-20261021-142115-47092-0001.jsonl",
+    "retained": "dispatch\\testConsumerDeviceLogsKeepReta1\\logs\\runtime-20261021-142115-47092-0001.jsonl",
+    "sha256": "8f4019275ef8f723910894f6982a0706a404f723c96da5b06844f996f0e7b890"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\regression\\testConsumerDeviceLogsKeepReta1\\project.json",
+    "retained": "dispatch\\testConsumerDeviceLogsKeepReta1\\project.json",
+    "sha256": "9dec87c9210dcf2471c9f0842006016cf2bad57f944f23fa59248ad2132e13e7"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testC1ThroughC6PendingDraftPub0\\C2-fixed-actions.png",
+    "retained": "usability-chain\\testC1ThroughC6PendingDraftPub0\\C2-fixed-actions.png",
+    "sha256": "b4cd287e2cef923c9a42f68bd1b73757e052138355068983fa4aa44e12a7b33c"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testC1ThroughC6PendingDraftPub0\\C3-publication-summary.png",
+    "retained": "usability-chain\\testC1ThroughC6PendingDraftPub0\\C3-publication-summary.png",
+    "sha256": "0023e5fb4ac5575d648ebce711b284cab8e1343d43899953139e6d5598b188ac"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testC1ThroughC6PendingDraftPub0\\usability-results.json",
+    "retained": "usability-chain\\testC1ThroughC6PendingDraftPub0\\usability-results.json",
+    "sha256": "81fb3257b507137bfa1f0a154f35241a8cf7a2b0881d73cbdf61b5b37745616d"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testC1ThroughC6PendingDraftPub0\\closure_plugin\\manifest.json",
+    "retained": "usability-chain\\testC1ThroughC6PendingDraftPub0\\closure_plugin\\manifest.json",
+    "sha256": "ad95f1337ec30afcead47afacd308594187149b38163944cc1d4c8b9bd36000a"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testC1ThroughC6PendingDraftPub0\\engineering\\usability.emoproj",
+    "retained": "usability-chain\\testC1ThroughC6PendingDraftPub0\\engineering\\usability.emoproj",
+    "sha256": "2542a81bb2b7989c8d27e5e834131cfc3cd5967d066302693b7c1c5673b4b51b"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound0\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound0\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "sha256": "0d93163e4875791eb8025be1df89930fc7df286915df8a429435d6a0fc4ccaed"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound0\\once-preview.json",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound0\\once-preview.json",
+    "sha256": "9912d9ea820d7d38a7385045668ff0333fc2874ebefe5a7f7332700e5011cfbd"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound1\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound1\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "sha256": "fe89d99ce64efa73c4685299bdd34295d877d427964d42b419ce92d1a5a5367b"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound1\\once-preview.json",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound1\\once-preview.json",
+    "sha256": "bef0eea07a40a68769aece85c7bac6747fc1cc5c9f2eec3b36a625492765ed67"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound2\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound2\\once-byte-logs\\runtime-20261021-142044-51336-0001.jsonl",
+    "sha256": "1abe5aa52a0c31376e145532a893ad97c342cbfa8619bf85b17116f4cf5be8cf"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound2\\once-preview.json",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound2\\once-preview.json",
+    "sha256": "e4ea682c1c3286bfdc2345fbf83b8b4f5a4b43412a02b0d94a766db6a165a097"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound3\\once-byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound3\\once-byte-logs\\runtime-20261021-142045-51336-0001.jsonl",
+    "sha256": "2d2b97a634046f96c0f922164cf30cf19463cd20d15cadc22f45ca39dad90175"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-huz7f4e2\\chain\\testTcpOnceResultLogsKeepBound3\\once-preview.json",
+    "retained": "once-byte-logs\\testTcpOnceResultLogsKeepBound3\\once-preview.json",
+    "sha256": "21e33d498140cec2d1145c15a6052e35df0ec19b0360df3e3ad589970bf23b42"
+  }
+]

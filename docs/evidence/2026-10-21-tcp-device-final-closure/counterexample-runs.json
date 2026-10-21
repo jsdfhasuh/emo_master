@@ -1,0 +1,80 @@
+{
+  "first-counterexamples": {
+    "sourceSha": "31b5de4a604e4facdf636ad39795da0869d908d4",
+    "productFilesMatchRecordedCommit": true,
+    "pytest": {
+      "label": "counterexamples",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-c0hrdfqs\\counterexamples",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\first-counterexamples\\counterexamples.xml",
+        "tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview",
+        "tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing",
+        "tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected",
+        "tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner",
+        "tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:32:40.824769+08:00",
+      "elapsedSeconds": 5.578,
+      "exitCode": 1,
+      "log": "counterexamples.log"
+    }
+  },
+  "corrected-counterexamples": {
+    "sourceSha": "31b5de4a604e4facdf636ad39795da0869d908d4",
+    "productFilesMatchRecordedCommit": true,
+    "pytest": {
+      "label": "counterexamples",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-4fh5zfo0\\counterexamples",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\corrected-counterexamples\\counterexamples.xml",
+        "tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview",
+        "tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing",
+        "tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected",
+        "tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner",
+        "tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:34:29.519584+08:00",
+      "elapsedSeconds": 4.0,
+      "exitCode": 1,
+      "log": "counterexamples.log"
+    }
+  },
+  "fixed-counterexamples": {
+    "sourceSha": "31b5de4a604e4facdf636ad39795da0869d908d4",
+    "productFilesMatchRecordedCommit": false,
+    "pytest": {
+      "label": "counterexamples",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-2a979125\\counterexamples",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\fixed-counterexamples\\counterexamples.xml",
+        "tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview",
+        "tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing",
+        "tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected",
+        "tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner",
+        "tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:36:15.677877+08:00",
+      "elapsedSeconds": 3.829,
+      "exitCode": 0,
+      "log": "counterexamples.log"
+    }
+  }
+}

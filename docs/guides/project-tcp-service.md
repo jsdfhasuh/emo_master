@@ -9,7 +9,8 @@
 1. 从主界面 **设备管理**打开独立窗口，创建 TCP 服务、TCP 单次客户端或 TCP 单次接收设备。
 2. 在“连接”中填写地址、端口及通道，在“默认参数”和“策略”中选择本次工作参数、启动与释放方式。
    非法字段会保留输入并显示位置；未下发的工程也可编辑。
-3. 在节点设备绑定向导中选择设备。TCP 服务节点还需选择稳定的通道 ID。
+3. 在节点设备绑定向导中选择设备。`communication.tcp.session` 还需选择稳定的通道 ID；
+   `communication.tcp.session_send` 只绑定 Server，通道由输入 session 决定，无需额外静态 selector。
 4. “应用到草稿”和“保留草稿并关闭”保留当前工程编辑；从文件菜单保存后可以重开。
 5. 从 **Runtime → 写入 Runtime**校验完整候选，再明确写入。校验不监听、不连接、不创建 Job。
 6. 通过 **运行**菜单启动正式流程。保存文件、写入配置和运行流程是三个明确动作。
@@ -22,7 +23,7 @@
 | 设备类型 | 算子 | 绑定与动作 |
 | --- | --- | --- |
 | device.tcp.server | communication.tcp.session | tcp 槽绑定设备及 channelId，取得会话 |
-| device.tcp.server | communication.tcp.session_send | tcp 槽绑定设备及 channelId，向输入会话发送 |
+| device.tcp.server | communication.tcp.session_send | tcp 槽只绑定设备，通道来自输入 session，向该会话发送 |
 | device.tcp.client_once | communication.tcp.client | tcp 槽绑定设备，单次连接并发送／交换 |
 | device.tcp.receive_once | communication.tcp.receive_once | tcp 槽绑定设备，单次监听接收及可选 ACK |
 
@@ -32,6 +33,9 @@
 服务通道包含稳定 channelId、显示名称和允许的 IPv4 客户端地址。改名称保留 ID；
 删除正在被节点使用的通道会指出流程／节点／槽位并保留输入。一个客户端 IP 只属于一个通道，
 一个通道同时保留一个客户端。共享设备不会因为两个节点或两个 Job 引用而复制监听器。
+
+在线 Server 仅修改通道显示名称后，可以测试当前连接草稿并复用原监听端点。
+端点测试不应用新的通道规则，也不验证外部客户端；草稿仍需通过 Runtime 入口明确写入。
 
 默认回环地址适合本机模拟。现场地址按 Runtime 所在机器配置；本轮测试不访问真实设备，
 也不修改物理网卡。允许列表不替代认证；当前后端不提供 TLS。
@@ -85,6 +89,8 @@ tcpSessionRef 和 tcpSendReceipt 使用 **1.1**，携带 deviceId、Runtime／�
 Designer 与独立操作端观察同一 Runtime 后端。服务状态提供通道、客户端地址及代次；
 诊断按设备和通道查看生命周期、收发、节点及失败记录，支持 UTF-8／HEX 和回执详情。
 后台事件、节点日志、未主动记录日志的节点失败都保留发生时的归属。
+收发字节预览最多保留 1024 个原始字节，并显示原始字节数；超出时提示“原始数据已截断”。
+“部分诊断字段已截断”只表示其他字段的预览被缩短，不表示报文本身丢失；通道筛选和字节显示仍可用。
 
 窗口关闭停止观察，不释放后台服务；重开不会重复挂钩。Runtime／工程／加载代次变化后，
 旧观察结果不会混到新设备。读取日志不改变 Job 事件序列。

@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "docs\\evidence\\2026-10-21-tcp-device-final-closure\\run_validation.py"
+  ],
+  "exitCode": 0,
+  "runnerSha256": "0f2de3c37ad5a1b30a5027052d89b34550feb5124cbe3d379cd749267a307e3f"
+}

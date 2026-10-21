@@ -1,0 +1,31 @@
+{
+  "sourceSha": "325f60e4fe7b9210eaf50abddc13d0b2086e8bcb",
+  "sourceTree": "0df69ebe7a7eeee7d631009de8e78cc2091cc2fe",
+  "snapshotPythonFilesMatchCommit": true,
+  "fixedWorkingTreeProductFilesMatchFinalCommit": true,
+  "historicalEvidenceCheck": {
+    "argv": [
+      "git",
+      "diff",
+      "--exit-code",
+      "31b5de4a604e4facdf636ad39795da0869d908d4",
+      "--",
+      "docs/evidence/2026-10-21-tcp-device-integration",
+      "docs/evidence/2026-10-21-tcp-device-closure",
+      "docs/evidence/2026-10-21-tcp-device-review-round2",
+      "docs/testing/2026-10-21-tcp-device-review-round2.md"
+    ],
+    "exitCode": 0,
+    "paths": [
+      "docs/evidence/2026-10-21-tcp-device-integration",
+      "docs/evidence/2026-10-21-tcp-device-closure",
+      "docs/evidence/2026-10-21-tcp-device-review-round2",
+      "docs/testing/2026-10-21-tcp-device-review-round2.md"
+    ]
+  },
+  "artifactCount": 28,
+  "artifactHashesMatch": true,
+  "sourceSubtree": "3127eb7a88e208de4d4c3aa41581fd723a757df1",
+  "testsSubtree": "20b8c03a685f6cdbd76bb2963413ce475874d544",
+  "remainingWorkingTree": "M .gitattributes\n M docs/guides/device-dispatch-online-configuration.md\n M docs/guides/project-tcp-service.md\n M docs/plans/2026-10-20-tcp-device-integration-plan-v1.md\n M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-tcp-device-final-closure/\n?? docs/testing/2026-10-21-tcp-device-final-closure.md\n?? docs/testing/2026-10-21-video-loader-validation.md\n?? docs/video-loader.md\n?? examples/video_sample_while/\n?? src/emo_master/plugins/builtins/video_loader/\n?? tests/designer/test_video_loader_form.py\n?? tests/plugins/test_video_loader_operator.py\n?? tests/runtime/test_video_sample_while.py"
+}

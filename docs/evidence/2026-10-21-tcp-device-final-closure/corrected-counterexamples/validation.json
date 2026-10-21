@@ -1,0 +1,148 @@
+{
+  "baseline": "31b5de4a604e4facdf636ad39795da0869d908d4",
+  "sourceSha": "31b5de4a604e4facdf636ad39795da0869d908d4",
+  "sourceTree": "294fae7f9b6409ecba1932e4305cf2d89557e30d",
+  "workingTree": true,
+  "workingTreeStatus": "M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/designer/test_device_definition_feedback.py\n M tests/designer/test_tcp_closure_ui.py\n M tests/runtime/test_device_plan_completion.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-tcp-device-final-closure/\n?? src/emo_master/plugins/builtins/video_loader/",
+  "snapshot": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-4fh5zfo0",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "exported": [
+    {
+      "path": "src/emo_master/apps/designer/ui/tcp_device_form.py",
+      "blob": "24221a5cf1da00a7c584c037e815c6445ddac064",
+      "committedBlob": "24221a5cf1da00a7c584c037e815c6445ddac064",
+      "matchesSourceCommit": true,
+      "sha256": "c18a66f81c032f8adac8c03b55a88a47af19d761176d2daf1db8ff0eaf10ba0b"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/diagnostics.py",
+      "blob": "e84fb45daabd89dad7e32a48e8360fd757956472",
+      "committedBlob": "e84fb45daabd89dad7e32a48e8360fd757956472",
+      "matchesSourceCommit": true,
+      "sha256": "1438970705ce87d486d5416dcd52524ae4dadc2d818debc97363e72907a51356"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/manager.py",
+      "blob": "fc4c670a6f3989ce5f7a361e1a3869c22c9cb4c5",
+      "committedBlob": "fc4c670a6f3989ce5f7a361e1a3869c22c9cb4c5",
+      "matchesSourceCommit": true,
+      "sha256": "c9a137205a4772061624963e54d89025a2d74eae13d16b0cfe2f61f1840f684e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "blob": "dfd4fee0b5e324408712951afa3bd1e6efae3d5e",
+      "committedBlob": "dfd4fee0b5e324408712951afa3bd1e6efae3d5e",
+      "matchesSourceCommit": true,
+      "sha256": "fe996fc9a6955d6d3c68aac22db137c79bea2ff39f359d88510e6fff8aaf587c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "blob": "393f46f8ce7a3503ffed3595cc65b2aa6529d3fa",
+      "committedBlob": "227e2fd79b84625d7f9a31c893bc83af335ac997",
+      "matchesSourceCommit": false,
+      "sha256": "39c756152c2233e10740712773bea232b692dd3e04c13b0560678595447d936f"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/resources.py",
+      "blob": "65e3cc6d8df755063a7a0810d8578d87049103e6",
+      "committedBlob": "7fe668923adcd9d101eef928a1ac3f79abcb4b9b",
+      "matchesSourceCommit": false,
+      "sha256": "6d51bd74d03ad2ec14b8d2ad1a2c73bdd0791fe476364c7c721ae6d533510c6f"
+    },
+    {
+      "path": "src/emo_master/ui/communication_panel.py",
+      "blob": "01f635d77d83857f3eaf01c55da71aa1e908ea57",
+      "committedBlob": "01f635d77d83857f3eaf01c55da71aa1e908ea57",
+      "matchesSourceCommit": true,
+      "sha256": "ca666d043580e7b692de75ab548d772a839d9356a56408c3e686067a006a44f2"
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "blob": "8718d811cccff6c0d5eea3a171278e8761db82f1",
+      "committedBlob": "9abbe0df3b6f7e7db31623a048f185cc5ce26049",
+      "matchesSourceCommit": false,
+      "sha256": "d59f97c5325f271c4c15d33974286ba23434f25c3d099742c3e22f8552765f32"
+    },
+    {
+      "path": "tests/designer/test_device_definition_feedback.py",
+      "blob": "c71ca418eee7d3a27ebb73b9526c72c428bed141",
+      "committedBlob": "d9ebb97ae7881c676ba8020e963ebc1ab4f032d3",
+      "matchesSourceCommit": false,
+      "sha256": "f04e5f13f2ec678b5ce988c0fb752fc84aa769fc669d54145a80d47e289dcfa8"
+    },
+    {
+      "path": "tests/designer/test_tcp_closure_ui.py",
+      "blob": "4dad14be18dceb27e613bb9eb0fc915a48a1f823",
+      "committedBlob": "d7b74e0e4a470f80a552694645d46aaca07e00f9",
+      "matchesSourceCommit": false,
+      "sha256": "3413d98d135c703a4bb0c974dfe04c6f175fae6117f317fb06d134331bf3f0ff"
+    },
+    {
+      "path": "tests/runtime/test_device_plan_completion.py",
+      "blob": "be5694ced167fdce4d09966f3298d68859c99f6c",
+      "committedBlob": "8c5e0a787d0e82a5f10679433bf1d47d556cfa0a",
+      "matchesSourceCommit": false,
+      "sha256": "7d8fc488c94e273c1213b20e97c30fad0e2f2240d4a35d97c85d6b0a6ab6f029"
+    },
+    {
+      "path": "tests/runtime/test_operator_debug_resources.py",
+      "blob": "9828406744523fc70bc44915463b39d50d43610d",
+      "committedBlob": "8c1d2167d953d15a5bd68d0141a401f6a76abd12",
+      "matchesSourceCommit": false,
+      "sha256": "548b830f5e39bbd85f0caf85c027a774f97e92f227d4496432a8e56b7d8d839d"
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "blob": "e57a141d9c2d4a64fc88164349e9fc8b631a732a",
+      "committedBlob": "e26676c57e36e534086f272b90ef6be468d95e7d",
+      "matchesSourceCommit": false,
+      "sha256": "267539e69e3f7f8da06abee36c7f26f6c51c1e34a2e409177bdcf2572fac9852"
+    }
+  ],
+  "runnerSha256": "0f2de3c37ad5a1b30a5027052d89b34550feb5124cbe3d379cd749267a307e3f",
+  "environment": {
+    "PYTHONPATH": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src;D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "31b5de4a604e4facdf636ad39795da0869d908d4"
+  },
+  "commands": [
+    {
+      "label": "environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import emo_master,sys,json,PySide2; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); import os; assert os.path.samefile(Path(emo_master.__file__).parent.parent, Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:34:29.168035+08:00",
+      "elapsedSeconds": 0.344,
+      "exitCode": 0,
+      "log": "environment.log"
+    },
+    {
+      "label": "counterexamples",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-4fh5zfo0\\counterexamples",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-final-closure\\corrected-counterexamples\\counterexamples.xml",
+        "tests/designer/test_tcp_closure_ui.py::testTcpByteLogsKeepChannelAndExactBoundedPreview",
+        "tests/runtime/test_device_plan_completion.py::testTcpDraftEndpointTestReusesRenamedServerWithoutPublishing",
+        "tests/runtime/test_device_plan_completion.py::testNonTcpDraftConnectionSettingsRemainProtected",
+        "tests/runtime/test_device_plan_completion.py::testConnectionTestDoesNotPublishAndReusesExistingOwner",
+        "tests/designer/test_device_definition_feedback.py::testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T15:34:29.519584+08:00",
+      "elapsedSeconds": 4.0,
+      "exitCode": 1,
+      "log": "counterexamples.log"
+    }
+  ]
+}

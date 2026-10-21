@@ -52,6 +52,29 @@ def testMissingSelectorAllowedButWrongSelectorRejected():
                                   allowMissingSelectors=True)
 
 
+def testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector():
+    typeDecl = DeviceType.model_validate_json((Path(__file__).resolve().parents[2] /
+        'src/emo_master/plugins/builtins/tcp_session/device_types/server.json').read_text(encoding='utf-8'))
+    declarationValue = typeDecl.model_dump()
+    declarationValue['bindingSelectors']['backupChannelId'] = deepcopy(declarationValue['bindingSelectors']['channelId'])
+    typeDecl = DeviceType.model_validate(declarationValue)
+    deviceDef = DeviceDefinition.model_validate(tcpDefinition(typeDecl, channels=[
+        dict(channelId='a', name='本机通道', allowedIps=['127.0.0.1'])]))
+    requirement = dict(deviceTypeId=typeDecl.deviceTypeId, selectorSchema=dict(type='object', properties={
+        'channelId': dict(type='string', default='a'),
+        'backupChannelId': dict(type='string', default='a')}, required=['channelId'], additionalProperties=False))
+    binding = dict(deviceId='tcp', selectors={})
+    original = deepcopy(requirement)
+    assert validateDeviceBinding(requirement, binding, deviceDef, typeDecl,
+                                 allowMissingSelectors=True) == {'backupChannelId': 'a'}
+    assert validateDeviceBinding(requirement, binding, deviceDef, typeDecl) == {
+        'channelId': 'a', 'backupChannelId': 'a'}
+    assert requirement == original and binding['selectors'] == {}
+    requirement['selectorSchema']['properties']['backupChannelId']['default'] = 'gone'
+    with pytest.raises(ValueError, match='backupChannelId'):
+        validateDeviceBinding(requirement, binding, deviceDef, typeDecl, allowMissingSelectors=True)
+
+
 def testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt(ownedDesignerWindow, tmp_path,
         definition, declaration):  # noqa: F811
     window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)

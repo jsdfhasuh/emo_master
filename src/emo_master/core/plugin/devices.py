@@ -312,10 +312,10 @@ def validateDeviceBinding(requirement, binding, definition, declaration, *, allo
         raise invalid("slot names an undeclared device selector", 'selectors')
     schema = deepcopy(requirement.selectorSchema)
     if allowMissingSelectors:
-        schema['required'] = []
-        for name, spec in schema['properties'].items():
+        for name in schema.get('required', []):
             if name not in binding.selectors:
-                spec.pop('default', None)
+                schema['properties'][name].pop('default', None)
+        schema['required'] = []
     selectors = _parameters(binding.selectors, schema, "selectors")
     for name, value in selectors.items():
         if value not in {key for key, _ in selectorCandidates(declaration, definition, name)}:

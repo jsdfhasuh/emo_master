@@ -1,6 +1,7 @@
 """Persistent fan-out software evidence. No physical device or SDK is used."""
 from copy import deepcopy
 import json
+from pathlib import Path
 
 import numpy as np
 import pytest
@@ -82,6 +83,92 @@ def testGroupCapacityRejectedBeforeCapture(tmp_path):
         assert service.deviceManager.drivers["camera"].sequence == 0
     finally:
         service.close()
+
+
+@pytest.mark.parametrize('fail', [False, True])
+def testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce(tmp_path, monkeypatch, fail):
+    # The consumer uses a device absent from the producer's own device bindings.
+    builtins = Path(__file__).resolve().parents[2] / 'src/emo_master/plugins/builtins'
+    plugin = tmp_path / 'dispatch_logging'
+    plugin.mkdir()
+    (plugin / '__init__.py').write_text('''
+from dataclasses import replace
+from emo_master.plugins.builtins.simulated_camera.operator import SimulatedCameraOperator
+class LoggedCamera(SimulatedCameraOperator):
+    meta = replace(SimulatedCameraOperator.meta, operatorId='test.dispatch.camera')
+    def validateParams(self, params):
+        return None
+    def executeNode(self, inputs, params, context):
+        result = super().executeNode(inputs, {}, context)
+        context['logger'].warning('consumer capture', payload=dict(reading=42))
+        if params['fail']:
+            return dict(status='error', error=dict(code='E_TEST_CAPTURE', message='consumer rejected capture'))
+        return result
+''', encoding='utf-8')
+    manifest = json.loads((builtins / 'simulated_camera/manifest.json').read_text(encoding='utf-8'))
+    manifest.update(operatorId='test.dispatch.camera', entry='dispatch_logging:LoggedCamera',
+        inputPorts=dict(image='image'), paramSchema=dict(type='object', properties=dict(fail=dict(type='boolean')),
+                                                       required=['fail'], additionalProperties=False))
+    (plugin / 'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+    monkeypatch.syspath_prepend(str(tmp_path))
+    payload = dispatchProject()
+    consumer = payload['workflows']['consumer']
+    consumer['nodes'].insert(1, dict(nodeId='consumer-capture', operatorId='test.dispatch.camera',
+        params=dict(fail=fail), deviceBindings=dict(camera=dict(deviceId='consumer-camera'))))
+    consumer['edges'] = [dict(fromNode='input', fromPort='image', toNode='consumer-capture', toPort='image'),
+        dict(fromNode='consumer-capture', fromPort='image', toNode='output', toPort='image')]
+    payload['devices']['definitions']['consumer-camera'] = deepcopy(payload['devices']['definitions']['camera'])
+    payload['devices']['definitions']['consumer-camera']['connection']['serial'] = 'CONSUMER-ONLY'
+    path = tmp_path / 'project.json'
+    path.write_text(json.dumps(payload), encoding='utf-8')
+    service = RuntimeService(dbPath=tmp_path/'runtime.db', workspaceRoot=tmp_path/'jobs',
+        pluginRootPaths=(str(builtins), str(plugin)))
+    originals = []
+    try:
+        loaded = service.LoadProject(pb.LoadProjectRequest(project_path=str(path)), None)
+        assert loaded.ok, loaded.message
+        manager = service.deviceManager
+        scope = dict(manager.scope)
+        generation = manager.executors['consumer-camera'].generation
+        started = service.StartJob(pb.StartJobRequest(workflow_id='main'), None)
+        assert started.ok, started.message
+        result = waitForTerminal(service, started.job_id, timeoutSeconds=45)
+        assert result.status == ('FAILED' if fail else 'COMPLETED'), result
+        waitFor(lambda: not manager.workers and not manager.dispatchGroups, timeout=30)
+        assert not manager.frames.frames and not manager.frames.reservations
+        assert not service.projectConfiguration.cycles and not service.projectConfiguration.childCycles
+        records = [r for r in service.jobRepository.all() if r.workflowId == 'consumer']
+        assert len(records) == 2 and len({r.pid for r in records}) == 2
+        assert all(r.status == ('FAILED' if fail else 'COMPLETED') for r in records)
+        originals = [e for r in records for e in service._eventsAfter(r.jobId, 0)
+                     if e.nodeId == 'consumer-capture' and e.eventType in {'node.log', 'node.failed'}]
+        assert sum(e.eventType == 'node.log' for e in originals) == 2
+        assert sum(e.eventType == 'node.failed' for e in originals) == (2 if fail else 0)
+        manager.recover('consumer-camera', generation)
+        assert manager.executors['consumer-camera'].generation != generation
+        rows = manager.diagnostics.query(scope, 'consumer-camera')['records']
+        for event in originals:
+            fields = json.loads(event.payloadJson)
+            binding = fields['deviceBindings']['camera']
+            assert binding['scope'] == scope
+            assert binding['deviceGeneration'] == generation
+            row = next(r for r in rows if r['eventType'] == event.eventType and r['nodeRunId'] == event.nodeRunId)
+            assert all(row[key] == value for key, value in scope.items())
+            assert row['deviceId'] == 'consumer-camera' and row['deviceGeneration'] == generation
+            assert row['timestampMs'] == event.timestampMs and row['level'] == event.level
+            assert row['workflowRunId'] == event.workflowRunId and row['ownerId'] == event.jobId
+            assert row['cycleId'] == fields['cycleId'] and row['planRevision'] == fields['planRevision']
+            assert row['iterationPath'] == json.loads(event.iterationPathJson)
+            assert row['phase'] == fields.get('phase', '') and row['data'] == fields.get('data', {})
+            if event.eventType == 'node.log':
+                assert row['level'] == 'WARN' and row['data'] == dict(reading=42)
+    finally:
+        service.close()
+    persisted = [json.loads(line) for path in tmp_path.rglob('runtime-*.jsonl')
+                 for line in path.read_text(encoding='utf-8').splitlines()]
+    for event in originals:
+        assert sum(row['eventType'] == event.eventType and row['nodeRunId'] == event.nodeRunId
+                   for row in persisted) == 1
 
 
 def testActualConsumerProcessCrashAfterDurableSideEffectNeverReplays(tmp_path, monkeypatch):

@@ -55,10 +55,6 @@ class DeviceBridge:
                     elif request["action"] == "beginCycle":
                         result = self.manager.configuration.beginCycle(self.owner, request["knownRevision"], self.cancelled,
                             parentCycleId=request.get("parentCycleId"))
-                        result['deviceScope'] = dict(self.manager.scope)
-                        with self.manager.lock:
-                            result['deviceIdentities'] = {key: dict(self.manager.scope, deviceId=key,
-                                deviceGeneration=executor.generation) for key, executor in self.manager.executors.items()}
                     elif request["action"] == "endCycle":
                         self.manager.waitOwner(self.owner, request['cycleId'])
                         self.manager.configuration.endCycle(self.owner, request["cycleId"])

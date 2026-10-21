@@ -149,6 +149,13 @@ class DeviceManager:
             return sorted(owner for owner, ids in self.permissions.items()
                           if deviceId in ids and owner not in self.maintenanceOwners)
 
+    def cycleIdentitySnapshot(self):
+        """Freeze all backends, including devices used only by Dispatch consumers."""
+        with self.lock:
+            return dict(deviceScope=dict(self.scope), deviceIdentities={
+                key: dict(self.scope, deviceId=key, deviceGeneration=executor.generation)
+                for key, executor in self.executors.items()})
+
     def availableControls(self, deviceId):
         lifecycle, executor = self.lifecycles[deviceId], self.executors[deviceId]
         controls = set(self.types[self.definitions[deviceId].deviceTypeId].controlCapabilities)

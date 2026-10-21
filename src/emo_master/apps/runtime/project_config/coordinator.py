@@ -10,13 +10,15 @@ REQUEST_WINDOW = 2048
 
 
 class ConfigurationCoordinator:
-    def __init__(self, store, runtimeInstanceId, *, lock=None, prepare, publish, beforeCommit=None, discard=None, transition=None):
+    def __init__(self, store, runtimeInstanceId, *, lock=None, prepare, publish, beforeCommit=None, discard=None,
+                 transition=None, cycleIdentity=None):
         self.store, self.runtimeInstanceId = store, runtimeInstanceId
         self.lock = lock if lock is not None else RLock()
         self.prepare, self.publish = prepare, publish
         self.beforeCommit = beforeCommit
         self.discard = discard
         self.transition = transition
+        self.cycleIdentity = cycleIdentity
         self.drainingOwners = set()
         self.parkedOwners = set()
         self.current = store.snapshot()
@@ -290,6 +292,10 @@ class ConfigurationCoordinator:
                     snapshot = self.current
                     lease = dict(cycleId=cycleId, snapshot=snapshot, parentCycleId=parentCycleId,
                                  allowChildRefresh=parentCycleId is None)
+                    if self.cycleIdentity is not None:
+                        # Capture the Runtime backends once, alongside the plan.
+                        # Retained consumers may use devices the source does not.
+                        lease.update(self.cycleIdentity())
                     if parentCycleId is None:
                         self.cycles[owner] = lease
                     else:
@@ -320,6 +326,9 @@ class ConfigurationCoordinator:
         snapshot = lease["snapshot"]
         result = dict(cycleId=lease["cycleId"], planRevision=snapshot["executionRevision"],
                       documentRevision=snapshot["documentRevision"], ownsCycle=ownsCycle)
+        for key in ('deviceScope', 'deviceIdentities'):
+            if key in lease:
+                result[key] = deepcopy(lease[key])
         if knownRevision != snapshot["executionRevision"]:
             result["payload"] = deepcopy(snapshot["payload"])
         return result
@@ -348,9 +357,7 @@ class ConfigurationCoordinator:
             if owner in self.cycles:
                 raise ConfigurationError("E_CYCLE_ACTIVE", "consumer already owns a cycle")
             self.cycles[owner] = dict(source, parentCycleId=None, allowChildRefresh=False)
-            return dict(cycleId=cycleId, planRevision=source["snapshot"]["executionRevision"],
-                        documentRevision=source["snapshot"]["documentRevision"],
-                        payload=deepcopy(source["snapshot"]["payload"]))
+            return self._cycleResult(source, None, ownsCycle=False)
 
     def endCycle(self, owner, cycleId):
         with self.cycleLock:

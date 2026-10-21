@@ -51,7 +51,8 @@ class ProjectConfigurationRpcMixin:
             runtime.runtimeInstanceId, lock=runtime._projectStateLock,
             prepare=self._prepareProjectConfiguration, publish=self._publishProjectConfiguration,
             beforeCommit=self._checkConfigurationAdmission, discard=self._discardProjectConfiguration,
-            transition=self._transitionProjectConfiguration)
+            transition=self._transitionProjectConfiguration,
+            cycleIdentity=runtime.deviceManager.cycleIdentitySnapshot)
         runtime.onlineRecoveryError = ""
         runtime.onlineRecoveryKind = ""
         runtime.deviceManager.configuration = runtime.projectConfiguration

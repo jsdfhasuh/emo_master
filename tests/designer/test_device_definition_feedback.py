@@ -208,6 +208,44 @@ def testSharedValidationStillUsesCoreIdentityGuard(retainedQtApplication):
         dialog.reject()
 
 
+def testDisabledEmptyServerCanBeCreatedAndEnabledErrorFindsChannels(retainedQtApplication):
+    path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+    metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+    dialog = module.DeviceDefinitionDialog(metadata, initial=dict(enabled=False, description='分阶段配置'))
+    dialog.show()
+    try:
+        assert not dialog.enabled.isChecked()
+        value = dialog.definition()
+        assert not value['enabled'] and value['connection']['channels'] == []
+        assert value['description'] == '分阶段配置'
+        dialog.enabled.setChecked(True)
+        dialog.accept()
+        QApplication.processEvents()
+        assert dialog.value is None and dialog.isVisible()
+        assert '请添加至少一个客户端通道' in dialog.error.text()
+        assert dialog.forms['connection'].channels.table.hasFocus()
+    finally:
+        dialog.reject()
+
+
+def testEmptyTcpIpFindsExactCellAndGivesChineseFeedback(retainedQtApplication):
+    path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+    metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+    dialog = module.DeviceDefinitionDialog(metadata)
+    dialog.show()
+    try:
+        table = dialog.forms['connection'].channels.table
+        dialog.forms['connection'].channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+        dialog.tabs.setCurrentIndex(1)
+        dialog.accept()
+        QApplication.processEvents()
+        assert dialog.value is None and dialog.isVisible()
+        assert '通道 1：请填写至少一个允许接入的客户端 IPv4' in dialog.error.text()
+        assert table.hasFocus() and (table.currentRow(), table.currentColumn()) == (0, 2)
+    finally:
+        dialog.reject()
+
+
 def testNodeReuseNoRetainsDialogForCorrectionAndCancelRemainsAtomic(ownedDesignerWindow, tmp_path,
         declaration, definition, monkeypatch):  # noqa: F811
     declaration.connectionSchema['properties']['source']['xDeviceIdentity'] = True

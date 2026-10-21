@@ -6,7 +6,7 @@ from uuid import uuid4
 from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QFormLayout, QLabel, QLineEdit,
-    QDialogButtonBox, QTabWidget, QScrollArea, QWidget, QComboBox, QPushButton, QMessageBox,
+    QDialogButtonBox, QTabWidget, QScrollArea, QWidget, QComboBox, QPushButton, QMessageBox, QCheckBox,
 )
 
 from emo_master.apps.designer.state.device_catalog import (DeviceCatalogEditor, changeParameterSource,
@@ -85,6 +85,12 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
     payload = deepcopy(base) if base is not None else dict(
         deviceTypeId=declaration.deviceTypeId, driverVersion=declaration.version)
     payload.update(name=name, **{key: form.getValues() for key, form in forms.items()})
+    if (declaration.deviceTypeId == 'device.tcp.server' and payload.get('enabled', True)
+            and not payload['connection'].get('channels')):
+        form = forms['connection']
+        _showControlTab(tabs, form)
+        form.focusField('channels')
+        raise ValueError('请添加至少一个客户端通道')
     try:
         return declaration.validateDefinition(DeviceDefinition.model_validate(payload)).model_dump()
     except ValueError as error:
@@ -97,12 +103,25 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
         raise
 
 
+def connectionTestPrompt(deviceTypeId):
+    if deviceTypeId in {'device.tcp.server', 'device.tcp.receive_once'}:
+        return '检查本地监听端点；不验证外部客户端，不应用草稿通道规则，不保存或发布配置。继续？'
+    return '检查设备连接；不拍照、不发送业务报文、不写 PLC，不保存或发布配置。继续？'
+
+
+def deviceErrorMessage(error):
+    if isinstance(error, ConnectionRefusedError) or getattr(error, 'code', '') in {'ECONNREFUSED', 'WSAECONNREFUSED'}:
+        return '无法连接到目标地址和端口，请检查设备端服务与端口设置'
+    return '设备操作未完成，请查看详情'
+
+
 class DeviceDefinitionDialog(QDialog):
     """Keep the draft open when beforeAccept returns False or a commit fails."""
 
     def __init__(self, declaration, parent=None, *, initial=None, client=None, beforeAccept=None):
         super().__init__(parent)
         self.declaration = declaration
+        self.initial = deepcopy(initial or {})
         self.value = None
         self.client = client
         self.beforeAccept = beforeAccept
@@ -113,10 +132,17 @@ class DeviceDefinitionDialog(QDialog):
         self.setWindowTitle("新建设备 · " + declaration.displayName)
         self.resize(600, 540)
         layout = QVBoxLayout(self)
-        self.name = QLineEdit(declaration.displayName)
+        self.name = QLineEdit(self.initial.get('name', declaration.displayName))
+        self.enabled = QCheckBox('启用设备')
+        self.enabled.setChecked(self.initial.get('enabled', True))
         names = QFormLayout()
         names.addRow("设备名称", self.name)
+        names.addRow('', self.enabled)
         layout.addLayout(names)
+        if declaration.deviceTypeId == 'device.tcp.server':
+            tip = QLabel('暂不启用时，可以先保存设备，稍后配置客户端通道')
+            tip.setWordWrap(True)
+            layout.addWidget(tip)
         self.tabs = QTabWidget()
         self.forms = {}
         for key, title in (("connection", "连接"), ("defaults", "工作参数"), ("policies", "策略")):
@@ -146,7 +172,9 @@ class DeviceDefinitionDialog(QDialog):
         layout.addWidget(buttons)
 
     def definition(self):
-        return validateDeviceDefinition(self.declaration, self.name, self.forms, self.tabs)
+        base = dict(self.initial, deviceTypeId=self.declaration.deviceTypeId,
+                    driverVersion=self.initial.get('driverVersion', self.declaration.version), enabled=self.enabled.isChecked())
+        return validateDeviceDefinition(self.declaration, self.name, self.forms, self.tabs, base=base)
 
     def discover(self):
         if self.setupPending is None:
@@ -162,7 +190,7 @@ class DeviceDefinitionDialog(QDialog):
         except ValueError as error:
             self.error.setText(str(error))
             return
-        if QMessageBox.question(self, '测试连接', '将实际连接设备，不拍照、不写 PLC，也不保存或发布配置。继续？',
+        if QMessageBox.question(self, '测试连接', connectionTestPrompt(self.declaration.deviceTypeId),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
             return
         def test():
@@ -193,9 +221,10 @@ class DeviceDefinitionDialog(QDialog):
                     values['cameraKey'] = dialog.selectedCameraKey
                     self.forms['connection'].setSchema(self.declaration.connectionSchema, values)
             else:
-                self.error.setText('连接测试通过；未修改工程或在线配置；原有连接保持不变')
+                self.error.setText(result.get('message') or '连接检查通过；未验证采集或业务读写；未保存或发布配置')
         except Exception as error:
-            self.error.setText(str(error))
+            self.error.setText(deviceErrorMessage(error))
+            self.error.setToolTip(str(error))
 
     def done(self, result):
         if self.setupPending is not None:

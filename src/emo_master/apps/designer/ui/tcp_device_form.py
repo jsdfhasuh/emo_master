@@ -37,7 +37,15 @@ class TcpConnectionForm(QWidget):
             from emo_master.core.project.communication import TcpServerSettings
             TcpServerSettings(**self.getValues())
         except ValidationError as error:
-            location = error.errors()[0]['loc']
+            issue = error.errors()[0]
+            location = issue['loc']
+            if location and location[0] == 'channels' and len(location) >= 3:
+                row, key = int(location[1]), str(location[2])
+                self.channels.table.setCurrentCell(row, {'channelId': 0, 'name': 1, 'allowedIps': 2}.get(key, 2))
+                self.focusField('channels')
+                if key == 'allowedIps' and not self.getValues()['channels'][row]['allowedIps']:
+                    return f'通道 {row + 1}：请填写至少一个允许接入的客户端 IPv4'
+                return f'通道 {row + 1}：请检查' + {'channelId': '通道 ID', 'name': '显示名称', 'allowedIps': '客户端 IPv4'}.get(key, key) + '；' + issue['msg']
             self.focusField(str(location[0]) if location else 'channels')
             return str(error)
         except ValueError as error:

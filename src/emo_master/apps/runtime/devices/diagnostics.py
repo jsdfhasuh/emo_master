@@ -6,6 +6,9 @@ from threading import RLock
 from time import time
 
 
+MAX_BYTE_PREVIEW = 1024
+
+
 def compactResult(value):
     """Keep transport identity and one bounded byte preview, never Base64 payloads."""
     if not isinstance(value, dict):
@@ -32,13 +35,19 @@ class DeviceDiagnostics:
 
     def append(self, scope, deviceId, eventType, message, *, write=True, timestampMs=None, **fields):
         # Keep previews bounded; receipts have compact count/outcome metadata.
+        if isinstance(fields.get('dataHex'), str):
+            data = bytes.fromhex(fields['dataHex'])
+            fields['truncated'] = bool(fields.get('truncated')) or len(data) > MAX_BYTE_PREVIEW
+            if len(data) > MAX_BYTE_PREVIEW:
+                fields['dataHex'] = data[:MAX_BYTE_PREVIEW].hex(' ').upper()
         preview = json.dumps(fields, ensure_ascii=False, default=str)
         if len(preview.encode('utf-8')) > 1024:
             # Frozen attribution and send receipts must survive preview truncation.
             retained = {key: fields[key] for key in ('ownerId', 'jobId', 'cycleId', 'requestId', 'source',
                         'slot', 'selectors', 'code', 'workflowId', 'nodeId', 'deviceGeneration', 'level', 'phase',
                         'planRevision', 'workflowRunId', 'parentWorkflowRunId', 'nodeRunId', 'iterationPath',
-                        'operatorId') if key in fields}
+                        'operatorId', 'sequence', 'kind', 'channelId', 'bytes', 'dataHex', 'truncated',
+                        'serviceGeneration', 'connectionGeneration', 'outcome', 'receipt') if key in fields}
             receipt = fields.get('diagnostics', {}).get('tcpReceipt')
             transaction = fields.get('diagnostics', {}).get('tcpTransaction')
             if receipt is None and isinstance(fields.get('result'), dict) and fields['result'].get('type') == 'tcpSendReceipt':
@@ -47,7 +56,7 @@ class DeviceDiagnostics:
                 retained['diagnostics'] = {'tcpReceipt': receipt}
             if transaction:
                 retained.setdefault('diagnostics', {})['tcpTransaction'] = transaction
-            fields = dict(retained, preview=preview.encode('utf-8')[:1000].decode('utf-8', errors='ignore'), truncated=True)
+            fields = dict(retained, preview=preview.encode('utf-8')[:1000].decode('utf-8', errors='ignore'), fieldsTruncated=True)
         with self.lock:
             self.cursor += 1
             row = dict(fields)

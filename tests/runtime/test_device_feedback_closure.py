@@ -33,7 +33,9 @@ def testF09ProjectionPreservesFrozenIdentityAndOriginalEvent(large):
     diagnostics.writer = type('Writer', (), dict(enqueue=lambda _, event: written.append(event)))()
     scope = dict(runtimeInstanceId='runtime', projectId='project', projectLoadGeneration='load-old')
     fields = dict(phase='execute', data=dict(reading=42, detail='x'*(4000 if large else 4)),
-        diagnostics=dict(tcpReceipt=dict(outcome='OUTCOME_UNKNOWN', requestId='send-request', automaticRetry=False)),
+        diagnostics=dict(tcpReceipt=dict(outcome='OUTCOME_UNKNOWN', requestId='send-request', automaticRetry=False),
+            tcpTransaction=dict(deviceTypeId='device.tcp.client_once', outcome='OUTCOME_UNKNOWN',
+                automaticRetry=False, bytesReceived=512)),
         cycleId='cycle', planRevision=7, deviceBindings={'tcp': dict(deviceId='server', scope=scope,
             deviceGeneration='backend-old', selectors=dict(channelId='a'))})
     event = RuntimeEvent(jobId='job', eventType='node.log', message='actual warning', level='WARN',

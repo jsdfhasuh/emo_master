@@ -1,14 +1,18 @@
 """Device creation stays editable until validation and explicit reuse succeed."""
 from concurrent.futures import Future
 from copy import deepcopy
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from PySide2.QtWidgets import QApplication, QMessageBox, QTabWidget, QWidget
 
 from emo_master.apps.designer.ui import device_wizard as module
+from emo_master.core.plugin.devices import DeviceType
 from tests.designer.test_device_identity_reuse import builtin
 from tests.designer.test_device_workspace import windowFor, waitUntil
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
+from tests.runtime.test_tcp_device_integration import definition as tcpDefinition
 
 
 def testPreacceptRejectionRetainsCandidateUntilCorrected(retainedQtApplication):
@@ -92,6 +96,42 @@ def testLocalFieldErrorShowsTabAndFocusWithoutResettingInput(retainedQtApplicati
         control.setText('0')
         dialog.accept()
         assert dialog.result() == dialog.Accepted
+    finally:
+        dialog.reject()
+
+
+@pytest.mark.parametrize('invalid', ['address', 'address-multicast', 'channel', 'duplicate-route'])
+def testTcpOuterValidationFocusesExactConnectionFieldAndRetainsDraft(retainedQtApplication, invalid):
+    path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+    metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+    initial = tcpDefinition(metadata, channels=[dict(channelId='a', name='A', allowedIps=['127.0.0.1'])])
+    commits, runtimeCalls = [], []
+    client = SimpleNamespace(deviceNetworkCommand=lambda *args, **kwargs: runtimeCalls.append((args, kwargs)))
+    dialog = module.DeviceDefinitionDialog(metadata, initial=initial, client=client,
+        beforeAccept=lambda value: commits.append(deepcopy(value)))
+    dialog.show()
+    dialog.activateWindow()
+    try:
+        waitUntil(dialog.isActiveWindow)
+        form = dialog.forms['connection']
+        if invalid == 'address':
+            form.fields._controls['bindAddress'].setText('127.0.0.999')
+        elif invalid == 'address-multicast':
+            form.fields._controls['bindAddress'].setText('224.0.0.1')
+        elif invalid == 'channel':
+            form.channels.setValue([dict(channelId='a', name='A', allowedIps=['invalid'])])
+        else:
+            form.channels.setValue([dict(channelId=key, name=key, allowedIps=['127.0.0.1']) for key in ('a', 'b')])
+        candidate = deepcopy(form.getValues())
+        dialog.tabs.setCurrentIndex(1)
+        dialog.accept()
+        QApplication.processEvents()
+        assert dialog.isVisible() and dialog.value is None and dialog.result() != dialog.Accepted
+        assert dialog.error.text() and dialog.tabs.currentIndex() == 0
+        assert form.getValues() == candidate
+        assert not commits and not runtimeCalls
+        target = form.fields._controls['bindAddress'] if invalid.startswith('address') else form.channels.table
+        assert target.hasFocus(), type(QApplication.focusWidget()).__name__
     finally:
         dialog.reject()
 

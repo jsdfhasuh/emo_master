@@ -365,6 +365,7 @@ class DeviceManager:
         definition = DeviceDefinition.model_validate(value)
         definitions, identities, classes = self._validatedDefinitions(
             SimpleNamespace(devices=SimpleNamespace(definitions={key: definition})))
+        definition, candidateIdentity = definitions[key], identities[key]
         temporary = False
         with (admissionLock or nullcontext()), self.lock:
             if admission is not None:
@@ -373,11 +374,13 @@ class DeviceManager:
                 raise DeviceError('E_DEVICE_REPLACING', 'configuration replacement is pending')
             explicit = deviceId
             existing = explicit if explicit in self.drivers else next((k for k, identity in self.identities.items()
-                if identities[key] is not None and identity == identities[key]
+                if candidateIdentity is not None and identity == candidateIdentity
                 and self.drivers[k].snapshot().get('ownsResources')), None)
             if existing is not None:
                 key = existing
-                if self.definitions[key].connection != definition.connection:
+                sameServerEndpoint = (definition.deviceTypeId == self.definitions[key].deviceTypeId == 'device.tcp.server'
+                    and candidateIdentity is not None and candidateIdentity == self.identities[key])
+                if self.definitions[key].connection != definition.connection and not sameServerEndpoint:
                     raise DeviceError('E_DEVICE_IDENTITY', 'existing physical device has different connection settings')
             else:
                 driver, executor, lifecycle = self.makeBackend(key, definitions[key], classes[key], self.scope)

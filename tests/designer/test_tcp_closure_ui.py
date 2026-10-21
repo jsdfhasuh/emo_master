@@ -11,14 +11,72 @@ import pytest
 from emo_master.apps.designer.state.device_catalog import DeviceCatalogEditor
 from emo_master.apps.designer.state.workflow_store import WorkflowStore
 from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
+from emo_master.apps.runtime.devices.manager import DeviceManager
+from emo_master.apps.runtime.events.jsonl_writer import RuntimeJsonlLogWriter
 from emo_master.core.project.configuration import requiredProjectChanges, selectedCandidate
+from emo_master.core.project.models import ProjectDocument
 from emo_master.core.project.snapshots import revisionOf
 from emo_master.core.workflow.compiler import WorkflowCompiler
 from emo_master.core.workflow.errors import WorkflowCompileError
+from emo_master.ui.communication_panel import DeviceDiagnosticsView
 from tests.designer.runtime_feedback_fixture import messages  # noqa: F401
 from tests.designer.test_device_workspace import waitUntil
 from tests.runtime.test_tcp_device_closure import runtime, thirdParty  # noqa: F401
 from tests.runtime.test_tcp_device_integration import definition, graph, node, waitWrite
+
+
+@pytest.mark.parametrize('length', [32, 512, 1025])
+def testTcpByteLogsKeepChannelAndExactBoundedPreview(runtime, retainedQtApplication, tmp_path, length):  # noqa: F811
+    service, _ = runtime
+    manager = DeviceManager(service.pluginScanResult.deviceTypes)
+    writer = RuntimeJsonlLogWriter(tmp_path/'byte-logs')
+    manager.diagnostics.writer = writer
+    payload = WorkflowStore().toPayload()
+    channels = [dict(channelId='a', name='Channel A', allowedIps=['127.0.0.1'])]
+    payload['devices']['definitions'] = dict(server=definition(
+        service.pluginScanResult.deviceTypes['device.tcp.server'], channels=channels))
+    view = DeviceDiagnosticsView()
+    try:
+        manager.load(ProjectDocument.model_validate(payload))
+        backend = manager.drivers['server'].backend
+        data = (b'ordinary TCP text 0123456789 ' * 40)[:length]
+        assert len(data) == length
+        backend._record('rx', 'bounded byte preview', 'a', data, connectionGeneration=7)
+        page = manager.diagnostics.query(manager.scope, 'server')
+        row, = page['records']
+        assert row['channelId'] == 'a' and row['bytes'] == length
+        assert row['serviceGeneration'] == backend.serviceGeneration
+        assert row['connectionGeneration'] == 7
+        assert row['deviceGeneration'] == manager.executors['server'].generation
+        assert all(row[key] == value for key, value in manager.scope.items())
+        assert row['timestampMs'] == backend._records[-1][0]['timestampMs']
+        assert row['truncated'] is (length > 1024)
+        assert bool(row.get('fieldsTruncated')) is (length >= 512)
+        assert bytes.fromhex(row['dataHex']) == data[:1024]
+        assert len(bytes.fromhex(row['dataHex'])) <= 1024
+        assert len(row.get('preview', '').encode('utf-8')) <= 1000
+        view.setPage(page, channels)
+        view.filter.setCurrentIndex(view.filter.findData('a'))
+        assert view.records.topLevelItemCount() == 1
+        view.records.setCurrentItem(view.records.topLevelItem(0))
+        expected = data[:1024]
+        assert view.details.toPlainText().splitlines()[0] == expected.hex(' ').upper()
+        view.format.setCurrentIndex(1)
+        rendered = view.details.toPlainText()
+        assert rendered.splitlines()[0] == repr(expected.decode('utf-8'))
+        assert ('[原始数据已截断]' in rendered) is (length > 1024)
+        assert ('[部分诊断字段已截断]' in rendered) is (length >= 512)
+        # Re-observing and formatting the event must never persist it again.
+        manager.diagnostics.query(manager.scope, 'server')
+    finally:
+        view.close()
+        manager.close()
+        assert writer.close() is None
+    persisted = [json.loads(line) for path in (tmp_path/'byte-logs').glob('runtime-*.jsonl')
+                 for line in path.read_text(encoding='utf-8').splitlines()]
+    event, = [row for row in persisted if row['eventType'] == 'device.tcp.rx']
+    assert event['payload']['channelId'] == 'a' and event['payload']['bytes'] == length
+    assert bytes.fromhex(event['payload']['dataHex']) == data[:1024]
 
 
 def testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer(runtime, ownedDesignerWindow, tmp_path):  # noqa: F811

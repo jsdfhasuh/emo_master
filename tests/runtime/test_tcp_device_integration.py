@@ -333,9 +333,19 @@ def testNormal16MiBMessageCrossesTheBoundedTcpBridge(chain):
                 received.extend(part)
         thread = Thread(target=drain, daemon=True)
         thread.start()
-        c['jobs'].append(run(c['service'], c['client'], 'main', dict(text=data)))
+        job = run(c['service'], c['client'], 'main', dict(text=data))
+        c['jobs'].append(job)
         thread.join(15)
         assert not thread.is_alive() and received == data.encode('ascii')
+    records = c['client'].getDeviceDiagnostics(c['service'].deviceManager.scope, 'server')['records']
+    sent = next(row for row in records if row['eventType'] == 'device.tcp.tx' and row.get('bytes') == len(data))
+    assert sent['channelId'] == 'a' and sent['receipt']['jobId'] == job
+    assert sent['receipt']['bytesRequested'] == sent['receipt']['bytesSent'] == len(data)
+    assert sent['receipt']['outcome'] == sent['outcome'] == 'SENT_TO_TRANSPORT'
+    assert sent['serviceGeneration'] == sent['receipt']['serviceGeneration']
+    assert sent['connectionGeneration'] == sent['receipt']['connectionGeneration']
+    assert sent['truncated'] and sent['fieldsTruncated']
+    assert bytes.fromhex(sent['dataHex']) == b'X'*1024
 
 
 def testBindingRejectsMissingChannelAndClientIdentityIsNotExclusive(chain):

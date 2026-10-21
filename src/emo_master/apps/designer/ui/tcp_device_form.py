@@ -1,6 +1,7 @@
 """TCP connection form using the shared channel editor and normal form contract."""
 from copy import deepcopy
 
+from pydantic import ValidationError
 from PySide2.QtWidgets import QVBoxLayout, QWidget
 
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
@@ -35,6 +36,10 @@ class TcpConnectionForm(QWidget):
         try:
             from emo_master.core.project.communication import TcpServerSettings
             TcpServerSettings(**self.getValues())
+        except ValidationError as error:
+            location = error.errors()[0]['loc']
+            self.focusField(str(location[0]) if location else 'channels')
+            return str(error)
         except ValueError as error:
             self.focusField('channels')
             return str(error)

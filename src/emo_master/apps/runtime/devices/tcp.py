@@ -99,11 +99,12 @@ class ManagedTcpServer(DeviceDriver):
         return dict(state, ready=state.get('state') == 'LISTENING')
 
     def testConnection(self, params, cancelled, deadline):
+        message = '监听端点可用；本次测试不应用草稿通道规则，未验证外部客户端'
         if self.snapshot().get('ready'):
-            return dict(endpointAvailable=True, reused=True, message='监听端点可用；未验证外部客户端')
+            return dict(endpointAvailable=True, reused=True, message=message)
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
             sock.bind((self.definition.connection['bindAddress'], self.definition.connection['port']))
-        return dict(endpointAvailable=True, message='监听端点可用；未验证外部客户端')
+        return dict(endpointAvailable=True, message=message)
 
 
 class ManagedTcpOnce(DeviceDriver):

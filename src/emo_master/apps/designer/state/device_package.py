@@ -58,16 +58,19 @@ def importDevices(session, package, deviceTypes, root):
                 raise ValueError('现场字段不属于设备类型的字符串属性')
             properties[name] = {'type': 'string'}
         checked[key] = declaration.validateDefinition(definition).model_copy(update={'enabled': False})
-    from .device_catalog import DeviceCatalogEditor
+    from .device_catalog import DeviceCatalogEditor, importedDeviceName
     editor = DeviceCatalogEditor(session, deviceTypes)
     deviceIds = {key: 'device-' + uuid4().hex for key in package.devices}
     directory = None
     try:
         with session.transaction():
             editor._enable()
+            names = {value['name'] for value in session.workflows.devices['definitions'].values()}
             for key, definition in checked.items():
                 value = definition.model_dump()
                 value['enabled'] = False
+                value['name'] = importedDeviceName(value['name'], names)
+                names.add(value['name'])
                 # Disabled portable definitions may have empty declared site fields.
                 session.workflows.devices['definitions'][deviceIds[key]] = deepcopy(value)
             plan, resourceIds = resources.remapDependencies(session.workflows, package, {}, {}, deviceIds)

@@ -3,7 +3,7 @@ import hashlib
 from copy import deepcopy
 from pathlib import Path
 
-from PySide2.QtCore import QSize, Qt
+from PySide2.QtCore import QSize, Qt, QTimer
 from PySide2.QtWidgets import QMessageBox, QStackedWidget, QFileDialog, QInputDialog, QScrollArea, QFrame
 
 from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
@@ -26,6 +26,7 @@ class PageCoordinator:
         self.monitor = None
         self.onlineSummary = '未读取在线状态'
         self.closeApproved = None
+        self._devicePublishPending = False
         from .preview import PreviewController
         self.preview = PreviewController(self)
         initialPayload = window.workflowStore.toPayload()
@@ -133,6 +134,49 @@ class PageCoordinator:
         from emo_master.apps.designer.ui.project_configuration import ProjectConfigurationDialog
         dialog = ProjectConfigurationDialog(self, self.window, allowRun=allowRun, selectCategories=selectCategories)
         return dialog.exec_()
+
+    def configureFromDevices(self):
+        """Yield the modal observer before entering the existing publication UI."""
+        devices = self.devices
+        if self._devicePublishPending or devices is None or not devices.isVisible():
+            return
+        if devices.pending is not None:
+            devices.status.setText('请等待当前设备请求返回后再查看发布')
+            return
+        try:
+            self.sync()  # Invalid fields must still be visible when focused.
+        except ValueError as error:
+            devices.status.setText(str(error))
+            return
+        session, scope, selected = self.session, devices._scope(), devices.selectedId
+        view = (devices.tabs.currentIndex(), devices.infoTabs.currentIndex(),
+                {key: scroll.verticalScrollBar().value() for key, scroll in devices.formScrolls.items()})
+        self._devicePublishPending = True
+        devices.buttons['publish'].setEnabled(False)
+        devices.done(0)
+        if devices.isVisible():
+            self._devicePublishPending = False
+            devices._updateOnlineActions()
+            return
+        def publish():
+            try:
+                if self.session is session and self.devices is devices and devices._scope() == scope:
+                    self.configureRuntime()
+            finally:
+                self._devicePublishPending = False
+                if self.session is session and self.devices is devices and devices._scope() == scope:
+                    devices.selectedId = selected
+                    devices.refresh()
+                    devices.show()
+                    devices.tabs.setCurrentIndex(view[0])
+                    devices.infoTabs.setCurrentIndex(view[1])
+                    for key, value in view[2].items():
+                        devices.formScrolls[key].verticalScrollBar().setValue(value)
+                    devices.raise_()
+                    devices.activateWindow()
+                    devices.readState()
+                    devices._updateOnlineActions()
+        QTimer.singleShot(0, publish)
 
     def resourceBindings(self):
         if not self._canSync():

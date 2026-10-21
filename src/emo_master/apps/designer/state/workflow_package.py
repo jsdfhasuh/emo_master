@@ -663,6 +663,8 @@ def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
     store.devices = deepcopy(upgraded.devices)
     store.projectExtensions = deepcopy(upgraded.projectExtensions)
     catalog = cast(dict, store.devices["definitions"])
+    from .device_catalog import importedDeviceName
+    names = {value['name'] for value in catalog.values()}
     result = {}
     for key, value in document.devices.items():
         targetId = (mapping or {})[key]
@@ -681,6 +683,8 @@ def _importDevices(store: WorkflowStore, document: WorkflowPackageDocument,
                 targetId = "device-" + uuid4().hex
             raw = value.model_dump()
             raw["enabled"] = False
+            raw['name'] = importedDeviceName(raw['name'], names)
+            names.add(raw['name'])
             catalog[targetId] = raw
         result[key] = targetId
     return result

@@ -18,7 +18,7 @@ def testDeviceDraftOpenCopySwitchSaveAndReopen(ownedDesignerWindow, tmp_path, de
                               releaseCommunicationForReplacement=forbidden)
     window = ownedDesignerWindow(runtime, settingsStore=QSettings(str(tmp_path / "settings.ini"), QSettings.IniFormat))
     assert window.loadProjectDirectory(str(source), confirmed=True)
-    assert window.flowModel.nodes["capture"].deviceBindings == {"camera": {"deviceId": "camera"}}
+    assert window.flowModel.nodes["capture"].deviceBindings == {"camera": {"deviceId": "camera", "selectors": {}}}
     copiedId = window.workflowController.duplicateNode("capture")
     assert window.flowModel.nodes[copiedId].deviceBindings == window.flowModel.nodes["capture"].deviceBindings
     window.pageCoordinator.showPages()
@@ -26,10 +26,10 @@ def testDeviceDraftOpenCopySwitchSaveAndReopen(ownedDesignerWindow, tmp_path, de
     window.pageCoordinator.sync()
     assert window.saveProjectToDirectory(str(source))
     saved = loadProject(source)
-    assert saved["schemaVersion"] == "2.6"
+    assert saved["schemaVersion"] == "2.7"
     assert len(saved["devices"]["definitions"]) == 1
     assert window.loadProjectDirectory(str(source), confirmed=True)
-    assert window.flowModel.nodes[copiedId].deviceBindings == {"camera": {"deviceId": "camera"}}
+    assert window.flowModel.nodes[copiedId].deviceBindings == {"camera": {"deviceId": "camera", "selectors": {}}}
     assert window.workflowStore.devices["definitions"]["camera"] == definition.model_dump()
     savedAs = tmp_path / "copy.emoproj"
     assert window.saveProjectToDirectory(str(savedAs))

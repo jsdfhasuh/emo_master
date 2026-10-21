@@ -182,6 +182,7 @@ try:
         QScrollArea,
         QSpinBox,
         QTextEdit,
+        QToolButton,
         QWidget,
     )
 
@@ -298,8 +299,13 @@ try:
             self.setLayout(layout)
 
     class SchemaParamForm(QWidget):
-        def __init__(self) -> None:
+        valuesChanged: Any = Signal()
+
+        def __init__(self, *, deviceMode=False) -> None:
             super().__init__()
+            self.deviceMode = deviceMode
+            self._advancedFields: set[str] = set()
+            self.advancedButton: QToolButton | None = None
             self._layout = QFormLayout()
             self._layout.setRowWrapPolicy(QFormLayout.WrapLongRows)
             self._layout.setFieldGrowthPolicy(QFormLayout.AllNonFixedFieldsGrow)
@@ -356,6 +362,22 @@ try:
             while self._layout.rowCount() > 0:
                 self._layout.removeRow(0)
 
+            properties = paramSchema.get('properties', {})
+            self._advancedFields = {name for name, spec in properties.items()
+                                    if self.deviceMode and isinstance(spec, dict) and spec.get('xAdvanced')
+                                    } if isinstance(properties, dict) else set()
+            self.advancedButton = None
+            if self.deviceMode:
+                defaultHint = QLabel('有默认值的字段可使用默认值；按需调整。')
+                defaultHint.setWordWrap(True)
+                self._layout.addRow(defaultHint)
+            if self._advancedFields:
+                self.advancedButton = QToolButton()
+                self.advancedButton.setText(f'高级设置（{len(self._advancedFields)} 项）')
+                self.advancedButton.setCheckable(True)
+                self.advancedButton.toggled.connect(self._updateDependentFields)
+                self._layout.addRow(self.advancedButton)
+
             valuesWithDefaultsRaw = applySchemaDefaults(paramSchema, values)
             valuesWithDefaults = (
                 valuesWithDefaultsRaw if isinstance(valuesWithDefaultsRaw, dict) else {}
@@ -371,6 +393,15 @@ try:
                 label = WrapLabel()
                 applyParameterLabel(label, control, field.name, paramSchema)
                 self._layout.addRow(label, control)
+                if self.deviceMode and 'default' in field.schema:
+                    label.setToolTip(label.toolTip() + '\n可使用默认值：' + str(field.schema['default']))
+                for signal in ('textChanged', 'valueChanged', 'currentIndexChanged', 'toggled'):
+                    if hasattr(control, signal):
+                        def changed(*_args, name=field.name):
+                            self._showFieldError(name, '')
+                            self.valuesChanged.emit()
+                        getattr(control, signal).connect(changed)
+                        break
                 if field.name in {f"case{i}Value" for i in range(4)} and field.schema.get("xOptionalPresence"):
                     valueControl = control.valueControl if isinstance(control, _OptionalFieldControl) else control
                     if isinstance(valueControl, QLineEdit):
@@ -482,11 +513,12 @@ try:
                         requiredLabel.setText(parameterTitle(name, field.schema) + (" *" if self._conditionApplies(requirement, values) else ""))
                 visibility = field.schema.get("xVisibleWhen")
                 visible = self._conditionApplies(visibility, values)
-                if isinstance(visibility, dict) and not field.schema.get("xHidden"):
-                    container.setVisible(visible)
+                if (isinstance(visibility, dict) or name in self._advancedFields) and not field.schema.get("xHidden"):
+                    expanded = name not in self._advancedFields or bool(self.advancedButton and self.advancedButton.isChecked())
+                    container.setVisible(visible and expanded)
                     rowLabel = self._layout.labelForField(container)
                     if rowLabel is not None:
-                        rowLabel.setVisible(visible)
+                        rowLabel.setVisible(visible and expanded)
                 condition = field.schema.get("xEnabledWhen")
                 source = self._variableSources.get(name)
                 if condition is not None or visibility is not None or source is not None:
@@ -538,7 +570,7 @@ try:
             control.setAccessibleDescription(message)
             control.setToolTip(parameterToolTip(name, self._fieldsByName[name].schema) + ("\n" + message if message else ""))
             if message:
-                control.setFocus(Qt.OtherFocusReason)
+                self.focusField(name)
             return message
 
         def validationMessage(self) -> str:
@@ -566,6 +598,16 @@ try:
                 elif schema.get("xWidget") == "port-select":
                     schema.pop("enum", None)  # Workflow options, not the saved enum, are authoritative.
                 message = _valueError(value, schema, _parameterErrorTitle(name, field.schema))
+                if not message and self.deviceMode and isinstance(value, str):
+                    title = _parameterErrorTitle(name, field.schema)
+                    minimum, maximum, pattern = schema.get('minLength'), schema.get('maxLength'), schema.get('pattern')
+                    if isinstance(minimum, int) and len(value) < minimum:
+                        message = ('请填写 SDK 设备唯一标识，或通过设备发现选择' if name == 'cameraKey'
+                                   else title + '：请填写此字段')
+                    elif isinstance(maximum, int) and len(value) > maximum:
+                        message = title + '：内容过长'
+                    elif isinstance(pattern, str) and not re.search(pattern, value):
+                        message = title + '：格式不符合要求'
                 if message:
                     return self._showFieldError(name, message)
             try:
@@ -621,6 +663,13 @@ try:
         def focusField(self, name):
             control = self._controls.get(name)
             if control is not None:
+                if name in self._advancedFields and self.advancedButton is not None:
+                    self.advancedButton.setChecked(True)
+                parent = control.parentWidget()
+                while parent is not None:
+                    if isinstance(parent, QScrollArea):
+                        parent.ensureWidgetVisible(control)
+                    parent = parent.parentWidget()
                 control.setFocus()
 
         def setFieldEnabled(self, name, enabled):
@@ -717,7 +766,7 @@ try:
                 rawProperties = field.schema.get("properties", {})
                 if isinstance(rawProperties, dict) and len(rawProperties) > 0:
                     groupBox = QGroupBox()
-                    nestedForm = SchemaParamForm()
+                    nestedForm = SchemaParamForm(deviceMode=self.deviceMode)
                     nestedValue = (
                         selectedValue if isinstance(selectedValue, dict) else {}
                     )

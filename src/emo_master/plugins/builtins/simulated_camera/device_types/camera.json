@@ -102,7 +102,8 @@
         "minimum": 1,
         "maximum": 86400000,
         "default": 30000,
-        "xUnit": "ms"
+        "xUnit": "ms",
+        "xAdvanced": true
       },
       "deviceWaitTimeoutMs": {
         "title": "排队超时",
@@ -110,7 +111,8 @@
         "minimum": 1,
         "maximum": 600000,
         "default": 5000,
-        "xUnit": "ms"
+        "xUnit": "ms",
+        "xAdvanced": true
       },
       "operationTimeoutMs": {
         "title": "操作超时",
@@ -118,7 +120,8 @@
         "minimum": 1,
         "maximum": 600000,
         "default": 5000,
-        "xUnit": "ms"
+        "xUnit": "ms",
+        "xAdvanced": true
       }
     },
     "required": [

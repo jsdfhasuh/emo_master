@@ -8,7 +8,7 @@ from time import monotonic
 
 from PySide2.QtCore import Qt, QTimer
 from PySide2.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, QPushButton, QComboBox,
-    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle)
+    QTableWidget, QTableWidgetItem, QHeaderView, QAbstractItemView, QMessageBox, QStyle, QTextBrowser)
 
 from emo_master.core.project.configuration import projectChanges, requiredProjectChanges, changeCategory
 
@@ -65,11 +65,20 @@ class ProjectConfigurationDialog(QDialog):
         formatRow.addWidget(self.upgradeButton)
         layout.addLayout(formatRow)
         self.table = QTableWidget(0, 6)
-        self.table.setHorizontalHeaderLabels(["选中变更", "Runtime 在线值", "工程草稿值", "变更类别", '生效方式', '影响对象'])
+        self.table.setHorizontalHeaderLabels(["对象 / 选中变更", "变更动作", "字段与改动摘要", "变更类别", '生效方式', '影响对象'])
         self.table.setEditTriggers(QAbstractItemView.NoEditTriggers)
+        self.table.setWordWrap(False)
+        self.table.setTextElideMode(Qt.ElideRight)
+        self.table.verticalHeader().setSectionResizeMode(QHeaderView.Fixed)
+        self.table.verticalHeader().setDefaultSectionSize(36)
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table.verticalHeader().hide()
         layout.addWidget(self.table, 1)
+        self.details = QTextBrowser()
+        self.details.setMaximumHeight(110)
+        self.details.setPlaceholderText('选择一项查看内部路径和完整前后值')
+        self.table.currentCellChanged.connect(self._showChangeDetails)
+        layout.addWidget(self.details)
         self.impact = QLabel('选中变更未校验')
         self.impact.setWordWrap(True)
         self.impact.setTextInteractionFlags(Qt.TextSelectableByMouse)
@@ -338,6 +347,52 @@ class ProjectConfigurationDialog(QDialog):
             self.deviceTypes, self.deviceRequirements, _ = reader()
         return self.client.getOnlineProjectSnapshot('')
 
+    @staticmethod
+    def _sectionSummary(key, value):
+        titles = dict(project='工程信息', workflows='流程', resources='资源与现场绑定', presentation='工作页面',
+                      runtime='运行配置', schemaVersion='工程格式')
+        return titles.get(key, key) + (' · ' + str(len(value)) + ' 项' if isinstance(value, (dict, list)) else '：' + str(value))
+
+    def _changeLabels(self, change):
+        parts, action = list(change['parts']), change['operation']
+        device = len(parts) >= 3 and parts[:2] == ['devices', 'definitions']
+        if not device:
+            return (self._sectionSummary(parts[0], {}), {'add': '新增', 'remove': '删除'}.get(action, '修改'),
+                    '/'.join(parts[1:]) + '：' + self._shortValue(change.get('before')) + ' → ' + self._shortValue(change.get('after')))
+        key = parts[2]
+        before = (self.snapshot or {}).get('payload', {}).get('devices', {}).get('definitions', {}).get(key, {})
+        after = self.local.get('devices', {}).get('definitions', {}).get(key, {})
+        definition = after or before or change.get('after') or change.get('before') or {}
+        declaration = self.deviceTypes.get(definition.get('deviceTypeId'))
+        name = definition.get('name', key)
+        if before.get('name') and after.get('name') and before['name'] != after['name']:
+            name = before['name'] + ' → ' + after['name']
+        title = name + ' · ' + (declaration.displayName if declaration else definition.get('deviceTypeId', '设备'))
+        if len(parts) == 3:
+            return title, '新增设备' if action == 'add' else '删除设备', '完整设备定义；详情见下方'
+        labels = dict(name='名称', enabled='启用状态', description='说明', connection='连接', defaults='工作参数', policies='策略')
+        field = labels.get(parts[3], parts[3])
+        schema = getattr(declaration, parts[3] + 'Schema', {}) if declaration else {}
+        for part in parts[4:]:
+            schema = schema.get('properties', {}).get(part, {})
+            field += ' · ' + schema.get('title', part)
+        summary = field + '：' + self._shortValue(change.get('before')) + ' → ' + self._shortValue(change.get('after'))
+        return title, '修改参数' if parts[3] == 'defaults' else '修改设备', summary
+
+    @staticmethod
+    def _shortValue(value):
+        if value is None:
+            return '未设置'
+        if isinstance(value, bool):
+            return '启用' if value else '禁用'
+        if isinstance(value, (dict, list)):
+            return f'{len(value)} 项（见详情）'
+        return str(value).replace('\n', ' ')[:100]
+
+    def _showChangeDetails(self, row, *_args):
+        item = self.table.item(row, 0)
+        self.details.setPlainText(json.dumps(item.data(Qt.UserRole + 1), ensure_ascii=False, indent=2) if item else '')
+
     def _showInitial(self):
         self.snapshot = None
         self.initial = True
@@ -346,13 +401,21 @@ class ProjectConfigurationDialog(QDialog):
         self.replacementPolicy.hide()
         self.table.blockSignals(True)
         try:
-            sections = list(self.local.items())
+            sections = [(key, value) for key, value in self.local.items() if key != 'devices']
+            sections += [(f'/devices/definitions/{key}', value)
+                         for key, value in self.local.get('devices', {}).get('definitions', {}).items()]
             self.table.setRowCount(len(sections))
             for row, (key, value) in enumerate(sections):
                 text = json.dumps(value, ensure_ascii=False, sort_keys=True)
-                for col, label in enumerate((key, '尚未加载', text[:180], '完整首次候选', '首次加载', '当前工程')):
+                labels = (key, '首次加载', self._sectionSummary(key, value), '完整首次候选', '首次加载', '当前工程')
+                if key.startswith('/devices/definitions/'):
+                    labels = (*self._changeLabels(dict(parts=key.strip('/').split('/'), operation='add',
+                        path=key, before=None, after=value)), '完整首次候选', '首次加载', '当前工程')
+                for col, label in enumerate(labels):
                     item = QTableWidgetItem(label)
-                    item.setToolTip(text if col == 2 else label)
+                    item.setToolTip(text if col == 2 else str(label))
+                    if col == 0:
+                        item.setData(Qt.UserRole + 1, dict(path=key, after=value))
                     self.table.setItem(row, col, item)
         finally:
             self.table.blockSignals(False)
@@ -374,17 +437,17 @@ class ProjectConfigurationDialog(QDialog):
         self.table.blockSignals(True)
         self.table.setRowCount(len(changes))
         for row, change in enumerate(changes):
-            item = QTableWidgetItem(change["path"])
+            labels = self._changeLabels(change)
+            item = QTableWidgetItem(labels[0])
             item.setToolTip(change["path"])
             item.setFlags(item.flags() | Qt.ItemIsUserCheckable)
             item.setCheckState(Qt.Checked if replacing or changeCategory(change["parts"]) in self.selectCategories else Qt.Unchecked)
             item.setData(Qt.UserRole, change["path"])
+            item.setData(Qt.UserRole + 1, change)
             self.table.setItem(row, 0, item)
-            for col, key in ((1, "before"), (2, "after")):
-                text = json.dumps(change[key], ensure_ascii=False, sort_keys=True)
-                absent = (key == "before" and change["operation"] == "add") or (key == "after" and change["operation"] == "remove")
-                item = QTableWidgetItem("不存在" if absent else text[:180])
-                item.setToolTip("不存在" if absent else text)
+            for col in (1, 2):
+                item = QTableWidgetItem(labels[col])
+                item.setToolTip(json.dumps(change, ensure_ascii=False, indent=2))
                 self.table.setItem(row, col, item)
             categories = {"document": "工程信息", "layout": "流程布局", "device_parameters": "设备默认参数",
                 "device_metadata": "设备描述", "device_connection": "设备连接 / 策略", "node_parameters": "节点参数 / 来源",
@@ -441,7 +504,6 @@ class ProjectConfigurationDialog(QDialog):
                 text = '\n'.join(details) or '无运行对象'
                 self.table.item(row, 5).setText(text)
                 self.table.item(row, 5).setToolTip(text)
-            self.table.resizeRowsToContents()
         finally:
             self.table.blockSignals(False)
         consequence = []

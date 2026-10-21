@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from copy import deepcopy
 from pathlib import Path
 import ipaddress
 import json
@@ -293,7 +294,7 @@ def selectorCandidates(declaration, definition, name):
     return [(item[spec["valueField"]], item[spec["labelField"]]) for item in value]
 
 
-def validateDeviceBinding(requirement, binding, definition, declaration):
+def validateDeviceBinding(requirement, binding, definition, declaration, *, allowMissingSelectors=False):
     """One offline binding rule for compiler, editors and package reuse."""
     from emo_master.core.project.devices import DeviceBinding
     from emo_master.core.project.snapshots import _parameters
@@ -309,7 +310,13 @@ def validateDeviceBinding(requirement, binding, definition, declaration):
         raise invalid("device lacks required capabilities")
     if not set(requirement.selectorSchema["properties"]) <= set(declaration.bindingSelectors):
         raise invalid("slot names an undeclared device selector", 'selectors')
-    selectors = _parameters(binding.selectors, requirement.selectorSchema, "selectors")
+    schema = deepcopy(requirement.selectorSchema)
+    if allowMissingSelectors:
+        schema['required'] = []
+        for name, spec in schema['properties'].items():
+            if name not in binding.selectors:
+                spec.pop('default', None)
+    selectors = _parameters(binding.selectors, schema, "selectors")
     for name, value in selectors.items():
         if value not in {key for key, _ in selectorCandidates(declaration, definition, name)}:
             raise invalid(f"device {binding.deviceId}: selectors.{name}={value!r} does not exist", 'selectors.'+name)

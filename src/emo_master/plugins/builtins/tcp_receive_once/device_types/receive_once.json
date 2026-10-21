@@ -64,7 +64,13 @@
           "idle",
           "fixedLength"
         ],
-        "default": "newline"
+        "default": "newline",
+        "xOptionLabels": {
+          "newline": "按换行分帧（newline）",
+          "quoted": "按引号分帧（quoted）",
+          "idle": "按空闲分帧（idle）",
+          "fixedLength": "按固定长度分帧（fixedLength）"
+        }
       },
       "expectedBytes": {
         "title": "预期字节数",
@@ -78,7 +84,8 @@
         "type": "integer",
         "minimum": 1,
         "maximum": 16777216,
-        "default": 1048576
+        "default": 1048576,
+        "xAdvanced": true
       },
       "messageEncoding": {
         "title": "消息内容编码",
@@ -90,7 +97,14 @@
           "hex",
           "base64"
         ],
-        "default": "utf-8"
+        "default": "utf-8",
+        "xOptionLabels": {
+          "utf-8": "UTF-8 文本（utf-8）",
+          "ascii": "ASCII 文本（ascii）",
+          "latin-1": "Latin-1 文本（latin-1）",
+          "hex": "十六进制（hex）",
+          "base64": "Base64（base64）"
+        }
       },
       "messageTextEncoding": {
         "title": "消息文本编码",
@@ -101,7 +115,14 @@
           "ascii",
           "latin-1"
         ],
-        "default": "none"
+        "default": "none",
+        "xAdvanced": true,
+        "xOptionLabels": {
+          "none": "不解码文本（none）",
+          "utf-8": "UTF-8 文本（utf-8）",
+          "ascii": "ASCII 文本（ascii）",
+          "latin-1": "Latin-1 文本（latin-1）"
+        }
       },
       "ackText": {
         "title": "应答文本",
@@ -118,7 +139,14 @@
           "hex",
           "base64"
         ],
-        "default": "utf-8"
+        "default": "utf-8",
+        "xOptionLabels": {
+          "utf-8": "UTF-8 文本（utf-8）",
+          "ascii": "ASCII 文本（ascii）",
+          "latin-1": "Latin-1 文本（latin-1）",
+          "hex": "十六进制（hex）",
+          "base64": "Base64（base64）"
+        }
       },
       "ackAppendNewline": {
         "title": "应答追加换行",
@@ -130,7 +158,8 @@
         "type": "integer",
         "minimum": 1,
         "maximum": 16777216,
-        "default": 1048576
+        "default": 1048576,
+        "xAdvanced": true
       }
     },
     "additionalProperties": false,
@@ -156,7 +185,8 @@
         "type": "integer",
         "default": 5000,
         "minimum": 1,
-        "maximum": 600000
+        "maximum": 600000,
+        "xAdvanced": true
       }
     },
     "additionalProperties": false,

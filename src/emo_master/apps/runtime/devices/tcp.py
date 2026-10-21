@@ -230,8 +230,15 @@ class ManagedTcpClientOnce(ManagedTcpOnce):
         return None
 
     def testConnection(self, params, cancelled, deadline):
-        with connectCancellable(self.definition.connection['host'], self.definition.connection['port'], cancelled, deadline):
-            return dict(endpointAvailable=True, message='远端连接可用；未发送业务报文')
+        from emo_master.plugins.builtins._tcp_transport import TcpConnectError
+        import errno
+        try:
+            with connectCancellable(self.definition.connection['host'], self.definition.connection['port'], cancelled, deadline):
+                return dict(endpointAvailable=True, message='远端连接可用；未发送业务报文')
+        except TcpConnectError as error:
+            if isinstance(error.__cause__, OSError) and error.__cause__.errno in {errno.ECONNREFUSED, 10061}:
+                raise DeviceError('E_DEVICE_CONNECTION_REFUSED', str(error)) from error
+            raise
 
 
 class ManagedTcpReceiveOnce(ManagedTcpOnce):

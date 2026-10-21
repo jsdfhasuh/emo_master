@@ -94,7 +94,14 @@
           "hex",
           "base64"
         ],
-        "default": "utf-8"
+        "default": "utf-8",
+        "xOptionLabels": {
+          "utf-8": "UTF-8 文本（utf-8）",
+          "ascii": "ASCII 文本（ascii）",
+          "latin-1": "Latin-1 文本（latin-1）",
+          "hex": "十六进制（hex）",
+          "base64": "Base64（base64）"
+        }
       },
       "appendNewline": {
         "title": "追加换行",
@@ -117,7 +124,8 @@
         "type": "integer",
         "default": 5000,
         "minimum": 1,
-        "maximum": 600000
+        "maximum": 600000,
+        "xAdvanced": true
       },
       "connect": {
         "title": "服务启动方式",
@@ -142,14 +150,16 @@
         "type": "integer",
         "default": 2000,
         "minimum": 1,
-        "maximum": 60000
+        "maximum": 60000,
+        "xAdvanced": true
       },
       "maxMessageBytes": {
         "title": "最大报文字节数",
         "type": "integer",
         "default": 1048576,
         "minimum": 1,
-        "maximum": 16777216
+        "maximum": 16777216,
+        "xAdvanced": true
       }
     },
     "additionalProperties": false,

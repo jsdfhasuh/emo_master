@@ -33,7 +33,7 @@ def testWizardCommitAndUndoAreSingleTransaction(editor, definition):  # noqa: F8
     saved = session.payload()
     assert session.undo() and session.payload() == original
     assert session.redo() and session.payload() == saved
-    assert session.document().schemaVersion == "2.6"
+    assert session.document().schemaVersion == "2.7"
 
 
 def testCancelledDraftHasNoSideEffects(editor, definition):  # noqa: F811
@@ -133,7 +133,7 @@ def testCanvasAndStoreRoundtripPreserveAllDeviceSources(definition):  # noqa: F8
     actual = next(n for n in result["workflows"]["main"]["nodes"] if n["nodeId"] == "capture")
     for key in ("deviceBindings", "deviceOverrides", "deviceValueBindings"):
         assert actual[key] == candidate[key]
-    assert result["schemaVersion"] == "2.6"
+    assert result["schemaVersion"] == "2.7"
     assert result["devices"] == store.devices
 
 
@@ -163,7 +163,7 @@ def testWorkflowExportIncludesDeviceDependencies(editor, definition):  # noqa: F
     from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage
     editor.commitNode("main", node(), newDevice=definition.model_dump(), deviceId="camera")
     package = buildWorkflowPackage(editor.session.workflows, "main")
-    assert package.schemaVersion == "1.2"
+    assert package.schemaVersion == "1.4"
     assert package.devices == editor.session.document().devices.definitions
 
 
@@ -172,13 +172,15 @@ def testCompilerCannotFallBackToPrivateConnection(definition):  # noqa: F811
     from emo_master.core.workflow.errors import WorkflowCompileError
     with pytest.raises(WorkflowCompileError) as caught:
         WorkflowCompiler().compile(project(definition))
-    assert any(issue.code == "E_DEVICE_RUNTIME_UNAVAILABLE" for issue in caught.value.issues)
+    assert any(issue.code == "E_DEVICE_BINDING" and issue.nodeId == 'capture'
+               and issue.fieldPath == 'deviceBindings.camera' for issue in caught.value.issues)
     payload = project(definition)
     payload["workflows"]["main"]["nodes"][-1].pop("deviceBindings")
     registry = {"vision.io.huaray_camera": {"deviceRequirements": {"camera": {"deviceTypeId": definition.deviceTypeId}}}}
     with pytest.raises(WorkflowCompileError) as caught:
         WorkflowCompiler(registry).compile(payload)
-    assert any(issue.code == "E_DEVICE_RUNTIME_UNAVAILABLE" for issue in caught.value.issues)
+    assert any(issue.code == "E_DEVICE_BINDING" and issue.nodeId == 'capture'
+               and issue.fieldPath == 'deviceBindings.camera' for issue in caught.value.issues)
 
 
 def testSingleNodeDebugCannotStripDeviceBindings(definition):  # noqa: F811

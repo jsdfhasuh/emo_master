@@ -2311,6 +2311,21 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if node is None:
             return model
         lines, outputs = controlFlowDetails(node, self.workflowStore.workflows, self._globalVariableDefinitions())
+        definition = self._operatorDefinition(node.operatorId)
+        requirements = definition.get('deviceRequirements')
+        if requirements:
+            pending = []
+            for slot, requirement in requirements.items():
+                binding = node.deviceBindings.get(slot)
+                if binding is None:
+                    pending.append(('待选择设备：' + slot, None))
+                    continue
+                for selector in requirement.get('selectorSchema', {}).get('required', []):
+                    if selector not in binding.get('selectors', {}):
+                        pending.append(('待选择通道：' + slot + '.' + selector, None))
+            lines = tuple(lines) + tuple(pending)
+        elif node.kind == 'operator' and not definition:
+            lines = tuple(lines) + (('绑定状态待检查', None),)
         inputs = {}
         from emo_master.core.workflow.loop_contracts import whileConditionMode
         if node.kind == "loop" and node.loop.get("mode") == "while" and whileConditionMode(node.loop) == "boolean":
@@ -4528,7 +4543,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             if self.pageCoordinator is None or not self.pageCoordinator._canSync():
                 return
             dialog = DeviceNodeDialog(self.pageCoordinator, asdict(node), definition.get("deviceRequirements", {}), self,
-                                      migrateLegacy=not node.deviceBindings)
+                                      migrateLegacy=self.pageCoordinator.session.document().schemaVersion not in {'2.6', '2.7'})
             dialog.exec_()
             return
 

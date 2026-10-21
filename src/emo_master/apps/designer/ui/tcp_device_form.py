@@ -2,6 +2,7 @@
 from copy import deepcopy
 
 from pydantic import ValidationError
+from PySide2.QtCore import Signal
 from PySide2.QtWidgets import QVBoxLayout, QWidget
 
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
@@ -9,12 +10,16 @@ from emo_master.ui.communication_panel import TcpChannelEditor
 
 
 class TcpConnectionForm(QWidget):
+    valuesChanged = Signal()
+
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        self.fields = SchemaParamForm()
+        self.fields = SchemaParamForm(deviceMode=True)
         self.channels = TcpChannelEditor()
+        self.fields.valuesChanged.connect(self.valuesChanged)
+        self.channels.table.cellChanged.connect(self._channelEdited)
         layout.addWidget(self.fields)
         layout.addWidget(self.channels)
 
@@ -28,6 +33,10 @@ class TcpConnectionForm(QWidget):
 
     def getValues(self):
         return dict(self.fields.getValues(), channels=self.channels.value())
+
+    def _channelEdited(self, *_args):
+        self.channels.table.setAccessibleDescription('')
+        self.valuesChanged.emit()
 
     def validationMessage(self):
         message = self.fields.validationMessage()
@@ -44,7 +53,9 @@ class TcpConnectionForm(QWidget):
                 self.channels.table.setCurrentCell(row, {'channelId': 0, 'name': 1, 'allowedIps': 2}.get(key, 2))
                 self.focusField('channels')
                 if key == 'allowedIps' and not self.getValues()['channels'][row]['allowedIps']:
-                    return f'通道 {row + 1}：请填写至少一个允许接入的客户端 IPv4'
+                    message = f'通道 {row + 1}：请填写至少一个允许接入的客户端 IPv4'
+                    self.channels.table.setAccessibleDescription(message)
+                    return message
                 return f'通道 {row + 1}：请检查' + {'channelId': '通道 ID', 'name': '显示名称', 'allowedIps': '客户端 IPv4'}.get(key, key) + '；' + issue['msg']
             self.focusField(str(location[0]) if location else 'channels')
             return str(error)

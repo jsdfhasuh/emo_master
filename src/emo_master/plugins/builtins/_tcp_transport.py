@@ -101,7 +101,7 @@ def connectCancellable(host, port, cancelled, deadline):
         except BaseException:
             sock.close()
             raise
-    raise TcpConnectError(str(last))
+    raise TcpConnectError(str(last)) from last
 
 
 def openTcpClient(

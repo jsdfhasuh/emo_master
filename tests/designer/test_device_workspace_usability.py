@@ -34,10 +34,32 @@ def testVisibleActionLabelsExplainDraftBoundary(ownedDesignerWindow, tmp_path, d
     assert d.buttons['diagnostics'] in d.diagnosticMenu.actions()
     assert d.readParametersButton in d.diagnosticMenu.actions()
     assert d.buttons['network'] in d.deviceMore.actions()
-    assert [b.text() for b in d.findChild(QDialogButtonBox).buttons()] == ['保留草稿并关闭']
+    assert {b.text() for b in d.findChild(QDialogButtonBox).buttons()} == {'保留草稿并关闭', '查看并写入 Runtime…'}
     assert '保留草稿' in d.closeButton.text()
     assert '切换设备或关闭' in d.draftHelp.toolTip()
     assert 'Runtime' in d.draftHelp.toolTip()
+
+
+def testAutoapplyRenameAndHistoryNeverReapplyOldControls(ownedDesignerWindow, tmp_path,
+        definition, declaration):  # noqa: F811
+    d = workspace(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = d.c
+    count = len(c.session._undo)
+    d.name.setText('自动保留的名称')
+    d.commitPending()
+    assert len(c.session._undo) == count + 1
+    assert d.table.item(0, 0).text() == d.detailTitle.text() == '自动保留的名称'
+    assert d.instanceItems['camera'].text(0).startswith('自动保留的名称')
+    d.commitPending()
+    assert len(c.session._undo) == count + 1
+    c.history()
+    assert d.name.text() == definition.name
+    d.closeButton.click()
+    assert c.session.document().devices.definitions['camera'].name == definition.name
+    c.showDevices()
+    c.history(True)
+    d.closeButton.click()
+    assert c.session.document().devices.definitions['camera'].name == '自动保留的名称'
 
 
 @pytest.mark.parametrize('confirm', [False, True])
@@ -111,7 +133,7 @@ def testBackgroundRecoveryClearsOnlyItsOwnErrorAndPreservesEdit(ownedDesignerWin
     d.pending, d.pendingKind, d.pendingScope = recovered, 'state', d._scope()
     d._metadataReady()
     assert d.stateError == ''
-    assert d.status.text() == (laterMessage or '在线状态已读取；工程草稿未改变')
+    assert d.status.text() == (laterMessage or '在线状态已刷新')
     assert d.name.text() == 'Pending device edit'
     assert d.c.session.payload() == before
 

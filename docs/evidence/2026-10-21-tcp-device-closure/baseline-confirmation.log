@@ -1,0 +1,261 @@
+FFFF                                                                     [100%]
+================================== FAILURES ===================================
+__________ testF02NewServerReferenceIsAddedBeforeSelectorValidation ___________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001E48F31FE80>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001E48F31F040>)
+
+    def testF02NewServerReferenceIsAddedBeforeSelectorValidation(runtime):
+        service, _ = runtime
+        online = WorkflowStore().toPayload()
+        local = deepcopy(online)
+        local['devices']['definitions']['new-server'] = definition(service.pluginScanResult.deviceTypes['device.tcp.server'],
+            channels=[dict(channelId='a', name='A', allowedIps=['127.0.0.1'])])
+        local['workflows']['main']['nodes'].append(node('acquire', 'communication.tcp.session', 'new-server', selectors=dict(channelId='a')))
+>       required = requiredProjectChanges(online, local, ['/workflows/main/nodes/acquire'])
+
+tests\runtime\test_tcp_device_closure.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+online = {'schemaVersion': '2.7', 'presentation': {'schemaVersion': '1.0', 'defaultPageId': None, 'pageOrder': [], 'navigation'..., 'siteBindings': []}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}
+local = {'schemaVersion': '2.7', 'presentation': {'schemaVersion': '1.0', 'defaultPageId': None, 'pageOrder': [], 'navigation'..., 'siteBindings': []}, 'production': {'autoStart': False, 'mode': 'single', 'cycleIntervalMs': 100, 'inputs': {}}, ...}
+selected = ['/workflows/main/nodes/acquire']
+
+    def requiredProjectChanges(online, local, selected):
+        """Find missing references transitively, offering exact changes for confirmation.
+    
+        Never copy edits to an existing dependency implicitly. Atomic list changes
+        (ordering/bindings) remain visible in the confirmation, including their own
+        dependencies. Selected removals that leave dangling references are errors.
+        """
+        changes = {item["path"]: item for item in projectChanges(online, local)}
+        required = {}
+        selected = list(selected)
+        while True:
+            candidate = selectedCandidate(online, local, selected + list(required))
+            tree = _tree(candidate)
+            found = {}
+    
+            def require(parts, owner):
+                value = tree
+                for part in parts:
+                    if not isinstance(value, dict) or part not in value:
+                        break
+                    value = value[part]
+                else:
+                    return
+                for length in range(len(parts), 0, -1):
+                    path = _pointer(parts[:length])
+                    change = changes.get(path)
+                    if change and change["operation"] == "add" and path not in selected:
+                        found.setdefault(path, []).append(owner)
+                        return
+                raise ValueError("missing project dependency: " + _pointer(parts) + " referenced by " + owner)
+    
+            def order(parts, keys):
+                value = tree
+                for part in parts:
+                    value = value.get(part, {})
+                if set(value) == set(keys) and len(value) == len(keys):
+                    return
+                path = _pointer(parts)
+                if path in changes and path not in selected and path not in required:
+                    found.setdefault(path, []).append("ordered membership")
+                else:
+                    raise ValueError("inconsistent dependency order: " + path)
+    
+            def workflow(wid, owner):
+                if wid:
+                    require(("workflows", wid), owner)
+    
+            workflow(candidate.get("entryWorkflowId"), "entryWorkflowId")
+            for wid in candidate.get("workflowOrder", []):
+                workflow(wid, "workflowOrder")
+            order(("workflowOrder",), candidate.get("workflows", {}))
+            for wid, flow in candidate.get("workflows", {}).items():
+                for node in flow.get("nodes", []):
+                    owner = wid + "/" + node["nodeId"]
+                    workflow(node.get("targetWorkflowId"), owner)
+                    for field in ("bodyWorkflowId", "conditionWorkflowId"):
+                        workflow((node.get("loop") or {}).get(field), owner)
+                    if node.get("kind") == "dispatch":
+                        for target in node.get("params", {}).get("targets", []):
+                            workflow(target.get("workflowId"), owner)
+                    for slot, binding in node.get("deviceBindings", {}).items():
+                        require(("devices", "definitions", binding["deviceId"]), owner)
+                        channelId = binding.get('selectors', {}).get('channelId')
+                        if channelId is not None:
+                            parts = ('devices', 'definitions', binding['deviceId'], 'connection', 'channels')
+                            definition = candidate.get('devices', {}).get('definitions', {}).get(binding['deviceId'], {})
+                            channels = definition.get('connection', {}).get('channels', [])
+                            if channelId not in {channel.get('channelId') for channel in channels}:
+                                path = _pointer(parts)
+                                localChannels = local.get('devices', {}).get('definitions', {}).get(
+                                    binding['deviceId'], {}).get('connection', {}).get('channels', [])
+                                if (path in changes and path not in selected
+                                        and channelId in {channel.get('channelId') for channel in localChannels}):
+                                    found.setdefault(path, []).append(f'{owner}/{slot}: channelId={channelId}')
+                                else:
+>                                   raise ValueError(f'{owner}/{slot}: missing channelId={channelId} in {binding["deviceId"]}')
+E                                   ValueError: main/acquire/tcp: missing channelId=a in new-server
+
+src\emo_master\core\project\configuration.py:176: ValueError
+__________ testF10ConcurrentServiceOwnersAppearInAuthoritativeState ___________
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001E48F0FFB50>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001E48F0FCC40>)
+
+    def testF10ConcurrentServiceOwnersAppearInAuthoritativeState(tickerRuntime):
+        service, client = tickerRuntime
+        manager = service.deviceManager
+        entered, release = Event(), Event()
+        def held(*_args, **_kwargs):
+            entered.set()
+            assert release.wait(10)
+            return dict(ticks=1)
+        manager.drivers['ticker'].execute = held
+        pool = ThreadPoolExecutor(2)
+        try:
+            for owner in ('a', 'b'):
+                manager.authorizeMaintenance(owner, 'ticker')
+            cycles = {owner: service.projectConfiguration.beginCycle(owner, -1, lambda: False)['cycleId'] for owner in ('a', 'b')}
+            first = pool.submit(manager.execute, 'a', 'ticker', 'sample', {}, cycleId=cycles['a'], requestId='request-a')
+            assert entered.wait(5)
+            second = pool.submit(manager.execute, 'b', 'ticker', 'sample', {}, cycleId=cycles['b'], requestId='request-b')
+            end = monotonic()+5
+            while len(manager.services['ticker'].operations) < 2 and monotonic() < end:
+                sleep(.01)
+            state = client.getDeviceStates(service.loadedProjectId)[1]['ticker']
+>           assert state['state'] == 'BUSY' and state['activeOwner'] is None
+E           AssertionError: assert ('IDLE' == 'BUSY'
+E             
+E             - BUSY
+E             + IDLE)
+
+tests\runtime\test_device_feedback_closure.py:94: AssertionError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001E48F148FD0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001E48F348220>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2689/testF11PackageDependencyReport0')
+dependency = 'operator_version'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):  # noqa: F811
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+            registry[key] = replace(registry[key], manifest=replace(registry[key].manifest, version='99.0.0'))
+        else:
+            types[key] = types[key].model_copy(update=dict(version='99.0.0'))
+        with pytest.raises(WorkflowCompileError) as caught:
+>           installRuntimePackage(package, tmp_path/'import', registry=registry, deviceTypes=types)
+
+tests\runtime\test_device_feedback_closure.py:173: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\project\runtime_package.py:276: in installRuntimePackage
+    document, manifest = _extract(package, stage, registry, deviceTypes)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+package = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2689/testF11PackageDependencyReport0/packages/runtime-1a7086d5a2884c38ad168cdc7b4470c1.vxpkg')
+stage = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2689/testF11PackageDependencyReport0/.runtime-stage-tf_5_cqg')
+registry = {'vision.image.absdiff': PluginDescriptor(manifest=PluginManifest(operatorId='vision.image.absdiff', displayName='Abso...ins/builtins/annotate'), editorIssues=(), editorUiContent=None, editorUiSha256='', iconAsset=None, iconIssues=()), ...}
+deviceTypes = {'device.camera.huaray_imv': DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.camera.huara...='emo_master.apps.runtime.devices.tcp:ManagedTcpClientOnce', executionLocation='io_thread', cancellableWait=None), ...}
+
+    def _extract(package, stage, registry, deviceTypes=None):
+        with zipfile.ZipFile(package) as archive:
+            entries = archive.infolist()
+            if len(entries) > MAX_ENTRIES or sum(i.file_size for i in entries) > MAX_TOTAL:
+                raise ValueError("runtime package file count or size limit")
+            names = {}
+            for entry in entries:
+                name = packagePath(entry.filename)
+                key = name.casefold()
+                mode = stat.S_IFMT(entry.external_attr >> 16)
+                if key in names or entry.is_dir() or mode not in {0, stat.S_IFREG} or entry.flag_bits & 1:
+                    raise ValueError("duplicate, linked, encrypted or special package entry")
+                names[key] = name
+            for key in names:
+                if any("/".join(key.split("/")[:i]) in names for i in range(1, len(key.split("/")))):
+                    raise ValueError("package file/directory collision")
+            if not {"manifest.json", "project.json"} <= set(names.values()):
+                raise ValueError("runtime package metadata missing")
+            if any(archive.getinfo(name).file_size > MAX_METADATA for name in ("manifest.json", "project.json")):
+                raise ValueError("runtime package metadata limit")
+            manifest = readJson(archive.read("manifest.json"))
+            if manifest.get("format") != FORMAT or manifest.get("projectSchema") not in {"2.3", "2.4", "2.5", "2.6", "2.7"}:
+                raise ValueError("unsupported runtime package format")
+            files = manifest.get("files")
+            if not isinstance(files, dict) or set(files) | {"manifest.json"} != set(names.values()):
+                raise ValueError("missing or undeclared package files")
+            for name, expected in files.items():
+                if name != "project.json" and name.casefold() in RESERVED:
+                    raise ValueError("reserved package entry")
+                target = stage / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                with archive.open(name) as source, target.open("xb") as output:
+                    if _digest(source, output) != expected:
+                        raise ValueError("package file digest or size mismatch")
+            document = ProjectDocument.model_validate(readJson((stage / "project.json").read_bytes()))
+            if (document.schemaVersion != manifest["projectSchema"] or document.project.projectId != manifest.get("projectId")
+                    or _operators(document, registry) != manifest.get("requiredOperators")):
+>               raise ValueError("incompatible operator versions or project identity")
+E               ValueError: incompatible operator versions or project identity
+
+src\emo_master\core\project\runtime_package.py:257: ValueError
+______________ testExampleHasRealSessionToCalculationDependency _______________
+
+    def testExampleHasRealSessionToCalculationDependency():
+        document = sampleProject()
+        registry = PluginRegistry("0.6.1").scanRoots([Path("src/emo_master/plugins/builtins")]).activeOperators
+>       compiled = WorkflowCompiler(registry).compile(document)
+
+tests\core\project\test_tcp_delivery.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x000001E48F749000>
+project = ProjectDocument(schemaVersion='2.5', project=ProjectMetadata(projectId='tcp-example', name='项目 TCP 示例', revision=1, cr...ettings(channelId='channel-b', name='客户端 B', allowedIps=['127.0.0.2'])], sendTimeoutMs=2000, maxMessageBytes=1048576)))
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        for workflowId, workflow in document.workflows.items():
+            for node in workflow.nodes:
+                descriptor = self.operatorRegistry.get(node.operatorId or "")
+                manifest = getattr(descriptor, "manifest", descriptor)
+                requirements = (manifest.get("deviceRequirements", {}) if isinstance(manifest, Mapping)
+                                else getattr(manifest, "deviceRequirements", {}))
+                if node.deviceBindings or requirements:
+                    try:
+                        self._devicePlans(document, node, requirements)
+                    except ValueError as error:
+                        issues.append(ValidationIssue(
+                            "E_DEVICE_RUNTIME_UNAVAILABLE", str(error),
+                            document.project.projectId, workflowId, node.nodeId))
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: device slots do not match the operator declaration; device slots do not match the operator declaration; device slots do not match the operator declaration; device slots do not match the operator declaration
+
+src\emo_master\core\workflow\compiler.py:69: WorkflowCompileError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_closure.py::testF02NewServerReferenceIsAddedBeforeSelectorValidation
+FAILED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+FAILED tests/core/project/test_tcp_delivery.py::testExampleHasRealSessionToCalculationDependency
+4 failed in 4.73s

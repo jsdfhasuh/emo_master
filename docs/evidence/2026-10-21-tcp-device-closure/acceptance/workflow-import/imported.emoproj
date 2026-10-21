@@ -1,0 +1,452 @@
+{
+  "schemaVersion": "2.7",
+  "presentation": {
+    "schemaVersion": "1.0",
+    "defaultPageId": null,
+    "pageOrder": [],
+    "navigation": {
+      "mode": "tabs"
+    },
+    "resultScopes": {},
+    "dataSources": {},
+    "pages": {}
+  },
+  "resources": {
+    "schemaVersion": "1.0",
+    "items": {
+      "resource-ec36a3fcc5864ab6aca33de1fad9126c": {
+        "path": "workflow-resources-vibxste2/resource-ec36a3fcc5864ab6aca33de1fad9126c.png",
+        "sha256": "7fe723189e4741a8dfe9e59e1ba90490e3ff82e7036c648d86ed80a81f605de4",
+        "size": 80,
+        "purpose": "input_image"
+      }
+    },
+    "parameterBindings": [
+      {
+        "target": {
+          "workflowId": "main-2",
+          "nodeId": "load",
+          "parameterPath": [
+            "imagePath"
+          ]
+        },
+        "resourceId": "resource-ec36a3fcc5864ab6aca33de1fad9126c"
+      }
+    ],
+    "siteBindings": []
+  },
+  "production": {
+    "autoStart": false,
+    "mode": "single",
+    "cycleIntervalMs": 100,
+    "inputs": {}
+  },
+  "globalVariables": {
+    "wait": {
+      "name": "等待客户端",
+      "type": "integer",
+      "kind": "constant",
+      "initialValue": 5000,
+      "lifetime": "job",
+      "legacyCounterName": null
+    }
+  },
+  "project": {
+    "projectId": "17fd227a-e517-4418-b2e9-847b2ce0635d",
+    "name": "project",
+    "revision": 2,
+    "createdAt": "2026-10-21T02:24:24Z",
+    "updatedAt": "2026-10-21T02:24:24Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": [
+    "main",
+    "main-2"
+  ],
+  "workflows": {
+    "main": {
+      "name": "Main",
+      "inputs": {},
+      "outputs": {},
+      "nodes": [
+        {
+          "nodeId": "__workflow_input__",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "kind": "workflow_input",
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "__workflow_output__",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {},
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "kind": "workflow_output",
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [],
+      "layout": {
+        "nodePositions": {
+          "__workflow_input__": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "__workflow_output__": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    },
+    "main-2": {
+      "name": "TCP acceptance",
+      "inputs": {
+        "text": "string"
+      },
+      "outputs": {
+        "receipt": "tcpSendReceipt"
+      },
+      "nodes": [
+        {
+          "nodeId": "__workflow_input__:main-2",
+          "kind": "workflow_input",
+          "operatorId": "",
+          "displayName": "Workflow Input",
+          "inputPorts": {},
+          "outputPorts": {
+            "text": "string"
+          },
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "acquire",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session",
+          "displayName": "TCP 通道会话",
+          "inputPorts": {},
+          "outputPorts": {
+            "session": "tcpSessionRef"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "device-e909e00f6d9848b89740a4489092ebc3",
+              "selectors": {
+                "channelId": "a"
+              }
+            }
+          },
+          "deviceValueBindings": {
+            "tcp": {
+              "timeoutMs": {
+                "source": "variable",
+                "variableId": "wait",
+                "inputName": null
+              }
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "send",
+          "kind": "operator",
+          "operatorId": "communication.tcp.session_send",
+          "displayName": "TCP 会话发送",
+          "inputPorts": {
+            "data": "string",
+            "session": "tcpSessionRef"
+          },
+          "outputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "paramSchema": {
+            "additionalProperties": false,
+            "properties": {},
+            "required": [],
+            "type": "object",
+            "xDeviceActionFields": []
+          },
+          "params": {},
+          "deviceBindings": {
+            "tcp": {
+              "deviceId": "device-e909e00f6d9848b89740a4489092ebc3",
+              "selectors": {}
+            }
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "__workflow_output__:main-2",
+          "kind": "workflow_output",
+          "operatorId": "",
+          "displayName": "Workflow Output",
+          "inputPorts": {
+            "receipt": "tcpSendReceipt"
+          },
+          "outputPorts": {},
+          "paramSchema": {},
+          "params": {},
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "load",
+          "kind": "operator",
+          "operatorId": "vision.io.image_loader",
+          "displayName": "Image Loader",
+          "inputPorts": {},
+          "outputPorts": {
+            "frame": "bbox2d",
+            "image": "image"
+          },
+          "paramSchema": {
+            "properties": {
+              "colorMode": {
+                "default": "color",
+                "enum": [
+                  "color",
+                  "grayscale"
+                ],
+                "title": "颜色模式",
+                "type": "string"
+              },
+              "imagePath": {
+                "default": "",
+                "title": "图像路径",
+                "type": "string",
+                "xFileMode": "open",
+                "xFilter": "图片文件 (*.png *.jpg *.jpeg *.bmp *.tif *.tiff)",
+                "xWidget": "file"
+              }
+            },
+            "required": [
+              "imagePath"
+            ],
+            "type": "object"
+          },
+          "params": {
+            "imagePath": "workflow-resources-vibxste2/resource-ec36a3fcc5864ab6aca33de1fad9126c.png"
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        },
+        {
+          "nodeId": "mask",
+          "kind": "operator",
+          "operatorId": "vision.preprocess.threshold",
+          "displayName": "Threshold",
+          "inputPorts": {
+            "frame": "bbox2d",
+            "image": "image"
+          },
+          "outputPorts": {
+            "frame": "bbox2d",
+            "mask": "image",
+            "threshold": "number"
+          },
+          "paramSchema": {
+            "properties": {
+              "blockSize": {
+                "default": 11,
+                "description": "仅自适应模式生效，必须是大于等于 3 的奇数，如 3、5、11。",
+                "title": "自适应邻域大小",
+                "type": "integer",
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xExample": 11,
+                "xMinimum": 3,
+                "xOdd": true,
+                "xUnit": "像素"
+              },
+              "constant": {
+                "default": 2.0,
+                "description": "仅自适应模式生效，从局部均值或加权均值中减去此有限数值，可为负数或小数。",
+                "title": "自适应阈值偏移量",
+                "type": "number",
+                "xEnabledWhen": {
+                  "mode": [
+                    "adaptiveMean",
+                    "adaptiveGaussian"
+                  ]
+                },
+                "xExample": 2.0,
+                "xUnit": "灰度级"
+              },
+              "invert": {
+                "default": false,
+                "description": "开启后反转二值掩码的前景与背景，输出仍为 0/255。",
+                "title": "反向阈值",
+                "type": "boolean"
+              },
+              "mode": {
+                "default": "fixed",
+                "description": "固定模式使用指定阈值；自动模式由图像计算阈值；自适应模式按局部邻域计算阈值。",
+                "enum": [
+                  "fixed",
+                  "otsu",
+                  "triangle",
+                  "adaptiveMean",
+                  "adaptiveGaussian"
+                ],
+                "title": "阈值模式",
+                "type": "string",
+                "xOptionLabels": {
+                  "adaptiveGaussian": "自适应高斯",
+                  "adaptiveMean": "自适应均值",
+                  "fixed": "固定阈值",
+                  "otsu": "大津法（自动阈值）",
+                  "triangle": "三角法（自动阈值）"
+                }
+              },
+              "threshold": {
+                "default": 127,
+                "description": "仅固定阈值模式生效，填写 0～255 的整数。",
+                "title": "阈值",
+                "type": "integer",
+                "xEnabledWhen": {
+                  "mode": [
+                    "fixed"
+                  ]
+                },
+                "xExample": 127,
+                "xMaximum": 255,
+                "xMinimum": 0,
+                "xUnit": "灰度级"
+              }
+            },
+            "type": "object"
+          },
+          "params": {
+            "mode": "fixed",
+            "threshold": 64
+          },
+          "targetWorkflowId": null,
+          "loop": {}
+        }
+      ],
+      "edges": [
+        {
+          "fromNode": "acquire",
+          "fromPort": "session",
+          "toNode": "send",
+          "toPort": "session"
+        },
+        {
+          "fromNode": "__workflow_input__:main-2",
+          "fromPort": "text",
+          "toNode": "send",
+          "toPort": "data"
+        },
+        {
+          "fromNode": "send",
+          "fromPort": "receipt",
+          "toNode": "__workflow_output__:main-2",
+          "toPort": "receipt"
+        },
+        {
+          "fromNode": "load",
+          "fromPort": "image",
+          "toNode": "mask",
+          "toPort": "image"
+        }
+      ],
+      "layout": {
+        "nodePositions": {
+          "__workflow_input__:main-2": {
+            "x": 20.0,
+            "y": 20.0
+          },
+          "__workflow_output__:main-2": {
+            "x": 360.0,
+            "y": 20.0
+          }
+        }
+      }
+    }
+  },
+  "runtime": {
+    "maxConcurrentJobs": 2,
+    "gracefulStopTimeoutMs": 5000,
+    "heartbeatTimeoutMs": 5000,
+    "eventRetentionPerJob": 10000
+  },
+  "dependencies": {
+    "operators": [
+      "communication.tcp.session",
+      "communication.tcp.session_send",
+      "vision.io.image_loader",
+      "vision.preprocess.threshold"
+    ]
+  },
+  "devices": {
+    "bindings": {},
+    "schemaVersion": "1.0",
+    "definitions": {
+      "device-e909e00f6d9848b89740a4489092ebc3": {
+        "name": "TCP 常驻服务",
+        "deviceTypeId": "device.tcp.server",
+        "driverVersion": "1.0.0",
+        "enabled": true,
+        "description": "",
+        "connection": {
+          "bindAddress": "127.0.0.1",
+          "channels": [
+            {
+              "allowedIps": [
+                "127.0.0.1"
+              ],
+              "channelId": "a",
+              "name": "Station A Qt"
+            },
+            {
+              "allowedIps": [
+                "127.0.0.2"
+              ],
+              "channelId": "c",
+              "name": "Station B"
+            }
+          ],
+          "port": 54339
+        },
+        "defaults": {
+          "appendNewline": false,
+          "encoding": "utf-8",
+          "timeoutMs": 5000
+        },
+        "policies": {
+          "connect": "on_project_open",
+          "deviceWaitTimeoutMs": 5000,
+          "maxMessageBytes": 16777216,
+          "release": "on_project_close",
+          "sendTimeoutMs": 10000
+        }
+      }
+    }
+  }
+}

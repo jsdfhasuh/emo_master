@@ -1,0 +1,138 @@
+..............................F.F....................................F.. [ 81%]
+................                                                         [100%]
+================================== FAILURES ===================================
+______ testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure ______
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2687/tcp-device-chain0'), 'serv...9Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'single', 'receive', 'other', 'camera-plc'], ...}, ...}
+
+    def testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure(chain):
+        from emo_master.clients.runtime.devices import DeviceManagementClient
+        from emo_master.core.project.configuration import projectChanges, requiredProjectChanges
+        c = chain
+        shared = DeviceManagementClient(c['service'])
+        runtimeId, states = shared.getDeviceStates(c['service'].loadedProjectId)
+        assert states['server']['driverState']['ready']
+>       assert states['server']['availableControls'] == c['client'].getDeviceStates(c['service'].loadedProjectId)[1]['server']['availableControls']
+
+tests\runtime\test_tcp_device_integration.py:377: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\services\runtime_client.py:672: in getDeviceStates
+    return self._deviceCall('getDeviceStates', projectId)
+src\emo_master\apps\designer\services\runtime_client.py:664: in _deviceCall
+    return getattr(self._deviceManagement(), method)(*args, **kwargs)
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+src\emo_master\clients\runtime\devices.py:34: in _call
+    return self.call(name, request, timeoutMs=timeoutMs, cancellation=context)
+src\emo_master\apps\designer\services\runtime_client.py:659: in _deviceManagementCall
+    return self._displayCall(name, request, timeoutMs, cancellation, 'device-management')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000023A17DB4490>
+methodName = 'GetDeviceStates'
+request = project_id: "bc851f86-9bdf-46dc-aed0-e94d9afcbbd5"
+, timeoutMs = 5000
+token = <emo_master.clients.runtime.calls.DisplayCallContext object at 0x0000023A173CF3D0>
+owner = 'device-management', preserveCompleted = None
+
+    def _displayCall(self, methodName: str, request: object, timeoutMs: int,
+                     token: DisplayCallContext | None, owner: str, *, preserveCompleted=None):
+        context = token or DisplayCallContext()
+        with self._displayLock:
+            if self._closed or self._closing or owner in self._closedDisplayOwners:
+>               raise RuntimeClientError("E_DISPLAY_CANCELLED", "display owner is closed")
+E               emo_master.apps.designer.services.runtime_client.RuntimeClientError: display owner is closed
+
+src\emo_master\apps\designer\services\runtime_client.py:713: RuntimeClientError
+____________ testA5AllThreePackagesImportAndRunFromNewDirectories _____________
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2687/tcp-device-chain0'), 'serv...9Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'single', 'receive', 'other', 'camera-plc'], ...}, ...}
+
+    def testA5AllThreePackagesImportAndRunFromNewDirectories(chain):
+        from emo_master.apps.designer.state.project_edit_session import ProjectEditSession
+        from emo_master.apps.designer.state.device_package import exportDevices, importDevices, readDevicePackage
+        from emo_master.apps.designer.state.workflow_package import buildWorkflowPackage, writeWorkflowPackage, loadWorkflowPackage, importWorkflowPackage
+        from emo_master.core.project.runtime_package import buildRuntimePackage, installRuntimePackage
+        c = chain
+>       control(c, 'server', 'disconnect')
+
+tests\runtime\test_tcp_device_integration.py:498: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\runtime\test_tcp_device_integration.py:354: in control
+    runtimeId, states = c['client'].getDeviceStates(c['service'].loadedProjectId)
+src\emo_master\apps\designer\services\runtime_client.py:672: in getDeviceStates
+    return self._deviceCall('getDeviceStates', projectId)
+src\emo_master\apps\designer\services\runtime_client.py:664: in _deviceCall
+    return getattr(self._deviceManagement(), method)(*args, **kwargs)
+src\emo_master\clients\runtime\devices.py:69: in getDeviceStates
+    return self._states(self._call('GetDeviceStates', pb.GetDeviceStatesRequest(project_id=projectId), cancellation))
+src\emo_master\clients\runtime\devices.py:34: in _call
+    return self.call(name, request, timeoutMs=timeoutMs, cancellation=context)
+src\emo_master\apps\designer\services\runtime_client.py:659: in _deviceManagementCall
+    return self._displayCall(name, request, timeoutMs, cancellation, 'device-management')
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000023A17DB4490>
+methodName = 'GetDeviceStates'
+request = project_id: "bc851f86-9bdf-46dc-aed0-e94d9afcbbd5"
+, timeoutMs = 5000
+token = <emo_master.clients.runtime.calls.DisplayCallContext object at 0x0000023A16F43BE0>
+owner = 'device-management', preserveCompleted = None
+
+    def _displayCall(self, methodName: str, request: object, timeoutMs: int,
+                     token: DisplayCallContext | None, owner: str, *, preserveCompleted=None):
+        context = token or DisplayCallContext()
+        with self._displayLock:
+            if self._closed or self._closing or owner in self._closedDisplayOwners:
+>               raise RuntimeClientError("E_DISPLAY_CANCELLED", "display owner is closed")
+E               emo_master.apps.designer.services.runtime_client.RuntimeClientError: display owner is closed
+
+src\emo_master\apps\designer\services\runtime_client.py:713: RuntimeClientError
+______________ testExampleHasRealSessionToCalculationDependency _______________
+
+    def testExampleHasRealSessionToCalculationDependency():
+        document = sampleProject()
+        registry = PluginRegistry("0.6.1").scanRoots([Path("src/emo_master/plugins/builtins")]).activeOperators
+>       compiled = WorkflowCompiler(registry).compile(document)
+
+tests\core\project\test_tcp_delivery.py:46: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.core.workflow.compiler.WorkflowCompiler object at 0x0000023A192313F0>
+project = ProjectDocument(schemaVersion='2.5', project=ProjectMetadata(projectId='tcp-example', name='项目 TCP 示例', revision=1, cr...ettings(channelId='channel-b', name='客户端 B', allowedIps=['127.0.0.2'])], sendTimeoutMs=2000, maxMessageBytes=1048576)))
+pluginRootPaths = ()
+
+    def compile(
+        self,
+        project: ProjectDocument | dict[str, object],
+        pluginRootPaths: tuple[str, ...] = (),
+    ) -> CompiledProject:
+        document = (
+            project
+            if isinstance(project, ProjectDocument)
+            else ProjectDocument.model_validate(migrateProjectPayload(project))
+        )
+        issues = validateProjectDocument(document, self.operatorRegistry)
+        for workflowId, workflow in document.workflows.items():
+            for node in workflow.nodes:
+                descriptor = self.operatorRegistry.get(node.operatorId or "")
+                manifest = getattr(descriptor, "manifest", descriptor)
+                requirements = (manifest.get("deviceRequirements", {}) if isinstance(manifest, Mapping)
+                                else getattr(manifest, "deviceRequirements", {}))
+                if node.deviceBindings or requirements:
+                    try:
+                        self._devicePlans(document, node, requirements)
+                    except ValueError as error:
+                        issues.extend(locatedValidationError(error, 'E_DEVICE_BINDING',
+                            projectId=document.project.projectId, workflowId=workflowId, nodeId=node.nodeId,
+                            fieldPath='deviceBindings').issues)
+        if issues:
+>           raise WorkflowCompileError(issues)
+E           emo_master.core.workflow.errors.WorkflowCompileError: device slots do not match the operator declaration; device slots do not match the operator declaration; device slots do not match the operator declaration; device slots do not match the operator declaration
+
+src\emo_master\core\workflow\compiler.py:69: WorkflowCompileError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_integration.py::testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure
+FAILED tests/runtime/test_tcp_device_integration.py::testA5AllThreePackagesImportAndRunFromNewDirectories
+FAILED tests/core/project/test_tcp_delivery.py::testExampleHasRealSessionToCalculationDependency
+3 failed, 85 passed in 87.67s (0:01:27)

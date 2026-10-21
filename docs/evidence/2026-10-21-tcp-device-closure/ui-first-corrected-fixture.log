@@ -1,0 +1,77 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_______ testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer ________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001BFDAF30FD0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001BFDAF30940>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001BFDBCC6BC0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2686/testTcpShortcutAppliesAfterMet0')
+
+    def testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer(runtime, ownedDesignerWindow, tmp_path):
+        service, client = runtime
+        entered, release = Event(), Event()
+        def metadata():
+            entered.set()
+            assert release.wait(10)
+            return client.listDeviceTypes()
+        adapter = SimpleNamespace(listOperators=lambda: [], listDeviceTypes=metadata)
+        window = ownedDesignerWindow(adapter)
+        payload = WorkflowStore().toPayload()
+        types = service.pluginScanResult.deviceTypes
+        payload['devices']['definitions'] = dict(server=definition(types['device.tcp.server']))
+        source = tmp_path/'draft.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        window.show()
+        try:
+            window.openCommunicationPanel()
+            workspace = window.pageCoordinator.devices
+            assert entered.wait(5) and workspace.pending is not None
+            release.set()
+            waitUntil(lambda: workspace.pending is None)
+>           assert workspace.tree.currentItem().text(0) == types['device.tcp.server'].category
+E           AttributeError: 'NoneType' object has no attribute 'text'
+
+tests\designer\test_tcp_closure_ui.py:37: AttributeError
+______________ testDraftAndConnectedServerSummaryUseSameSnapshot ______________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001BFDE0619C0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001BFDE061E40>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x000001BFDE09B760>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2686/testDraftAndConnectedServerSum0')
+
+    def testDraftAndConnectedServerSummaryUseSameSnapshot(runtime, ownedDesignerWindow, tmp_path):
+        service, client = runtime
+        window = ownedDesignerWindow(client)
+        payload = WorkflowStore().toPayload()
+        types = service.pluginScanResult.deviceTypes
+        payload['devices']['definitions'] = {key: definition(types['device.tcp.server'], channels=[
+            dict(channelId='a', name='A', allowedIps=['127.0.0.1'])]) for key in ('server', 'draft')}
+        source = tmp_path/'draft.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        window.pageCoordinator.showDevices()
+        workspace = window.pageCoordinator.devices
+        waitUntil(lambda: workspace.pending is None)
+        workspace.stateScope = workspace._scope()
+        workspace.stateReadAt = 1.0
+        workspace.stateRuntimeId = 'runtime'
+        workspace.stateError = workspace.stateNotice = ''
+        checked = types['device.tcp.server'].validateDefinition(
+            window.pageCoordinator.session.document().devices.definitions['server'])
+        state = dict(state='IDLE', activeOwner=None, activeOwners=[], queued=0, generation='backend',
+            definitionRevision=revisionOf(checked.model_dump()), driverState=dict(ready=True, channels=[dict(connected=True)]))
+        workspace.states = dict(server=state)
+        workspace._showStates()
+        rows = {workspace.table.item(row, 0).data(Qt.UserRole): row for row in range(workspace.table.rowCount())}
+>       assert '尚未写入 Runtime' in workspace.table.item(rows['draft'], 3).text()
+E       AssertionError: assert '尚未写入 Runtime' in '未读取在线状态'
+E        +  where '未读取在线状态' = <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x000001BFDB2F1C80>()
+E        +    where <built-in method text of PySide2.QtWidgets.QTableWidgetItem object at 0x000001BFDB2F1C80> = <PySide2.QtWidgets.QTableWidgetItem object at 0x000001BFDB2F1C80>.text
+E        +      where <PySide2.QtWidgets.QTableWidgetItem object at 0x000001BFDB2F1C80> = <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x000001BFDB223A80>(1, 3)
+E        +        where <built-in method item of PySide2.QtWidgets.QTableWidget object at 0x000001BFDB223A80> = <PySide2.QtWidgets.QTableWidget(0x1bfde784cf0) at 0x000001BFDB223A80>.item
+E        +          where <PySide2.QtWidgets.QTableWidget(0x1bfde784cf0) at 0x000001BFDB223A80> = <emo_master.apps.designer.ui.device_workspace.DeviceWorkspace(0x1bfdc7fc300) at 0x000001BFDE38AFC0>.table
+
+tests\designer\test_tcp_closure_ui.py:70: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer
+FAILED tests/designer/test_tcp_closure_ui.py::testDraftAndConnectedServerSummaryUseSameSnapshot
+2 failed in 4.10s

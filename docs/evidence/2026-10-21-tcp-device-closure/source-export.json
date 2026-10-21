@@ -1,0 +1,14 @@
+{
+  "sourceSha": "24fcc827de18085f432fababa679acb0d382e940",
+  "sourceTree": "4dd9d4dd3ebcb5dfcff1a4ddc110dca05c658319",
+  "archive": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\source-24fcc827.zip",
+  "archiveSha256": "8a983819129340f04dff6415707a3da3fb9227cbf3e5b7e425eb1e3b4b181d25",
+  "snapshot": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\final-24fcc827",
+  "command": [
+    "git",
+    "archive",
+    "--format=zip",
+    "--output=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\build\\tcp-device-closure\\source-24fcc827.zip",
+    "24fcc827de18085f432fababa679acb0d382e940"
+  ]
+}

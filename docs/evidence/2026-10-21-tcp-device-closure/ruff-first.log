@@ -1,0 +1,105 @@
+F811 Redefinition of unused `runtime` from line 11
+  --> tests\designer\test_tcp_closure_ui.py:15:68
+   |
+15 | def testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer(runtime, ownedDesignerWindow, tmp_path):
+   |                                                                    ^^^^^^^ `runtime` redefined here
+16 |     service, client = runtime
+17 |     entered, release = Event(), Event()
+   |
+  ::: tests\designer\test_tcp_closure_ui.py:11:51
+   |
+ 9 | from emo_master.core.project.snapshots import revisionOf
+10 | from tests.designer.test_device_workspace import waitUntil
+11 | from tests.runtime.test_tcp_device_closure import runtime, thirdParty  # noqa: F401
+   |                                                   ------- previous definition of `runtime` here
+12 | from tests.runtime.test_tcp_device_integration import definition
+   |
+help: Remove definition: `runtime`
+
+F811 Redefinition of unused `runtime` from line 11
+  --> tests\designer\test_tcp_closure_ui.py:46:55
+   |
+46 | def testDraftAndConnectedServerSummaryUseSameSnapshot(runtime, ownedDesignerWindow, tmp_path):
+   |                                                       ^^^^^^^ `runtime` redefined here
+47 |     service, client = runtime
+48 |     window = ownedDesignerWindow(client)
+   |
+  ::: tests\designer\test_tcp_closure_ui.py:11:51
+   |
+ 9 | from emo_master.core.project.snapshots import revisionOf
+10 | from tests.designer.test_device_workspace import waitUntil
+11 | from tests.runtime.test_tcp_device_closure import runtime, thirdParty  # noqa: F401
+   |                                                   ------- previous definition of `runtime` here
+12 | from tests.runtime.test_tcp_device_integration import definition
+   |
+help: Remove definition: `runtime`
+
+F401 [*] `copy.deepcopy` imported but unused
+ --> tests\runtime\test_device_feedback_closure.py:3:18
+  |
+1 | """Frozen log attribution, authoritative activity, precise errors and RPC budgets."""
+2 | from concurrent.futures import ThreadPoolExecutor
+3 | from copy import deepcopy
+  |                  ^^^^^^^^
+4 | from dataclasses import replace
+5 | import json
+  |
+help: Remove unused import: `copy.deepcopy`
+
+F811 Redefinition of unused `runtime` from line 26
+   --> tests\runtime\test_device_feedback_closure.py:118:56
+    |
+118 | def testF11SelectorIssueHasWorkflowNodeSlotAndSelector(runtime):
+    |                                                        ^^^^^^^ `runtime` redefined here
+119 |     service, _ = runtime
+120 |     payload = tcpPayload(service)
+    |
+   ::: tests\runtime\test_device_feedback_closure.py:26:61
+    |
+ 24 | from emo_master.core.workflow.compiler import WorkflowCompiler
+ 25 | from emo_master.core.workflow.errors import WorkflowCompileError
+ 26 | from tests.runtime.test_tcp_device_closure import BUILTINS, runtime, thirdParty  # noqa: F401
+    |                                                             ------- previous definition of `runtime` here
+ 27 | from tests.runtime.test_tcp_device_integration import definition, graph, node
+    |
+help: Remove definition: `runtime`
+
+F811 Redefinition of unused `runtime` from line 26
+   --> tests\runtime\test_device_feedback_closure.py:130:59
+    |
+130 | def testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO(runtime, tmp_path, monkeypatch):
+    |                                                           ^^^^^^^ `runtime` redefined here
+131 |     service, _ = runtime
+132 |     payload = tcpPayload(service)
+    |
+   ::: tests\runtime\test_device_feedback_closure.py:26:61
+    |
+ 24 | from emo_master.core.workflow.compiler import WorkflowCompiler
+ 25 | from emo_master.core.workflow.errors import WorkflowCompileError
+ 26 | from tests.runtime.test_tcp_device_closure import BUILTINS, runtime, thirdParty  # noqa: F401
+    |                                                             ------- previous definition of `runtime` here
+ 27 | from tests.runtime.test_tcp_device_integration import definition, graph, node
+    |
+help: Remove definition: `runtime`
+
+F811 Redefinition of unused `runtime` from line 26
+   --> tests\runtime\test_device_feedback_closure.py:142:65
+    |
+141 | @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+142 | def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+    |                                                                 ^^^^^^^ `runtime` redefined here
+143 |     service, _ = runtime
+144 |     registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+    |
+   ::: tests\runtime\test_device_feedback_closure.py:26:61
+    |
+ 24 | from emo_master.core.workflow.compiler import WorkflowCompiler
+ 25 | from emo_master.core.workflow.errors import WorkflowCompileError
+ 26 | from tests.runtime.test_tcp_device_closure import BUILTINS, runtime, thirdParty  # noqa: F401
+    |                                                             ------- previous definition of `runtime` here
+ 27 | from tests.runtime.test_tcp_device_integration import definition, graph, node
+    |
+help: Remove definition: `runtime`
+
+Found 6 errors.
+[*] 1 fixable with the `--fix` option.

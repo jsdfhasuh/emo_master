@@ -1,0 +1,84 @@
+FF                                                                       [100%]
+================================== FAILURES ===================================
+_______ testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer ________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000253E38A10C0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000253E38A0A30>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000253E4636BC0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2685/testTcpShortcutAppliesAfterMet0')
+
+    def testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer(runtime, ownedDesignerWindow, tmp_path):
+        service, client = runtime
+        entered, release = Event(), Event()
+        def metadata():
+            entered.set()
+            assert release.wait(10)
+            return client.listDeviceTypes()
+        adapter = SimpleNamespace(listOperators=lambda: [], listDeviceTypes=metadata)
+        window = ownedDesignerWindow(adapter)
+        payload = WorkflowStore().toPayload()
+        types = service.pluginScanResult.deviceTypes
+        payload['devices']['definitions'] = dict(server=definition(types['device.tcp.server']))
+        source = tmp_path/'draft.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        window.show()
+        try:
+            window.openCommunicationPanel()
+            workspace = window.pageCoordinator.devices
+            assert entered.wait(5) and workspace.pending is not None
+            release.set()
+            waitUntil(lambda: workspace.pending is None)
+>           assert workspace.tree.currentItem().text(0) == types['device.tcp.server'].category
+E           AttributeError: 'NoneType' object has no attribute 'text'
+
+tests\designer\test_tcp_closure_ui.py:38: AttributeError
+______________ testDraftAndConnectedServerSummaryUseSameSnapshot ______________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000253E69E1960>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000253E69E1F00>)
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000253E6A177C0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2685/testDraftAndConnectedServerSum0')
+
+    def testDraftAndConnectedServerSummaryUseSameSnapshot(runtime, ownedDesignerWindow, tmp_path):
+        service, client = runtime
+        window = ownedDesignerWindow(client)
+        payload = WorkflowStore().toPayload()
+        types = service.pluginScanResult.deviceTypes
+        payload['devices']['definitions'] = {key: definition(types['device.tcp.server']) for key in ('server', 'draft')}
+        source = tmp_path/'draft.emoproj'
+        source.write_text(json.dumps(payload), encoding='utf-8')
+        assert window.loadProjectDirectory(str(source), confirmed=True)
+        window.pageCoordinator.showDevices()
+        workspace = window.pageCoordinator.devices
+        waitUntil(lambda: workspace.pending is None)
+        workspace.stateScope = workspace._scope()
+        workspace.stateReadAt = 1.0
+        workspace.stateRuntimeId = 'runtime'
+        workspace.stateError = workspace.stateNotice = ''
+>       checked = types['device.tcp.server'].validateDefinition(
+            window.pageCoordinator.session.document().devices.definitions['server'])
+
+tests\designer\test_tcp_closure_ui.py:63: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\plugin\devices.py:205: in validateDefinition
+    checked = validateTcpDefinition(checked)
+src\emo_master\core\project\communication.py:90: in validateTcpDefinition
+    config = tcpServerConfiguration(definition)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = DeviceDefinition(name='TCP 常驻服务', deviceTypeId='device.tcp.server', driverVersion='1.0.0', enabled=True, description='...: 5000, 'connect': 'on_project_run', 'release': 'on_project_close', 'sendTimeoutMs': 2000, 'maxMessageBytes': 1048576})
+
+    def tcpServerConfiguration(definition):
+        """Pure adapter; lifecycle policy belongs exclusively to DeviceManager."""
+>       return CommunicationSettings(enabled=definition.enabled, startupPolicy="manual", tcpServer=TcpServerSettings(
+            serviceId="tcp-server", name=definition.name[:80], **definition.connection,
+            sendTimeoutMs=definition.policies.get("sendTimeoutMs", 2000),
+            maxMessageBytes=definition.policies.get("maxMessageBytes", 1048576)))
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for CommunicationSettings
+E         Value error, 启用 TCP 通信前请配置至少一个客户端通道 [type=value_error, input_value={'enabled': True, 'startu...axMessageBytes=1048576)}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+src\emo_master\core\project\communication.py:81: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpShortcutAppliesAfterMetadataAndDoesNotChooseFirstServer
+FAILED tests/designer/test_tcp_closure_ui.py::testDraftAndConnectedServerSummaryUseSameSnapshot
+2 failed in 3.23s

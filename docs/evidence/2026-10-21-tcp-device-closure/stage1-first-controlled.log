@@ -1,0 +1,440 @@
+FFFFF.F                                                                  [100%]
+================================== FAILURES ===================================
+____________ testF02SelectorDependencyUsesDeviceDeclaration[True] _____________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012CA94C7F40>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012CA94C40D0>)
+newDevice = True
+
+    @pytest.mark.parametrize('newDevice', [True, False])
+    def testF02SelectorDependencyUsesDeviceDeclaration(runtime, newDevice):
+        service, _ = runtime
+        types = service.pluginScanResult.deviceTypes
+        online = WorkflowStore().toPayload()
+        # Use a third-party selector name and collection path to rule out channelId special casing.
+        declaration = types['device.tcp.server'].model_copy(deep=True)
+        declaration.bindingSelectors = {'station': dict(itemsPath='connection.stations', valueField='id', labelField='name')}
+        device = definition(types['device.tcp.server'], channels=[])
+        device['connection'] = dict(stations=[dict(id='a', name='A')])
+        if not newDevice:
+            online['devices']['definitions']['server'] = device
+        local = deepcopy(online)
+        local['devices']['definitions']['server'] = deepcopy(device)
+        local['devices']['definitions']['server']['connection']['stations'].append(dict(id='b', name='B'))
+        local['workflows']['main']['nodes'].append(node('bind', 'closure.selector', 'server', selectors=dict(station='b')))
+        local['project']['name'] = 'UNSELECTED'
+>       required = requiredProjectChanges(online, local, ['/workflows/main/nodes/bind'],
+            deviceTypes={declaration.deviceTypeId: declaration}, operatorRegistry={'closure.selector': dict(deviceRequirements={
+                'tcp': dict(deviceTypeId=declaration.deviceTypeId, requiredCapabilities=[],
+                    selectorSchema=dict(type='object', properties={'station': dict(type='string')}, required=['station'], additionalProperties=False))})})
+E       TypeError: requiredProjectChanges() got an unexpected keyword argument 'deviceTypes'
+
+tests\runtime\test_tcp_device_closure.py:73: TypeError
+____________ testF02SelectorDependencyUsesDeviceDeclaration[False] ____________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012CA9BA9900>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012CA9BA9780>)
+newDevice = False
+
+    @pytest.mark.parametrize('newDevice', [True, False])
+    def testF02SelectorDependencyUsesDeviceDeclaration(runtime, newDevice):
+        service, _ = runtime
+        types = service.pluginScanResult.deviceTypes
+        online = WorkflowStore().toPayload()
+        # Use a third-party selector name and collection path to rule out channelId special casing.
+        declaration = types['device.tcp.server'].model_copy(deep=True)
+        declaration.bindingSelectors = {'station': dict(itemsPath='connection.stations', valueField='id', labelField='name')}
+        device = definition(types['device.tcp.server'], channels=[])
+        device['connection'] = dict(stations=[dict(id='a', name='A')])
+        if not newDevice:
+            online['devices']['definitions']['server'] = device
+        local = deepcopy(online)
+        local['devices']['definitions']['server'] = deepcopy(device)
+        local['devices']['definitions']['server']['connection']['stations'].append(dict(id='b', name='B'))
+        local['workflows']['main']['nodes'].append(node('bind', 'closure.selector', 'server', selectors=dict(station='b')))
+        local['project']['name'] = 'UNSELECTED'
+>       required = requiredProjectChanges(online, local, ['/workflows/main/nodes/bind'],
+            deviceTypes={declaration.deviceTypeId: declaration}, operatorRegistry={'closure.selector': dict(deviceRequirements={
+                'tcp': dict(deviceTypeId=declaration.deviceTypeId, requiredCapabilities=[],
+                    selectorSchema=dict(type='object', properties={'station': dict(type='string')}, required=['station'], additionalProperties=False))})})
+E       TypeError: requiredProjectChanges() got an unexpected keyword argument 'deviceTypes'
+
+tests\runtime\test_tcp_device_closure.py:73: TypeError
+_________________ testF03ThirdPartyTcpGetsBridgeInSpawnedJob __________________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012CA9CD3B50>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012CA9CD38E0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2677/testF03ThirdPartyTcpGetsBridge0')
+
+    def testF03ThirdPartyTcpGetsBridgeInSpawnedJob(runtime, tmp_path):
+        service, client = runtime
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            listener.listen(1)
+            listener.settimeout(2)
+            payload = WorkflowStore().toPayload()
+            payload['devices']['definitions'] = dict(tcp=definition(service.pluginScanResult.deviceTypes['device.tcp.client_once'],
+                port=listener.getsockname()[1]))
+            payload['workflows']['main'] = graph([node('send', 'closure.tcp.client', 'tcp', params=dict(text='CLOSURE', operation='send'))],
+                [edge('send', 'sentBytes', 'output', 'sentBytes')], outputs=dict(sentBytes='integer'))
+            load(service, payload, tmp_path)
+            started = client.startJob(service.loadedProjectId, 'main')
+            assert started.ok, started
+>           assert waitForTerminal(service, started.job_id).status == 'COMPLETED'
+E           AssertionError: assert 'FAILED' == 'COMPLETED'
+E             
+E             - COMPLETED
+E             + FAILED
+
+tests\runtime\test_tcp_device_closure.py:97: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-fbdb30b9-fb47-4fdf-93d7-440e82210be0:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+
+    runCycle(context, inputs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: TCP data bridge missing
+
+_________ testF04StopSingleTransactionAbortsAndReleases[client_once] __________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012CA9C91FF0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012CA9C92440>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2677/testF04StopSingleTransactionAb0')
+kind = 'client_once'
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    def testF04StopSingleTransactionAbortsAndReleases(runtime, tmp_path, kind):
+        service, client = runtime
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            port = listener.getsockname()[1]
+            if kind == 'client_once':
+                listener.listen(1)
+            else:
+                listener.close()
+            payload = WorkflowStore().toPayload()
+            device = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=port)
+            payload['devices']['definitions'] = dict(tcp=device)
+            operator = 'communication.tcp.' + ('client' if kind == 'client_once' else 'receive_once')
+            payload['workflows']['main'] = graph([node('wait', operator, 'tcp', params=dict(operation='exchange', text='WAIT') if kind == 'client_once' else {})])
+            load(service, payload, tmp_path)
+            # Run twice: Stop must release the transaction so a new Job can enter it.
+            for _ in range(2):
+                started = client.startJob(service.loadedProjectId, 'main')
+                assert started.ok, started
+                peer = None
+                if kind == 'client_once':
+                    listener.settimeout(10)
+                    peer = listener.accept()[0]
+                    assert peer.recv(100) == b'WAIT'
+                else:
+                    end = time.monotonic()+10
+                    while not service.deviceManager.drivers['tcp'].active and time.monotonic() < end:
+                        time.sleep(.01)
+                    assert service.deviceManager.drivers['tcp'].active
+                try:
+                    client.stopJob(started.job_id)
+                    result = waitForTerminal(service, started.job_id)
+>                   assert result.status == 'ABORTED', result
+E                   AssertionError: ok: true
+E                     status: "FAILED"
+E                     error_code: "E_TCP_OUTCOME_UNKNOWN"
+E                     message: "TCP reply unavailable; do not replay business ...20
+E                     accepted_at_ms: 1792546798987
+E                     started_at_ms: 1792546800033
+E                     ended_at_ms: 1792546800068
+E                     legacy_snapshot_policy: "ALL"
+E                     
+E                   assert 'FAILED' == 'ABORTED'
+E                     
+E                     - ABORTED
+E                     + FAILED
+
+tests\runtime\test_tcp_device_closure.py:135: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-af6243b5-6472-4102-a6cf-77580e574ad9:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+
+    runCycle(context, inputs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: TCP reply unavailable; do not replay business action
+
+_________ testF04StopSingleTransactionAbortsAndReleases[receive_once] _________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x0000012CA9E0E230>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x0000012CA9E0CC10>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2677/testF04StopSingleTransactionAb1')
+kind = 'receive_once'
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    def testF04StopSingleTransactionAbortsAndReleases(runtime, tmp_path, kind):
+        service, client = runtime
+        with socket.socket() as listener:
+            listener.bind(('127.0.0.1', 0))
+            port = listener.getsockname()[1]
+            if kind == 'client_once':
+                listener.listen(1)
+            else:
+                listener.close()
+            payload = WorkflowStore().toPayload()
+            device = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=port)
+            payload['devices']['definitions'] = dict(tcp=device)
+            operator = 'communication.tcp.' + ('client' if kind == 'client_once' else 'receive_once')
+            payload['workflows']['main'] = graph([node('wait', operator, 'tcp', params=dict(operation='exchange', text='WAIT') if kind == 'client_once' else {})])
+            load(service, payload, tmp_path)
+            # Run twice: Stop must release the transaction so a new Job can enter it.
+            for _ in range(2):
+                started = client.startJob(service.loadedProjectId, 'main')
+                assert started.ok, started
+                peer = None
+                if kind == 'client_once':
+                    listener.settimeout(10)
+                    peer = listener.accept()[0]
+                    assert peer.recv(100) == b'WAIT'
+                else:
+                    end = time.monotonic()+10
+                    while not service.deviceManager.drivers['tcp'].active and time.monotonic() < end:
+                        time.sleep(.01)
+                    assert service.deviceManager.drivers['tcp'].active
+                try:
+                    client.stopJob(started.job_id)
+                    result = waitForTerminal(service, started.job_id)
+>                   assert result.status == 'ABORTED', result
+E                   AssertionError: ok: true
+E                     status: "FAILED"
+E                     error_code: "E_TCP_OUTCOME_UNKNOWN"
+E                     message: "TCP reply unavailable; do not replay business ...16
+E                     accepted_at_ms: 1792546800687
+E                     started_at_ms: 1792546801755
+E                     ended_at_ms: 1792546801780
+E                     legacy_snapshot_policy: "ALL"
+E                     
+E                   assert 'FAILED' == 'ABORTED'
+E                     
+E                     - ABORTED
+E                     + FAILED
+
+tests\runtime\test_tcp_device_closure.py:135: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-7bdc93ce-1fa5-4fa1-af90-84ed2b72128e:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+
+    runCycle(context, inputs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 221, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: TCP reply unavailable; do not replay business action
+
+__ testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication ___
+
+chain = {'root': WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2677/tcp-device-chain0'), 'serv...5Z', ...}, 'entryWorkflowId': 'main', 'workflowOrder': ['main', 'single', 'receive', 'other', 'camera-plc'], ...}, ...}
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x0000012CA9DFB1C0>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x0000012CA9DF9480>
+
+    def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(chain, ownedDesignerWindow, monkeypatch):
+        from PySide2.QtCore import Qt
+        from PySide2.QtTest import QTest
+        from PySide2.QtWidgets import QDialogButtonBox, QMessageBox
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog, DeviceNodeDialog
+        from tests.designer.test_device_workspace import waitUntil
+        from tests.designer.test_runtime_menu_publication import menuDialog
+        c = chain
+        window = ownedDesignerWindow(c['client'])
+        window.resize(1400, 900)
+        window.show()
+        assert window.loadProjectDirectory(str(c['path']), confirmed=True)
+        coordinator = window.pageCoordinator
+        coordinator.chrome.deviceAction.trigger()
+        workspace = coordinator.devices
+        waitUntil(lambda: workspace.pending is None)
+        # Use a fixed ID in this harness so every subsequent group uses this same project.
+        declaration = c['types']['device.tcp.server']
+        create = DeviceDefinitionDialog(declaration, workspace, initial=c['payload']['devices']['definitions']['server'],
+            client=c['client'], beforeAccept=lambda value: workspace.catalog().put(value, deviceId='server'))
+        create.show()
+        address = create.forms['connection'].channels.table.item(0, 2)
+        address.setText('999.0.0.1')
+        QTest.mouseClick(create.findChild(QDialogButtonBox).button(QDialogButtonBox.Ok), Qt.LeftButton)
+        assert create.isVisible() and create.error.text()
+        address.setText('127.0.0.1')
+        QTest.mouseClick(create.findChild(QDialogButtonBox).button(QDialogButtonBox.Ok), Qt.LeftButton)
+        assert create.result() == create.Accepted, create.error.text()
+        workspace.refresh()
+        row = next(row for row in range(workspace.table.rowCount()) if workspace.table.item(row, 0).data(Qt.UserRole) == 'server')
+        workspace.table.setCurrentCell(row, 0)
+        original = deepcopy(coordinator.session.payload())
+        channels = workspace.forms['connection'].channels
+        channels.table.removeRow(0)
+        workspace.apply()
+        assert 'main/acquire' in workspace.status.text(), workspace.status.text()
+        assert coordinator.session.payload() == original and channels.table.rowCount() == 1
+        channels.setValue(original['devices']['definitions']['server']['connection']['channels'])
+        channels.table.item(0, 1).setText('Station A Qt')
+        workspace.apply()
+        assert coordinator.session.payload()['devices']['definitions']['server']['connection']['channels'][0]['channelId'] == 'a'
+        workspace.tabs.setCurrentIndex(1)
+        assert workspace.grab().save(str(c['root']/'qt-device-connection.png'))
+        workspace.closeButton.click()
+        for _ in range(2):
+            acquire = deepcopy(next(item for item in coordinator.session.workflows.get('main').nodes if item['nodeId'] == 'acquire'))
+            acquire['paramSchema'] = c['service'].pluginScanResult.activeOperators['communication.tcp.session'].manifest.paramSchema
+            requirements = {'tcp': c['service'].pluginScanResult.activeOperators['communication.tcp.session'].manifest.deviceRequirements['tcp'].model_dump()}
+            wizard = DeviceNodeDialog(coordinator, acquire, requirements, window)
+            wizard.show()
+            waitUntil(lambda: wizard.buttons.button(QDialogButtonBox.Ok).isEnabled())
+            assert wizard.selectors['tcp']['channelId'].currentData() == 'a'
+            QTest.mouseClick(wizard.buttons.button(QDialogButtonBox.Ok), Qt.LeftButton)
+            assert wizard.result() == wizard.Accepted, wizard.error.text()
+        assert window.saveProjectToDirectory(str(c['path']))
+        assert window.loadProjectDirectory(str(c['path']), confirmed=True)
+        c['payload'] = json.loads(c['path'].read_text(encoding='utf-8'))
+        stored = ProjectDocument.model_validate_json(c['path'].read_bytes())
+        assert stored.schemaVersion == '2.7' and stored.communication is None
+        reopened = WorkflowStore(stored.model_dump(mode='json')).toPayload()
+        assert reopened['devices'] == stored.model_dump()['devices']
+        dialog = menuDialog(window, monkeypatch)
+        dialog.validateButton.click()
+        waitUntil(lambda: dialog.pending is None)
+        assert dialog.initialValidated, dialog.status.text()
+        assert not c['service'].deviceManager.drivers
+        with socket.socket() as sock:
+            sock.bind(('127.0.0.1', reopened['devices']['definitions']['server']['connection']['port']))
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_args: QMessageBox.Yes)
+        dialog.writeButton.click()
+        waitUntil(lambda: dialog.pending is None and not dialog.writePending and not dialog.initial)
+        request = dialog.requestId
+        receipt = waitWrite(c['service'], c['client'], request)
+        assert receipt['state'] == 'COMMITTED', receipt
+        end = time.monotonic()+5
+        while receipt.get('connections', {}).get('server') == 'PENDING' and time.monotonic() < end:
+            time.sleep(.01)
+            receipt = c['client'].getProjectWriteStatus(request)
+        assert receipt['connections']['server'] == 'LISTENING', receipt
+        assert not c['service'].jobRepository.all()
+        assert json.loads(c['path'].read_text(encoding='utf-8')) == c['payload']
+        assert dialog.grab().save(str(c['root']/'qt-first-write.png'))
+        dialog.reject()
+    
+        # A published managed project can be saved under a new root without replacing Runtime.
+        runtimeDocument = c['client'].getOnlineProjectSnapshot()['payload']
+        backend = c['service'].deviceManager.drivers['server']
+        generation = dict(c['service'].deviceManager.scope)
+        jobs = list(c['service'].jobRepository.all())
+        copy = c['root']/'saved-copy'
+        monkeypatch.setattr(QMessageBox, 'warning', lambda *_args: QMessageBox.Ok)
+>       assert window.saveProjectToDirectory(str(copy)), window.projectController.lastSaveError
+E       AssertionError: 副本已写入 C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2677\tcp-device-chain0\saved-copy\project.json，但旧运行上下文未释放；仍保留原项目：TCP 已纳入设备管理，请选择 deviceId 查看状态和控制
+E       assert False
+E        +  where False = saveProjectToDirectory('C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2677\\tcp-device-chain0\\saved-copy')
+E        +    where saveProjectToDirectory = <emo_master.apps.designer.ui.main_window.MainWindow(0x12ca85b39e0) at 0x0000012CA9ECD580>.saveProjectToDirectory
+E        +    and   'C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\pytest-of-jsdfhasuh\\pytest-2677\\tcp-device-chain0\\saved-copy' = str(WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2677/tcp-device-chain0/saved-copy'))
+
+tests\runtime\test_tcp_device_integration.py:237: AssertionError
+---------------------------- Captured stdout setup ----------------------------
+TCP_ACCEPTANCE_ROOT=C:\Users\jsdfhasuh\AppData\Local\Temp\pytest-of-jsdfhasuh\pytest-2677\tcp-device-chain0
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[True]
+FAILED tests/runtime/test_tcp_device_closure.py::testF02SelectorDependencyUsesDeviceDeclaration[False]
+FAILED tests/runtime/test_tcp_device_closure.py::testF03ThirdPartyTcpGetsBridgeInSpawnedJob
+FAILED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[client_once]
+FAILED tests/runtime/test_tcp_device_closure.py::testF04StopSingleTransactionAbortsAndReleases[receive_once]
+FAILED tests/runtime/test_tcp_device_integration.py::testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication
+6 failed, 1 passed in 16.91s

@@ -1,0 +1,605 @@
+FFFFFFFFFFF.                                                             [100%]
+================================== FAILURES ===================================
+_______ testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[False] _______
+
+large = False
+
+    @pytest.mark.parametrize('large', [False, True])
+    def testF09ProjectionPreservesFrozenIdentityAndOriginalEvent(large):
+        diagnostics = DeviceDiagnostics()
+        written = []
+        diagnostics.writer = type('Writer', (), dict(enqueue=lambda _, event: written.append(event)))()
+        scope = dict(runtimeInstanceId='runtime', projectId='project', projectLoadGeneration='load-old')
+        fields = dict(phase='execute', data=dict(reading=42, detail='x'*(4000 if large else 4)),
+            cycleId='cycle', planRevision=7, deviceBindings={'tcp': dict(deviceId='server', scope=scope,
+                deviceGeneration='backend-old', selectors=dict(channelId='a'))})
+        event = RuntimeEvent(jobId='job', eventType='node.log', message='actual warning', level='WARN',
+            timestampMs=123456, workflowId='main', workflowRunId='workflow-run', nodeId='node', nodeRunId='node-run',
+            parentWorkflowRunId='parent', iterationPathJson='[1,2]', payloadJson=json.dumps(fields))
+        diagnostics.projectEvent(event)
+        row = diagnostics.query(scope, 'server')['records'][0]
+>       assert row['timestampMs'] == event.timestampMs and row['level'] == 'WARN'
+E       AssertionError: assert (1792547455027 == 123456)
+E        +  where 123456 = RuntimeEvent(jobId='job', eventType='node.log', message='actual warning', level='WARN', nodeId='node', code='', payloa...Id='main', workflowRunId='workflow-run', parentWorkflowRunId='parent', nodeRunId='node-run', iterationPathJson='[1,2]').timestampMs
+
+tests\runtime\test_device_feedback_closure.py:44: AssertionError
+_______ testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[True] ________
+
+large = True
+
+    @pytest.mark.parametrize('large', [False, True])
+    def testF09ProjectionPreservesFrozenIdentityAndOriginalEvent(large):
+        diagnostics = DeviceDiagnostics()
+        written = []
+        diagnostics.writer = type('Writer', (), dict(enqueue=lambda _, event: written.append(event)))()
+        scope = dict(runtimeInstanceId='runtime', projectId='project', projectLoadGeneration='load-old')
+        fields = dict(phase='execute', data=dict(reading=42, detail='x'*(4000 if large else 4)),
+            cycleId='cycle', planRevision=7, deviceBindings={'tcp': dict(deviceId='server', scope=scope,
+                deviceGeneration='backend-old', selectors=dict(channelId='a'))})
+        event = RuntimeEvent(jobId='job', eventType='node.log', message='actual warning', level='WARN',
+            timestampMs=123456, workflowId='main', workflowRunId='workflow-run', nodeId='node', nodeRunId='node-run',
+            parentWorkflowRunId='parent', iterationPathJson='[1,2]', payloadJson=json.dumps(fields))
+        diagnostics.projectEvent(event)
+        row = diagnostics.query(scope, 'server')['records'][0]
+>       assert row['timestampMs'] == event.timestampMs and row['level'] == 'WARN'
+E       AssertionError: assert (1792547455283 == 123456)
+E        +  where 123456 = RuntimeEvent(jobId='job', eventType='node.log', message='actual warning', level='WARN', nodeId='node', code='', payloa...Id='main', workflowRunId='workflow-run', parentWorkflowRunId='parent', nodeRunId='node-run', iterationPathJson='[1,2]').timestampMs
+
+tests\runtime\test_device_feedback_closure.py:44: AssertionError
+__________ testF10ConcurrentServiceOwnersAppearInAuthoritativeState ___________
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CBB03940>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CBB03A00>)
+
+    def testF10ConcurrentServiceOwnersAppearInAuthoritativeState(tickerRuntime):
+        service, client = tickerRuntime
+        manager = service.deviceManager
+        entered, release = Event(), Event()
+        def held(*_args, **_kwargs):
+            entered.set()
+            assert release.wait(10)
+            return dict(ticks=1)
+        manager.drivers['ticker'].execute = held
+        pool = ThreadPoolExecutor(2)
+        try:
+            for owner in ('a', 'b'):
+                manager.authorizeMaintenance(owner, 'ticker')
+            first = pool.submit(manager.execute, 'a', 'ticker', 'sample', {}, cycleId='a-cycle', requestId='request-a')
+>           assert entered.wait(5)
+E           assert False
+E            +  where False = wait(5)
+E            +    where wait = <threading.Event object at 0x000001B7CBB03B20>.wait
+
+tests\runtime\test_device_feedback_closure.py:88: AssertionError
+_____________ testF11SelectorIssueHasWorkflowNodeSlotAndSelector ______________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC026770>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC026650>)
+
+    def testF11SelectorIssueHasWorkflowNodeSlotAndSelector(runtime):
+        service, _ = runtime
+        payload = tcpPayload(service)
+        payload['workflows']['main']['nodes'][1]['deviceBindings']['tcp']['selectors']['channelId'] = 'missing'
+        with pytest.raises(WorkflowCompileError) as caught:
+            WorkflowCompiler(service.pluginScanResult.activeOperators, deviceTypes=service.pluginScanResult.deviceTypes).compile(payload)
+        issue = next(item for item in caught.value.issues if 'missing' in item.message)
+        assert issue.workflowId == 'main' and issue.nodeId == 'acquire'
+>       assert issue.fieldPath == 'deviceBindings.tcp.selectors.channelId'
+E       AssertionError: assert '' == 'deviceBindin...ors.channelId'
+E         
+E         - deviceBindings.tcp.selectors.channelId
+
+tests\runtime\test_device_feedback_closure.py:125: AssertionError
+____________ testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO ____________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC14F790>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC14F9D0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2683/testF11DefinitionIssueHasDevic0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x000001B7CC14F7F0>
+
+    def testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO(runtime, tmp_path, monkeypatch):
+        service, _ = runtime
+        payload = tcpPayload(service)
+        payload['devices']['definitions']['server']['connection']['port'] = 0
+        monkeypatch.setattr(service.deviceManager, 'makeBackend', lambda *_: pytest.fail('candidate must not make a backend'))
+        with pytest.raises(WorkflowCompileError) as caught:
+>           prepareRuntimeProject(ProjectDocument.model_validate(payload), tmp_path, service.pluginScanResult.activeOperators,
+                                  deviceTypes=service.pluginScanResult.deviceTypes)
+
+tests\runtime\test_device_feedback_closure.py:135: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\project\runtime_directory.py:93: in prepareRuntimeProject
+    definition = declaration.validateDefinition(definition)
+src\emo_master\core\plugin\devices.py:189: in validateDefinition
+    payload[name] = _parameters(getattr(definition, name), schema, name)
+src\emo_master\core\project\snapshots.py:122: in _parameters
+    value[key] = _parameters(value[key], definition, f"{path}.{key}")
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+value = 0
+schema = {'title': '端口', 'type': 'integer', 'default': 10000, 'minimum': 1, ...}
+path = 'connection.port'
+
+    def _parameters(value: Any, schema: Mapping, path: str) -> Any:
+        """Normalize and check the supported manifest parameter-schema subset.
+    
+        Reject unsupported validation keywords rather than silently skipping them.
+        Operator-specific semantic validation still belongs to the runtime compiler.
+        """
+        supported = {"type", "properties", "required", "additionalProperties", "default", "enum",
+                     "minimum", "maximum", "exclusiveMinimum", "exclusiveMaximum", "items",
+                     "minLength", "maxLength", "minItems", "maxItems", "pattern", "title", "description"}
+        unknown = {key for key in schema if key not in supported and not key.startswith("x")}
+        if unknown:
+            raise ValueError(f"{path}: unsupported parameter constraints {sorted(unknown)}")
+        kind = schema.get("type", "object")
+        valid = {"object": isinstance(value, dict), "array": isinstance(value, list),
+                 "string": isinstance(value, str), "integer": type(value) is int,
+                 "number": type(value) in (int, float), "boolean": type(value) is bool}
+        if not valid.get(kind, False):
+            raise ValueError(f"{path}: expected {kind}")
+        if "enum" in schema and value not in schema["enum"]:
+            raise ValueError(f"{path}: value outside enum")
+        if kind == "object":
+            properties = schema.get("properties", {})
+            if not schema.get("additionalProperties", True) and set(value) - set(properties):
+                raise ValueError(f"{path}: unknown parameter")
+            value = deepcopy(value)
+            for key, definition in properties.items():
+                if key not in value and "default" in definition:
+                    value[key] = deepcopy(definition["default"])
+                if key in value:
+                    value[key] = _parameters(value[key], definition, f"{path}.{key}")
+            if set(schema.get("required", [])) - set(value):
+                raise ValueError(f"{path}: required parameter missing")
+        if kind == "array":
+            value = [_parameters(item, schema.get("items", {}), f"{path}[]") for item in value]
+        if kind in {"integer", "number"}:
+            if kind == "number":
+                value = float(value)
+            for key, invalid in [("minimum", lambda a, b: a < b), ("maximum", lambda a, b: a > b),
+                                 ("exclusiveMinimum", lambda a, b: a <= b),
+                                 ("exclusiveMaximum", lambda a, b: a >= b)]:
+                if key in schema and invalid(value, schema[key]):
+>                   raise ValueError(f"{path}: {key}")
+E                   ValueError: connection.port: minimum
+
+src\emo_master\core\project\snapshots.py:134: ValueError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_missing] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC0255D0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC024610>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2683/testF11PackageDependencyReport0')
+dependency = 'operator_missing'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+            registry[key] = replace(registry[key], manifest=registry[key].manifest.model_copy(update=dict(version='99.0.0')))
+        else:
+            types[key] = types[key].model_copy(update=dict(version='99.0.0'))
+        with pytest.raises(WorkflowCompileError) as caught:
+>           installRuntimePackage(package, tmp_path/'import', registry=registry, deviceTypes=types)
+
+tests\runtime\test_device_feedback_closure.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\project\runtime_package.py:276: in installRuntimePackage
+    document, manifest = _extract(package, stage, registry, deviceTypes)
+src\emo_master\core\project\runtime_package.py:256: in _extract
+    or _operators(document, registry) != manifest.get("requiredOperators")):
+src\emo_master\core\project\runtime_package.py:97: in _operators
+    return {key: registry[key].manifest.version for key in sorted(ids)}
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+.0 = <list_iterator object at 0x000001B7CC14A560>
+
+>   return {key: registry[key].manifest.version for key in sorted(ids)}
+E   KeyError: 'communication.tcp.session'
+
+src\emo_master\core\project\runtime_package.py:97: KeyError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC14E980>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC14EBC0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2683/testF11PackageDependencyReport1')
+dependency = 'operator_version'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+>           registry[key] = replace(registry[key], manifest=registry[key].manifest.model_copy(update=dict(version='99.0.0')))
+E           AttributeError: 'PluginManifest' object has no attribute 'model_copy'
+
+tests\runtime\test_device_feedback_closure.py:155: AttributeError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[device_missing] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC23E3E0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC23E4A0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2683/testF11PackageDependencyReport2')
+dependency = 'device_missing'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+            registry[key] = replace(registry[key], manifest=registry[key].manifest.model_copy(update=dict(version='99.0.0')))
+        else:
+            types[key] = types[key].model_copy(update=dict(version='99.0.0'))
+        with pytest.raises(WorkflowCompileError) as caught:
+>           installRuntimePackage(package, tmp_path/'import', registry=registry, deviceTypes=types)
+
+tests\runtime\test_device_feedback_closure.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\project\runtime_package.py:276: in installRuntimePackage
+    document, manifest = _extract(package, stage, registry, deviceTypes)
+src\emo_master\core\project\runtime_package.py:258: in _extract
+    if document.schemaVersion in {"2.6", "2.7"} and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
+src\emo_master\core\project\runtime_package.py:101: in _devices
+    declarations = {value.deviceTypeId: deviceDeclaration(value, deviceTypes)
+src\emo_master\core\project\runtime_package.py:101: in <dictcomp>
+    declarations = {value.deviceTypeId: deviceDeclaration(value, deviceTypes)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = DeviceDefinition(name='TCP 常驻服务', deviceTypeId='device.tcp.server', driverVersion='1.0.0', enabled=True, description='...t_run', 'deviceWaitTimeoutMs': 5000, 'maxMessageBytes': 1048576, 'release': 'on_project_close', 'sendTimeoutMs': 2000})
+deviceTypes = {'device.camera.huaray_imv': DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.camera.huara...='emo_master.apps.runtime.devices.tcp:ManagedTcpClientOnce', executionLocation='io_thread', cancellableWait=None), ...}
+
+    def deviceDeclaration(definition, deviceTypes: Mapping[str, DeviceType] | None) -> DeviceType:
+        declaration = (deviceTypes or {}).get(definition.deviceTypeId)
+        if declaration is None or declaration.version != definition.driverVersion:
+>           raise ValueError(f"device metadata missing or version mismatch: {definition.deviceTypeId}")
+E           ValueError: device metadata missing or version mismatch: device.tcp.server
+
+src\emo_master\core\project\device_resources.py:21: ValueError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[device_version] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC412A40>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC4126B0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2683/testF11PackageDependencyReport3')
+dependency = 'device_version'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+            registry[key] = replace(registry[key], manifest=registry[key].manifest.model_copy(update=dict(version='99.0.0')))
+        else:
+            types[key] = types[key].model_copy(update=dict(version='99.0.0'))
+        with pytest.raises(WorkflowCompileError) as caught:
+>           installRuntimePackage(package, tmp_path/'import', registry=registry, deviceTypes=types)
+
+tests\runtime\test_device_feedback_closure.py:159: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\core\project\runtime_package.py:276: in installRuntimePackage
+    document, manifest = _extract(package, stage, registry, deviceTypes)
+src\emo_master\core\project\runtime_package.py:258: in _extract
+    if document.schemaVersion in {"2.6", "2.7"} and _devices(document, deviceTypes) != manifest.get("requiredDeviceTypes"):
+src\emo_master\core\project\runtime_package.py:101: in _devices
+    declarations = {value.deviceTypeId: deviceDeclaration(value, deviceTypes)
+src\emo_master\core\project\runtime_package.py:101: in <dictcomp>
+    declarations = {value.deviceTypeId: deviceDeclaration(value, deviceTypes)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+definition = DeviceDefinition(name='TCP 常驻服务', deviceTypeId='device.tcp.server', driverVersion='1.0.0', enabled=True, description='...t_run', 'deviceWaitTimeoutMs': 5000, 'maxMessageBytes': 1048576, 'release': 'on_project_close', 'sendTimeoutMs': 2000})
+deviceTypes = {'device.camera.huaray_imv': DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.camera.huara...='emo_master.apps.runtime.devices.tcp:ManagedTcpClientOnce', executionLocation='io_thread', cancellableWait=None), ...}
+
+    def deviceDeclaration(definition, deviceTypes: Mapping[str, DeviceType] | None) -> DeviceType:
+        declaration = (deviceTypes or {}).get(definition.deviceTypeId)
+        if declaration is None or declaration.version != definition.driverVersion:
+>           raise ValueError(f"device metadata missing or version mismatch: {definition.deviceTypeId}")
+E           ValueError: device metadata missing or version mismatch: device.tcp.server
+
+src\emo_master\core\project\device_resources.py:21: ValueError
+___ testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[embedded] ___
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001B7CC14E5C0>
+name = 'ExecuteDeviceAction'
+request = project_id: "36e5d52c-889d-4a6b-b5c9-27714ba6c710"
+runtime_instance_id: "ff973ad6-83ba-4626-94bb-3a9d15dcb926"
+device_...855260261b19770a"
+action: "sample"
+arguments_json: "{}"
+confirmed: true
+request_id: "33e9a51214a84f529c6b5ce8af5c6709"
+
+cancellation = None
+
+    def _call(self, name, request, cancellation=None):
+        context = cancellation or DisplayCallContext()
+        with self.lock:
+            if self.closed:
+                raise DeviceClientError('E_DISPLAY_CANCELLED', '设备观察已关闭')
+            self.contexts.add(context)
+        try:
+            if self.call is not None and cancellation is None:
+                return self.call(name, request)
+            context.start(5000)
+            method = getattr(self.service, name)
+            if callable(getattr(method, 'future', None)):
+                task = method.future(request, timeout=context.time_remaining(), wait_for_ready=False)
+                context.attach(task)
+                reply = task.result()
+            else:
+                reply = method(request, context)
+>           context.check()
+
+src\emo_master\clients\runtime\devices.py:42: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.clients.runtime.calls.DisplayCallContext object at 0x000001B7CC14FD60>
+
+    def check(self) -> None:
+        with self._lock:
+            if self._cancelled:
+                raise DisplayCallError(
+                    "E_DISPLAY_CANCELLED", "display request cancelled"
+                )
+            if self.time_remaining() <= 0:
+>               raise DisplayCallError(
+                    "E_DISPLAY_TIMEOUT", "display request deadline exceeded"
+                )
+E               emo_master.clients.runtime.calls.DisplayCallError: display request deadline exceeded
+
+src\emo_master\clients\runtime\calls.py:60: DisplayCallError
+
+The above exception was the direct cause of the following exception:
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC2E1BA0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7A2F02E90>)
+transport = 'embedded'
+
+    @pytest.mark.parametrize('transport', ['embedded', 'grpc', 'designer'])
+    def testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner(tickerRuntime, transport):
+        service, designer = tickerRuntime
+        server = grpc.server(ThreadPoolExecutor(4))
+        runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+        port = server.add_insecure_port('127.0.0.1:0')
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        client = (designer if transport == 'designer' else DeviceManagementClient(
+            service if transport == 'embedded' else runtime_pb2_grpc.RuntimeServiceStub(channel)))
+        def slow(action, params, cancelled, deadline, **_kwargs):
+            end = monotonic()+6
+            while monotonic() < end:
+                if cancelled():
+                    raise DeviceError('E_DEVICE_CANCELLED', 'cancelled six-second action')
+                if monotonic() >= deadline:
+                    raise DeviceError('E_DEVICE_OPERATION_TIMEOUT', 'action budget expired')
+                sleep(.01)
+            return dict(ticks=123)
+        service.deviceManager.drivers['ticker'].execute = slow
+        try:
+            runtimeId, states = client.getDeviceStates(service.loadedProjectId)
+            start = monotonic()
+>           result = client.executeDeviceAction(service.loadedProjectId, runtimeId, 'ticker', states['ticker'], 'sample', {})
+
+tests\runtime\test_device_feedback_closure.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:82: in executeDeviceAction
+    reply = self._call('ExecuteDeviceAction', pb.ExecuteDeviceActionRequest(project_id=projectId,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001B7CC14E5C0>
+name = 'ExecuteDeviceAction'
+request = project_id: "36e5d52c-889d-4a6b-b5c9-27714ba6c710"
+runtime_instance_id: "ff973ad6-83ba-4626-94bb-3a9d15dcb926"
+device_...855260261b19770a"
+action: "sample"
+arguments_json: "{}"
+confirmed: true
+request_id: "33e9a51214a84f529c6b5ce8af5c6709"
+
+cancellation = None
+
+    def _call(self, name, request, cancellation=None):
+        context = cancellation or DisplayCallContext()
+        with self.lock:
+            if self.closed:
+                raise DeviceClientError('E_DISPLAY_CANCELLED', '设备观察已关闭')
+            self.contexts.add(context)
+        try:
+            if self.call is not None and cancellation is None:
+                return self.call(name, request)
+            context.start(5000)
+            method = getattr(self.service, name)
+            if callable(getattr(method, 'future', None)):
+                task = method.future(request, timeout=context.time_remaining(), wait_for_ready=False)
+                context.attach(task)
+                reply = task.result()
+            else:
+                reply = method(request, context)
+            context.check()
+            return reply
+        except grpc.RpcError as error:
+            raise DeviceClientError(str(error.code()), error.details() or '设备 RPC 失败') from error
+        except DisplayCallError as error:
+>           raise DeviceClientError(error.code, str(error)) from error
+E           emo_master.clients.runtime.devices.DeviceClientError: display request deadline exceeded
+
+src\emo_master\clients\runtime\devices.py:47: DeviceClientError
+_____ testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc] _____
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001B7CC5792D0>
+name = 'ExecuteDeviceAction'
+request = project_id: "b207812c-4c4e-4cfe-ae63-94f481af981c"
+runtime_instance_id: "85614b5b-cc36-40ec-8073-f0233eed5c9b"
+device_...9c9f3c92443890b7"
+action: "sample"
+arguments_json: "{}"
+confirmed: true
+request_id: "e3c76c4b56a843e586b0eab22d375fdb"
+
+cancellation = None
+
+    def _call(self, name, request, cancellation=None):
+        context = cancellation or DisplayCallContext()
+        with self.lock:
+            if self.closed:
+                raise DeviceClientError('E_DISPLAY_CANCELLED', '设备观察已关闭')
+            self.contexts.add(context)
+        try:
+            if self.call is not None and cancellation is None:
+                return self.call(name, request)
+            context.start(5000)
+            method = getattr(self.service, name)
+            if callable(getattr(method, 'future', None)):
+                task = method.future(request, timeout=context.time_remaining(), wait_for_ready=False)
+                context.attach(task)
+>               reply = task.result()
+
+src\emo_master\clients\runtime\devices.py:39: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.DEADLINE_EXCEEDED
+	details = "Deadline Exceeded"
+	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Deadline Exceeded", grpc_status:4}"
+>
+timeout = None
+
+    def result(self, timeout: Optional[float] = None) -> Any:
+        """Returns the result of the computation or raises its exception.
+    
+        See grpc.Future.result for the full API contract.
+        """
+        with self._state.condition:
+            timed_out = _common.wait(
+                self._state.condition.wait, self._is_complete, timeout=timeout
+            )
+            if timed_out:
+                raise grpc.FutureTimeoutError()
+            if self._state.code is grpc.StatusCode.OK:
+                return self._state.response
+            if self._state.cancelled:
+                raise grpc.FutureCancelledError()
+>           raise self
+E           grpc._channel._MultiThreadedRendezvous: <_MultiThreadedRendezvous of RPC that terminated with:
+E           	status = StatusCode.DEADLINE_EXCEEDED
+E           	details = "Deadline Exceeded"
+E           	debug_error_string = "UNKNOWN:Error received from peer  {grpc_message:"Deadline Exceeded", grpc_status:4}"
+E           >
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\grpc\_channel.py:874: _MultiThreadedRendezvous
+
+The above exception was the direct cause of the following exception:
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001B7CC024B80>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001B7CC0241F0>)
+transport = 'grpc'
+
+    @pytest.mark.parametrize('transport', ['embedded', 'grpc', 'designer'])
+    def testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner(tickerRuntime, transport):
+        service, designer = tickerRuntime
+        server = grpc.server(ThreadPoolExecutor(4))
+        runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+        port = server.add_insecure_port('127.0.0.1:0')
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        client = (designer if transport == 'designer' else DeviceManagementClient(
+            service if transport == 'embedded' else runtime_pb2_grpc.RuntimeServiceStub(channel)))
+        def slow(action, params, cancelled, deadline, **_kwargs):
+            end = monotonic()+6
+            while monotonic() < end:
+                if cancelled():
+                    raise DeviceError('E_DEVICE_CANCELLED', 'cancelled six-second action')
+                if monotonic() >= deadline:
+                    raise DeviceError('E_DEVICE_OPERATION_TIMEOUT', 'action budget expired')
+                sleep(.01)
+            return dict(ticks=123)
+        service.deviceManager.drivers['ticker'].execute = slow
+        try:
+            runtimeId, states = client.getDeviceStates(service.loadedProjectId)
+            start = monotonic()
+>           result = client.executeDeviceAction(service.loadedProjectId, runtimeId, 'ticker', states['ticker'], 'sample', {})
+
+tests\runtime\test_device_feedback_closure.py:189: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\clients\runtime\devices.py:82: in executeDeviceAction
+    reply = self._call('ExecuteDeviceAction', pb.ExecuteDeviceActionRequest(project_id=projectId,
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.clients.runtime.devices.DeviceManagementClient object at 0x000001B7CC5792D0>
+name = 'ExecuteDeviceAction'
+request = project_id: "b207812c-4c4e-4cfe-ae63-94f481af981c"
+runtime_instance_id: "85614b5b-cc36-40ec-8073-f0233eed5c9b"
+device_...9c9f3c92443890b7"
+action: "sample"
+arguments_json: "{}"
+confirmed: true
+request_id: "e3c76c4b56a843e586b0eab22d375fdb"
+
+cancellation = None
+
+    def _call(self, name, request, cancellation=None):
+        context = cancellation or DisplayCallContext()
+        with self.lock:
+            if self.closed:
+                raise DeviceClientError('E_DISPLAY_CANCELLED', '设备观察已关闭')
+            self.contexts.add(context)
+        try:
+            if self.call is not None and cancellation is None:
+                return self.call(name, request)
+            context.start(5000)
+            method = getattr(self.service, name)
+            if callable(getattr(method, 'future', None)):
+                task = method.future(request, timeout=context.time_remaining(), wait_for_ready=False)
+                context.attach(task)
+                reply = task.result()
+            else:
+                reply = method(request, context)
+            context.check()
+            return reply
+        except grpc.RpcError as error:
+>           raise DeviceClientError(str(error.code()), error.details() or '设备 RPC 失败') from error
+E           emo_master.clients.runtime.devices.DeviceClientError: Deadline Exceeded
+
+src\emo_master\clients\runtime\devices.py:45: DeviceClientError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[False]
+FAILED tests/runtime/test_device_feedback_closure.py::testF09ProjectionPreservesFrozenIdentityAndOriginalEvent[True]
+FAILED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+FAILED tests/runtime/test_device_feedback_closure.py::testF11SelectorIssueHasWorkflowNodeSlotAndSelector
+FAILED tests/runtime/test_device_feedback_closure.py::testF11DefinitionIssueHasDeviceAndExactFieldWithoutIO
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_missing]
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_missing]
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[device_version]
+FAILED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[embedded]
+FAILED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc]
+11 failed, 1 passed in 26.40s

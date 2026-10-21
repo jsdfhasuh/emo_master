@@ -1,0 +1,136 @@
+..F...F...F.                                                             [100%]
+================================== FAILURES ===================================
+__________ testF10ConcurrentServiceOwnersAppearInAuthoritativeState ___________
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001AF09EB8130>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001AF0A46A320>)
+
+    def testF10ConcurrentServiceOwnersAppearInAuthoritativeState(tickerRuntime):
+        service, client = tickerRuntime
+        manager = service.deviceManager
+        entered, release = Event(), Event()
+        def held(*_args, **_kwargs):
+            entered.set()
+            assert release.wait(10)
+            return dict(ticks=1)
+        manager.drivers['ticker'].execute = held
+        pool = ThreadPoolExecutor(2)
+        try:
+            for owner in ('a', 'b'):
+                manager.authorizeMaintenance(owner, 'ticker')
+            first = pool.submit(manager.execute, 'a', 'ticker', 'sample', {}, cycleId='a-cycle', requestId='request-a')
+>           assert entered.wait(5)
+E           assert False
+E            +  where False = wait(5)
+E            +    where wait = <threading.Event object at 0x000001AF09EB84C0>.wait
+
+tests\runtime\test_device_feedback_closure.py:88: AssertionError
+_ testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version] _
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001AF09222650>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001AF0A5CD6C0>)
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/pytest-of-jsdfhasuh/pytest-2684/testF11PackageDependencyReport1')
+dependency = 'operator_version'
+
+    @pytest.mark.parametrize('dependency', ['operator_missing', 'operator_version', 'device_missing', 'device_version'])
+    def testF11PackageDependencyReportsRequiredAndInstalledVersions(runtime, tmp_path, dependency):
+        service, _ = runtime
+        registry, types = service.pluginScanResult.activeOperators, service.pluginScanResult.deviceTypes
+        source = tmp_path/'source'
+        source.mkdir()
+        (source/'project.json').write_text(json.dumps(tcpPayload(service)), encoding='utf-8')
+        package = buildRuntimePackage(source, tmp_path/'packages', registry=registry, deviceTypes=types)
+        registry, types = dict(registry), dict(types)
+        operator = dependency.startswith('operator')
+        key = 'communication.tcp.session' if operator else 'device.tcp.server'
+        required = registry[key].manifest.version if operator else types[key].version
+        if dependency.endswith('missing'):
+            (registry if operator else types).pop(key)
+        elif operator:
+>           registry[key] = replace(registry[key], manifest=registry[key].manifest.model_copy(update=dict(version='99.0.0')))
+E           AttributeError: 'PluginManifest' object has no attribute 'model_copy'
+
+tests\runtime\test_device_feedback_closure.py:155: AttributeError
+_____ testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc] _____
+
+tickerRuntime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001AF0AA0E110>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001AF0AA0E8F0>)
+transport = 'grpc'
+
+    @pytest.mark.parametrize('transport', ['embedded', 'grpc', 'designer'])
+    def testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner(tickerRuntime, transport):
+        service, designer = tickerRuntime
+        server = grpc.server(ThreadPoolExecutor(4))
+        runtime_pb2_grpc.add_RuntimeServiceServicer_to_server(service, server)
+        port = server.add_insecure_port('127.0.0.1:0')
+        server.start()
+        channel = grpc.insecure_channel(f'127.0.0.1:{port}')
+        client = (designer if transport == 'designer' else DeviceManagementClient(
+            service if transport == 'embedded' else runtime_pb2_grpc.RuntimeServiceStub(channel)))
+        def slow(action, params, cancelled, deadline, **_kwargs):
+            end = monotonic()+6
+            while monotonic() < end:
+                if cancelled():
+                    raise DeviceError('E_DEVICE_CANCELLED', 'cancelled six-second action')
+                if monotonic() >= deadline:
+                    raise DeviceError('E_DEVICE_OPERATION_TIMEOUT', 'action budget expired')
+                sleep(.01)
+            return dict(ticks=123)
+        service.deviceManager.drivers['ticker'].execute = slow
+        try:
+            runtimeId, states = client.getDeviceStates(service.loadedProjectId)
+            start = monotonic()
+            result = client.executeDeviceAction(service.loadedProjectId, runtimeId, 'ticker', states['ticker'], 'sample', {})
+            assert result == dict(ticks=123) and monotonic()-start >= 6
+            assert not service.deviceManager.maintenanceOwners and not service.projectConfiguration.cycles
+            if transport != 'designer':
+                with ThreadPoolExecutor(1) as pool:
+                    task = pool.submit(client.executeDeviceAction, service.loadedProjectId, runtimeId, 'ticker', states['ticker'], 'sample', {})
+                    end = monotonic()+5
+                    while not service.deviceManager.maintenanceOwners and monotonic() < end:
+                        sleep(.01)
+                    client.close()
+                    with pytest.raises(RuntimeError):
+>                       task.result(5)
+
+tests\runtime\test_device_feedback_closure.py:200: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\_base.py:458: in result
+    return self.__get_result()
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\_base.py:403: in __get_result
+    raise self._exception
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\concurrent\futures\thread.py:58: in run
+    result = self.fn(*self.args, **self.kwargs)
+src\emo_master\clients\runtime\devices.py:87: in executeDeviceAction
+    reply = self._call('ExecuteDeviceAction', pb.ExecuteDeviceActionRequest(project_id=projectId,
+src\emo_master\clients\runtime\devices.py:39: in _call
+    reply = task.result()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <_MultiThreadedRendezvous of RPC that terminated with:
+	status = StatusCode.CANCELLED
+	details = "Locally cancelled by application!"
+	debug_error_string = "None"
+>
+timeout = None
+
+    def result(self, timeout: Optional[float] = None) -> Any:
+        """Returns the result of the computation or raises its exception.
+    
+        See grpc.Future.result for the full API contract.
+        """
+        with self._state.condition:
+            timed_out = _common.wait(
+                self._state.condition.wait, self._is_complete, timeout=timeout
+            )
+            if timed_out:
+                raise grpc.FutureTimeoutError()
+            if self._state.code is grpc.StatusCode.OK:
+                return self._state.response
+            if self._state.cancelled:
+>               raise grpc.FutureCancelledError()
+E               grpc.FutureCancelledError
+
+C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\site-packages\grpc\_channel.py:873: FutureCancelledError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_feedback_closure.py::testF10ConcurrentServiceOwnersAppearInAuthoritativeState
+FAILED tests/runtime/test_device_feedback_closure.py::testF11PackageDependencyReportsRequiredAndInstalledVersions[operator_version]
+FAILED tests/runtime/test_device_feedback_closure.py::testManagementSixSecondsUsesDeclaredBudgetAndCancelExitsOwner[grpc]
+3 failed, 9 passed in 28.81s

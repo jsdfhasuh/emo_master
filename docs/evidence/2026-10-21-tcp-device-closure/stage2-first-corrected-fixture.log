@@ -1,0 +1,139 @@
+FFF.F                                                                    [100%]
+================================== FAILURES ===================================
+______ testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes ______
+
+serviceManager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x00000278F632DF60>
+
+    def testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes(serviceManager):
+        manager = serviceManager
+        parent, child = multiprocessing.Pipe()
+        cancellation = Event()
+        bridge = DeviceBridge(manager, 'owner', parent, cancellation)
+        proxy = DeviceProxy(child, cancellation)
+        bridge.thread.start()
+        try:
+>           result = proxy.call('release', deviceId='ticker', params={}, cycleId='cycle')
+
+tests\runtime\test_device_contract_closure.py:50: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.apps.runtime.devices.ipc.DeviceProxy object at 0x00000278F63D59F0>
+action = 'release'
+fields = {'deviceId': 'ticker', 'params': {}, 'cycleId': 'cycle'}
+
+    def call(self, action, **fields):
+        def cancelled():
+            return self.closed or self.cancellation.is_set()
+        while not self.lock.acquire(timeout=.02):
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+        try:
+            if cancelled():
+                raise DeviceError("E_DEVICE_CANCELLED", "device proxy cancelled")
+            self.sequence += 1
+            raw = json.dumps(dict(sequence=self.sequence, action=action, **fields)).encode()
+            if len(raw) > MAX_BYTES:
+                raise DeviceError("E_DEVICE_IPC_SIZE", "device request exceeds IPC budget")
+            try:
+                deadline = time.monotonic() + 1202
+                if action == "capture" and fields.get("params", {}).get("captureTimeoutMs") == 0:
+                    # Runtime validates the plugin's cancellable-wait declaration.
+                    # EOF and cancellation still retire this non-retrying call.
+                    deadline = float("inf")
+                sendBytes(self.connection, raw, cancelled, time.monotonic() + 2)
+                reply = json.loads(receiveBytes(self.connection, MAX_BYTES, cancelled, deadline))
+            except (OSError, EOFError, ValueError) as error:
+                self.close()
+                raise DeviceError("E_DEVICE_OUTCOME_UNKNOWN", "device transport interrupted; do not retry",
+                                  outcome="UNKNOWN") from error
+            if not reply["ok"]:
+>               raise DeviceError(reply["code"], reply["message"], outcome=reply["outcome"], diagnostics=reply.get("diagnostics", {}))
+E               emo_master.core.contracts.device_driver.DeviceError: 'frameId'
+
+src\emo_master\apps\runtime\devices\ipc.py:121: DeviceError
+_____ testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0] _____
+
+serviceManager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x00000278F64BEAD0>
+error = DeviceError('unhealthy service')
+
+    @pytest.mark.parametrize('error', [DeviceError('E_FATAL', 'unhealthy service', unhealthy=True), RuntimeError('driver failed')])
+    def testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover(serviceManager, error):
+        manager = serviceManager
+        driver = manager.drivers['ticker']
+        def fail(*_args, **_kwargs):
+            raise error
+        driver.execute = fail
+        with pytest.raises(type(error)):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        executor = manager.executors['ticker']
+>       assert executor.quarantined and str(error) in executor.lastError
+E       assert (False)
+E        +  where False = <emo_master.apps.runtime.devices.executor.DeviceExecutor object at 0x00000278F64BD0F0>.quarantined
+
+tests\runtime\test_device_contract_closure.py:74: AssertionError
+_____ testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1] _____
+
+serviceManager = <emo_master.apps.runtime.devices.manager.DeviceManager object at 0x00000278F64C45B0>
+error = RuntimeError('driver failed')
+
+    @pytest.mark.parametrize('error', [DeviceError('E_FATAL', 'unhealthy service', unhealthy=True), RuntimeError('driver failed')])
+    def testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover(serviceManager, error):
+        manager = serviceManager
+        driver = manager.drivers['ticker']
+        def fail(*_args, **_kwargs):
+            raise error
+        driver.execute = fail
+        with pytest.raises(type(error)):
+            manager.execute('owner', 'ticker', 'sample', {}, cycleId='cycle')
+        executor = manager.executors['ticker']
+>       assert executor.quarantined and str(error) in executor.lastError
+E       assert (False)
+E        +  where False = <emo_master.apps.runtime.devices.executor.DeviceExecutor object at 0x00000278F64C4250>.quarantined
+
+tests\runtime\test_device_contract_closure.py:74: AssertionError
+_____________ testF08OrdinaryChannelsUseGenericCreateEditAndSave ______________
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x278f533fab0) at 0x00000278F645BAB0>
+
+    def testF08OrdinaryChannelsUseGenericCreateEditAndSave(retainedQtApplication):
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog, configurationForm
+        from emo_master.apps.designer.ui.param_form import SchemaParamForm
+        declaration = tickerType()
+        declaration.connectionSchema = dict(type='object', properties=dict(channels=dict(type='array', default=[],
+            items=dict(type='object', properties=dict(id=dict(type='string'), name=dict(type='string')),
+                       required=['id', 'name'], additionalProperties=False))), additionalProperties=False)
+        value = definition(declaration, channels=[dict(id='a', name='A')])
+>       dialog = DeviceDefinitionDialog(declaration, initial=value)
+
+tests\runtime\test_device_contract_closure.py:99: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+src\emo_master\apps\designer\ui\device_wizard.py:124: in __init__
+    self.forms[key] = configurationForm(schema, applySchemaDefaults(schema, (initial or {}).get(key, {})))
+src\emo_master\apps\designer\ui\device_wizard.py:46: in configurationForm
+    form.setSchema(schema, values)
+src\emo_master\apps\designer\ui\tcp_device_form.py:26: in setSchema
+    self.channels.setValue(values.get('channels', []))
+src\emo_master\ui\communication_panel.py:91: in setValue
+    self.addChannel(channel)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <emo_master.ui.communication_panel.TcpChannelEditor(0x278f531d7e0) at 0x00000278F6D0B580>
+channel = {'id': 'a', 'name': 'A'}
+
+    def addChannel(self, channel=None):
+        if self.table.rowCount() >= 64:
+            return
+        channel = channel or dict(channelId='ch-' + uuid4().hex[:10],
+                                  name=f'通道 {self.table.rowCount() + 1}', allowedIps=[])
+        index = self.table.rowCount()
+        self.table.insertRow(index)
+>       for col, value in enumerate((channel['channelId'], channel['name'], ', '.join(channel['allowedIps']))):
+E       KeyError: 'channelId'
+
+src\emo_master\ui\communication_panel.py:100: KeyError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_contract_closure.py::testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes
+FAILED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+FAILED tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+FAILED tests/runtime/test_device_contract_closure.py::testF08OrdinaryChannelsUseGenericCreateEditAndSave
+4 failed, 1 passed in 1.40s

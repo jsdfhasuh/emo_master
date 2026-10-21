@@ -1,0 +1,108 @@
+EEEEF                                                                    [100%]
+=================================== ERRORS ====================================
+_ ERROR at setup of testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes _
+
+    @pytest.fixture
+    def serviceManager():
+>       declaration = tickerType()
+
+tests\runtime\test_device_contract_closure.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tickerType():
+        root = Path(__file__).resolve().parents[2]
+        value = json.loads((root/'examples/device_service/device_types/ticker.json').read_text(encoding='utf-8'))
+        value['capabilities'].append('release')
+>       return DeviceType.model_validate(value)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E         Value error, every business action requires an action schema [type=value_error, input_value={'schemaVersion': '1.1', ...', 'resume', 'recover']}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\runtime\test_device_contract_closure.py:24: ValidationError
+_ ERROR at setup of testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0] _
+
+    @pytest.fixture
+    def serviceManager():
+>       declaration = tickerType()
+
+tests\runtime\test_device_contract_closure.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tickerType():
+        root = Path(__file__).resolve().parents[2]
+        value = json.loads((root/'examples/device_service/device_types/ticker.json').read_text(encoding='utf-8'))
+        value['capabilities'].append('release')
+>       return DeviceType.model_validate(value)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E         Value error, every business action requires an action schema [type=value_error, input_value={'schemaVersion': '1.1', ...', 'resume', 'recover']}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\runtime\test_device_contract_closure.py:24: ValidationError
+_ ERROR at setup of testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1] _
+
+    @pytest.fixture
+    def serviceManager():
+>       declaration = tickerType()
+
+tests\runtime\test_device_contract_closure.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tickerType():
+        root = Path(__file__).resolve().parents[2]
+        value = json.loads((root/'examples/device_service/device_types/ticker.json').read_text(encoding='utf-8'))
+        value['capabilities'].append('release')
+>       return DeviceType.model_validate(value)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E         Value error, every business action requires an action schema [type=value_error, input_value={'schemaVersion': '1.1', ...', 'resume', 'recover']}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\runtime\test_device_contract_closure.py:24: ValidationError
+________ ERROR at setup of testF07BusinessRejectionLeavesServiceUsable ________
+
+    @pytest.fixture
+    def serviceManager():
+>       declaration = tickerType()
+
+tests\runtime\test_device_contract_closure.py:29: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tickerType():
+        root = Path(__file__).resolve().parents[2]
+        value = json.loads((root/'examples/device_service/device_types/ticker.json').read_text(encoding='utf-8'))
+        value['capabilities'].append('release')
+>       return DeviceType.model_validate(value)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E         Value error, every business action requires an action schema [type=value_error, input_value={'schemaVersion': '1.1', ...', 'resume', 'recover']}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\runtime\test_device_contract_closure.py:24: ValidationError
+================================== FAILURES ===================================
+_____________ testF08OrdinaryChannelsUseGenericCreateEditAndSave ______________
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x1f73c9dbe60) at 0x000001F73DAE2B80>
+
+    def testF08OrdinaryChannelsUseGenericCreateEditAndSave(retainedQtApplication):
+        from emo_master.apps.designer.ui.device_wizard import DeviceDefinitionDialog, configurationForm
+        from emo_master.apps.designer.ui.param_form import SchemaParamForm
+>       declaration = tickerType()
+
+tests\runtime\test_device_contract_closure.py:93: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+    def tickerType():
+        root = Path(__file__).resolve().parents[2]
+        value = json.loads((root/'examples/device_service/device_types/ticker.json').read_text(encoding='utf-8'))
+        value['capabilities'].append('release')
+>       return DeviceType.model_validate(value)
+E       pydantic_core._pydantic_core.ValidationError: 1 validation error for DeviceType
+E         Value error, every business action requires an action schema [type=value_error, input_value={'schemaVersion': '1.1', ...', 'resume', 'recover']}, input_type=dict]
+E           For further information visit https://errors.pydantic.dev/2.13/v/value_error
+
+tests\runtime\test_device_contract_closure.py:24: ValidationError
+=========================== short test summary info ===========================
+FAILED tests/runtime/test_device_contract_closure.py::testF08OrdinaryChannelsUseGenericCreateEditAndSave
+ERROR tests/runtime/test_device_contract_closure.py::testF06BusinessReleaseAndFrameworkFrameReleaseHaveDifferentRoutes
+ERROR tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error0]
+ERROR tests/runtime/test_device_contract_closure.py::testF07UnhealthyServiceUsesCanonicalQuarantineAndCanRecover[error1]
+ERROR tests/runtime/test_device_contract_closure.py::testF07BusinessRejectionLeavesServiceUsable
+1 failed, 4 errors in 1.01s

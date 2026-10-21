@@ -1,0 +1,352 @@
+{
+  "recorded": "2026-10-21T10:22:38.921835+08:00",
+  "baseline": "d307b9fbe828ea600e8586f8f72f71a9d721f5f0",
+  "sourceSha": "24fcc827de18085f432fababa679acb0d382e940",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "branch",
+        "--show-current"
+      ],
+      "exitCode": 0,
+      "stdout": "agent/runtime-workflow-architecture-v1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "log",
+        "--reverse",
+        "--format=%H %s",
+        "59f3f63b653d6c021ceb7c33700bdfcd3e7e4e6a..d307b9fbe828ea600e8586f8f72f71a9d721f5f0"
+      ],
+      "exitCode": 0,
+      "stdout": "f47a9e584904e098f43c9431d461f093594ceb60 docs(device): add TCP device integration implementation plan v1.5\nba779fe356e61997b1b776802aa06b363412d037 feat(devices): integrate TCP devices across Runtime and project delivery\nd307b9fbe828ea600e8586f8f72f71a9d721f5f0 docs(devices): retain TCP integration v1.5 acceptance evidence\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--stat",
+        "59f3f63b653d6c021ceb7c33700bdfcd3e7e4e6a",
+        "d307b9fbe828ea600e8586f8f72f71a9d721f5f0"
+      ],
+      "exitCode": 0,
+      "stdout": " .gitattributes                                     |    1 +\n .../acceptance/acceptance-results.json             |  519 +++++++++\n .../device-diagnostics-before-export.json          |  813 ++++++++++++++\n .../device-import/device-diagnostics.json          |  172 +++\n .../acceptance/device-import/imported.emoproj      | 1156 +++++++++++++++++++\n .../acceptance/device-import/sample.png            |  Bin 0 -> 80 bytes\n .../acceptance/devices.emodev.json                 |  172 +++\n .../acceptance/engineering/acceptance.emoproj      | 1169 ++++++++++++++++++++\n .../acceptance/engineering/sample.png              |  Bin 0 -> 80 bytes\n .../acceptance/job-results.json                    |  194 ++++\n .../acceptance/qt-device-connection.png            |  Bin 0 -> 64874 bytes\n .../acceptance/qt-first-write.png                  |  Bin 0 -> 15659 bytes\n .../runtime-import/device-diagnostics.json         |  195 ++++\n .../acceptance/runtime-import/imported.emoproj     | 1169 ++++++++++++++++++++\n .../acceptance/runtime-import/project.json         |    1 +\n .../acceptance/runtime-import/sample.png           |  Bin 0 -> 80 bytes\n .../runtime-5e793a6ffa324a7083693ec93c82478e.vxpkg |  Bin 0 -> 5246 bytes\n .../workflow-import/device-diagnostics.json        |  172 +++\n .../acceptance/workflow-import/imported.emoproj    |  452 ++++++++\n .../resource-55844ba6253640cf834ebf71a7c034ba.png  |  Bin 0 -> 80 bytes\n .../acceptance/workflow.emowf.json                 |  375 +++++++\n .../acceptance/write-receipts.json                 |   41 +\n .../artifact-manifest.json                         |  252 +++++\n .../first-failures/cli-first.log                   |    4 +\n .../first-failures/contracts-final.log             |  184 +++\n .../first-failures/final-acceptance.log            |   34 +\n .../first-failures/integration-ui-first.log        |  759 +++++++++++++\n .../first-failures/management-first.log            |   11 +\n .../first-failures/native-first.log                |   11 +\n .../first-failures/regression-fourth.log           |   30 +\n .../first-failures/regression-third.log            |  162 +++\n .../first-failures/runtime-final.log               |  155 +++\n .../first-failures/source-snapshot-first.log       |    4 +\n .../first-failures/transport-worker-first.log      |  135 +++\n .../first-failures/vertical-first.log              |   48 +\n .../provenance.json                                |  211 ++++\n .../runtime-20261020-171529-28644-0001.jsonl       |   26 +\n .../runtime-20261020-171517-28644-0001.jsonl       |  161 +++\n .../runtime-20261020-171532-28644-0001.jsonl       |   26 +\n .../runtime-20261020-171534-28644-0001.jsonl       |   47 +\n .../runtime-20261020-171531-28644-0001.jsonl       |   26 +\n .../third-party/service.emoproj                    |    1 +\n .../third-party/third-party-diagnostics.json       |  251 +++++\n .../verification/cli-checks.log                    |   13 +\n .../verification/final-regression.log              |   10 +\n .../verification/offline-import-final.log          |    2 +\n .../verification/source-candidate.json             |  602 ++++++++++\n .../verification/source-snapshot-check.json        |    8 +\n .../verification/source-snapshot.log               |   51 +\n .../verification/static-checks.json                |  350 ++++++\n .../verification/static-checks.log                 |   53 +\n docs/guides/device-catalog-contract-v1.md          |  582 ++++------\n .../guides/device-dispatch-online-configuration.md |   29 +-\n docs/guides/project-tcp-service.md                 |  150 +--\n .../2026-10-20-tcp-device-integration-plan-v1.md   |  844 ++++++++++++++\n docs/testing/2026-10-21-tcp-device-integration.md  |  131 +++\n .../device_types/simulated_camera.json             |  122 +-\n examples/device_service/README.md                  |   44 +\n examples/device_service/device_types/ticker.json   |   16 +\n examples/device_service/driver.py                  |   81 ++\n examples/device_service/manifest.json              |    7 +\n proto/runtime.proto                                |   37 +-\n .../controllers/operator_catalog_controller.py     |    1 -\n .../designer/controllers/project_controller.py     |    2 +-\n .../designer/controllers/workflow_controller.py    |    4 +\n .../apps/designer/page_designer/chrome.py          |    6 +\n .../apps/designer/page_designer/coordinator.py     |   11 -\n .../apps/designer/services/runtime_client.py       |   49 +-\n .../apps/designer/state/device_catalog.py          |   19 +-\n .../apps/designer/state/project_edit_session.py    |    2 +-\n .../apps/designer/state/workflow_package.py        |   85 +-\n .../apps/designer/state/workflow_store.py          |   13 +-\n src/emo_master/apps/designer/ui/device_wizard.py   |   32 +-\n .../apps/designer/ui/device_workspace.py           |  171 ++-\n src/emo_master/apps/designer/ui/main_window.py     |   83 +-\n src/emo_master/apps/designer/ui/param_form.py      |   10 +\n .../apps/designer/ui/project_configuration.py      |   44 +-\n src/emo_master/apps/designer/ui/tcp_device_form.py |   53 +\n src/emo_master/apps/operator_runtime/main.py       |   55 +-\n src/emo_master/apps/runtime/communication/ipc.py   |  188 ++--\n .../apps/runtime/communication/manager.py          |   25 +-\n src/emo_master/apps/runtime/communication/rpc.py   |    6 +\n src/emo_master/apps/runtime/devices/diagnostics.py |  101 ++\n src/emo_master/apps/runtime/devices/drivers.py     |   25 +-\n src/emo_master/apps/runtime/devices/executor.py    |   14 +-\n src/emo_master/apps/runtime/devices/imv_host.py    |    9 +-\n src/emo_master/apps/runtime/devices/ipc.py         |   17 +-\n src/emo_master/apps/runtime/devices/lifecycle.py   |   14 +-\n src/emo_master/apps/runtime/devices/manager.py     |  532 ++++++---\n src/emo_master/apps/runtime/devices/replacement.py |   66 +-\n .../apps/runtime/devices/service_executor.py       |   62 ++\n src/emo_master/apps/runtime/devices/simulated.py   |   11 +-\n src/emo_master/apps/runtime/devices/slmp.py        |   11 +-\n src/emo_master/apps/runtime/devices/tcp.py         |  243 ++++\n src/emo_master/apps/runtime/events/jsonl_writer.py |    1 +\n .../apps/runtime/events/operator_logger.py         |   25 +-\n .../apps/runtime/execution/operator_executor.py    |   35 +-\n .../runtime/grpc_server/generated/runtime_pb2.py   |  382 +++----\n .../grpc_server/generated/runtime_pb2_grpc.py      |   86 ++\n src/emo_master/apps/runtime/grpc_server/service.py |  135 ++-\n src/emo_master/apps/runtime/jobs/supervisor.py     |    8 +-\n .../apps/runtime/operator_debug/contracts.py       |    7 +-\n src/emo_master/apps/runtime/operator_debug/rpc.py  |   36 +-\n .../apps/runtime/presentation/normal_capture.py    |    4 +-\n .../apps/runtime/project_config/coordinator.py     |    5 +\n .../apps/runtime/project_config/cycle_plan.py      |    1 +\n src/emo_master/apps/runtime/project_config/rpc.py  |   49 +-\n .../apps/runtime/project_config/transition.py      |   86 +-\n src/emo_master/apps/runtime/workflow/runner.py     |    1 +\n src/emo_master/clients/runtime/devices.py          |  105 ++\n src/emo_master/core/contracts/communication.py     |    5 +-\n src/emo_master/core/contracts/device_driver.py     |   85 ++\n src/emo_master/core/contracts/operator_logging.py  |    7 +\n src/emo_master/core/contracts/port_types.py        |    1 +\n src/emo_master/core/contracts/tcp_service.py       |   18 +-\n src/emo_master/core/plugin/devices.py              |   78 +-\n src/emo_master/core/plugin/models.py               |    1 -\n src/emo_master/core/plugin/registry.py             |   13 +\n src/emo_master/core/plugin/validator.py            |    5 -\n src/emo_master/core/project/communication.py       |   29 +-\n src/emo_master/core/project/configuration.py       |   16 +-\n src/emo_master/core/project/device_identity.py     |    4 +-\n src/emo_master/core/project/devices.py             |    1 +\n src/emo_master/core/project/migration.py           |   12 +-\n src/emo_master/core/project/models.py              |   20 +-\n src/emo_master/core/project/package_builder.py     |    2 +-\n src/emo_master/core/project/runtime_package.py     |    6 +-\n src/emo_master/core/project/snapshots.py           |    2 +-\n src/emo_master/core/project/tcp_dependencies.py    |   15 +-\n src/emo_master/core/project/test_delivery.py       |    2 +-\n src/emo_master/core/workflow/compiler.py           |   14 +-\n src/emo_master/core/workflow/dispatch_contracts.py |    2 +-\n src/emo_master/core/workflow/validation.py         |    4 +-\n .../plugins/builtins/_communication_operators.py   |  449 +-------\n src/emo_master/plugins/builtins/_managed_tcp.py    |   24 +-\n src/emo_master/plugins/builtins/_tcp_transport.py  |   77 ++\n .../builtins/huaray_camera/device_types/imv.json   |  105 +-\n .../plugins/builtins/huaray_camera/manifest.json   |    8 +-\n .../builtins/plc_slmp_read/device_types/slmp.json  |   76 +-\n .../plugins/builtins/plc_slmp_read/manifest.json   |  185 +++-\n .../plugins/builtins/plc_slmp_write/manifest.json  |  183 ++-\n .../simulated_camera/device_types/camera.json      |  169 ++-\n .../builtins/simulated_camera/manifest.json        |    2 +-\n .../tcp_client/device_types/client_once.json       |  251 +++++\n .../plugins/builtins/tcp_client/manifest.json      |  128 +--\n .../device_types/receive_once.json                 |  225 ++++\n .../builtins/tcp_receive_once/manifest.json        |   54 +-\n .../builtins/tcp_session/device_types/server.json  |  225 ++++\n .../plugins/builtins/tcp_session/manifest.json     |   47 +-\n .../builtins/tcp_session_send/manifest.json        |   32 +-\n src/emo_master/ui/communication_panel.py           |  173 ++-\n src/emo_master/ui/device_actions.py                |   87 ++\n src/emo_master/ui/device_management.py             |  169 +++\n tests/core/plugin/test_device_registry.py          |    2 +-\n tests/core/project/test_device_resources.py        |    4 +-\n tests/core/project/test_devices.py                 |   24 +-\n tests/designer/test_device_workspace.py            |    8 +-\n tests/designer/test_runtime_validation_feedback.py |   35 +-\n tests/designer/test_workflow_package_devices.py    |   66 +-\n tests/designer/test_workflow_package_resources.py  |    2 +-\n tests/plugins/test_managed_tcp_operators.py        |   13 +-\n tests/runtime/test_configuration_owners.py         |  203 ++--\n tests/runtime/test_configuration_transition.py     |    1 +\n tests/runtime/test_device_lifecycle.py             |   26 +-\n tests/runtime/test_device_manager.py               |    4 +-\n tests/runtime/test_device_production_outcomes.py   |    4 +-\n tests/runtime/test_device_replacement.py           |    2 +-\n tests/runtime/test_device_runtime.py               |    4 +-\n .../runtime/test_initial_project_configuration.py  |    6 +-\n tests/runtime/test_loop_cycle_configuration.py     |    4 +-\n tests/runtime/test_managed_tcp.py                  |  175 +--\n tests/runtime/test_tcp_device_integration.py       |  606 ++++++++++\n 172 files changed, 17029 insertions(+), 2372 deletions(-)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "log",
+        "--reverse",
+        "--format=%H %T %s",
+        "d307b9fbe828ea600e8586f8f72f71a9d721f5f0..24fcc827de18085f432fababa679acb0d382e940"
+      ],
+      "exitCode": 0,
+      "stdout": "1915dbd11de47e726ef07d47ddeb69faf538c77d 8da900b4229986752c715fc5c5f39ac167f12841 fix(devices): close managed project save and TCP job gaps (F01-F05)\nbae00c584b33f4ce654f0ec3739d8ec700106c94 66c259b990810658dfa474c38cec65e38df816cc fix(devices): separate business IPC and service health contracts (F06-F08)\n24fcc827de18085f432fababa679acb0d382e940 4dd9d4dd3ebcb5dfcff1a4ddc110dca05c658319 fix(devices): preserve diagnostics, activity and validation feedback (F09-F11)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--name-status",
+        "d307b9fbe828ea600e8586f8f72f71a9d721f5f0",
+        "24fcc827de18085f432fababa679acb0d382e940"
+      ],
+      "exitCode": 0,
+      "stdout": "M\tsrc/emo_master/apps/designer/controllers/project_controller.py\nM\tsrc/emo_master/apps/designer/services/runtime_client.py\nM\tsrc/emo_master/apps/designer/state/device_package.py\nM\tsrc/emo_master/apps/designer/ui/device_wizard.py\nM\tsrc/emo_master/apps/designer/ui/device_workspace.py\nM\tsrc/emo_master/apps/designer/ui/project_configuration.py\nM\tsrc/emo_master/apps/runtime/devices/diagnostics.py\nM\tsrc/emo_master/apps/runtime/devices/ipc.py\nM\tsrc/emo_master/apps/runtime/devices/manager.py\nM\tsrc/emo_master/apps/runtime/devices/replacement.py\nM\tsrc/emo_master/apps/runtime/devices/service_executor.py\nM\tsrc/emo_master/apps/runtime/devices/tcp.py\nM\tsrc/emo_master/apps/runtime/execution/operator_executor.py\nM\tsrc/emo_master/apps/runtime/frame_dispatch/runner.py\nM\tsrc/emo_master/apps/runtime/grpc_server/service.py\nM\tsrc/emo_master/apps/runtime/jobs/worker_main.py\nM\tsrc/emo_master/apps/runtime/project_config/cycle_plan.py\nM\tsrc/emo_master/apps/runtime/project_config/rpc.py\nM\tsrc/emo_master/clients/runtime/devices.py\nM\tsrc/emo_master/core/plugin/devices.py\nM\tsrc/emo_master/core/project/communication.py\nM\tsrc/emo_master/core/project/configuration.py\nM\tsrc/emo_master/core/project/dependencies.py\nM\tsrc/emo_master/core/project/device_resources.py\nM\tsrc/emo_master/core/project/runtime_directory.py\nM\tsrc/emo_master/core/project/runtime_package.py\nM\tsrc/emo_master/core/project/snapshots.py\nM\tsrc/emo_master/core/project/tcp_dependencies.py\nM\tsrc/emo_master/core/workflow/compiler.py\nM\tsrc/emo_master/core/workflow/errors.py\nM\tsrc/emo_master/plugins/builtins/_communication_operators.py\nM\tsrc/emo_master/plugins/builtins/_tcp_transport.py\nA\ttests/designer/test_tcp_closure_ui.py\nA\ttests/runtime/test_device_contract_closure.py\nA\ttests/runtime/test_device_feedback_closure.py\nM\ttests/runtime/test_frame_dispatch.py\nM\ttests/runtime/test_loop_cycle_configuration.py\nA\ttests/runtime/test_tcp_device_closure.py\nM\ttests/runtime/test_tcp_device_integration.py\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "config",
+        "--get",
+        "core.autocrlf"
+      ],
+      "exitCode": 0,
+      "stdout": "true\n",
+      "stderr": ""
+    }
+  ],
+  "changedFiles": [
+    {
+      "path": "src/emo_master/apps/designer/controllers/project_controller.py",
+      "gitBlob": "c6ca2a86fe67f41a99dcebcbf8d8860dbe314893",
+      "normalizedSnapshotGitBlob": "c6ca2a86fe67f41a99dcebcbf8d8860dbe314893",
+      "gitBlobSha256": "0d9eef34e3eb7997991e646ebc4911c6dd5b389950374171377ca3ca5e505f96",
+      "snapshotSha256": "cfd56d73baca03027262172584fec13b571532bcae15e27f2e3779d2be8d9e76"
+    },
+    {
+      "path": "src/emo_master/apps/designer/services/runtime_client.py",
+      "gitBlob": "ece2baf73122079c1d0f0b6a212e62bbb5fb4f53",
+      "normalizedSnapshotGitBlob": "ece2baf73122079c1d0f0b6a212e62bbb5fb4f53",
+      "gitBlobSha256": "05e47b87e0e19e40dccb20f2cc181d31536474fff04d1c3e935366c6d800fa26",
+      "snapshotSha256": "dd0a05ccd8146086cc6d547d781bd20f4dd898f25578f5aac456a3e9cd72efba"
+    },
+    {
+      "path": "src/emo_master/apps/designer/state/device_package.py",
+      "gitBlob": "1f7f738cacf2545ffdcbe6a19dbd4067ccf5c9bb",
+      "normalizedSnapshotGitBlob": "1f7f738cacf2545ffdcbe6a19dbd4067ccf5c9bb",
+      "gitBlobSha256": "293724deff7e72a93b1d3daef04e36d339d9005511319522f106c408609271d1",
+      "snapshotSha256": "325302e983e99d2a0b6c3ebfa26a1adf663150ca325e0e2afa467b48202f440b"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_wizard.py",
+      "gitBlob": "64920cf6648b981d00c379935f6d9ae85b668f37",
+      "normalizedSnapshotGitBlob": "64920cf6648b981d00c379935f6d9ae85b668f37",
+      "gitBlobSha256": "d97eb9c428b63d8836ee81e0fb940f7345523822845e29ade915c7e94582f521",
+      "snapshotSha256": "3135c6dc0f867c8d36946290d7bf852b589974238ed909f05d7dd8b8283f9e6f"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/device_workspace.py",
+      "gitBlob": "926b61324c7c03adacfd0cfba2f2ebfdf032e39d",
+      "normalizedSnapshotGitBlob": "926b61324c7c03adacfd0cfba2f2ebfdf032e39d",
+      "gitBlobSha256": "372099a06bd5cb1fad091cab75d482351713059a166a0a5b70df5e77dadfb81b",
+      "snapshotSha256": "f195beb5570ca72a216e6672b40462a307c3793c55f74e915676df5b6b7a7f15"
+    },
+    {
+      "path": "src/emo_master/apps/designer/ui/project_configuration.py",
+      "gitBlob": "366017d14f6331c3caa36d62995f349d0e8c7ece",
+      "normalizedSnapshotGitBlob": "366017d14f6331c3caa36d62995f349d0e8c7ece",
+      "gitBlobSha256": "d7387999b25557a99ed9ed1addfccbaa6db6a30c00a0db1cb7d101902fb42e0c",
+      "snapshotSha256": "2b9b297d63f2d1d2c64a57c93c6487fe809809bb13eb02f2623a5986de0dfb74"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/diagnostics.py",
+      "gitBlob": "e84fb45daabd89dad7e32a48e8360fd757956472",
+      "normalizedSnapshotGitBlob": "e84fb45daabd89dad7e32a48e8360fd757956472",
+      "gitBlobSha256": "1438970705ce87d486d5416dcd52524ae4dadc2d818debc97363e72907a51356",
+      "snapshotSha256": "f9fbe9086cc77f63dda47d4786d1f98fb281c05cea37b779958f986bbdc32c3d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/ipc.py",
+      "gitBlob": "c5530668884ea46d7feeb6f82fddbded3f888bd0",
+      "normalizedSnapshotGitBlob": "c5530668884ea46d7feeb6f82fddbded3f888bd0",
+      "gitBlobSha256": "4b5ddb8a0b0803ad91b427ea143243f19f3c5b4ea4f8140972d6400f2a986548",
+      "snapshotSha256": "19f11bfb1ca3a737265882923f1ded36b423cbd43f0d7b7981ab1a4238fd7f8a"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/manager.py",
+      "gitBlob": "fae813fb861214624559d36455bdd5971afb762c",
+      "normalizedSnapshotGitBlob": "fae813fb861214624559d36455bdd5971afb762c",
+      "gitBlobSha256": "aaca468a855710b7794d1fa2d0cbb1514b900f124f5b5137d4d5706aa6445bcd",
+      "snapshotSha256": "061dcbfa396231b9371a32475af8cfb148fba8fda2ce3bb68d04aefb25be106c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/replacement.py",
+      "gitBlob": "ce1ceb3788ca9f591c0539fc44dcf677abd05571",
+      "normalizedSnapshotGitBlob": "ce1ceb3788ca9f591c0539fc44dcf677abd05571",
+      "gitBlobSha256": "29183c1e8da2e53ecca47a8cacab8b8848e30319d1ccba901002843512b32512",
+      "snapshotSha256": "f310fefe8f30d5057e4ffd5653adffb1b66013d9cc92de4179fbdd11134cca6d"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/service_executor.py",
+      "gitBlob": "1de5ec89db9fd94bcdb034713be05c366565aa24",
+      "normalizedSnapshotGitBlob": "1de5ec89db9fd94bcdb034713be05c366565aa24",
+      "gitBlobSha256": "fd046f9e383378722127de4969160e22ded0105c1465ad489129fb3e33999c80",
+      "snapshotSha256": "28f60f1d19c1d1ace88934172fcad51e8ba912d5f0ffef00018d49702d2c5d1e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/devices/tcp.py",
+      "gitBlob": "dfd4fee0b5e324408712951afa3bd1e6efae3d5e",
+      "normalizedSnapshotGitBlob": "dfd4fee0b5e324408712951afa3bd1e6efae3d5e",
+      "gitBlobSha256": "fe996fc9a6955d6d3c68aac22db137c79bea2ff39f359d88510e6fff8aaf587c",
+      "snapshotSha256": "13a9ae4735cbaf51425d3b09096dc348c69c33668366ad88c0ea1cb4c267334e"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/execution/operator_executor.py",
+      "gitBlob": "5735b3a4f4ccf7dceeed5b10795dde8fbcaab739",
+      "normalizedSnapshotGitBlob": "5735b3a4f4ccf7dceeed5b10795dde8fbcaab739",
+      "gitBlobSha256": "50f81dcce66a6b632e214cdd7aeaecb368f84e71cb9ffadd22eaaaa7d43f8abf",
+      "snapshotSha256": "8d1d75d397a99767a663a781a84ff40fa4eb787d540cec0d65d0cca0aedbbb6c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/frame_dispatch/runner.py",
+      "gitBlob": "1b2b9e11de5309b9e442756fa658ad250495cf4d",
+      "normalizedSnapshotGitBlob": "1b2b9e11de5309b9e442756fa658ad250495cf4d",
+      "gitBlobSha256": "28130971424b2d8853d5c6efd3b8ef3951c40ad151d11c3eb2efc0ed0b30f810",
+      "snapshotSha256": "88b97d45ae593d43f3292d9dd051821405727db00b2966be46217c194df4d8b6"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/grpc_server/service.py",
+      "gitBlob": "5f1ba8400a59387a58c2997b24fdf72896a10035",
+      "normalizedSnapshotGitBlob": "5f1ba8400a59387a58c2997b24fdf72896a10035",
+      "gitBlobSha256": "817276dc023e7edf269b76c9e3e4b110ecc16b2c6bb5d3cefae79d0a8025d7c8",
+      "snapshotSha256": "f5c1347024eaa3e77d05d6700630b41eece752381f4627b69a941844bac3232f"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/jobs/worker_main.py",
+      "gitBlob": "9a5cdbbc8920bc61c0af2e1ac0cca44c839e6071",
+      "normalizedSnapshotGitBlob": "9a5cdbbc8920bc61c0af2e1ac0cca44c839e6071",
+      "gitBlobSha256": "e63d4202ab4deb73676698736698c38eda40de1c043ca826b59f40ecb47ea500",
+      "snapshotSha256": "8e9bf123d079d25a77e4e607d3eb61fede009383dd3e571d04f859c4927cc8be"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/cycle_plan.py",
+      "gitBlob": "0af5a5e74a1679e081b2a36d13fadad62afe5200",
+      "normalizedSnapshotGitBlob": "0af5a5e74a1679e081b2a36d13fadad62afe5200",
+      "gitBlobSha256": "f82527b26811ea61b6e3cf868abf1c78a8548017d8628e46abc9cfed100c7c7c",
+      "snapshotSha256": "203705bcce4eb418a6a99ea5b396eab544e39f8de206eede460164d388e4c06c"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/project_config/rpc.py",
+      "gitBlob": "2b78540fb6479f7a42952034b6c301baf04f207b",
+      "normalizedSnapshotGitBlob": "2b78540fb6479f7a42952034b6c301baf04f207b",
+      "gitBlobSha256": "c8cc491133844839a1a2a671ca610601b0d8267e4a046cf9a951587246eed728",
+      "snapshotSha256": "8b35e9d7f7e8fc8e6310368c50ee369ea55df40365fe0fbeee5687bb076da7d2"
+    },
+    {
+      "path": "src/emo_master/clients/runtime/devices.py",
+      "gitBlob": "85fc4f4aae91762a866ac194ffe7fc531301084f",
+      "normalizedSnapshotGitBlob": "85fc4f4aae91762a866ac194ffe7fc531301084f",
+      "gitBlobSha256": "75ce24225be1aca8d4d80eb8ddb868abd382bc0a68cc432908fea39071b4ca8a",
+      "snapshotSha256": "a6915786f1471f4361043e1366546877a5d240ba8ece3af960ed5e9d8ea6931b"
+    },
+    {
+      "path": "src/emo_master/core/plugin/devices.py",
+      "gitBlob": "701011597f2e5c066766c5887e743aaf731607f8",
+      "normalizedSnapshotGitBlob": "701011597f2e5c066766c5887e743aaf731607f8",
+      "gitBlobSha256": "cfc183a70f27291a098cb809c942a9a65e68e0ac326a0b20129be0d322e9d2b6",
+      "snapshotSha256": "b85acff63b31dd1ca3d1a67bb5cbc266230e040dc396ec96e6602190ab067425"
+    },
+    {
+      "path": "src/emo_master/core/project/communication.py",
+      "gitBlob": "fd838adf19208e4a2160e3d3daffe51ebae48e89",
+      "normalizedSnapshotGitBlob": "fd838adf19208e4a2160e3d3daffe51ebae48e89",
+      "gitBlobSha256": "a9c0578f2e43afc2d8eb4b14006520374da994d1091e08915f52d8c849ee52a4",
+      "snapshotSha256": "834808dea3d77fcb753c3bc39d4dca29d1b6f301efcf75a4f8929f547e3bfa06"
+    },
+    {
+      "path": "src/emo_master/core/project/configuration.py",
+      "gitBlob": "d2620297c83331d3bd578f71b84cdfd934e9be4a",
+      "normalizedSnapshotGitBlob": "d2620297c83331d3bd578f71b84cdfd934e9be4a",
+      "gitBlobSha256": "dbdd5a1a289ed68fae730cd928756cfb2dc3fa20116bd7bf2fa32e274474eabe",
+      "snapshotSha256": "c96c8a023f19293a7ce9228cad4533ca6d52a4001de0f1c330a6c07aeab51786"
+    },
+    {
+      "path": "src/emo_master/core/project/dependencies.py",
+      "gitBlob": "fb834a1fa4977954383deb68be7ca2b02354a6dd",
+      "normalizedSnapshotGitBlob": "fb834a1fa4977954383deb68be7ca2b02354a6dd",
+      "gitBlobSha256": "57dd807e410809fce5c15969bd4cfc1f71b388678b1807d03d867be96f2f1234",
+      "snapshotSha256": "6255b8862efeca175ea21aed815b76e4b5bc26835ee6940df4daee7b7fc7b633"
+    },
+    {
+      "path": "src/emo_master/core/project/device_resources.py",
+      "gitBlob": "fb77974ad8a4f1211b884a36beaee4dc83511b27",
+      "normalizedSnapshotGitBlob": "fb77974ad8a4f1211b884a36beaee4dc83511b27",
+      "gitBlobSha256": "6541636262b289376702f48a54105cfec8fa691f228075e3606a1092898af724",
+      "snapshotSha256": "26094f4e9ea2c34cc239194605c1d8731e31417dc81c9cdbec2b4c3208a278f6"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "gitBlob": "a3508e0bc0b4dc648f4fffb7e834911fd956d040",
+      "normalizedSnapshotGitBlob": "a3508e0bc0b4dc648f4fffb7e834911fd956d040",
+      "gitBlobSha256": "4192405ce4e3893571aa530465496c372999cdd2e8f58237cf0081bc96844cf2",
+      "snapshotSha256": "4bcc49f9180811d4fabd9c64df6e5d174bd4e26a94db3eba2f0640787a38e5e8"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_package.py",
+      "gitBlob": "261e6a8fcb10d6353c5cfe8264fdb15996cbac08",
+      "normalizedSnapshotGitBlob": "261e6a8fcb10d6353c5cfe8264fdb15996cbac08",
+      "gitBlobSha256": "ea5c954be773bae899e99cbc531d9697b5949496134d91b5ef118464cd3c61f9",
+      "snapshotSha256": "768c6230d3edb2b68300aa660f05933e9430dbb699082f12d649f96f060ba08a"
+    },
+    {
+      "path": "src/emo_master/core/project/snapshots.py",
+      "gitBlob": "3ddcf49aed1638ae07c3015304d207902ae1e968",
+      "normalizedSnapshotGitBlob": "3ddcf49aed1638ae07c3015304d207902ae1e968",
+      "gitBlobSha256": "bb8877d5276c73b6e6c58524e8d76634dada867929240dbd4ba5feb5fb057303",
+      "snapshotSha256": "e7b91a2d619864ef79a21b707d21671459a83ffe0611bc8a8717e3f05f46f2e5"
+    },
+    {
+      "path": "src/emo_master/core/project/tcp_dependencies.py",
+      "gitBlob": "ec13067914d85060fb1d5444a56f381145e158db",
+      "normalizedSnapshotGitBlob": "ec13067914d85060fb1d5444a56f381145e158db",
+      "gitBlobSha256": "06967ab67708c629283ce1209d0c78bcc4b74fa12108b3495b8d4b26663b3f50",
+      "snapshotSha256": "55f6d2eb6f420f6ba6499d26c8591fd069626e182b2d7abb1d17740aad4edcb7"
+    },
+    {
+      "path": "src/emo_master/core/workflow/compiler.py",
+      "gitBlob": "5445ca4e2c59aac0e6a44a07ab4e1755ee2bd6ad",
+      "normalizedSnapshotGitBlob": "5445ca4e2c59aac0e6a44a07ab4e1755ee2bd6ad",
+      "gitBlobSha256": "d0192f86a067ce53bbbad7972af652430174db0d2f45a80b6a4cd2395eeecffa",
+      "snapshotSha256": "101fd10abd6255fe3a4f1838a1f8a5537c3814e0ac6564151e485d686935c4a8"
+    },
+    {
+      "path": "src/emo_master/core/workflow/errors.py",
+      "gitBlob": "928a763dad5747f2bf04d412947f5717e23977b9",
+      "normalizedSnapshotGitBlob": "928a763dad5747f2bf04d412947f5717e23977b9",
+      "gitBlobSha256": "58a64515aa09902fe5a8a9480a863ca703f15982169a2769c31ef517eb2a2671",
+      "snapshotSha256": "6c036193c98bb0d9aa616471a76ec6a7c4fdcf68f9eaefbffbcd418d8314f39b"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_communication_operators.py",
+      "gitBlob": "6eec6f4b50ecdc10fdf63fb0ecd61752021fd82e",
+      "normalizedSnapshotGitBlob": "6eec6f4b50ecdc10fdf63fb0ecd61752021fd82e",
+      "gitBlobSha256": "546b0fd19fcf5ba28bb90faa5631205c40d457805b85389273c4c7c6e8109470",
+      "snapshotSha256": "e454fa5437d28a2479fdadfedeaa672f6dc35feb0b4f0345b94176667612ede4"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/_tcp_transport.py",
+      "gitBlob": "b929527021be4745eea18c39da0fe8f554f2ba2f",
+      "normalizedSnapshotGitBlob": "b929527021be4745eea18c39da0fe8f554f2ba2f",
+      "gitBlobSha256": "c3f69c0b51afc817ace2a65ce7cd8f2df6aade5f2f4c3e96811e6f45ae6950a7",
+      "snapshotSha256": "cecb45bda624be68a294b6c4e53f36986c5fc016539ecce8242b32671aaa71f1"
+    },
+    {
+      "path": "tests/designer/test_tcp_closure_ui.py",
+      "gitBlob": "76745d3f391a271b6deaddfb81f3132c19fd7e45",
+      "normalizedSnapshotGitBlob": "76745d3f391a271b6deaddfb81f3132c19fd7e45",
+      "gitBlobSha256": "a663ccd80f42d363f7ef8006d515f9b50c59b5c12312f9e6fc712aba2d0ae7c0",
+      "snapshotSha256": "6779b28ea5c7f97e367c1c888ce744cfd09dbff435045aee01be2914dc71aa07"
+    },
+    {
+      "path": "tests/runtime/test_device_contract_closure.py",
+      "gitBlob": "5dee8d1ec0bdb2d913a313ca13eab2a91fa7214d",
+      "normalizedSnapshotGitBlob": "5dee8d1ec0bdb2d913a313ca13eab2a91fa7214d",
+      "gitBlobSha256": "c8fc4cd7d266157a12c97f07e07cdc9f63529c8a7c305c7a249b6959625ac569",
+      "snapshotSha256": "4af1de38bf190432bb90f958c4fad0b18714ce3ca9665148d400d5f6cf80c8d6"
+    },
+    {
+      "path": "tests/runtime/test_device_feedback_closure.py",
+      "gitBlob": "f02a29505042cf009f0da98f915dd547ac1eb784",
+      "normalizedSnapshotGitBlob": "f02a29505042cf009f0da98f915dd547ac1eb784",
+      "gitBlobSha256": "893406cbda6f1da09ac082eb231fbda92439fcad73c950772cc06e34e2588cd5",
+      "snapshotSha256": "0eb4f87f02da6c5c93f446545c6bf23bd7c6fa5f7f4e94d0bcc18bc1f2be9b7c"
+    },
+    {
+      "path": "tests/runtime/test_frame_dispatch.py",
+      "gitBlob": "f6e303de50b3a18a800896165e358fb80b53b084",
+      "normalizedSnapshotGitBlob": "f6e303de50b3a18a800896165e358fb80b53b084",
+      "gitBlobSha256": "b5c34923e1d437c5737ad8f23b7043021055bcae159fcdc074d8429e97582ace",
+      "snapshotSha256": "079d4606999d90e7e39e7cd79e18268c1bf84be810c5a5b0e3449d94875d7ae8"
+    },
+    {
+      "path": "tests/runtime/test_loop_cycle_configuration.py",
+      "gitBlob": "5d07ecd7679a78fea3297b67779e313e013ad7b7",
+      "normalizedSnapshotGitBlob": "5d07ecd7679a78fea3297b67779e313e013ad7b7",
+      "gitBlobSha256": "0dbb4ee58109fc57a1545e9626c1488f65eace4a42fedd70c2d015cc0724f926",
+      "snapshotSha256": "f0abfab954d09b68426db7a57482875847aa2d93cce23718d86a80a7c8a993c6"
+    },
+    {
+      "path": "tests/runtime/test_tcp_device_closure.py",
+      "gitBlob": "3b7e545d5e4bfeb86d1ab89750cea9bc0828cf7e",
+      "normalizedSnapshotGitBlob": "3b7e545d5e4bfeb86d1ab89750cea9bc0828cf7e",
+      "gitBlobSha256": "b7cf58bd8333159baa8aeb314926232c84dd5214f61574921ac5ba7bfe66d267",
+      "snapshotSha256": "098df41e65e28aae8244d1a9245a3295e1df4bd5af44087a600d76c0602fa899"
+    },
+    {
+      "path": "tests/runtime/test_tcp_device_integration.py",
+      "gitBlob": "e418f292fbb54ebcc4692efb5441396eead93cb7",
+      "normalizedSnapshotGitBlob": "e418f292fbb54ebcc4692efb5441396eead93cb7",
+      "gitBlobSha256": "e8014eab54bced65840e719c0e64c6462cfcddf4fed4339028e0b59815648f06",
+      "snapshotSha256": "29e8c8424607b15b1c8a0d5c65f2f0c830144cc42db61e1a80e121af64b9e6da"
+    }
+  ],
+  "byteComparisonNote": "Initial direct byte comparison stopped on project_controller.py: git archive honors core.autocrlf=true. Exported CRLF files match the commit after the configured Git clean conversion. No source edits were needed."
+}

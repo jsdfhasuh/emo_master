@@ -149,8 +149,10 @@ class PageCoordinator:
             devices.status.setText(str(error))
             return
         session, scope, selected = self.session, devices._scope(), devices.selectedId
-        view = (devices.tabs.currentIndex(), devices.infoTabs.currentIndex(),
-                {key: scroll.verticalScrollBar().value() for key, scroll in devices.formScrolls.items()})
+        view = (devices.tabs.currentIndex(), devices.infoTabs.currentIndex())
+        scrollValues = [(bar, bar.value())
+            for widget in (devices.tree, devices.table, devices.tabs.widget(0), *devices.formScrolls.values())
+            for bar in (widget.horizontalScrollBar(), widget.verticalScrollBar())]
         self._devicePublishPending = True
         devices.buttons['publish'].setEnabled(False)
         devices.done(0)
@@ -170,10 +172,10 @@ class PageCoordinator:
                     devices.show()
                     devices.tabs.setCurrentIndex(view[0])
                     devices.infoTabs.setCurrentIndex(view[1])
-                    for key, value in view[2].items():
-                        devices.formScrolls[key].verticalScrollBar().setValue(value)
                     devices.raise_()
                     devices.activateWindow()
+                    for bar, value in scrollValues:
+                        bar.setValue(value)
                     devices.readState()
                     devices._updateOnlineActions()
         QTimer.singleShot(0, publish)

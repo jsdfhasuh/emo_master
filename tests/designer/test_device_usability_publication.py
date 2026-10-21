@@ -1,6 +1,7 @@
 """Device observation yields to the existing publication dialog, without writing."""
 from concurrent.futures import Future
 
+import pytest
 from PySide2.QtCore import Qt
 from PySide2.QtWidgets import QApplication
 
@@ -40,6 +41,43 @@ def testShortcutValidatesThenHidesAndRestoresSameObserver(ownedDesignerWindow, t
     c.configureFromDevices()
     assert len(calls) == 1 and d.isVisible()
     d.pending = None
+
+
+@pytest.mark.parametrize('offset', [0, 1])
+def testPublicationReturnPreservesDeviceListViewport(ownedDesignerWindow, tmp_path,
+        definition, declaration, monkeypatch, offset):  # noqa: F811
+    window, _ = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    c = window.pageCoordinator
+    with c.session.transaction():
+        for index in range(24):
+            c.session.workflows.devices['definitions'][f'copy-{index}'] = definition.model_copy(
+                update={'name': f'导入副本 {index + 1}', 'enabled': False}).model_dump()
+    c.showDevices()
+    d = c.devices
+    waitUntil(lambda: d.pending is None)
+    d.table.setCurrentCell(0, 0)
+    for column in range(d.table.columnCount()):
+        d.table.setColumnWidth(column, 180)
+    QApplication.processEvents()
+    bar = d.table.horizontalScrollBar()
+    assert bar.maximum() > offset
+    bar.setValue(offset)
+    vertical = d.table.verticalScrollBar()
+    assert vertical.maximum() > 1
+    vertical.setValue(vertical.maximum() // 2)
+    tablePosition = vertical.value()
+    treeBar = d.tree.verticalScrollBar()
+    treeBar.setValue(treeBar.maximum())
+    treePosition = treeBar.value()
+    calls = []
+    monkeypatch.setattr(c, 'configureRuntime', lambda: calls.append(True))
+    d.buttons['publish'].click()
+    waitUntil(lambda: bool(calls) and d.isVisible())
+    QApplication.processEvents()
+    assert d.selectedId == 'camera'
+    assert bar.value() == offset
+    assert vertical.value() == tablePosition
+    assert treeBar.value() == treePosition
 
 
 def testReadableDeviceDiffRetainsExactPathAndBoundedRows(ownedDesignerWindow, tmp_path):

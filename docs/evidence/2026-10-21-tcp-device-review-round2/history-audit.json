@@ -1,0 +1,66 @@
+{
+  "baseline": "b86d0162dcde14b9c19ec19eee838dc114eeca98",
+  "implementationStart": "Correct branch and clean worktree; no commits after baseline locally or remotely, as checked before edits.",
+  "commands": [
+    {
+      "argv": [
+        "git",
+        "branch",
+        "--show-current"
+      ],
+      "exitCode": 0,
+      "stdout": "agent/runtime-workflow-architecture-v1\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "log",
+        "--reverse",
+        "--format=%H %T %s",
+        "b86d016..2db1913"
+      ],
+      "exitCode": 0,
+      "stdout": "ad1d01bba6bb4e2735afb681ff4266652dd3bfbf 111cdec4fe9108c34a5a578086b05fb860f757a5 fix(runtime): retain frozen device identity for Dispatch consumers\n23c0186cb4b91c56725cb667726e4c4972f0a65b 454d0a7c6e504f117ca66efdc4e3ed51ed77395b fix(designer): locate selective binding errors and show active owners\n2db1913021d764ddbe175b73a28c8623ffe9df82 e71aba961e0a9f8e0e0ea8d1357dbb6fdebb5978 test(runtime): align configuration fixtures with managed device contracts\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--stat",
+        "b86d016",
+        "2db1913"
+      ],
+      "exitCode": 0,
+      "stdout": " .../apps/designer/ui/device_workspace.py           |  12 +-\n .../apps/designer/ui/project_configuration.py      |  10 +-\n src/emo_master/apps/runtime/devices/ipc.py         |   4 -\n src/emo_master/apps/runtime/devices/manager.py     |   7 ++\n .../apps/runtime/project_config/coordinator.py     |  15 ++-\n src/emo_master/apps/runtime/project_config/rpc.py  |   3 +-\n src/emo_master/core/project/configuration.py       |   8 +-\n tests/designer/test_tcp_closure_ui.py              | 128 ++++++++++++++++++++-\n tests/runtime/test_frame_dispatch.py               |  87 ++++++++++++++\n tests/runtime/test_project_configuration.py        |   6 +-\n 10 files changed, 262 insertions(+), 18 deletions(-)\n",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "diff",
+        "--name-only",
+        "b86d016",
+        "2db1913",
+        "--",
+        "docs/evidence/2026-10-21-tcp-device-closure",
+        "docs/testing/2026-10-21-tcp-device-closure.md"
+      ],
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "argv": [
+        "git",
+        "ls-remote",
+        "origin",
+        "refs/heads/agent/runtime-workflow-architecture-v1"
+      ],
+      "exitCode": 0,
+      "stdout": "b86d0162dcde14b9c19ec19eee838dc114eeca98\trefs/heads/agent/runtime-workflow-architecture-v1\n",
+      "stderr": ""
+    }
+  ]
+}

@@ -1,0 +1,565 @@
+{
+  "sourceSha": "23c0186cb4b91c56725cb667726e4c4972f0a65b",
+  "engineering": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\engineering\\acceptance.emoproj",
+  "jobs": [
+    "3a2cd556-47ab-4825-86c3-a72c514127b7",
+    "b96f316e-a54f-4865-ac76-64a45cfdaf4e",
+    "dd0044d3-f6bc-432b-ab4a-8262809baa3a",
+    "1d488aa6-cff3-4f36-889d-81782ef58644",
+    "f909fb01-0e66-4e6f-a2db-3746c71efc42",
+    "78874d12-a44b-4732-9f87-519e9ae9973a"
+  ],
+  "importJobs": {
+    "DEVICE-PACKAGE": "b66ed247-6b52-4243-bf09-a8e183d693ca",
+    "WORKFLOW-PACKAGE": "e9739134-c925-42ef-a62e-ed0c9b9f1ba6",
+    "RUNTIME-PACKAGE": "a4356154-3118-4713-b55e-ed94d8bf5263"
+  },
+  "importEvidence": {
+    "DEVICE-PACKAGE": {
+      "jobId": "b66ed247-6b52-4243-bf09-a8e183d693ca",
+      "workflowId": "main",
+      "deviceId": "device-bf9c4f95e2254e4c84c1a4b49b27eccc",
+      "scope": {
+        "runtimeInstanceId": "2b1eba64-ca7d-4cf6-b565-e7159da721f4",
+        "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+        "projectLoadGeneration": "26352e6bcf154190b662f81f793ee94b"
+      },
+      "diagnostics": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\device-import\\device-diagnostics.json",
+      "state": {
+        "identity": "device-bf9c4f95e2254e4c84c1a4b49b27eccc",
+        "generation": "648e6078a2694cccb019bd44cf1b2d94",
+        "queued": 0,
+        "lastError": "",
+        "activeRequestId": null,
+        "activeOwner": null,
+        "state": "IDLE",
+        "activeOwners": [],
+        "serviceOperations": [],
+        "controlActivity": false,
+        "definitionRevision": "1c5726b112a799923615fabc000e89b3956992c3fa5065990fbffb4d80f7c1ae",
+        "deviceTypeId": "device.tcp.server",
+        "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+        "enabled": true,
+        "driverState": {
+          "protocolVersion": "1.1",
+          "runtimeInstanceId": "2b1eba64-ca7d-4cf6-b565-e7159da721f4",
+          "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+          "projectLoadGeneration": "26352e6bcf154190b662f81f793ee94b",
+          "projectPath": "26352e6bcf154190b662f81f793ee94b",
+          "enabled": true,
+          "state": "LISTENING",
+          "error": "",
+          "ownsResources": true,
+          "serviceGeneration": 1,
+          "configRevision": "5b91b4296f3379810439b2939e18b64f6b81b13a6ac2369bbc554ef04874d6ce",
+          "pending": false,
+          "desiredRevision": "347ca4bebb65cf2bca2c23093b4ec5d368a38274b60fd523ae2276cf02bd28c7",
+          "savePending": false,
+          "disableSavePending": false,
+          "desired": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "effective": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "channels": [
+            {
+              "channelId": "a",
+              "name": "Station A Qt",
+              "allowedIps": [
+                "127.0.0.1"
+              ],
+              "connected": false,
+              "peerAddress": null,
+              "connectionGeneration": 0,
+              "connectedAtMs": 0,
+              "lastSend": {
+                "timestampMs": 1792553383584,
+                "schemaVersion": "1.1",
+                "deviceId": "device-bf9c4f95e2254e4c84c1a4b49b27eccc",
+                "type": "tcpSendReceipt",
+                "requestId": "0e3dbdc1f8a44791984fba7a1df5b400",
+                "jobId": "b66ed247-6b52-4243-bf09-a8e183d693ca",
+                "channelId": "a",
+                "serviceGeneration": 1,
+                "connectionGeneration": 1,
+                "outcome": "SENT_TO_TRANSPORT",
+                "bytesRequested": 14,
+                "bytesSent": 14,
+                "deviceConfirmed": false,
+                "code": "",
+                "message": "\u672c\u673a TCP \u6808\u5df2\u63a5\u6536\u5168\u90e8\u5b57\u8282\uff1b\u8bbe\u5907\u786e\u8ba4\u672a\u542f\u7528"
+              }
+            },
+            {
+              "channelId": "c",
+              "name": "Station B",
+              "allowedIps": [
+                "127.0.0.2"
+              ],
+              "connected": false,
+              "peerAddress": null,
+              "connectionGeneration": 0,
+              "connectedAtMs": 0,
+              "lastSend": null
+            }
+          ],
+          "sequence": 4,
+          "gap": false,
+          "droppedRecords": 0,
+          "ready": true
+        },
+        "admissionState": "READY",
+        "controlRevision": "ea553cf301604af5a66de05aeaa702a6",
+        "lifecycleConnected": true,
+        "explicitKeepAlive": 0,
+        "recovery": {
+          "state": "CONNECTED",
+          "attempt": 1,
+          "lastError": ""
+        },
+        "streamKeepAlive": false,
+        "lifecycleError": "",
+        "productionOwners": [],
+        "runtimeInstanceId": "2b1eba64-ca7d-4cf6-b565-e7159da721f4",
+        "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+        "projectLoadGeneration": "26352e6bcf154190b662f81f793ee94b",
+        "availableControls": [
+          "disconnect",
+          "maintenance",
+          "recover",
+          "test_connection"
+        ],
+        "availableManagementActions": [],
+        "rpcBudgetsMs": {
+          "actions": {},
+          "controls": {
+            "connect": 35000,
+            "disconnect": 35000,
+            "maintenance": 35000,
+            "resume": 35000,
+            "recover": 12000,
+            "test_connection": 35000
+          }
+        }
+      }
+    },
+    "WORKFLOW-PACKAGE": {
+      "jobId": "e9739134-c925-42ef-a62e-ed0c9b9f1ba6",
+      "workflowId": "main-2",
+      "deviceId": "device-3f004ed879104627b131830e164fee39",
+      "scope": {
+        "runtimeInstanceId": "3526a6f3-a988-4bc8-af29-e6c42dd1f65e",
+        "projectId": "62891477-6e09-4deb-bc38-93af83a6862f",
+        "projectLoadGeneration": "343dbb75455240e080dfc0faeeb5ea43"
+      },
+      "diagnostics": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow-import\\device-diagnostics.json",
+      "state": {
+        "identity": "device-3f004ed879104627b131830e164fee39",
+        "generation": "cc1a3134efc54759a66ba6ffb0bddb8c",
+        "queued": 0,
+        "lastError": "",
+        "activeRequestId": null,
+        "activeOwner": null,
+        "state": "IDLE",
+        "activeOwners": [],
+        "serviceOperations": [],
+        "controlActivity": false,
+        "definitionRevision": "1c5726b112a799923615fabc000e89b3956992c3fa5065990fbffb4d80f7c1ae",
+        "deviceTypeId": "device.tcp.server",
+        "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+        "enabled": true,
+        "driverState": {
+          "protocolVersion": "1.1",
+          "runtimeInstanceId": "3526a6f3-a988-4bc8-af29-e6c42dd1f65e",
+          "projectId": "62891477-6e09-4deb-bc38-93af83a6862f",
+          "projectLoadGeneration": "343dbb75455240e080dfc0faeeb5ea43",
+          "projectPath": "343dbb75455240e080dfc0faeeb5ea43",
+          "enabled": true,
+          "state": "LISTENING",
+          "error": "",
+          "ownsResources": true,
+          "serviceGeneration": 1,
+          "configRevision": "5b91b4296f3379810439b2939e18b64f6b81b13a6ac2369bbc554ef04874d6ce",
+          "pending": false,
+          "desiredRevision": "347ca4bebb65cf2bca2c23093b4ec5d368a38274b60fd523ae2276cf02bd28c7",
+          "savePending": false,
+          "disableSavePending": false,
+          "desired": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "effective": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "channels": [
+            {
+              "channelId": "a",
+              "name": "Station A Qt",
+              "allowedIps": [
+                "127.0.0.1"
+              ],
+              "connected": true,
+              "peerAddress": [
+                "127.0.0.1",
+                53282
+              ],
+              "connectionGeneration": 1,
+              "connectedAtMs": 1792553384337,
+              "lastSend": {
+                "timestampMs": 1792553385476,
+                "schemaVersion": "1.1",
+                "deviceId": "device-3f004ed879104627b131830e164fee39",
+                "type": "tcpSendReceipt",
+                "requestId": "0b9c04efd07248ae971599c9346426ec",
+                "jobId": "e9739134-c925-42ef-a62e-ed0c9b9f1ba6",
+                "channelId": "a",
+                "serviceGeneration": 1,
+                "connectionGeneration": 1,
+                "outcome": "SENT_TO_TRANSPORT",
+                "bytesRequested": 16,
+                "bytesSent": 16,
+                "deviceConfirmed": false,
+                "code": "",
+                "message": "\u672c\u673a TCP \u6808\u5df2\u63a5\u6536\u5168\u90e8\u5b57\u8282\uff1b\u8bbe\u5907\u786e\u8ba4\u672a\u542f\u7528"
+              }
+            },
+            {
+              "channelId": "c",
+              "name": "Station B",
+              "allowedIps": [
+                "127.0.0.2"
+              ],
+              "connected": false,
+              "peerAddress": null,
+              "connectionGeneration": 0,
+              "connectedAtMs": 0,
+              "lastSend": null
+            }
+          ],
+          "sequence": 3,
+          "gap": false,
+          "droppedRecords": 0,
+          "ready": true
+        },
+        "admissionState": "READY",
+        "controlRevision": "de20817327de4116a8ff418ffd4d72e8",
+        "lifecycleConnected": true,
+        "explicitKeepAlive": 0,
+        "recovery": {
+          "state": "CONNECTED",
+          "attempt": 1,
+          "lastError": ""
+        },
+        "streamKeepAlive": false,
+        "lifecycleError": "",
+        "productionOwners": [],
+        "runtimeInstanceId": "3526a6f3-a988-4bc8-af29-e6c42dd1f65e",
+        "projectId": "62891477-6e09-4deb-bc38-93af83a6862f",
+        "projectLoadGeneration": "343dbb75455240e080dfc0faeeb5ea43",
+        "availableControls": [
+          "disconnect",
+          "maintenance",
+          "recover",
+          "test_connection"
+        ],
+        "availableManagementActions": [],
+        "rpcBudgetsMs": {
+          "actions": {},
+          "controls": {
+            "connect": 35000,
+            "disconnect": 35000,
+            "maintenance": 35000,
+            "resume": 35000,
+            "recover": 12000,
+            "test_connection": 35000
+          }
+        }
+      }
+    },
+    "RUNTIME-PACKAGE": {
+      "jobId": "a4356154-3118-4713-b55e-ed94d8bf5263",
+      "workflowId": "main",
+      "deviceId": "server",
+      "scope": {
+        "runtimeInstanceId": "ec29143d-f938-4319-a521-7d7e6d411b24",
+        "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+        "projectLoadGeneration": "312b027147fd40e8b88e7744323833b7"
+      },
+      "diagnostics": "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-import\\device-diagnostics.json",
+      "state": {
+        "identity": "server",
+        "generation": "6a7cf358cb4c447fbec1b5bcc23f53c7",
+        "queued": 0,
+        "lastError": "",
+        "activeRequestId": null,
+        "activeOwner": null,
+        "state": "IDLE",
+        "activeOwners": [],
+        "serviceOperations": [],
+        "controlActivity": false,
+        "definitionRevision": "1c5726b112a799923615fabc000e89b3956992c3fa5065990fbffb4d80f7c1ae",
+        "deviceTypeId": "device.tcp.server",
+        "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+        "enabled": true,
+        "driverState": {
+          "protocolVersion": "1.1",
+          "runtimeInstanceId": "ec29143d-f938-4319-a521-7d7e6d411b24",
+          "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+          "projectLoadGeneration": "312b027147fd40e8b88e7744323833b7",
+          "projectPath": "312b027147fd40e8b88e7744323833b7",
+          "enabled": true,
+          "state": "LISTENING",
+          "error": "",
+          "ownsResources": true,
+          "serviceGeneration": 1,
+          "configRevision": "5b91b4296f3379810439b2939e18b64f6b81b13a6ac2369bbc554ef04874d6ce",
+          "pending": false,
+          "desiredRevision": "347ca4bebb65cf2bca2c23093b4ec5d368a38274b60fd523ae2276cf02bd28c7",
+          "savePending": false,
+          "disableSavePending": false,
+          "desired": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "effective": {
+            "enabled": true,
+            "startupPolicy": "manual",
+            "tcpServer": {
+              "serviceId": "tcp-server",
+              "name": "TCP \u5e38\u9a7b\u670d\u52a1",
+              "bindAddress": "127.0.0.1",
+              "port": 53277,
+              "channels": [
+                {
+                  "channelId": "a",
+                  "name": "Station A Qt",
+                  "allowedIps": [
+                    "127.0.0.1"
+                  ]
+                },
+                {
+                  "channelId": "c",
+                  "name": "Station B",
+                  "allowedIps": [
+                    "127.0.0.2"
+                  ]
+                }
+              ],
+              "sendTimeoutMs": 10000,
+              "maxMessageBytes": 16777216
+            }
+          },
+          "channels": [
+            {
+              "channelId": "a",
+              "name": "Station A Qt",
+              "allowedIps": [
+                "127.0.0.1"
+              ],
+              "connected": false,
+              "peerAddress": null,
+              "connectionGeneration": 0,
+              "connectedAtMs": 0,
+              "lastSend": {
+                "timestampMs": 1792553387366,
+                "schemaVersion": "1.1",
+                "deviceId": "server",
+                "type": "tcpSendReceipt",
+                "requestId": "f22f6f6bf0a74410bba1386fd402a179",
+                "jobId": "a4356154-3118-4713-b55e-ed94d8bf5263",
+                "channelId": "a",
+                "serviceGeneration": 1,
+                "connectionGeneration": 1,
+                "outcome": "SENT_TO_TRANSPORT",
+                "bytesRequested": 15,
+                "bytesSent": 15,
+                "deviceConfirmed": false,
+                "code": "",
+                "message": "\u672c\u673a TCP \u6808\u5df2\u63a5\u6536\u5168\u90e8\u5b57\u8282\uff1b\u8bbe\u5907\u786e\u8ba4\u672a\u542f\u7528"
+              }
+            },
+            {
+              "channelId": "c",
+              "name": "Station B",
+              "allowedIps": [
+                "127.0.0.2"
+              ],
+              "connected": false,
+              "peerAddress": null,
+              "connectionGeneration": 0,
+              "connectedAtMs": 0,
+              "lastSend": null
+            }
+          ],
+          "sequence": 4,
+          "gap": false,
+          "droppedRecords": 0,
+          "ready": true
+        },
+        "admissionState": "READY",
+        "controlRevision": "8050c943a8ce4c75ac13979fd9da7258",
+        "lifecycleConnected": true,
+        "explicitKeepAlive": 0,
+        "recovery": {
+          "state": "CONNECTED",
+          "attempt": 1,
+          "lastError": ""
+        },
+        "streamKeepAlive": false,
+        "lifecycleError": "",
+        "productionOwners": [],
+        "runtimeInstanceId": "ec29143d-f938-4319-a521-7d7e6d411b24",
+        "projectId": "34bcfbbc-e229-498f-b9ae-6c2f9b6f7229",
+        "projectLoadGeneration": "312b027147fd40e8b88e7744323833b7",
+        "availableControls": [
+          "disconnect",
+          "maintenance",
+          "recover",
+          "test_connection"
+        ],
+        "availableManagementActions": [],
+        "rpcBudgetsMs": {
+          "actions": {},
+          "controls": {
+            "connect": 35000,
+            "disconnect": 35000,
+            "maintenance": 35000,
+            "resume": 35000,
+            "recover": 12000,
+            "test_connection": 35000
+          }
+        }
+      }
+    }
+  },
+  "packages": [
+    "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\devices.emodev.json",
+    "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\workflow.emowf.json",
+    "C:\\Users\\jsdfhasuh\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\chain\\tcp-device-chain0\\runtime-package\\runtime-768af335265a48ccb3f424bfd53b42af.vxpkg"
+  ],
+  "importPath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2-mv69mpwu\\source\\src\\emo_master\\__init__.py"
+}

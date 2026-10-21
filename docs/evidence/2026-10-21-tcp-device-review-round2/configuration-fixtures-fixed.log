@@ -1,0 +1,6 @@
+..                                                                       [100%]
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_project_configuration.py::testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver
+PASSED tests/runtime/test_project_configuration.py::testRemoteWriteAndLegacyMutationFence
+2 passed in 3.04s

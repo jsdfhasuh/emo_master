@@ -1,0 +1,23 @@
+{
+  "sourceSha": "b86d0162dcde14b9c19ec19eee838dc114eeca98",
+  "snapshot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2base-9472_w4_\\source",
+  "argv": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "pytest",
+    "-q",
+    "-rA",
+    "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2base-9472_w4_\\tests",
+    "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-device-review-round2\\baseline-confirmation.xml",
+    "tests/runtime/test_project_configuration.py::testSpawnedContinuousCyclesApplyNextRevisionWithoutRestartingDriver",
+    "tests/runtime/test_project_configuration.py::testRemoteWriteAndLegacyMutationFence",
+    "tests/designer/test_runtime_validation_feedback.py::testUpgradedDraftResourceFailureCanBeFixedAndRevalidated"
+  ],
+  "environment": {
+    "PYTHONPATH": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2base-9472_w4_\\source\\src;C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-r2base-9472_w4_\\source",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "b86d0162dcde14b9c19ec19eee838dc114eeca98"
+  },
+  "exitCode": 1,
+  "elapsedSeconds": 18.016
+}

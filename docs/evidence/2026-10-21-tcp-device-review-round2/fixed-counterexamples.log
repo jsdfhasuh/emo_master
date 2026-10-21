@@ -1,0 +1,138 @@
+......                                                                   [100%]
+=================================== PASSES ====================================
+_____ testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[True] _____
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-2c314943-99ee-4827-ba87-63752642aaf9:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 120, in runJobProcess
+
+    _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publisher)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 229, in _runConsumer
+
+    result = runner.run(spec.workflowId, values, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: consumer rejected capture
+
+Process emo-master-job-2c476374-d984-4b33-a4cb-a943d496690e:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 120, in runJobProcess
+
+    _runConsumer(runner, spec, devices, cyclePlans, token, cancelEvent, publisher)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 229, in _runConsumer
+
+    result = runner.run(spec.workflowId, values, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+
+    raise WorkflowExecutionError(
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: consumer rejected capture
+
+Process emo-master-job-2cc476e1-d7ce-47a4-9d8f-d10e756fb12f:
+
+Traceback (most recent call last):
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+
+    self.run()
+
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+
+    self._target(*self._args, **self._kwargs)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+
+    target(*args)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 133, in runJobProcess
+
+    runCycle(RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath,
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+
+    result = self._runWorkflow(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 348, in _runNode
+
+    return self.dispatchRunner.run(node, nodeInput, context, cancellation)
+
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\frame_dispatch\runner.py", line 41, in run
+
+    raise error
+
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: one or more consumers did not complete
+
+=========================== short test summary info ===========================
+PASSED tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[False]
+PASSED tests/runtime/test_frame_dispatch.py::testConsumerDeviceLogsKeepRetainedCycleIdentityAndPersistOnce[True]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners0]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners1]
+PASSED tests/designer/test_tcp_closure_ui.py::testDeviceDetailShowsAllActiveOwners[owners2]
+PASSED tests/designer/test_tcp_closure_ui.py::testSelectiveChannelRemovalLocatesOldBindingAndUiCanPublishAfterSelection
+6 passed in 9.73s

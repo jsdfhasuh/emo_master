@@ -179,7 +179,8 @@ class OperatorExecutor:
                               cycleId=context.cycleId or context.workflowRunId, source=source,
                               selectors=dict(plan.get('selectors', {})))
                 try:
-                    if plan['definition']['deviceTypeId'].startswith('device.tcp.'):
+                    from emo_master.core.project.tcp_dependencies import isTcpDeviceType
+                    if isTcpDeviceType(plan['definition']['deviceTypeId']):
                         if self.communication is None:
                             raise WorkflowExecutionError('E_DEVICE_RUNTIME_UNAVAILABLE', 'TCP data bridge missing', node.nodeId)
                         return self.communication.call(action, deviceTypeId=plan['definition']['deviceTypeId'],

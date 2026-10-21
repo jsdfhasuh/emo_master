@@ -8,7 +8,7 @@ from emo_master.core.contracts.device_driver import DeviceDriver, DeviceError
 from emo_master.core.contracts.tcp_service import TcpServiceError
 from emo_master.core.project.communication import tcpServerConfiguration
 from emo_master.plugins.builtins._tcp_transport import (
-    CancellableSocket, connectCancellable, receiveFramed, sendAll,
+    CancellableSocket, configureListener, connectCancellable, receiveFramed, sendAll,
 )
 
 
@@ -180,6 +180,7 @@ class ManagedTcpOnce(DeviceDriver):
                         peerHost=self.definition.connection['host'], peerPort=self.definition.connection['port'])
             else:
                 server = self._track(socket.socket(socket.AF_INET, socket.SOCK_STREAM))
+                configureListener(server)
                 server.bind((self.definition.connection['bindHost'], self.definition.connection['port']))
                 server.listen(1)
                 acceptEnd = min(deadline, monotonic()+params['acceptTimeoutMs']/1000)
@@ -239,5 +240,6 @@ class ManagedTcpReceiveOnce(ManagedTcpOnce):
 
     def testConnection(self, params, cancelled, deadline):
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            configureListener(sock)
             sock.bind((self.definition.connection['bindHost'], self.definition.connection['port']))
         return dict(endpointAvailable=True, message='单次监听端点可用；未验证外部客户端')

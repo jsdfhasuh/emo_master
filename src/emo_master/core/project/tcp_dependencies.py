@@ -5,6 +5,10 @@ SEND_OPERATOR = "communication.tcp.session_send"
 MANAGED_TCP_OPERATORS = frozenset({SESSION_OPERATOR, SEND_OPERATOR, "communication.tcp.client", "communication.tcp.receive_once"})
 
 
+def isTcpDeviceType(deviceTypeId):
+    return deviceTypeId.startswith('device.tcp.')
+
+
 class CommunicationDependencyError(ValueError):
     def __init__(self, code, message):
         self.code = code
@@ -19,7 +23,8 @@ def communicationNodes(document, workflowId):
             continue
         visited.add(key)
         for node in document.workflows[key].nodes:
-            if node.operatorId in MANAGED_TCP_OPERATORS:
+            if any(isTcpDeviceType(document.devices.definitions[binding.deviceId].deviceTypeId)
+                   for binding in node.deviceBindings.values()):
                 result.append((key, node))
             if node.kind == "subflow" and node.targetWorkflowId:
                 pending.append(node.targetWorkflowId)

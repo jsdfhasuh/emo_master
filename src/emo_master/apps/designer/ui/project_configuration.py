@@ -32,6 +32,7 @@ class ProjectConfigurationDialog(QDialog):
         self.scope = self._scope()
         self.local = deepcopy(self.session.payload())
         self.snapshot = None
+        self.deviceTypes, self.deviceRequirements = {}, {}
         self.initial = False
         self.initialRuntimeId = ''
         self.initialValidated = False
@@ -323,7 +324,13 @@ class ProjectConfigurationDialog(QDialog):
         self.validationSelection = self.validatedSelection = None
         self._formatFeedback()
         self._feedback('正在读取在线配置…', 'busy')
-        self._submit("snapshot", self.client.getOnlineProjectSnapshot, "")
+        self._submit("snapshot", self._readSnapshot)
+
+    def _readSnapshot(self):
+        reader = getattr(self.client, 'listDeviceTypes', None)
+        if callable(reader):
+            self.deviceTypes, self.deviceRequirements, _ = reader()
+        return self.client.getOnlineProjectSnapshot('')
 
     def _showInitial(self):
         self.snapshot = None
@@ -462,7 +469,8 @@ class ProjectConfigurationDialog(QDialog):
         if not self._requireFormat():
             return
         try:
-            dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths)
+            dependencies = requiredProjectChanges(self.snapshot["payload"], self.local, paths,
+                deviceTypes=self.deviceTypes, operatorRegistry=self.deviceRequirements)
         except ValueError as error:
             self._notify('工程校验未通过', str(error), self._errorDetails(error))
             return

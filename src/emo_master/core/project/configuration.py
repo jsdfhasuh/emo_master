@@ -98,7 +98,7 @@ def requiredDeviceChanges(online, local, selected):
     return required
 
 
-def requiredProjectChanges(online, local, selected):
+def requiredProjectChanges(online, local, selected, *, deviceTypes=None, operatorRegistry=None):
     """Find missing references transitively, offering exact changes for confirmation.
 
     Never copy edits to an existing dependency implicitly. Atomic list changes
@@ -160,20 +160,6 @@ def requiredProjectChanges(online, local, selected):
                         workflow(target.get("workflowId"), owner)
                 for slot, binding in node.get("deviceBindings", {}).items():
                     require(("devices", "definitions", binding["deviceId"]), owner)
-                    channelId = binding.get('selectors', {}).get('channelId')
-                    if channelId is not None:
-                        parts = ('devices', 'definitions', binding['deviceId'], 'connection', 'channels')
-                        definition = candidate.get('devices', {}).get('definitions', {}).get(binding['deviceId'], {})
-                        channels = definition.get('connection', {}).get('channels', [])
-                        if channelId not in {channel.get('channelId') for channel in channels}:
-                            path = _pointer(parts)
-                            localChannels = local.get('devices', {}).get('definitions', {}).get(
-                                binding['deviceId'], {}).get('connection', {}).get('channels', [])
-                            if (path in changes and path not in selected
-                                    and channelId in {channel.get('channelId') for channel in localChannels}):
-                                found.setdefault(path, []).append(f'{owner}/{slot}: channelId={channelId}')
-                            else:
-                                raise ValueError(f'{owner}/{slot}: missing channelId={channelId} in {binding["deviceId"]}')
         resources = candidate.get("resources") or {}
         for binding in [*resources.get("parameterBindings", []), *resources.get("siteBindings", [])]:
             target = binding["target"]
@@ -220,9 +206,40 @@ def requiredProjectChanges(online, local, selected):
         if presentation:
             order(("presentation", "pageOrder"), presentation.get("pages", {}))
         additions = {path: owners for path, owners in found.items() if path not in required}
-        if not additions:
+        if additions:
+            required.update(additions)
+            continue
+        # References now exist. Resolve selector collections from device metadata,
+        # then let the shared compiler/editor binding rule validate the candidate.
+        from emo_master.core.plugin.devices import selectorCandidates, validateDeviceBinding
+        from emo_master.core.project.devices import DeviceDefinition
+        for wid, flow in candidate.get('workflows', {}).items():
+            for node in flow.get('nodes', []):
+                descriptor = (operatorRegistry or {}).get(node.get('operatorId'), {})
+                manifest = getattr(descriptor, 'manifest', descriptor)
+                requirements = (manifest.get('deviceRequirements', manifest) if isinstance(manifest, dict)
+                                else getattr(manifest, 'deviceRequirements', {}))
+                for slot, binding in node.get('deviceBindings', {}).items():
+                    key = binding['deviceId']
+                    definition = candidate['devices']['definitions'][key]
+                    declaration = (deviceTypes or {}).get(definition['deviceTypeId'])
+                    if declaration is None:
+                        continue  # Runtime compilation remains authoritative without metadata.
+                    for name, value in binding.get('selectors', {}).items():
+                        spec = declaration.bindingSelectors.get(name)
+                        if spec is None or value in {item for item, _ in selectorCandidates(declaration, definition, name)}:
+                            continue
+                        parts = ('devices', 'definitions', key, *spec['itemsPath'].split('.'))
+                        path = _pointer(parts)
+                        localDefinition = local.get('devices', {}).get('definitions', {}).get(key, {})
+                        if (path in changes and path not in selected and path not in required
+                                and value in {item for item, _ in selectorCandidates(declaration, localDefinition, name)}):
+                            found.setdefault(path, []).append(f'{wid}/{node["nodeId"]}/{slot}: {name}={value}')
+                    if slot in requirements and not found:
+                        validateDeviceBinding(requirements[slot], binding, DeviceDefinition.model_validate(definition), declaration)
+        if not found:
             return required
-        required.update(additions)
+        required.update(found)
 
 
 def changeCategory(parts):

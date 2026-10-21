@@ -232,7 +232,7 @@ class ProjectController:
             except (OSError, RuntimeError):
                 # The file was saved; failed identity probing must not undo that fact.
                 pass
-        if payload.get("schemaVersion") != "2.6" and changedPath:
+        if payload.get("schemaVersion") not in {"2.6", "2.7"} and changedPath:
             release = getattr(self.runtimeClient, "releaseCommunicationForReplacement", None)
             if callable(release):
                 try:

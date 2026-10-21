@@ -669,6 +669,16 @@ TCP_RECEIVE_OUTPUT_PORTS: dict[str, object] = {'message': {'type': 'tcpMessage',
 TCP_RECEIVE_NODE_SCHEMA = {'type': 'object', 'properties': {}, 'additionalProperties': False, 'required': [], 'xDeviceActionFields': []}
 
 
+def _checkTcpCancellation(runtimeContext, error):
+    check = runtimeContext.get('raiseIfCancellationRequested')
+    if callable(check):
+        try:
+            check()
+        except Exception as cancelled:
+            cancelled.diagnostics = getattr(error, 'diagnostics', {})
+            raise
+
+
 class TcpClientOperator:
     meta = OperatorMeta(operatorId="communication.tcp.client", displayName="TCP Client", version="1.2.0",
         inputPorts=TCP_CLIENT_INPUT_PORTS, outputPorts=TCP_CLIENT_OUTPUT_PORTS,
@@ -702,6 +712,7 @@ class TcpClientOperator:
                     outputs['responseText'] = _decodeTcpText(raw, work['responseTextEncoding'])
             return dict(status='ok', outputs=outputs)
         except Exception as error:
+            _checkTcpCancellation(runtimeContext, error)
             return dict(status='error', error=dict(code=getattr(error, 'code', 'E_TCP_IO'), message=str(error)),
                         diagnostics=getattr(error, 'diagnostics', {}))
 
@@ -728,6 +739,7 @@ class TcpReceiveOnceOperator:
                 outputs['text'] = _decodeTcpText(raw, work['messageTextEncoding'])
             return dict(status='ok', outputs=outputs)
         except Exception as error:
+            _checkTcpCancellation(runtimeContext, error)
             return dict(status='error', error=dict(code=getattr(error, 'code', 'E_TCP_IO'), message=str(error)),
                         diagnostics=getattr(error, 'diagnostics', {}))
 

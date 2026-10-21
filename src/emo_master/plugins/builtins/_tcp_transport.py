@@ -203,6 +203,12 @@ def receiveFramed(
             raise TcpFrameError(f"TCP message exceeds maxBytes={maxBytes}")
 
 
+def configureListener(server):
+    """Set listener ownership/rebind semantics before bind on either platform."""
+    exclusive = getattr(socket, 'SO_EXCLUSIVEADDRUSE', None)
+    server.setsockopt(socket.SOL_SOCKET, exclusive if isinstance(exclusive, int) else socket.SO_REUSEADDR, 1)
+
+
 def listenOnce(
     bindHost: str,
     port: int,
@@ -216,11 +222,7 @@ def listenOnce(
 ) -> tuple[bytes, tuple[str, int]]:
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
-        exclusiveAddressUse = getattr(socket, "SO_EXCLUSIVEADDRUSE", None)
-        if isinstance(exclusiveAddressUse, int):
-            server.setsockopt(socket.SOL_SOCKET, exclusiveAddressUse, 1)
-        else:
-            server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        configureListener(server)
         try:
             server.bind((bindHost, port))
             server.listen(1)

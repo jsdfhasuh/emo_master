@@ -227,6 +227,24 @@ def testA1SavedCurrentProjectValidatesWithoutListeningThenInitialPublication(cha
     assert dialog.grab().save(str(c['root']/'qt-first-write.png'))
     dialog.reject()
 
+    # A published managed project can be saved under a new root without replacing Runtime.
+    runtimeDocument = c['client'].getOnlineProjectSnapshot()['payload']
+    backend = c['service'].deviceManager.drivers['server']
+    generation = dict(c['service'].deviceManager.scope)
+    jobs = list(c['service'].jobRepository.all())
+    copy = c['root']/'saved-copy'
+    monkeypatch.setattr(QMessageBox, 'warning', lambda *_args: QMessageBox.Ok)
+    assert window.saveProjectToDirectory(str(copy)), window.projectController.lastSaveError
+    saved = window.projectController.currentProjectFile
+    assert saved.parent == copy and (copy/'sample.png').read_bytes() == (c['path'].parent/'sample.png').read_bytes()
+    assert c['client'].getOnlineProjectSnapshot()['payload'] == runtimeDocument
+    assert c['service'].deviceManager.drivers['server'] is backend
+    assert c['service'].deviceManager.scope == generation and list(c['service'].jobRepository.all()) == jobs
+    assert backend.snapshot()['ready']
+    assert window.loadProjectDirectory(str(saved), confirmed=True)
+    assert coordinator.directory == copy
+    assert coordinator.session.payload()['resources']['items']['sample']['path'] == 'sample.png'
+
 
 def testA2CameraProcessingThenPlcWriteInTheSameSavedProject(chain):
     from tests.plugins.test_communication_operators import _ScriptedSlmpServer, _slmpResponse
@@ -377,7 +395,8 @@ def testA4ControlsSelectiveChannelUpdateAndCommittedConnectionFailure(chain):
     target['deviceBindings']['tcp']['selectors']['channelId'] = 'c'
     candidate['devices']['definitions']['client']['description'] = 'unrelated draft must stay local'
     selected = [item['path'] for item in projectChanges(before, candidate) if tuple(item['parts'][:2]) == ('workflows', 'other')]
-    dependencies = requiredProjectChanges(before, candidate, selected)
+    dependencies = requiredProjectChanges(before, candidate, selected, deviceTypes=c['types'],
+        operatorRegistry=c['service'].pluginScanResult.activeOperators)
     assert set(dependencies) == {'/devices/definitions/server/connection/channels'}
     receipt = publish(c, candidate, selected+list(dependencies), 'a4-channels')
     assert receipt['connections']['server'] == 'LISTENING'

@@ -1,0 +1,147 @@
+{
+  "baseline": "4550d46e34e508cbb2774f7bcda8863d293541e6",
+  "sourceSha": "4550d46e34e508cbb2774f7bcda8863d293541e6",
+  "sourceTree": "9c7a31269cdfdd4e72d4f6cdd5ea820c6905afea",
+  "workingTree": true,
+  "workingTreeStatus": "M src/emo_master/apps/runtime/devices/diagnostics.py\n M src/emo_master/apps/runtime/operator_debug/contracts.py\n M src/emo_master/apps/runtime/operator_debug/resources.py\n M src/emo_master/core/project/runtime_directory.py\n M src/emo_master/plugins/builtins/image_saver/manifest.json\n M src/emo_master/plugins/builtins/image_saver/operator.py\n M src/emo_master/ui/communication_panel.py\n M tests/core/plugin/test_builtin_parameter_titles.py\n M tests/core/test_runtime_directory.py\n M tests/designer/test_tcp_closure_ui.py\n M tests/plugins/test_image_saver_operator.py\n M tests/runtime/test_device_feedback_closure.py\n M tests/runtime/test_operator_debug_resources.py\n M tests/runtime/test_operator_registration.py\n?? docs/evidence/2026-10-21-tcp-once-log-preview/\n?? docs/testing/2026-10-21-video-loader-validation.md\n?? docs/video-loader.md\n?? examples/video_sample_while/\n?? examples/video_yolo_crop_operators/\n?? src/emo_master/plugins/builtins/video_loader/\n?? tests/designer/test_video_loader_form.py\n?? tests/plugins/test_video_loader_operator.py\n?? tests/runtime/test_video_sample_while.py",
+  "snapshot": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "temporaryRoot": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-7i4lohsm",
+  "executable": "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+  "platform": "Windows-10-10.0.26200-SP0",
+  "exported": [
+    {
+      "path": "src/emo_master/apps/runtime/devices/diagnostics.py",
+      "blob": "49054a2272d2c869d0d45d364f005069742becac",
+      "committedBlob": "8e1fd899181037b1bfe557a0c69ab2fec3a9d2a8",
+      "matchesSourceCommit": false,
+      "sha256": "287fe0e7af19bc45824760fbead964269fc3b910b45a5ee8dd2c58450ee04b19"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/contracts.py",
+      "blob": "393f46f8ce7a3503ffed3595cc65b2aa6529d3fa",
+      "committedBlob": "227e2fd79b84625d7f9a31c893bc83af335ac997",
+      "matchesSourceCommit": false,
+      "sha256": "39c756152c2233e10740712773bea232b692dd3e04c13b0560678595447d936f"
+    },
+    {
+      "path": "src/emo_master/apps/runtime/operator_debug/resources.py",
+      "blob": "65e3cc6d8df755063a7a0810d8578d87049103e6",
+      "committedBlob": "7fe668923adcd9d101eef928a1ac3f79abcb4b9b",
+      "matchesSourceCommit": false,
+      "sha256": "6d51bd74d03ad2ec14b8d2ad1a2c73bdd0791fe476364c7c721ae6d533510c6f"
+    },
+    {
+      "path": "src/emo_master/core/project/runtime_directory.py",
+      "blob": "0a47ae0a0ba49bc7bdd64a1b21dc9024f74b0886",
+      "committedBlob": "a3508e0bc0b4dc648f4fffb7e834911fd956d040",
+      "matchesSourceCommit": false,
+      "sha256": "b3126ffa25bd4c2f7ad27076b7a49766a5e4c7bcac88793d63790c89f14a6b27"
+    },
+    {
+      "path": "src/emo_master/plugins/builtins/image_saver/operator.py",
+      "blob": "196966b73c3c89fad7842a0fd4012382abec1a6a",
+      "committedBlob": "7a11dc2dce4a7195fabe926186a9a6236a102eeb",
+      "matchesSourceCommit": false,
+      "sha256": "d13f145020775ba4cadc05329f56141eb491952c640071db40cb333ce9ed0c37"
+    },
+    {
+      "path": "src/emo_master/ui/communication_panel.py",
+      "blob": "809c5c31c7fe775bfdcdcf9227324fb62d4cb22f",
+      "committedBlob": "f1ee553caddb1104a1826e16e8f361f409e79a14",
+      "matchesSourceCommit": false,
+      "sha256": "254187c1978a6fb4dac9b72cf29bb8d19412187f1dbeacb5daf7d72b7419c7a3"
+    },
+    {
+      "path": "tests/core/plugin/test_builtin_parameter_titles.py",
+      "blob": "8718d811cccff6c0d5eea3a171278e8761db82f1",
+      "committedBlob": "9abbe0df3b6f7e7db31623a048f185cc5ce26049",
+      "matchesSourceCommit": false,
+      "sha256": "d59f97c5325f271c4c15d33974286ba23434f25c3d099742c3e22f8552765f32"
+    },
+    {
+      "path": "tests/core/test_runtime_directory.py",
+      "blob": "6c57e1ae0fb141bec931bc86d4c8efd233200c59",
+      "committedBlob": "2d63a0276063aaea439d680169d74bfbfd5b319d",
+      "matchesSourceCommit": false,
+      "sha256": "8e80e22543f7595234b35ae114f31f490239042e8f93eea673ca51d47ac18b7e"
+    },
+    {
+      "path": "tests/designer/test_tcp_closure_ui.py",
+      "blob": "9930e8e86505c364ac91611502d3089f2338e48b",
+      "committedBlob": "4dad14be18dceb27e613bb9eb0fc915a48a1f823",
+      "matchesSourceCommit": false,
+      "sha256": "e24f7c0d0437766b7d048e0d50a7082dddf05adf59e7b9a88bcf5af36e34bda1"
+    },
+    {
+      "path": "tests/plugins/test_image_saver_operator.py",
+      "blob": "e1d396fec905510504b5cf77bb5a8693233ea819",
+      "committedBlob": "a40ec5d834c0b7bc6f4646811831ca0157f71aed",
+      "matchesSourceCommit": false,
+      "sha256": "12228b014fe6308ebd118141f6a14f4fbe1bbd82c51f7efc599247f8e5887f0f"
+    },
+    {
+      "path": "tests/runtime/test_device_feedback_closure.py",
+      "blob": "cd947291fe899676bff65e0c104895817c1b7e44",
+      "committedBlob": "c4686fe792ee215a0ff4884b4e51ce2af9442d59",
+      "matchesSourceCommit": false,
+      "sha256": "e6613b67155fb7349d40e65ce722d9a070f7c822a8e93adf1bc5475d227b1045"
+    },
+    {
+      "path": "tests/runtime/test_operator_debug_resources.py",
+      "blob": "5461c2811c4a82741f1ab655f9c3a176500704d9",
+      "committedBlob": "8c1d2167d953d15a5bd68d0141a401f6a76abd12",
+      "matchesSourceCommit": false,
+      "sha256": "992d5430295fea438f913490816134f52194f626469ebfa2db29d30563ff5442"
+    },
+    {
+      "path": "tests/runtime/test_operator_registration.py",
+      "blob": "e57a141d9c2d4a64fc88164349e9fc8b631a732a",
+      "committedBlob": "e26676c57e36e534086f272b90ef6be468d95e7d",
+      "matchesSourceCommit": false,
+      "sha256": "267539e69e3f7f8da06abee36c7f26f6c51c1e34a2e409177bdcf2572fac9852"
+    }
+  ],
+  "runnerSha256": "0f2de3c37ad5a1b30a5027052d89b34550feb5124cbe3d379cd749267a307e3f",
+  "environment": {
+    "PYTHONPATH": "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\src;D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+    "PYTHONIOENCODING": "utf-8",
+    "QT_QPA_PLATFORM": "windows",
+    "EMO_TEST_SOURCE_SHA": "4550d46e34e508cbb2774f7bcda8863d293541e6"
+  },
+  "commands": [
+    {
+      "label": "environment",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-c",
+        "import emo_master,sys,json,PySide2; from PySide2.QtCore import qVersion; from pathlib import Path; print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),importPath=emo_master.__file__),indent=2)); import os; assert os.path.samefile(Path(emo_master.__file__).parent.parent, Path.cwd()/'src'); assert sys.version_info[:2]==(3,10) and PySide2.__version__=='5.15.2.1'"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T16:50:48.615133+08:00",
+      "elapsedSeconds": 0.344,
+      "exitCode": 0,
+      "log": "environment.log"
+    },
+    {
+      "label": "counterexamples",
+      "argv": [
+        "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+        "-m",
+        "pytest",
+        "-q",
+        "-rA",
+        "--basetemp=C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-7i4lohsm\\counterexamples",
+        "--junitxml=D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-21-tcp-once-log-preview\\fixed-counterexamples-corrected\\counterexamples.xml",
+        "tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview",
+        "tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength",
+        "tests/runtime/test_device_feedback_closure.py::testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "started": "2026-10-21T16:50:48.952361+08:00",
+      "elapsedSeconds": 3.203,
+      "exitCode": 0,
+      "log": "counterexamples.log"
+    }
+  ],
+  "entryPointSha256": "d04dd3c350abc0afd8954b6949230568564e9cbc9c4cc18c34cfa41f82f79ad9"
+}

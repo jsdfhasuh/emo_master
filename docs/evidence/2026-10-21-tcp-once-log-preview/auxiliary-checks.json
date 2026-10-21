@@ -1,0 +1,14 @@
+{
+  "command": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "docs\\evidence\\2026-10-21-tcp-once-log-preview\\run_validation.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "exitCode": 0,
+  "elapsedSeconds": 0.094,
+  "started": "2026-10-21T16:56:21.562923+08:00",
+  "log": "entrypoint-ruff.log"
+}

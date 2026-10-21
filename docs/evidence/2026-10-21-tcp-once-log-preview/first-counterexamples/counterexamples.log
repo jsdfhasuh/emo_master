@@ -1,0 +1,390 @@
+FFFFFFFFF                                                                [100%]
+================================== FAILURES ===================================
+__________ testTcpOnceResultLogsKeepBoundedPreview[512-client_once] ___________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001672AD46A40>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001672AD44D00>)
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x167295c5e30) at 0x000001672990F300>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-2imjg138/counterexamples/testTcpOnceResultLogsKeepBound0')
+kind = 'client_once', length = 512
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    @pytest.mark.parametrize('length', [512, 1025])
+    def testTcpOnceResultLogsKeepBoundedPreview(runtime, retainedQtApplication, tmp_path, kind, length):  # noqa: F811
+        service, _ = runtime
+        manager = DeviceManager(service.pluginScanResult.deviceTypes)
+        writer = RuntimeJsonlLogWriter(tmp_path/'once-byte-logs')
+        manager.diagnostics.writer = writer
+        data = (b'ordinary single transaction text 0123456789 ' * 30)[:length]
+        source = dict(workflowId='main', nodeId='once-node', slot='tcp')
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=freePort())
+        value['defaults'].update(expectedBytes=length)
+        value['defaults']['responseFraming' if kind == 'client_once' else 'framing'] = 'fixedLength'
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(once=value)
+        view = DeviceDiagnosticsView()
+        listener = socket.socket()
+        try:
+            manager.load(ProjectDocument.model_validate(payload))
+            manager.authorize('once-job', ['once'])
+            if kind == 'client_once':
+                listener.bind(('127.0.0.1', value['connection']['port']))
+                listener.listen(1)
+                listener.settimeout(5)
+    
+            def peer():
+                if kind == 'client_once':
+                    connection = listener.accept()[0]
+                else:
+                    deadline = monotonic()+5
+                    while True:
+                        try:
+                            connection = socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=1)
+                            break
+                        except ConnectionRefusedError:
+                            if monotonic() >= deadline:
+                                raise
+                            sleep(.01)
+                with connection:
+                    connection.settimeout(5)
+                    if kind == 'client_once':
+                        received = b''
+                        while len(received) < 4:
+                            block = connection.recv(4-len(received))
+                            assert block
+                            received += block
+                        assert received == b'PING'
+                    connection.sendall(data)
+    
+            with ThreadPoolExecutor(max_workers=1) as peers:
+                remote = peers.submit(peer)
+                result = manager.execute('once-job', 'once', 'exchange' if kind == 'client_once' else 'receive',
+                    manager.definitions['once'].defaults, cycleId='once-cycle', source=source, requestId='once-request',
+                    arguments=dict(dataBase64=base64.b64encode(b'PING').decode('ascii')) if kind == 'client_once' else {})
+                remote.result(timeout=5)
+            assert base64.b64decode(result['dataBase64']) == data
+            manager.waitOwner('once-job')
+            state = manager.drivers['once'].snapshot()
+            assert state['state'] == 'TRANSACTION_READY' and not state['ownsResources']
+            assert not manager.drivers['once'].sockets and not manager.busy()
+            waitUntil(lambda: bool(manager.diagnostics.query(manager.scope, 'once')['records']))
+            page = manager.diagnostics.query(manager.scope, 'once')
+            row, = page['records']
+            assert row['eventType'] == 'device.action.completed'
+            assert row['ownerId'] == 'once-job' and row['cycleId'] == 'once-cycle'
+            assert row['source'] == source and row['requestId'] == 'once-request'
+            assert row['deviceGeneration'] == manager.executors['once'].generation
+            assert all(row[key] == val for key, val in manager.scope.items())
+>           preview = row['result']
+E           KeyError: 'result'
+
+tests\designer\test_tcp_closure_ui.py:99: KeyError
+__________ testTcpOnceResultLogsKeepBoundedPreview[512-receive_once] __________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001672DDA4640>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001672DDA46D0>)
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x167295c5e30) at 0x000001672990F300>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-2imjg138/counterexamples/testTcpOnceResultLogsKeepBound1')
+kind = 'receive_once', length = 512
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    @pytest.mark.parametrize('length', [512, 1025])
+    def testTcpOnceResultLogsKeepBoundedPreview(runtime, retainedQtApplication, tmp_path, kind, length):  # noqa: F811
+        service, _ = runtime
+        manager = DeviceManager(service.pluginScanResult.deviceTypes)
+        writer = RuntimeJsonlLogWriter(tmp_path/'once-byte-logs')
+        manager.diagnostics.writer = writer
+        data = (b'ordinary single transaction text 0123456789 ' * 30)[:length]
+        source = dict(workflowId='main', nodeId='once-node', slot='tcp')
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=freePort())
+        value['defaults'].update(expectedBytes=length)
+        value['defaults']['responseFraming' if kind == 'client_once' else 'framing'] = 'fixedLength'
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(once=value)
+        view = DeviceDiagnosticsView()
+        listener = socket.socket()
+        try:
+            manager.load(ProjectDocument.model_validate(payload))
+            manager.authorize('once-job', ['once'])
+            if kind == 'client_once':
+                listener.bind(('127.0.0.1', value['connection']['port']))
+                listener.listen(1)
+                listener.settimeout(5)
+    
+            def peer():
+                if kind == 'client_once':
+                    connection = listener.accept()[0]
+                else:
+                    deadline = monotonic()+5
+                    while True:
+                        try:
+                            connection = socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=1)
+                            break
+                        except ConnectionRefusedError:
+                            if monotonic() >= deadline:
+                                raise
+                            sleep(.01)
+                with connection:
+                    connection.settimeout(5)
+                    if kind == 'client_once':
+                        received = b''
+                        while len(received) < 4:
+                            block = connection.recv(4-len(received))
+                            assert block
+                            received += block
+                        assert received == b'PING'
+                    connection.sendall(data)
+    
+            with ThreadPoolExecutor(max_workers=1) as peers:
+                remote = peers.submit(peer)
+                result = manager.execute('once-job', 'once', 'exchange' if kind == 'client_once' else 'receive',
+                    manager.definitions['once'].defaults, cycleId='once-cycle', source=source, requestId='once-request',
+                    arguments=dict(dataBase64=base64.b64encode(b'PING').decode('ascii')) if kind == 'client_once' else {})
+                remote.result(timeout=5)
+            assert base64.b64decode(result['dataBase64']) == data
+            manager.waitOwner('once-job')
+            state = manager.drivers['once'].snapshot()
+            assert state['state'] == 'TRANSACTION_READY' and not state['ownsResources']
+            assert not manager.drivers['once'].sockets and not manager.busy()
+            waitUntil(lambda: bool(manager.diagnostics.query(manager.scope, 'once')['records']))
+            page = manager.diagnostics.query(manager.scope, 'once')
+            row, = page['records']
+            assert row['eventType'] == 'device.action.completed'
+            assert row['ownerId'] == 'once-job' and row['cycleId'] == 'once-cycle'
+            assert row['source'] == source and row['requestId'] == 'once-request'
+            assert row['deviceGeneration'] == manager.executors['once'].generation
+            assert all(row[key] == val for key, val in manager.scope.items())
+>           preview = row['result']
+E           KeyError: 'result'
+
+tests\designer\test_tcp_closure_ui.py:99: KeyError
+__________ testTcpOnceResultLogsKeepBoundedPreview[1025-client_once] __________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001672DE3DCC0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001672DE3DD50>)
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x167295c5e30) at 0x000001672990F300>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-2imjg138/counterexamples/testTcpOnceResultLogsKeepBound2')
+kind = 'client_once', length = 1025
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    @pytest.mark.parametrize('length', [512, 1025])
+    def testTcpOnceResultLogsKeepBoundedPreview(runtime, retainedQtApplication, tmp_path, kind, length):  # noqa: F811
+        service, _ = runtime
+        manager = DeviceManager(service.pluginScanResult.deviceTypes)
+        writer = RuntimeJsonlLogWriter(tmp_path/'once-byte-logs')
+        manager.diagnostics.writer = writer
+        data = (b'ordinary single transaction text 0123456789 ' * 30)[:length]
+        source = dict(workflowId='main', nodeId='once-node', slot='tcp')
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=freePort())
+        value['defaults'].update(expectedBytes=length)
+        value['defaults']['responseFraming' if kind == 'client_once' else 'framing'] = 'fixedLength'
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(once=value)
+        view = DeviceDiagnosticsView()
+        listener = socket.socket()
+        try:
+            manager.load(ProjectDocument.model_validate(payload))
+            manager.authorize('once-job', ['once'])
+            if kind == 'client_once':
+                listener.bind(('127.0.0.1', value['connection']['port']))
+                listener.listen(1)
+                listener.settimeout(5)
+    
+            def peer():
+                if kind == 'client_once':
+                    connection = listener.accept()[0]
+                else:
+                    deadline = monotonic()+5
+                    while True:
+                        try:
+                            connection = socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=1)
+                            break
+                        except ConnectionRefusedError:
+                            if monotonic() >= deadline:
+                                raise
+                            sleep(.01)
+                with connection:
+                    connection.settimeout(5)
+                    if kind == 'client_once':
+                        received = b''
+                        while len(received) < 4:
+                            block = connection.recv(4-len(received))
+                            assert block
+                            received += block
+                        assert received == b'PING'
+                    connection.sendall(data)
+    
+            with ThreadPoolExecutor(max_workers=1) as peers:
+                remote = peers.submit(peer)
+                result = manager.execute('once-job', 'once', 'exchange' if kind == 'client_once' else 'receive',
+                    manager.definitions['once'].defaults, cycleId='once-cycle', source=source, requestId='once-request',
+                    arguments=dict(dataBase64=base64.b64encode(b'PING').decode('ascii')) if kind == 'client_once' else {})
+                remote.result(timeout=5)
+            assert base64.b64decode(result['dataBase64']) == data
+            manager.waitOwner('once-job')
+            state = manager.drivers['once'].snapshot()
+            assert state['state'] == 'TRANSACTION_READY' and not state['ownsResources']
+            assert not manager.drivers['once'].sockets and not manager.busy()
+            waitUntil(lambda: bool(manager.diagnostics.query(manager.scope, 'once')['records']))
+            page = manager.diagnostics.query(manager.scope, 'once')
+            row, = page['records']
+            assert row['eventType'] == 'device.action.completed'
+            assert row['ownerId'] == 'once-job' and row['cycleId'] == 'once-cycle'
+            assert row['source'] == source and row['requestId'] == 'once-request'
+            assert row['deviceGeneration'] == manager.executors['once'].generation
+            assert all(row[key] == val for key, val in manager.scope.items())
+>           preview = row['result']
+E           KeyError: 'result'
+
+tests\designer\test_tcp_closure_ui.py:99: KeyError
+_________ testTcpOnceResultLogsKeepBoundedPreview[1025-receive_once] __________
+
+runtime = (<emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x000001672DF4C9A0>, <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x000001672DF4CA60>)
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x167295c5e30) at 0x000001672990F300>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-2imjg138/counterexamples/testTcpOnceResultLogsKeepBound3')
+kind = 'receive_once', length = 1025
+
+    @pytest.mark.parametrize('kind', ['client_once', 'receive_once'])
+    @pytest.mark.parametrize('length', [512, 1025])
+    def testTcpOnceResultLogsKeepBoundedPreview(runtime, retainedQtApplication, tmp_path, kind, length):  # noqa: F811
+        service, _ = runtime
+        manager = DeviceManager(service.pluginScanResult.deviceTypes)
+        writer = RuntimeJsonlLogWriter(tmp_path/'once-byte-logs')
+        manager.diagnostics.writer = writer
+        data = (b'ordinary single transaction text 0123456789 ' * 30)[:length]
+        source = dict(workflowId='main', nodeId='once-node', slot='tcp')
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.'+kind], port=freePort())
+        value['defaults'].update(expectedBytes=length)
+        value['defaults']['responseFraming' if kind == 'client_once' else 'framing'] = 'fixedLength'
+        payload = WorkflowStore().toPayload()
+        payload['devices']['definitions'] = dict(once=value)
+        view = DeviceDiagnosticsView()
+        listener = socket.socket()
+        try:
+            manager.load(ProjectDocument.model_validate(payload))
+            manager.authorize('once-job', ['once'])
+            if kind == 'client_once':
+                listener.bind(('127.0.0.1', value['connection']['port']))
+                listener.listen(1)
+                listener.settimeout(5)
+    
+            def peer():
+                if kind == 'client_once':
+                    connection = listener.accept()[0]
+                else:
+                    deadline = monotonic()+5
+                    while True:
+                        try:
+                            connection = socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=1)
+                            break
+                        except ConnectionRefusedError:
+                            if monotonic() >= deadline:
+                                raise
+                            sleep(.01)
+                with connection:
+                    connection.settimeout(5)
+                    if kind == 'client_once':
+                        received = b''
+                        while len(received) < 4:
+                            block = connection.recv(4-len(received))
+                            assert block
+                            received += block
+                        assert received == b'PING'
+                    connection.sendall(data)
+    
+            with ThreadPoolExecutor(max_workers=1) as peers:
+                remote = peers.submit(peer)
+                result = manager.execute('once-job', 'once', 'exchange' if kind == 'client_once' else 'receive',
+                    manager.definitions['once'].defaults, cycleId='once-cycle', source=source, requestId='once-request',
+                    arguments=dict(dataBase64=base64.b64encode(b'PING').decode('ascii')) if kind == 'client_once' else {})
+                remote.result(timeout=5)
+            assert base64.b64decode(result['dataBase64']) == data
+            manager.waitOwner('once-job')
+            state = manager.drivers['once'].snapshot()
+            assert state['state'] == 'TRANSACTION_READY' and not state['ownsResources']
+            assert not manager.drivers['once'].sockets and not manager.busy()
+            waitUntil(lambda: bool(manager.diagnostics.query(manager.scope, 'once')['records']))
+            page = manager.diagnostics.query(manager.scope, 'once')
+            row, = page['records']
+            assert row['eventType'] == 'device.action.completed'
+            assert row['ownerId'] == 'once-job' and row['cycleId'] == 'once-cycle'
+            assert row['source'] == source and row['requestId'] == 'once-request'
+            assert row['deviceGeneration'] == manager.executors['once'].generation
+            assert all(row[key] == val for key, val in manager.scope.items())
+>           preview = row['result']
+E           KeyError: 'result'
+
+tests\designer\test_tcp_closure_ui.py:99: KeyError
+_____________ testCompactResultUsesExactOriginalByteLength[1024] ______________
+
+length = 1024
+
+    @pytest.mark.parametrize('length', [1024, 1025, 1026, 1027])
+    def testCompactResultUsesExactOriginalByteLength(length):
+        data = b'x'*length
+        result = compactResult(dict(dataBase64=base64.b64encode(data).decode('ascii'), sentBytes=4))
+        assert result['dataTruncated'] is (length > 1024)
+>       assert result['bytes'] == length and result['sentBytes'] == 4
+E       KeyError: 'bytes'
+
+tests\runtime\test_device_feedback_closure.py:35: KeyError
+_____________ testCompactResultUsesExactOriginalByteLength[1025] ______________
+
+length = 1025
+
+    @pytest.mark.parametrize('length', [1024, 1025, 1026, 1027])
+    def testCompactResultUsesExactOriginalByteLength(length):
+        data = b'x'*length
+        result = compactResult(dict(dataBase64=base64.b64encode(data).decode('ascii'), sentBytes=4))
+>       assert result['dataTruncated'] is (length > 1024)
+E       assert False is (1025 > 1024)
+
+tests\runtime\test_device_feedback_closure.py:34: AssertionError
+_____________ testCompactResultUsesExactOriginalByteLength[1026] ______________
+
+length = 1026
+
+    @pytest.mark.parametrize('length', [1024, 1025, 1026, 1027])
+    def testCompactResultUsesExactOriginalByteLength(length):
+        data = b'x'*length
+        result = compactResult(dict(dataBase64=base64.b64encode(data).decode('ascii'), sentBytes=4))
+>       assert result['dataTruncated'] is (length > 1024)
+E       assert False is (1026 > 1024)
+
+tests\runtime\test_device_feedback_closure.py:34: AssertionError
+_____________ testCompactResultUsesExactOriginalByteLength[1027] ______________
+
+length = 1027
+
+    @pytest.mark.parametrize('length', [1024, 1025, 1026, 1027])
+    def testCompactResultUsesExactOriginalByteLength(length):
+        data = b'x'*length
+        result = compactResult(dict(dataBase64=base64.b64encode(data).decode('ascii'), sentBytes=4))
+        assert result['dataTruncated'] is (length > 1024)
+>       assert result['bytes'] == length and result['sentBytes'] == 4
+E       KeyError: 'bytes'
+
+tests\runtime\test_device_feedback_closure.py:35: KeyError
+___________ testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts ____________
+
+    def testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts():
+        diagnostics = DeviceDiagnostics()
+        scope = dict(runtimeInstanceId='runtime', projectId='project', projectLoadGeneration='load')
+        diagnostics.append(scope, 'once', 'device.action.completed', 'exchange', result=dict(
+            dataHex=(b'x'*2048).hex(), bytes=2048, sentBytes=4, dataTruncated=False,
+            opaque=dict(unbounded='y'*100000), dataUtf8='z'*100000))
+        row, = diagnostics.query(scope, 'once')['records']
+        assert row['fieldsTruncated'] is True
+        assert len(row['preview'].encode('utf-8')) <= 1000
+>       assert row['result'] == dict(dataHex=(b'x'*1024).hex(), bytes=2048, sentBytes=4, dataTruncated=True)
+E       KeyError: 'result'
+
+tests\runtime\test_device_feedback_closure.py:50: KeyError
+=========================== short test summary info ===========================
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-client_once]
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[512-receive_once]
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-client_once]
+FAILED tests/designer/test_tcp_closure_ui.py::testTcpOnceResultLogsKeepBoundedPreview[1025-receive_once]
+FAILED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1024]
+FAILED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1025]
+FAILED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1026]
+FAILED tests/runtime/test_device_feedback_closure.py::testCompactResultUsesExactOriginalByteLength[1027]
+FAILED tests/runtime/test_device_feedback_closure.py::testFoldedByteResultRetainsOnlyBoundedPreviewAndCounts
+9 failed in 2.82s

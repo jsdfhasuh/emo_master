@@ -75,6 +75,66 @@ def testPendingSelectorsPreserveOptionalDefaultsWithoutFillingRequiredSelector()
         validateDeviceBinding(requirement, binding, deviceDef, typeDecl, allowMissingSelectors=True)
 
 
+def selectorProject(*, required=True, default='a', explicit=None):
+    import json
+    from emo_master.apps.designer.state.workflow_store import WorkflowStore
+    from tests.runtime.test_tcp_device_integration import graph, node
+    root = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session'
+    typeDecl = DeviceType.model_validate_json((root/'device_types/server.json').read_text(encoding='utf-8'))
+    manifest = json.loads((root/'manifest.json').read_text(encoding='utf-8'))
+    manifest['operatorId'] = 'review.default_session'
+    schema = manifest['deviceRequirements']['tcp']['selectorSchema']
+    schema['required'] = ['channelId'] if required else []
+    if default is not None:
+        schema['properties']['channelId']['default'] = default
+    payload = WorkflowStore().toPayload()
+    payload['devices']['definitions']['server'] = tcpDefinition(typeDecl, channels=[
+        dict(channelId='a', name='A', allowedIps=['127.0.0.1']),
+        dict(channelId='b', name='B', allowedIps=['127.0.0.2'])])
+    payload['workflows']['main'] = graph([node('acquire', manifest['operatorId'], 'server', selectors=explicit)])
+    return payload, typeDecl, manifest
+
+
+@pytest.mark.parametrize('required,explicit,expectedDraft,expectedPlan', [
+    (True, {}, {}, {'channelId': 'a'}),
+    (False, {}, {'channelId': 'a'}, {'channelId': 'a'}),
+    (True, {'channelId': 'b'}, {'channelId': 'b'}, {'channelId': 'b'}),
+])
+def testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan(required, explicit, expectedDraft, expectedPlan):
+    from emo_master.core.workflow.compiler import WorkflowCompiler
+    payload, typeDecl, manifest = selectorProject(required=required, explicit=explicit)
+    original = deepcopy(payload)
+    types = {typeDecl.deviceTypeId: typeDecl}
+    compiled = WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes=types).compile(payload)
+    plan = next(n for n in compiled.workflows['main'].nodes if n.nodeId == 'acquire').devicePlans['tcp']
+    assert dict(plan['selectors']) == expectedPlan
+    assert payload == original
+    session = ProjectEditSession(payload)
+    editor = DeviceCatalogEditor(session, types, {manifest['operatorId']: manifest['deviceRequirements']})
+    rawNode = payload['workflows']['main']['nodes'][1]
+    editor.commitNode('main', rawNode, allowIncomplete=True)
+    saved = next(n for n in session.document().workflows['main'].nodes if n.nodeId == 'acquire')
+    assert saved.deviceBindings['tcp'].selectors == expectedDraft
+    assert rawNode['deviceBindings']['tcp']['selectors'] == explicit
+
+
+@pytest.mark.parametrize('default,explicit', [('gone', {}), (42, {}),
+    ('a', {'channelId': 'gone'}), ('a', {'channelId': 42}), ('a', {'undeclared': 'a'}), (None, {})])
+def testInvalidSelectorsRetainStrictLocation(default, explicit):
+    from emo_master.core.workflow.compiler import WorkflowCompiler
+    from emo_master.core.workflow.errors import WorkflowCompileError
+    payload, typeDecl, manifest = selectorProject(default=default, explicit=explicit)
+    original = deepcopy(payload)
+    with pytest.raises(WorkflowCompileError) as caught:
+        WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes={typeDecl.deviceTypeId: typeDecl}).compile(payload)
+    issue = caught.value.issues[0]
+    assert issue.code == ('E_DEVICE_BINDING' if default == 'gone' or explicit == {'channelId': 'gone'}
+                          else 'E_PARAM_INVALID')
+    assert issue.workflowId == 'main' and issue.nodeId == 'acquire'
+    assert issue.fieldPath.startswith('deviceBindings.tcp.selectors')
+    assert payload == original
+
+
 def testPendingWizardPreservesUnavailableDeviceInsteadOfErasingIt(ownedDesignerWindow, tmp_path,
         definition, declaration):  # noqa: F811
     window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)

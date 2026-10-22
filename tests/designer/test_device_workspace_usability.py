@@ -4,7 +4,7 @@ from concurrent.futures import Future
 
 import pytest
 from PySide2.QtCore import Qt
-from PySide2.QtWidgets import QMessageBox, QToolButton, QDialogButtonBox
+from PySide2.QtWidgets import QApplication, QMessageBox, QToolButton, QDialogButtonBox
 
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
 from tests.designer.test_device_workspace import windowFor, waitUntil
@@ -156,3 +156,160 @@ def testIncompleteNumberRevealsItsTabWithoutCommitting(ownedDesignerWindow, tmp_
     finally:
         d.revert()
         assert d.close()
+
+
+def tcpWorkspace(ownedDesignerWindow, tmp_path):
+    from pathlib import Path
+    from emo_master.core.plugin.devices import DeviceType
+    from emo_master.core.project.devices import DeviceDefinition
+    from tests.runtime.test_tcp_device_integration import definition as tcpDefinition
+    typeDecl = DeviceType.model_validate_json((Path(__file__).resolve().parents[2] /
+        'src/emo_master/plugins/builtins/tcp_session/device_types/server.json').read_text(encoding='utf-8'))
+    value = tcpDefinition(typeDecl, port=10000,
+        channels=[dict(channelId='a', name='A', allowedIps=['127.0.0.1'])])
+    value.update(description='未发布的候选')
+    return workspace(ownedDesignerWindow, tmp_path, DeviceDefinition.model_validate(value), typeDecl)
+
+
+@pytest.mark.parametrize('changed', ['device', 'port'])
+@pytest.mark.parametrize('failed', [False, True])
+def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_path, monkeypatch, changed, failed):
+    d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+    if changed == 'device':
+        other = deepcopy(d.original)
+        other['connection']['port'] = 10002
+        other['name'] = 'B'
+        d.catalog().put(other, deviceId='other')
+        d.refresh()
+        d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+            if d.table.item(i, 0).data(Qt.UserRole) == 'camera'), 0)
+    future = Future()
+    monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: future)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    d.testConnection()
+    assert d.pending is future and d.timer.isActive()
+    if changed == 'device':
+        d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+            if d.table.item(i, 0).data(Qt.UserRole) == 'other'), 0)
+        assert d.selectedId == 'other'
+    else:
+        d.forms['connection'].fields._controls['port'].setValue(10001)
+    d.status.setText('当前输入待测试')
+    d.status.setToolTip('当前输入')
+    if failed:
+        future.set_exception(ValueError('OLD-ENDPOINT-FAILURE'))
+    else:
+        future.set_result(dict(message='OLD-ENDPOINT-SUCCESS'))
+    d._metadataReady()
+    assert d.pending is None and not d.timer.isActive()
+    assert d.buttons['refresh'].isEnabled()
+    assert d.status.text() == '当前输入待测试'
+    assert 'OLD-ENDPOINT' not in d.status.toolTip()
+    d.revert()
+
+
+def testDetailConnectionValidationIsChineseFocusedAndReadOnly(ownedDesignerWindow, tmp_path, monkeypatch):
+    d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+    before = d.c.session.payload()
+    source = tmp_path / 'device.emoproj'
+    sourceBytes = source.read_bytes()
+    calls = []
+    monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: calls.append('RPC'))
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: calls.append('confirm') or QMessageBox.Yes)
+    form = d.forms['connection']
+    form.channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+    candidate = deepcopy(d._formValue())
+    d.tabs.setCurrentIndex(2)
+    d.activateWindow()
+    waitUntil(d.isActiveWindow)
+    d.testConnection()
+    QApplication.processEvents()
+    try:
+        assert d.status.text() == '通道 1：请填写至少一个允许接入的客户端 IPv4'
+        table = form.channels.table
+        assert d.tabs.currentIndex() == 1 and table.hasFocus()
+        assert (table.currentRow(), table.currentColumn()) == (0, 2)
+        assert d._formValue() == candidate
+        assert d.c.session.payload() == before and source.read_bytes() == sourceBytes
+        assert calls == [] and d.pending is None
+    finally:
+        d.revert()
+
+
+def testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState(ownedDesignerWindow, tmp_path,
+        definition, declaration):  # noqa: F811
+    d = workspace(ownedDesignerWindow, tmp_path, definition, declaration)
+    gain = d.forms['defaults']._controls['gain']
+    gain.setText('-')
+    d.apply()
+    message = d.status.text()
+    assert message and gain.accessibleDescription()
+    try:
+        d.name.setText('仅修改其他字段')
+        assert d.status.text() == message
+        response = Future()
+        response.set_exception(ValueError('background unavailable'))
+        d.pending, d.pendingKind, d.pendingScope = response, 'state', d._scope()
+        d.backgroundState = True
+        d._metadataReady()
+        assert d.status.text() == message
+        gain.setText('2')
+        assert not gain.accessibleDescription() and not d.status.text()
+    finally:
+        d.revert()
+
+
+def testDetailChannelFeedbackClearsOnlyEditedErrorCell(ownedDesignerWindow, tmp_path):
+    d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+    form = d.forms['connection']
+    form.channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+    d.apply()
+    message = d.status.text()
+    table = form.channels.table
+    assert '通道 1' in message and table.accessibleDescription()
+    try:
+        table.item(0, 1).setText('只改显示名')
+        assert d.status.text() == message and table.accessibleDescription() == message
+        table.item(0, 2).setText('127.0.0.1')
+        assert not table.accessibleDescription() and not d.status.text()
+    finally:
+        d.revert()
+
+
+@pytest.mark.parametrize('failed', [False, True])
+def testDisabledEmptyDetailConnectionTestUsesCandidateWithoutApplying(ownedDesignerWindow, tmp_path, monkeypatch, failed):
+    from types import SimpleNamespace
+    d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+    calls = []
+
+    def network(project, runtime, command, **kwargs):
+        calls.append((project, runtime, command, kwargs))
+        if failed and command == 'test_connection':
+            raise ValueError('CURRENT-ENDPOINT-FAILURE')
+        return dict(projectId='online', runtimeInstanceId='r', deviceSetupVersion=1, message='CURRENT-ENDPOINT')
+
+    d.c.window.runtimeClient = SimpleNamespace(deviceNetworkCommand=network)
+    d._showDetails()  # Recompute support after installing the test connector.
+    d.enabled.setChecked(False)
+    d.forms['connection'].channels.setValue([])
+    d.forms['connection'].fields._controls['port'].setValue(10001)
+    candidate = deepcopy(d._formValue())
+    before = d.c.session.payload()
+    source = tmp_path/'device.emoproj'
+    disk = source.read_bytes()
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    try:
+        d.testConnection()
+        waitUntil(lambda: d.pending is None)
+        assert [call[2] for call in calls] == ['info', 'test_connection']
+        assert calls[-1][3]['payload']['definition'] == candidate
+        if failed:
+            assert d.status.text() == '设备操作未完成，请查看详情'
+            assert 'CURRENT-ENDPOINT-FAILURE' in d.status.toolTip()
+        else:
+            assert 'CURRENT-ENDPOINT' in d.status.text()
+        assert d.c.session.payload() == before and source.read_bytes() == disk
+        assert d._formValue() == candidate and not d.timer.isActive()
+        assert d.buttons['test'].isEnabled()
+    finally:
+        d.revert()

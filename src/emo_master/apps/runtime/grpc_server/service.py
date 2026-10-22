@@ -202,7 +202,9 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
         self.runtimeInstanceId = str(uuid4())
         self.communicationManager = CommunicationManager(self.runtimeInstanceId)
         from emo_master.apps.runtime.devices.manager import DeviceManager
-        self.deviceManager = DeviceManager(self.pluginScanResult.deviceTypes)
+        self.deviceManager = DeviceManager(self.pluginScanResult.deviceTypes,
+            operatorRequirements={key: descriptor.manifest.deviceRequirements
+                for key, descriptor in self.pluginScanResult.activeOperators.items()})
         self.deviceManager.runtimeInstanceId = self.runtimeInstanceId
         self.deviceManager.scope['runtimeInstanceId'] = self.runtimeInstanceId
         self.deviceManager.diagnostics.writer = self.operationalLogWriter

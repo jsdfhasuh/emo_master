@@ -41,6 +41,9 @@ class DeviceWorkspace(QDialog):
         self.selectedId = None
         self.original = None
         self.formBaseline = None
+        self.inputErrorControl = None
+        self.inputErrorMessage = ''
+        self.pendingTest = None
         self.lastSearch = ''
         self.loading = False
         self.reader = ThreadPoolExecutor(max_workers=1, thread_name_prefix="device-metadata")
@@ -310,9 +313,15 @@ class DeviceWorkspace(QDialog):
     def _inputStatus(self, *_args):
         if getattr(self, '_populatingDetails', False):
             return
+        if self.inputErrorControl is not None and not self.inputErrorControl.accessibleDescription():
+            if self.status.text() == self.inputErrorMessage:
+                self.status.clear()
+                self.status.setToolTip('')
+            self.inputErrorControl = None
         try:
             changed = bool(self.original and self._formValue() != self.formBaseline)
-            text = ('输入有误' if self.original and (not self.name.text().strip() or len(self.name.text().strip()) > 160)
+            text = ('输入有误' if self.inputErrorControl is not None or
+                    self.original and (not self.name.text().strip() or len(self.name.text().strip()) > 160)
                     else '有待应用输入' if changed else '当前输入未修改')
         except ValueError:
             text = '输入有误'
@@ -356,7 +365,7 @@ class DeviceWorkspace(QDialog):
         try:
             self.commitPending()
         except ValueError as error:
-            self.status.setText(str(error))
+            self._showInputError(error)
             return
         # Keep the reusable metadata reader, but abandon this opening intent.
         # Reopening the workspace must not revive a response from before close.
@@ -562,11 +571,13 @@ class DeviceWorkspace(QDialog):
         if self.pending is not None or not self.selectedId:
             return
         try:
-            from emo_master.core.project.devices import DeviceDefinition
-            definition = self.deviceTypes[self.original['deviceTypeId']].validateDefinition(
-                DeviceDefinition.model_validate(self._formValue())).model_dump()
+            from .device_wizard import validateDeviceDefinition
+            base = dict(self.original, description=self.description.text(), enabled=self.enabled.isChecked())
+            definition = validateDeviceDefinition(self.deviceTypes[base['deviceTypeId']],
+                self.name, self.forms, self.tabs, base=base)
+            candidate = (self.selectedId, deepcopy(self._formValue()))
         except (ValueError, KeyError) as error:
-            self.status.setText(str(error))
+            self._showInputError(error)
             return
         from .device_wizard import connectionTestPrompt
         if QMessageBox.question(self, '测试连接', connectionTestPrompt(definition['deviceTypeId']),
@@ -580,6 +591,7 @@ class DeviceWorkspace(QDialog):
             return client.deviceNetworkCommand(info['projectId'], info['runtimeInstanceId'], 'test_connection',
                 payload=dict(confirmed=True, definition=definition))
         self.pendingKind, self.pendingScope = 'test', self._scope()
+        self.pendingTest = candidate
         self.pending = self.reader.submit(test)
         self.status.setText('正在测试当前连接草稿')
         self.timer.start(40)
@@ -712,6 +724,17 @@ class DeviceWorkspace(QDialog):
                 self.showDiagnostics()
                 return
             if self.pendingKind == 'test':
+                # This request owns a device/candidate, unlike project-level reads.
+                # Check before consuming success OR failure, without validating or
+                # committing the current controls as a side effect of completion.
+                try:
+                    current = (self.selectedId, self._formValue())
+                except ValueError:
+                    current = None
+                if current != self.pendingTest:
+                    if self.status.text() == '正在测试当前连接草稿':
+                        self.status.setText('设备或输入已变化；此前测试结果不用于当前输入')
+                    return
                 result = future.result()
                 self.status.setText(result.get('message', '端点测试通过') + '；工程草稿和在线配置未改变')
                 return
@@ -739,11 +762,13 @@ class DeviceWorkspace(QDialog):
                 self.stateScope, self.stateReadAt, self.stateError = self._scope(), monotonic(), ''
                 self.stateNotice = ''
                 self._showStates()
-                if self.pendingKind != 'state' or not getattr(self, 'backgroundState', False) or recoveredStateError:
+                keepInput = self.pendingKind == 'state' and getattr(self, 'backgroundState', False) and self.inputErrorControl is not None
+                if not keepInput and (self.pendingKind != 'state' or not getattr(self, 'backgroundState', False) or recoveredStateError):
                     self.status.setText("会话已恢复；未连接设备、未重发读写" if self.pendingKind == "recover"
                                     else "设备控制完成；工程草稿未改变" if self.pendingKind == "control"
                                     else "在线状态已刷新")
-                self.status.setToolTip("Runtime: " + runtimeId)
+                if not keepInput:
+                    self.status.setToolTip("Runtime: " + runtimeId)
                 self.readDiagnostics()
                 return
             types, requirements, rejected = future.result()
@@ -774,6 +799,8 @@ class DeviceWorkspace(QDialog):
                 self.stateError = '' if self.stateNotice else str(error)
                 self._showStates()
                 notice = self.stateNotice
+                if self.pendingKind == 'state' and getattr(self, 'backgroundState', False) and self.inputErrorControl is not None:
+                    return
             self.status.setText(notice or "设备信息读取失败：" + str(error))
 
     def _showStates(self):
@@ -983,7 +1010,7 @@ class DeviceWorkspace(QDialog):
         try:
             self.commitPending()
         except ValueError as error:
-            self.status.setText(str(error))
+            self._showInputError(error)
             self.loading = True
             self.table.setCurrentCell(oldRow, 0)
             self.loading = False
@@ -998,6 +1025,10 @@ class DeviceWorkspace(QDialog):
 
     def _showDetails(self):
         self._populatingDetails = True
+        if self.inputErrorControl is not None and self.status.text() == self.inputErrorMessage:
+            self.status.clear()
+            self.status.setToolTip('')
+        self.inputErrorControl = None
         self.original = deepcopy(self.c.session.workflows.devices.get("definitions", {}).get(self.selectedId))
         declaration = self.deviceTypes.get(self.original["deviceTypeId"]) if self.original else None
         self.details.setEnabled(bool(declaration))
@@ -1123,9 +1154,15 @@ class DeviceWorkspace(QDialog):
             self.refresh()
             self.status.setText("已应用到工程草稿；在线配置未改变")
         except ValueError as error:
-            from .device_wizard import deviceValidationMessage, deviceErrorDetails
-            self.status.setText(deviceValidationMessage(error))
-            self.status.setToolTip(deviceErrorDetails(error))
+            self._showInputError(error)
+
+    def _showInputError(self, error):
+        from .device_wizard import deviceValidationMessage, deviceErrorDetails, deviceErrorControl
+        self.inputErrorMessage = deviceValidationMessage(error)
+        self.status.setText(self.inputErrorMessage)
+        self.status.setToolTip(deviceErrorDetails(error))
+        self.inputErrorControl = deviceErrorControl(self.name, self.forms, str(error))
+        self._inputStatus()
 
     def revert(self):
         self._showDetails()

@@ -287,3 +287,58 @@ def testNodeReuseNoRetainsDialogForCorrectionAndCancelRemainsAtomic(ownedDesigne
         assert window.pageCoordinator.session.payload() == before
     finally:
         wizard.reject()
+
+
+@pytest.mark.parametrize('failed', [False, True])
+def testCreationConnectionReceiptBelongsToCandidate(retainedQtApplication, monkeypatch, failed):
+    path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+    metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+    initial = tcpDefinition(metadata, port=10000, channels=[])
+    initial['enabled'] = False
+    dialog = module.DeviceDefinitionDialog(metadata, initial=initial, client=SimpleNamespace())
+    future = Future()
+    monkeypatch.setattr(dialog.setupPool, 'submit', lambda *_args, **_kw: future)
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    dialog.show()
+    try:
+        dialog.testConnection()
+        assert dialog.setupPending is future
+        dialog.forms['connection'].fields._controls['port'].setValue(10001)
+        dialog.error.setText('当前输入待测试')
+        if failed:
+            future.set_exception(ValueError('OLD-ENDPOINT-FAILURE'))
+        else:
+            future.set_result(dict(message='OLD-ENDPOINT-SUCCESS'))
+        dialog.setupReady()
+        assert dialog.setupPending is None and not dialog.setupTimer.isActive()
+        assert dialog.error.text() == '当前输入待测试'
+        assert 'OLD-ENDPOINT' not in dialog.error.toolTip()
+        assert dialog.value is None
+    finally:
+        dialog.setupPending = None
+        dialog.reject()
+
+
+def testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected(ownedDesignerWindow, tmp_path,
+        declaration, definition):  # noqa: F811
+    window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+    requirements['vision.io.huaray_camera']['other'] = deepcopy(requirements['vision.io.huaray_camera']['camera'])
+    requirements = requirements['vision.io.huaray_camera']
+    wizard = module.DeviceNodeDialog(window.pageCoordinator,
+        dict(nodeId='new', operatorId='vision.io.huaray_camera', params={}), requirements, window)
+    wizard.show()
+    try:
+        waitUntil(lambda: bool(wizard.types))
+        wizard.accept()
+        message = '请选择设备：camera'
+        assert wizard.error.text() == message
+        other = wizard.slots['other'][0]
+        other.setCurrentIndex(other.findData('camera'))
+        assert wizard.error.text() == message
+        camera = wizard.slots['camera'][0]
+        camera.setCurrentIndex(camera.findData('camera'))
+        assert 'camera' in wizard.sources
+        assert not wizard.error.text()
+        assert wizard.result() != wizard.Accepted
+    finally:
+        wizard.reject()

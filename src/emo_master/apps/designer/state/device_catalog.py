@@ -143,7 +143,8 @@ class DeviceCatalogEditor:
             from emo_master.core.plugin.devices import validateDeviceBinding
             from emo_master.core.workflow.errors import locatedValidationError
             try:
-                validateDeviceBinding(requirement, binding, definition, declaration, allowMissingSelectors=allowIncomplete)
+                binding.selectors = validateDeviceBinding(requirement, binding, definition, declaration,
+                    allowMissingSelectors=allowIncomplete)
             except ValueError as error:
                 raise locatedValidationError(error, 'E_DEVICE_BINDING', nodeId=node.nodeId,
                     prefix='deviceBindings.' + slot) from error

@@ -53,6 +53,75 @@ def load(service, payload, tmp_path):
     assert result.ok, result.message
 
 
+def testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission(tmp_path, monkeypatch):
+    from tests.runtime.test_tcp_device_integration import freePort, run
+    from emo_master.apps.runtime.devices.executor import DeviceError
+    monkeypatch.syspath_prepend(str(tmp_path))
+    root = tmp_path/'selector_default_plugin'
+    root.mkdir()
+    (root/'__init__.py').write_text('''
+from dataclasses import replace
+from emo_master.plugins.builtins._managed_tcp import TcpSessionOperator
+class DefaultSession(TcpSessionOperator):
+    meta = replace(TcpSessionOperator.meta, operatorId='review.default_session')
+''', encoding='utf-8')
+    manifest = json.loads((BUILTINS/'tcp_session/manifest.json').read_text(encoding='utf-8'))
+    manifest.update(operatorId='review.default_session', entry='selector_default_plugin:DefaultSession')
+    manifest['deviceRequirements']['tcp']['selectorSchema']['properties']['channelId']['default'] = 'a'
+    (root/'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+    service = RuntimeService(dbPath=tmp_path/'runtime/runtime.db', workspaceRoot=tmp_path/'runtime/jobs',
+        pluginRootPaths=(str(BUILTINS), str(root)))
+    client = RuntimeClient(runtimeService=service)
+    observed = []
+    try:
+        payload = WorkflowStore().toPayload()
+        value = definition(service.pluginScanResult.deviceTypes['device.tcp.server'], port=freePort(), channels=[
+            dict(channelId='a', name='A', allowedIps=['127.0.0.1']),
+            dict(channelId='b', name='B', allowedIps=['127.0.0.2'])])
+        value['policies']['connect'] = 'on_project_open'
+        payload['devices']['definitions']['server'] = value
+        payload['workflows']['main'] = graph([node('acquire', manifest['operatorId'], 'server')])
+        original = deepcopy(payload)
+        load(service, payload, tmp_path)
+        driver = service.deviceManager.drivers['server']
+        execute = driver.execute
+
+        def record(*args, **kwargs):
+            context = kwargs['operationContext']
+            observed.append(dict(selectors=dict(context.selectors), owner=context.ownerId,
+                cycleId=context.cycleId, frozen=service.projectConfiguration.cyclePayload(context.ownerId, context.cycleId)))
+            return execute(*args, **kwargs)
+
+        monkeypatch.setattr(driver, 'execute', record)
+        with socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=5):
+            jobId = run(service, client, 'main')
+        assert len(observed) == 1 and observed[0]['selectors'] == {'channelId': 'a'}
+        assert observed[0]['owner'] == jobId
+        frozenNode = observed[0]['frozen']['workflows']['main']['nodes'][1]
+        assert frozenNode['deviceBindings']['tcp']['selectors'] == {}
+        assert client.getOnlineProjectSnapshot()['payload']['workflows']['main']['nodes'][1]['deviceBindings']['tcp']['selectors'] == {}
+        assert payload == original
+        manager = service.deviceManager
+        manager.authorize('review-tamper', ['server'])
+        cycle = service.projectConfiguration.beginCycle('review-tamper', None)
+        try:
+            for mismatched in ({'channelId': 'b'}, {}, {'channelId': 'a', 'unknown': 'a'}):
+                with pytest.raises(DeviceError) as caught:
+                    manager.execute('review-tamper', 'server', 'acquire_session', value['defaults'],
+                        cycleId=cycle['cycleId'], source=dict(workflowId='main', nodeId='acquire', slot='tcp'),
+                        selectors=mismatched)
+                assert caught.value.code == 'E_DEVICE_BINDING'
+            assert len(observed) == 1
+        finally:
+            service.projectConfiguration.endCycle('review-tamper', cycle['cycleId'])
+            manager.retire('review-tamper')
+        (tmp_path/'selector-default-job.json').write_text(json.dumps(dict(jobId=jobId, observed=observed,
+            mismatchCode=caught.value.code), ensure_ascii=False, indent=2), encoding='utf-8')
+    finally:
+        client.close()
+        service.close()
+
+
 def testF02NewServerReferenceIsAddedBeforeSelectorValidation(runtime):
     service, _ = runtime
     online = WorkflowStore().toPayload()

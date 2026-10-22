@@ -89,7 +89,7 @@ def validateDeviceDefinition(declaration, nameControl, forms, tabs=None, *, base
             and not payload['connection'].get('channels')):
         form = forms['connection']
         _showControlTab(tabs, form)
-        form.focusField('channels')
+        form.showChannelError('请添加至少一个客户端通道')
         raise ValueError('请添加至少一个客户端通道')
     try:
         return declaration.validateDefinition(DeviceDefinition.model_validate(payload)).model_dump()
@@ -131,8 +131,10 @@ def clearNameFeedback(control, feedback):
     previous = control.accessibleDescription()
     control.setAccessibleDescription('')
     control.setStyleSheet('')
-    if previous and feedback.text() == previous:
-        feedback.clear()
+    if previous and previous in feedback.text().splitlines():
+        feedback.setText('\n'.join(line for line in feedback.text().splitlines() if line != previous))
+        if not feedback.text():
+            feedback.setToolTip('')
 
 
 def deviceErrorControl(name, forms, message):
@@ -177,7 +179,9 @@ class DeviceDefinitionDialog(QDialog):
         self.setupPool = ThreadPoolExecutor(max_workers=1, thread_name_prefix='device-setup')
         self.setupPending = None
         self.setupScope = None
+        self.setupCandidate = None
         self.inputErrorControl = None
+        self.inputErrorMessage = ''
         self.setupTimer = QTimer(self)
         self.setupTimer.timeout.connect(self.setupReady)
         self.setWindowTitle("新建设备 · " + declaration.displayName)
@@ -204,6 +208,7 @@ class DeviceDefinitionDialog(QDialog):
         layout.addWidget(self.tabs)
         self.error = QLabel()
         self.name.textChanged.connect(lambda *_: clearNameFeedback(self.name, self.error))
+        self.name.textChanged.connect(self._fieldEdited)
         for form in self.forms.values():
             form.valuesChanged.connect(self._fieldEdited)
         self.error.setWordWrap(True)
@@ -232,8 +237,14 @@ class DeviceDefinitionDialog(QDialog):
 
     def _fieldEdited(self):
         if self.inputErrorControl is not None and not self.inputErrorControl.accessibleDescription():
-            self.error.clear()
+            if self.error.text() == self.inputErrorMessage:
+                self.error.clear()
+                self.error.setToolTip('')
             self.inputErrorControl = None
+
+    def _testCandidate(self):
+        return (self.name.text(), self.enabled.isChecked(),
+                {key: form.getValues() for key, form in self.forms.items()})
 
     def _setupScope(self):
         parent = self.parentWidget()
@@ -254,8 +265,12 @@ class DeviceDefinitionDialog(QDialog):
             return
         try:
             definition = self.definition()
+            candidate = deepcopy(self._testCandidate())
         except ValueError as error:
-            self.error.setText(str(error))
+            self.inputErrorMessage = deviceValidationMessage(error)
+            self.error.setText(self.inputErrorMessage)
+            self.error.setToolTip(deviceErrorDetails(error))
+            self.inputErrorControl = deviceErrorControl(self.name, self.forms, str(error))
             return
         if QMessageBox.question(self, '测试连接', connectionTestPrompt(self.declaration.deviceTypeId),
                 QMessageBox.Yes | QMessageBox.No, QMessageBox.No) != QMessageBox.Yes:
@@ -268,6 +283,7 @@ class DeviceDefinitionDialog(QDialog):
                 payload=dict(confirmed=True, definition=definition))
         self.setupKind = 'test'
         self.setupScope = self._setupScope()
+        self.setupCandidate = candidate
         self.setupPending = self.setupPool.submit(test)
         self.setupTimer.start(40)
         self.error.setText('正在测试连接')
@@ -280,6 +296,15 @@ class DeviceDefinitionDialog(QDialog):
         try:
             if self.setupScope is not None and self.setupScope != self._setupScope():
                 raise ValueError('工程或 Runtime 连接已变化，请重新测试')
+            if self.setupKind == 'test':
+                try:
+                    current = self._testCandidate()
+                except ValueError:
+                    current = None
+                if current != self.setupCandidate:
+                    if self.error.text() == '正在测试连接':
+                        self.error.setText('输入已变化；此前测试结果不用于当前输入')
+                    return
             result = future.result()
             if self.setupKind == 'discover':
                 from .device_network import DeviceNetworkDialog
@@ -314,7 +339,8 @@ class DeviceDefinitionDialog(QDialog):
             if self.beforeAccept is not None and self.beforeAccept(value) is False:
                 return
         except (ValueError, KeyError, OSError) as error:
-            self.error.setText(deviceValidationMessage(error))
+            self.inputErrorMessage = deviceValidationMessage(error)
+            self.error.setText(self.inputErrorMessage)
             self.error.setToolTip(deviceErrorDetails(error))
             self.inputErrorControl = deviceErrorControl(self.name, self.forms, str(error))
             return
@@ -677,6 +703,7 @@ class DeviceNodeDialog(QDialog):
             old.deleteLater()
         oldSelectors = self.selectors.pop(slot, {})
         for oldControl in oldSelectors.values():
+            clearNameFeedback(oldControl, self.error)
             oldControl.deleteLater()
         hint = getattr(self, '_sourceHints', {}).pop(slot, None)
         if hint is not None:
@@ -692,6 +719,7 @@ class DeviceNodeDialog(QDialog):
             layout.addWidget(hint)
             self._sourceHints[slot] = hint
             return
+        clearNameFeedback(combo, self.error)
         declaration = self.types[definitions[key]["deviceTypeId"]]
         editorNode = self.node
         if declaration.deviceTypeId == "device.camera.huaray_imv" and getattr(self, "migrateLegacy", False):
@@ -718,7 +746,8 @@ class DeviceNodeDialog(QDialog):
             select = QComboBox(editor)
             select.setObjectName('selector-' + slot + '-' + name)
             select.addItem('请选择通道' if name == 'channelId' else '请选择 ' + name, None)
-            for value, label in selectorCandidates(declaration, definitions[key], name):
+            candidates = selectorCandidates(declaration, definitions[key], name)
+            for value, label in candidates:
                 select.addItem(f'{label} ({value})', value)
             prior = self.node.get('deviceBindings', {}).get(slot, {}).get('selectors', {}).get(name)
             if prior is not None:
@@ -727,6 +756,8 @@ class DeviceNodeDialog(QDialog):
                 select.setCurrentIndex(select.findData(prior))
             editor.layout().addRow('通道' if name == 'channelId' else name, select)
             self.selectors[slot][name] = select
+            select.currentIndexChanged.connect(lambda _index, control=select, valid={value for value, _ in candidates}:
+                clearNameFeedback(control, self.error) if control.currentData() in valid else None)
         self.sources[slot] = editor
         self._compareSource(slot, editor)
         layout.addWidget(editor)
@@ -752,8 +783,11 @@ class DeviceNodeDialog(QDialog):
                 key = combo.currentData()
                 if key is None:
                     if not allowIncomplete:
+                        message = '请选择设备：' + slot
+                        combo.setAccessibleDescription(message)
+                        _showControlTab(self.tabs, combo)
                         combo.setFocus()
-                        raise ValueError("请选择设备：" + slot)
+                        raise ValueError(message)
                     hadSources = bool(draft.get('deviceOverrides', {}).get(slot) or draft.get('deviceValueBindings', {}).get(slot))
                     if hadSources and QMessageBox.question(self, '解除设备绑定',
                             f'解除 {slot} 并移除该槽的参数覆写与动态来源？其他槽保持原值。',
@@ -763,7 +797,9 @@ class DeviceNodeDialog(QDialog):
                         draft.get(group, {}).pop(slot, None)
                     continue
                 if key not in definitions:
-                    raise ValueError('槽位 ' + slot + '：设备引用不存在：' + key)
+                    message = '槽位 ' + slot + '：设备引用不存在：' + key
+                    combo.setAccessibleDescription(message)
+                    raise ValueError(message)
                 draft.setdefault("deviceBindings", {})[slot] = {"deviceId": key, "selectors": {
                     name: control.currentData() for name, control in self.selectors.get(slot, {}).items()
                     if control.currentData() is not None}}
@@ -806,14 +842,18 @@ class DeviceNodeDialog(QDialog):
             from emo_master.core.workflow.errors import WorkflowCompileError
             if isinstance(error, WorkflowCompileError):
                 self.error.setText('\n'.join(f'{issue.fieldPath}：{issue.message}' for issue in error.issues))
+                first = None
                 for issue in error.issues:
                     parts = issue.fieldPath.split('.')
                     if len(parts) >= 4 and parts[0] == 'deviceBindings' and parts[2] == 'selectors':
                         control = self.selectors.get(parts[1], {}).get(parts[3])
                         if control is not None:
-                            _showControlTab(self.tabs, control)
-                            control.setFocus(Qt.OtherFocusReason)
-                            break
+                            control.setAccessibleDescription(f'{issue.fieldPath}：{issue.message}')
+                            if first is None:
+                                first = control
+                if first is not None:
+                    _showControlTab(self.tabs, first)
+                    first.setFocus(Qt.OtherFocusReason)
             else:
                 self.error.setText(str(error))
             return

@@ -13,8 +13,9 @@ from .recovery import connectionBudget
 
 
 class DeviceManager:
-    def __init__(self, types):
+    def __init__(self, types, *, operatorRequirements=None):
         self.types = types
+        self.operatorRequirements = deepcopy(operatorRequirements)
         self.lock = RLock()
         self.definitions = {}
         self.executors = {}
@@ -230,7 +231,19 @@ class DeviceManager:
             try:
                 node = next(node for node in frozen['workflows'][source['workflowId']]['nodes'] if node['nodeId'] == source['nodeId'])
                 binding = node['deviceBindings'][source['slot']]
-                if binding['deviceId'] != deviceId or binding.get('selectors', {}) != selectors:
+                if binding['deviceId'] != deviceId:
+                    raise ValueError('device differs from frozen cycle')
+                expected = binding.get('selectors', {})
+                if self.operatorRequirements is not None:
+                    from emo_master.core.plugin.devices import validateDeviceBinding
+                    from emo_master.core.project.devices import DeviceDefinition
+                    definition = DeviceDefinition.model_validate(frozen['devices']['definitions'][deviceId])
+                    requirement = self.operatorRequirements[node['operatorId']][source['slot']]
+                    # Normalize the authority's frozen binding, never the request
+                    # or the Designer's current/unselected draft. Still compare
+                    # the complete selector map before admission and device I/O.
+                    expected = validateDeviceBinding(requirement, binding, definition, self.types[definition.deviceTypeId])
+                if expected != selectors:
                     raise ValueError('device binding differs from frozen cycle')
             except (KeyError, StopIteration, ValueError) as error:
                 raise DeviceError('E_DEVICE_BINDING', 'request does not match frozen node/slot/selectors') from error

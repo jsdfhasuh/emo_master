@@ -158,7 +158,7 @@ class WorkflowCompiler:
             requirement = requirements[slot]
             from emo_master.core.plugin.devices import validateDeviceBinding
             try:
-                validateDeviceBinding(requirement, binding, definition, declaration)
+                selectors = validateDeviceBinding(requirement, binding, definition, declaration)
             except ValueError as error:
                 raise locatedValidationError(error, 'E_DEVICE_BINDING', prefix=f'deviceBindings.{slot}') from error
             overrides = node.deviceOverrides.get(slot, {})
@@ -178,7 +178,7 @@ class WorkflowCompiler:
                 elif not compatible(normalizePortType(node.inputPorts.get(source.inputName)), expected):
                     raise WorkflowCompileError([ValidationIssue('E_DEVICE_PARAMETERS', 'invalid dynamic device input',
                         fieldPath=f'deviceValueBindings.{slot}.{path}.inputName')])
-            result[slot] = dict(deviceId=binding.deviceId, selectors=deepcopy(binding.selectors), definition=definition.model_dump(),
+            result[slot] = dict(deviceId=binding.deviceId, selectors=deepcopy(selectors), definition=definition.model_dump(),
                                 declaration=declaration.model_dump(), overrides=deepcopy(overrides),
                                 bindings={path: source.model_dump() for path, source in bindings.items()})
         return result

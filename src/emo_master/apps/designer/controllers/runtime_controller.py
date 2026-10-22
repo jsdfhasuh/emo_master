@@ -34,6 +34,7 @@ class RuntimeController:
         onInspectionStatus=None,
         onInspectionAccepted=None,
         onInspectionClosing=None,
+        getRunProjectReference: Callable[[], str | None] | None = None,
     ) -> None:
         self.runtimeClient = runtimeClient
         self.runtimePanelState = runtimePanelState
@@ -45,6 +46,7 @@ class RuntimeController:
         self.setCurrentJobId = setCurrentJobId
         self.setIsJobRunning = setIsJobRunning
         self.getLoadedProjectPath = getLoadedProjectPath
+        self.getRunProjectReference = getRunProjectReference or getLoadedProjectPath
         self.getCurrentJobId = getCurrentJobId
         self.getActiveWorkflowId = getActiveWorkflowId or (lambda: None)
         self.getEntryWorkflowId = getEntryWorkflowId or self.getActiveWorkflowId
@@ -89,11 +91,16 @@ class RuntimeController:
         if not self.syncRuntimeProjectBeforeRun():
             return
         try:
+            # Publication can replace the online copy while leaving the local
+            # Designer file association unchanged. Resolve only after sync.
+            projectReference = self.getRunProjectReference()
+            if projectReference is None:
+                raise ValueError("尚未加载项目")
             legacySnapshotPolicy = normalizeLegacySnapshotPolicy(self.getLegacySnapshotPolicy())
             captureRequest = self.getCapturePresentation()
             capturePresentation = bool(captureRequest)
         except Exception as error:
-            self.appendLog("ERROR", f"页面采集准备失败：{error}")
+            self.appendLog("ERROR", f"运行准备失败：{error}")
             return
         self._captureCurrentRun = capturePresentation
         inspection = self.onInspectionStarting() if self.onInspectionStarting else None
@@ -104,7 +111,7 @@ class RuntimeController:
         workflowId = self.getEntryWorkflowId() or ""
         worker = RuntimeWorker(
             runtimeClient=self.runtimeClient,
-            projectId=loadedProjectPath,
+            projectId=projectReference,
             workflowId=workflowId,
             capturePresentation=capturePresentation,
             legacySnapshotPolicy=legacySnapshotPolicy,

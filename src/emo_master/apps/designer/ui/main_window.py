@@ -1347,6 +1347,7 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             setCurrentJobId=self._setCurrentJobId,
             setIsJobRunning=self._setIsJobRunning,
             getLoadedProjectPath=lambda: self.loadedProjectPath,
+            getRunProjectReference=self._runtimeProjectReference,
             getCurrentJobId=lambda: self.currentJobId,
             getActiveWorkflowId=lambda: self.activeWorkflowId,
             getEntryWorkflowId=lambda: self.workflowStore.entryWorkflowId,
@@ -3448,7 +3449,11 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         if self.loadedProjectPath is None:
             self.appendRuntimeLog("WARN", "尚未加载项目")
             return
-        reply = self.runtimeClient.validateProject(self.loadedProjectPath)
+        try:
+            reply = self.runtimeClient.validateProject(self._runtimeProjectReference())
+        except Exception as error:
+            self.appendRuntimeLog("ERROR", f"项目校验失败：{error}")
+            return
         if getattr(reply, "ok", False):
             self.appendRuntimeLog("INFO", "项目校验通过")
             self.updateToolbarState()
@@ -3606,6 +3611,16 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
             successMessagePrefix="项目已同步",
             failedMessagePrefix="项目同步失败",
         )
+
+    def _runtimeProjectReference(self) -> str | None:
+        if self.pageCoordinator is not None:
+            document = self.pageCoordinator.session.document()
+            if document.schemaVersion in {"2.6", "2.7"}:
+                # The committed Runtime copy may be managed remotely and need
+                # not share the local file path. UUID mismatch remains an error.
+                snapshot = self.runtimeClient.getOnlineProjectSnapshot(document.project.projectId)
+                return str(snapshot["sourcePath"])
+        return self.loadedProjectPath
 
     def refreshOperators(self, *, explicit: bool = True) -> None:
         if self._operatorDisplayClosed:

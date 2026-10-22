@@ -171,7 +171,7 @@ class NodeResultCoordinator(QObject):
                              '节点图片尚未发布')
             selection = None
             if record and record['status'] == 'COMPLETED' and self.panel.ports.currentData():
-                selection = ImageSelection(window.loadedProjectPath, view['job'].jobId, window.activeWorkflowId,
+                selection = ImageSelection(self.images.projectId, view['job'].jobId, window.activeWorkflowId,
                     nodeId, record['workflowRunId'], record['nodeRunId'], view['job'].revision,
                     self.panel.ports.currentData())
             self.images.select(selection)

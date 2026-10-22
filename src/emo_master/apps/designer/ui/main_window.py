@@ -1549,7 +1549,12 @@ class MainWindow(QMainWindow):  # type: ignore[valid-type,misc]
         except (OSError, ValueError) as error:
             QMessageBox.warning(self, "新建项目失败", str(error))
             return
-        self.loadProjectDirectory(selected, confirmed=True)
+        if not self.loadProjectDirectory(selected, confirmed=True):
+            QMessageBox.warning(
+                self, "新建项目未打开",
+                f"文件已创建并保留：{selected}\n当前工程未替换。\n"
+                + (self.projectController.lastLoadError or "打开操作未完成，请检查当前运行或编辑状态。"),
+            )
 
     def saveProjectAsAction(self) -> None:
         if self.isJobRunning:

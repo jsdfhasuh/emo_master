@@ -270,7 +270,7 @@ def testStartupNewBlankCancelDirectoryReturnsFalse() -> None:
     assert window.showStartupProjectEntry() is False
 
 
-def testStartupNewBlankStopsWhenSaveFails(tmp_path: Path) -> None:
+def testStartupNewBlankStopsWhenSaveFails(tmp_path: Path, monkeypatch) -> None:
     class CountingRuntimeClientStub(RuntimeClientStub):
         def __init__(self) -> None:
             self.loadCalls = 0
@@ -287,9 +287,10 @@ def testStartupNewBlankStopsWhenSaveFails(tmp_path: Path) -> None:
         projectEntryDialogFactory=lambda: EntryDialogStub("new_blank", ""),
     )
     window._chooseProjectFile = lambda title: str(projectDir / "blank.emoproj")  # type: ignore[method-assign]
-    window.projectController.saveProjectToDirectory = (  # type: ignore[method-assign]
-        lambda *args, **kwargs: (False, None)
-    )
+    from emo_master.apps.designer.controllers import project_controller
+    def failCreate(*args, **kwargs):
+        raise OSError("disk unavailable")
+    monkeypatch.setattr(project_controller, "createProjectSkeleton", failCreate)
 
     assert window.showStartupProjectEntry() is False
     assert runtimeClient.loadCalls == 0

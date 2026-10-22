@@ -50,7 +50,7 @@ def testCompilerDiagnosticsExplainNamesAndFields(runtime, missing, target, phras
     assert 'E_' not in entries[0]['text'] and 'deviceBindings' not in entries[0]['text']
 
 
-def testInitialPublishRpcErrorLocatesNodeAndRetainsDraft(runtime, ownedDesignerWindow, tmp_path,
+def testInitialPublishRpcErrorLocatesNodeAndRetainsDraft(runtime, ownedDesignerWindow, tmp_path,  # noqa: F811
                                                         monkeypatch, messages):  # noqa: F811
     service, client = runtime
     payload = draft(service)

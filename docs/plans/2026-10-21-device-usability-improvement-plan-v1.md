@@ -2,7 +2,7 @@
 
 - 日期：2026-10-21。
 - 版本：v1.0。
-- 状态：U01—U10 已实施，C1—C6 对应软件链路及原生 Windows Qt 自动化已通过；真实桌面关键路径已走查。硬件、人工完整 UI、冻结 EXE、Linux 和跨机器验证未执行，范围见本轮记录。
+- 状态：U01—U10 主体已实施；2026-10-22 四项审核修复已完成固定源码的软件验证，C1—C6、A1—A6 及受影响回归共 432 项通过，沿用 2 项旧迁移分支排除。历史桌面走查证据保留；本轮原生 Qt 自动化不替代人工完整 UI、硬件、冻结 EXE、Linux 或跨机器验收。
 - 仓库：`jsdfhasuh/emo_master`。
 - 目标分支：`agent/runtime-workflow-architecture-v1`。
 - 实施审查基线：`756e526c1d2c657b3ff793fed7abe904d38b8d48`，编写时已核对远端分支。
@@ -10,7 +10,21 @@
 - 建议仓库路径：`docs/plans/2026-10-21-device-usability-improvement-plan-v1.md`。
 - 技术栈：Python 3.10、PySide2 5.15.2.1、Qt QWidget；沿用 Designer、Runtime、Worker 和现有三列设备管理窗口。
 
-当前实施状态（2026-10-21）：最终被测源码为 `236d6008651a6f1bde5daebc999f83065555940a`，
+当前审核修复状态（2026-10-22）：审查基线 `eefb930481eda864cf03b0725407192c41eff17a`，
+固定被测源码 `c41bf6f50e405f1f2c8a286372416d28d1b7cee7`，
+tree `2790207b374f9e321899ea0412547511f052d01f`。
+连接测试设备／候选归属、设备详情共用中文校验和焦点、定向错误清理、selector 默认值实际执行四项均已修复。
+共享严格校验与冻结绑定比较保留；草稿缺 required selector 即使有 default 仍保持待填，
+可选 default、显式值和局部发布隔离沿用原契约。第三方 default 已通过真实 Runtime、正式 spawned Job、
+设备准入到 localhost 驱动上下文的验证，未将其他未选草稿带入在线配置。
+独立 `git archive` 快照本轮实际执行 CHAIN **62 passed**、REGRESSION **370 passed, 2 deselected**，
+没有新增 skip／deselect；11 个受改 Python 文件 Ruff、7 个源码文件 mypy、协议一致性和差异检查通过。
+历史 410 项与媒体 181 项不记作本轮通过。首次失败、修正过程、原生 Qt／Runtime 证据和未执行项见
+[审核修复报告](../testing/2026-10-22-device-usability-review-fixes.md)与
+[本轮独立证据](../evidence/2026-10-22-device-usability-review-fixes/README.md)。
+本轮范围内的软件问题已闭环，不据此声称硬件、冻结产品或人工完整桌面验收完成。
+
+历史实施状态（2026-10-21，保留原结论及限制）：最终被测源码为 `236d6008651a6f1bde5daebc999f83065555940a`，
 tree 为 `ecdb1063bdd6da2f85f30cfd2fe0b4b97c514d08`。独立 `git archive` 快照实际执行
 61 项 CHAIN、349 项 REGRESSION，全部通过；只保留既有 2 项旧迁移参数化分支排除。
 23 个受改 Python 文件 Ruff、13 个源码文件 mypy、协议一致性和差异检查通过。

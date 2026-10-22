@@ -1,0 +1,14 @@
+{
+  "argv": [
+    "C:\\Users\\jsdfhasuh\\.conda\\envs\\emo_master\\python.exe",
+    "-m",
+    "ruff",
+    "check",
+    "D:\\jsdfhasuh\\documents\\my_project\\emo_master\\docs\\evidence\\2026-10-22-device-usability-review-fixes\\run_validation.py"
+  ],
+  "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+  "started": "2026-10-22T09:23:20.933190+08:00",
+  "exitCode": 0,
+  "entryPointSha256": "13b50173618f79de14c80cd4e2c3391ceeb9d0058d3d846a38c3582fc33578f7",
+  "log": "entry-point-check.log"
+}

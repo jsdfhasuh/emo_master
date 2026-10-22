@@ -1,0 +1,2 @@
+src\emo_master\apps\runtime\grpc_server\service.py:1269: note: By default the bodies of untyped functions are not checked, consider using --check-untyped-defs  [annotation-unchecked]
+Success: no issues found in 7 source files

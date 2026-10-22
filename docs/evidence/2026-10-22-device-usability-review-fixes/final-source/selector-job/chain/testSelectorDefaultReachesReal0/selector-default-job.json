@@ -1,0 +1,160 @@
+{
+  "jobId": "ae0afec5-75a6-468c-bab5-b0ef2d202eef",
+  "observed": [
+    {
+      "selectors": {
+        "channelId": "a"
+      },
+      "owner": "ae0afec5-75a6-468c-bab5-b0ef2d202eef",
+      "cycleId": "408f98a8b3bc474089a9a8b478c1e7c4",
+      "frozen": {
+        "dependencies": {
+          "operators": []
+        },
+        "devices": {
+          "bindings": {},
+          "definitions": {
+            "server": {
+              "connection": {
+                "bindAddress": "127.0.0.1",
+                "channels": [
+                  {
+                    "allowedIps": [
+                      "127.0.0.1"
+                    ],
+                    "channelId": "a",
+                    "name": "A"
+                  },
+                  {
+                    "allowedIps": [
+                      "127.0.0.2"
+                    ],
+                    "channelId": "b",
+                    "name": "B"
+                  }
+                ],
+                "port": 64294
+              },
+              "defaults": {
+                "appendNewline": false,
+                "encoding": "utf-8",
+                "timeoutMs": 5000
+              },
+              "description": "",
+              "deviceTypeId": "device.tcp.server",
+              "driverVersion": "1.0.0",
+              "enabled": true,
+              "name": "TCP 常驻服务",
+              "policies": {
+                "connect": "on_project_open",
+                "deviceWaitTimeoutMs": 5000,
+                "maxMessageBytes": 1048576,
+                "release": "on_project_close",
+                "sendTimeoutMs": 2000
+              }
+            }
+          },
+          "schemaVersion": "1.0"
+        },
+        "entryWorkflowId": "main",
+        "globalVariables": {},
+        "presentation": {
+          "dataSources": {},
+          "defaultPageId": null,
+          "navigation": {
+            "mode": "tabs"
+          },
+          "pageOrder": [],
+          "pages": {},
+          "resultScopes": {},
+          "schemaVersion": "1.0"
+        },
+        "production": {
+          "autoStart": false,
+          "cycleIntervalMs": 100,
+          "inputs": {},
+          "mode": "single"
+        },
+        "project": {
+          "createdAt": "2026-10-22T01:18:30Z",
+          "name": "project",
+          "projectId": "e91476bc-a518-4f74-a544-1dfc9116512b",
+          "revision": 2,
+          "updatedAt": "2026-10-22T01:18:30Z"
+        },
+        "resources": {
+          "items": {},
+          "parameterBindings": [],
+          "schemaVersion": "1.0",
+          "siteBindings": []
+        },
+        "runtime": {
+          "eventRetentionPerJob": 10000,
+          "gracefulStopTimeoutMs": 5000,
+          "heartbeatTimeoutMs": 5000,
+          "maxConcurrentJobs": 2
+        },
+        "schemaVersion": "2.7",
+        "workflowOrder": [
+          "main"
+        ],
+        "workflows": {
+          "main": {
+            "edges": [],
+            "inputs": {},
+            "layout": {
+              "nodePositions": {}
+            },
+            "name": "TCP acceptance",
+            "nodes": [
+              {
+                "displayName": null,
+                "inputPorts": {},
+                "kind": "workflow_input",
+                "loop": {},
+                "nodeId": "input",
+                "operatorId": null,
+                "outputPorts": {},
+                "paramSchema": {},
+                "params": {},
+                "targetWorkflowId": null
+              },
+              {
+                "deviceBindings": {
+                  "tcp": {
+                    "deviceId": "server",
+                    "selectors": {}
+                  }
+                },
+                "displayName": null,
+                "inputPorts": {},
+                "kind": "operator",
+                "loop": {},
+                "nodeId": "acquire",
+                "operatorId": "review.default_session",
+                "outputPorts": {},
+                "paramSchema": {},
+                "params": {},
+                "targetWorkflowId": null
+              },
+              {
+                "displayName": null,
+                "inputPorts": {},
+                "kind": "workflow_output",
+                "loop": {},
+                "nodeId": "output",
+                "operatorId": null,
+                "outputPorts": {},
+                "paramSchema": {},
+                "params": {},
+                "targetWorkflowId": null
+              }
+            ],
+            "outputs": {}
+          }
+        }
+      }
+    }
+  ],
+  "mismatchCode": "E_DEVICE_BINDING"
+}

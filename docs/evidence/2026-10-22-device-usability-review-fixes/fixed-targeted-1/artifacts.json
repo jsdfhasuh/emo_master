@@ -1,0 +1,17 @@
+[
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-zgmwa55a\\counterexamples\\testSelectorDefaultReachesReal0\\closure.emoproj",
+    "retained": "selector-job\\counterexamples\\testSelectorDefaultReachesReal0\\closure.emoproj",
+    "sha256": "1f3897dda3100312d8dc15161bd20c063e5d620f6a09ca2a6d003acb4243b3a6"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-zgmwa55a\\counterexamples\\testSelectorDefaultReachesReal0\\selector-default-job.json",
+    "retained": "selector-job\\counterexamples\\testSelectorDefaultReachesReal0\\selector-default-job.json",
+    "sha256": "7754f0d7c9ad752a556c251ae2f1a41f4e041fce5c6ec8aec568f96b43b7f2d2"
+  },
+  {
+    "source": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-f-zgmwa55a\\counterexamples\\testSelectorDefaultReachesReal0\\selector_default_plugin\\manifest.json",
+    "retained": "selector-job\\counterexamples\\testSelectorDefaultReachesReal0\\selector_default_plugin\\manifest.json",
+    "sha256": "e17dac41ad965884afcc12a26764b1cfa399f660a75e7b0defeb7ec76137f22b"
+  }
+]

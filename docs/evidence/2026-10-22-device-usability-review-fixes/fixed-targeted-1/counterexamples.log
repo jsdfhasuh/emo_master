@@ -1,0 +1,76 @@
+....................                                                     [100%]
+=================================== PASSES ====================================
+__________ testDetailConnectionValidationIsChineseFocusedAndReadOnly __________
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 322, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1124, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 39, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 322, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1124, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 39, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+_____________ testDetailChannelFeedbackClearsOnlyEditedErrorCell ______________
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 322, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1124, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 39, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 322, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1124, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 39, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+=========================== short test summary info ===========================
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-device]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-port]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-device]
+PASSED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-port]
+PASSED tests/designer/test_device_workspace_usability.py::testDetailConnectionValidationIsChineseFocusedAndReadOnly
+PASSED tests/designer/test_device_workspace_usability.py::testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState
+PASSED tests/designer/test_device_workspace_usability.py::testDetailChannelFeedbackClearsOnlyEditedErrorCell
+PASSED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[False]
+PASSED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[True]
+PASSED tests/designer/test_device_definition_feedback.py::testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit0-expectedDraft0-expectedPlan0]
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[False-explicit1-expectedDraft1-expectedPlan1]
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit2-expectedDraft2-expectedPlan2]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[gone-explicit0]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[42-explicit1]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit2]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit3]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit4]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[None-explicit5]
+PASSED tests/runtime/test_tcp_device_closure.py::testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission
+20 passed in 7.24s

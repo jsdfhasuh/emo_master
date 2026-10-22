@@ -1,0 +1,801 @@
+FFFFFFEFEFFFFF..F.FFFF                                                   [100%]
+=================================== ERRORS ====================================
+_ ERROR at teardown of testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState _
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x299a12f39e0) at 0x00000299A1AEF840>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A71DF9A0>
+
+    @pytest.fixture
+    def ownedDesignerWindow(retainedQtApplication, monkeypatch):
+        """Explicit native ownership for e2e tests which create Designer windows."""
+        from PySide2.QtWidgets import QMessageBox
+        from tests.qt_widget_owner import OwnedDesignerWindows
+>       with OwnedDesignerWindows(retainedQtApplication) as owner:
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\conftest.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A71DC070>
+
+    def retire(self):
+        from PySide2.QtCore import QCoreApplication, QEvent
+        from shiboken2 import isValid
+        self._assertGuiThread()
+        errors = []
+        accepted = []
+        # close() can pump Qt events. Close every root before deleting any root.
+        for index, (window, _scene, _bubble) in enumerate(self._owned):
+            if not isValid(window):
+                accepted.append(True)
+                continue
+            try:
+                closed = window.close()
+                accepted.append(bool(closed))
+                if not closed:
+                    errors.append(f'window {index} refused close')
+            except Exception as error:
+                accepted.append(False)
+                errors.append(f'window {index} close failed: {error}')
+    
+        safe = []
+        retained = []
+        for index, (owned, closed) in enumerate(zip(self._owned, accepted)):
+            window, _scene, _bubble = owned
+            ready = closed
+            if isValid(window):
+                if not window.runtimeController._closed:
+                    errors.append(f'window {index} runtime controller is not closed')
+                    ready = False
+                provider = window.operatorIconProvider
+                workers = [('icon', provider.worker if provider is not None else None),
+                           ('catalog', window.operatorCatalogWorker)]
+                for name, worker in workers:
+                    if worker is not None and worker.isRunning():
+                        errors.append(f'window {index} {name} workers are still running')
+                        ready = False
+            (safe if ready else retained).append(owned)
+    
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                window.deleteLater()
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                QCoreApplication.sendPostedEvents(window, QEvent.DeferredDelete)
+        for index, owned in enumerate(safe):
+            remaining = [name for name, obj in zip(('window', 'scene', 'bubble'), owned)
+                         if isValid(obj)]
+            if remaining:
+                errors.append(f'retired window {index} still has native objects: {remaining}')
+                retained.append(owned)
+        self._owned = retained
+        if errors:
+>           raise AssertionError('; '.join(errors))
+E           AssertionError: window 0 refused close; window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+
+tests\qt_widget_owner.py:102: AssertionError
+___ ERROR at teardown of testDetailChannelFeedbackClearsOnlyEditedErrorCell ___
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x299a12f39e0) at 0x00000299A1AEF840>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A7190C70>
+
+    @pytest.fixture
+    def ownedDesignerWindow(retainedQtApplication, monkeypatch):
+        """Explicit native ownership for e2e tests which create Designer windows."""
+        from PySide2.QtWidgets import QMessageBox
+        from tests.qt_widget_owner import OwnedDesignerWindows
+>       with OwnedDesignerWindows(retainedQtApplication) as owner:
+
+C:\Users\jsdfhasuh\my_scripts\emo_master\tests\conftest.py:43: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+tests\qt_widget_owner.py:48: in __exit__
+    self.retire()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+self = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A7190BE0>
+
+    def retire(self):
+        from PySide2.QtCore import QCoreApplication, QEvent
+        from shiboken2 import isValid
+        self._assertGuiThread()
+        errors = []
+        accepted = []
+        # close() can pump Qt events. Close every root before deleting any root.
+        for index, (window, _scene, _bubble) in enumerate(self._owned):
+            if not isValid(window):
+                accepted.append(True)
+                continue
+            try:
+                closed = window.close()
+                accepted.append(bool(closed))
+                if not closed:
+                    errors.append(f'window {index} refused close')
+            except Exception as error:
+                accepted.append(False)
+                errors.append(f'window {index} close failed: {error}')
+    
+        safe = []
+        retained = []
+        for index, (owned, closed) in enumerate(zip(self._owned, accepted)):
+            window, _scene, _bubble = owned
+            ready = closed
+            if isValid(window):
+                if not window.runtimeController._closed:
+                    errors.append(f'window {index} runtime controller is not closed')
+                    ready = False
+                provider = window.operatorIconProvider
+                workers = [('icon', provider.worker if provider is not None else None),
+                           ('catalog', window.operatorCatalogWorker)]
+                for name, worker in workers:
+                    if worker is not None and worker.isRunning():
+                        errors.append(f'window {index} {name} workers are still running')
+                        ready = False
+            (safe if ready else retained).append(owned)
+    
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                window.deleteLater()
+        for window, _scene, _bubble in safe:
+            if isValid(window):
+                QCoreApplication.sendPostedEvents(window, QEvent.DeferredDelete)
+        for index, owned in enumerate(safe):
+            remaining = [name for name, obj in zip(('window', 'scene', 'bubble'), owned)
+                         if isValid(obj)]
+            if remaining:
+                errors.append(f'retired window {index} still has native objects: {remaining}')
+                retained.append(owned)
+        self._owned = retained
+        if errors:
+>           raise AssertionError('; '.join(errors))
+E           AssertionError: window 0 refused close; window 0 runtime controller is not closed; window 0 icon workers are still running; window 0 catalog workers are still running
+
+tests\qt_widget_owner.py:102: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+================================== FAILURES ===================================
+_______ testConnectionReceiptBelongsToDeviceAndCandidate[False-device] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A1AEFDF0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testConnectionReceiptBelongsTo0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A1AEF2E0>
+changed = 'device', failed = False
+
+    @pytest.mark.parametrize('changed', ['device', 'port'])
+    @pytest.mark.parametrize('failed', [False, True])
+    def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_path, monkeypatch, changed, failed):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        if changed == 'device':
+            other = deepcopy(d.original)
+            other['connection']['port'] = 10002
+            other['name'] = 'B'
+            d.catalog().put(other, deviceId='other')
+            d.refresh()
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'camera'), 0)
+        future = Future()
+        monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        d.testConnection()
+        assert d.pending is future and d.timer.isActive()
+        if changed == 'device':
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'other'), 0)
+            assert d.selectedId == 'other'
+        else:
+            d.forms['connection'].fields._controls['port'].setText('10001')
+        d.status.setText('当前输入待测试')
+        d.status.setToolTip('当前输入')
+        if failed:
+            future.set_exception(ValueError('OLD-ENDPOINT-FAILURE'))
+        else:
+            future.set_result(dict(message='OLD-ENDPOINT-SUCCESS'))
+        d._metadataReady()
+        assert d.pending is None and not d.timer.isActive()
+        assert d.buttons['refresh'].isEnabled()
+>       assert d.status.text() == '当前输入待测试'
+E       AssertionError: assert 'OLD-ENDPOINT...；工程草稿和在线配置未改变' == '当前输入待测试'
+E         
+E         - 当前输入待测试
+E         + OLD-ENDPOINT-SUCCESS；工程草稿和在线配置未改变
+
+tests\designer\test_device_workspace_usability.py:206: AssertionError
+________ testConnectionReceiptBelongsToDeviceAndCandidate[False-port] _________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A5EF6DD0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testConnectionReceiptBelongsTo1')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A5EF4850>
+changed = 'port', failed = False
+
+    @pytest.mark.parametrize('changed', ['device', 'port'])
+    @pytest.mark.parametrize('failed', [False, True])
+    def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_path, monkeypatch, changed, failed):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        if changed == 'device':
+            other = deepcopy(d.original)
+            other['connection']['port'] = 10002
+            other['name'] = 'B'
+            d.catalog().put(other, deviceId='other')
+            d.refresh()
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'camera'), 0)
+        future = Future()
+        monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        d.testConnection()
+        assert d.pending is future and d.timer.isActive()
+        if changed == 'device':
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'other'), 0)
+            assert d.selectedId == 'other'
+        else:
+>           d.forms['connection'].fields._controls['port'].setText('10001')
+E           AttributeError: 'PySide2.QtWidgets.QSpinBox' object has no attribute 'setText'
+
+tests\designer\test_device_workspace_usability.py:196: AttributeError
+________ testConnectionReceiptBelongsToDeviceAndCandidate[True-device] ________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A5EF72B0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testConnectionReceiptBelongsTo2')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A1AEF040>
+changed = 'device', failed = True
+
+    @pytest.mark.parametrize('changed', ['device', 'port'])
+    @pytest.mark.parametrize('failed', [False, True])
+    def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_path, monkeypatch, changed, failed):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        if changed == 'device':
+            other = deepcopy(d.original)
+            other['connection']['port'] = 10002
+            other['name'] = 'B'
+            d.catalog().put(other, deviceId='other')
+            d.refresh()
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'camera'), 0)
+        future = Future()
+        monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        d.testConnection()
+        assert d.pending is future and d.timer.isActive()
+        if changed == 'device':
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'other'), 0)
+            assert d.selectedId == 'other'
+        else:
+            d.forms['connection'].fields._controls['port'].setText('10001')
+        d.status.setText('当前输入待测试')
+        d.status.setToolTip('当前输入')
+        if failed:
+            future.set_exception(ValueError('OLD-ENDPOINT-FAILURE'))
+        else:
+            future.set_result(dict(message='OLD-ENDPOINT-SUCCESS'))
+        d._metadataReady()
+        assert d.pending is None and not d.timer.isActive()
+        assert d.buttons['refresh'].isEnabled()
+>       assert d.status.text() == '当前输入待测试'
+E       AssertionError: assert '设备操作未完成，请查看详情' == '当前输入待测试'
+E         
+E         - 当前输入待测试
+E         + 设备操作未完成，请查看详情
+
+tests\designer\test_device_workspace_usability.py:206: AssertionError
+_________ testConnectionReceiptBelongsToDeviceAndCandidate[True-port] _________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A5EF68C0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testConnectionReceiptBelongsTo3')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A5F6B8E0>
+changed = 'port', failed = True
+
+    @pytest.mark.parametrize('changed', ['device', 'port'])
+    @pytest.mark.parametrize('failed', [False, True])
+    def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_path, monkeypatch, changed, failed):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        if changed == 'device':
+            other = deepcopy(d.original)
+            other['connection']['port'] = 10002
+            other['name'] = 'B'
+            d.catalog().put(other, deviceId='other')
+            d.refresh()
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'camera'), 0)
+        future = Future()
+        monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        d.testConnection()
+        assert d.pending is future and d.timer.isActive()
+        if changed == 'device':
+            d.table.setCurrentCell(next(i for i in range(d.table.rowCount())
+                if d.table.item(i, 0).data(Qt.UserRole) == 'other'), 0)
+            assert d.selectedId == 'other'
+        else:
+>           d.forms['connection'].fields._controls['port'].setText('10001')
+E           AttributeError: 'PySide2.QtWidgets.QSpinBox' object has no attribute 'setText'
+
+tests\designer\test_device_workspace_usability.py:196: AttributeError
+__________ testDetailConnectionValidationIsChineseFocusedAndReadOnly __________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A5F1CE20>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testDetailConnectionValidation0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A71A9330>
+
+    def testDetailConnectionValidationIsChineseFocusedAndReadOnly(ownedDesignerWindow, tmp_path, monkeypatch):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        before = d.c.session.payload()
+        source = tmp_path / 'device.emoproj'
+        sourceBytes = source.read_bytes()
+        calls = []
+        monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: calls.append('RPC'))
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: calls.append('confirm') or QMessageBox.Yes)
+        form = d.forms['connection']
+        form.channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+        candidate = deepcopy(d._formValue())
+        d.tabs.setCurrentIndex(2)
+        d.activateWindow()
+        waitUntil(d.isActiveWindow)
+        d.testConnection()
+        QApplication.processEvents()
+        try:
+>           assert d.status.text() == '通道 1：请填写至少一个允许接入的客户端 IPv4'
+E           AssertionError: assert 'connection.c...ze constraint' == '通道 1：请填写至少一个允许接入的客户端 IPv4'
+E             
+E             - 通道 1：请填写至少一个允许接入的客户端 IPv4
+E             + connection.channels.0.allowedIps: size constraint
+
+tests\designer\test_device_workspace_usability.py:228: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+_______ testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState _______
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A71DC070>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testDetailFieldFeedbackClearsO0')
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+
+    def testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState(ownedDesignerWindow, tmp_path,
+            definition, declaration):  # noqa: F811
+        d = workspace(ownedDesignerWindow, tmp_path, definition, declaration)
+        gain = d.forms['defaults']._controls['gain']
+        gain.setText('-')
+        d.apply()
+        message = d.status.text()
+        assert message and gain.accessibleDescription()
+        d.name.setText('仅修改其他字段')
+        assert d.status.text() == message
+        response = Future()
+        response.set_exception(ValueError('background unavailable'))
+        d.pending, d.pendingKind, d.pendingScope = response, 'state', d._scope()
+        d.backgroundState = True
+        d._metadataReady()
+>       assert d.status.text() == message
+E       AssertionError: assert '设备信息读取失败：bac...d unavailable' == 'gain：请输入有效数值'
+E         
+E         - gain：请输入有效数值
+E         + 设备信息读取失败：background unavailable
+
+tests\designer\test_device_workspace_usability.py:254: AssertionError
+_____________ testDetailChannelFeedbackClearsOnlyEditedErrorCell ______________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A7190BE0>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testDetailChannelFeedbackClear0')
+
+    def testDetailChannelFeedbackClearsOnlyEditedErrorCell(ownedDesignerWindow, tmp_path):
+        d = tcpWorkspace(ownedDesignerWindow, tmp_path)
+        form = d.forms['connection']
+        form.channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+        d.apply()
+        message = d.status.text()
+        table = form.channels.table
+        assert '通道 1' in message and table.accessibleDescription()
+        table.item(0, 1).setText('只改显示名')
+>       assert d.status.text() == message and table.accessibleDescription() == message
+E       AssertionError: assert ('\u901a\u9053...37\u7aef IPv4' == '\u901a\u9053...37\u7aef IPv4'
+E         
+E           通道 1：请填写至少一个允许接入的客户端 IPv4 and '' == '通道 1：请填写至少一个允许接入的客户端 IPv4'
+E         
+E         - 通道 1：请填写至少一个允许接入的客户端 IPv4)
+
+tests\designer\test_device_workspace_usability.py:269: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in <listcomp>
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+AttributeError: 'NoneType' object has no attribute 'text'
+Traceback (most recent call last):
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 314, in _inputStatus
+    changed = bool(self.original and self._formValue() != self.formBaseline)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\device_workspace.py", line 1094, in _formValue
+    value[key] = editor.getValues()
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\designer\ui\tcp_device_form.py", line 35, in getValues
+    return dict(self.fields.getValues(), channels=self.channels.value())
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 107, in value
+    return [dict(channelId=self.table.item(row, 0).text(), name=self.table.item(row, 1).text().strip(),
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\ui\communication_panel.py", line 108, in <listcomp>
+    allowedIps=[ip for ip in re.split(r'[,，;；\s]+', self.table.item(row, 2).text().strip()) if ip])
+AttributeError: 'NoneType' object has no attribute 'text'
+___________ testCreationConnectionReceiptBelongsToCandidate[False] ____________
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x299a12f39e0) at 0x00000299A1AEF840>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A7193340>
+failed = False
+
+    @pytest.mark.parametrize('failed', [False, True])
+    def testCreationConnectionReceiptBelongsToCandidate(retainedQtApplication, monkeypatch, failed):
+        path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+        metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+        initial = tcpDefinition(metadata, port=10000, channels=[])
+        initial['enabled'] = False
+        dialog = module.DeviceDefinitionDialog(metadata, initial=initial, client=SimpleNamespace())
+        future = Future()
+        monkeypatch.setattr(dialog.setupPool, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        dialog.show()
+        try:
+            dialog.testConnection()
+            assert dialog.setupPending is future
+>           dialog.forms['connection'].fields._controls['port'].setText('10001')
+E           AttributeError: 'PySide2.QtWidgets.QSpinBox' object has no attribute 'setText'
+
+tests\designer\test_device_definition_feedback.py:306: AttributeError
+____________ testCreationConnectionReceiptBelongsToCandidate[True] ____________
+
+retainedQtApplication = <PySide2.QtWidgets.QApplication(0x299a12f39e0) at 0x00000299A1AEF840>
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A7EF3B80>
+failed = True
+
+    @pytest.mark.parametrize('failed', [False, True])
+    def testCreationConnectionReceiptBelongsToCandidate(retainedQtApplication, monkeypatch, failed):
+        path = Path(__file__).resolve().parents[2]/'src/emo_master/plugins/builtins/tcp_session/device_types/server.json'
+        metadata = DeviceType.model_validate_json(path.read_text(encoding='utf-8'))
+        initial = tcpDefinition(metadata, port=10000, channels=[])
+        initial['enabled'] = False
+        dialog = module.DeviceDefinitionDialog(metadata, initial=initial, client=SimpleNamespace())
+        future = Future()
+        monkeypatch.setattr(dialog.setupPool, 'submit', lambda *_args, **_kw: future)
+        monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+        dialog.show()
+        try:
+            dialog.testConnection()
+            assert dialog.setupPending is future
+>           dialog.forms['connection'].fields._controls['port'].setText('10001')
+E           AttributeError: 'PySide2.QtWidgets.QSpinBox' object has no attribute 'setText'
+
+tests\designer\test_device_definition_feedback.py:306: AttributeError
+___________ testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected ___________
+
+ownedDesignerWindow = <tests.qt_widget_owner.OwnedDesignerWindows object at 0x00000299A7192980>
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testMissingSlotFeedbackClearsO0')
+declaration = DeviceType(schemaVersion='1.1', driverApiVersion='1.1', deviceTypeId='device.example.simulated_camera', version='1.0.0...tors={}, managementActions=[], actionSchemas={}, driverEntry=None, executionLocation='io_thread', cancellableWait=None)
+definition = DeviceDefinition(name='Camera A', deviceTypeId='device.example.simulated_camera', driverVersion='1.0.0', enabled=True,...ce': 'offline'}, defaults={'exposureMode': 'manual', 'exposureUs': 8000.0, 'gain': 0.0, 'enabled': False}, policies={})
+
+    def testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected(ownedDesignerWindow, tmp_path,
+            declaration, definition):  # noqa: F811
+        window, requirements = windowFor(ownedDesignerWindow, tmp_path, definition, declaration)
+        requirements = dict(requirements['vision.io.huaray_camera'])
+        requirements['other'] = deepcopy(requirements['camera'])
+        wizard = module.DeviceNodeDialog(window.pageCoordinator,
+            dict(nodeId='new', operatorId='vision.io.huaray_camera', params={}), requirements, window)
+        wizard.show()
+        try:
+            waitUntil(lambda: bool(wizard.types))
+            wizard.accept()
+            message = '请选择设备：camera'
+>           assert wizard.error.text() == message
+E           AssertionError: assert '设备类型尚未就绪' == '请选择设备：camera'
+E             
+E             - 请选择设备：camera
+E             + 设备类型尚未就绪
+
+tests\designer\test_device_definition_feedback.py:334: AssertionError
+_ testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit0-expectedDraft0-expectedPlan0] _
+
+required = True, explicit = {}, expectedDraft = {}
+expectedPlan = {'channelId': 'a'}
+
+    @pytest.mark.parametrize('required,explicit,expectedDraft,expectedPlan', [
+        (True, {}, {}, {'channelId': 'a'}),
+        (False, {}, {'channelId': 'a'}, {'channelId': 'a'}),
+        (True, {'channelId': 'b'}, {'channelId': 'b'}, {'channelId': 'b'}),
+    ])
+    def testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan(required, explicit, expectedDraft, expectedPlan):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        payload, declaration, manifest = selectorProject(required=required, explicit=explicit)
+        original = deepcopy(payload)
+        types = {declaration.deviceTypeId: declaration}
+        compiled = WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes=types).compile(payload)
+        plan = next(n for n in compiled.workflows['main'].nodes if n.nodeId == 'acquire').devicePlans['tcp']
+>       assert dict(plan['selectors']) == expectedPlan
+E       AssertionError: assert {} == {'channelId': 'a'}
+E         
+E         Right contains 1 more item:
+E         {'channelId': 'a'}
+E         Use -v to get more diff
+
+tests\designer\test_device_usability_drafts.py:110: AssertionError
+_ testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[False-explicit1-expectedDraft1-expectedPlan1] _
+
+required = False, explicit = {}, expectedDraft = {'channelId': 'a'}
+expectedPlan = {'channelId': 'a'}
+
+    @pytest.mark.parametrize('required,explicit,expectedDraft,expectedPlan', [
+        (True, {}, {}, {'channelId': 'a'}),
+        (False, {}, {'channelId': 'a'}, {'channelId': 'a'}),
+        (True, {'channelId': 'b'}, {'channelId': 'b'}, {'channelId': 'b'}),
+    ])
+    def testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan(required, explicit, expectedDraft, expectedPlan):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        payload, declaration, manifest = selectorProject(required=required, explicit=explicit)
+        original = deepcopy(payload)
+        types = {declaration.deviceTypeId: declaration}
+        compiled = WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes=types).compile(payload)
+        plan = next(n for n in compiled.workflows['main'].nodes if n.nodeId == 'acquire').devicePlans['tcp']
+>       assert dict(plan['selectors']) == expectedPlan
+E       AssertionError: assert {} == {'channelId': 'a'}
+E         
+E         Right contains 1 more item:
+E         {'channelId': 'a'}
+E         Use -v to get more diff
+
+tests\designer\test_device_usability_drafts.py:110: AssertionError
+___________ testInvalidSelectorsRetainStrictLocation[42-explicit1] ____________
+
+default = 42, explicit = {}
+
+    @pytest.mark.parametrize('default,explicit', [('gone', {}), (42, {}),
+        ('a', {'channelId': 'gone'}), ('a', {'channelId': 42}), ('a', {'undeclared': 'a'}), (None, {})])
+    def testInvalidSelectorsRetainStrictLocation(default, explicit):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        from emo_master.core.workflow.errors import WorkflowCompileError
+        payload, declaration, manifest = selectorProject(default=default, explicit=explicit)
+        original = deepcopy(payload)
+        with pytest.raises(WorkflowCompileError) as caught:
+            WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes={declaration.deviceTypeId: declaration}).compile(payload)
+        issue = caught.value.issues[0]
+>       assert issue.code == 'E_DEVICE_BINDING' and issue.workflowId == 'main' and issue.nodeId == 'acquire'
+E       AssertionError: assert ('E_PARAM_INVALID' == 'E_DEVICE_BINDING'
+E         
+E         - E_DEVICE_BINDING
+E         + E_PARAM_INVALID)
+
+tests\designer\test_device_usability_drafts.py:131: AssertionError
+____________ testInvalidSelectorsRetainStrictLocation[a-explicit3] ____________
+
+default = 'a', explicit = {'channelId': 42}
+
+    @pytest.mark.parametrize('default,explicit', [('gone', {}), (42, {}),
+        ('a', {'channelId': 'gone'}), ('a', {'channelId': 42}), ('a', {'undeclared': 'a'}), (None, {})])
+    def testInvalidSelectorsRetainStrictLocation(default, explicit):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        from emo_master.core.workflow.errors import WorkflowCompileError
+        payload, declaration, manifest = selectorProject(default=default, explicit=explicit)
+        original = deepcopy(payload)
+        with pytest.raises(WorkflowCompileError) as caught:
+            WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes={declaration.deviceTypeId: declaration}).compile(payload)
+        issue = caught.value.issues[0]
+>       assert issue.code == 'E_DEVICE_BINDING' and issue.workflowId == 'main' and issue.nodeId == 'acquire'
+E       AssertionError: assert ('E_PARAM_INVALID' == 'E_DEVICE_BINDING'
+E         
+E         - E_DEVICE_BINDING
+E         + E_PARAM_INVALID)
+
+tests\designer\test_device_usability_drafts.py:131: AssertionError
+____________ testInvalidSelectorsRetainStrictLocation[a-explicit4] ____________
+
+default = 'a', explicit = {'undeclared': 'a'}
+
+    @pytest.mark.parametrize('default,explicit', [('gone', {}), (42, {}),
+        ('a', {'channelId': 'gone'}), ('a', {'channelId': 42}), ('a', {'undeclared': 'a'}), (None, {})])
+    def testInvalidSelectorsRetainStrictLocation(default, explicit):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        from emo_master.core.workflow.errors import WorkflowCompileError
+        payload, declaration, manifest = selectorProject(default=default, explicit=explicit)
+        original = deepcopy(payload)
+        with pytest.raises(WorkflowCompileError) as caught:
+            WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes={declaration.deviceTypeId: declaration}).compile(payload)
+        issue = caught.value.issues[0]
+>       assert issue.code == 'E_DEVICE_BINDING' and issue.workflowId == 'main' and issue.nodeId == 'acquire'
+E       AssertionError: assert ('E_PARAM_INVALID' == 'E_DEVICE_BINDING'
+E         
+E         - E_DEVICE_BINDING
+E         + E_PARAM_INVALID)
+
+tests\designer\test_device_usability_drafts.py:131: AssertionError
+__________ testInvalidSelectorsRetainStrictLocation[None-explicit5] ___________
+
+default = None, explicit = {}
+
+    @pytest.mark.parametrize('default,explicit', [('gone', {}), (42, {}),
+        ('a', {'channelId': 'gone'}), ('a', {'channelId': 42}), ('a', {'undeclared': 'a'}), (None, {})])
+    def testInvalidSelectorsRetainStrictLocation(default, explicit):
+        from emo_master.core.workflow.compiler import WorkflowCompiler
+        from emo_master.core.workflow.errors import WorkflowCompileError
+        payload, declaration, manifest = selectorProject(default=default, explicit=explicit)
+        original = deepcopy(payload)
+        with pytest.raises(WorkflowCompileError) as caught:
+            WorkflowCompiler({manifest['operatorId']: manifest}, deviceTypes={declaration.deviceTypeId: declaration}).compile(payload)
+        issue = caught.value.issues[0]
+>       assert issue.code == 'E_DEVICE_BINDING' and issue.workflowId == 'main' and issue.nodeId == 'acquire'
+E       AssertionError: assert ('E_PARAM_INVALID' == 'E_DEVICE_BINDING'
+E         
+E         - E_DEVICE_BINDING
+E         + E_PARAM_INVALID)
+
+tests\designer\test_device_usability_drafts.py:131: AssertionError
+_________ testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission __________
+
+tmp_path = WindowsPath('C:/Users/jsdfhasuh/AppData/Local/Temp/emo-f-l7pvowvn/counterexamples/testSelectorDefaultReachesReal0')
+monkeypatch = <_pytest.monkeypatch.MonkeyPatch object at 0x00000299A7192B00>
+
+    def testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission(tmp_path, monkeypatch):
+        from tests.runtime.test_tcp_device_integration import freePort, run
+        from emo_master.apps.runtime.devices.executor import DeviceError
+        monkeypatch.syspath_prepend(str(tmp_path))
+        root = tmp_path/'selector_default_plugin'
+        root.mkdir()
+        (root/'__init__.py').write_text('''
+    from dataclasses import replace
+    from emo_master.plugins.builtins._managed_tcp import TcpSessionOperator
+    class DefaultSession(TcpSessionOperator):
+        meta = replace(TcpSessionOperator.meta, operatorId='review.default_session')
+    ''', encoding='utf-8')
+        manifest = json.loads((BUILTINS/'tcp_session/manifest.json').read_text(encoding='utf-8'))
+        manifest.update(operatorId='review.default_session', entry='selector_default_plugin:DefaultSession')
+        manifest['deviceRequirements']['tcp']['selectorSchema']['properties']['channelId']['default'] = 'a'
+        (root/'manifest.json').write_text(json.dumps(manifest), encoding='utf-8')
+        service = RuntimeService(dbPath=tmp_path/'runtime/runtime.db', workspaceRoot=tmp_path/'runtime/jobs',
+            pluginRootPaths=(str(BUILTINS), str(root)))
+        client = RuntimeClient(runtimeService=service)
+        observed = []
+        try:
+            payload = WorkflowStore().toPayload()
+            value = definition(service.pluginScanResult.deviceTypes['device.tcp.server'], port=freePort(), channels=[
+                dict(channelId='a', name='A', allowedIps=['127.0.0.1']),
+                dict(channelId='b', name='B', allowedIps=['127.0.0.2'])])
+            value['policies']['connect'] = 'on_project_open'
+            payload['devices']['definitions']['server'] = value
+            payload['workflows']['main'] = graph([node('acquire', manifest['operatorId'], 'server')])
+            original = deepcopy(payload)
+            load(service, payload, tmp_path)
+            driver = service.deviceManager.drivers['server']
+            execute = driver.execute
+    
+            def record(*args, **kwargs):
+                context = kwargs['operationContext']
+                observed.append(dict(selectors=dict(context.selectors), owner=context.ownerId,
+                    cycleId=context.cycleId, frozen=service.projectConfiguration.cyclePayload(context.ownerId, context.cycleId)))
+                return execute(*args, **kwargs)
+    
+            monkeypatch.setattr(driver, 'execute', record)
+            with socket.create_connection(('127.0.0.1', value['connection']['port']), timeout=5):
+>               jobId = run(service, client, 'main')
+
+tests\runtime\test_tcp_device_closure.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+service = <emo_master.apps.runtime.grpc_server.service.RuntimeService object at 0x00000299A71DE470>
+client = <emo_master.apps.designer.services.runtime_client.RuntimeClient object at 0x00000299A71DC4F0>
+workflow = 'main', inputs = None
+
+    def run(service, client, workflow, inputs=None):
+        reply = client.startJob(service.loadedProjectId, workflow, inputs=inputs or {})
+        assert reply.ok, reply
+        job = reply.job_id
+        result = waitForTerminal(service, job, timeoutSeconds=30)
+>       assert result.status == 'COMPLETED', result
+E       AssertionError: ok: true
+E         status: "FAILED"
+E         error_code: "E_TCP_IPC"
+E         message: "\'channelId\'"
+E         project_id: "dbfea0a5-525f-4785-bcbe-2c2cec...28
+E         accepted_at_ms: 1792631280626
+E         started_at_ms: 1792631281623
+E         ended_at_ms: 1792631281631
+E         legacy_snapshot_policy: "ALL"
+E         
+E       assert 'FAILED' == 'COMPLETED'
+E         
+E         - COMPLETED
+E         + FAILED
+
+tests\runtime\test_tcp_device_integration.py:64: AssertionError
+---------------------------- Captured stderr call -----------------------------
+Process emo-master-job-db39979d-0f66-4433-b2ee-3097840e6820:
+Traceback (most recent call last):
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 314, in _bootstrap
+    self.run()
+  File "C:\Users\jsdfhasuh\.conda\envs\emo_master\lib\multiprocessing\process.py", line 108, in run
+    self._target(*self._args, **self._kwargs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\project_config\resource_lease.py", line 80, in runWithResourceLease
+    target(*args)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 140, in runJobProcess
+    runCycle(context, inputs)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\jobs\worker_main.py", line 118, in runCycle
+    return runner.run(spec.workflowId, cycleInputs, context, token)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 118, in run
+    result = self._runWorkflow(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 216, in _runWorkflow
+    nodeOutputs, nodeMetrics, nodeDiagnostics = self._runNode(
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\workflow\runner.py", line 349, in _runNode
+    return self.operatorExecutor.invoke(node, nodeInput, context, cancellation, boundValues)
+  File "D:\jsdfhasuh\documents\my_project\emo_master\src\emo_master\apps\runtime\execution\operator_executor.py", line 222, in invoke
+    raise WorkflowExecutionError(
+emo_master.apps.runtime.execution.errors.WorkflowExecutionError: 'channelId'
+=================================== PASSES ====================================
+=========================== short test summary info ===========================
+PASSED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit2-expectedDraft2-expectedPlan2]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[gone-explicit0]
+PASSED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit2]
+ERROR tests/designer/test_device_workspace_usability.py::testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState
+ERROR tests/designer/test_device_workspace_usability.py::testDetailChannelFeedbackClearsOnlyEditedErrorCell
+FAILED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-device]
+FAILED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[False-port]
+FAILED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-device]
+FAILED tests/designer/test_device_workspace_usability.py::testConnectionReceiptBelongsToDeviceAndCandidate[True-port]
+FAILED tests/designer/test_device_workspace_usability.py::testDetailConnectionValidationIsChineseFocusedAndReadOnly
+FAILED tests/designer/test_device_workspace_usability.py::testDetailFieldFeedbackClearsOnlyCorrectedInputAndSurvivesState
+FAILED tests/designer/test_device_workspace_usability.py::testDetailChannelFeedbackClearsOnlyEditedErrorCell
+FAILED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[False]
+FAILED tests/designer/test_device_definition_feedback.py::testCreationConnectionReceiptBelongsToCandidate[True]
+FAILED tests/designer/test_device_definition_feedback.py::testMissingSlotFeedbackClearsOnlyWhenThatSlotIsSelected
+FAILED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[True-explicit0-expectedDraft0-expectedPlan0]
+FAILED tests/designer/test_device_usability_drafts.py::testSelectorDefaultsAgreeBetweenDraftAndCompiledPlan[False-explicit1-expectedDraft1-expectedPlan1]
+FAILED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[42-explicit1]
+FAILED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit3]
+FAILED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[a-explicit4]
+FAILED tests/designer/test_device_usability_drafts.py::testInvalidSelectorsRetainStrictLocation[None-explicit5]
+FAILED tests/runtime/test_tcp_device_closure.py::testSelectorDefaultReachesRealSpawnedJobAndFrozenAdmission
+17 failed, 3 passed, 2 errors in 7.75s

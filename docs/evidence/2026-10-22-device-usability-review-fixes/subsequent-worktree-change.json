@@ -1,0 +1,7 @@
+{
+  "discoveredAt": "2026-10-22T09:24:47.517923+08:00",
+  "path": "tests/designer/test_project_configuration_ui.py",
+  "sha256": "c8c6a826e11d31d4b76d488332203d3fc86b361a76e4208dba205c535a7bfc0c",
+  "excludedFromDelivery": true,
+  "reason": "New concurrent worktree change; not edited by this task. Fixed-source archive and delivery commit comparison remain pinned to c41bf6f."
+}

@@ -36,6 +36,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     heartbeatEventsStopped = threading.Event()
     heartbeatEmissionLock = threading.Lock()
     runner = None
+    token = CancellationToken(cancelEvent)
 
     def publishTerminal(event):
         # Once terminal is enqueued, no heartbeat can follow it or race queue
@@ -50,6 +51,9 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                                     captureDiagnostics=list(getattr(runner, "captureDiagnostics", ())))
         _put(eventQueue, event)
 
+    def errorDetails(error):
+        return {key: getattr(error, key) for key in ("outcome", "diagnostics") if hasattr(error, key)}
+
     heartbeatThread = threading.Thread(
         target=heartbeatLoop,
         args=(spec.jobId, spec.projectId, spec.workflowId, eventQueue, heartbeatStop,
@@ -61,6 +65,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
     try:
         _put(eventQueue, {"eventType": "job.process.started", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid()})
         heartbeatThread.start()
+        token.raise_if_cancelled()
         snapshot = json.loads(Path(spec.projectSnapshotPath).read_text(encoding="utf-8"))
         if not isinstance(snapshot, dict):
             raise RuntimeError("project snapshot must be an object")
@@ -74,7 +79,6 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         inputs = json.loads(spec.inputsJson or "{}")
         if not isinstance(inputs, dict):
             raise ValueError("inputs_json must contain an object")
-        token = CancellationToken(cancelEvent)
         publisher = _eventPublisher(spec.jobId, spec.projectId, eventQueue)
         globalCounters = (
             ProjectGlobalCounters(SqliteStore(Path(spec.runtimeDbPath)), spec.projectId)
@@ -104,6 +108,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
         )
         runner.prepareResources(spec.workflowId,
             RunContext.root(spec.jobId, spec.workflowId, spec.jobWorkspacePath, projectId=spec.projectId), token)
+        token.raise_if_cancelled()
         _put(eventQueue, {"eventType": "job.started", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
         from emo_master.apps.runtime.project_config.cycle_plan import CyclePlanSession
         cyclePlans = CyclePlanSession(runner, devices, document, compiler, registry,
@@ -140,7 +145,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
             runCycle(context, inputs)
         publishTerminal({"eventType": "job.completed", "jobId": spec.jobId, "projectId": spec.projectId, "pid": _pid(), "workflowId": spec.workflowId})
     except CancellationRequested as err:
-        publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err)})
+        publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId, "workflowId": spec.workflowId, "pid": _pid(), "code": "E_CANCELLED", "message": str(err), "payload": errorDetails(err)})
     except BaseException as err:
         if getattr(err, "code", "") == "E_CONFIG_DRAINED":
             publishTerminal({"eventType": "job.aborted", "jobId": spec.jobId, "projectId": spec.projectId,
@@ -155,6 +160,7 @@ def runJobProcess(spec: JobProcessSpec, cancelEvent, eventQueue, communicationPi
                 "pid": _pid(),
                 "code": getattr(err, "code", "E_WORKER_CRASHED"),
                 "message": str(err),
+                "payload": errorDetails(err),
             },
         )
         raise

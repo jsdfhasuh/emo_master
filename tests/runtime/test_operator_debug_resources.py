@@ -59,7 +59,7 @@ def uploadImage(debug):
 def testAllBuiltinsAdmittedButExternalResourcesNotWorkflowEnabled(runtime):
     rows = json.loads(runtime.GetOperatorDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
     managed = {"communication.tcp.session", "communication.tcp.session_send", "vision.io.simulated_camera"}
-    assert len(rows) == 70
+    assert len(rows) == 71
     assert {row["operatorId"] for row in rows if not row["supported"]} == managed
     flow = json.loads(runtime.GetWorkflowDebugCapabilities(pb.OperatorDebugRequest(), None).snapshot_json)["operators"]
     assert sum(not row["supported"] for row in flow) == len(SINGLE_NODE_FOLDERS) + len(managed)
@@ -117,9 +117,25 @@ def testBatchLoaderSequenceExhaustionResetAndParameterChange(runtime, tmp_path):
         assert run(debug, {**params, "colorMode": "grayscale"})["outputs"]["index"] == 0
 
 
+def testVideoLoaderSequenceExhaustionResetAndParameterChange(runtime, tmp_path):
+    from tests.plugins.test_video_loader_operator import makeVideo
+    path = makeVideo(tmp_path / "video.avi", count=6)
+    with connected(runtime, "vision.io.video_loader") as debug:
+        params = {"videoPath": str(path), "intervalSec": .5}
+        first, second = run(debug, params), run(debug, params)
+        assert first["status"] == second["status"] == "SUCCEEDED", (first, second)
+        assert first["outputs"]["frameIndex"] == 0 and first["outputs"]["hasNext"]
+        assert second["outputs"]["frameIndex"] == 5 and not second["outputs"]["hasNext"]
+        assert first["outputAssets"]["image"] and second["outputAssets"]["image"]
+        assert run(debug, params)["code"] == "E_INPUT_EXHAUSTED"
+        assert run(debug, params, {"reset": {"inline": True}})["outputs"]["index"] == 0
+        assert run(debug, {**params, "intervalSec": .25})["outputs"]["index"] == 0
+
+
 @pytest.mark.parametrize("operatorId,key", [
     ("vision.io.coordinate_reader", "filePath"), ("vision.io.image_batch_loader", "folderPath"),
     ("vision.inference.yolo", "modelPath"),
+    ("vision.io.video_loader", "videoPath"),
 ])
 def testPathsMustExistOnRuntime(runtime, tmp_path, operatorId, key):
     with connected(runtime, operatorId) as debug:

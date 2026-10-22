@@ -118,6 +118,13 @@ def prepareRuntimeProject(
         validateBindings(node.globalVariableBindings, prepared.globalVariables, descriptor.manifest.paramSchema)
         try:
             _resolveFiles(node.params, descriptor.manifest.paramSchema, root, inputs, outputs, 'params')
+            if node.operatorId == "vision.io.image_saver" and any(
+                edge.toNode == nid and edge.toPort == "fileName" for edge in prepared.workflows[wid].edges
+            ):
+                outputPath = node.params.get("outputPath")
+                if isinstance(outputPath, str) and outputPath:
+                    # A dynamic basename can target any file in this directory.
+                    outputs.append((Path(outputPath).parent, 'params.outputPath'))
         except ValueError as error:
             raise locatedValidationError(error, 'E_RESOURCE_INPUT', projectId=document.project.projectId,
                 workflowId=wid, nodeId=nid) from error

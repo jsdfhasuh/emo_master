@@ -1,0 +1,88 @@
+{
+  "schemaVersion": "2.1",
+  "project": {
+    "projectId": "video-sample-while-example",
+    "name": "\u672c\u5730\u89c6\u9891\u53d6\u5e27",
+    "revision": 1,
+    "createdAt": "2026-10-21T00:00:00Z",
+    "updatedAt": "2026-10-21T00:00:00Z"
+  },
+  "entryWorkflowId": "main",
+  "workflowOrder": ["main", "body"],
+  "workflows": {
+    "main": {
+      "name": "\u4e3b\u5de5\u4f5c\u6d41",
+      "inputs": {},
+      "outputs": {"hasNext": "boolean"},
+      "nodes": [
+        {"nodeId": "one", "kind": "operator", "operatorId": "vision.value.number", "displayName": "Number",
+         "outputPorts": {"value": "number"}, "params": {"value": 1}},
+        {"nodeId": "initial", "kind": "operator", "operatorId": "vision.compare.number", "displayName": "1 == 1",
+         "inputPorts": {"left": "number", "right": "number"}, "outputPorts": {"result": "boolean"},
+         "params": {"operator": "eq", "rightValue": 1}},
+        {"nodeId": "while", "kind": "loop", "displayName": "While \u89c6\u9891\u53d6\u5e27",
+         "inputPorts": {"hasNext": "boolean"}, "outputPorts": {"hasNext": "boolean"},
+         "loop": {"contractVersion": 2, "mode": "while", "bodyWorkflowId": "body", "maxIterations": 10000,
+                  "timeoutMs": 0, "conditionMode": "boolean", "conditionPort": "hasNext"}},
+        {"nodeId": "input", "kind": "workflow_input", "displayName": "Workflow Input"},
+        {"nodeId": "output", "kind": "workflow_output", "displayName": "Workflow Output", "inputPorts": {"hasNext": "boolean"}}
+      ],
+      "edges": [
+        {"fromNode": "one", "fromPort": "value", "toNode": "initial", "toPort": "left"},
+        {"fromNode": "initial", "fromPort": "result", "toNode": "while", "toPort": "hasNext"},
+        {"fromNode": "while", "fromPort": "hasNext", "toNode": "output", "toPort": "hasNext"}
+      ],
+      "layout": {"nodePositions": {
+        "input": {"x": 20, "y": 40}, "one": {"x": 20, "y": 220},
+        "initial": {"x": 330, "y": 220}, "while": {"x": 750, "y": 220}, "output": {"x": 1190, "y": 220}
+      }}
+    },
+    "body": {
+      "name": "\u53d6\u5e27\u5e76\u5904\u7406",
+      "inputs": {"hasNext": "boolean"},
+      "outputs": {"hasNext": "boolean"},
+      "nodes": [
+        {"nodeId": "load", "kind": "operator", "operatorId": "vision.io.video_loader",
+         "displayName": "\u672c\u5730\u89c6\u9891\u53d6\u5e27",
+         "inputPorts": {"reset": "boolean"},
+         "outputPorts": {"image": "image", "frame": "bbox2d", "videoPath": "string", "index": "integer",
+                         "frameIndex": "integer", "timestampSec": "number", "hasNext": "boolean"},
+         "paramSchema": {
+           "type": "object",
+           "properties": {
+             "videoPath": {
+               "title": "\u89c6\u9891\u6587\u4ef6", "type": "string", "default": "",
+               "xWidget": "file", "xFileMode": "open",
+               "xFilter": "\u89c6\u9891\u6587\u4ef6 (*.mp4 *.avi *.mkv *.mov *.wmv *.m4v *.webm *.mpg *.mpeg);;\u6240\u6709\u6587\u4ef6 (*)"
+             },
+             "intervalSec": {
+               "title": "\u53d6\u5e27\u95f4\u9694\uff08\u79d2\uff09", "type": "number", "exclusiveMinimum": 0.0, "default": 1.0
+             },
+             "colorMode": {
+               "title": "\u989c\u8272\u6a21\u5f0f", "type": "string", "enum": ["color", "grayscale"], "default": "color"
+             }
+           },
+           "required": ["videoPath"]
+         },
+         "params": {"videoPath": "", "intervalSec": 1.0, "colorMode": "color"}},
+        {"nodeId": "blur", "kind": "operator", "operatorId": "vision.preprocess.blur", "displayName": "Blur / Denoise",
+         "inputPorts": {"image": "image", "frame": "bbox2d"}, "outputPorts": {"image": "image", "frame": "bbox2d"},
+         "params": {"mode": "gaussian", "kernelSize": 3}},
+        {"nodeId": "input", "kind": "workflow_input", "displayName": "Workflow Input", "outputPorts": {"hasNext": "boolean"}},
+        {"nodeId": "output", "kind": "workflow_output", "displayName": "Workflow Output", "inputPorts": {"hasNext": "boolean"}}
+      ],
+      "edges": [
+        {"fromNode": "load", "fromPort": "image", "toNode": "blur", "toPort": "image"},
+        {"fromNode": "load", "fromPort": "frame", "toNode": "blur", "toPort": "frame"},
+        {"fromNode": "load", "fromPort": "hasNext", "toNode": "output", "toPort": "hasNext"}
+      ],
+      "layout": {"nodePositions": {
+        "input": {"x": 40, "y": 40}, "load": {"x": 40, "y": 220},
+        "blur": {"x": 470, "y": 220}, "output": {"x": 850, "y": 40}
+      }}
+    }
+  },
+  "runtime": {"maxConcurrentJobs": 2, "gracefulStopTimeoutMs": 5000, "heartbeatTimeoutMs": 5000, "eventRetentionPerJob": 10000},
+  "dependencies": {"operators": []},
+  "devices": {"bindings": {}}
+}

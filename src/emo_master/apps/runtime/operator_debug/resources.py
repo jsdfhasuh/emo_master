@@ -67,6 +67,8 @@ class DebugResources:
             runtimePath(params.get("filePath"), mustExist=params.get("readMode") != "session")
         elif operatorId == "vision.io.image_batch_loader":
             runtimePath(params.get("folderPath"), directory=True)
+        elif operatorId == "vision.io.video_loader":
+            runtimePath(params.get("videoPath"))
         elif operatorId == "vision.inference.yolo":
             runtimePath(params.get("modelPath"))
         elif operatorId == "vision.io.image_saver":

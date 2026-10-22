@@ -1,0 +1,10 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+AssertionError
+{
+  "python": "3.10.21 | packaged by Anaconda, Inc. | (main, Aug 27 2026, 14:35:39) [MSC v.1942 64 bit (AMD64)]",
+  "PySide2": "5.15.2.1",
+  "Qt": "5.15.2",
+  "OpenCV": "4.10.0",
+  "importPath": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-media-delivery-dqn66h8e\\source\\src\\emo_master\\__init__.py"
+}

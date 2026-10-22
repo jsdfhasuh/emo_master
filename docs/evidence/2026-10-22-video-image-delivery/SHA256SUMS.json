@@ -1,0 +1,56 @@
+{
+  "algorithm": "SHA-256",
+  "sourceSha": "196c0823c37f68f5833b877b366bbb8ec4955a2d",
+  "files": [
+    {
+      "path": "delivery-checks.json",
+      "bytes": 1787,
+      "sha256": "567479344e8f09f5afb1849a1b63b207d52e8bb085e80663dae52d90a13b6935"
+    },
+    {
+      "path": "environment-fixed.json",
+      "bytes": 842,
+      "sha256": "fcc63bb8c77bdd9a12321eb9d05c916c99642cbd483f352d4c2dc6857916c663"
+    },
+    {
+      "path": "environment-fixed.log",
+      "bytes": 407,
+      "sha256": "05b8b69ea625e4047f62994ef707274bcc46dd542fe0f16fafaa22f6ba0d1c64"
+    },
+    {
+      "path": "environment.log",
+      "bytes": 407,
+      "sha256": "5c01e246b8659974c29a7d5832e2ca218f8492f0edd601fc635b130e0a246f34"
+    },
+    {
+      "path": "focused.log",
+      "bytes": 265,
+      "sha256": "2c4649701bba9230157bcbd40e4869c055fbbbdc39e8c732bd2e512e1e8c16c8"
+    },
+    {
+      "path": "focused.xml",
+      "bytes": 24693,
+      "sha256": "4ee2459f270dbf10e489a714dc933c2af60fe6ec5d59706c260d779d894660a5"
+    },
+    {
+      "path": "mypy.log",
+      "bytes": 44,
+      "sha256": "718df785efbbd4b57e63b5f64aff2c5b5592e433447681f759b307f97a3ec96a"
+    },
+    {
+      "path": "proto.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "ruff.log",
+      "bytes": 19,
+      "sha256": "82b3e6a6c090a57601d22943bd23fca9218d1031dbe5a7b754092f9a156b4f18"
+    },
+    {
+      "path": "validation.json",
+      "bytes": 9352,
+      "sha256": "5b4459c5ca2e00fc0cf22e0f3c2d8691114bb8ccc5a5edd807d84dc2922a563c"
+    }
+  ]
+}

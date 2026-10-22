@@ -1,0 +1,11 @@
+{
+  "argv": [
+    "C:/Users/jsdfhasuh/.conda/envs/emo_master/python.exe",
+    "-c",
+    "import json,os,sys,emo_master,PySide2,cv2;from pathlib import Path;from PySide2.QtCore import qVersion;print(json.dumps(dict(python=sys.version,PySide2=PySide2.__version__,Qt=qVersion(),OpenCV=cv2.__version__,importPath=emo_master.__file__,cwd=str(Path.cwd())),indent=2));assert os.path.samefile(Path(emo_master.__file__).parent.parent,Path.cwd()/\"src\");assert sys.version_info[:2]==(3,10)"
+  ],
+  "cwd": "C:\\Users\\JSDFHA~1\\AppData\\Local\\Temp\\emo-media-delivery-dqn66h8e\\source",
+  "exitCode": 0,
+  "executed": "2026-10-22T08:03:21.699145+08:00",
+  "firstFailureClassification": "Validation harness compared Windows short and long path spellings using is_relative_to; corrected to os.path.samefile without changing tested source."
+}

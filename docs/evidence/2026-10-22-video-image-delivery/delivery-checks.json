@@ -1,0 +1,56 @@
+{
+  "sourceSha": "196c0823c37f68f5833b877b366bbb8ec4955a2d",
+  "sourceTree": "4eaf72ca85535d9e9b71753621452304166fda31",
+  "commands": [
+    {
+      "label": "source-tests-examples-unchanged",
+      "argv": [
+        "git",
+        "diff",
+        "--exit-code",
+        "196c0823c37f68f5833b877b366bbb8ec4955a2d",
+        "--",
+        "src",
+        "tests",
+        "examples"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": ""
+    },
+    {
+      "label": "document-diff-check",
+      "argv": [
+        "git",
+        "diff",
+        "--check",
+        "--",
+        ".gitattributes",
+        "docs/testing/2026-10-21-image-saver-filename-validation.md",
+        "docs/testing/2026-10-21-video-loader-validation.md",
+        "docs/testing/2026-10-22-video-image-source-delivery.md"
+      ],
+      "cwd": "D:\\jsdfhasuh\\documents\\my_project\\emo_master",
+      "exitCode": 0,
+      "stdout": "",
+      "stderr": "warning: in the working copy of 'docs/testing/2026-10-21-image-saver-filename-validation.md', LF will be replaced by CRLF the next time Git touches it\nwarning: in the working copy of 'docs/testing/2026-10-21-video-loader-validation.md', LF will be replaced by CRLF the next time Git touches it\n"
+    }
+  ],
+  "documentLinksChecked": 6,
+  "junit": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "181",
+      "time": "35.958",
+      "timestamp": "2026-10-22T08:02:28.555093+08:00",
+      "hostname": "视觉电脑"
+    }
+  ],
+  "initialEnvironmentCheck": "FAILED_HARNESS_PATH_COMPARISON",
+  "correctedEnvironmentExitCode": 0,
+  "sourceAndExamplesUnchanged": true
+}

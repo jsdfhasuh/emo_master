@@ -2,6 +2,10 @@
 
 Date: 2026-10-21 (Asia/Shanghai).
 
+This report retains the original development results and working-tree state.
+The 2026-10-22 source commit and fresh delivery checks are recorded in
+[the delivery report](2026-10-22-video-image-source-delivery.md).
+
 ## Source and scope
 
 - Starting HEAD: `31b5de4a604e4facdf636ad39795da0869d908d4`.

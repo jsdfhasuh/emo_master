@@ -217,7 +217,7 @@ class PageWorkspace(QWidget):
 
     def refresh(self):
         p = self.store.snapshot()
-        self.coordinator.window.setWindowTitle('视觉流程设计器' + (' *' if self.session.dirty else ''))
+        self.coordinator.updateWindowTitle()
         if self.pageId not in p.pages:
             self.pageId = p.defaultPageId
         self.pageList.blockSignals(True)

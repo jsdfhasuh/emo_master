@@ -362,7 +362,11 @@ class PageCoordinator:
     def saved(self, directory):
         self.directory = directory
         self.session.markSaved()
-        self.window.setWindowTitle('视觉流程设计器')
+        self.updateWindowTitle()
+
+    def updateWindowTitle(self):
+        name = self.session.workflows.project.get('name') or '未命名工程'
+        self.window.setWindowTitle(f'视觉流程设计器 · {name}' + (' *' if self.session.dirty else ''))
 
     def normalizeDraft(self, payload):
         from copy import deepcopy

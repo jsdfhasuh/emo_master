@@ -38,8 +38,10 @@ def testActualNewEntryPreservesOnlineAndReopens(ownedDesignerWindow, tmp_path, m
     assert w.projectController.currentProjectFile == b
     assert w.pageCoordinator.session.payload()['project']['projectId'] == raw['project']['projectId']
     assert w.loadedProjectPath == str(b)
+    assert w.windowTitle() == '视觉流程设计器 · B'
     assert w.saveProjectToDirectory(str(b))
     assert w.loadProjectDirectory(str(b), confirmed=True)
+    assert w.windowTitle() == '视觉流程设计器 · B'
     assert online == before
     assert set(w.flowModel.nodes) == {'__workflow_input__', '__workflow_output__'}
 

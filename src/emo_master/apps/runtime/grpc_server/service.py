@@ -2256,11 +2256,21 @@ class RuntimeService(ProjectConfigurationRpcMixin, CommunicationRpcMixin, Operat
     def _projectMatches(self, requested: str) -> bool:
         if requested == "":
             return True
-        return requested in {
+        if requested in {
             self.loadedProjectId,
             self.loadedProjectPath or "",
             self.loadedProjectFile or "",
-        }
+        }:
+            return True
+        # Initial publication resolves its source path, while Designer retains
+        # the selected path. Use the same copy identity as inspection renewals,
+        # without treating another file with the same project UUID as an alias.
+        try:
+            reference = self._inspectionReference(requested)
+            return any(reference == self._inspectionReference(path)
+                       for path in (self.loadedProjectPath, self.loadedProjectFile) if path)
+        except (OSError, RuntimeError, ValueError):
+            return False
 
     def _globalCounterProjectError(self, requested: str) -> tuple[str, str] | None:
         if (

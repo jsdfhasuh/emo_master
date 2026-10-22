@@ -3,7 +3,7 @@ from copy import deepcopy
 from concurrent.futures import Future
 
 import pytest
-from PySide2.QtCore import Qt
+from PySide2.QtCore import QRect, Qt
 from PySide2.QtWidgets import QApplication, QMessageBox, QToolButton, QDialogButtonBox
 
 from tests.core.project.test_devices import declaration, definition  # noqa: F401
@@ -208,7 +208,8 @@ def testConnectionReceiptBelongsToDeviceAndCandidate(ownedDesignerWindow, tmp_pa
     d.revert()
 
 
-def testDetailConnectionValidationIsChineseFocusedAndReadOnly(ownedDesignerWindow, tmp_path, monkeypatch):
+@pytest.mark.parametrize('size', [(1200, 760), (826, 590)])
+def testDetailConnectionValidationIsChineseVisibleAndReadOnly(ownedDesignerWindow, tmp_path, monkeypatch, size):
     d = tcpWorkspace(ownedDesignerWindow, tmp_path)
     before = d.c.session.payload()
     source = tmp_path / 'device.emoproj'
@@ -217,18 +218,41 @@ def testDetailConnectionValidationIsChineseFocusedAndReadOnly(ownedDesignerWindo
     monkeypatch.setattr(d.reader, 'submit', lambda *_args, **_kw: calls.append('RPC'))
     monkeypatch.setattr(QMessageBox, 'question', lambda *_: calls.append('confirm') or QMessageBox.Yes)
     form = d.forms['connection']
-    form.channels.setValue([dict(channelId='a', name='A', allowedIps=[])])
+    d.resize(*size)
+    d.tabs.setCurrentIndex(1)
+    QApplication.processEvents()
+    assert d.formScrolls['connection'].viewport().height() >= 2 * d.name.height(), (
+        d.detailSplitter.sizes(), d.details.size(), d.detailSplitter.size(),
+        [(w.text(), w.height()) for w in (d.detailTitle, d.typeInfo, d.onlineIndicator, d.status, d.difference)])
+    form.channels.setValue([dict(channelId=f'ch-{index}', name=f'通道 {index + 1}',
+        allowedIps=[f'127.0.0.{index + 1}'] if index < 7 else []) for index in range(8)])
+    policies = d.forms['policies']
+    policies._controls['sendTimeoutMs'].setValue(2500)
     candidate = deepcopy(d._formValue())
+    policies.advancedButton.setChecked(True)
+    policies.advancedButton.setChecked(False)
+    assert d._formValue() == candidate
+    # An error must reopen a user-collapsed editor, and traverse both scroll
+    # areas to reveal a later row, not merely give an offscreen table focus.
+    d.detailSplitter.setSizes([0, 1])
     d.tabs.setCurrentIndex(2)
     d.activateWindow()
     waitUntil(d.isActiveWindow)
     d.testConnection()
     QApplication.processEvents()
     try:
-        assert d.status.text() == '通道 1：请填写至少一个允许接入的客户端 IPv4'
+        assert d.status.text() == '通道 8：请填写至少一个允许接入的客户端 IPv4'
         table = form.channels.table
         assert d.tabs.currentIndex() == 1 and table.hasFocus()
-        assert (table.currentRow(), table.currentColumn()) == (0, 2)
+        assert (table.currentRow(), table.currentColumn()) == (7, 2)
+        cell = table.visualItemRect(table.currentItem())
+        assert table.viewport().rect().contains(cell)
+        outer = d.formScrolls['connection'].viewport()
+        assert outer.rect().contains(QRect(table.viewport().mapTo(outer, cell.topLeft()), cell.size()))
+        for key in ('apply', 'revert'):
+            button = d.buttons[key]
+            assert button.isVisibleTo(d)
+            assert d.rect().contains(QRect(button.mapTo(d, button.rect().topLeft()), button.size()))
         assert d._formValue() == candidate
         assert d.c.session.payload() == before and source.read_bytes() == sourceBytes
         assert calls == [] and d.pending is None
@@ -313,3 +337,27 @@ def testDisabledEmptyDetailConnectionTestUsesCandidateWithoutApplying(ownedDesig
         assert d.buttons['test'].isEnabled()
     finally:
         d.revert()
+
+
+def testImportBatchUndoRedoRefreshesOperationNotice(ownedDesignerWindow, tmp_path,
+        definition, declaration, monkeypatch):  # noqa: F811
+    from PySide2.QtWidgets import QFileDialog
+    from emo_master.apps.designer.state.device_package import exportDevices
+    d = workspace(ownedDesignerWindow, tmp_path, definition, declaration)
+    package = exportDevices(d.c.session, ['camera'], tmp_path)
+    path = tmp_path / 'devices.emodev'
+    path.write_text(package.model_dump_json(), encoding='utf-8')
+    monkeypatch.setattr(QFileDialog, 'getOpenFileName', lambda *_: (str(path), ''))
+    monkeypatch.setattr(QMessageBox, 'question', lambda *_: QMessageBox.Yes)
+    d.importDevices()
+    first = deepcopy(d.c.session.payload()['devices'])
+    d.importDevices()
+    second = deepcopy(d.c.session.payload()['devices'])
+    assert len(second['definitions']) == 3 and '已导入工程草稿' in d.status.text()
+    d.buttons['undo'].click()
+    assert d.c.session.payload()['devices'] == first
+    assert '已撤销' in d.status.text() and '已导入' not in d.status.text()
+    d.buttons['redo'].click()
+    assert d.c.session.payload()['devices'] == second
+    assert '已重做' in d.status.text() and '已导入' not in d.status.text()
+    assert all(not item['enabled'] for key, item in second['definitions'].items() if key != 'camera')

@@ -172,7 +172,9 @@ class OperatorWindow(QWidget):
         if (len(self.controller.sessions) > 1 or len(self.selectedWorkflowIds) > 1
                 or self.selectedWorkflowIds != [self.controller.document.entryWorkflowId]):
             return self.startWorkflows()
-        self._removePages()
+        if self.pages is None or self.pages.config.pageOrder:
+            self._removePages()
+        self._updateBasicPages(operation="starting")
         self.error = ""
         self.message.setText("正在启动")
         def start():
@@ -194,6 +196,7 @@ class OperatorWindow(QWidget):
                 or next(iter(self.controller.sessions), None) != self.controller.document.entryWorkflowId):
             return self.stopWorkflows()
         self.message.setText("正在停止")
+        self._updateBasicPages(operation="stopping")
         def stop():
             self.controller.stop()
             return self.controller.status()
@@ -220,7 +223,10 @@ class OperatorWindow(QWidget):
         if not keys:
             return
         for key in keys:
-            self._removeWorkflowPages(key)
+            pages = self.workflowPages.get(key)
+            if pages is None or pages.config.pageOrder:
+                self._removeWorkflowPages(key)
+        self._updateBasicPages(operation="starting", workflowIds=keys)
         self.error = ""
         def start():
             for key in keys:
@@ -265,6 +271,8 @@ class OperatorWindow(QWidget):
             return state
         self.error = ""
         self.message.setText("正在停止流程")
+        self._updateBasicPages(operation="stopping",
+                               workflowIds=[workflowId] if workflowId else None)
         self.launch("workflowsStopped", stop)
 
     def _removePages(self):
@@ -395,11 +403,23 @@ class OperatorWindow(QWidget):
                 (f"\n{row['message']}" if row.get("message") else ""))
             controls["label"].setToolTip(f"流程 ID: {key}\n启动请求: {row.get('startRequestId', '')}")
 
+    def _updateBasicPages(self, *, connected=None, connectionDetail="", operation="", workflowIds=None):
+        connected = self.state.get("runtimeConnected", False) if connected is None else connected
+        if self.pages is not None and (workflowIds is None
+                or self.controller.document.entryWorkflowId in workflowIds):
+            self.pages.setBasicStatus(self.state, connected=connected,
+                connectionDetail=connectionDetail, operation=operation)
+        for key, pages in self.workflowPages.items():
+            if workflowIds is None or key in workflowIds:
+                pages.setBasicStatus(self.state.get("workflows", {}).get(key, {}), connected=connected,
+                    connectionDetail=connectionDetail, operation=operation)
+
     def _displayState(self):
         names = dict(EMPTY="未加载工程", READY="就绪", RUNNING="检测中", STOPPING="停止中", FAULT="故障")
         if not self.error:
             self.message.setText(names[self.state["state"]] +
                                  ("\n" + self.state["message"] if self.state["state"] == "FAULT" else ""))
+        self._updateBasicPages()
         self._controls()
 
     def poll(self):
@@ -417,6 +437,8 @@ class OperatorWindow(QWidget):
             self.error = error
             self.message.setText("操作失败：" + error)
             self.closing = False
+            if kind == "status":
+                self._updateBasicPages(connected=False, connectionDetail=error)
             if self.controller:
                 # Query off-thread before deciding whether Start is available.
                 self.launch("status", self.controller.status)

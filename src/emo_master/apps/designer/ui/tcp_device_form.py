@@ -3,7 +3,7 @@ from copy import deepcopy
 
 from pydantic import ValidationError
 from PySide2.QtCore import Signal
-from PySide2.QtWidgets import QVBoxLayout, QWidget
+from PySide2.QtWidgets import QAbstractItemView, QVBoxLayout, QWidget
 
 from emo_master.apps.designer.ui.param_form import SchemaParamForm
 from emo_master.ui.communication_panel import TcpChannelEditor
@@ -81,6 +81,8 @@ class TcpConnectionForm(QWidget):
         self.channels.table.setAccessibleDescription(message)
         if cell is not None:
             self.channels.table.setCurrentCell(*cell)
+            self.channels.table.scrollToItem(self.channels.table.currentItem(),
+                QAbstractItemView.PositionAtCenter)
         self.focusField('channels')
         return message
 

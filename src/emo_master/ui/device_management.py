@@ -2,7 +2,7 @@
 from concurrent.futures import ThreadPoolExecutor
 import json
 
-from PySide2.QtCore import QTimer
+from PySide2.QtCore import QTimer, Qt
 from PySide2.QtWidgets import QComboBox, QDialog, QHBoxLayout, QLabel, QPushButton, QTextBrowser, QVBoxLayout
 
 
@@ -83,8 +83,14 @@ class DeviceManagementDialog(QDialog):
                     self.selector.blockSignals(True)
                     self.selector.clear()
                     self.selector.addItem('请选择设备', None)
-                    for key in self.states:
-                        self.selector.addItem(key, key)
+                    for key, state in self.states.items():
+                        name = str(state.get('name') or '').strip()
+                        declaration = self.types.get(state.get('deviceTypeId'))
+                        typeName = declaration.displayName if declaration else state.get('deviceTypeId', '')
+                        suffix = ' · '.join(part for part in (typeName, key[-8:]) if part)
+                        label = f'{name}（{suffix}）' if name else key
+                        self.selector.addItem(label, key)
+                        self.selector.setItemData(self.selector.count()-1, key, Qt.ToolTipRole)
                     self.selector.setCurrentIndex(max(0, self.selector.findData(selected)))
                     self.selector.blockSignals(False)
                     self.nextState = monotonic()+2

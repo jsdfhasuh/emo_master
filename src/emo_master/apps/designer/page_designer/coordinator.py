@@ -279,6 +279,8 @@ class PageCoordinator:
             self.window._refreshWorkflowTabs()
             if self.devices:
                 self.devices.refresh()
+                self.devices.status.setText(('已重做' if redo else '已撤销') + '工程修改；当前设备列表已同步，在线配置未改变')
+                self.devices.status.setToolTip('')
             if self.editor:
                 if self.session.document().presentation is None:
                     self.showFlow()

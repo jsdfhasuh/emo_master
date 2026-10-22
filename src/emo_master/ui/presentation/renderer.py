@@ -170,6 +170,45 @@ class RuntimePages(QWidget):
         if hub:
             hub.attach(self)
 
+    def setBasicStatus(self, state, *, connected, connectionDetail="", operation=""):
+        """Show an owner's exact task without creating a result-observer session.
+
+        Only the no-page shell uses this path. Custom pages keep their existing
+        hub, capture and result-identity rules, including their disconnected UI.
+        """
+        assertGuiThread()
+        if self.config.pageOrder:
+            return
+        self.status.setText("Runtime：已连接（本机）" if connected else "Runtime：连接状态不可用")
+        self.status.setToolTip(connectionDetail)
+        jobId, status = state.get("jobId", ""), state.get("jobStatus", "")
+        names = {"ACCEPTED": "已接受，等待启动", "STARTING": "启动中", "RUNNING": "运行中",
+                 "STOPPING": "停止中", "COMPLETED": "已完成", "FAILED": "执行失败", "ABORTED": "已中止"}
+        terminal = status in {"COMPLETED", "FAILED", "ABORTED"}
+        if jobId:
+            text = ("最近任务：" if terminal else "当前任务：") + names.get(status, "状态待确认")
+            if status:
+                text += f" ({status})"
+            text += "\nJob: " + jobId
+            if terminal:
+                text += "\n任务资源已释放" if state.get("resourcesReleased") else "\n正在等待任务资源释放"
+        else:
+            text = "任务：尚未开始" if state.get("state") != "FAULT" else "任务：启动结果待确认"
+        if operation == "starting":
+            text += "\n正在请求启动"
+        elif operation == "stopping":
+            text += "\n正在请求停止，等待任务退出及资源释放"
+        if state.get("message"):
+            text += "\n" + state["message"]
+        if not connected:
+            text += "\n以上为最近一次已确认状态，当前状态暂不可用"
+            if connectionDetail:
+                text += "\n" + connectionDetail
+        self.jobStatus.setText(text)
+        self.stack.currentWidget().setText("尚未配置运行页面\n当前仅显示基础任务状态；任务完成不等于产品 OK/NG。")
+        for widget in (self.resumeButton, self.fitButton, self.modeLabel, self.identity):
+            widget.hide()
+
     def fitToAvailableScreen(self, *, resize=True, screen=None):
         if self.editorHost:
             self.setMinimumSize(0, 0)
